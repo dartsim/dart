@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2018, The DART development contributors
+# Copyright (c) 2011-2019, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -9,10 +9,13 @@
 # Find FCL
 #
 # This sets the following variables:
-# FCL_FOUND
-# FCL_INCLUDE_DIRS
-# FCL_LIBRARIES
-# FCL_VERSION
+#   FCL_FOUND
+#   FCL_INCLUDE_DIRS
+#   FCL_LIBRARIES
+#   FCL_VERSION
+#
+# and the following targets:
+#   fcl
 
 find_package(PkgConfig QUIET)
 
@@ -58,4 +61,3 @@ find_package_handle_standard_args(FCL
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS FCL_INCLUDE_DIRS FCL_LIBRARIES
     VERSION_VAR   FCL_VERSION)
-

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5.1)
 
 if(DART_IN_SOURCE_BUILD)
   include(${CMAKE_CURRENT_SOURCE_DIR}/InSourceBuild.cmake)
@@ -8,10 +8,6 @@ endif()
 project(osgWamIkfast)
 
 find_package(DART 6.6.0 REQUIRED COMPONENTS utils-urdf gui-osg)
-
-add_compile_options(-std=c++11)
-
-include_directories(${DART_INCLUDE_DIRS})
 
 add_subdirectory(ikfast)
 

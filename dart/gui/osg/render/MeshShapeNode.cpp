@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -377,6 +377,12 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
 {
   if (index < mTextureImageArrays.size())
     return mTextureImageArrays[index];
+
+  // We sometimes use this value for meshes that do not have material
+  // information, since assimp does not seem to have a built-in way to express
+  // that case.
+  if (index == std::numeric_limits<unsigned int>::max())
+    return {};
 
   if (!mTextureImageArrays.empty())
   {

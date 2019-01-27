@@ -9,34 +9,13 @@ cache:
 
 env:
   global:
+    - REPO_SLUG=$TRAVIS_REPO_SLUG
     - IS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
     - OS_NAME=$TRAVIS_OS_NAME
     - BUILD_DIR=$TRAVIS_BUILD_DIR
 
 matrix:
   include:
-    - os: linux
-      compiler: gcc
-      env:
-        - BUILD_NAME=TRUSTY_DEBUG
-        - SUDO=sudo
-        - BUILD_TYPE=Debug
-        - COMPILER=GCC
-        - BUILD_ONLY_ON_PULL_REQUEST=ON
-    - os: linux
-      compiler: gcc
-      env:
-        - BUILD_NAME=TRUSTY_RELEASE
-        - SUDO=sudo
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-    - os: linux
-      env:
-        - BUILD_NAME=XENIAL_DEBUG
-        - DOCKERFILE="Dockerfile.ubuntu-xenial"
-        - BUILD_TYPE=Debug
-        - COMPILER=GCC
-      services: docker
     - os: linux
       env:
         - BUILD_NAME=XENIAL_RELEASE
@@ -56,13 +35,6 @@ matrix:
         - BUILD_NAME=BIONIC_RELEASE
         - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
-    - os: linux
-      env:
-        - BUILD_NAME=COSMIC_DEBUG
-        - DOCKERFILE="Dockerfile.ubuntu-cosmic"
-        - BUILD_TYPE=Debug
         - COMPILER=GCC
       services: docker
     - os: linux
@@ -87,12 +59,12 @@ matrix:
     #     - BUILD_TYPE=Release
     #     - COMPILER=CLANG
     - os: linux
-      compiler: gcc
       env:
         - BUILD_NAME=DOCS
-        - SUDO=sudo
+        - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
         - COMPILER=GCC
+      services: docker
 
 install:
   - if [ -n "$DOCKERFILE" ]; then

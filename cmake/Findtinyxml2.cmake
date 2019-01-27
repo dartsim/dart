@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2018, The DART development contributors
+# Copyright (c) 2011-2019, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -9,10 +9,13 @@
 # Find TINYXML2
 #
 # This sets the following variables:
-# TINYXML2_FOUND
-# TINYXML2_INCLUDE_DIRS
-# TINYXML2_LIBRARIES
-# TINYXML2_VERSION
+#   TINYXML2_FOUND
+#   TINYXML2_INCLUDE_DIRS
+#   TINYXML2_LIBRARIES
+#   TINYXML2_VERSION
+#
+# and the following targets:
+#   tinyxml2::tinyxml2
 
 find_package(PkgConfig QUIET)
 
@@ -43,4 +46,3 @@ find_package_handle_standard_args(TINYXML2
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS TINYXML2_INCLUDE_DIRS TINYXML2_LIBRARIES
     VERSION_VAR   TINYXML2_VERSION)
-

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -68,18 +68,16 @@ ContactConstraint::ContactConstraint(
     collision::Contact& contact, double timeStep)
   : ConstraintBase(),
     mTimeStep(timeStep),
-    mBodyNodeA(
-        const_cast<dynamics::ShapeFrame*>(
-            contact.collisionObject1->getShapeFrame())
-            ->asShapeNode()
-            ->getBodyNodePtr()
-            .get()),
-    mBodyNodeB(
-        const_cast<dynamics::ShapeFrame*>(
-            contact.collisionObject2->getShapeFrame())
-            ->asShapeNode()
-            ->getBodyNodePtr()
-            .get()),
+    mBodyNodeA(const_cast<dynamics::ShapeFrame*>(
+                   contact.collisionObject1->getShapeFrame())
+                   ->asShapeNode()
+                   ->getBodyNodePtr()
+                   .get()),
+    mBodyNodeB(const_cast<dynamics::ShapeFrame*>(
+                   contact.collisionObject2->getShapeFrame())
+                   ->asShapeNode()
+                   ->getBodyNodePtr()
+                   .get()),
     mContact(contact),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),

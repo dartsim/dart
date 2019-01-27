@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -173,7 +173,6 @@ int main()
 
   // Create the OSG Node that represents the world
   osg::ref_ptr<TinkertoyWorldNode> node = new TinkertoyWorldNode(world);
-  node->setNumStepsPerCycle(20);
 
   // Create the viewer
   dart::gui::osg::ImGuiViewer viewer;

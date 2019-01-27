@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2018, The DART development contributors
+# Copyright (c) 2011-2019, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -31,8 +31,18 @@
 #
 
 # GoogleTest setup
-include(GoogleTest)
-include_directories(BEFORE SYSTEM ${GTEST_INCLUDE_DIRS})
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest/include)
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest)
+add_library(gtest STATIC gtest/src/gtest-all.cc)
+add_library(gtest_main STATIC gtest/src/gtest_main.cc)
+target_link_libraries(gtest_main gtest)
+if(NOT WIN32)
+  target_link_libraries(gtest pthread)
+endif()
+set_target_properties(
+  gtest PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+)
 
 #===============================================================================
 # This function uses following global properties:
@@ -57,9 +67,15 @@ function(dart_add_test test_type target_name) # ARGN for source files
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
 
-  target_link_libraries(${target_name}
-    ${GTEST_MAIN_LIBRARY} ${GTEST_LIBRARY} dart
-  )
+  if(MSVC)
+    target_link_libraries(${target_name}
+        dart
+        optimized gtest debug gtestd
+        optimized gtest_main debug gtest_maind
+    )
+  else()
+    target_link_libraries(${target_name} dart gtest gtest_main)
+  endif()
 
 endfunction()
 
@@ -114,10 +130,10 @@ else()
     "${comprehensive_tests_len} + ${regression_tests_len} + ${unit_tests_len}"
   )
   message(STATUS "Adding ${tests_len} tests ("
-    "comprehensive: ${comprehensive_tests_len}, "
-    "regression: ${regression_tests_len}, "
-    "unit: ${unit_tests_len}"
-    ")"
+      "comprehensive: ${comprehensive_tests_len}, "
+      "regression: ${regression_tests_len}, "
+      "unit: ${unit_tests_len}"
+      ")"
   )
 endif()
 

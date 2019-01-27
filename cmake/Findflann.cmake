@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2018, The DART development contributors
+# Copyright (c) 2011-2019, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -9,10 +9,13 @@
 # Find FLANN
 #
 # This sets the following variables:
-# FLANN_FOUND
-# FLANN_INCLUDE_DIRS
-# FLANN_LIBRARIES
-# FLANN_VERSION
+#   FLANN_FOUND
+#   FLANN_INCLUDE_DIRS
+#   FLANN_LIBRARIES
+#   FLANN_VERSION
+#
+# and the following targets:
+#   flann
 
 find_package(PkgConfig QUIET)
 

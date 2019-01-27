@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -42,8 +42,7 @@ namespace common {
 template <typename Lockable>
 SingleLockableReference<Lockable>::SingleLockableReference(
     std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept
-    : mLockableHolder(std::move(lockableHolder)),
-      mLockable(lockable)
+  : mLockableHolder(std::move(lockableHolder)), mLockable(lockable)
 {
   // Do nothing
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2018, The DART development contributors
+# Copyright (c) 2011-2019, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -42,4 +42,3 @@ find_package_handle_standard_args(ASSIMP
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES
     VERSION_VAR   ASSIMP_VERSION)
-

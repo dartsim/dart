@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -124,10 +124,10 @@ struct TranslationalJoint2DProperties : GenericJoint<math::R2Space>::Properties,
 };
 
 //==============================================================================
-using TranslationalJoint2DBase
-    = common::EmbedPropertiesOnTopOf<TranslationalJoint2D,
-                                     TranslationalJoint2DUniqueProperties,
-                                     GenericJoint<math::R2Space>>;
+using TranslationalJoint2DBase = common::EmbedPropertiesOnTopOf<
+    TranslationalJoint2D,
+    TranslationalJoint2DUniqueProperties,
+    GenericJoint<math::R2Space>>;
 
 } // namespace detail
 } // namespace dynamics
