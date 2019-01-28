@@ -113,19 +113,20 @@ jobs:
     CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
     VCPKG_ROOT: '$(Build.BinariesDirectory)/vcpkg'
   steps:
-  - script: git clone https://github.com/Microsoft/vcpkg.git
-    displayName: 'Clone vcpkg'
-    workingDirectory: '$(Build.BinariesDirectory)'
-  - script: .\bootstrap-vcpkg.bat
-    displayName: 'Build vcpkg'
-    workingDirectory: '$(VCPKG_ROOT)'
+#   - script: git clone https://github.com/Microsoft/vcpkg.git
+#     displayName: 'Clone vcpkg'
+#     workingDirectory: '$(Build.BinariesDirectory)'
+#   - script: .\bootstrap-vcpkg.bat
+#     displayName: 'Build vcpkg'
+#     workingDirectory: '$(VCPKG_ROOT)'
+#   - script: |
+#       .\vcpkg.exe remove --outdated --recurse
+#       .\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
+#       .\vcpkg.exe integrate install
+#     displayName: 'Install dependencies'
+#     workingDirectory: '$(VCPKG_ROOT)'
   - script: |
-      .\vcpkg.exe remove --outdated --recurse
-      .\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
-      .\vcpkg.exe integrate install
-    displayName: 'Install dependencies'
-    workingDirectory: '$(VCPKG_ROOT)'
-  - script: |
+      dir
       mkdir build
       cd build
       cmake \
