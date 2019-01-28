@@ -126,6 +126,8 @@ jobs:
     displayName: 'Install dependencies'
     workingDirectory: '$(VCPKG_ROOT)'
   - script: |
+      dir
+      cd dart
       mkdir build
       cd build
       cmake \
