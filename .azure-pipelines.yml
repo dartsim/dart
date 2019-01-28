@@ -113,12 +113,12 @@ jobs:
     CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
     VCPKG_ROOT: '$(Build.BinariesDirectory)/vcpkg'
   steps:
-#   - script: git clone https://github.com/Microsoft/vcpkg.git
-#     displayName: 'Clone vcpkg'
-#     workingDirectory: '$(Build.BinariesDirectory)'
-#   - script: .\bootstrap-vcpkg.bat
-#     displayName: 'Build vcpkg'
-#     workingDirectory: '$(VCPKG_ROOT)'
+  - script: git clone https://github.com/Microsoft/vcpkg.git
+    displayName: 'Clone vcpkg'
+    workingDirectory: '$(Build.BinariesDirectory)'
+  - script: .\bootstrap-vcpkg.bat
+    displayName: 'Build vcpkg'
+    workingDirectory: '$(VCPKG_ROOT)'
 #   - script: |
 #       .\vcpkg.exe remove --outdated --recurse
 #       .\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
@@ -128,8 +128,8 @@ jobs:
   - script: |
       mkdir build
       cd build
-      cmake -help
-      cmake .. -G "$(CMAKE_GENERATOR)" -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
+#      cmake .. -G "$(CMAKE_GENERATOR)" -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
+      cmake .. -G"$(CMAKE_GENERATOR)" -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake"
       cmake --build . --target ALL_BUILD --config Release -- /maxcpucount:4
     displayName: 'Build'
     workingDirectory: '$(Build.SourcesDirectory)'
