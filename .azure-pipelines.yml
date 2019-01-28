@@ -128,7 +128,6 @@ jobs:
   - script: |
       mkdir build
       cd build
-#      cmake .. -G "$(CMAKE_GENERATOR)" -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
       cmake .. -G"$(CMAKE_GENERATOR)" -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake"
       cmake --build . --target ALL_BUILD --config Release -- /maxcpucount:4
     displayName: 'Build'
