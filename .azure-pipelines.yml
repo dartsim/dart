@@ -126,13 +126,9 @@ jobs:
 #     displayName: 'Install dependencies'
 #     workingDirectory: '$(VCPKG_ROOT)'
   - script: |
-      dir
       mkdir build
       cd build
-      cmake \
-        .. -G "$(CMAKE_GENERATOR)" -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64"
-        -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake"
-        -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
+      cmake .. -G "$(CMAKE_GENERATOR)" -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
       make -j4
     displayName: 'Build'
     workingDirectory: '$(Build.SourcesDirectory)'
