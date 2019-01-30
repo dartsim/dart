@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <TestHelpers.hpp>
+#include <gtest/gtest.h>
 
-#include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
@@ -48,12 +48,12 @@ TEST(Issue1231, NoContacts)
   dart::simulation::WorldPtr world = dart::simulation::World::create();
 
   double x = -0.25;
-  for(const std::string& name : {"1", "2"})
+  for (const std::string& name : {"1", "2"})
   {
     const auto skeleton = dart::dynamics::Skeleton::create(name);
     skeleton->setMobile(false);
-    auto pair = skeleton
-        ->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+    auto pair
+        = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
     auto joint = pair.first;
     auto bn = pair.second;
 
@@ -63,7 +63,7 @@ TEST(Issue1231, NoContacts)
     x += 0.5;
 
     bn->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-          std::make_shared<dart::dynamics::BoxShape>(
+        std::make_shared<dart::dynamics::BoxShape>(
             Eigen::Vector3d::Constant(1.0)));
 
     world->addSkeleton(skeleton);
