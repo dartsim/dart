@@ -129,7 +129,13 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
     return true;
 
-  if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton())
+  const auto& skel1 = bodyNode1->getSkeleton();
+  const auto& skel2 = bodyNode2->getSkeleton();
+
+  if ( !skel1->isMobile() && !skel2->isMobile() )
+    return true;
+
+  if (skel1 == skel2)
   {
     auto skeleton = bodyNode1->getSkeleton();
 
