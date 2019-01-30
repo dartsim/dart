@@ -137,12 +137,10 @@ bool BodyNodeCollisionFilter::ignoresCollision(
 
   if (skel1 == skel2)
   {
-    auto skeleton = bodyNode1->getSkeleton();
-
-    if (!skeleton->isEnabledSelfCollisionCheck())
+    if (!skel1->isEnabledSelfCollisionCheck())
       return true;
 
-    if (!skeleton->isEnabledAdjacentBodyCheck())
+    if (!skel1->isEnabledAdjacentBodyCheck())
     {
       if (areAdjacentBodies(bodyNode1, bodyNode2))
         return true;
