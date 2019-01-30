@@ -4,6 +4,10 @@
 
 #### Changes
 
+* Collision Detection
+
+  * The BodyNodeCollisionFilter will ignore contacts between immobile bodies: [#1232](https://github.com/dartsim/dart/pull/1232)
+
 * Planning
 
   * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
