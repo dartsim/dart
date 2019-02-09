@@ -112,13 +112,14 @@ jobs:
     BUILD_TOOLSET_VERSION: '141'
     CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
     CONFIGURATION: 'Release'
+    VCPKG_ROOT: '%VCPKG_ROOT%'
   steps:
   - script: |
       vcpkg.exe remove --outdated --recurse
       vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
       vcpkg.exe integrate install
     displayName: 'Install dependencies'
-    workingDirectory: '$(VCPKG_ROOT)'
+    workingDirectory: '$(Build.SourcesDirectory)'
   - script: |
       cmake --version
       mkdir build
