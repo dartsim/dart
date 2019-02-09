@@ -114,10 +114,9 @@ jobs:
     CONFIGURATION: 'Release'
   steps:
   - script: |
-      echo %VCPKG_ROOT%
-      %VCPKG_ROOT%/vcpkg.exe remove --outdated --recurse
-      %VCPKG_ROOT%/vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
-      %VCPKG_ROOT%/vcpkg.exe integrate install
+      ${VCPKG_ROOT}/vcpkg.exe remove --outdated --recurse
+      ${VCPKG_ROOT}/vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
+      ${VCPKG_ROOT}/vcpkg.exe integrate install
     displayName: 'Install dependencies'
     workingDirectory: '$(Build.SourcesDirectory)'
   - script: |
