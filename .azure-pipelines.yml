@@ -115,9 +115,9 @@ jobs:
     VCPKG_ROOT: '%VCPKG_ROOT%'
   steps:
   - script: |
-      vcpkg.exe remove --outdated --recurse
-      vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
-      vcpkg.exe integrate install
+      vcpkg remove --outdated --recurse
+      vcpkg install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
+      vcpkg integrate install
     displayName: 'Install dependencies'
     workingDirectory: '$(Build.SourcesDirectory)'
   - script: |
