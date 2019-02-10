@@ -536,6 +536,17 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
 }
 
 //==============================================================================
+bool Group::removeJoints(
+    const std::vector<Joint*>& _joints, bool _removeDofs, bool _warning)
+{
+  bool added = false;
+  for(Joint* joint : _joints)
+    added |= removeJoint(joint, _removeDofs, _warning);
+
+  return added;
+}
+
+//==============================================================================
 bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
 {
   if(nullptr == _dof)
