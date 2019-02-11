@@ -163,14 +163,14 @@ void runIssue1234Test(
 }
 
 //==============================================================================
-TEST(Issue1234, Bullet)
+TEST(DISABLED_Issue1234, Bullet)
 {
   runIssue1234Test(
         []{ return dart::collision::BulletCollisionDetector::create(); });
 }
 
 //==============================================================================
-TEST(Issue1234, ODE)
+TEST(DISABLED_Issue1234, ODE)
 {
   runIssue1234Test(
         []{ return dart::collision::OdeCollisionDetector::create(); });
