@@ -189,20 +189,16 @@ function(install_component_exports package_name)
     # TODO: Replace this manual generation with a configure_file.
     set(output_path
       "${output_prefix}/${package_name}_${component}Component.cmake")
-    file(WRITE "${output_path}" "")
 
-    get_property(dependencies TARGET "${target}"
+    get_property(internal_dependencies TARGET "${target}"
       PROPERTY "${component_prefix}DEPENDENCIES")
-    file(APPEND "${output_path}"
-      "set(\"${package_name}_${component}_DEPENDENCIES\" ${dependencies})\n")
 
     get_property(libraries TARGET "${target}"
       PROPERTY "${component_prefix}LIBRARIES")
-    file(APPEND "${output_path}"
-      "set(\"${package_name}_${component}_LIBRARIES\" ${libraries})\n")
 
     get_property(dependency_package TARGET "${target}"
       PROPERTY "${component_prefix}dependency_package")
+    set(external_dependencies)
     foreach(dependent_package ${dependency_package})
       set(find_pkg_name "Find${dependent_package}.cmake")
       set(find_pkg_path "")
@@ -224,9 +220,14 @@ function(install_component_exports package_name)
       if("${dart_find_pkg_path}" STREQUAL "")
         message(FATAL_ERROR "Failed to find '${dart_find_pkg_path}'.")
       endif()
-      file(APPEND "${output_path}" "include(\${CMAKE_CURRENT_LIST_DIR}/${dart_find_pkg_name})\n")
+      list(APPEND external_dependencies ${dependent_package})
       install(FILES "${dart_find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
     endforeach()
+
+    configure_file(
+      "${CMAKE_SOURCE_DIR}/cmake/dart_Component.cmake.in"
+      "${output_path}"
+      @ONLY)
 
     install(FILES "${output_path}"
       DESTINATION "${CONFIG_INSTALL_DIR}")

@@ -11,7 +11,7 @@
 # with Bullet, which uses relative paths and may break transitive dependencies.
 find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
 
-if(BULLET_FOUND AND NOT TARGET Bullet)
+if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   add_library(Bullet INTERFACE IMPORTED)
   set_target_properties(Bullet PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${BULLET_INCLUDE_DIRS}"

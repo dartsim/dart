@@ -4,31 +4,73 @@
 
 #### Changes
 
+* Collision Detection
+
+  * The BodyNodeCollisionFilter will ignore contacts between immobile bodies: [#1232](https://github.com/dartsim/dart/pull/1232)
+
 * Planning
 
   * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
 
 #### Compilers Tested
 
-  * Linux
+* Linux
 
-    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
 
-  * Linux (32-bit)
+* Linux (32-bit)
 
-    * GCC (C++11): 5.4.0
+  * GCC (C++11): 5.4.0
 
-  * macOS
+* macOS
 
-    * AppleClang (C++11): 9.1.0
+  * AppleClang (C++11): 9.1.0
 
-### DART 6.7.1 (XXXX-XX-XX)
+### [DART 6.7.2 (2019-01-17)](https://github.com/dartsim/dart/milestone/50?closed=1)
+
+### Changes
+
+* Build system
+
+  * Fixed #1223 for the recursive case: [#1227](https://github.com/dartsim/dart/pull/1227)
+  * Specified mode for find_package(): [#1228](https://github.com/dartsim/dart/pull/1228)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
+
+### [DART 6.7.1 (2019-01-15)](https://github.com/dartsim/dart/milestone/49?closed=1)
 
 #### Changes
 
 * Build system
 
   * Ensure that imported targets of dependencies are always created when finding the dart package: [#1222](https://github.com/dartsim/dart/pull/1222)
+  * Set components to not-found when their external dependencies are missing: [#1223](https://github.com/dartsim/dart/pull/1223)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
 
 ### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
 
@@ -70,17 +112,17 @@
 
 #### Compilers Tested
 
-  * Linux
+* Linux
 
-    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
 
-  * Linux (32-bit)
+* Linux (32-bit)
 
-    * GCC (C++11): 5.4.0
+  * GCC (C++11): 5.4.0
 
-  * macOS
+* macOS
 
-    * AppleClang (C++11): 9.1.0
+  * AppleClang (C++11): 9.1.0
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 
