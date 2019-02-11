@@ -1,10 +1,24 @@
+#==============================================================================
+#
 # Arguments that will be appended in-order before command line arguments.
+#
+#==============================================================================
 arguments:
   - "-extra-arg"
   - "-I/usr/lib/clang/3.6/include"
 
+#==============================================================================
+#
+# Binding
+#
+#==============================================================================
 binding: "boost_python"
 
+#==============================================================================
+#
+# Template
+#
+#==============================================================================
 template:
   module: !file
     'templates/module.mstch.cpp'
@@ -22,7 +36,7 @@ template:
       #include <dartpy/template_registry.h>
       #include <dart/dart.hpp>
       #include <dart/collision/bullet/bullet.hpp>
-      // #include <dart/collision/ode/ode.hpp>
+      #include <dart/collision/ode/ode.hpp>
       #include <dart/optimizer/optimizer.hpp>
       #include <dart/optimizer/nlopt/nlopt.hpp>
       #include <dart/planning/planning.hpp>
@@ -46,7 +60,7 @@ template:
       #include <dartpy/util.h>
       #include <dart/dart.hpp>
       #include <dart/collision/bullet/bullet.hpp>
-      // #include <dart/collision/ode/ode.hpp>
+      #include <dart/collision/ode/ode.hpp>
       #include <dart/optimizer/optimizer.hpp>
       #include <dart/optimizer/nlopt/nlopt.hpp>
       #include <dart/planning/planning.hpp>
@@ -58,7 +72,12 @@ template:
     prebody:
       '/* main prebody */'
     precontent: |
-      boost::python::import("boost_numpy_eigen");
+      try {
+        boost::python::import("boost_numpy_eigen");
+      } catch(...) {
+        std::cerr << "Failed to import 'boost_numpy_eigen'" << std::endl;
+        throw;
+      }
 
       // std::shared_ptr implicit conversions
       boost::python::implicitly_convertible<
@@ -136,15 +155,24 @@ template:
     footer: |
       // main footer
 
-# The C++ namespaces that will be extracted by Chimera
+#==============================================================================
+#
+# Namespaces: The C++ namespaces that will be extracted by Chimera
+#
+#==============================================================================
 namespaces:
   'dart':
     name: null  # Collapse the 'dart' namespace into its parent.
   'dart::common::detail': null
   'dart::math::detail': null
   'dart::dynamics::detail': null
+  'dart::collision::detail': null
 
-# Selected types that need special handling.
+#==============================================================================
+#
+# Types: Selected types that need special handling.
+#
+#==============================================================================
 types:
   'const bool &':
     return_value_policy: copy_const_reference
@@ -619,8 +647,23 @@ types:
 
   'std::shared_ptr<const dart::collision::CollisionDetector>': null
 
-# Selected function and class declarations that need custom parameters.
+#==============================================================================
+#
+# Classes: Selected function and class declarations that need custom parameters.
+#
+#==============================================================================
 classes:
+
+  #----------------------------------------------------------------------------
+  # dart::common
+  #----------------------------------------------------------------------------
+  'template <class T> dart::common::Virtual': null
+
+  #----------------------------------------------------------------------------
+  # dart::dynamics
+  #----------------------------------------------------------------------------
+  'dart::dynamics::VoxelGridShape': null
+
   #'dart::common::Factory<std::string, dart::collision::CollisionDetector, std::shared_ptr<dart::collision::CollisionDetector>>': null
 
   'dart::common::ResourceRetriever':
@@ -638,38 +681,22 @@ classes:
   'dart::dynamics::SimpleFrame':
     held_type: 'std::shared_ptr<dart::dynamics::SimpleFrame>'
 
-  'dart::common::Virtual<dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::EndEffector> >':
-    name: VirtualBodyNodeSpecializedForEndEffector
-  'dart::common::Virtual<dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::ShapeNode> >':
-    name: VirtualBodyNodeSpecializedForShapeNode
   'dart::common::SpecializedForAspect<dart::dynamics::CollisionAspect, dart::dynamics::DynamicsAspect>':
     name: SpecializedForAspect_CollisionAspect_DynamicsAspect
-  'dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::CollisionAspect, dart::dynamics::DynamicsAspect> >':
-    name: VirtualSpecializedForAspect_CollisionAspect_DynamicsAspect
   'dart::common::SpecializedForAspect<dart::dynamics::Support>':
     name: SpecializedForAspectSupport
-  'dart::common::Virtual<dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::Marker> >':
-    name: BodyNodeSpecializedForMarker
   'dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::EndEffector, dart::dynamics::Marker>':
     name: BodyNodeSpecializedFor_EndEffector_Marker
-  'dart::common::Virtual<dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::EndEffector, dart::dynamics::Marker> >':
-    name: VirtualBodyNodeSpecializedFor_EndEffector_Marker
-  'dart::common::Virtual<dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::Marker> >':
-    name: VirtualBodyNodeSpecializedForMarker
 
   # todo: seems below lines are too long to parse by yaml-cpp
   #'dart::common::SpecializedForAspect<dart::common::ProxyStateAndPropertiesAspect<dart::dynamics::Skeleton, dart::common::ProxyCloneable<dart::common::Aspect::State, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState> > >, &dart::dynamics::detail::setAllBodyNodeStates, &dart::dynamics::detail::getAllBodyNodeStates>, dart::common::ProxyCloneable<dart::common::Aspect::Properties, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties> > >, &dart::dynamics::detail::setAllBodyNodeProperties, &dart::dynamics::detail::getAllBodyNodeProperties> > >':
     #name: SpecializedForAspect_Skeleton_BodyNode
   #'dart::common::RequiresAspect<dart::common::ProxyStateAndPropertiesAspect<dart::dynamics::Skeleton, dart::common::ProxyCloneable<dart::common::Aspect::State, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState> > >, &dart::dynamics::detail::setAllBodyNodeStates, &dart::dynamics::detail::getAllBodyNodeStates>, dart::common::ProxyCloneable<dart::common::Aspect::Properties, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties> > >, &dart::dynamics::detail::setAllBodyNodeProperties, &dart::dynamics::detail::getAllBodyNodeProperties> > >':
     #name: RequiresAspect_Skeleton_BodyNode
-  #'dart::common::Virtual<dart::common::RequiresAspect<dart::common::ProxyStateAndPropertiesAspect<dart::dynamics::Skeleton, dart::common::ProxyCloneable<dart::common::Aspect::State, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState> > >, &dart::dynamics::detail::setAllBodyNodeStates, &dart::dynamics::detail::getAllBodyNodeStates>, dart::common::ProxyCloneable<dart::common::Aspect::Properties, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties> > >, &dart::dynamics::detail::setAllBodyNodeProperties, &dart::dynamics::detail::getAllBodyNodeProperties> > > >':
-    #name: VirtualRequiresAspect_Skeleton_BodyNode
   #'dart::common::SpecializedForAspect<dart::common::ProxyStateAndPropertiesAspect<dart::dynamics::Skeleton, dart::common::ProxyCloneable<dart::common::Aspect::State, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState> > >, &dart::dynamics::detail::setAllJointStates, &dart::dynamics::detail::getAllJointStates>, dart::common::ProxyCloneable<dart::common::Aspect::Properties, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties> > >, &dart::dynamics::detail::setAllJointProperties, &dart::dynamics::detail::getAllJointProperties> > >':
     #name: SpecializedForAspect_Skeleton_Joint
   #'dart::common::RequiresAspect<dart::common::ProxyStateAndPropertiesAspect<dart::dynamics::Skeleton, dart::common::ProxyCloneable<dart::common::Aspect::State, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState> > >, &dart::dynamics::detail::setAllJointStates, &dart::dynamics::detail::getAllJointStates>, dart::common::ProxyCloneable<dart::common::Aspect::Properties, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties> > >, &dart::dynamics::detail::setAllJointProperties, &dart::dynamics::detail::getAllJointProperties> > >':
     #name: RequiresAspect_Skeleton_Joint
-  #'dart::common::Virtual<dart::common::RequiresAspect<dart::common::ProxyStateAndPropertiesAspect<dart::dynamics::Skeleton, dart::common::ProxyCloneable<dart::common::Aspect::State, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState> > >, &dart::dynamics::detail::setAllJointStates, &dart::dynamics::detail::getAllJointStates>, dart::common::ProxyCloneable<dart::common::Aspect::Properties, dart::dynamics::Skeleton, std::vector<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, std::allocator<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties> > >, &dart::dynamics::detail::setAllJointProperties, &dart::dynamics::detail::getAllJointProperties> > > >':
-    #name: VirtualRequiresAspect_Skeleton_Joint
 
   'dart::common::SpecializedForAspect<dart::common::EmbeddedPropertiesAspect<dart::dynamics::FixedFrame, dart::dynamics::detail::FixedFrameProperties> >':
     name: SpecializedForFixedFrameAspect
@@ -775,11 +802,6 @@ classes:
   'dart::dynamics::detail::GenericJointState<dart::math::SE3Space >':
     name: SE3JointState
 
-  'dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::State, std::default_delete<dart::common::Aspect::State> > > > >, dart::common::detail::GetState>':
-    name: CompositeData_Map_TypeIndex_AspectState
-  'dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>':
-    name: CompositeData_Map_TypeIndex_AspectProperties
-
   'dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>':
     name: CompositeTrackingAspect_ShapeFrame
   'dart::common::CompositeTrackingAspect<dart::dynamics::EulerJoint>':
@@ -821,63 +843,8 @@ classes:
   'dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SE3Space> >':
     name: CompositeTrackingAspect_SE3Joint
 
-  'dart::common::detail::GetAspect<dart::dynamics::BodyNode>':
-    name: GetAspect_BodyNode
-
-  'dart::common::detail::GetProperties<dart::dynamics::BodyNode>':
-    name: GetProperties_BodyNode
-
   'dart::common::EmbedProperties<dart::dynamics::FixedFrame, dart::dynamics::detail::FixedFrameProperties>':
     name: EmbedProperties_FixedFrame_FixedFrameProperties
-
-  'dart::common::Virtual<dart::dynamics::FixedFrame>':
-    name: Virtual_FixedFrame
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::Joint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::Joint, dart::dynamics::detail::JointProperties>, dart::dynamics::detail::JointProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::JointProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_Joint
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::ShapeFrame, dart::dynamics::detail::ShapeFrameProperties>, dart::dynamics::detail::ShapeFrameProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::ShapeFrameProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_ShapeFrame
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::EntityNode<dart::dynamics::TemplatedJacobianNode<dart::dynamics::FixedJacobianNode> > >, dart::common::EmbeddedPropertiesAspect<dart::dynamics::EntityNode<dart::dynamics::TemplatedJacobianNode<dart::dynamics::FixedJacobianNode> >, dart::dynamics::detail::EntityNodeProperties>, dart::dynamics::detail::EntityNodeProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::EntityNodeProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_FixedJacobianNode
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::EndEffector>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::EndEffector, dart::dynamics::detail::EndEffectorProperties>, dart::dynamics::detail::EndEffectorProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::EndEffectorProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_EndEffector
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::Marker>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::Marker, dart::dynamics::detail::MarkerProperties>, dart::dynamics::detail::MarkerProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::MarkerProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_Marker
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::Skeleton>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::Skeleton, dart::dynamics::detail::SkeletonAspectProperties>, dart::dynamics::detail::SkeletonAspectProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SkeletonAspectProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_Skeleton
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::BodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::BodyNode, dart::dynamics::detail::BodyNodeState, dart::dynamics::detail::BodyNodeAspectProperties>, dart::dynamics::detail::BodyNodeState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::BodyNodeState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::BodyNode, dart::dynamics::detail::BodyNodeState, dart::dynamics::detail::BodyNodeAspectProperties>, dart::dynamics::detail::BodyNodeAspectProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::BodyNodeAspectProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_BodyNode
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::UniversalJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::UniversalJoint, dart::dynamics::detail::UniversalJointUniqueProperties>, dart::dynamics::detail::UniversalJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::UniversalJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_UniversalJoint
-
-  # todo: seems yaml-cpp complains to parse too many brackects
-  #'dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> >, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    #name: EmbeddedPropertiesAspect_R1Joint
-
-  #'dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> >, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    #name: EmbeddedPropertiesAspect_R2Joint
-
-  #'dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> >, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    #name: EmbeddedPropertiesAspect_R3Joint
-
-  #'dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SO3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SO3Space>, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SO3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SO3Space>, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space>, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    #name: EmbeddedPropertiesAspect_SO3Joint
-
-  #'dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SE3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SE3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space>, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    #name: EmbeddedPropertiesAspect_SE3Joint
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::ScrewJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::ScrewJoint, dart::dynamics::detail::ScrewJointUniqueProperties>, dart::dynamics::detail::ScrewJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::ScrewJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_ScrewJoint
-
-  'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::TranslationalJoint2D>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::TranslationalJoint2D, dart::dynamics::detail::TranslationalJoint2DUniqueProperties>, dart::dynamics::detail::TranslationalJoint2DUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::TranslationalJoint2DUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>':
-    name: EmbeddedPropertiesAspect_TranslationalJoint2D
 
   # Joints
   'dart::dynamics::Joint':
@@ -941,16 +908,10 @@ classes:
 
   'dart::dynamics::SkeletonSpecializedFor<dart::dynamics::ShapeNode>':
     name: SkeletonSpecializedForShapeNode
-  'dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::ShapeNode> >':
-    name: VirtualSkeletonSpecializedForShapeNode
   'dart::dynamics::SkeletonSpecializedFor<dart::dynamics::EndEffector>':
     name: SkeletonSpecializedForEndEffector
-  'dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::EndEffector> >':
-    name: VirtualSkeletonSpecializedForEndEffector
   'dart::dynamics::SkeletonSpecializedFor<dart::dynamics::Marker>':
     name: SkeletonSpecializedForMarker
-  'dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::Marker> >':
-    name: VirtualSkeletonSpecializedForMarker
 
   'dart::dynamics::NodeManagerJoinerForBodyNode<dart::common::Virtual<dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::ShapeNode> >, dart::common::Virtual<dart::dynamics::BodyNodeSpecializedFor<dart::dynamics::EndEffector> >>':
     name: NodeManagerJoinerForBodyNode_VirtualBodyNodeSpecializedForShapeNode_VirtualBodyNodeSpecializedForEndEffector
@@ -969,23 +930,15 @@ classes:
 
   'dart::dynamics::SkeletonSpecializedFor<dart::dynamics::EndEffector, dart::dynamics::Marker>':
     name: SkeletonSpecializedFor_EndEffector_Marker
-  'dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::EndEffector, dart::dynamics::Marker> >':
-    name: VirtualSkeletonSpecializedFor_EndEffector_Marker
 
   'dart::dynamics::SkeletonSpecializedFor<dart::dynamics::ShapeNode, dart::dynamics::EndEffector>':
     name: SkeletonSpecializedFor_ShapeNode_EndEffector
   'dart::common::SpecializedForAspect<dart::dynamics::VisualAspect>':
     name: SpecializedForAspectVisualAspect
-  'dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::VisualAspect> >':
-    name: VirtualSpecializedForAspectVisualAspect
   'dart::common::SpecializedForAspect<dart::dynamics::CollisionAspect>':
     name: SpecializedForAspectCollisionAspect
   'dart::common::SpecializedForAspect<dart::dynamics::DynamicsAspect>':
     name: SpecializedForAspectDynamicsAspect
-  'dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::CollisionAspect> >':
-    name: VirtualSpecializedForAspectCollisionAspect
-  'dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::DynamicsAspect> >':
-    name: VirtualSpecializedForAspectDynamicsAspect
   'dart::common::CompositeJoiner<dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::CollisionAspect> >, dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::DynamicsAspect> > >':
     name: CompositeJoiner_VirtualSpecializedForAspectCollisionAspect_VirtualSpecializedForAspectDynamicsAspect
   'dart::common::CompositeJoiner<dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::VisualAspect> >, dart::common::Virtual<dart::common::SpecializedForAspect<dart::dynamics::CollisionAspect, dart::dynamics::DynamicsAspect> > >':
@@ -1068,9 +1021,6 @@ classes:
     name: SpecializedForPlanarJointAspect
   'dart::common::CompositeJoiner<dart::dynamics::GenericJoint<dart::math::R3Space>, dart::common::RequiresAspect<dart::dynamics::PlanarJoint::Aspect> >':
     name: CompositeJoiner_R3Joint_RequiresPlanarJointAspect
-
-  'dart::common::detail::AspectWithState<dart::common::CompositeTrackingAspect<dart::dynamics::EndEffector>, dart::dynamics::Support, dart::dynamics::detail::SupportStateData, dart::dynamics::EndEffector, &dart::dynamics::detail::SupportUpdate>':
-    name: AspectWithState_EndEffector_Support_SupportStateData_EndEffector_SupportUpdate
 
   'dart::common::Signal<void (const dart::dynamics::Entity *), dart::common::signal::detail::DefaultCombiner>':
     name: EntitySignal
@@ -1260,99 +1210,6 @@ classes:
   # 'dart::common::EmbedProperties<dart::dynamics::PrismaticJoint, dart::dynamics::detail::PrismaticJointUniqueProperties>': null
   # 'dart::common::EmbedStateAndProperties<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >': null
   # 'dart::common::CompositeJoiner<dart::common::EmbedStateAndProperties<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::Joint>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::BodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::BodyNode, dart::dynamics::detail::BodyNodeState, dart::dynamics::detail::BodyNodeAspectProperties>, dart::dynamics::detail::BodyNodeState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::BodyNodeState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::BodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::BodyNode, dart::dynamics::detail::BodyNodeState, dart::dynamics::detail::BodyNodeAspectProperties>, dart::dynamics::detail::BodyNodeState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::BodyNodeState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::BodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::BodyNode, dart::dynamics::detail::BodyNodeState, dart::dynamics::detail::BodyNodeAspectProperties>, dart::dynamics::detail::BodyNodeState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::BodyNodeState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SO3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SO3Space>, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SO3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SO3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SO3Space>, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SO3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SO3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SO3Space>, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SO3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>::ConvertIfState<dart::dynamics::detail::SoftBodyNodeUniqueState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SE3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SE3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SE3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SE3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SE3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SE3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::Joint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::Joint, dart::dynamics::detail::JointProperties>, dart::dynamics::detail::JointProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::JointProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::JointProperties> >': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::FixedFrame>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::FixedFrame, dart::dynamics::detail::FixedFrameProperties>, dart::dynamics::detail::FixedFrameProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::FixedFrameProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SO3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SO3Space>, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SO3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SO3Space>, dart::dynamics::detail::GenericJointState<dart::math::SO3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, dart::dynamics::detail::GenericJointUniqueProperties<
-  #   dart::math::SO3Space>, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SO3Space> >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<1> >, dart::dynamics::detail::GenericJointUniqueProperties<
-  #   dart::math::RealVectorSpace<1> > >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> >, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<1> > >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::ScrewJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::ScrewJoint, dart::dynamics::detail::ScrewJointUniqueProperties>, dart::dynamics::detail::ScrewJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::ScrewJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::ScrewJointUniqueProperties> >': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::TranslationalJoint2D>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::TranslationalJoint2D, dart::dynamics::detail::TranslationalJoint2DUniqueProperties>, dart::dynamics::detail::TranslationalJoint2DUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::TranslationalJoint2DUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::TranslationalJoint2DUniqueProperties> >': null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties,
-  #   &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties,
-  #   &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties,
-  #   &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties,
-  #   &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::dynamics::detail::SoftBodyNodeUniqueState>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties,
-  #   &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties,
-  #   &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::SoftBodyNode>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::SoftBodyNodeUniqueState>, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::SoftBodyNode, dart::dynamics::detail::SoftBodyNodeUniqueState, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, dart::dynamics::detail::SoftBodyNodeUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::SoftBodyNodeUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties,
-  #   &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::dynamics::detail::SoftBodyNodeUniqueProperties>
-  # : null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<3> >,
-  #   dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> >, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<3> > >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::EulerJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::EulerJoint, dart::dynamics::detail::EulerJointUniqueProperties>, dart::dynamics::detail::EulerJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::EulerJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::EulerJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::EulerJoint, dart::dynamics::detail::EulerJointUniqueProperties>, dart::dynamics::detail::EulerJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::EulerJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::EulerJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::EulerJoint, dart::dynamics::detail::EulerJointUniqueProperties>, dart::dynamics::detail::EulerJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::EulerJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::EulerJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::EulerJoint, dart::dynamics::detail::EulerJointUniqueProperties>, dart::dynamics::detail::EulerJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::EulerJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::EulerJointUniqueProperties> >': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::RevoluteJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::RevoluteJoint, dart::dynamics::detail::RevoluteJointUniqueProperties>, dart::dynamics::detail::RevoluteJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::RevoluteJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::RevoluteJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::RevoluteJoint, dart::dynamics::detail::RevoluteJointUniqueProperties>, dart::dynamics::detail::RevoluteJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::RevoluteJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::RevoluteJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::RevoluteJoint, dart::dynamics::detail::RevoluteJointUniqueProperties>, dart::dynamics::detail::RevoluteJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::RevoluteJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::RevoluteJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::RevoluteJoint, dart::dynamics::detail::RevoluteJointUniqueProperties>, dart::dynamics::detail::RevoluteJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::RevoluteJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::RevoluteJointUniqueProperties> >': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PlanarJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PlanarJoint, dart::dynamics::detail::PlanarJointUniqueProperties>, dart::dynamics::detail::PlanarJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PlanarJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PlanarJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PlanarJoint, dart::dynamics::detail::PlanarJointUniqueProperties>, dart::dynamics::detail::PlanarJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PlanarJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PlanarJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PlanarJoint, dart::dynamics::detail::PlanarJointUniqueProperties>, dart::dynamics::detail::PlanarJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PlanarJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PlanarJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PlanarJoint, dart::dynamics::detail::PlanarJointUniqueProperties>, dart::dynamics::detail::PlanarJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PlanarJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PlanarJointUniqueProperties> >': null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> > >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> > >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointState<dart::math::RealVectorSpace<2> >, dart::dynamics::detail::GenericJointUniqueProperties<
-  #   dart::math::RealVectorSpace<2> > >, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> >, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::RealVectorSpace<2> > >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::UniversalJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::UniversalJoint, dart::dynamics::detail::UniversalJointUniqueProperties>, dart::dynamics::detail::UniversalJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::UniversalJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::UniversalJointUniqueProperties> >': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PrismaticJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PrismaticJoint, dart::dynamics::detail::PrismaticJointUniqueProperties>, dart::dynamics::detail::PrismaticJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PrismaticJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PrismaticJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PrismaticJoint, dart::dynamics::detail::PrismaticJointUniqueProperties>, dart::dynamics::detail::PrismaticJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PrismaticJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PrismaticJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PrismaticJoint, dart::dynamics::detail::PrismaticJointUniqueProperties>, dart::dynamics::detail::PrismaticJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PrismaticJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>': null
-  # 'dart::common::detail::EmbeddedPropertiesAspect<dart::common::CompositeTrackingAspect<dart::dynamics::PrismaticJoint>, dart::common::EmbeddedPropertiesAspect<dart::dynamics::PrismaticJoint, dart::dynamics::detail::PrismaticJointUniqueProperties>, dart::dynamics::detail::PrismaticJointUniqueProperties, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PrismaticJointUniqueProperties>, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>::ConvertIfProperties<dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::PrismaticJointUniqueProperties> >': null
-  # ? |
-  #   dart::common::detail::EmbeddedPropertiesAspect<dart::common::detail::EmbeddedStateAspect<dart::common::CompositeTrackingAspect<dart::dynamics::GenericJoint<dart::math::SE3Space> >, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::common::MakeCloneable<dart::common::Aspect::State, dart::dynamics::detail::GenericJointState<dart::math::SE3Space> >, &dart::common::detail::DefaultSetEmbeddedState, &dart::common::detail::DefaultGetEmbeddedState>, dart::common::EmbeddedStateAndPropertiesAspect<dart::dynamics::GenericJoint<dart::math::SE3Space>, dart::dynamics::detail::GenericJointState<dart::math::SE3Space>, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, dart::dynamics::detail::GenericJointUniqueProperties<
-  #   dart::math::SE3Space>, dart::common::MakeCloneable<dart::common::Aspect::Properties, dart::dynamics::detail::GenericJointUniqueProperties<dart::math::SE3Space> >, &dart::common::detail::DefaultSetEmbeddedProperties, &dart::common::detail::DefaultGetEmbeddedProperties>
-  # : null
   # 'dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect<dart::dynamics::ShapeFrame, dart::dynamics::detail::ShapeFrameProperties> >': null
   # 'dart::common::EmbeddedPropertiesAspect<dart::dynamics::Joint, dart::dynamics::detail::JointProperties>': null
   # 'dart::common::EmbeddedPropertiesAspect<dart::dynamics::FixedFrame, dart::dynamics::detail::FixedFrameProperties>': null
@@ -1370,25 +1227,6 @@ classes:
   # 'dart::common::EmbeddedPropertiesAspect<dart::dynamics::PrismaticJoint, dart::dynamics::detail::PrismaticJointUniqueProperties>': null
   'dart::math::constants<double>': null
   'dart::math::constants<long double>': null
-  'dart::math::detail::inverseImpl<Eigen::Matrix<double, 3, 3, 0, 3, 3>, 3, dart::math::detail::Range<true> >': null
-  'dart::math::detail::inverseImpl<Eigen::Matrix<double, 1, 1, 0, 1, 1>, 1, dart::math::detail::Range<true> >': null
-  'dart::math::detail::inverseImpl<Eigen::Matrix<double, 2, 2, 0, 2, 2>, 2, dart::math::detail::Range<true> >': null
-  'dart::math::detail::inverseImpl<Eigen::Matrix<double, 6, 6, 0, 6, 6>, 6, dart::math::detail::Range<true> >': null
-  'dart::math::detail::toEuclideanPointImpl<dart::math::RealVectorSpace<1> >': null
-  'dart::math::detail::toEuclideanPointImpl<dart::math::RealVectorSpace<3> >': null
-  'dart::math::detail::toEuclideanPointImpl<dart::math::RealVectorSpace<2> >': null
-  'dart::math::detail::toEuclideanPointImpl<dart::math::SO3Space>': null
-  'dart::math::detail::toEuclideanPointImpl<dart::math::SE3Space>': null
-  'dart::math::detail::toManifoldPointImpl<dart::math::RealVectorSpace<1> >': null
-  'dart::math::detail::toManifoldPointImpl<dart::math::RealVectorSpace<3> >': null
-  'dart::math::detail::toManifoldPointImpl<dart::math::RealVectorSpace<2> >': null
-  'dart::math::detail::toManifoldPointImpl<dart::math::SO3Space>': null
-  'dart::math::detail::toManifoldPointImpl<dart::math::SE3Space>': null
-  'dart::math::detail::integratePositionImpl<dart::math::RealVectorSpace<1> >': null
-  'dart::math::detail::integratePositionImpl<dart::math::RealVectorSpace<3> >': null
-  'dart::math::detail::integratePositionImpl<dart::math::RealVectorSpace<2> >': null
-  'dart::math::detail::integratePositionImpl<dart::math::SO3Space>': null
-  'dart::math::detail::integratePositionImpl<dart::math::SE3Space>': null
   # 'dart::dynamics::NodeManagerJoinerForBodyNode<dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::ShapeNode> >, dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::EndEffector, dart::dynamics::Marker> > >': null
   # 'dart::dynamics::NodeManagerJoinerForSkeleton<dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::ShapeNode> >, dart::common::Virtual<dart::dynamics::SkeletonSpecializedFor<dart::dynamics::EndEffector, dart::dynamics::Marker> > >': null
   # 'dart::dynamics::SkeletonSpecializedFor<dart::dynamics::ShapeNode, dart::dynamics::EndEffector, dart::dynamics::Marker>': null
@@ -1403,8 +1241,24 @@ classes:
     held_type: 'std::shared_ptr<dart::collision::DARTCollisionDetector>'
   'dart::collision::FCLCollisionDetector':
     held_type: 'std::shared_ptr<dart::collision::FCLCollisionDetector>'
-  # 'dart::collision::OdeCollisionDetector':
-  #   held_type: 'std::shared_ptr<dart::collision::OdeCollisionDetector>'
+  'dart::collision::OdeCollisionDetector':
+    held_type: 'std::shared_ptr<dart::collision::OdeCollisionDetector>'
+  'dart::collision::CollisionGroup':
+    held_type: 'std::shared_ptr<dart::collision::CollisionGroup>'
+    is_copyable: false
+  'dart::collision::BulletCollisionGroup':
+    held_type: 'std::shared_ptr<dart::collision::BulletCollisionGroup>'
+    is_copyable: false
+  'dart::collision::DARTCollisionGroup':
+    held_type: 'std::shared_ptr<dart::collision::DARTCollisionGroup>'
+    is_copyable: false
+    is_void: false
+  'dart::collision::FCLCollisionGroup':
+    held_type: 'std::shared_ptr<dart::collision::FCLCollisionGroup>'
+    is_copyable: false
+  'dart::collision::OdeCollisionGroup':
+    held_type: 'std::shared_ptr<dart::collision::OdeCollisionGroup>'
+    is_copyable: false
 
   # Shapes
   'dart::dynamics::Shape':
@@ -1425,8 +1279,8 @@ classes:
     held_type: 'std::shared_ptr<dart::dynamics::PlaneShape>'
   'dart::dynamics::SoftMeshShape':
     held_type: 'std::shared_ptr<dart::dynamics::SoftMeshShape>'
-  'dart::dynamics::VoxelGridShape':
-    held_type: 'std::shared_ptr<dart::dynamics::VoxelGridShape>'
+  # 'dart::dynamics::VoxelGridShape':
+  #   held_type: 'std::shared_ptr<dart::dynamics::VoxelGridShape>'
 
   # MetaSkeletons
   'dart::dynamics::Skeleton':
@@ -1514,10 +1368,6 @@ classes:
 #  'dart::optimizer::DartTNLP': null
 
   # Suppressed because these don't have default constructor.
-  'dart::common::detail::AspectWithVersionedProperties<dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>, dart::dynamics::VisualAspect, dart::dynamics::detail::VisualAspectProperties, dart::dynamics::ShapeFrame, &dart::common::detail::NoOp>': null
-  'dart::common::detail::AspectWithVersionedProperties<dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>, dart::dynamics::CollisionAspect, dart::dynamics::detail::CollisionAspectProperties, dart::dynamics::ShapeFrame, &dart::common::detail::NoOp>': null
-  'dart::common::detail::AspectWithVersionedProperties<dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>, dart::dynamics::DynamicsAspect, dart::dynamics::detail::DynamicsAspectProperties, dart::dynamics::ShapeFrame, &dart::common::detail::NoOp>': null
-  'dart::common::detail::AspectWithVersionedProperties<dart::common::detail::AspectWithState<dart::common::CompositeTrackingAspect<dart::dynamics::EndEffector>, dart::dynamics::Support, dart::dynamics::detail::SupportStateData, dart::dynamics::EndEffector, &dart::dynamics::detail::SupportUpdate>, dart::dynamics::Support, dart::dynamics::detail::SupportPropertiesData, dart::dynamics::EndEffector, &dart::dynamics::detail::SupportUpdate>': null
   'dart::common::AspectWithStateAndVersionedProperties<dart::dynamics::Support, dart::dynamics::detail::SupportStateData, dart::dynamics::detail::SupportPropertiesData, dart::dynamics::EndEffector, &dart::dynamics::detail::SupportUpdate, &dart::dynamics::detail::SupportUpdate>': null
 
   # Workarounds for bugs in Chimera.
@@ -1546,8 +1396,6 @@ classes:
   #'dart::gui::osg::ImGuiHandler': null
 
   'dart::common::CompositeTrackingAspect<dart::dynamics::EntityNode<dart::dynamics::TemplatedJacobianNode<dart::dynamics::FixedJacobianNode> > >': null
-  'dart::common::detail::ComposeData<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, dart::common::detail::GetProperties>': null
-  'dart::common::detail::ComposeData<dart::common::detail::CompositeData<std::map<std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> >, std::less<std::type_index>, std::allocator<std::pair<const std::type_index, std::unique_ptr<dart::common::Aspect::Properties, std::default_delete<dart::common::Aspect::Properties> > > > >, dart::common::detail::GetProperties>, dart::common::detail::GetProperties, dart::dynamics::BodyNode>': null
   ? |
     dart::common::SpecializedForAspect<dart::common::ProxyStateAndPropertiesAspect<
     dart::dynamics::Skeleton, dart::common::ProxyCloneable<dart::common::Aspect::State,
@@ -1746,15 +1594,22 @@ classes:
     &dart::dynamics::detail::getAllJointProperties> > > >
   : null
   'dart::common::signal::detail::ConnectionBody<std::function<void (const dart::dynamics::Entity *, const std::basic_string<char, std::char_traits<char>, std::allocator<char> > &, const std::basic_string<char, std::char_traits<char>, std::allocator<char> > &)> >': null
-  'dart::common::detail::AspectWithVersionedProperties<dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>, dart::dynamics::VisualAspect, dart::dynamics::detail::VisualAspectProperties, dart::dynamics::ShapeFrame, &dart::common::detail::NoOp>': null
-  'dart::common::detail::AspectWithVersionedProperties<dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>, dart::dynamics::DynamicsAspect, dart::dynamics::detail::DynamicsAspectProperties, dart::dynamics::ShapeFrame, &dart::common::detail::NoOp>': null
-  'dart::common::detail::AspectWithVersionedProperties<dart::common::detail::AspectWithState<dart::common::CompositeTrackingAspect<dart::dynamics::EndEffector>, dart::dynamics::Support, dart::dynamics::detail::SupportStateData, dart::dynamics::EndEffector, &dart::dynamics::detail::SupportUpdate>, dart::dynamics::Support, dart::dynamics::detail::SupportPropertiesData, dart::dynamics::EndEffector, &dart::dynamics::detail::SupportUpdate>': null
   'dart::common::SpecializedForAspect<dart::common::EmbeddedPropertiesAspect<dart::dynamics::ShapeFrame, dart::dynamics::detail::ShapeFrameProperties> >': null
   'dart::common::EmbedProperties<dart::dynamics::ShapeFrame, dart::dynamics::detail::ShapeFrameProperties>': null
 
+#==============================================================================
+#
+# Functions
+#
+#==============================================================================
 functions:
+
+  #----------------------------------------------------------------------------
+  # dart::dynamics::
+  #----------------------------------------------------------------------------
   'dart::dynamics::Frame *dart::dynamics::Frame::World()':
     return_value_policy: reference_existing_object
+
   'const tinyxml2::XMLElement *dart::utils::getElement(const tinyxml2::XMLElement *, const std::string &)': null
   'tinyxml2::XMLElement *dart::utils::getElement(tinyxml2::XMLElement *, const std::string &)': null
   'std::ostream &dart::common::colorMsg(const std::string &, int)': null
@@ -1765,10 +1620,10 @@ functions:
   'void dart::gui::OpenGLRenderInterface::readFrameBuffer(dart::gui::DecoBufferType, dart::gui::DecoColorChannel, void*)': null
   'size_t dart::common::Resource::read(void *, size_t, size_t)': null
   'size_t dart::common::LocalResource::read(void *, size_t, size_t)': null
-  'dart::dynamics::VoxelGridShape::VoxelGridShape(fcl_shared_ptr<octomap::OcTree>)': null
-  'void dart::dynamics::VoxelGridShape::setOctree(fcl_shared_ptr<octomap::OcTree>)': null
-  'fcl_shared_ptr<octomap::OcTree> dart::dynamics::VoxelGridShape::getOctree()': null
-  'fcl_shared_ptr<const octomap::OcTree> dart::dynamics::VoxelGridShape::getOctree() const': null
+  # 'dart::dynamics::VoxelGridShape::VoxelGridShape(fcl_shared_ptr<octomap::OcTree>)': null
+  # 'void dart::dynamics::VoxelGridShape::setOctree(fcl_shared_ptr<octomap::OcTree>)': null
+  # 'fcl_shared_ptr<octomap::OcTree> dart::dynamics::VoxelGridShape::getOctree()': null
+  # 'fcl_shared_ptr<const octomap::OcTree> dart::dynamics::VoxelGridShape::getOctree() const': null
 
   #'bool dart::gui::osg::DefaultEventHandler::handle(const osgGA::GUIEventAdapter &, osgGA::GUIActionAdapter &)': null
   #'void dart::gui::osg::DefaultEventHandler::pick(std::vector<dart::gui::osg::PickInfo> &, const osgGA::GUIEventAdapter &)': null
@@ -1791,3 +1646,8 @@ functions:
   'template<> dart::dynamics::GenericJoint<dart::math::SE3Space>::Aspect *dart::dynamics::GenericJoint<dart::math::SE3Space>::getGenericJointAspect(const bool)': null
 
   'dart::common::SharedLibrary::SharedLibrary(dart::common::SharedLibrary::ProtectedConstructionTag, const boost::filesystem::path&)': null
+
+  'dart::collision::DARTCollisionGroup::DARTCollisionGroup(const dart::collision::CollisionDetectorPtr &)': null
+  'dart::collision::FCLCollisionGroup::FCLCollisionGroup(const dart::collision::CollisionDetectorPtr &)': null
+  'dart::collision::BulletCollisionGroup::BulletCollisionGroup(const dart::collision::CollisionDetectorPtr &)': null
+  'dart::collision::OdeCollisionGroup::OdeCollisionGroup(const dart::collision::CollisionDetectorPtr &)': null

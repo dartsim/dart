@@ -94,11 +94,12 @@ check_cxx_source_compiles(
   DART_HAS_VOXELGRIDSHAPE
 )
 
-if(DART_HAS_VOXELGRIDSHAPE)
-  set(CHIMERA_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/chimera/chimera.yml")
-else()
-  set(CHIMERA_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/chimera/chimera_without_voxel.yml")
-endif()
+set(CHIMERA_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/chimera/chimera.yml")
+# if(DART_HAS_VOXELGRIDSHAPE)
+#   set(CHIMERA_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/chimera/chimera.yml")
+# else()
+#   set(CHIMERA_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/chimera/chimera_without_voxel.yml")
+# endif()
 if(chimera_FOUND)
   add_chimera_binding(TARGET "${PROJECT_NAME}_CHIMERA"
     MODULE "${PROJECT_NAME}"
@@ -107,12 +108,21 @@ if(chimera_FOUND)
     DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/src/generated"
     DEBUG EXCLUDE_FROM_ALL
   )
+  target_include_directories("${PROJECT_NAME}_CHIMERA"
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  )
   target_link_libraries("${PROJECT_NAME}_CHIMERA"
     PUBLIC
       ${Boost_LIBRARIES}
       ${PYTHON_LIBRARIES}
       dart
       dart-collision-bullet
+      dart-collision-ode
+      dart-optimizer-nlopt
+      dart-planning
+      dart-utils
+      dart-utils-urdf
       dart-gui
   )
   add_custom_target(binding DEPENDS "${PROJECT_NAME}_CHIMERA_REBUILD")
@@ -140,12 +150,21 @@ if(EXISTS "${SOURCES_TXT}")
     src/skel_parser.cpp
     src/template_registry.cpp
   )
+  target_include_directories("${PROJECT_NAME}"
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  )
   target_link_libraries("${PROJECT_NAME}"
     PUBLIC
       ${Boost_LIBRARIES}
       ${PYTHON_LIBRARIES}
       dart
       dart-collision-bullet
+      dart-collision-ode
+      dart-optimizer-nlopt
+      dart-planning
+      dart-utils
+      dart-utils-urdf
       dart-gui
   )
   set_target_properties("${PROJECT_NAME}" PROPERTIES
@@ -157,6 +176,15 @@ if(EXISTS "${SOURCES_TXT}")
       PRIVATE -fabi-version=6
     )
   endif()
+  target_compile_options("${PROJECT_NAME}" PRIVATE -fvisibility=hidden)
+
+  # dart_format_add(
+  #   ${SOURCES_GENERATED}
+  #   src/BodyNode.cpp
+  #   src/Skeleton.cpp
+  #   src/skel_parser.cpp
+  #   src/template_registry.cpp
+  # )
 
   install(TARGETS "${PROJECT_NAME}"
     LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
