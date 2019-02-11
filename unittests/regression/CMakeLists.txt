@@ -19,3 +19,13 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_Issue1184 dart-collision-bullet)
 
 endif()
+
+if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
+
+  dart_add_test("regression" test_Issue1234)
+  target_link_libraries(test_Issue1234
+    dart-collision-bullet
+    dart-collision-ode
+    dart-utils)
+
+endif()
