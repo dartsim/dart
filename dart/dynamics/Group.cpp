@@ -539,11 +539,11 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
 bool Group::removeJoints(
     const std::vector<Joint*>& _joints, bool _removeDofs, bool _warning)
 {
-  bool added = false;
+  bool removed = false;
   for(Joint* joint : _joints)
-    added |= removeJoint(joint, _removeDofs, _warning);
+    removed |= removeJoint(joint, _removeDofs, _warning);
 
-  return added;
+  return removed;
 }
 
 //==============================================================================
