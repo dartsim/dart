@@ -58,6 +58,8 @@ set(CMAKE_REQUIRED_LIBRARIES
   ${Boost_LIBRARIES}
   ${PYTHON_LIBRARIES}
 )
+set(CMAKE_REQUIRED_QUIET FALSE)
+
 check_cxx_source_compiles(
   "
   #include <memory>
@@ -67,6 +69,7 @@ check_cxx_source_compiles(
   DARTPY_HAS_STD_SHARED_GET_POINTER
 )
 
+unset(CMAKE_REQUIRED_QUIET)
 unset(CMAKE_REQUIRED_DEFINITIONS)
 unset(CMAKE_REQUIRED_FLAGS)
 unset(CMAKE_REQUIRED_INCLUDES)
