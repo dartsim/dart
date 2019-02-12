@@ -61,12 +61,14 @@ set(CMAKE_REQUIRED_LIBRARIES
 check_cxx_source_compiles(
   "
   #include <memory>
-  #include <boost/python.hpp>
+  #include <boost/get_pointer.hpp>
   int main() { std::shared_ptr<int> ptr; int *p = boost::get_pointer(ptr); }
   "
   DARTPY_HAS_STD_SHARED_GET_POINTER
 )
 
+unset(CMAKE_REQUIRED_DEFINITIONS)
+unset(CMAKE_REQUIRED_FLAGS)
 unset(CMAKE_REQUIRED_INCLUDES)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
