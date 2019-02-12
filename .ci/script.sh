@@ -59,7 +59,7 @@ else
     -DDART_CODECOV=OFF
 fi
 
-if [ "$BUILD_TYPE" = "DARTPY" ]; then
+if [ "$BUILD_NAME" = "DARTPY" ]; then
   make -j$num_threads binding
   make -j$num_threads make dartpy
 elif [ "$OS_NAME" = "linux" ]; then

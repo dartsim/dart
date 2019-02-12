@@ -58,7 +58,7 @@ else
   exit 1
 fi
 
-if [ "$BUILD_TYPE" = "DARTPY" ]; then
+if [ "$BUILD_NAME" = "DARTPY" ]; then
   sudo apt-add-repository ppa:personalrobotics -y
   sudo apt-get update -q
   sudo apt-get install libboost-python-dev
