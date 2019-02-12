@@ -62,7 +62,10 @@ if [ "$BUILD_NAME" = "DARTPY" ]; then
   sudo apt-add-repository -y ppa:personalrobotics
   sudo apt-get -qq update
   sudo apt-get -y install libboost-dev libboost-thread-dev libboost-python-dev
-  sudo apt-get -y install python3-dev python3-numpy python3-boost-numpy-eigen
+  sudo apt-get -y install python3-dev python3-numpy
+  sudo apt-get -y install chimera python3-boost-numpy-eigen
+  sudo apt-get -y install python3-pip -y
+  sudo pip3 install pytest -U
 fi
 
 $SUDO apt-get -y install lcov
