@@ -58,6 +58,13 @@ else
   exit 1
 fi
 
+if [ "$BUILD_TYPE" = "DARTPY" ]; then
+  sudo apt-add-repository ppa:personalrobotics -y
+  sudo apt-get update -q
+  sudo apt-get install libboost-python-dev
+  sudo apt-get install python3-dev python3-numpy python3-boost-numpy-eigen
+fi
+
 $SUDO apt-get -y install lcov
 
 if [ $BUILD_NAME = DOCS ]; then
