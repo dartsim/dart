@@ -61,8 +61,8 @@ fi
 
 if [ "$BUILD_NAME" = "DARTPY" ]; then
   make -j$num_threads binding
-  make -j$num_threads make dartpy
-  make -j$num_threads make pytest
+  make -j$num_threads dartpy
+  make -j$num_threads pytest
 elif [ "$OS_NAME" = "linux" ]; then
   make -j$num_threads all tutorials examples tests
 else
