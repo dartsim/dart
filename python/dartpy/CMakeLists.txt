@@ -48,6 +48,8 @@ find_package(chimera QUIET)
 # Check whether the CXX compiler and boost::python support get_pointer for
 # std::shared_ptr<T> references.
 include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_DEFINITIONS "")
+set(CMAKE_REQUIRED_FLAGS "-std=c++11")
 set(CMAKE_REQUIRED_INCLUDES
   ${Boost_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
@@ -102,7 +104,7 @@ if(chimera_FOUND)
   add_chimera_binding(TARGET "dartpy_CHIMERA"
     MODULE "dartpy"
     CONFIGURATION "${CHIMERA_CONFIG}"
-    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/chimera/chimera.cpp"
+    SOURCES "chimera/chimera.hpp"
     DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/src/generated"
     DEBUG EXCLUDE_FROM_ALL
   )
