@@ -9,46 +9,6 @@
 
 Python bindings for [DART][dart], the Dynamic Animation and Robotics Toolkit.
 
-## Installation
-
-### On Ubuntu 14.04 / 16.04 / 18.04
-
-You can install `dartpy` using `apt-get` as:
-
-**14.04**
-
-```shell
-$ sudo add-apt-repository ppa:libccd-debs/ppa
-$ sudo add-apt-repository ppa:fcl-debs/ppa
-$ sudo add-apt-repository ppa:dartsim/ppa
-$ sudo add-apt-repository ppa:personalrobotics/ppa
-$ sudo apt-get update
-
-$ sudo apt-get install python-dartpy  # for Python 2
-$ sudo apt-get install python3-dartpy # for Python 3
-```
-
-**16.04 / 18.04**
-
-```shell
-$ sudo add-apt-repository ppa:dartsim/ppa
-$ sudo add-apt-repository ppa:personalrobotics/ppa
-$ sudo apt-get update
-
-$ sudo apt-get install python-dartpy  # for Python 2
-$ sudo apt-get install python3-dartpy # for Python 3
-```
-
-All set! Import `dartpy` in Python and enjoy! Please see [Usage](#usage) section for more information.
-
-If you want to build `dartpy` from source, please see this [wiki page](https://github.com/personalrobotics/dartpy/wiki/Building-from-Source).
-
-### On macOS
-
-```shell
-$ brew install personalrobotics/tap/dartpy
-```
-
 ## Usage
 
 Once `dartpy` is installed, you should be able to open a Python terminal and
@@ -69,17 +29,63 @@ becomes the Python code
 joint = bodynode.moveTo(dartpy.dynamics.FreeJoint, newParent)
 ```
 
+### Template Member Functions
+
 Due to limitations of C++, this functionality requires the template arguments
-to be registered with `dartpy`. Follow [the instructions](https://github.com/personalrobotics/dartpy/wiki/Bindings-for-Extension-Libraries#template-member-functions)
-to register your custom types for use as template arguments.
+to be registered with `dartpy`.
+DART uses template member functions to construct `Addon`, `BodyNode`, and
+`Joint` instances. `dartpy` works around this limitation by wrapping these
+functions for a *predefined set* of template arguments. You need to *register*
+your classes with `dartpy` for these methods to work on custom types.
+
+For custom `Joint`s:
+```c++
+JointTemplateRegistry::register_type<MyJoint1>();
+JointTemplateRegistry::register_type<MyJoint2>();
+// ...
+```
+
+For custom `BodyNode`s:
+```c++
+BodyNodeTemplateRegistry::register_type<MyBodyNode1>();
+BodyNodeTemplateRegistry::register_type<MyBodyNode2>();
+BodyNodeTemplateRegistry::register_type<MyBodyNode3>();
+// ...
+```
+
+If you want to use the `createJointAndBodyNodePair()` method on `Skeleton`,
+then you also need to register *all pairs* of `BodyNode` and `Joint` subclasses
+that you intend to pass as template arguments. Typically, this includes:
+
+1. each custom `BodyNode` paired with each custom `Joint`
+2. each custom `BodyNode` paired with each default `Joint`
+3. each default `BodyNode` paired with each custom` Joint`
+
+`dartpy` provides the `register_all_types` helper function to register the
+cartesian product of two lists of types. You can register all of the above
+combinations using the three lines of code:
+```c++
+using MyJointTypes = typelist<MyJoint1, MyJoint2 /* ... */>;
+using MyBodyNodeTypes = typelist<MyBodyNode1, MyBodyNode2, MyBodyNode3 /* ... */>;
+
+JointAndNodeTemplateRegistry::register_all_types<MyJointTypes, AllNodeTypes>();
+JointAndNodeTemplateRegistry::register_all_types<AllJointTypes, MyBodyNodeTypes>();
+JointAndNodeTemplateRegistry::register_all_types<MyJointTypes, MyBodyNodeTypes>();
+```
+
+Note that this approach means that is is not generally possible to call
+`createJointAndBodyNodePair` with `BodyNode` and `Joint` types defined in two
+different extension libraries. If this is necessary, you need to modify one of
+the libraries to call `register_type` on that pair of `BodyNode` and `Joint`
+types.
 
 ## License
 
-`dartpy` is licensed under [the BSD-2-Clause license](https://opensource.org/licenses/BSD-2-Clause). See [LICENSE](https://github.com/personalrobotics/dartpy/blob/master/LICENSE) for more information.
+`dartpy` is licensed under [the BSD-2-Clause license](https://opensource.org/licenses/BSD-2-Clause). See [LICENSE](https://github.com/dartsim/dart/blob/master/LICENSE) for more information.
 
 ## Authors
 
-`dartpy` is developed by the [Personal Robotics Lab][prl] in the [Robotics
+`dartpy` is initiated by the [Personal Robotics Lab][prl] in the [Robotics
 Institute][ri] at [Carnegie Mellon University][cmu] by [Michael Koval][mkoval]
 ([**@mkoval**][mkoval_github]) and [Pras Velagapudi][psigen]
 ([**@psigen**][psigen_github]).
