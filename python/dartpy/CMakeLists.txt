@@ -47,18 +47,22 @@ find_package(chimera QUIET)
 
 # Check whether the CXX compiler and boost::python support get_pointer for
 # std::shared_ptr<T> references.
-message(status "[DEBUG] Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-message(status "[DEBUG] Boost_LIBRARIES: ${Boost_LIBRARIES}")
 include(CheckCXXSourceCompiles)
 set(CMAKE_REQUIRED_DEFINITIONS "")
-set(CMAKE_REQUIRED_FLAGS "-std=c++11")
+set(CMAKE_REQUIRED_FLAGS "-std=c++11 -w")
 set(CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
 set(CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
 check_cxx_source_compiles(
   "
+  #include <cassert>
   #include <memory>
   #include <boost/get_pointer.hpp>
-  int main() { std::shared_ptr<int> ptr; int *p = boost::get_pointer(ptr); }
+  int main() {
+    std::shared_ptr<int> ptr;
+    int *p = boost::get_pointer(ptr);
+    assert(!p);
+    return 0;
+  }
   "
   DARTPY_HAS_STD_SHARED_GET_POINTER
 )
@@ -75,7 +79,7 @@ configure_file("cmake/config.h.in"
 # Check if DART is built with octomap so that it supports VoxelGridShape
 include(CheckCXXSourceCompiles)
 set(CMAKE_REQUIRED_DEFINITIONS "")
-set(CMAKE_REQUIRED_FLAGS "-std=c++11")
+set(CMAKE_REQUIRED_FLAGS "-std=c++11 -w")
 set(CMAKE_REQUIRED_INCLUDES ${DART_INCLUDE_DIRS})
 set(CMAKE_REQUIRED_LIBRARIES ${DART_LIBRARIES})
 check_cxx_source_compiles(
