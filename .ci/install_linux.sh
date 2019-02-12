@@ -34,7 +34,7 @@ $SUDO apt-get -y install \
   libxi-dev \
   libxmu-dev \
   libbullet-dev \
-  lz4-dev \
+  liblz4-dev \
   libflann-dev \
   coinor-libipopt-dev \
   libtinyxml2-dev \
