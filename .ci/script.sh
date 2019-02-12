@@ -60,6 +60,9 @@ else
 fi
 
 if [ "$BUILD_NAME" = "DARTPY" ]; then
+  # [DEBUG]
+  cat /usr/include/boost/get_pointer.hpp
+  # [END OF DEBUG]
   make -j$num_threads binding
   make -j$num_threads dartpy
   make -j$num_threads pytest

@@ -47,19 +47,13 @@ find_package(chimera QUIET)
 
 # Check whether the CXX compiler and boost::python support get_pointer for
 # std::shared_ptr<T> references.
+message(status "[DEBUG] Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+message(status "[DEBUG] Boost_LIBRARIES: ${Boost_LIBRARIES}")
 include(CheckCXXSourceCompiles)
 set(CMAKE_REQUIRED_DEFINITIONS "")
 set(CMAKE_REQUIRED_FLAGS "-std=c++11")
-set(CMAKE_REQUIRED_INCLUDES
-  ${Boost_INCLUDE_DIRS}
-  ${PYTHON_INCLUDE_DIRS}
-)
-set(CMAKE_REQUIRED_LIBRARIES
-  ${Boost_LIBRARIES}
-  ${PYTHON_LIBRARIES}
-)
-set(CMAKE_REQUIRED_QUIET FALSE)
-
+set(CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
+set(CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
 check_cxx_source_compiles(
   "
   #include <memory>
@@ -68,8 +62,6 @@ check_cxx_source_compiles(
   "
   DARTPY_HAS_STD_SHARED_GET_POINTER
 )
-
-unset(CMAKE_REQUIRED_QUIET)
 unset(CMAKE_REQUIRED_DEFINITIONS)
 unset(CMAKE_REQUIRED_FLAGS)
 unset(CMAKE_REQUIRED_INCLUDES)
@@ -98,6 +90,10 @@ check_cxx_source_compiles(
   "
   DART_HAS_VOXELGRIDSHAPE
 )
+unset(CMAKE_REQUIRED_DEFINITIONS)
+unset(CMAKE_REQUIRED_FLAGS)
+unset(CMAKE_REQUIRED_INCLUDES)
+unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CHIMERA_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/chimera/chimera.yml")
 # if(DART_HAS_VOXELGRIDSHAPE)
