@@ -181,7 +181,7 @@ if(EXISTS "${SOURCES_TXT}")
       PRIVATE -fabi-version=6
     )
   endif()
-  target_compile_options("dartpy" PRIVATE -fvisibility=hidden)
+  target_compile_options("dartpy" PRIVATE -fvisibility=hidden -w)
 
   # dart_format_add(
   #   ${SOURCES_GENERATED}
