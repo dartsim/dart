@@ -62,12 +62,8 @@ fi
 if [ "$BUILD_NAME" = "DARTPY" ]; then
   make -j$num_threads binding
   make -j$num_threads dartpy
-  dir
-  cd python/dartpy
-  ls
-  python3 -c "import dartpy"
-  # PYTHONPATH=./python/dartpy python3 -c "import dartpy"
-  make pytest
+  # Disabled for now
+  # make pytest
 elif [ "$OS_NAME" = "linux" ]; then
   make -j$num_threads all tutorials examples tests
 else
