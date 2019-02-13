@@ -2,19 +2,22 @@
 set -ex
 
 # Sanity checks for required environment variables.
-if [ -z "$BUILD_TYPE" ]
+if [ -z "$BUILD_TYPE" ]; then
   echo "Error: Environment variable BUILD_TYPE is unset."
   exit 1
 fi
-if [ -z "$BUILD_DARTPY" ]
+
+if [ -z "$BUILD_DARTPY" ]; then
   echo "Info: Environment variable BUILD_DARTPY is unset. Using OFF by default."
   BUILD_DARTPY=OFF
 fi
-if [ -z "$BUILD_DOCS" ]
+
+if [ -z "$BUILD_DOCS" ]; then
   echo "Info: Environment variable BUILD_DOCS is unset. Using OFF by default."
   BUILD_DOCS=OFF
 fi
-if [ -z "$CODECOV" ]
+
+if [ -z "$CODECOV" ]; then
   echo "Info: Environment variable CODECOV is unset. Using OFF by default."
   CODECOV=OFF
 fi
