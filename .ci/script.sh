@@ -22,6 +22,11 @@ if [ -z "$CODECOV" ]; then
   CODECOV=OFF
 fi
 
+if [ -z "$OS_NAME" ]; then
+  echo "Error: Environment variable OS_NAME is unset."
+  exit 1
+fi
+
 # Set number of threads for parallel build
 # Ref: https://unix.stackexchange.com/a/129401
 num_threads=4
@@ -42,8 +47,7 @@ elif [ "$COMPILER" = "clang" ]; then
   export CC=clang
   export CXX=clang++
 else
-  echo "Error: Unsupported compiler '$COMPILER'"
-  exit 1
+  echo "Info: Compiler isn't specified. Using the system default."
 fi
 
 # Skip Xenial and Bionic in push builds
