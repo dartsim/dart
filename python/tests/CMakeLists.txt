@@ -31,9 +31,14 @@ set(dartpy_test_files
 )
 
 # Add custom target to run the tests
+if(DART_VERBOSE)
+  set(pytest_verbose -v)
+else()
+  set(pytest_verbose)
+endif()
 add_custom_target(pytest
   COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest [sources]"
-  COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files} -v
+  COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files} ${pytest_verbose}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   SOURCES ${dartpy_test_files} ${dartpy_test_utils}
 )
