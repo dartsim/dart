@@ -1008,7 +1008,7 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
           // We shouldn't be overly aggressive about printing this warning,
           // because sometimes it gets spammed if s is just a tiny bit beneath
           // 0.0.
-          if (s < REAL(-1e-2)) {
+          if (s < REAL(-1e-6)) {
             dMessage (d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e)",
                       (double)s);
           }
