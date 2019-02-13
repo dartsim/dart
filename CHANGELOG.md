@@ -4,6 +4,10 @@
 
 #### Changes
 
+* Simulation
+
+  * The LCP solver will be less aggressive about printing out unnecessary warnings: [#1238](https://github.com/dartsim/dart/pull/1238)
+
 * Collision Detection
 
   * The BodyNodeCollisionFilter will ignore contacts between immobile bodies: [#1232](https://github.com/dartsim/dart/pull/1232)
