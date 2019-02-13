@@ -59,7 +59,7 @@ else
   exit 1
 fi
 
-if [ "$BUILD_NAME" = "DARTPY" ]; then
+if [ "$BUILD_DARTPY" = "ON" ]; then
   sudo apt-add-repository -y ppa:personalrobotics
   sudo apt-get -qq update
   sudo apt-get -y install libboost-dev libboost-thread-dev libboost-python-dev
@@ -71,6 +71,6 @@ fi
 
 $SUDO apt-get -y install lcov
 
-if [ $BUILD_NAME = DOCS ]; then
+if [ $BUILD_DOCS = "ON" ]; then
   $SUDO apt-get -qq -y install doxygen
 fi

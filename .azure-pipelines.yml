@@ -56,8 +56,8 @@ jobs:
   variables:
     OS_NAME: linux
     COMPILER: gcc
-    BUILD_NAME: DARTPY
     BUILD_TYPE: Release
+    BUILD_DARTPY: ON
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-bionic
   steps:
