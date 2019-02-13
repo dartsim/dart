@@ -62,6 +62,7 @@ jobs:
     DOCKERFILE: Dockerfile.ubuntu-bionic
   steps:
   - template: .ci/azure-pipelines/docker.yml
+  timeoutInMinutes: 0
 
 - job: cosmic_gcc_release
   pool:
