@@ -25,14 +25,18 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
+include(GNUInstallDirs)
+
 # Variables used in Components.cmake
-set(INCLUDE_INSTALL_DIR "include")
-set(LIBRARY_INSTALL_DIR "lib")
-set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
+set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake")
 
 # Set relative location to install additional documentation (sample data,
 # examples, and tutorials)
-set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH "share/doc/${PROJECT_NAME}")
+set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH
+  "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
+)
 
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -369,10 +373,12 @@ if(DART_VERBOSE)
   message(STATUS ${PC_CONFIG_OUT})
 endif()
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
-install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
+install(FILES ${PC_CONFIG_OUT} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
-install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+install(FILES package.xml DESTINATION
+  ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
+)
 
 #===============================================================================
 # Install sample data, examples, and tutorials
