@@ -4,6 +4,10 @@
 
 #### Changes
 
+* Dynamics
+
+  * Fix Skeleton::setState(): [#1244](https://github.com/dartsim/dart/pull/1244)
+
 * Collision Detection
 
   * The BodyNodeCollisionFilter will ignore contacts between immobile bodies: [#1232](https://github.com/dartsim/dart/pull/1232)
