@@ -1,5 +1,13 @@
 ## DART 6
 
+### [DART 6.7.3 (2019-XX-XX)]
+
+### Changes
+
+* Dynamics
+
+  * Fixed Skeleton::setState(): [#1245](https://github.com/dartsim/dart/pull/1245)
+
 ### [DART 6.7.2 (2019-01-17)](https://github.com/dartsim/dart/milestone/50?closed=1)
 
 ### Changes
