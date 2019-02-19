@@ -235,6 +235,7 @@ template <class Base, class OwnerT, class DataT,
 auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     const ProxyCloneable& other) -> ProxyCloneable&
 {
+  mOwner = other.mOwner;
   set(other);
   return *this;
 }
@@ -246,6 +247,7 @@ template <class Base, class OwnerT, class DataT,
 auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     ProxyCloneable&& other) -> ProxyCloneable&
 {
+  mOwner = other.mOwner;
   set(other);
   return *this;
 }

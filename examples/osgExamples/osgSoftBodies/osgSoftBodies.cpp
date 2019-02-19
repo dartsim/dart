@@ -55,20 +55,7 @@ public:
     slice.reserve(mWorld->getNumSkeletons());
 
     for(std::size_t i=0; i < mWorld->getNumSkeletons(); ++i)
-    {
-      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
-      State state;
-      state.mConfig = skeleton->getConfiguration();
-      state.mAspectStates.reserve(skeleton->getNumBodyNodes());
-
-      for(std::size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
-      {
-        BodyNode* bn = skeleton->getBodyNode(j);
-        state.mAspectStates.push_back(bn->getCompositeState());
-      }
-
-      slice.push_back(state);
-    }
+      slice.push_back(mWorld->getSkeleton(i)->getState());
 
     mHistory.push_back(slice);
   }
@@ -96,18 +83,7 @@ public:
 
     const TimeSlice& slice = mHistory[index];
     for(std::size_t i=0; i < slice.size(); ++i)
-    {
-      const State& state = slice[i];
-      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
-
-      skeleton->setConfiguration(state.mConfig);
-
-      for(std::size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
-      {
-        BodyNode* bn = skeleton->getBodyNode(j);
-        bn->setCompositeState(state.mAspectStates[j]);
-      }
-    }
+      mWorld->getSkeleton(i)->setState(slice[i]);
 
     mCurrentIndex = index;
   }
@@ -133,13 +109,7 @@ public:
     moveTo(mHistory.size()-1);
   }
 
-  struct State
-  {
-    Skeleton::Configuration mConfig;
-    std::vector<dart::common::Composite::State> mAspectStates;
-  };
-
-  using TimeSlice = std::vector<State>;
+  using TimeSlice = std::vector<Skeleton::State>;
   using History = std::vector<TimeSlice>;
 
   History mHistory;
