@@ -31,3 +31,5 @@ if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
     dart-utils)
 
 endif()
+
+dart_format_add(test_Issue1243.cpp)
