@@ -30,54 +30,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <TestHelpers.hpp>
+#include <gtest/gtest.h>
 
 #include <dart/dart.hpp>
 
-dart::dynamics::SkeletonPtr create_box(const Eigen::Vector3d& dims, double mass, const Eigen::Vector4d& color, const std::string& box_name)
+dart::dynamics::SkeletonPtr create_box(
+    const Eigen::Vector3d& dims,
+    double mass,
+    const Eigen::Vector4d& color,
+    const std::string& box_name)
 {
-    dart::dynamics::SkeletonPtr box_skel = dart::dynamics::Skeleton::create(box_name);
+  dart::dynamics::SkeletonPtr box_skel
+      = dart::dynamics::Skeleton::create(box_name);
 
-    // Give the box a body
-    dart::dynamics::BodyNodePtr body;
-    body = box_skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(nullptr).second;
-    body->setName(box_name);
+  // Give the box a body
+  dart::dynamics::BodyNodePtr body;
+  body
+      = box_skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(nullptr)
+            .second;
+  body->setName(box_name);
 
-    // Give the body a shape
-    auto box = std::make_shared<dart::dynamics::BoxShape>(dims);
-    auto box_node = body->createShapeNodeWith<dart::dynamics::VisualAspect, dart::dynamics::CollisionAspect, dart::dynamics::DynamicsAspect>(box);
-    box_node->getVisualAspect()->setColor(color);
-    // Set up inertia
-    dart::dynamics::Inertia inertia;
-    inertia.setMass(mass);
-    inertia.setMoment(box->computeInertia(mass));
-    body->setInertia(inertia);
+  // Give the body a shape
+  auto box = std::make_shared<dart::dynamics::BoxShape>(dims);
+  auto box_node = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(box);
+  box_node->getVisualAspect()->setColor(color);
+  // Set up inertia
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(mass);
+  inertia.setMoment(box->computeInertia(mass));
+  body->setInertia(inertia);
 
-    return box_skel;
+  return box_skel;
 }
 
 dart::dynamics::SkeletonPtr create_floor()
 {
-    double floor_width = 10.;
-    double floor_height = 0.1;
+  double floor_width = 10.;
+  double floor_height = 0.1;
 
-    dart::dynamics::SkeletonPtr floor_skel = dart::dynamics::Skeleton::create("floor");
+  dart::dynamics::SkeletonPtr floor_skel
+      = dart::dynamics::Skeleton::create("floor");
 
-    // Give the floor a body
-    dart::dynamics::BodyNodePtr body = floor_skel->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr).second;
+  // Give the floor a body
+  dart::dynamics::BodyNodePtr body
+      = floor_skel
+            ->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
 
-    // Give the body a shape
-    auto box = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(floor_width, floor_width, floor_height));
-    auto box_node = body->createShapeNodeWith<dart::dynamics::VisualAspect, dart::dynamics::CollisionAspect, dart::dynamics::DynamicsAspect>(box);
-    box_node->getVisualAspect()->setColor(dart::Color::Gray());
+  // Give the body a shape
+  auto box = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(floor_width, floor_width, floor_height));
+  auto box_node = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(box);
+  box_node->getVisualAspect()->setColor(dart::Color::Gray());
 
-    // Put the body into position
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.translation()[2] -= floor_height / 2.0;
-    body->getParentJoint()->setTransformFromParentBodyNode(tf);
+  // Put the body into position
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation()[2] -= floor_height / 2.0;
+  body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-    return floor_skel;
+  return floor_skel;
 }
 
 //==============================================================================
@@ -97,7 +115,7 @@ TEST(Issue1243, State)
   Eigen::Isometry3d bookmark_tf;
   for (size_t i = 0; i < 20; i++)
   {
-    if(i==10)
+    if (i == 10)
     {
       bookmark_state = box_skel->getState();
       bookmark_tf = box_skel->getRootBodyNode()->getTransform();
@@ -105,12 +123,12 @@ TEST(Issue1243, State)
     world->step();
   }
 
-  const Eigen::Isometry3d final_tf =
-      box_skel->getRootBodyNode()->getTransform();
+  const Eigen::Isometry3d final_tf
+      = box_skel->getRootBodyNode()->getTransform();
 
   box_skel->setState(bookmark_state);
-  const Eigen::Isometry3d rewind_tf =
-      box_skel->getRootBodyNode()->getTransform();
+  const Eigen::Isometry3d rewind_tf
+      = box_skel->getRootBodyNode()->getTransform();
 
   EXPECT_FALSE(equals(bookmark_tf, final_tf));
   EXPECT_TRUE(equals(bookmark_tf, rewind_tf));
