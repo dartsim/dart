@@ -1,5 +1,7 @@
 dart_add_test("regression" test_Issue000Template test_Issue000Template.cpp)
 
+dart_add_test("regression" test_Issue1243 test_Issue1243.cpp)
+
 if(TARGET dart-utils-urdf)
 
   dart_add_test("regression" test_Issue838)

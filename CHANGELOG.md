@@ -1,5 +1,27 @@
 ## DART 6
 
+### [DART 6.7.3 (2019-02-19)](https://github.com/dartsim/dart/milestone/51?closed=1)
+
+### Changes
+
+* Dynamics
+
+  * Fixed Skeleton::setState(): [#1245](https://github.com/dartsim/dart/pull/1245)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
+
 ### [DART 6.7.2 (2019-01-17)](https://github.com/dartsim/dart/milestone/50?closed=1)
 
 ### Changes
