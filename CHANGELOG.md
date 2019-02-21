@@ -19,6 +19,7 @@
 * Build system
 
   * Changed to use GNUInstallDirs for install paths: [#1241](https://github.com/dartsim/dart/pull/1241)
+  * Fixed not failing for missing required dependencies: [#1250](https://github.com/dartsim/dart/pull/1250)
 
 ### [DART 6.7.3 (2019-02-19)](https://github.com/dartsim/dart/milestone/51?closed=1)
 

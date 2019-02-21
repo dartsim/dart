@@ -20,7 +20,7 @@
 find_package(ccd QUIET CONFIG)
 # Upstream provide ccd-config.cmake since 2.1.
 
-if(NOT CCD_FOUND)
+if(NOT CCD_FOUND AND NOT ccd_FOUND)
 
   find_package(PkgConfig QUIET)
 
@@ -63,7 +63,7 @@ if(NOT CCD_FOUND)
 
   # Set (NAME)_FOUND if all the variables and the version are satisfied.
   include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(CCD
+  find_package_handle_standard_args(ccd
       FAIL_MESSAGE  DEFAULT_MSG
       REQUIRED_VARS CCD_INCLUDE_DIRS CCD_LIBRARIES
       VERSION_VAR   CCD_VERSION)
