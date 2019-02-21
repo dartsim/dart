@@ -28,6 +28,7 @@ matrix:
         - BUILD_NAME=BIONIC_DEBUG
         - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Debug
+        - CODECOV: ON
         - COMPILER=GCC
       services: docker
     - os: linux
@@ -60,7 +61,7 @@ matrix:
     #     - COMPILER=CLANG
     - os: linux
       env:
-        - BUILD_NAME=DOCS
+        - BUILD_DOCS=ON
         - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
         - COMPILER=GCC
@@ -95,4 +96,4 @@ deploy:
   verbose: true
   on:
     branch: master
-    condition: $BUILD_NAME == DOCS && $TRAVIS_EVENT_TYPE != cron
+    condition: $BUILD_DOCS == ON && $TRAVIS_EVENT_TYPE != cron

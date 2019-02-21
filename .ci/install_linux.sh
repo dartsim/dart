@@ -34,6 +34,7 @@ $SUDO apt-get -y install \
   libxi-dev \
   libxmu-dev \
   libbullet-dev \
+  liblz4-dev \
   libflann-dev \
   coinor-libipopt-dev \
   libtinyxml2-dev \
@@ -58,8 +59,18 @@ else
   exit 1
 fi
 
+if [ "$BUILD_DARTPY" = "ON" ]; then
+  sudo apt-add-repository -y ppa:personalrobotics
+  sudo apt-get -qq update
+  sudo apt-get -y install libboost-dev libboost-thread-dev libboost-python-dev
+  sudo apt-get -y install python3-dev python3-numpy
+  sudo apt-get -y install chimera python3-boost-numpy-eigen
+  sudo apt-get -y install python3-pip -y
+  sudo pip3 install pytest -U
+fi
+
 $SUDO apt-get -y install lcov
 
-if [ $BUILD_NAME = DOCS ]; then
+if [ $BUILD_DOCS = "ON" ]; then
   $SUDO apt-get -qq -y install doxygen
 fi

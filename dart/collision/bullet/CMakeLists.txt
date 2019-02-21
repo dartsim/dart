@@ -10,7 +10,7 @@ if(BULLET_FOUND)
   # any Bullet headers. This is a workaround for the fact that Bullet does not
   # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
   include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_FLAGS "")
+  set(CMAKE_REQUIRED_FLAGS "-w")
   set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
   set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
   set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
