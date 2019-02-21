@@ -20,6 +20,14 @@
 
   * Changed to use GNUInstallDirs for install paths: [#1241](https://github.com/dartsim/dart/pull/1241)
 
+### [DART 6.7.3 (2019-02-19)](https://github.com/dartsim/dart/milestone/51?closed=1)
+
+### Changes
+
+* Dynamics
+
+  * Fixed Skeleton::setState(): [#1245](https://github.com/dartsim/dart/pull/1245)
+
 #### Compilers Tested
 
 * Linux
