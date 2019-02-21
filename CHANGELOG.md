@@ -16,9 +16,13 @@
 
   * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
 
-* Build system
+* Build System
 
   * Changed to use GNUInstallDirs for install paths: [#1241](https://github.com/dartsim/dart/pull/1241)
+
+* Python
+
+  * Added (experimental) Python binding: [#1237](https://github.com/dartsim/dart/pull/1237)
 
 #### Compilers Tested
 
