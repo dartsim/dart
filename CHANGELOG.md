@@ -20,6 +20,7 @@
 
   * Changed to use GNUInstallDirs for install paths: [#1241](https://github.com/dartsim/dart/pull/1241)
   * Fixed not failing for missing required dependencies: [#1250](https://github.com/dartsim/dart/pull/1250)
+  * Fixed attempting to link octomap when not imported: [#1253](https://github.com/dartsim/dart/pull/1253)
   * Fixed not defining boost targets: [#1254](https://github.com/dartsim/dart/pull/1254)
 
 ### [DART 6.7.3 (2019-02-19)](https://github.com/dartsim/dart/milestone/51?closed=1)

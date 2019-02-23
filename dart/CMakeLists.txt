@@ -135,8 +135,10 @@ target_link_libraries(dart
     Boost::boost
     Boost::system
     Boost::filesystem
-    octomap
 )
+if (TARGET octomap)
+  target_link_libraries(dart PUBLIC octomap)
+endif()
 if(NOT MSVC)
   target_link_libraries(dart PUBLIC Boost::regex)
 endif()
