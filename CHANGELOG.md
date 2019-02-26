@@ -29,7 +29,7 @@
 
 ### [DART 6.7.3 (2019-02-19)](https://github.com/dartsim/dart/milestone/51?closed=1)
 
-### Changes
+#### Changes
 
 * Dynamics
 
@@ -51,7 +51,7 @@
 
 ### [DART 6.7.2 (2019-01-17)](https://github.com/dartsim/dart/milestone/50?closed=1)
 
-### Changes
+#### Changes
 
 * Build system
 
