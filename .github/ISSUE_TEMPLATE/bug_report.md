@@ -6,9 +6,9 @@ labels: 'type: bug'
 assignees: ''
 
 ---
+> If you're not reporting a bug, please use the [forum](https://dartsim.discourse.group/) to ask questions.
 
 ### Bug Report
-> Please use the [forum](https://dartsim.discourse.group/) if you're asking questions.
 > Please answer the following questions for yourself before reporting a bug.
 - [ ] I checked the [documentation](http://dartsim.github.io/) and found no answer.
 - [ ] I checked to make sure that this issue has not already been filed.
