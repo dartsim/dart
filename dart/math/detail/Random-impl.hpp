@@ -406,7 +406,7 @@ struct NormalImpl<
   }
 };
 
-} // detail namespace
+} // namespace detail
 
 //==============================================================================
 template <typename S>

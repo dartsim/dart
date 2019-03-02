@@ -4,6 +4,7 @@ dart_add_test("unit" test_ContactConstraint)
 dart_add_test("unit" test_Factory)
 dart_add_test("unit" test_GenericJoints)
 dart_add_test("unit" test_Geometry)
+dart_add_test("unit" test_Inertia)
 dart_add_test("unit" test_Lemke)
 dart_add_test("unit" test_LocalResourceRetriever)
 dart_add_test("unit" test_Math)
@@ -80,3 +81,5 @@ foreach(collision_engine
   endif()
 
 endforeach()
+
+dart_format_add(test_Inertia.cpp)
