@@ -15,6 +15,7 @@ env:
     - BUILD_DIR=$TRAVIS_BUILD_DIR
 
 matrix:
+  fast_finish: true
   include:
     - os: linux
       env:
@@ -37,13 +38,6 @@ matrix:
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
-    - os: linux
-      env:
-        - BUILD_NAME=DISCO_RELEASE
-        - DOCKERFILE="Dockerfile.ubuntu-disco"
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
     - os: osx
       osx_image: xcode9.4
       compiler: clang
@@ -55,6 +49,14 @@ matrix:
       env:
         - BUILD_DOCS=ON
         - DOCKERFILE="Dockerfile.ubuntu-bionic"
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
+      services: docker
+  allow_failures:
+    - os: linux
+      env:
+        - BUILD_NAME=DISCO_RELEASE
+        - DOCKERFILE="Dockerfile.ubuntu-disco"
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker

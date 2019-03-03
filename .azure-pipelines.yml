@@ -66,6 +66,7 @@ jobs:
   - template: .ci/azure-pipelines/docker.yml
 
 - job: disco_gcc_debug
+  continueOnError: true
   pool:
     vmImage: 'Ubuntu 16.04'
   variables:
