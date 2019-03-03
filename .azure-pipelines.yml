@@ -14,39 +14,28 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/native.yml
 
-- job: xenial_gcc_release
+- job: xenial_32bit_gcc_debug
   pool:
     vmImage: 'Ubuntu 16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
-    BUILD_TYPE: Release
-    BUILD_DIR: $(Build.SourcesDirectory)
-    SUDO: sudo
-  steps:
-  - template: .ci/azure-pipelines/native.yml
-
-- job: xenial_32bit_gcc_release
-  pool:
-    vmImage: 'Ubuntu 16.04'
-  variables:
-    OS_NAME: linux
-    COMPILER: gcc
-    BUILD_TYPE: Release
+    BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-xenial-32bit
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: bionic_gcc_release
+- job: bionic_gcc_debug_with_codecov
   pool:
     vmImage: 'Ubuntu 16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
-    BUILD_TYPE: Release
+    BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-bionic
+    CODECOV: ON
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
@@ -64,25 +53,25 @@ jobs:
   - template: .ci/azure-pipelines/docker.yml
   timeoutInMinutes: 0
 
-- job: cosmic_gcc_release
+- job: cosmic_gcc_debug
   pool:
     vmImage: 'Ubuntu 16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
-    BUILD_TYPE: Release
+    BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-cosmic
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: disco_gcc_release
+- job: disco_gcc_debug
   pool:
     vmImage: 'Ubuntu 16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
-    BUILD_TYPE: Release
+    BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-disco
   steps:
@@ -94,21 +83,6 @@ jobs:
   variables:
     OS_NAME: osx
     BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-  steps:
-  - script: |
-      '.ci/install.sh'
-    displayName: 'Install'
-  - script: |
-      '.ci/script.sh'
-    displayName: 'Script'
-
-- job: high_seirra_clang_release
-  pool:
-    vmImage: 'macOS 10.13'
-  variables:
-    OS_NAME: osx
-    BUILD_TYPE: Release
     BUILD_DIR: $(Build.SourcesDirectory)
   steps:
   - script: |

@@ -25,14 +25,6 @@ matrix:
       services: docker
     - os: linux
       env:
-        - BUILD_NAME=BIONIC_DEBUG
-        - DOCKERFILE="Dockerfile.ubuntu-bionic"
-        - BUILD_TYPE=Debug
-        - CODECOV: ON
-        - COMPILER=GCC
-      services: docker
-    - os: linux
-      env:
         - BUILD_NAME=BIONIC_RELEASE
         - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
@@ -45,20 +37,20 @@ matrix:
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
-    # - os: osx
-    #   osx_image: xcode9.4
-    #   compiler: clang
-    #   env:
-    #     - BUILD_NAME=XCODE94_DEBUG
-    #     - BUILD_TYPE=Debug
-    #     - COMPILER=CLANG
-    # - os: osx
-    #   osx_image: xcode9.4
-    #   compiler: clang
-    #   env:
-    #     - BUILD_NAME=XCODE94_RELEASE
-    #     - BUILD_TYPE=Release
-    #     - COMPILER=CLANG
+    - os: linux
+      env:
+        - BUILD_NAME=DISCO_RELEASE
+        - DOCKERFILE="Dockerfile.ubuntu-disco"
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
+      services: docker
+    - os: osx
+      osx_image: xcode9.4
+      compiler: clang
+      env:
+        - BUILD_NAME=XCODE94_RELEASE
+        - BUILD_TYPE=Release
+        - COMPILER=CLANG
     - os: linux
       env:
         - BUILD_DOCS=ON
