@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -235,6 +235,7 @@ template <class Base, class OwnerT, class DataT,
 auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     const ProxyCloneable& other) -> ProxyCloneable&
 {
+  mOwner = other.mOwner;
   set(other);
   return *this;
 }
@@ -246,6 +247,7 @@ template <class Base, class OwnerT, class DataT,
 auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     ProxyCloneable&& other) -> ProxyCloneable&
 {
+  mOwner = other.mOwner;
   set(other);
   return *this;
 }

@@ -3,14 +3,14 @@
 # Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
 # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
 # with Bullet, which uses relative paths and may break transitive dependencies.
-find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+dart_find_package(Bullet)
 if(BULLET_FOUND)
   # Test whether Bullet was built with double precision. If so, we need to
   # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
   # any Bullet headers. This is a workaround for the fact that Bullet does not
   # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
   include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_FLAGS "")
+  set(CMAKE_REQUIRED_FLAGS "-w")
   set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
   set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
   set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
@@ -54,20 +54,13 @@ set(component_name collision-bullet)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
-target_include_directories(
-  ${target_name} SYSTEM
-  PUBLIC ${BULLET_INCLUDE_DIRS}
-)
-target_link_libraries(
-  ${target_name}
-  dart
-  ${BULLET_LIBRARIES}
-)
+target_link_libraries(${target_name} PUBLIC dart Bullet)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} Bullet)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})

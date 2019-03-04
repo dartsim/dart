@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -36,7 +36,7 @@
 AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     const dart::simulation::WorldPtr& world,
     const dart::dynamics::SkeletonPtr& atlas)
-  : dart::gui::osg::WorldNode(world),
+  : dart::gui::osg::RealTimeWorldNode(world),
     mExternalForce(Eigen::Vector3d::Zero()),
     mForceDuration(0.0)
 {

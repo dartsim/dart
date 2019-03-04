@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -55,10 +55,10 @@ dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
   double boxHeight = 0.5;
   auto boxShape = std::make_shared<dynamics::BoxShape>(
       Eigen::Vector3d(boxWidth, boxDepth, boxHeight));
-  dynamics::ShapeNode* shapeNode
-      = boxBody->createShapeNodeWith<dynamics::VisualAspect,
-                                     dynamics::CollisionAspect,
-                                     dynamics::DynamicsAspect>(boxShape);
+  dynamics::ShapeNode* shapeNode = boxBody->createShapeNodeWith<
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(
       dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0));
 
@@ -97,10 +97,10 @@ dynamics::SkeletonPtr createFloor()
   double floorHeight = 0.01;
   auto box = std::make_shared<dynamics::BoxShape>(
       Eigen::Vector3d(floorWidth, floorWidth, floorHeight));
-  dynamics::ShapeNode* shapeNode
-      = body->createShapeNodeWith<dynamics::VisualAspect,
-                                  dynamics::CollisionAspect,
-                                  dynamics::DynamicsAspect>(box);
+  dynamics::ShapeNode* shapeNode = body->createShapeNodeWith<
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(box);
   shapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
 
   // Put the body into position
@@ -112,11 +112,11 @@ dynamics::SkeletonPtr createFloor()
 }
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::WorldNode
+class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
   explicit CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::WorldNode(world)
+    : dart::gui::osg::RealTimeWorldNode(world)
   {
     // Set up the customized WorldNode
   }
@@ -416,9 +416,6 @@ int main()
 
   // Wrap a WorldNode around it
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
-
-  // Run 20 simulation steps per one rendering frame
-  node->setNumStepsPerCycle(20);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::ImGuiViewer viewer;

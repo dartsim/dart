@@ -1,14 +1,15 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-# CMake 2.8.12 or above is required for CMakeParseArguments.
 if(MSVC)
   cmake_minimum_required(VERSION 3.8.0)
 else()
-  cmake_minimum_required(VERSION 2.8.12)
+  cmake_minimum_required(VERSION 3.5.1)
 endif()
 
 project(dart)
+
+string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
@@ -24,20 +25,18 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
-# Stick to the legacy GL library until we need GLVND
-# (see: https://cmake.org/cmake/help/git-stage/policy/CMP0072.html)
-if(POLICY CMP0072)
-  cmake_policy(SET CMP0072 OLD)
-endif()
+include(GNUInstallDirs)
 
 # Variables used in Components.cmake
-set(INCLUDE_INSTALL_DIR "include")
-set(LIBRARY_INSTALL_DIR "lib")
-set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
+set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake")
 
 # Set relative location to install additional documentation (sample data,
 # examples, and tutorials)
-set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH "share/doc/${PROJECT_NAME}")
+set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH
+  "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
+)
 
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -61,7 +60,7 @@ endif()
 
 # If you change the version, please update the <version> tag in package.xml.
 set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "7")
+set(DART_MINOR_VERSION "8")
 set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
@@ -93,6 +92,7 @@ option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
+option(DART_BUILD_DARTPY "Build dartpy (the python binding)" OFF)
 
 #===============================================================================
 # Print intro
@@ -142,12 +142,6 @@ endif()
 # Find dependencies
 #===============================================================================
 include(DARTFindDependencies)
-
-#===============================================================================
-# Include directories
-#===============================================================================
-include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories("${CMAKE_BINARY_DIR}")
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
@@ -200,8 +194,6 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CXX_COMPILER_VERSION ${GCC_VERSION})
   if(GCC_VERSION VERSION_LESS 4.8)
     message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 4.8 or greater.")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
@@ -212,7 +204,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
@@ -225,8 +217,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CXX_COMPILER_VERSION ${CLANG_VERSION})
   if(CLANG_VERSION VERSION_LESS 3.3)
     message(FATAL_ERROR "The installed Clang version is ${CLANG_VERSION}. ${PROJECT_NAME} requires clang 3.3 or greater.")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif()
   if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -322,6 +312,10 @@ if(TARGET dart)
 
 endif()
 
+if (DART_BUILD_DARTPY)
+  add_subdirectory(python)
+endif()
+
 if(DART_BUILD_EXTRAS)
   add_subdirectory(extras)
 endif()
@@ -343,8 +337,6 @@ if(DART_VERBOSE)
   message(STATUS "")
   message(STATUS "[ Configured files ]")
 endif()
-
-string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
 # Generate and install a Config.cmake file. This file includes the
 # <C>Component.cmake and <C>Targets.cmake created above. It also uses the
@@ -386,10 +378,12 @@ if(DART_VERBOSE)
   message(STATUS ${PC_CONFIG_OUT})
 endif()
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
-install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
+install(FILES ${PC_CONFIG_OUT} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
-install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+install(FILES package.xml DESTINATION
+  ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
+)
 
 #===============================================================================
 # Install sample data, examples, and tutorials
@@ -426,7 +420,7 @@ endif()
 
 find_program(
   CLANG_FORMAT_EXECUTABLE
-  NAMES clang-format-3.8
+  NAMES clang-format-6.0
 )
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)

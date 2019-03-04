@@ -1,12 +1,15 @@
 # Dependency checks
-find_package(PAGMO 2.8 QUIET)
-dart_check_optional_package(PAGMO "dart-optimizer-pagmo" "pagmo" "2.8")
+dart_find_package(NLOPT)
+dart_find_package(pagmo)
+dart_check_optional_package(pagmo "dart-optimizer-pagmo" "pagmo" "2.8")
+if(pagmo_FOUND)
+  set(HAVE_PAGMO TRUE CACHE BOOL "Check if pagmo found." FORCE)
+else()
+  set(HAVE_PAGMO FALSE CACHE BOOL "Check if pagmo found." FORCE)
+endif()
 
 find_package(Threads REQUIRED)
 dart_check_optional_package(Threads "dart-optimizer-pagmo" "Threads" "")
-
-find_package(NLOPT 2.4.1 QUIET)
-dart_check_optional_package(NLOPT "dart-optimizer-pagmo" "nlopt" "2.4.1")
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
@@ -18,7 +21,7 @@ set(component_name optimizer-pagmo)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_link_libraries(${target_name} PUBLIC dart ${NLOPT_LIBRARIES})
+target_link_libraries(${target_name} PUBLIC dart Pagmo::pagmo NLOPT::nlopt)
 
 # Thread
 if(THREADS_HAVE_PTHREAD_ARG)
@@ -32,6 +35,7 @@ endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} pagmo NLOPT)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_pagmo headers" ${hdrs})

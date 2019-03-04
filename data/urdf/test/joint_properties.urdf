@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<robot name="testRobot">
+  <link name="link_0">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.087"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="0_to_1" type="revolute">
+    <parent link="link_0"/>
+    <child link="link_1"/>
+    <limit effort="2.5" lower="-3.14159265359"
+           upper="3.14159265359" velocity="3.00545697193"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="1.2" friction="2.3"/>
+  </joint>
+  <link name="link_1">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.087"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="1_to_2" type="continuous">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <limit effort="2.5" velocity="3.00545697193"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="1.2" friction="2.3"/>
+  </joint>
+  <link name="link_2">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.087"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>

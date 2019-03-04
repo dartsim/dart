@@ -1,11 +1,109 @@
 ## DART 6
 
-### DART 6.7.0 (201X-XX-XX)
+### [DART 6.8.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/48?closed=1)
+
+#### Changes
+
+* Simulation
+
+  * The LCP solver will be less aggressive about printing out unnecessary warnings: [#1238](https://github.com/dartsim/dart/pull/1238)
+
+* Collision Detection
+
+  * The BodyNodeCollisionFilter will ignore contacts between immobile bodies: [#1232](https://github.com/dartsim/dart/pull/1232)
+
+* Planning
+
+  * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
+
+* Python
+
+  * Added (experimental) Python binding: [#1237](https://github.com/dartsim/dart/pull/1237)
+
+* Build System
+
+  * Changed to use GNUInstallDirs for install paths: [#1241](https://github.com/dartsim/dart/pull/1241)
+  * Fixed not failing for missing required dependencies: [#1250](https://github.com/dartsim/dart/pull/1250)
+  * Fixed attempting to link octomap when not imported: [#1253](https://github.com/dartsim/dart/pull/1253)
+  * Fixed not defining boost targets: [#1254](https://github.com/dartsim/dart/pull/1254)
+
+### [DART 6.7.3 (2019-02-19)](https://github.com/dartsim/dart/milestone/51?closed=1)
+
+#### Changes
+
+* Dynamics
+
+  * Fixed Skeleton::setState(): [#1245](https://github.com/dartsim/dart/pull/1245)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
+
+### [DART 6.7.2 (2019-01-17)](https://github.com/dartsim/dart/milestone/50?closed=1)
+
+#### Changes
+
+* Build system
+
+  * Fixed #1223 for the recursive case: [#1227](https://github.com/dartsim/dart/pull/1227)
+  * Specified mode for find_package(): [#1228](https://github.com/dartsim/dart/pull/1228)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
+
+### [DART 6.7.1 (2019-01-15)](https://github.com/dartsim/dart/milestone/49?closed=1)
+
+#### Changes
+
+* Build system
+
+  * Ensure that imported targets of dependencies are always created when finding the dart package: [#1222](https://github.com/dartsim/dart/pull/1222)
+  * Set components to not-found when their external dependencies are missing: [#1223](https://github.com/dartsim/dart/pull/1223)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
+
+### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
+
+#### Changes
 
 * Build system
 
   * Fixed compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
   * Changed to generate namespace headers without requiring *.hpp.in files: [#1192](https://github.com/dartsim/dart/pull/1192)
+  * Dropped supporting Ubuntu Trusty and started using imported targets of dependencies: [#1212](https://github.com/dartsim/dart/pull/1212)
 
 * Collision Detection
 
@@ -29,10 +127,25 @@
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
+  * Added the RealTimeWorldNode to display simulations at real-time rates: [#1216](https://github.com/dartsim/dart/pull/1216)
 
 * Misc
 
-  * Remove gtest source code from DART codebase: [#1205](https://github.com/dartsim/dart/pull/1205)
+  * Updated Googletest to version 1.8.1: [#1214](https://github.com/dartsim/dart/pull/1214)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 

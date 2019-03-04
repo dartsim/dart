@@ -1004,7 +1004,15 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
         // we're going to get stuck in an infinite loop. instead, just cross
         // our fingers and exit with the current solution.
         if (s <= REAL(0.0)) {
-          dMessage (d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e)",(double)s);
+
+          // We shouldn't be overly aggressive about printing this warning,
+          // because sometimes it gets spammed if s is just a tiny bit beneath
+          // 0.0.
+          if (s < REAL(-1e-6)) {
+            dMessage (d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e)",
+                      (double)s);
+          }
+
           if (i < n) {
             dSetZero (x+i,n-i);
             dSetZero (w+i,n-i);

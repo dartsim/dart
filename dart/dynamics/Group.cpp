@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -531,6 +531,17 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
       assert(false);
     }
   }
+
+  return removed;
+}
+
+//==============================================================================
+bool Group::removeJoints(
+    const std::vector<Joint*>& _joints, bool _removeDofs, bool _warning)
+{
+  bool removed = false;
+  for(Joint* joint : _joints)
+    removed |= removeJoint(joint, _removeDofs, _warning);
 
   return removed;
 }

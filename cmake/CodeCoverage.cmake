@@ -35,6 +35,9 @@
 # - Added support for Clang.
 # - Some additional usage instructions.
 #
+# 2019-01-24, Brian Hou
+# - Added support for Codecov uploads.
+#
 # USAGE:
 
 # 0. (Mac only) If you use Xcode 5.1 make sure to patch geninfo as described here:
@@ -132,6 +135,7 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _testrunner _outputname)
 
 	SET(coverage_info "${CMAKE_BINARY_DIR}/${_outputname}.info")
 	SET(coverage_cleaned "${coverage_info}.cleaned")
+	SET(codecov_script "${CMAKE_BINARY_DIR}/codecov.sh")
 
 	SEPARATE_ARGUMENTS(test_command UNIX_COMMAND "${_testrunner}")
 
@@ -148,6 +152,13 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _testrunner _outputname)
 		COMMAND ${LCOV_PATH} --directory . --capture --output-file ${coverage_info}
 		COMMAND ${LCOV_PATH} --remove ${coverage_info} 'tests/*' '/usr/*' --output-file ${coverage_cleaned}
 		COMMAND ${GENHTML_PATH} -o ${_outputname} ${coverage_cleaned}
+
+		# Upload to Codecov (added by @brianhou)
+		COMMAND curl -s "https://codecov.io/bash" > ${codecov_script}
+		COMMAND chmod +x ${codecov_script}
+		COMMAND ${codecov_script} -R ${CMAKE_SOURCE_DIR} -X gcov -f ${coverage_cleaned}
+
+		# Clean up reports
 		COMMAND ${CMAKE_COMMAND} -E remove ${coverage_info} ${coverage_cleaned}
 
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
