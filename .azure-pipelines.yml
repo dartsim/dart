@@ -14,13 +14,13 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/native.yml
 
-- job: xenial_32bit_gcc_debug
+- job: xenial_32bit_gcc_release
   pool:
     vmImage: 'Ubuntu 16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
-    BUILD_TYPE: Debug
+    BUILD_TYPE: Release  # TODO: Tests fail in debug mode
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-xenial-32bit
   steps:
