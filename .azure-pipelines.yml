@@ -124,20 +124,24 @@ jobs:
     ARCHITECTURE_SUFFIX: '-x64'
     VCPKG_ARCH: 'x64-windows'
     BUILD_TOOLSET_VERSION: '141'
-    CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
+    CMAKE_GENERATOR: 'Visual Studio 16 2019 Win64'
     CONFIGURATION: 'Release'
   steps:
   - script: |
-      %VCPKG_ROOT%/vcpkg.exe remove --outdated --recurse
-      %VCPKG_ROOT%/vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
-      %VCPKG_ROOT%/vcpkg.exe integrate install
+      git clone https://github.com/Microsoft/vcpkg
+      cd vcpkg
+      .\bootstrap-vcpkg.bat
+      .\vcpkg integrate install
+      .\vcpkg vcpkg remove --outdated --recurse
+      .\vcpkg vcpkg install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
+      .\vcpkg vcpkg integrate install
     displayName: 'Install dependencies'
     workingDirectory: '$(Build.SourcesDirectory)'
   - script: |
       cmake --version
       mkdir build
       cd build
-      cmake .. -G "$(CMAKE_GENERATOR)" -DCMAKE_BUILD_TYPE=$(CONFIGURATION) -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
+      cmake .. -G "$(CMAKE_GENERATOR)" -DCMAKE_BUILD_TYPE=$(CONFIGURATION) -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
       cmake --build . --target ALL_BUILD --config $(CONFIGURATION) -- /maxcpucount:4
     displayName: 'Build'
     workingDirectory: '$(Build.SourcesDirectory)'
