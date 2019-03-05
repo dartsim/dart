@@ -6,7 +6,7 @@
 
 * Dynamics
 
-  * Fix incorrect transpose check in Inertia::verifySpatialTensor(): [#1258](https://github.com/dartsim/dart/pull/1258)
+  * Fixed incorrect transpose check in Inertia::verifySpatialTensor(): [#1258](https://github.com/dartsim/dart/pull/1258)
 
 * Simulation
 
