@@ -94,6 +94,9 @@ if [ $CODECOV = ON ]; then
   make -j4 codecov
 else
   ctest --output-on-failure -j4
+  if [ $BUILD_TYPE = Debug ]; then
+    ctest --test-action memcheck --output-on-failure -j4
+  fi
 fi
 
 # Make sure we can install with no issues

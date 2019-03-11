@@ -8,12 +8,14 @@ $SUDO apt-get -qq update
 
 # Build tools
 $SUDO apt-get -y install \
-  sudo \
   build-essential \
   cmake \
-  pkg-config \
   curl \
-  git
+  git \
+  pkg-config \
+  sudo \
+  valgrind
+  
 if [ $COMPILER = clang ]; then
   $SUDO apt-get -qq -y install clang
 fi

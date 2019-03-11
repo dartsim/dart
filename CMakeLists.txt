@@ -275,7 +275,7 @@ set(DART_IN_SOURCE_BUILD TRUE)
 if(TARGET dart)
 
   # Add a "tests" target to build unit tests.
-  enable_testing()
+  include(CTest)
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
 
   # Add example subdirectories and an "examples" target.
