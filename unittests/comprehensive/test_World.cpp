@@ -323,7 +323,7 @@ simulation::WorldPtr createWorld()
   // Create and initialize the world
   simulation::WorldPtr world
     = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
-  assert(myWorld != nullptr);
+  assert(world != nullptr);
 
   // Create and initialize the world
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
