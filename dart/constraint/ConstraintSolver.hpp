@@ -153,6 +153,10 @@ public:
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
 
+  /// Sets this constraint solver using other constraint solver. All the
+  /// properties and registered skeletons and constraints will be copied over.
+  virtual void setFromOtherConstraintSolver(const ConstraintSolver& other);
+
 protected:
   // TODO(JS): Docstring
   virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;

@@ -330,6 +330,17 @@ DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
+void ConstraintSolver::setFromOtherConstraintSolver(
+    const ConstraintSolver& other)
+{
+  removeAllSkeletons();
+  mManualConstraints.clear();
+
+  addSkeletons(other.getSkeletons());
+  mManualConstraints = other.mManualConstraints;
+}
+
+//==============================================================================
 bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& _skeleton) const
 {
   assert(_skeleton != nullptr && "Not allowed to insert null pointer skeleton.");
