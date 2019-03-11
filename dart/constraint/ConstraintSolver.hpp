@@ -89,6 +89,12 @@ public:
   /// Add a constraint
   void addConstraint(const ConstraintBasePtr& constraint);
 
+  /// Returns all the constraints added to this ConstraintSolver.
+  const std::vector<constraint::ConstraintBasePtr>& getConstraints();
+
+  /// Returns all the constraints added to this ConstraintSolver.
+  std::vector<constraint::ConstConstraintBasePtr> getConstraints() const;
+
   /// Remove a constraint
   void removeConstraint(const ConstraintBasePtr& constraint);
 

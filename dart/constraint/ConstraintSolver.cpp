@@ -166,6 +166,23 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
 }
 
 //==============================================================================
+const std::vector<ConstraintBasePtr>& ConstraintSolver::getConstraints()
+{
+  return mManualConstraints;
+}
+
+//==============================================================================
+std::vector<ConstConstraintBasePtr> ConstraintSolver::getConstraints() const
+{
+  std::vector<ConstConstraintBasePtr> constraints;
+  constraints.reserve(mManualConstraints.size());
+  for (auto constraint : mManualConstraints)
+    constraints.push_back(constraint);
+
+  return constraints;
+}
+
+//==============================================================================
 void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
 {
   assert(constraint);

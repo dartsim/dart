@@ -44,6 +44,10 @@
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/simulation/World.hpp"
+#include "dart/constraint/BallJointConstraint.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
 using namespace dart;
 using namespace math;
@@ -311,4 +315,68 @@ TEST(World, ValidatingClones)
       EXPECT_EQ(originalCDType, cloneCDType);
     }
   }
+}
+
+//==============================================================================
+simulation::WorldPtr createWorld()
+{
+  // Create and initialize the world
+  simulation::WorldPtr world
+    = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+  assert(myWorld != nullptr);
+
+  // Create and initialize the world
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(1.0/2000);
+
+  const auto dof =  world->getSkeleton(0)->getNumDofs();
+  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
+  initPose[20] = 3.14159 * 0.4;
+  initPose[23] = 3.14159 * 0.4;
+  initPose[26] = 3.14159 * 0.4;
+  initPose[29] = 3.14159 * 0.4;
+  world->getSkeleton(0)->setPositions(initPose);
+
+  // Create a ball joint constraint
+  BodyNode* bd1 = world->getSkeleton(0)->getBodyNode("link 6");
+  BodyNode* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
+  EXPECT_TRUE(bd1 != nullptr);
+  EXPECT_TRUE(bd2 != nullptr);
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  const Eigen::Vector3d jointPos = bd1->getTransform() * offset;
+  auto cl = std::make_shared<constraint::BallJointConstraint>(
+      bd1, bd2, jointPos);
+  world->getConstraintSolver()->addConstraint(cl);
+
+  return world;
+}
+
+//==============================================================================
+TEST(World, SetNewConstraintSolver)
+{
+  auto world = createWorld();
+  EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
+  EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
+
+  auto solver1
+      = dart::common::make_unique<constraint::BoxedLcpConstraintSolver>(
+          world->getTimeStep(),
+          std::make_shared<constraint::DantzigBoxedLcpSolver>());
+  EXPECT_TRUE(solver1->getSkeletons().size() == 0);
+  EXPECT_TRUE(solver1->getConstraints().size() == 0);
+
+  world->setConstraintSolver(std::move(solver1));
+  EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
+  EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
+
+  auto solver2
+      = dart::common::make_unique<constraint::BoxedLcpConstraintSolver>(
+          world->getTimeStep(),
+          std::make_shared<constraint::PgsBoxedLcpSolver>());
+  EXPECT_TRUE(solver2->getSkeletons().size() == 0);
+  EXPECT_TRUE(solver2->getConstraints().size() == 0);
+
+  world->setConstraintSolver(std::move(solver2));
+  EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
+  EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
 }
