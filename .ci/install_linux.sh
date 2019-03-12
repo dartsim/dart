@@ -17,6 +17,7 @@ $SUDO apt-get -y install \
   valgrind
 
 if [ $(lsb_release -sc) = "xenial" ]; then
+  $SUDO apt-get -y install wget
   wget http://valgrind.org/downloads/valgrind-3.14.0.tar.bz2
   tar -xjf valgrind-3.14.0.tar.bz2
   cd valgrind-3.14.0
