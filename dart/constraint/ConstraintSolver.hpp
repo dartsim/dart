@@ -89,17 +89,26 @@ public:
   /// Add a constraint
   void addConstraint(const ConstraintBasePtr& constraint);
 
-  /// Returns all the constraints added to this ConstraintSolver.
-  const std::vector<constraint::ConstraintBasePtr>& getConstraints();
-
-  /// Returns all the constraints added to this ConstraintSolver.
-  std::vector<constraint::ConstConstraintBasePtr> getConstraints() const;
-
   /// Remove a constraint
   void removeConstraint(const ConstraintBasePtr& constraint);
 
   /// Remove all constraints
   void removeAllConstraints();
+
+  /// Returns the number of constraints that was manually added to this ConstraintSolver.
+  std::size_t getNumConstraints() const;
+
+  /// Returns a constraint by index.
+  constraint::ConstraintBasePtr getConstraint(std::size_t index);
+
+  /// Returns a constraint by index.
+  constraint::ConstConstraintBasePtr getConstraint(std::size_t index) const;
+
+  /// Returns all the constraints added to this ConstraintSolver.
+  std::vector<constraint::ConstraintBasePtr> getConstraints();
+
+  /// Returns all the constraints added to this ConstraintSolver.
+  std::vector<constraint::ConstConstraintBasePtr> getConstraints() const;
 
   /// Clears the last collision result
   void clearLastCollisionResult();
