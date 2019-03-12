@@ -15,7 +15,19 @@ $SUDO apt-get -y install \
   pkg-config \
   sudo \
   valgrind
-  
+
+if [ $(lsb_release -sc) = "xenial" ]; then
+  wget http://valgrind.org/downloads/valgrind-3.14.0.tar.bz2
+  tar -xjf valgrind-3.14.0.tar.bz2
+  cd valgrind-3.14.0
+  ./configure --prefix=/usr/local
+  make
+  sudo make install
+  ccache --clear
+else
+  $SUDO apt-get -y install valgrind
+fi
+
 if [ $COMPILER = clang ]; then
   $SUDO apt-get -qq -y install clang
 fi
