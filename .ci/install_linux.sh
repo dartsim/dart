@@ -21,7 +21,7 @@ if [ $BUILD_TYPE = Debug ]; then
     wget http://valgrind.org/downloads/valgrind-3.14.0.tar.bz2
     tar -xjf valgrind-3.14.0.tar.bz2
     cd valgrind-3.14.0
-    ./configure --prefix=/usr/local
+    ./configure --prefix=/usr
     make
     sudo make install
   else
