@@ -13,20 +13,21 @@ $SUDO apt-get -y install \
   curl \
   git \
   pkg-config \
-  sudo \
-  valgrind
+  sudo
 
-if [ $(lsb_release -sc) = "xenial" ]; then
-  $SUDO apt-get -y install wget
-  wget http://valgrind.org/downloads/valgrind-3.14.0.tar.bz2
-  tar -xjf valgrind-3.14.0.tar.bz2
-  cd valgrind-3.14.0
-  ./configure --prefix=/usr/local
-  make
-  sudo make install
-  ccache --clear
-else
-  $SUDO apt-get -y install valgrind
+if [ $BUILD_TYPE = Debug ]; then
+  if [ $(lsb_release -sc) = "xenial" ]; then
+    $SUDO apt-get -y install wget
+    wget http://valgrind.org/downloads/valgrind-3.14.0.tar.bz2
+    tar -xjf valgrind-3.14.0.tar.bz2
+    cd valgrind-3.14.0
+    ./configure --prefix=/usr/local
+    make
+    sudo make install
+    ccache --clear
+  else
+    $SUDO apt-get -y install valgrind
+  fi
 fi
 
 if [ $COMPILER = clang ]; then
