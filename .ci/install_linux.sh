@@ -24,7 +24,6 @@ if [ $BUILD_TYPE = Debug ]; then
     ./configure --prefix=/usr/local
     make
     sudo make install
-    ccache --clear
   else
     $SUDO apt-get -y install valgrind
   fi
