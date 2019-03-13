@@ -1,7 +1,7 @@
 # Dependency checks
-#if (NOT TARGET dart-gui)
-#  return()
-#endif()
+if (NOT TARGET dart-gui)
+  return()
+endif()
 
 if(WIN32 AND NOT CYGWIN)
   set(GLUT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
