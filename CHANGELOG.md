@@ -21,6 +21,10 @@
 
   * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
 
+* GUI
+
+  * Made gui-glut as an optional component: [#1262](https://github.com/dartsim/dart/pull/1262)
+
 * Python
 
   * Added (experimental) Python binding: [#1237](https://github.com/dartsim/dart/pull/1237)
