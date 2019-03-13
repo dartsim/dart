@@ -6,6 +6,9 @@ endif()
 # OpenSceneGraph
 if(DART_BUILD_GUI_OSG)
   dart_find_package(OpenSceneGraph)
+  dart_check_optional_package(OPENTHREADS "dart-gui-osg" "libopenscenegraph-dev")
+  dart_check_optional_package(OSG "dart-gui-osg" "libopenscenegraph-dev")
+  dart_check_optional_package(OPENSCENEGRAPH "dart-gui-osg" "libopenscenegraph-dev")
 else()
   message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
   return()
@@ -28,12 +31,14 @@ set(component_name gui-osg)
 dart_add_library(${target_name} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_include_directories(
   ${target_name} SYSTEM
-  PUBLIC ${OPENSCENEGRAPH_INCLUDE_DIRS}
+  PUBLIC
+    ${OPENSCENEGRAPH_INCLUDE_DIRS}
 )
 target_link_libraries(
   ${target_name}
-  dart-gui
-  ${OPENSCENEGRAPH_LIBRARIES}
+  PUBLIC
+    dart-gui
+    ${OPENSCENEGRAPH_LIBRARIES}
 )
 
 # Component
