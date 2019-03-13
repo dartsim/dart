@@ -5,6 +5,7 @@ endif()
 
 dart_find_package(OpenGL)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
+dart_check_optional_package(OPENGL_GLU "dart-gui" "OpenGL GLU")
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp" "*.h" "detail/*.hpp")

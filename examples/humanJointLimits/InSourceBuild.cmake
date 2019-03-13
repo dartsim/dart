@@ -31,7 +31,7 @@ target_compile_options(${example_name} PUBLIC -std=c++14)
 target_link_libraries(${example_name}
   PUBLIC
     dart-utils-urdf
-    dart-gui
+    dart-gui-glut
     dart-collision-ode
     dart-collision-bullet
     ${TinyDNN_LIBRARIES}
