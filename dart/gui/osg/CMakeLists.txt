@@ -6,7 +6,6 @@ endif()
 # OpenSceneGraph
 if(DART_BUILD_GUI_OSG)
   dart_find_package(OpenSceneGraph)
-  dart_check_optional_package(OPENTHREADS "dart-gui-osg" "libopenscenegraph-dev")
   dart_check_optional_package(OSG "dart-gui-osg" "libopenscenegraph-dev")
   dart_check_optional_package(OPENSCENEGRAPH "dart-gui-osg" "libopenscenegraph-dev")
 else()
