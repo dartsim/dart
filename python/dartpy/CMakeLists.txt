@@ -128,7 +128,7 @@ if(chimera_FOUND)
       dart-planning
       dart-utils
       dart-utils-urdf
-      dart-gui
+      dart-gui-glut
   )
   add_custom_target(binding DEPENDS "dartpy_CHIMERA_REBUILD")
 else()
@@ -170,7 +170,7 @@ if(EXISTS "${SOURCES_TXT}")
       dart-planning
       dart-utils
       dart-utils-urdf
-      dart-gui
+      dart-gui-glut
   )
   set_target_properties("dartpy" PROPERTIES
     PREFIX ""

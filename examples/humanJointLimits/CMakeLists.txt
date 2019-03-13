@@ -24,7 +24,7 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
     dart
     dart-utils-urdf
-    dart-gui
+    dart-gui-glut
     dart-collision-ode
     dart-collision-bullet
     ${TinyDNN_LIBRARIES}
