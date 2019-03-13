@@ -236,6 +236,9 @@ public:
   //--------------------------------------------------------------------------
 
   /// Sets the constraint solver
+  ///
+  /// Note that the internal properties of \c solver will be overwritten by this
+  /// World.
   void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
 
   /// Get the constraint solver

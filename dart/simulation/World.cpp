@@ -538,8 +538,8 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
     return;
   }
 
-  solver->removeAllSkeletons();
-  solver->addSkeletons(mConstraintSolver->getSkeletons());
+  assert(mConstraintSolver);
+  solver->setFromOtherConstraintSolver(*mConstraintSolver);
 
   mConstraintSolver = std::move(solver);
 }
