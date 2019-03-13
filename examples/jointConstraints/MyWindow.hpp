@@ -39,7 +39,7 @@
 #include "Controller.hpp"
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
 class MyWindow : public dart::gui::glut::SimWindow
 {

@@ -1,13 +1,13 @@
 get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
-if(NOT TARGET dart-utils-urdf OR NOT TARGET dart-gui)
+if(NOT TARGET dart-utils-urdf OR NOT TARGET dart-gui-glut)
   return()
 endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 
 add_executable(${example_name} ${srcs})
-target_link_libraries(${example_name} dart dart-gui)
+target_link_libraries(${example_name} dart dart-gui-glut)
 set_target_properties(${example_name}
   PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

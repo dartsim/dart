@@ -38,7 +38,7 @@
 #include <Eigen/Dense>
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
 #include "Controller.hpp"
 

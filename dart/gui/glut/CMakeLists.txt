@@ -1,8 +1,42 @@
+# Dependency checks
+#if (NOT TARGET dart-gui)
+#  return()
+#endif()
+
+if(WIN32 AND NOT CYGWIN)
+  set(GLUT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+  set(GLUT_LIBRARIES glut32)
+  set(HAVE_GLUT TRUE)
+else()
+  dart_find_package(GLUT)
+  dart_check_optional_package(GLUT "dart-gui" "freeglut3")
+  if(GLUT_FOUND)
+    set(HAVE_GLUT TRUE)
+  else()
+    set(HAVE_GLUT FALSE)
+  endif()
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-dart_add_gui_headers(${hdrs} ${detail_hdrs})
-dart_add_gui_sources(${srcs} ${detail_srcs})
+
+# Set local target name
+set(target_name ${PROJECT_NAME}-gui-glut)
+set(component_name gui-glut)
+
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(${target_name} PUBLIC ${GLUT_INCLUDE_DIRS})
+target_link_libraries(${target_name} PUBLIC dart-gui ${GLUT_LIBRARIES})
+
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} gui)
+if(NOT WIN32 OR CYGWIN)
+  add_component_dependency_packages(${PROJECT_NAME} ${component_name} GLUT)
+endif()
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui_glut_headers headers" ${hdrs})

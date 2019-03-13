@@ -2,7 +2,7 @@ get_filename_component(tutorial_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 if(NOT TARGET dart-collision-bullet
   OR NOT TARGET dart-utils-urdf
-  OR NOT TARGET dart-gui)
+  OR NOT TARGET dart-gui-glut)
   return()
 endif()
 
@@ -10,7 +10,7 @@ file(GLOB srcs "*.cpp" "*.hpp")
 
 add_executable(${tutorial_name} ${srcs})
 target_link_libraries(${tutorial_name}
-  dart dart-collision-bullet dart-utils-urdf dart-gui
+  dart dart-collision-bullet dart-utils-urdf dart-gui-glut
 )
 set_target_properties(${tutorial_name}
   PROPERTIES

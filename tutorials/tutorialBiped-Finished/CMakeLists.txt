@@ -8,7 +8,7 @@ endif()
 project(tutorialBiped-Finished)
 
 find_package(DART 6.6.0 REQUIRED
-  COMPONENTS collision-bullet utils-urdf gui
+  COMPONENTS collision-bullet utils-urdf gui-glut
   CONFIG
 )
 
@@ -16,5 +16,5 @@ file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
-    dart dart-collision-bullet dart-utils-urdf dart-gui
+    dart dart-collision-bullet dart-utils-urdf dart-gui-glut
 )

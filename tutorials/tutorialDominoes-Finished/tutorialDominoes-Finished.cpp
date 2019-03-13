@@ -31,7 +31,7 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 
 const double default_domino_height = 0.3;

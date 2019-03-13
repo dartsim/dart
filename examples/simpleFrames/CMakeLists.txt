@@ -7,7 +7,7 @@ endif()
 
 project(simpleFrames)
 
-find_package(DART 6.6.0 REQUIRED COMPONENTS utils-urdf gui CONFIG)
+find_package(DART 6.6.0 REQUIRED COMPONENTS utils-urdf gui-glut CONFIG)
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})

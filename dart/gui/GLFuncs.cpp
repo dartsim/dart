@@ -47,9 +47,10 @@
 namespace dart {
 namespace gui {
 
-void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
+void drawStringOnScreen(float /*x*/, float /*y*/, const std::string& /*s*/, bool /*bigFont*/)
 {
-  glut::drawStringOnScreen(x, y, s, bigFont);
+  dterr << "[drawStringOnScreen] This function is removed in DART 6.8. Please use "
+        << "dart::glut::drawStringOnScreen() instead.\n";
 }
 
 // draw a 3D arrow starting from pt along dir, the arrowhead is on the other end

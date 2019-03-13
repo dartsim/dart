@@ -57,7 +57,7 @@ set(target_name ${PROJECT_NAME}-gui-osg)
 set(component_name gui-osg)
 
 # Add target
-dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
+dart_add_library(${target_name} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_include_directories(
   ${target_name} SYSTEM
   PUBLIC ${OPENSCENEGRAPH_INCLUDE_DIRS}
@@ -72,6 +72,7 @@ target_link_libraries(
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} gui)
+#add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenSceneGraph)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})

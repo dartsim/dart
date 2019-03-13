@@ -6,20 +6,6 @@ endif()
 dart_find_package(OpenGL)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
-if(WIN32 AND NOT CYGWIN)
-  set(GLUT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
-  set(GLUT_LIBRARIES glut32)
-  set(HAVE_GLUT TRUE)
-else()
-  dart_find_package(GLUT)
-  dart_check_optional_package(GLUT "dart-gui" "freeglut3")
-  if(GLUT_FOUND)
-    set(HAVE_GLUT TRUE)
-  else()
-    set(HAVE_GLUT FALSE)
-  endif()
-endif()
-
 # Search all header and source files
 file(GLOB hdrs "*.hpp" "*.h" "detail/*.hpp")
 file(GLOB srcs "*.cpp" "*.c" "detail/*.cpp")
@@ -32,9 +18,6 @@ function(dart_add_gui_sources)
   dart_property_add(DART_GUI_SOURCES ${ARGN})
 endfunction()
 
-# Add required subdirectory
-add_subdirectory(glut)
-
 get_property(dart_gui_headers GLOBAL PROPERTY DART_GUI_HEADERS)
 get_property(dart_gui_sources GLOBAL PROPERTY DART_GUI_SOURCES)
 
@@ -46,11 +29,9 @@ set(component_name gui)
 dart_add_library(${target_name}
   ${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
 )
-target_include_directories(${target_name} PUBLIC ${GLUT_INCLUDE_DIRS})
 target_link_libraries(${target_name}
   PUBLIC
     dart-utils
-    ${GLUT_LIBRARIES}
     OpenGL::GLU
     OpenGL::GL
     ${PROJECT_NAME}-external-lodepng
@@ -73,6 +54,7 @@ if(NOT WIN32 OR CYGWIN)
 endif()
 
 # Add subdirectories
+add_subdirectory(glut)
 add_subdirectory(osg)
 
 # Generate header for this namespace
@@ -91,11 +73,6 @@ list(REMOVE_ITEM header_names
   "Win3D.hpp"
 )
 
-set(
-  header_names
-  ${header_names}
-  glut/glut.hpp
-)
 dart_generate_include_header_file(
   "${CMAKE_CURRENT_BINARY_DIR}/gui.hpp"
   "dart/gui/"
