@@ -76,6 +76,14 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
     return;
   }
 
+  if (lcpSolver == mFallbackBoxedLcpSolver)
+  {
+    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
+           << "the primary LCP solver that is identical to the secondary LCP "
+           << "solver, which is redundant. Please use different solvers or set "
+           << "the secondary LCP solver to nullptr.\n";
+  }
+
   mBoxedLcpSolver = std::move(lcpSolver);
 }
 
@@ -89,6 +97,14 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 void BoxedLcpConstraintSolver::setFallbackBoxedLcpSolver(
     BoxedLcpSolverPtr lcpSolver)
 {
+  if (lcpSolver == mBoxedLcpSolver)
+  {
+    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
+           << "the secondary LCP solver that is identical to the primary LCP "
+           << "solver, which is redundant. Please use different solvers or set "
+           << "the secondary LCP solver to nullptr.\n";
+  }
+
   mFallbackBoxedLcpSolver = std::move(lcpSolver);
 }
 
