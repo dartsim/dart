@@ -199,7 +199,8 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // the parimary solver failed.
   if (mFallbackBoxedLcpSolver)
   {
-    // Make backups because following terms can be modified by the solver.
+    // Make backups for the secondary LCP solver because the primary solver
+    // modifies the original terms.
     mABackup = mA;
     mXBackup = mX;
     mBBackup = mB;
@@ -209,7 +210,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
   const bool earlyTermination = (mFallbackBoxedLcpSolver != nullptr);
   assert(mBoxedLcpSolver);
-  const bool success = mBoxedLcpSolver->solve(
+  bool success = mBoxedLcpSolver->solve(
       n,
       mA.data(),
       mX.data(),
@@ -219,19 +220,35 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       mHi.data(),
       mFIndex.data(),
       earlyTermination);
+
+  // Sanity check. LCP solvers should not report success with nan values, but
+  // it could happen. So we set the sucees to false for nan values.
+  if (success && mX.hasNaN())
+    success = false;
+
   if (!success && mFallbackBoxedLcpSolver)
   {
-    mX = mXBackup;
     mFallbackBoxedLcpSolver->solve(
         n,
         mABackup.data(),
-        mX.data(),
+        mXBackup.data(),
         mBBackup.data(),
         0,
         mLoBackup.data(),
         mHiBackup.data(),
         mFIndexBackup.data(),
         false);
+    mX = mXBackup;
+  }
+
+  if (mX.hasNaN())
+  {
+    dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
+          << "values: " << mX.transpose() << ". We're setting it zero for "
+          << "safety. Consider using more robust solver such as PGS as a "
+          << "secondary solver. If this happens even with PGS solver, please "
+          << "report this as a bug.\n";
+    mX.setZero();
   }
 
   // Print LCP formulation
