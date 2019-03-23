@@ -84,10 +84,10 @@ TEST(Issue892, LCPSolverShouldNotRetrunNanValues)
       EXPECT_TRUE(result.isCollision());
 
       auto angle1 = box1->getRootJoint()->getPosition(0);
-      auto angle2 = box1->getRootJoint()->getPosition(0);
+      auto angle2 = box2->getRootJoint()->getPosition(0);
 
       EXPECT_NEAR(angle1, -0.345858, 0.1);
-      EXPECT_NEAR(angle2, -0.345858, 0.1);
+      EXPECT_NEAR(angle2, +0.345858, 0.1);
     }
   }
 }
