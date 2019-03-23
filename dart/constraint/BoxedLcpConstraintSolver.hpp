@@ -43,14 +43,31 @@ class BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
   /// Constructor
+  ///
+  /// \param[in] timeStep Simulation time step
+  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
+  /// passed, Dantzig solver will be used.
+  /// \param[in] fallbackBoxedLcpSolver The secondary boxed-LCP solver. When
+  /// nullptr is passed, PGS solver will be used. This is to make the default
+  /// solver setting to be Dantzig + PGS. In order to disable use of secondary
+  /// solver, call setFallbackBoxedLcpSolver(nullptr) explicitly.
   BoxedLcpConstraintSolver(
-      double timeStep, BoxedLcpSolverPtr boxedLcpSolver = nullptr);
+      double timeStep,
+      BoxedLcpSolverPtr boxedLcpSolver = nullptr,
+      BoxedLcpSolverPtr fallbackBoxedLcpSolver = nullptr);
 
   /// Sets boxed LCP (BLCP) solver
   void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
 
   /// Returns boxed LCP (BLCP) solver
   ConstBoxedLcpSolverPtr getBoxedLcpSolver() const;
+
+  /// Sets boxed LCP (BLCP) solver that is used when the primary solver failed
+  void setFallbackBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
+
+  /// Returns boxed LCP (BLCP) solver that is used when the primary solver
+  /// failed
+  ConstBoxedLcpSolverPtr getFallbackBoxedLcpSolver() const;
 
 protected:
   // Documentation inherited.
@@ -59,14 +76,27 @@ protected:
   /// Boxed LCP solver
   BoxedLcpSolverPtr mBoxedLcpSolver;
 
+  /// Boxed LCP solver to be used when the primary solver failed
+  BoxedLcpSolverPtr mFallbackBoxedLcpSolver;
+
   /// Cache data for boxed LCP formulation
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      mABackup;
 
   /// Cache data for boxed LCP formulation
   Eigen::VectorXd mX;
 
   /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mXBackup;
+
+  /// Cache data for boxed LCP formulation
   Eigen::VectorXd mB;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mBBackup;
 
   /// Cache data for boxed LCP formulation
   Eigen::VectorXd mW;
@@ -75,10 +105,19 @@ protected:
   Eigen::VectorXd mLo;
 
   /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mLoBackup;
+
+  /// Cache data for boxed LCP formulation
   Eigen::VectorXd mHi;
 
   /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mHiBackup;
+
+  /// Cache data for boxed LCP formulation
   Eigen::VectorXi mFIndex;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi mFIndexBackup;
 
   /// Cache data for boxed LCP formulation
   Eigen::VectorXi mOffset;

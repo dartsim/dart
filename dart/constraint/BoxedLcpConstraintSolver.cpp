@@ -44,6 +44,7 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {
@@ -51,11 +52,18 @@ namespace constraint {
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
-    double timeStep, BoxedLcpSolverPtr boxedLcpSolver)
-  : ConstraintSolver(timeStep), mBoxedLcpSolver(std::move(boxedLcpSolver))
+    double timeStep,
+    BoxedLcpSolverPtr boxedLcpSolver,
+    BoxedLcpSolverPtr fallbackBoxedLcpSolver)
+  : ConstraintSolver(timeStep),
+    mBoxedLcpSolver(std::move(boxedLcpSolver)),
+    mFallbackBoxedLcpSolver(std::move(fallbackBoxedLcpSolver))
 {
   if (!mBoxedLcpSolver)
     mBoxedLcpSolver = std::make_shared<DantzigBoxedLcpSolver>();
+
+  if (!mFallbackBoxedLcpSolver)
+    mFallbackBoxedLcpSolver = std::make_shared<PgsBoxedLcpSolver>();
 }
 
 //==============================================================================
@@ -75,6 +83,20 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 {
   return mBoxedLcpSolver;
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::setFallbackBoxedLcpSolver(
+    BoxedLcpSolverPtr lcpSolver)
+{
+  mFallbackBoxedLcpSolver = std::move(lcpSolver);
+}
+
+//==============================================================================
+ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getFallbackBoxedLcpSolver()
+    const
+{
+  return mFallbackBoxedLcpSolver;
 }
 
 //==============================================================================
@@ -173,9 +195,21 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 
-  // Solve LCP using ODE's Dantzig algorithm
+  // Solve LCP using the primary solver and fallback to secondary solver when
+  // the parimary solver failed.
+  if (mFallbackBoxedLcpSolver)
+  {
+    // Make backups because following terms can be modified by the solver.
+    mABackup = mA;
+    mXBackup = mX;
+    mBBackup = mB;
+    mLoBackup = mLo;
+    mHiBackup = mHi;
+    mFIndexBackup = mFIndex;
+  }
+  const bool earlyTermination = (mFallbackBoxedLcpSolver != nullptr);
   assert(mBoxedLcpSolver);
-  mBoxedLcpSolver->solve(
+  const bool success = mBoxedLcpSolver->solve(
       n,
       mA.data(),
       mX.data(),
@@ -183,7 +217,22 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       0,
       mLo.data(),
       mHi.data(),
-      mFIndex.data());
+      mFIndex.data(),
+      earlyTermination);
+  if (!success && mFallbackBoxedLcpSolver)
+  {
+    mX = mXBackup;
+    mFallbackBoxedLcpSolver->solve(
+        n,
+        mABackup.data(),
+        mX.data(),
+        mBBackup.data(),
+        0,
+        mLoBackup.data(),
+        mHiBackup.data(),
+        mFIndexBackup.data(),
+        false);
+  }
 
   // Print LCP formulation
   //  dtdbg << "After solve:" << std::endl;

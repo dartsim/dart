@@ -48,25 +48,48 @@ public:
   /// Returns the type
   virtual const std::string& getType() const = 0;
 
-  /// Get true if this solver and the template parameter (a solver class) are
-  /// the same type. This function is a syntactic sugar, which is identical to:
-  /// \code getType() == ShapeType::getStaticType() \endcode.
+  /// Returns true if this solver and the template parameter (a solver class)
+  /// are the same type. This function is a syntactic sugar, which is identical
+  /// to:
+  /// \code getType() == BoxedLcpSolver::getStaticType() \endcode.
   ///
   /// Example code:
   /// \code
-  /// auto shape = bodyNode->getShapeNode(0)->getShape();
-  /// if (shape->is<BoxShape>())
-  ///   std::cout << "The shape type is box!\n";
+  /// auto lcpSolver = constraintSolver->getBoxedLcpSolver();
+  /// if (shape->is<DantzigBoxedLcpSolver>())
+  ///   std::cout << "The LCP solver type is Dantzig!\n";
   /// \endcode
   ///
   /// \sa getType()
   template <typename BoxedLcpSolverT>
   bool is() const;
 
-  /// Solves constriant impulses for a constrained group
+  /// Solves constriant impulses for a constrained group. The LCP formulation
+  /// setting that this function solve is A*x = b + w where each x[i], w[i]
+  /// satisfies one of
+  ///   (1) x = lo, w >= 0
+  ///   (2) x = hi, w <= 0
+  ///   (3) lo < x < hi, w = 0
+  ///
+  /// \param[in] n Dimension of constraints.
+  /// \param[in] A A term of the LCP formulation.
+  /// \param[in] x x term of the LCP formulation.
+  /// \param[in] b b term of the LCP formulation.
+  /// \param[in] nub Number of the first unbounded constraints.
+  /// \param[in] lo Lower bound of x where it's restricted to be lo <= 0.
+  /// \param[in] hi Upper bound of x where it's enforced to be hi >= 0.
+  /// \param[in] findex Indices to corresponding normal contact constraint. Set
+  /// the index to itself (e.g., findex[k] = k) for normal contacts or
+  /// non-contact constraints. For friction constraint, set the cooresponding
+  /// normal contact constraint.
+  /// \param[in] earlyTermination Set true to return false as soon as the solver
+  /// find the solution doesn't exist. Otherwise, the solver will continue to
+  /// push hard to solve the problem using some hacks.
+  ///
+  /// \return Success.
   // Note: The function signature is ODE specific for now. Consider changing
   // this to Eigen friendly version once own Dantzig LCP solver is available.
-  virtual void solve(
+  virtual bool solve(
       int n,
       double* A,
       double* x,
@@ -74,7 +97,8 @@ public:
       int nub,
       double* lo,
       double* hi,
-      int* findex)
+      int* findex,
+      bool earlyTermination = false)
       = 0;
 
 #ifndef NDEBUG
