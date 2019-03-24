@@ -80,9 +80,6 @@ TEST(Issue892, LCPSolverShouldNotRetrunNanValues)
 
     if (i > 1100)
     {
-      const CollisionResult result = world->getLastCollisionResult();
-      EXPECT_TRUE(result.isCollision());
-
       auto angle1 = box1->getRootJoint()->getPosition(0);
       auto angle2 = box2->getRootJoint()->getPosition(0);
 
