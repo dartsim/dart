@@ -41,31 +41,44 @@ using namespace Eigen;
 using namespace dart;
 using namespace dart::dynamics;
 
-SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
-                                           Vector3d dim2, TypeOfDOF type2,
-                                           bool finished = true)
+SkeletonPtr createFreeFloatingTwoLinkRobot(
+    Vector3d dim1, Vector3d dim2, TypeOfDOF type2, bool finished = true)
 {
   SkeletonPtr robot = Skeleton::create();
 
   // Create the first link
   BodyNode::Properties node(BodyNode::AspectProperties("link1"));
-  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
+  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2) / 2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
 
-  BodyNode* parent_node = robot->createJointAndBodyNodePair<FreeJoint>(nullptr,
-    GenericJoint<SE3Space>::Properties(std::string("joint1")), node).second;
-  parent_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
-        shape);
+  BodyNode* parent_node
+      = robot
+            ->createJointAndBodyNodePair<FreeJoint>(
+                nullptr,
+                GenericJoint<SE3Space>::Properties(std::string("joint1")),
+                node)
+            .second;
+  parent_node
+      ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          shape);
 
   // Create the second link
   node = BodyNode::Properties(BodyNode::AspectProperties("link2"));
-  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
+  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2) / 2.0));
   shape = std::shared_ptr<Shape>(new BoxShape(dim2));
 
   std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
-        robot, parent_node, node, "joint2", 0.0, -constantsd::pi(), constantsd::pi(), type2);
-  pair2.second->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
-        shape);
+      robot,
+      parent_node,
+      node,
+      "joint2",
+      0.0,
+      -constantsd::pi(),
+      constantsd::pi(),
+      type2);
+  pair2.second
+      ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          shape);
 
   Joint* joint = pair2.first;
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -75,7 +88,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   parent_node = pair2.second;
 
   // If finished, initialize the skeleton
-  if(finished)
+  if (finished)
     addEndEffector(robot, parent_node, dim2);
 
   return robot;
@@ -83,7 +96,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 
 #if HAVE_NLOPT
 //==============================================================================
-//TEST(InverseKinematics, FittingTransformation)
+// TEST(InverseKinematics, FittingTransformation)
 //{
 //  const double TOLERANCE = 1e-6;
 //#if BUILD_TYPE_RELEASE
@@ -107,7 +120,8 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 ////  Joint* joint1 = body1->getParentJoint();
 //  Joint* joint2 = body2->getParentJoint();
 
-//  //------------------------- Free joint test ----------------------------------
+//  //------------------------- Free joint test
+//  ----------------------------------
 //  // The parent joint of body1 is free joint so body1 should be able to
 //  // transform to arbitrary tramsformation.
 //  for (std::size_t i = 0; i < numRandomTests; ++i)
@@ -125,7 +139,8 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //    robot->setConfigs(oldConfig, true, false, false);
 //  }
 
-//  //----------------------- Revolute joint test ---------------------------------
+//  //----------------------- Revolute joint test
+//  ---------------------------------
 //  // The parent joint of body2 is revolute joint so body2 can rotate along the
 //  // axis of the revolute joint.
 //  for (std::size_t i = 0; i < numRandomTests; ++i)
@@ -154,8 +169,8 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //                0.0, TOLERANCE);
 //  }
 
-//  //---------------- Revolute joint test with joint limit ----------------------
-//  for (std::size_t i = 0; i < numRandomTests; ++i)
+//  //---------------- Revolute joint test with joint limit
+//  ---------------------- for (std::size_t i = 0; i < numRandomTests; ++i)
 //  {
 //    // Set joint limit
 //    joint2->setPositionLowerLimit(0, DART_RADIAN *  0.0);
@@ -167,9 +182,9 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 
 //    // Get desiredT2 by rotating the revolute joint with random angle out of
 //    // the joint limit range
-//    joint2->setPosition(0, math::random(DART_RADIAN * 15.5, constantsd::pi()));
-//    robot->setConfigs(robot->getPositions(), true, false, false);
-//    Isometry3d desiredT2 = body2->getWorldTransform();
+//    joint2->setPosition(0, math::random(DART_RADIAN * 15.5,
+//    constantsd::pi())); robot->setConfigs(robot->getPositions(), true, false,
+//    false); Isometry3d desiredT2 = body2->getWorldTransform();
 
 //    // Transform body2 to the original transofrmation and check if it is done
 //    // well
@@ -197,7 +212,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //}
 
 //==============================================================================
-//TEST(InverseKinematics, FittingVelocity)
+// TEST(InverseKinematics, FittingVelocity)
 //{
 //  const double TOLERANCE = 1e-4;
 //#if BUILD_TYPE_RELEASE
@@ -219,7 +234,8 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //  Joint* joint1 = body1->getParentJoint();
 ////  Joint* joint2 = body2->getParentJoint();
 
-//  //------------------------- Free joint test ----------------------------------
+//  //------------------------- Free joint test
+//  ----------------------------------
 //  // The parent joint of body1 is free joint so body1 should be able to
 //  // transform to arbitrary tramsformation.
 //  for (std::size_t i = 0; i < numRandomTests; ++i)
@@ -248,3 +264,95 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //  }
 //}
 #endif
+
+//==============================================================================
+TEST(InverseKinematics, SolveForFreeJoint)
+{
+  // Very simple test of InverseKinematics module, applied to a FreeJoint to
+  // ensure that the target is reachable
+
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+
+  std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
+
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);
+  tf.rotate(Eigen::AngleAxisd(M_PI / 8, Eigen::Vector3d(0, 1, 0)));
+  ik->getTarget()->setTransform(tf);
+
+  ik->getErrorMethod().setBounds(
+      Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
+
+  ik->getSolver()->setNumMaxIterations(100);
+
+  EXPECT_FALSE(equals(
+      ik->getTarget()->getTransform().matrix(),
+      skel->getBodyNode(0)->getTransform().matrix(),
+      1e-1));
+
+  EXPECT_TRUE(ik->getSolver()->solve());
+
+  EXPECT_TRUE(equals(
+      ik->getTarget()->getTransform().matrix(),
+      skel->getBodyNode(0)->getTransform().matrix(),
+      1e-8));
+}
+
+//==============================================================================
+class FailingSolver : public optimizer::Solver
+{
+public:
+  FailingSolver(double constant) : mConstant(constant)
+  {
+    // Do nothing
+  }
+
+  bool solve() override
+  {
+    std::shared_ptr<optimizer::Problem> problem = mProperties.mProblem;
+    if (nullptr == problem)
+    {
+      dtwarn << "[FailingSolver::solve] Attempting to solve a nullptr "
+             << "problem! We will return false.\n";
+      return false;
+    }
+
+    const auto dim = problem->getDimension();
+    const Eigen::VectorXd wrongSolution
+        = Eigen::VectorXd::Constant(static_cast<int>(dim), mConstant);
+    problem->setOptimalSolution(wrongSolution);
+
+    return false;
+  }
+
+  std::string getType() const override
+  {
+    return "FailingSolver";
+  }
+
+  std::shared_ptr<Solver> clone() const override
+  {
+    return std::make_shared<FailingSolver>(mConstant);
+  }
+
+protected:
+  double mConstant;
+};
+
+//==============================================================================
+TEST(InverseKinematics, DoNotApplySolutionOnFailure)
+{
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+
+  std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
+  ik->setSolver(std::make_shared<FailingSolver>(10));
+  ik->getTarget()->setTransform(Eigen::Isometry3d::Identity());
+
+  const auto dofs = static_cast<int>(skel->getNumDofs());
+  skel->resetPositions();
+
+  EXPECT_FALSE(ik->solve(false));
+  EXPECT_TRUE(equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+}

@@ -56,5 +56,6 @@ if(TARGET dart-utils)
 endif()
 
 dart_format_add(
+  test_InverseKinematics.cpp
   test_MultiObjectiveOptimization.cpp
 )
