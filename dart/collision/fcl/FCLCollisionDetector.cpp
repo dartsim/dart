@@ -667,7 +667,7 @@ FCLCollisionDetector::~FCLCollisionDetector()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-FCLCollisionDetector::cloneWithoutCollisionObjects()
+FCLCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return FCLCollisionDetector::create();
 }

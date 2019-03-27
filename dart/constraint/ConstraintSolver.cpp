@@ -78,9 +78,20 @@ ConstraintSolver::ConstraintSolver(double timeStep)
 }
 
 //==============================================================================
-ConstraintSolver::~ConstraintSolver()
+ConstraintSolver::ConstraintSolver()
+  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+    mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
+    mCollisionOption(
+      collision::CollisionOption(
+        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>()))
 {
-  // Do nothing
+  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+        mCollisionDetector);
+
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
+  // incorrect contact point computation.
+  // (see: https://github.com/flexible-collision-library/fcl/issues/106)
 }
 
 //==============================================================================

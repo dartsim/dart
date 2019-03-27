@@ -242,7 +242,10 @@ public:
   void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
 
   /// Get the constraint solver
-  constraint::ConstraintSolver* getConstraintSolver() const;
+  constraint::ConstraintSolver* getConstraintSolver();
+
+  /// Get the constraint solver
+  const constraint::ConstraintSolver* getConstraintSolver() const;
 
   /// Bake simulated current state and store it into mRecording
   void bake();
