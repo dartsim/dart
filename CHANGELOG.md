@@ -4,6 +4,10 @@
 
 #### Changes
 
+* Kinematics
+
+  * Fixed applying IK solution when the solver failed to solve: [#1266](https://github.com/dartsim/dart/pull/1266)
+
 * Dynamics
 
   * Fixed incorrect transpose check in Inertia::verifySpatialTensor(): [#1258](https://github.com/dartsim/dart/pull/1258)
