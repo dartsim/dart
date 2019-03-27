@@ -92,21 +92,17 @@ bool InverseKinematics::solve(bool _applySolution)
   // Many GradientMethod implementations use Joint::integratePositions, so we
   // need to clear out any velocities that might be in the Skeleton and then
   // reset those velocities later. This has been opened as issue #699.
-  Eigen::VectorXd originalVelocities = skel->getVelocities();
-  for(std::size_t i=0; i < skel->getNumDofs(); ++i)
-    skel->getDof(i)->setVelocity(0.0);
+  const Eigen::VectorXd originalVelocities = skel->getVelocities();
+  skel->resetVelocities();
 
-  if(_applySolution)
-  {
-    bool wasSolved = mSolver->solve();
+  const Eigen::VectorXd originalPositions = getPositions();
+  const bool wasSolved = mSolver->solve();
+
+  if(wasSolved && _applySolution)
     setPositions(mProblem->getOptimalSolution());
-    skel->setVelocities(originalVelocities);
-    return wasSolved;
-  }
+  else
+    setPositions(originalPositions);
 
-  Eigen::VectorXd originalPositions = getPositions();
-  bool wasSolved = mSolver->solve();
-  setPositions(originalPositions);
   skel->setVelocities(originalVelocities);
   return wasSolved;
 }
