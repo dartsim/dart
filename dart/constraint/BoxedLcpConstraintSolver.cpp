@@ -62,7 +62,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
-  : BoxedLcpConstraintSolver(std::make_shared<PgsBoxedLcpSolver>())
+  : BoxedLcpConstraintSolver(std::make_shared<DantzigBoxedLcpSolver>())
 {
   // Do nothing
 }

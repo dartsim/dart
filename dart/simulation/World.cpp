@@ -542,8 +542,8 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
     return;
   }
 
-  assert(mConstraintSolver);
-  solver->setFromOtherConstraintSolver(*mConstraintSolver);
+  if (mConstraintSolver)
+    solver->setFromOtherConstraintSolver(*mConstraintSolver);
 
   mConstraintSolver = std::move(solver);
   mConstraintSolver->setTimeStep(mTimeStep);

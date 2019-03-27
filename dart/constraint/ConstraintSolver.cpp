@@ -83,7 +83,8 @@ ConstraintSolver::ConstraintSolver()
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(
       collision::CollisionOption(
-        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>()))
+        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
+    mTimeStep(0.001)
 {
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
         mCollisionDetector);
