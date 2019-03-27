@@ -121,9 +121,10 @@ public:
   /// InverseKinematics::getProblem() and then using
   /// Problem::addSeed(Eigen::VectorXd).
   ///
-  /// By default, the Skeleton itself will retain the solved joint positions.
-  /// If you pass in false for _applySolution, then the joint positions will be
-  /// returned to their original positions after the problem is solved.
+  /// By default, the Skeleton itself will retain the solved joint positions
+  /// unless it failed to solve. If you pass in false for _applySolution, then
+  /// the joint positions will be returned to their original positions after the
+  /// problem is solved.
   ///
   /// Calling this function will automatically call Position::setLowerBounds(~)
   /// and Position::setUpperBounds(~) with the lower/upper position bounds of
