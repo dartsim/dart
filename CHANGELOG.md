@@ -6,7 +6,7 @@
 
 * Kinematics
 
-  * Fixed applying IK solution when the solver failed to solve: [#1266](https://github.com/dartsim/dart/pull/1266)
+  * Added findSolution() and solveAndApply() to InverseKinematics and HierarchicalIk classes and deprecated solve(~) member functions: [#1266](https://github.com/dartsim/dart/pull/1266)
 
 * Dynamics
 
