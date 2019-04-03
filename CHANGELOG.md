@@ -27,7 +27,7 @@
 
 * Parsers
 
-  * Made multi-tree robot in URDF as warning: [#1270](https://github.com/dartsim/dart/pull/1270)
+  * Changed urdf parser to warn if robot model has multi-tree: [#1270](https://github.com/dartsim/dart/pull/1270)
 
 * Build System
 
