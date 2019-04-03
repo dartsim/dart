@@ -95,6 +95,21 @@ public:
   /// Remove all constraints
   void removeAllConstraints();
 
+  /// Returns the number of constraints that was manually added to this ConstraintSolver.
+  std::size_t getNumConstraints() const;
+
+  /// Returns a constraint by index.
+  constraint::ConstraintBasePtr getConstraint(std::size_t index);
+
+  /// Returns a constraint by index.
+  constraint::ConstConstraintBasePtr getConstraint(std::size_t index) const;
+
+  /// Returns all the constraints added to this ConstraintSolver.
+  std::vector<constraint::ConstraintBasePtr> getConstraints();
+
+  /// Returns all the constraints added to this ConstraintSolver.
+  std::vector<constraint::ConstConstraintBasePtr> getConstraints() const;
+
   /// Clears the last collision result
   void clearLastCollisionResult();
 
@@ -152,6 +167,10 @@ public:
 
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
+
+  /// Sets this constraint solver using other constraint solver. All the
+  /// properties and registered skeletons and constraints will be copied over.
+  virtual void setFromOtherConstraintSolver(const ConstraintSolver& other);
 
 protected:
   // TODO(JS): Docstring
