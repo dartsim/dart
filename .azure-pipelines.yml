@@ -10,7 +10,7 @@ jobs:
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
-    SUDO: sudo
+    DOCKERFILE: Dockerfile.ubuntu-xenial
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
