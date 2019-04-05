@@ -36,6 +36,17 @@
   * Fixed attempting to link octomap when not imported: [#1253](https://github.com/dartsim/dart/pull/1253)
   * Fixed not defining boost targets: [#1254](https://github.com/dartsim/dart/pull/1254)
 
+#### Compilers Tested
+
+* Linux
+
+  * GCC 64-bit: 5.4.0, 7.3.0, 8.2.0
+  * GCC 32-bit: 5.4.0
+
+* macOS
+
+  * AppleClang: 9.1.0, 10.0.0
+
 ### [DART 6.7.3 (2019-02-19)](https://github.com/dartsim/dart/milestone/51?closed=1)
 
 #### Changes
