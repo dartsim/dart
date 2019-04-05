@@ -12,7 +12,7 @@ jobs:
     BUILD_DIR: $(Build.SourcesDirectory)
     SUDO: sudo
   steps:
-  - template: .ci/azure-pipelines/native.yml
+  - template: .ci/azure-pipelines/docker.yml
 
 - job: xenial_32bit_gcc_release
   pool:
