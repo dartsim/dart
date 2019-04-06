@@ -127,6 +127,27 @@ public:
     /// entry in mTargets) will be halted if it reaches any entry in mTerminal
     std::vector<Terminal> mTerminals;
 
+    /// Constructs an empty criteria that will lead to creating an empty Linkage
+    Criteria() = default;
+
+    /// Utility constructor to create a contiguous sequence of BodyNodes that
+    /// doesn't include branches in it.
+    ///
+    /// The start and target can be interchangeably set if both are included in
+    /// the sequence.
+    ///
+    /// \param[in] start The first BodyNode in the sequence. If \c nullptr is
+    /// passed the sequence will expand from \c target to the root.
+    /// \param[in] target The second BodyNode in the sequence. If \c nullptr is
+    /// passed the sequence will expand from \c start to the root.
+    /// \param[in] includeBoth Set this to true if both \c start and \c target
+    /// should be included. Otherwise, whichever is upstream of the other will
+    /// be left out of the sequence.
+    Criteria(
+        BodyNode* start,
+        BodyNode* target,
+        bool includeBoth = false);
+
   protected:
 
     /// Refresh the content of mMapOfTerminals
