@@ -45,6 +45,13 @@ matrix:
         - BUILD_NAME=XCODE94_RELEASE
         - BUILD_TYPE=Release
         - COMPILER=CLANG
+    - os: osx
+      osx_image: xcode10.2
+      compiler: clang
+      env:
+        - BUILD_NAME=XCODE102_RELEASE
+        - BUILD_TYPE=Release
+        - COMPILER=CLANG
     - os: linux
       env:
         - BUILD_DOCS=ON
