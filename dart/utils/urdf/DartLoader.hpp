@@ -126,17 +126,18 @@ private:
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
     typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
 
+    /// Parses the ModelInterface and spits out a Skeleton object
     static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
-      const urdf::ModelInterface* _model,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever);
+      const urdf::ModelInterface* model,
+      const common::Uri& baseUri,
+      const common::ResourceRetrieverPtr& resourceRetriever);
 
     static bool createSkeletonRecursive(
       const urdf::ModelInterface* model,
-      dynamics::SkeletonPtr _skel,
-      const urdf::Link* _lk,
-      dynamics::BodyNode* _parent,
-      const common::Uri& _baseUri,
+      dynamics::SkeletonPtr skel,
+      const urdf::Link* lk,
+      dynamics::BodyNode* parent,
+      const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
     static bool addMimicJointsRecursive(

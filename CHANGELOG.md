@@ -29,6 +29,10 @@
 
   * Added (experimental) Python binding: [#1237](https://github.com/dartsim/dart/pull/1237)
 
+* Parsers
+
+  * Changed urdf parser to warn if robot model has multi-tree: [#1270](https://github.com/dartsim/dart/pull/1270)
+
 * Build System
 
   * Changed to use GNUInstallDirs for install paths: [#1241](https://github.com/dartsim/dart/pull/1241)
