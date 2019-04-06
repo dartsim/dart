@@ -813,7 +813,7 @@ public:
       mHubo->getJoint(0)->setPositions(FreeJoint::convertToPositions(new_tf));
     }
 
-    mHubo->getIK(true)->solve();
+    mHubo->getIK(true)->solveAndApply(true);
   }
 
   bool mAmplifyMovement;
