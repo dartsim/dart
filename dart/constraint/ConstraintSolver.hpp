@@ -39,6 +39,7 @@
 
 #include "dart/common/Deprecated.hpp"
 #include "dart/constraint/SmartPointer.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/collision/CollisionDetector.hpp"
 
@@ -56,9 +57,19 @@ class ConstraintSolver
 {
 public:
   /// Constructor
+  ///
+  /// \deprecated Deprecated in DART 6.8. Please use other constructors that
+  /// doesn't take timespte. Timestep should be set by the owner of this solver
+  /// such as dart::simulation::World when the solver added.
+  DART_DEPRECATED(6.8)
   explicit ConstraintSolver(double timeStep);
+
   // TODO(JS): Remove timeStep. The timestep can be set by world when a
   // constraint solver is assigned to a world.
+  // Deprecate
+
+  /// Default constructor
+  ConstraintSolver();
 
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to
@@ -66,7 +77,7 @@ public:
   ConstraintSolver(const ConstraintSolver& other) = delete;
 
   /// Destructor
-  virtual ~ConstraintSolver();
+  virtual ~ConstraintSolver() = default;
 
   /// Add single skeleton
   void addSkeleton(const dynamics::SkeletonPtr& skeleton);
@@ -114,7 +125,7 @@ public:
   void clearLastCollisionResult();
 
   /// Set time step
-  void setTimeStep(double _timeStep);
+  virtual void setTimeStep(double _timeStep);
 
   /// Get time step
   double getTimeStep() const;

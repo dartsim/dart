@@ -73,7 +73,8 @@ const std::string& PgsBoxedLcpSolver::getStaticType()
   return type;
 }
 
-void PgsBoxedLcpSolver::solve(
+//==============================================================================
+bool PgsBoxedLcpSolver::solve(
     int n,
     double* A,
     double* x,
@@ -81,7 +82,8 @@ void PgsBoxedLcpSolver::solve(
     int nub,
     double* lo,
     double* hi,
-    int* findex)
+    int* findex,
+    bool /*earlyTermination*/)
 {
   const int nskip = dPAD(n);
 
@@ -96,7 +98,7 @@ void PgsBoxedLcpSolver::solve(
     dSolveLDLT(A, mCacheD.data(), b, n, nskip);
     std::memcpy(x, b, n * sizeof(double));
 
-    return;
+    return true;
   }
 
   mCacheOrder.clear();
@@ -161,8 +163,7 @@ void PgsBoxedLcpSolver::solve(
 
   if (possibleToTerminate)
   {
-    // return true;
-    return;
+    return true;
   }
 
   // Normalizing
@@ -240,9 +241,7 @@ void PgsBoxedLcpSolver::solve(
       break;
   }
 
-  // return sentinel; // TODO(JS): Consider providing the result passing
-  // sentinel
-  // in it.
+  return possibleToTerminate;
 }
 
 #ifndef NDEBUG

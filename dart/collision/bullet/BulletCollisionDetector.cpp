@@ -109,7 +109,7 @@ BulletCollisionDetector::~BulletCollisionDetector()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-BulletCollisionDetector::cloneWithoutCollisionObjects()
+BulletCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return BulletCollisionDetector::create();
 }
