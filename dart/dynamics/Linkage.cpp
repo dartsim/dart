@@ -125,7 +125,8 @@ Linkage::Criteria::Terminal::Terminal(BodyNode* _terminal, bool _inclusive)
 }
 
 //==============================================================================
-Linkage::Criteria::Criteria(BodyNode* start, BodyNode* target, bool includeBoth)
+Linkage::Criteria::Criteria(
+    BodyNode* start, BodyNode* target, bool includeUpstreamParentJoint)
 {
   mStart.mNode = start;
   mStart.mPolicy = Linkage::Criteria::INCLUDE;
@@ -135,7 +136,7 @@ Linkage::Criteria::Criteria(BodyNode* start, BodyNode* target, bool includeBoth)
   endPoint.mChain = false;
   endPoint.mPolicy = Linkage::Criteria::INCLUDE;
 
-  if (!includeBoth)
+  if (!includeUpstreamParentJoint)
   {
     if(endPoint.mNode.lock() &&
        endPoint.mNode.lock()->descendsFrom(mStart.mNode.lock()))

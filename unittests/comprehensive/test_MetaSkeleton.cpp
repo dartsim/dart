@@ -412,7 +412,8 @@ TEST(MetaSkeleton, Linkage)
   EXPECT_TRUE( count == combinedSkelBases->getNumBodyNodes() );
 
   ChainPtr downstreamFreeJoint = Chain::create(skel->getBodyNode("c1b1"),
-      skel->getBodyNode("c1b3"), Chain::IncludeBoth, "downstreamFreeJoint");
+      skel->getBodyNode("c1b3"), Chain::IncludeUpstreamParentJoint,
+      "downstreamFreeJoint");
   checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
   checkLinkageJointConsistency(downstreamFreeJoint);
 

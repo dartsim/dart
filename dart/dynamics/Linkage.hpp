@@ -140,13 +140,12 @@ public:
     /// passed the sequence will expand from \c target to the root.
     /// \param[in] target The second BodyNode in the sequence. If \c nullptr is
     /// passed the sequence will expand from \c start to the root.
-    /// \param[in] includeBoth Set this to true if both \c start and \c target
-    /// should be included. Otherwise, whichever is upstream of the other will
-    /// be left out of the sequence.
+    /// \param[in] includeUpstreamParentJoint Set this to true if the parent
+    /// joint of whichever is upstream of the other should be included.
     Criteria(
         BodyNode* start,
         BodyNode* target,
-        bool includeBoth = false);
+        bool includeUpstreamParentJoint = false);
 
   protected:
 
