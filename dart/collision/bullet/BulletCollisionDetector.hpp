@@ -61,7 +61,8 @@ public:
   virtual ~BulletCollisionDetector();
 
   // Documentation inherited
-  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() override;
+  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() const
+  override;
 
   // Documentation inherited
   const std::string& getType() const override;

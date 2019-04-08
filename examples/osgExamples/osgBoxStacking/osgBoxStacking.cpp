@@ -358,21 +358,21 @@ protected:
       //         mWorld->getTimeStep());
       auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
       auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
-          mWorld->getTimeStep(), lcpSolver);
+          lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else if (solverType == 1)
     {
       auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
       auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
-          mWorld->getTimeStep(), lcpSolver);
+          lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else if (solverType == 2)
     {
       auto lcpSolver = std::make_shared<constraint::PgsBoxedLcpSolver>();
       auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
-          mWorld->getTimeStep(), lcpSolver);
+          lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else

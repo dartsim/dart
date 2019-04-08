@@ -11,6 +11,7 @@
 * Dynamics
 
   * Fixed incorrect transpose check in Inertia::verifySpatialTensor(): [#1258](https://github.com/dartsim/dart/pull/1258)
+  * Allowed BoxedLcpConstraintSolver to have a secondary LCP solver: [#1265](https://github.com/dartsim/dart/pull/1265)
 
 * Simulation
 

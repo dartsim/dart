@@ -74,7 +74,7 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-DARTCollisionDetector::cloneWithoutCollisionObjects()
+DARTCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return DARTCollisionDetector::create();
 }

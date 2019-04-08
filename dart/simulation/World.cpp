@@ -45,6 +45,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/integration/SemiImplicitEulerIntegrator.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 
@@ -66,12 +67,13 @@ World::World(const std::string& _name)
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
-    mConstraintSolver(
-      new constraint::BoxedLcpConstraintSolver(mTimeStep)),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
 {
   mIndices.push_back(0);
+
+  auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>();
+  setConstraintSolver(std::move(solver));
 }
 
 //==============================================================================
@@ -131,16 +133,18 @@ WorldPtr World::clone() const
 //==============================================================================
 void World::setTimeStep(double _timeStep)
 {
-  assert(_timeStep > 0.0 && "Invalid timestep.");
+  if (_timeStep <= 0.0)
+  {
+    dtwarn << "[World] Attempting to set negative timestep. Ignoring this "
+           << "request because it can lead to undefined behavior.\n";
+    return;
+  }
 
   mTimeStep = _timeStep;
-//  mConstraintHandler->setTimeStep(_timeStep);
+  assert(mConstraintSolver);
   mConstraintSolver->setTimeStep(_timeStep);
-  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    (*it)->setTimeStep(_timeStep);
-  }
+  for (auto& skel : mSkeletons)
+    skel->setTimeStep(_timeStep);
 }
 
 //==============================================================================
@@ -538,14 +542,21 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
     return;
   }
 
-  assert(mConstraintSolver);
-  solver->setFromOtherConstraintSolver(*mConstraintSolver);
+  if (mConstraintSolver)
+    solver->setFromOtherConstraintSolver(*mConstraintSolver);
 
   mConstraintSolver = std::move(solver);
+  mConstraintSolver->setTimeStep(mTimeStep);
 }
 
 //==============================================================================
-constraint::ConstraintSolver* World::getConstraintSolver() const
+constraint::ConstraintSolver* World::getConstraintSolver()
+{
+  return mConstraintSolver.get();
+}
+
+//==============================================================================
+const constraint::ConstraintSolver* World::getConstraintSolver() const
 {
   return mConstraintSolver.get();
 }

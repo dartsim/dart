@@ -30,49 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include <TestHelpers.hpp>
+#include <dart/dart.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
+#include <gtest/gtest.h>
 
-#include "dart/external/odelcpsolver/lcp.h"
-
-namespace dart {
-namespace constraint {
+using namespace dart::collision;
+using namespace dart::dynamics;
+using namespace dart::simulation;
 
 //==============================================================================
-const std::string& DantzigBoxedLcpSolver::getType() const
+SkeletonPtr createBox(double offset, double angle, std::string name)
 {
-  return getStaticType();
+  SkeletonPtr box = Skeleton::create(name);
+  RevoluteJoint::Properties props;
+  props.mAxis = Eigen::Vector3d::UnitY();
+  props.mT_ParentBodyToJoint.translation() = Eigen::Vector3d(offset, 0.0, 0.0);
+  props.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(0.0, 0.0, -0.4);
+
+  BodyNode* bn
+      = box->createJointAndBodyNodePair<RevoluteJoint>(nullptr, props).second;
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.1, 1.0));
+  bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+
+  box->getDof(0)->setPosition(-angle);
+
+  return box;
 }
 
 //==============================================================================
-const std::string& DantzigBoxedLcpSolver::getStaticType()
+TEST(Issue892, LCPSolverShouldNotRetrunNanValues)
 {
-  static const std::string type = "DantzigBoxedLcpSolver";
-  return type;
-}
+  // Set more than 1100 steps so that the two boxes are in contact.
+  const auto numSteps = 2000u;
 
-//==============================================================================
-bool DantzigBoxedLcpSolver::solve(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    int /*nub*/,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  return dSolveLCP(n, A, x, b, nullptr, 0, lo, hi, findex, earlyTermination);
-}
+  auto box1 = createBox(+0.4, +0.1, "box0");
+  auto box2 = createBox(-0.4, -0.1, "box1");
 
-#ifndef NDEBUG
-//==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
-{
-  // TODO(JS): Not implemented.
-  return true;
-}
-#endif
+  WorldPtr world = World::create();
+  world->addSkeleton(box1);
+  world->addSkeleton(box2);
 
-} // namespace constraint
-} // namespace dart
+  for (auto i = 0u; i < numSteps; ++i)
+  {
+    world->step();
+    EXPECT_FALSE(box1->getRootJoint()->getPositions().hasNaN());
+    EXPECT_FALSE(box2->getRootJoint()->getPositions().hasNaN());
+
+    if (i > 1100)
+    {
+      auto angle1 = box1->getRootJoint()->getPosition(0);
+      auto angle2 = box2->getRootJoint()->getPosition(0);
+
+      EXPECT_NEAR(angle1, -0.345858, 0.1);
+      EXPECT_NEAR(angle2, +0.345858, 0.1);
+    }
+  }
+}
