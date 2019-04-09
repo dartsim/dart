@@ -777,8 +777,8 @@ void dLCP::unpermute()
 //***************************************************************************
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
 
-void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
-                dReal *outer_w/*=nullptr*/, int nub, dReal *lo, dReal *hi, int *findex)
+bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
+                dReal *outer_w/*=nullptr*/, int nub, dReal *lo, dReal *hi, int *findex, bool earlyTermination)
 {
   dAASSERT (n>0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
 # ifndef dNODEBUG
@@ -800,7 +800,8 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
     dSolveLDLT (A, d, b, n, nskip);
     memcpy (x, b, n*sizeof(dReal));
 
-    return;
+    delete[] d;
+    return true;
   }
 
   const int nskip = dPAD(n);
@@ -1005,6 +1006,26 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
         // our fingers and exit with the current solution.
         if (s <= REAL(0.0)) {
 
+          if (earlyTermination) {
+            if (!outer_w)
+              delete[] w;
+            delete[] L;
+            delete[] d;
+            delete[] delta_w;
+            delete[] delta_x;
+            delete[] Dell;
+            delete[] ell;
+          #ifdef ROWPTRS
+            delete[] Arows;
+          #endif
+            delete[] p;
+            delete[] C;
+
+            delete[] state;
+
+            return false;
+          }
+
           // We shouldn't be overly aggressive about printing this warning,
           // because sometimes it gets spammed if s is just a tiny bit beneath
           // 0.0.
@@ -1088,6 +1109,8 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
   delete[] C;
 
   delete[] state;
+
+  return true;
 }
 
 size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)

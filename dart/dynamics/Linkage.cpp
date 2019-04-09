@@ -125,6 +125,36 @@ Linkage::Criteria::Terminal::Terminal(BodyNode* _terminal, bool _inclusive)
 }
 
 //==============================================================================
+Linkage::Criteria::Criteria(
+    BodyNode* start, BodyNode* target, bool includeUpstreamParentJoint)
+{
+  mStart.mNode = start;
+  mStart.mPolicy = Linkage::Criteria::INCLUDE;
+
+  Target endPoint;
+  endPoint.mNode = target;
+  endPoint.mChain = false;
+  endPoint.mPolicy = Linkage::Criteria::INCLUDE;
+
+  if (!includeUpstreamParentJoint)
+  {
+    if(endPoint.mNode.lock() &&
+       endPoint.mNode.lock()->descendsFrom(mStart.mNode.lock()))
+    {
+      mStart.mPolicy = Linkage::Criteria::EXCLUDE;
+    }
+
+    if (mStart.mNode.lock() &&
+       mStart.mNode.lock()->descendsFrom(endPoint.mNode.lock()))
+    {
+      endPoint.mPolicy = Linkage::Criteria::EXCLUDE;
+    }
+  }
+
+  mTargets.push_back(endPoint);
+}
+
+//==============================================================================
 void Linkage::Criteria::refreshTerminalMap() const
 {
   mMapOfTerminals.clear();

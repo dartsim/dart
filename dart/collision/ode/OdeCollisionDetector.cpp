@@ -127,7 +127,7 @@ OdeCollisionDetector::~OdeCollisionDetector()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-OdeCollisionDetector::cloneWithoutCollisionObjects()
+OdeCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return OdeCollisionDetector::create();
 }

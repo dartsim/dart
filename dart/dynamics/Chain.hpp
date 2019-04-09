@@ -50,7 +50,10 @@ public:
   struct Criteria
   {
     /// Constructor for Chain::Criteria
-    Criteria(BodyNode* _start, BodyNode* _target, bool _includeBoth = false);
+    Criteria(
+      BodyNode* start,
+      BodyNode* target,
+      bool includeUpstreamParentJoint = false);
 
     /// Return a vector of BodyNodes that form a chain
     std::vector<BodyNode*> satisfy() const;
@@ -62,10 +65,9 @@ public:
     /// branching or a FreeJoint along the way
     WeakBodyNodePtr mTarget;
 
-    /// Set this to true if both the start and the target BodyNode should be
-    /// included. Otherwise, whichever is upstream of the other will be left out
-    /// of the chain.
-    bool mIncludeBoth;
+    /// Set this to true if the parent joint of whichever is upstream of the
+    /// other should be included.
+    bool mIncludeUpstreamParentJoint;
 
     /// Convert this Criteria into Linkage::Criteria
     Linkage::Criteria convert() const;
@@ -77,10 +79,10 @@ public:
     static Criteria convert(const Linkage::Criteria& criteria);
   };
 
-  /// This enum is used to specify to the create() function that both the start
-  /// and the target BodyNodes should be included in the Chain that gets
-  /// generated.
-  enum IncludeBothTag { IncludeBoth };
+  /// This enum is used to specify to the create() function that the parent
+  /// joint of whichever is upstream of the other should be included in the
+  /// Chain that gets generated.
+  enum IncludeUpstreamParentJointTag { IncludeUpstreamParentJoint };
 
   /// Create a Chain given some Chain::Criteria
   static ChainPtr create(const Chain::Criteria& _criteria,
@@ -93,8 +95,11 @@ public:
 
   /// Create a Chain given a start and a target BodyNode. In this version, both
   /// BodyNodes will be included in the Chain that gets created.
-  static ChainPtr create(BodyNode* _start, BodyNode* _target,
-                         IncludeBothTag, const std::string& _name = "Chain");
+  static ChainPtr create(
+      BodyNode* _start,
+      BodyNode* _target,
+      IncludeUpstreamParentJointTag,
+      const std::string& _name = "Chain");
 
   /// Creates and returns a clone of this Chain.
   ChainPtr cloneChain() const;
@@ -123,7 +128,7 @@ protected:
 
   /// Alternative constructor for the Chain class
   Chain(BodyNode* _start, BodyNode* _target,
-        IncludeBothTag, const std::string& _name = "Chain");
+        IncludeUpstreamParentJointTag, const std::string& _name = "Chain");
 
 };
 

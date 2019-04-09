@@ -7,10 +7,12 @@
 * Kinematics
 
   * Added findSolution() and solveAndApply() to InverseKinematics and HierarchicalIk classes and deprecated solve(~) member functions: [#1266](https://github.com/dartsim/dart/pull/1266)
+  * Added an utility constructor to Linkage::Criteria to create sequence Linkage: [#1273](https://github.com/dartsim/dart/pull/1273)
 
 * Dynamics
 
   * Fixed incorrect transpose check in Inertia::verifySpatialTensor(): [#1258](https://github.com/dartsim/dart/pull/1258)
+  * Allowed BoxedLcpConstraintSolver to have a secondary LCP solver: [#1265](https://github.com/dartsim/dart/pull/1265)
 
 * Simulation
 
