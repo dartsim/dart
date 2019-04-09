@@ -200,7 +200,7 @@ public:
   /// getting a result close to a solution even if it failed to find the
   /// solution.
   /// \return True if a solution is successfully found
-  bool solveAndApply(bool allowIncompleteResult = false);
+  bool solveAndApply(bool allowIncompleteResult = true);
 
   /// Identical to solveAndApply(bool), but \c position will be filled with the
   /// solved positions.
@@ -216,7 +216,7 @@ public:
   /// solution.
   /// \return True if a solution is successfully found
   bool solveAndApply(
-      Eigen::VectorXd& positions, bool allowIncompleteResult = false);
+      Eigen::VectorXd& positions, bool allowIncompleteResult = true);
 
   /// Clone this IK module, but targeted at a new Node. Any Functions in the
   /// Problem that inherit InverseKinematics::Function will be adapted to the
