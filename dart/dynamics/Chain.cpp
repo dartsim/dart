@@ -37,11 +37,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Chain::Criteria::Criteria(BodyNode* _start, BodyNode* _target,
-                          bool _includeBoth)
-  : mStart(_start),
-    mTarget(_target),
-    mIncludeBoth(_includeBoth)
+Chain::Criteria::Criteria(BodyNode* start, BodyNode* target,
+                          bool includeUpstreamParentJoint)
+  : mStart(start),
+    mTarget(target),
+    mIncludeUpstreamParentJoint(includeUpstreamParentJoint)
 {
   // Do nothing
 }
@@ -64,7 +64,7 @@ Linkage::Criteria Chain::Criteria::convert() const
   target.mChain = true;
   target.mPolicy = Linkage::Criteria::INCLUDE;
 
-  if(!mIncludeBoth)
+  if(!mIncludeUpstreamParentJoint)
   {
     if(target.mNode.lock() &&
        target.mNode.lock()->descendsFrom(criteria.mStart.mNode.lock()))
@@ -115,14 +115,14 @@ Chain::Criteria Chain::Criteria::convert(const Linkage::Criteria& criteria)
     return Chain::Criteria(nullptr, nullptr);
   }
 
-  bool includeBoth = true;
+  bool includeUpstreamParentJoint = true;
   if (criteria.mStart.mPolicy != Linkage::Criteria::INCLUDE)
-    includeBoth = false;
+    includeUpstreamParentJoint = false;
   if (target.mPolicy != Linkage::Criteria::INCLUDE)
-    includeBoth = false;
+    includeUpstreamParentJoint = false;
 
   return Chain::Criteria(
-      startBodyNode.get(), targetBodyNode.get(), includeBoth);
+      startBodyNode.get(), targetBodyNode.get(), includeUpstreamParentJoint);
 }
 
 //==============================================================================
@@ -151,9 +151,9 @@ ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
 
 //==============================================================================
 ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
-                       IncludeBothTag, const std::string& _name)
+                       IncludeUpstreamParentJointTag, const std::string& _name)
 {
-  ChainPtr chain(new Chain(_start, _target, IncludeBoth, _name));
+  ChainPtr chain(new Chain(_start, _target, IncludeUpstreamParentJoint, _name));
   chain->mPtr = chain;
   return chain;
 }
@@ -243,7 +243,7 @@ Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
 
 //==============================================================================
 Chain::Chain(BodyNode* _start, BodyNode* _target,
-             IncludeBothTag, const std::string& _name)
+             IncludeUpstreamParentJointTag, const std::string& _name)
   : Linkage(Chain::Criteria(_start, _target, true), _name)
 {
   // Do nothing

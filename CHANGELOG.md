@@ -4,6 +4,10 @@
 
 #### Changes
 
+* Kinematics
+
+  * Added an utility constructor to Linkage::Criteria to create sequence Linkage: [#1273](https://github.com/dartsim/dart/pull/1273)
+
 * Dynamics
 
   * Fixed incorrect transpose check in Inertia::verifySpatialTensor(): [#1258](https://github.com/dartsim/dart/pull/1258)
