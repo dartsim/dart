@@ -54,23 +54,46 @@ InverseKinematics::~InverseKinematics()
 }
 
 //==============================================================================
-bool InverseKinematics::solve(bool _applySolution)
+bool InverseKinematics::solve(bool applySolution)
+{
+  if (applySolution)
+  {
+    return solveAndApply(true);
+  }
+  else
+  {
+    Eigen::VectorXd positions;
+    return findSolution(positions);
+  }
+}
+
+//==============================================================================
+bool InverseKinematics::solve(Eigen::VectorXd& positions, bool applySolution)
+{
+  if (applySolution)
+    return solveAndApply(positions, true);
+  else
+    return findSolution(positions);
+}
+
+//==============================================================================
+bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
 {
   if(nullptr == mSolver)
   {
-    dtwarn << "[InverseKinematics::solve] The Solver for an InverseKinematics "
-           << "module associated with [" << mNode->getName() << "] is a "
-           << "nullptr. You must reset the module's Solver before you can use "
-           << "it.\n";
+    dtwarn << "[InverseKinematics::findSolution] The Solver for an "
+           << "InverseKinematics module associated with [" << mNode->getName()
+           << "] is a nullptr. You must reset the module's Solver before you "
+           << "can use it.\n";
     return false;
   }
 
   if(nullptr == mProblem)
   {
-    dtwarn << "[InverseKinematics::solve] The Problem for an InverseKinematics "
-           << "module associated with [" << mNode->getName() << "] is a "
-           << "nullptr. You must reset the module's Problem before you can use "
-           << "it.\n";
+    dtwarn << "[InverseKinematics::findSolution] The Problem for an "
+           << "InverseKinematics module associated with [" << mNode->getName()
+           << "] is a nullptr. You must reset the module's Problem before you "
+           << "can use it.\n";
     return false;
   }
 
@@ -92,30 +115,36 @@ bool InverseKinematics::solve(bool _applySolution)
   // Many GradientMethod implementations use Joint::integratePositions, so we
   // need to clear out any velocities that might be in the Skeleton and then
   // reset those velocities later. This has been opened as issue #699.
-  Eigen::VectorXd originalVelocities = skel->getVelocities();
-  for(std::size_t i=0; i < skel->getNumDofs(); ++i)
-    skel->getDof(i)->setVelocity(0.0);
+  const Eigen::VectorXd originalVelocities = skel->getVelocities();
+  skel->resetVelocities();
 
-  if(_applySolution)
-  {
-    bool wasSolved = mSolver->solve();
-    setPositions(mProblem->getOptimalSolution());
-    skel->setVelocities(originalVelocities);
-    return wasSolved;
-  }
+  const Eigen::VectorXd originalPositions = getPositions();
+  const bool wasSolved = mSolver->solve();
 
-  Eigen::VectorXd originalPositions = getPositions();
-  bool wasSolved = mSolver->solve();
+  positions = mProblem->getOptimalSolution();
+
   setPositions(originalPositions);
   skel->setVelocities(originalVelocities);
   return wasSolved;
 }
 
 //==============================================================================
-bool InverseKinematics::solve(Eigen::VectorXd& positions, bool _applySolution)
+bool InverseKinematics::solveAndApply(bool allowIncompleteResult)
 {
-  bool wasSolved = solve(_applySolution);
-  positions = mProblem->getOptimalSolution();
+  Eigen::VectorXd solution;
+  const auto wasSolved = findSolution(solution);
+  if (wasSolved || allowIncompleteResult)
+    setPositions(solution);
+  return wasSolved;
+}
+
+//==============================================================================
+bool InverseKinematics::solveAndApply(
+    Eigen::VectorXd& positions, bool allowIncompleteResult)
+{
+  const auto wasSolved = findSolution(positions);
+  if (wasSolved || allowIncompleteResult)
+    setPositions(positions);
   return wasSolved;
 }
 

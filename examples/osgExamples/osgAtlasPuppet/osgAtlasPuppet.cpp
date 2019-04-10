@@ -232,7 +232,7 @@ public:
       mAtlas->getJoint(0)->setPositions(FreeJoint::convertToPositions(new_tf));
     }
 
-    bool solved = mAtlas->getIK(true)->solve();
+    bool solved = mAtlas->getIK(true)->solveAndApply(true);
 
     if(!solved)
       ++iter;
