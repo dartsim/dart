@@ -60,7 +60,8 @@ public:
   /// Constructor
   ImGuiHandler();
 
-  void init();
+  /// Destructor
+  ~ImGuiHandler() override;
 
   void newFrame(::osg::RenderInfo& renderInfo);
 
@@ -76,8 +77,8 @@ public:
   bool hasWidget(const std::shared_ptr<ImGuiWidget>& widget) const;
 
   /// Adds given Widget to this Viewer.
-  void addWidget(const std::shared_ptr<ImGuiWidget>& widget,
-                 bool visible = true);
+  void addWidget(
+      const std::shared_ptr<ImGuiWidget>& widget, bool visible = true);
 
   /// Removes given Widget from this Viewer.
   void removeWidget(const std::shared_ptr<ImGuiWidget>& widget);
@@ -88,10 +89,11 @@ public:
   /// \}
 
   // Documentation inherited.
-  bool handle(const osgGA::GUIEventAdapter& eventAdapter,
-              osgGA::GUIActionAdapter& actionAdapter,
-              ::osg::Object* object,
-              ::osg::NodeVisitor* nodeVisitor) override;
+  bool handle(
+      const osgGA::GUIEventAdapter& eventAdapter,
+      osgGA::GUIActionAdapter& actionAdapter,
+      ::osg::Object* object,
+      ::osg::NodeVisitor* nodeVisitor) override;
 
 protected:
   double mTime;
@@ -100,8 +102,6 @@ protected:
   std::array<bool, 3> mMousePressed;
 
   float mMouseWheel;
-
-  GLuint mFontTexture;
 
   std::vector<std::shared_ptr<ImGuiWidget>> mWidgets;
 };
