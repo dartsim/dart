@@ -12,8 +12,8 @@ environment:
   MSVC_DEFAULT_OPTIONS: ON
   CMAKE_TOOLCHAIN_FILE: -DCMAKE_TOOLCHAIN_FILE="C:\tools\vcpkg\scripts\buildsystems\vcpkg.cmake"
   matrix:
-    - CMAKE_GENERATOR: -G"Visual Studio 16 2019 Win64"
-      CMAKE_TOOLCHAIN: -T"v141"
+    - CMAKE_GENERATOR: -G"Visual Studio 16 2019"
+      CMAKE_TOOLCHAIN: -T"v142"
 
 # build configuration, i.e. Debug, Release, etc.
 configuration:
