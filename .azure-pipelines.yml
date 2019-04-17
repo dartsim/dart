@@ -78,7 +78,7 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: high_seirra_clang_debug
+- job: high_sierra_clang_debug
   pool:
     vmImage: 'macOS 10.13'
   variables:
@@ -93,7 +93,7 @@ jobs:
       '.ci/script.sh'
     displayName: 'Script'
 
-- job: high_seirra_clang_release
+- job: high_sierra_clang_release
   pool:
     vmImage: 'macOS 10.13'
   variables:
