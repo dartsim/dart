@@ -113,8 +113,8 @@ jobs:
   variables:
     ARCHITECTURE_SUFFIX: '-x64'
     VCPKG_ARCH: 'x64-windows'
-    BUILD_TOOLSET_VERSION: '141'
-    CMAKE_GENERATOR: 'Visual Studio 16 2019 Win64'
+    BUILD_TOOLSET_VERSION: '142'
+    CMAKE_GENERATOR: 'Visual Studio 16 2019'
     CONFIGURATION: 'Release'
   steps:
   - script: |
