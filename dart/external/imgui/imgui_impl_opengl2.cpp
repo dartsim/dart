@@ -97,6 +97,13 @@ void ImGui_ImplOpenGL2_RenderDrawData(ImDrawData* draw_data)
     glDisable(GL_LIGHTING);
     glDisable(GL_COLOR_MATERIAL);
     glEnable(GL_SCISSOR_TEST);
+    //---------------------------
+    // [BEGIN] Modified for DART
+    //---------------------------
+    glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY);
+    //---------------------------
+    // [END] Modified for DART
+    //---------------------------
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
@@ -169,9 +176,16 @@ void ImGui_ImplOpenGL2_RenderDrawData(ImDrawData* draw_data)
 
     // Restore modified state
 
-    //glDisableClientState(GL_COLOR_ARRAY);
-    //glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    //glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    //---------------------------
+    // [BEGIN] Modified for DART
+    //---------------------------
+    glPopClientAttrib();
+    //---------------------------
+    // [END] Modified for DART
+    //---------------------------
     glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
