@@ -100,6 +100,8 @@ install(
 )
 
 dart_format_add(
+  ImGuiHandler.hpp
+  ImGuiHandler.cpp
   RealTimeWorldNode.hpp
   RealTimeWorldNode.cpp
 )

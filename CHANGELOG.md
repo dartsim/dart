@@ -35,6 +35,10 @@
 
   * Changed urdf parser to warn if robot model has multi-tree: [#1270](https://github.com/dartsim/dart/pull/1270)
 
+* GUI
+
+  * Updated ImGui to 1.69: [#1274](https://github.com/dartsim/dart/pull/1274)
+
 * Build System
 
   * Changed to use GNUInstallDirs for install paths: [#1241](https://github.com/dartsim/dart/pull/1241)
