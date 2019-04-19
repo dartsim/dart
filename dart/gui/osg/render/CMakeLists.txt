@@ -18,3 +18,8 @@ install(
   DESTINATION include/dart/gui/osg/render
   COMPONENT headers
 )
+
+dart_format_add(
+  VoxelGridShapeNode.hpp
+  VoxelGridShapeNode.cpp
+)

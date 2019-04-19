@@ -29,16 +29,13 @@ install(
 )
 
 dart_format_add(
-  TranslationalJoint2D.hpp
-  TranslationalJoint2D.cpp
-  detail/TranslationalJoint2DAspect.hpp
-  detail/TranslationalJoint2DAspect.cpp
-)
-
-dart_format_add(
   HeightmapShape.hpp
   VoxelGridShape.hpp
   VoxelGridShape.cpp
   SmartPointer.hpp
+  TranslationalJoint2D.hpp
+  TranslationalJoint2D.cpp
   detail/HeightmapShape-impl.hpp
+  detail/TranslationalJoint2DAspect.hpp
+  detail/TranslationalJoint2DAspect.cpp
 )
