@@ -33,6 +33,10 @@
 #ifndef DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
 
+#include "dart/config.hpp"
+
+#if HAVE_OCTOMAP
+
 #include <osg/MatrixTransform>
 #include <osg/ShapeDrawable>
 
@@ -70,5 +74,7 @@ protected:
 } // namespace osg
 } // namespace gui
 } // namespace dart
+
+#endif // HAVE_OCTOMAP
 
 #endif // DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_

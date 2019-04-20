@@ -32,6 +32,8 @@
 
 #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 
+#if HAVE_OCTOMAP
+
 #include <osg/Geode>
 #include <osg/Light>
 #include <osg/Material>
@@ -270,3 +272,5 @@ void VoxelGridShapeDrawable::updateBoxes(
 } // namespace osg
 } // namespace gui
 } // namespace dart
+
+#endif // HAVE_OCTOMAP
