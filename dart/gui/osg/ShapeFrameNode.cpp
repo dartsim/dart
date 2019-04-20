@@ -48,6 +48,9 @@
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
+#if HAVE_OCTOMAP
+#include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
+#endif
 #include "dart/gui/osg/render/WarningShapeNode.hpp"
 
 #include "dart/dynamics/Frame.hpp"
@@ -64,6 +67,9 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
+#if HAVE_OCTOMAP
+#include "dart/dynamics/VoxelGridShape.hpp"
+#endif
 #include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
@@ -285,6 +291,17 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
+#if HAVE_OCTOMAP
+  else if(VoxelGridShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<VoxelGridShape> lss =
+        std::dynamic_pointer_cast<VoxelGridShape>(shape);
+    if(lss)
+      mRenderShapeNode = new render::VoxelGridShapeNode(lss, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+#endif // HAVE_OCTOMAP
   else
   {
     mRenderShapeNode = new render::WarningShapeNode(shape, this);
