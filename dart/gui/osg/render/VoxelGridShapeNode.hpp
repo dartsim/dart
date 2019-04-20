@@ -15,12 +15,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -36,48 +30,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
-#define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
+#ifndef DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
+#define DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
 
-#include "dart/gui/osg/ImGuiWidget.hpp"
-#include "dart/gui/osg/ImGuiViewer.hpp"
+#include "dart/config.hpp"
 
-class AtlasSimbiconWorldNode;
+#if HAVE_OCTOMAP
 
-class AtlasSimbiconWidget : public dart::gui::osg::ImGuiWidget
+#include <osg/MatrixTransform>
+#include <osg/ShapeDrawable>
+
+#include "dart/gui/osg/render/ShapeNode.hpp"
+
+namespace dart {
+
+namespace dynamics {
+class VoxelGridShape;
+} // namespace dynamics
+
+namespace gui {
+namespace osg {
+namespace render {
+
+class VoxelGridShapeGeode;
+
+class VoxelGridShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
+  VoxelGridShapeNode(
+      std::shared_ptr<dynamics::VoxelGridShape> shape, ShapeFrameNode* parent);
 
-  /// Constructor
-  AtlasSimbiconWidget(dart::gui::osg::ImGuiViewer* viewer,
-                      AtlasSimbiconWorldNode* node);
-
-  // Documentation inherited
-  void render() override;
+  void refresh() override;
+  void extractData(bool firstTime);
 
 protected:
+  virtual ~VoxelGridShapeNode() override;
 
-  void setGravity(float gravity);
-
-  dart::gui::osg::ImGuiViewer* mViewer;
-
-  AtlasSimbiconWorldNode* mNode;
-
-  float mGuiGravityAcc;
-
-  float mGravityAcc;
-
-  bool mGuiHeadlights;
-
-  /// Control mode value for GUI
-  int mGuiControlMode;
-
-  /// Actual control mode
-  ///   - 0: No control
-  ///   - 1: Short-stride walking control
-  ///   - 1: Normal-stride walking control
-  int mControlMode;
-
+  std::shared_ptr<dynamics::VoxelGridShape> mVoxelGridShape;
+  VoxelGridShapeGeode* mGeode;
 };
 
-#endif // DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
+} // namespace render
+} // namespace osg
+} // namespace gui
+} // namespace dart
+
+#endif // HAVE_OCTOMAP
+
+#endif // DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
