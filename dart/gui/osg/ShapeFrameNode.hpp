@@ -35,7 +35,10 @@
 
 #include <map>
 #include <memory>
+
 #include <osg/MatrixTransform>
+
+#include "dart/config.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
