@@ -259,6 +259,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 
   io.DeltaTime
       = mTime > 0.0 ? static_cast<float>(currentTime - mTime) : 1.0f / 60.0f;
+  io.DeltaTime = std::max(io.DeltaTime, std::numeric_limits<float>::min());
   mTime = currentTime;
   assert(mTime >= 0.0);
 

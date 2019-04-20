@@ -33,6 +33,7 @@
 #include <cmath>
 
 #include <dart/dart.hpp>
+#include <dart/external/imgui/imgui.h>
 #include <dart/gui/osg/osg.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
@@ -51,12 +52,18 @@ public:
       simulation::WorldPtr world, dynamics::SkeletonPtr robot)
     : gui::osg::WorldNode(std::move(world)), mRobot(std::move(robot))
   {
-    auto voxelFrame = mWorld->getSimpleFrame("voxel");
+    auto pointCloudFrame = mWorld->getSimpleFrame("point cloud");
+    auto voxelGridFrame = mWorld->getSimpleFrame("voxel");
 
-    mVoxelShape = std::dynamic_pointer_cast<dynamics::VoxelGridShape>(
-        voxelFrame->getShape());
+    mPointCloudShape = std::dynamic_pointer_cast<dynamics::PointCloudShape>(
+        pointCloudFrame->getShape());
+    mVoxelGridShape = std::dynamic_pointer_cast<dynamics::VoxelGridShape>(
+        voxelGridFrame->getShape());
 
-    assert(mVoxelShape);
+    mPointCloudVisualAspect = pointCloudFrame->getVisualAspect();
+    mVoxelGridVisualAspect = voxelGridFrame->getVisualAspect();
+
+    assert(mVoxelGridShape);
   }
 
   // Triggered at the beginning of each simulation step
@@ -87,8 +94,20 @@ public:
     assert(sensorFrame);
     sensorFrame->setTranslation(sensorPos);
 
+    // Update point cloud
+    mPointCloudShape->setPoints(pointCloud);
+
     // Update voxel
-    mVoxelShape->updateOccupancy(pointCloud, sensorPos);
+    mVoxelGridShape->updateOccupancy(pointCloud, sensorPos);
+  }
+
+  dynamics::VisualAspect* getPointCloudVisualAspect()
+  {
+    return mPointCloudVisualAspect;
+  }
+  dynamics::VisualAspect* getVoxelGridVisualAspect()
+  {
+    return mVoxelGridVisualAspect;
   }
 
 protected:
@@ -146,7 +165,114 @@ protected:
 
   SkeletonPtr mRobot;
 
-  std::shared_ptr<dynamics::VoxelGridShape> mVoxelShape;
+  std::shared_ptr<dynamics::PointCloudShape> mPointCloudShape;
+  std::shared_ptr<dynamics::VoxelGridShape> mVoxelGridShape;
+
+  dynamics::VisualAspect* mPointCloudVisualAspect;
+  dynamics::VisualAspect* mVoxelGridVisualAspect;
+};
+
+class PointCloudWidget : public dart::gui::osg::ImGuiWidget
+{
+public:
+  PointCloudWidget(dart::gui::osg::ImGuiViewer* viewer, PointCloudWorld* node)
+    : mViewer(viewer), mNode(node)
+  {
+    // Do nothing
+  }
+
+  void render() override
+  {
+    ImGui::SetNextWindowPos(ImVec2(10, 20));
+    if (!ImGui::Begin(
+            "Point Cloud & Voxel Grid Demo",
+            nullptr,
+            ImVec2(360, 340),
+            0.5f,
+            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar))
+    {
+      // Early out if the window is collapsed, as an optimization.
+      ImGui::End();
+      return;
+    }
+
+    // Menu
+    if (ImGui::BeginMenuBar())
+    {
+      if (ImGui::BeginMenu("Menu"))
+      {
+        if (ImGui::MenuItem("Exit"))
+          mViewer->setDone(true);
+        ImGui::EndMenu();
+      }
+      if (ImGui::BeginMenu("Help"))
+      {
+        if (ImGui::MenuItem("About DART"))
+          mViewer->showAbout();
+        ImGui::EndMenu();
+      }
+      ImGui::EndMenuBar();
+    }
+
+    ImGui::Text("Point cloud and voxel grid rendering example");
+    ImGui::Spacing();
+    ImGui::TextWrapped(
+        "The robot is moving by random joint velocities. The small blue boxes "
+        "and orange boxes represent point cloud and voxel grid, respectively. "
+        "The moving red sphere represents the sensor origin that generates the "
+        "point cloud.");
+
+    if (ImGui::CollapsingHeader("Help"))
+    {
+      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
+      ImGui::Text("User Guid:\n");
+      ImGui::Text("%s", mViewer->getInstructions().c_str());
+      ImGui::PopTextWrapPos();
+    }
+
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+      int e = mViewer->isSimulating() ? 0 : 1;
+      if (mViewer->isAllowingSimulation())
+      {
+        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+          mViewer->simulate(true);
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+          mViewer->simulate(false);
+      }
+    }
+
+    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+      if (mViewer->isAllowingSimulation())
+      {
+        bool pcShow = !mNode->getPointCloudVisualAspect()->isHidden();
+        if (ImGui::Checkbox("Point Cloud", &pcShow))
+        {
+          if (pcShow)
+            mNode->getPointCloudVisualAspect()->show();
+          else
+            mNode->getPointCloudVisualAspect()->hide();
+        }
+
+        bool vgShow = !mNode->getVoxelGridVisualAspect()->isHidden();
+        if (ImGui::Checkbox("Voxel Grid", &vgShow))
+        {
+          if (vgShow)
+            mNode->getVoxelGridVisualAspect()->show();
+          else
+            mNode->getVoxelGridVisualAspect()->hide();
+        }
+      }
+    }
+
+    ImGui::End();
+  }
+
+protected:
+  dart::gui::osg::ImGuiViewer* mViewer;
+  PointCloudWorld* mNode;
 };
 
 dynamics::SkeletonPtr createRobot(const std::string& name)
@@ -210,6 +336,20 @@ dynamics::SimpleFramePtr createVoxelFrame(double resolution = 0.01)
   return voxelFrame;
 }
 
+dynamics::SimpleFramePtr createPointCloudFrame()
+{
+  auto pointCloudShape
+      = ::std::make_shared<::dart::dynamics::PointCloudShape>();
+  auto pointCloudFrame = ::dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  pointCloudFrame->setName("point cloud");
+  pointCloudFrame->setShape(pointCloudShape);
+  auto visualAspect = pointCloudFrame->createVisualAspect();
+  visualAspect->setRGB(Color::Blue());
+
+  return pointCloudFrame;
+}
+
 dynamics::SimpleFramePtr createSensorFrame()
 {
   auto sphereShape = ::std::make_shared<dart::dynamics::SphereShape>(0.05);
@@ -234,6 +374,9 @@ int main()
   auto ground = createGround();
   world->addSkeleton(ground);
 
+  auto pointCloud = createPointCloudFrame();
+  world->addSimpleFrame(pointCloud);
+
   auto voxel = createVoxelFrame(0.05);
   world->addSimpleFrame(voxel);
 
@@ -245,19 +388,23 @@ int main()
   node->setNumStepsPerCycle(16);
 
   // Create the Viewer instance
-  dart::gui::osg::Viewer viewer;
+  dart::gui::osg::ImGuiViewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
+
+  // Add control widget for atlas
+  viewer.getImGuiHandler()->addWidget(
+      std::make_shared<PointCloudWidget>(&viewer, node.get()));
 
   // Print out instructions
   std::cout << viewer.getInstructions() << std::endl;
 
-  // Set up the window to be 640x480 pixels
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+  // Set up the window to be 1280x720 pixels
+  viewer.setUpViewInWindow(0, 0, 1280, 720);
 
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.57, 3.14, 1.64),
-      ::osg::Vec3(0.00, 0.00, 0.00),
+      ::osg::Vec3(0.00, 0.00, 0.30),
       ::osg::Vec3(-0.24, -0.25, 0.94));
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting

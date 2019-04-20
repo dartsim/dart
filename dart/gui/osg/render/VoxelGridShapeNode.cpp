@@ -193,12 +193,6 @@ VoxelGridShapeDrawable::VoxelGridShapeDrawable(
 }
 
 //==============================================================================
-::osg::Vec3 toVec3(const octomap::point3d& point)
-{
-  return ::osg::Vec3(point.x(), point.y(), point.z());
-}
-
-//==============================================================================
 void VoxelGridShapeDrawable::refresh(bool firstTime)
 {
   if (mVoxelGridShape->getDataVariance() == dynamics::Shape::STATIC)
@@ -227,6 +221,12 @@ void VoxelGridShapeDrawable::refresh(bool firstTime)
   }
 
   mVoxelVersion = mVoxelGridShape->getVersion();
+}
+
+//==============================================================================
+::osg::Vec3 toVec3(const octomap::point3d& point)
+{
+  return ::osg::Vec3(point.x(), point.y(), point.z());
 }
 
 //==============================================================================

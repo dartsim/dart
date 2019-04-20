@@ -20,6 +20,8 @@ install(
 )
 
 dart_format_add(
+  PointCloudShapeNode.hpp
+  PointCloudShapeNode.cpp
   VoxelGridShapeNode.hpp
   VoxelGridShapeNode.cpp
 )
