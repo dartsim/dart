@@ -109,7 +109,8 @@ jobs:
     displayName: 'Script'
 
 - job: windows_vs_amd64
-  pool: Hosted
+  pool:
+    vmImage: 'windows-2019'
   variables:
     ARCHITECTURE_SUFFIX: '-x64'
     VCPKG_ARCH: 'x64-windows'
