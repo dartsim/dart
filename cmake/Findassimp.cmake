@@ -26,7 +26,7 @@ find_path(ASSIMP_INCLUDE_DIRS assimp/scene.h
 
 # Libraries
 if(MSVC)
-  set(ASSIMP_LIBRARIES optimized assimp debug assimpd)
+  set(ASSIMP_LIBRARIES "assimp$<$<CONFIG:Debug>:d>")
 else()
   find_library(ASSIMP_LIBRARIES
       NAMES assimp
