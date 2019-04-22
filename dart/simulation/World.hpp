@@ -106,9 +106,6 @@ public:
 
   /// Create a clone of this World. All Skeletons and SimpleFrames that are held
   /// by this World will be copied over.
-  ///
-  /// Note that the states of the Skeletons will not be transferred over to this
-  /// clone [TODO: copy the states as well]
   std::shared_ptr<World> clone() const;
 
   //--------------------------------------------------------------------------
