@@ -100,6 +100,8 @@ install(
 )
 
 dart_format_add(
+  GridVisual.hpp
+  GridVisual.cpp
   ImGuiHandler.hpp
   ImGuiHandler.cpp
   RealTimeWorldNode.hpp
