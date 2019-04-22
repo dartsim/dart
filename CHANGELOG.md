@@ -40,7 +40,7 @@
   * Updated ImGui to 1.69: [#1274](https://github.com/dartsim/dart/pull/1274)
   * Added VoxelGridShape support to OSG renderer: [#1276](https://github.com/dartsim/dart/pull/1276)
   * Added PointCloudShape and its OSG rendering: [#1277](https://github.com/dartsim/dart/pull/1277)
-  * Added grid visual to OSG renderer: [#1278](https://github.com/dartsim/dart/pull/1278)
+  * Added grid visual to OSG renderer: [#1278](https://github.com/dartsim/dart/pull/1278), [#1280](https://github.com/dartsim/dart/pull/1280)
 
 * Build System
 
