@@ -146,6 +146,12 @@ void GridVisual::display(bool display)
 }
 
 //==============================================================================
+bool GridVisual::isDisplayed() const
+{
+  return mDisplayGrid;
+}
+
+//==============================================================================
 void GridVisual::setMajorLineColor(const Eigen::Vector4d& color)
 {
   assert(mMajorLineColor->size() == 1);
