@@ -276,108 +276,116 @@ public:
       {
         assert(mGrid);
         ImGui::Text("Grid");
-        int e = static_cast<int>(mGrid->getPlaneType());
-        if (mViewer->isAllowingSimulation())
+
+        bool display = mGrid->isDisplayed();
+        if (ImGui::Checkbox("Show", &display))
+          mGrid->display(display);
+
+        if (display)
         {
-          if (ImGui::RadioButton("XY-Plane", &e, 0))
-            mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
-          ImGui::SameLine();
-          if (ImGui::RadioButton("YZ-Plane", &e, 1))
-            mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::YZ);
-          ImGui::SameLine();
-          if (ImGui::RadioButton("ZX-Plane", &e, 2))
-            mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
-        }
+          int e = static_cast<int>(mGrid->getPlaneType());
+          if (mViewer->isAllowingSimulation())
+          {
+            if (ImGui::RadioButton("XY-Plane", &e, 0))
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
+            ImGui::SameLine();
+            if (ImGui::RadioButton("YZ-Plane", &e, 1))
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::YZ);
+            ImGui::SameLine();
+            if (ImGui::RadioButton("ZX-Plane", &e, 2))
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
+          }
 
-        static Eigen::Vector3f offset;
-        ImGui::Columns(3);
-        offset = mGrid->getOffset().cast<float>();
-        if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f"))
-          mGrid->setOffset(offset.cast<double>());
-        ImGui::NextColumn();
-        if (ImGui::InputFloat("Y", &offset[1], 0.1f, 0.5f, "%.1f"))
-          mGrid->setOffset(offset.cast<double>());
-        ImGui::NextColumn();
-        if (ImGui::InputFloat("Z", &offset[2], 0.1f, 0.5f, "%.1f"))
-          mGrid->setOffset(offset.cast<double>());
-        ImGui::Columns(1);
+          static Eigen::Vector3f offset;
+          ImGui::Columns(3);
+          offset = mGrid->getOffset().cast<float>();
+          if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f"))
+            mGrid->setOffset(offset.cast<double>());
+          ImGui::NextColumn();
+          if (ImGui::InputFloat("Y", &offset[1], 0.1f, 0.5f, "%.1f"))
+            mGrid->setOffset(offset.cast<double>());
+          ImGui::NextColumn();
+          if (ImGui::InputFloat("Z", &offset[2], 0.1f, 0.5f, "%.1f"))
+            mGrid->setOffset(offset.cast<double>());
+          ImGui::Columns(1);
 
-        static int cellCount;
-        cellCount = static_cast<int>(mGrid->getNumCells());
-        if (ImGui::InputInt("Line Count", &cellCount, 1, 5))
-        {
-          if (cellCount < 0)
-            cellCount = 0;
-          mGrid->setNumCells(static_cast<std::size_t>(cellCount));
-        }
+          static int cellCount;
+          cellCount = static_cast<int>(mGrid->getNumCells());
+          if (ImGui::InputInt("Line Count", &cellCount, 1, 5))
+          {
+            if (cellCount < 0)
+              cellCount = 0;
+            mGrid->setNumCells(static_cast<std::size_t>(cellCount));
+          }
 
-        static float cellStepSize;
-        cellStepSize = static_cast<float>(mGrid->getMinorLineStepSize());
-        if (ImGui::InputFloat("Line Step Size", &cellStepSize, 0.001f, 0.1f))
-        {
-          mGrid->setMinorLineStepSize(static_cast<double>(cellStepSize));
-        }
+          static float cellStepSize;
+          cellStepSize = static_cast<float>(mGrid->getMinorLineStepSize());
+          if (ImGui::InputFloat("Line Step Size", &cellStepSize, 0.001f, 0.1f))
+          {
+            mGrid->setMinorLineStepSize(static_cast<double>(cellStepSize));
+          }
 
-        static int minorLinesPerMajorLine;
-        minorLinesPerMajorLine
-            = static_cast<int>(mGrid->getNumMinorLinesPerMajorLine());
-        if (ImGui::InputInt(
+          static int minorLinesPerMajorLine;
+          minorLinesPerMajorLine
+              = static_cast<int>(mGrid->getNumMinorLinesPerMajorLine());
+          if (ImGui::InputInt(
                 "Minor Lines per Major Line", &minorLinesPerMajorLine, 1, 5))
-        {
-          if (minorLinesPerMajorLine < 0)
-            minorLinesPerMajorLine = 0;
-          mGrid->setNumMinorLinesPerMajorLine(
-              static_cast<std::size_t>(minorLinesPerMajorLine));
-        }
+          {
+            if (minorLinesPerMajorLine < 0)
+              minorLinesPerMajorLine = 0;
+            mGrid->setNumMinorLinesPerMajorLine(
+                  static_cast<std::size_t>(minorLinesPerMajorLine));
+          }
 
-        static float axisLineWidth;
-        axisLineWidth = mGrid->getAxisLineWidth();
-        if (ImGui::InputFloat(
+          static float axisLineWidth;
+          axisLineWidth = mGrid->getAxisLineWidth();
+          if (ImGui::InputFloat(
                 "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f"))
-        {
-          mGrid->setAxisLineWidth(axisLineWidth);
-        }
+          {
+            mGrid->setAxisLineWidth(axisLineWidth);
+          }
 
-        static float majorLineWidth;
-        majorLineWidth = mGrid->getMajorLineWidth();
-        if (ImGui::InputFloat(
+          static float majorLineWidth;
+          majorLineWidth = mGrid->getMajorLineWidth();
+          if (ImGui::InputFloat(
                 "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f"))
-        {
-          mGrid->setMajorLineWidth(majorLineWidth);
-        }
+          {
+            mGrid->setMajorLineWidth(majorLineWidth);
+          }
 
-        static float majorColor[3];
-        auto internalmajorColor = mGrid->getMajorLineColor();
-        majorColor[0] = static_cast<float>(internalmajorColor.x());
-        majorColor[1] = static_cast<float>(internalmajorColor.y());
-        majorColor[2] = static_cast<float>(internalmajorColor.z());
-        if (ImGui::ColorEdit3("Major Line Color", majorColor))
-        {
-          internalmajorColor[0] = static_cast<double>(majorColor[0]);
-          internalmajorColor[1] = static_cast<double>(majorColor[1]);
-          internalmajorColor[2] = static_cast<double>(majorColor[2]);
-          mGrid->setMajorLineColor(internalmajorColor);
-        }
+          static float majorColor[3];
+          auto internalmajorColor = mGrid->getMajorLineColor();
+          majorColor[0] = static_cast<float>(internalmajorColor.x());
+          majorColor[1] = static_cast<float>(internalmajorColor.y());
+          majorColor[2] = static_cast<float>(internalmajorColor.z());
+          if (ImGui::ColorEdit3("Major Line Color", majorColor))
+          {
+            internalmajorColor[0] = static_cast<double>(majorColor[0]);
+            internalmajorColor[1] = static_cast<double>(majorColor[1]);
+            internalmajorColor[2] = static_cast<double>(majorColor[2]);
+            mGrid->setMajorLineColor(internalmajorColor);
+          }
 
-        static float minorLineWidth;
-        minorLineWidth = mGrid->getMinorLineWidth();
-        if (ImGui::InputFloat(
+          static float minorLineWidth;
+          minorLineWidth = mGrid->getMinorLineWidth();
+          if (ImGui::InputFloat(
                 "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f"))
-        {
-          mGrid->setMinorLineWidth(minorLineWidth);
-        }
+          {
+            mGrid->setMinorLineWidth(minorLineWidth);
+          }
 
-        float minorColor[3];
-        auto internalMinorColor = mGrid->getMinorLineColor();
-        minorColor[0] = static_cast<float>(internalMinorColor.x());
-        minorColor[1] = static_cast<float>(internalMinorColor.y());
-        minorColor[2] = static_cast<float>(internalMinorColor.z());
-        if (ImGui::ColorEdit3("Minor Line Color", minorColor))
-        {
-          internalMinorColor[0] = static_cast<double>(minorColor[0]);
-          internalMinorColor[1] = static_cast<double>(minorColor[1]);
-          internalMinorColor[2] = static_cast<double>(minorColor[2]);
-          mGrid->setMinorLineColor(internalMinorColor);
+          float minorColor[3];
+          auto internalMinorColor = mGrid->getMinorLineColor();
+          minorColor[0] = static_cast<float>(internalMinorColor.x());
+          minorColor[1] = static_cast<float>(internalMinorColor.y());
+          minorColor[2] = static_cast<float>(internalMinorColor.z());
+          if (ImGui::ColorEdit3("Minor Line Color", minorColor))
+          {
+            internalMinorColor[0] = static_cast<double>(minorColor[0]);
+            internalMinorColor[1] = static_cast<double>(minorColor[1]);
+            internalMinorColor[2] = static_cast<double>(minorColor[2]);
+            mGrid->setMinorLineColor(internalMinorColor);
+          }
         }
       }
     }
