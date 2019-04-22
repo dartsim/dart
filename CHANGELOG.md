@@ -2,9 +2,11 @@
 
 ### [DART 6.8.1 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/53?closed=1)
 
-* XXX
+#### Changes
 
-  * XXX: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+* Build System
+
+  * Disabled octomap support on macOS: [#1284](https://github.com/dartsim/dart/pull/1284)
 
 #### Compilers Tested
 
