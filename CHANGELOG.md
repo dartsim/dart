@@ -1,6 +1,6 @@
 ## DART 6
 
-### [DART 6.8.1 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/53?closed=1)
+### [DART 6.8.1 (2019-04-23)](https://github.com/dartsim/dart/milestone/53?closed=1)
 
 #### Changes
 
