@@ -489,7 +489,7 @@ struct TestResource : public dart::common::Resource
     return false;
   }
 
-  size_t read(void */*_buffer*/, size_t /*_size*/, size_t /*_count*/) override
+  size_t read(void* /*_buffer*/, size_t /*_size*/, size_t /*_count*/) override
   {
     return 0;
   }
