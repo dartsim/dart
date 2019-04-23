@@ -28,22 +28,22 @@ if(NOT MSVC)
   if(NOT TARGET Boost::regex)
     add_library(Boost::regex INTERFACE IMPORTED)
     set_target_properties(Boost::regex PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES “${Boost_INCLUDE_DIRS}”
-      INTERFACE_LINK_LIBRARIES “${Boost_REGEX_LIBRARY}”
+      INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${Boost_REGEX_LIBRARY}"
     )
   endif()
 endif()
 if(NOT TARGET Boost::system)
   add_library(Boost::system INTERFACE IMPORTED)
   set_target_properties(Boost::system PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES “${Boost_INCLUDE_DIRS}”
-    INTERFACE_LINK_LIBRARIES “${Boost_SYSTEM_LIBRARY}”
+    INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${Boost_SYSTEM_LIBRARY}"
   )
 endif()
 if(NOT TARGET Boost::filesystem)
   add_library(Boost::filesystem INTERFACE IMPORTED)
   set_target_properties(Boost::filesystem PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES “${Boost_INCLUDE_DIRS}”
-    INTERFACE_LINK_LIBRARIES “${Boost_FILESYSTEM_LIBRARY}”
+    INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${Boost_FILESYSTEM_LIBRARY}"
   )
 endif()
