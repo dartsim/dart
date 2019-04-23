@@ -41,7 +41,6 @@
 #define DART_UNITTESTS_TEST_HELPERS_H
 
 #include <vector>
-#include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
@@ -80,7 +79,7 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
   {
     for (size_t j = 0; j < n1; j++)
     {
-      if (boost::math::isnan(_expected(i,j)) ^ boost::math::isnan(_actual(i,j)))
+      if (std::isnan(_expected(i,j)) ^ std::isnan(_actual(i,j)))
         return false;
       else if (fabs(_expected(i,j)) > 1)
       {
