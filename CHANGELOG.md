@@ -2,9 +2,12 @@
 
 ### [DART 6.8.1 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/53?closed=1)
 
+#### Changes
+
 * Build System
 
   * Fixed invalid double quotation marks in DARTFindBoost.cmake: [#1283](https://github.com/dartsim/dart/pull/1283)
+  * Disabled octomap support on macOS: [#1284](https://github.com/dartsim/dart/pull/1284)
 
 #### Compilers Tested
 
