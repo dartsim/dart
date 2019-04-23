@@ -53,7 +53,7 @@ public:
                       AtlasSimbiconWorldNode* node);
 
   // Documentation inherited
-  void render() override;\
+  void render() override;
 
 protected:
 

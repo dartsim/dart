@@ -20,7 +20,7 @@ The code for training neural nets is [here][2].
 
 2. There are only two trained neural nets for the left arm and leg respectively. For right arm and leg, we just mirror the q values before feeding them into neural nets. For users, one just need to turn on an additional isMirror flag when specifying a right limb joint-limit constraint.
 
-3. The “left” and “right” are defined from the perspective of the agent itself.
+3. The "left" and "right" are defined from the perspective of the agent itself.
 
 4. We do not directly input the q values into neural nets, instead, we input sin(q) and cos(q). As such, the trained functions still work when q exceeds 2pi range.
 

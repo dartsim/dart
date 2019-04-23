@@ -41,23 +41,46 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-bool HierarchicalIK::solve(bool _applySolution)
+bool HierarchicalIK::solve(bool applySolution)
+{
+  if (applySolution)
+  {
+    return solveAndApply(true);
+  }
+  else
+  {
+    Eigen::VectorXd positions;
+    return findSolution(positions);
+  }
+}
+
+//==============================================================================
+bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool applySolution)
+{
+  if (applySolution)
+    return solveAndApply(positions, true);
+  else
+    return findSolution(positions);
+}
+
+//==============================================================================
+bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 {
   if(nullptr == mSolver)
   {
-    dtwarn << "[HierarchicalIK::solve] The Solver for a HierarchicalIK module "
-           << "associated with [" << mSkeleton.lock()->getName() << "] is a "
-           << "nullptr. You must reset the module's Solver before you can use "
-           << "it.\n";
+    dtwarn << "[HierarchicalIK::findSolution] The Solver for a HierarchicalIK "
+           << "module associated with [" << mSkeleton.lock()->getName()
+           << "] is a nullptr. You must reset the module's Solver before you "
+           << "can use it.\n";
     return false;
   }
 
   if(nullptr == mProblem)
   {
-    dtwarn << "[HierarchicalIK::solve] The Problem for a HierarchicalIK module "
-           << "associated with [" << mSkeleton.lock()->getName() << "] is a "
-           << "nullptr. You must reset the module's Problem before you can use "
-           << "it.\n";
+    dtwarn << "[HierarchicalIK::findSolution] The Problem for a HierarchicalIK "
+           << "module associated with [" << mSkeleton.lock()->getName()
+           << "] is a nullptr. You must reset the module's Problem before you "
+           << "can use it.\n";
     return false;
   }
 
@@ -65,8 +88,8 @@ bool HierarchicalIK::solve(bool _applySolution)
 
   if(nullptr == skel)
   {
-    dtwarn << "[HierarchicalIK::solve] Calling a HierarchicalIK module which "
-           << "is associated with a Skeleton that no longer exists.\n";
+    dtwarn << "[HierarchicalIK::findSolution] Calling a HierarchicalIK module "
+           << "which is associated with a Skeleton that no longer exists.\n";
     return false;
   }
 
@@ -86,24 +109,39 @@ bool HierarchicalIK::solve(bool _applySolution)
 
   refreshIKHierarchy();
 
-  if(_applySolution)
-  {
-    bool wasSolved = mSolver->solve();
-    setPositions(mProblem->getOptimalSolution());
-    return wasSolved;
-  }
+  // Many GradientMethod implementations use Joint::integratePositions, so we
+  // need to clear out any velocities that might be in the Skeleton and then
+  // reset those velocities later. This has been opened as issue #699.
+  const Eigen::VectorXd originalVelocities = skel->getVelocities();
+  skel->resetVelocities();
 
-  Eigen::VectorXd originalPositions = skel->getPositions();
-  bool wasSolved = mSolver->solve();
+  const Eigen::VectorXd originalPositions = skel->getPositions();
+  const bool wasSolved = mSolver->solve();
+
+  positions = mProblem->getOptimalSolution();
+
   setPositions(originalPositions);
+  skel->setVelocities(originalVelocities);
   return wasSolved;
 }
 
 //==============================================================================
-bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool _applySolution)
+bool HierarchicalIK::solveAndApply(bool allowIncompleteResult)
 {
-  bool wasSolved = solve(_applySolution);
-  positions = mProblem->getOptimalSolution();
+  Eigen::VectorXd solution;
+  const auto wasSolved = findSolution(solution);
+  if (wasSolved || allowIncompleteResult)
+    setPositions(solution);
+  return wasSolved;
+}
+
+//==============================================================================
+bool HierarchicalIK::solveAndApply(
+    Eigen::VectorXd& positions, bool allowIncompleteResult)
+{
+  const auto wasSolved = findSolution(positions);
+  if (wasSolved || allowIncompleteResult)
+    setPositions(positions);
   return wasSolved;
 }
 

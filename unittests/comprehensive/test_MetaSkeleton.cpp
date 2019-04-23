@@ -238,6 +238,27 @@ BodyNode* addBodyNode(BodyNode* bn, const std::string& name)
 //==============================================================================
 SkeletonPtr constructLinkageTestSkeleton()
 {
+  // Skeleton structure:
+  //
+  //          c1b1 (root)
+  //           |
+  //          c1b2
+  //           |
+  //          c1b3
+  //   +-------+--------+
+  // c2b1     c3b1     c5b1
+  //   |       |        |
+  // c2b2     c3b2     c5b2
+  //   |       |
+  // c2b3     c3b3
+  //       +---+---+
+  //      c4b1    c3b4
+  //       |
+  //      c4b2
+  //       |
+  //      c4b3
+  //
+
   SkeletonPtr skel = Skeleton::create();
   BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
   bn->setName("c1b1");
@@ -391,7 +412,8 @@ TEST(MetaSkeleton, Linkage)
   EXPECT_TRUE( count == combinedSkelBases->getNumBodyNodes() );
 
   ChainPtr downstreamFreeJoint = Chain::create(skel->getBodyNode("c1b1"),
-      skel->getBodyNode("c1b3"), Chain::IncludeBoth, "downstreamFreeJoint");
+      skel->getBodyNode("c1b3"), Chain::IncludeUpstreamParentJoint,
+      "downstreamFreeJoint");
   checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
   checkLinkageJointConsistency(downstreamFreeJoint);
 
@@ -444,6 +466,52 @@ TEST(MetaSkeleton, Linkage)
   checkForBodyNodes(terminatedUpstream, skel, true,
                     "c3b1", "c1b3", "c5b1", "c5b2", "c1b2", "c1b1");
   checkLinkageJointConsistency(terminatedUpstream);
+
+  // Sequence linkage 1
+  Linkage::Criteria sequenceCriteria1(
+      skel->getBodyNode("c1b3"), skel->getBodyNode("c4b1"), true);
+  LinkagePtr sequenceLinkage1 = Linkage::create(sequenceCriteria1, "sequence");
+  checkForBodyNodes(
+      sequenceLinkage1, skel, true, "c1b3", "c3b1", "c3b2", "c3b3", "c4b1");
+  checkLinkageJointConsistency(sequenceLinkage1);
+
+  // Sequence linkage 2: nullptr start
+  Linkage::Criteria sequenceCriteria2(nullptr, skel->getBodyNode("c4b1"), true);
+  LinkagePtr sequenceLinkage2 = Linkage::create(sequenceCriteria2, "sequence");
+  checkForBodyNodes(
+      sequenceLinkage2, skel, true,
+      "c1b1", "c1b2", "c1b3", "c3b1", "c3b2", "c3b3", "c4b1");
+  checkLinkageJointConsistency(sequenceLinkage2);
+
+  // Sequence linkage 3: nullptr target
+  Linkage::Criteria sequenceCriteria3(skel->getBodyNode("c1b3"), nullptr, true);
+  LinkagePtr sequenceLinkage3 = Linkage::create(sequenceCriteria3, "sequence");
+  checkForBodyNodes(sequenceLinkage3, skel, true, "c1b1", "c1b2", "c1b3");
+  checkLinkageJointConsistency(sequenceLinkage3);
+
+  // Sequence linkage 4: reversed
+  Linkage::Criteria sequenceCriteria4(
+      skel->getBodyNode("c4b1"), skel->getBodyNode("c1b3"), true);
+  LinkagePtr sequenceLinkage4
+      = Linkage::create(sequenceCriteria4, "sequence");
+  checkForBodyNodes(
+      sequenceLinkage4, skel, true,
+      "c1b3", "c3b1", "c3b2", "c3b3", "c4b1");
+  checkLinkageJointConsistency(sequenceLinkage4);
+
+  // Sequence linkage 5: empty
+  Linkage::Criteria sequenceCriteria5(nullptr, nullptr, true);
+  LinkagePtr sequenceLinkage5 = Linkage::create(sequenceCriteria5, "sequence");
+  checkForBodyNodes(sequenceLinkage5, skel, true);
+  checkLinkageJointConsistency(sequenceLinkage5);
+
+  // Sequence linkage 6: not include both
+  Linkage::Criteria sequenceCriteria6(
+      skel->getBodyNode("c1b3"), skel->getBodyNode("c4b1"), false);
+  LinkagePtr sequenceLinkage6 = Linkage::create(sequenceCriteria6, "sequence");
+  checkForBodyNodes(
+      sequenceLinkage6, skel, true, "c3b1", "c3b2", "c3b3", "c4b1");
+  checkLinkageJointConsistency(sequenceLinkage6);
 }
 
 //==============================================================================

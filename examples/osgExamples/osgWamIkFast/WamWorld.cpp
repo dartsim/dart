@@ -42,5 +42,5 @@ WamWorld::WamWorld(WorldPtr world, SkeletonPtr robot)
 //==============================================================================
 void WamWorld::customPreRefresh()
 {
-  mWam->getIK(true)->solve();
+  mWam->getIK(true)->solveAndApply(true);
 }

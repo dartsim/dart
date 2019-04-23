@@ -42,7 +42,7 @@ namespace render {
 ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
                      ShapeFrameNode* parentNode,
                      ::osg::Node* node)
-  : mShape(shape),
+  : mShape(std::move(shape)),
     mParentShapeFrameNode(parentNode),
     mNode(node),
     mUtilized(true)
