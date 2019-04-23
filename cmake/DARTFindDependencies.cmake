@@ -98,6 +98,13 @@ if(MSVC)
       "'https://github.com/OctoMap/octomap/pull/213' "
       "is resolved.")
   set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+elseif(APPLE)
+  # Supporting Octomap on Windows is disabled for the following issue:
+  # https://github.com/OctoMap/octomap/pull/213
+  message(WARNING "Octomap ${octomap_VERSION} is found, but Octomap "
+      "is not supported on macOS until "
+      "'https://github.com/dartsim/dart/issues/1078' is resolved.")
+  set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
 else()
   if(OCTOMAP_FOUND OR octomap_FOUND)
     if(NOT DEFINED octomap_VERSION)
@@ -106,16 +113,9 @@ else()
           "please install octomap with version information"
       )
     else()
-      if(NOT octomap_VERSION VERSION_LESS 1.9.0)
-        message(WARNING "Octomap ${octomap_VERSION} is found, but Octomap 1.9.0 or "
-            "greater is not supported yet. Please see "
-            "'https://github.com/dartsim/dart/issues/1078' for the details")
-        set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
-      else()
-        set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
-        if(DART_VERBOSE)
-          message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
-        endif()
+      set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+      if(DART_VERBOSE)
+        message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
       endif()
     endif()
   else()
