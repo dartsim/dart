@@ -2,9 +2,9 @@
 
 ### [DART 6.8.1 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/53?closed=1)
 
-* XXX
+* Build System
 
-  * XXX: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+  * Fixed invalid double quotation marks in DARTFindBoost.cmake: [#1283](https://github.com/dartsim/dart/pull/1283)
 
 #### Compilers Tested
 
