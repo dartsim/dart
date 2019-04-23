@@ -93,21 +93,6 @@ jobs:
       '.ci/script.sh'
     displayName: 'Script'
 
-- job: high_sierra_clang_release
-  pool:
-    vmImage: 'macOS 10.13'
-  variables:
-    OS_NAME: osx
-    BUILD_TYPE: Release
-    BUILD_DIR: $(Build.SourcesDirectory)
-  steps:
-  - script: |
-      '.ci/install.sh'
-    displayName: 'Install'
-  - script: |
-      '.ci/script.sh'
-    displayName: 'Script'
-
 - job: windows_vs2019_x64
   pool:
     vmImage: 'windows-2019'
