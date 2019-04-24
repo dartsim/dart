@@ -8,6 +8,10 @@
 
   * Fixed BoxedLcpConstraintSolver is not API compatible with 6.7: [#1291](https://github.com/dartsim/dart/pull/1291)
 
+* Build
+
+  * Fixed building with FCL built without Octomap: [#1292](https://github.com/dartsim/dart/pull/1292)
+
 #### Compilers Tested
 
 * Linux
