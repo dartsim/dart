@@ -4,9 +4,9 @@
 
 #### Changes
 
-* XXX
+* Build
 
-  * XXX: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+  * Fixed building with FCL built without Octomap: [#1292](https://github.com/dartsim/dart/pull/1292)
 
 #### Compilers Tested
 
