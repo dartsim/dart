@@ -4,9 +4,9 @@
 
 #### Changes
 
-* XXX
+* Dynamics
 
-  * XXX: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+  * Fixed BoxedLcpConstraintSolver is not API compatible with 6.7: [#1291](https://github.com/dartsim/dart/pull/1291)
 
 #### Compilers Tested
 
