@@ -30,7 +30,7 @@ find_path(TINYXML2_INCLUDE_DIRS
 
 # Libraries
 if(MSVC)
-  set(TINYXML2_LIBRARIES optimized tinyxml2 debug tinyxml2d)
+  set(TINYXML2_LIBRARIES "tinyxml2$<$<CONFIG:Debug>:d>")
 else()
   find_library(TINYXML2_LIBRARIES
       NAMES tinyxml2

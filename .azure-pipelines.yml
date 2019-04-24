@@ -78,7 +78,7 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: high_seirra_clang_debug
+- job: high_sierra_clang_debug
   pool:
     vmImage: 'macOS 10.13'
   variables:
@@ -93,34 +93,38 @@ jobs:
       '.ci/script.sh'
     displayName: 'Script'
 
-# Disable windows build until we figure out how to cache vcpkg packages
-# - job: windows_vs_amd64
-#   pool: Hosted
-#   variables:
-#     ARCHITECTURE_SUFFIX: '-x64'
-#     VCPKG_ARCH: 'x64-windows'
-#     BUILD_TOOLSET_VERSION: '141'
-#     CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
-#     VCPKG_ROOT: '$(Build.BinariesDirectory)/vcpkg'
-#   steps:
-#   - script: git clone https://github.com/Microsoft/vcpkg.git
-#     displayName: 'Clone vcpkg'
-#     workingDirectory: '$(Build.BinariesDirectory)'
-#   - script: .\bootstrap-vcpkg.bat
-#     displayName: 'Build vcpkg'
-#     workingDirectory: '$(VCPKG_ROOT)'
-#   - script: |
-#       .\vcpkg.exe remove --outdated --recurse
-#       .\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
-#       .\vcpkg.exe integrate install
-#     displayName: 'Install dependencies'
-#     workingDirectory: '$(VCPKG_ROOT)'
-#   - script: |
-#       mkdir build
-#       cd build
-#       cmake \
-#         .. -G "$(CMAKE_GENERATOR)" -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64"
-#         -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake"
-#         -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
-#       make -j4
-#     displayName: 'Build'
+- job: windows_vs2019_x64
+  pool:
+    vmImage: 'windows-2019'
+  timeoutInMinutes: 0
+  strategy:
+    matrix:
+      Debug64:
+        CONFIGURATION: 'Debug'
+      Release64:
+        CONFIGURATION: 'Release'
+  variables:
+    VCPKG_INSTALL_ROOT: $(Build.SourcesDirectory)\vcpkg
+    VCPKG_ARCH: 'x64-windows'
+    VCPKG_PACKAGES: 'assimp boost-system boost-filesystem ccd eigen3 fcl'
+    BUILD_TOOLSET_VERSION: '142'
+    CMAKE_GENERATOR: 'Visual Studio 16 2019'
+  steps:
+  # TODO: Change to the upstream repo and use master branch once https://github.com/Microsoft/vcpkg/pull/6141 is merged
+  - script: |
+      git clone -q --depth 1 -b dev/roschuma/boost https://github.com/ras0219-msft/vcpkg.git $(VCPKG_INSTALL_ROOT)
+      $(VCPKG_INSTALL_ROOT)\bootstrap-vcpkg.bat
+    displayName: 'Install vcpkg'
+  - script: |
+      $(VCPKG_INSTALL_ROOT)\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) $(VCPKG_PACKAGES)
+      $(VCPKG_INSTALL_ROOT)\vcpkg.exe integrate install
+    displayName: 'Install dependencies'
+  - script: |
+      cmake --version
+      mkdir build
+      cd build
+      cmake .. -G "$(CMAKE_GENERATOR)" -A x64 -DCMAKE_BUILD_TYPE=$(CONFIGURATION) -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DVCPKG_TARGET_TRIPLET=$(VCPKG_ARCH) -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_INSTALL_ROOT)/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)" -DDART_MSVC_DEFAULT_OPTIONS=ON
+      cmake --build . --target ALL_BUILD --config $(CONFIGURATION) -- /maxcpucount:4
+    displayName: 'Build'
+    workingDirectory: '$(Build.SourcesDirectory)'
+
