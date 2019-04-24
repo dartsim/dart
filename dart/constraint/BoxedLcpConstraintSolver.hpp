@@ -58,8 +58,8 @@ public:
   DART_DEPRECATED(6.8)
   BoxedLcpConstraintSolver(
       double timeStep,
-      BoxedLcpSolverPtr boxedLcpSolver,
-      BoxedLcpSolverPtr secondaryBoxedLcpSolver);
+      BoxedLcpSolverPtr boxedLcpSolver = nullptr,
+      BoxedLcpSolverPtr secondaryBoxedLcpSolver = nullptr);
 
   /// Constructos with default primary and secondary LCP solvers, which are
   /// Dantzig and PGS, respectively.
