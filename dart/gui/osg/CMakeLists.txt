@@ -106,4 +106,5 @@ dart_format_add(
   ImGuiHandler.cpp
   RealTimeWorldNode.hpp
   RealTimeWorldNode.cpp
+  Utils.hpp
 )

@@ -205,7 +205,7 @@ void SphereShapeDrawable::refresh(bool firstTime)
   if(mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
+    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 

@@ -217,7 +217,7 @@ void VoxelGridShapeDrawable::refresh(bool firstTime)
   if (mVoxelGridShape->checkDataVariance(dynamics::Shape::DYNAMIC_COLOR)
       || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
+    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 
   mVoxelVersion = mVoxelGridShape->getVersion();
