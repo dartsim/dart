@@ -98,7 +98,10 @@ protected:
 //==============================================================================
 VoxelGridShapeNode::VoxelGridShapeNode(
     std::shared_ptr<dynamics::VoxelGridShape> shape, ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mVoxelGridShape(shape), mGeode(nullptr)
+  : ShapeNode(shape, parent, this),
+    mVoxelGridShape(shape),
+    mGeode(nullptr),
+    mVoxelGridVersion(dynamics::INVALID_INDEX)
 {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
@@ -111,10 +114,15 @@ void VoxelGridShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
-  if (mShape->getDataVariance() == dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
+      && mVoxelGridVersion == mVoxelGridShape->getVersion())
+  {
     return;
+  }
 
   extractData(false);
+
+  mVoxelGridVersion = mVoxelGridShape->getVersion();
 }
 
 //==============================================================================
@@ -193,15 +201,16 @@ VoxelGridShapeDrawable::VoxelGridShapeDrawable(
 }
 
 //==============================================================================
-void VoxelGridShapeDrawable::refresh(bool firstTime)
+void VoxelGridShapeDrawable::refresh(bool /*firstTime*/)
 {
   if (mVoxelGridShape->getDataVariance() == dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mVoxelGridShape->checkDataVariance(dynamics::Shape::DYNAMIC_ELEMENTS)
-      || firstTime)
+  // This function is called whenever the voxel grid version is increased, and
+  // the voxel grid could be updated in the version up. So we always update the
+  // voxel grid.
   {
     if (mVoxelVersion != mVoxelGridShape->getVersion())
     {
@@ -214,8 +223,9 @@ void VoxelGridShapeDrawable::refresh(bool firstTime)
     }
   }
 
-  if (mVoxelGridShape->checkDataVariance(dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
+  // This function is called whenever the point voxel grid is increased, and
+  // the color could be updated in the version up. So we always update the
+  // color.
   {
     setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
   }

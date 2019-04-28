@@ -73,7 +73,6 @@ private:
       ::osg::CompositeShape* osgShape,
       const std::vector<Eigen::Vector3d>& points,
       double size);
-  std::size_t mPointCloudVersion;
   std::vector<::osg::ref_ptr<::osg::Box>> mBoxes;
 };
 
@@ -99,11 +98,14 @@ protected:
 PointCloudShapeNode::PointCloudShapeNode(
     std::shared_ptr<dart::dynamics::PointCloudShape> shape,
     ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mPointCloudShape(shape), mGeode(nullptr)
+  : ShapeNode(shape, parent, this),
+    mPointCloudShape(shape),
+    mGeode(nullptr),
+    mPointCloudVersion(dynamics::INVALID_INDEX)
 {
   mNode = this;
   extractData(true);
-  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 }
 
 //==============================================================================
@@ -111,12 +113,17 @@ void PointCloudShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
+      && mPointCloudVersion == mPointCloudShape->getVersion())
+  {
     return;
+  }
 
   extractData(false);
+
+  mPointCloudVersion = mPointCloudShape->getVersion();
 }
 
 //==============================================================================
@@ -184,50 +191,39 @@ PointCloudShapeDrawable::PointCloudShapeDrawable(
     mVisualAspect(visualAspect),
     mVertices(new ::osg::Vec3Array),
     mColors(new ::osg::Vec4Array),
-    mOsgShape(new ::osg::CompositeShape()),
-    mPointCloudVersion(dynamics::INVALID_INDEX)
+    mOsgShape(new ::osg::CompositeShape())
 {
   refresh(true);
 }
 
 //==============================================================================
-void PointCloudShapeDrawable::refresh(bool firstTime)
+void PointCloudShapeDrawable::refresh(bool /*firstTime*/)
 {
   if (mPointCloudShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mPointCloudShape->checkDataVariance(dynamics::Shape::DYNAMIC_ELEMENTS)
-      || firstTime)
+  // This function is called whenever the point cloud version is increased, and
+  // the point cloud could be updated in the version up. So we always update the
+  // point cloud.
   {
-    if (mPointCloudVersion != mPointCloudShape->getVersion())
-    {
-      const auto size = mPointCloudShape->getVisualSize();
-      const auto& points = mPointCloudShape->getPoints();
+    const auto size = mPointCloudShape->getVisualSize();
+    const auto& points = mPointCloudShape->getPoints();
 
-      auto osgShape = new ::osg::CompositeShape();
-      addBoxes(osgShape, points, size);
+    auto osgShape = new ::osg::CompositeShape();
+    addBoxes(osgShape, points, size);
 
-      setShape(osgShape);
-      dirtyDisplayList();
-    }
+    setShape(osgShape);
+    dirtyDisplayList();
   }
 
-  if (mPointCloudShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
+  // This function is called whenever the point cloud version is increased, and
+  // the color could be updated in the version up. So we always update the
+  // color.
   {
     setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
   }
-}
-
-//==============================================================================
-::osg::Vec3 toVec3(const Eigen::Vector3d& point)
-{
-  return ::osg::Vec3(
-      static_cast<float>(point.x()),
-      static_cast<float>(point.y()),
-      static_cast<float>(point.z()));
 }
 
 //==============================================================================
@@ -254,7 +250,7 @@ void PointCloudShapeDrawable::addBoxes(
   for (auto i = mBoxes.size(); i < points.size(); ++i)
   {
     auto osgSphere
-        = new ::osg::Box(toVec3(points[i]), static_cast<float>(size));
+        = new ::osg::Box(eigToOsgVec3(points[i]), static_cast<float>(size));
     mBoxes.emplace_back(osgSphere);
     osgShape->addChild(mBoxes.back());
   }

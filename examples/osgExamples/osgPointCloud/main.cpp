@@ -43,7 +43,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
 
-const std::string& robotName = "KR5";
+static const std::string& robotName = "KR5";
 
 class PointCloudWorld : public gui::osg::WorldNode
 {
@@ -72,13 +72,16 @@ public:
     if (!mRobot)
       return;
 
+    if (!mUpdate)
+      return;
+
     // Set robot pose
     Eigen::VectorXd pos = mRobot->getPositions();
     pos += 0.01 * Eigen::VectorXd::Random(pos.size());
     mRobot->setPositions(pos);
 
     // Generate point cloud from robot meshes
-    auto pointCloud = generatePointCloud(100);
+    auto pointCloud = generatePointCloud(500);
 
     // Update sensor position
     static double time = 0.0;
@@ -105,9 +108,20 @@ public:
   {
     return mPointCloudVisualAspect;
   }
+
   dynamics::VisualAspect* getVoxelGridVisualAspect()
   {
     return mVoxelGridVisualAspect;
+  }
+
+  void setUpdate(bool update)
+  {
+    mUpdate = update;
+  }
+
+  bool getUpdate() const
+  {
+    return mUpdate;
   }
 
 protected:
@@ -173,6 +187,8 @@ protected:
 
   dynamics::VisualAspect* mPointCloudVisualAspect;
   dynamics::VisualAspect* mVoxelGridVisualAspect;
+
+  bool mUpdate{true};
 };
 
 class PointCloudWidget : public dart::gui::osg::ImGuiWidget
@@ -247,6 +263,15 @@ public:
         if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
           mViewer->simulate(false);
       }
+
+      int robotUpdate = mNode->getUpdate() ? 0 : 1;
+      if (ImGui::RadioButton("Run Robot Updating", &robotUpdate, 0)
+          && mNode->getUpdate())
+        mNode->setUpdate(true);
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Stop Robot Updating", &robotUpdate, 1)
+          && mNode->getUpdate())
+        mNode->setUpdate(false);
     }
 
     if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
@@ -329,18 +354,18 @@ public:
           minorLinesPerMajorLine
               = static_cast<int>(mGrid->getNumMinorLinesPerMajorLine());
           if (ImGui::InputInt(
-                "Minor Lines per Major Line", &minorLinesPerMajorLine, 1, 5))
+                  "Minor Lines per Major Line", &minorLinesPerMajorLine, 1, 5))
           {
             if (minorLinesPerMajorLine < 0)
               minorLinesPerMajorLine = 0;
             mGrid->setNumMinorLinesPerMajorLine(
-                  static_cast<std::size_t>(minorLinesPerMajorLine));
+                static_cast<std::size_t>(minorLinesPerMajorLine));
           }
 
           static float axisLineWidth;
           axisLineWidth = mGrid->getAxisLineWidth();
           if (ImGui::InputFloat(
-                "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f"))
+                  "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f"))
           {
             mGrid->setAxisLineWidth(axisLineWidth);
           }
@@ -348,7 +373,7 @@ public:
           static float majorLineWidth;
           majorLineWidth = mGrid->getMajorLineWidth();
           if (ImGui::InputFloat(
-                "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f"))
+                  "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f"))
           {
             mGrid->setMajorLineWidth(majorLineWidth);
           }
@@ -369,7 +394,7 @@ public:
           static float minorLineWidth;
           minorLineWidth = mGrid->getMinorLineWidth();
           if (ImGui::InputFloat(
-                "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f"))
+                  "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f"))
           {
             mGrid->setMinorLineWidth(minorLineWidth);
           }

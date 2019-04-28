@@ -57,7 +57,7 @@ if [ "$IS_PULL_REQUEST" = "false" ]; then
   fi
 fi
 
-if [ $BUILD_NAME = DOCS ]; then
+if [ $BUILD_DOCS = "ON" ]; then
   . "${BUILD_DIR}/.ci/travis/build_docs.sh"
   exit 0
 fi

@@ -64,6 +64,7 @@ protected:
 
   std::shared_ptr<dart::dynamics::PointCloudShape> mPointCloudShape;
   PointCloudShapeGeode* mGeode;
+  std::size_t mPointCloudVersion;
 };
 
 } // namespace render
