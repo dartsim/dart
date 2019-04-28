@@ -98,6 +98,9 @@ public:
   /// Returns size of visual object that represents each point.
   double getVisualSize() const;
 
+  // Documentation inherited.
+  void notifyColorUpdated(const Eigen::Vector4d& color) override;
+
 protected:
   // Documentation inherited.
   void updateVolume() const override;
