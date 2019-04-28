@@ -3,7 +3,8 @@ version: "{build}"
 
 image:
   - Visual Studio 2017
-  #- Ubuntu
+  # - Ubuntu1604
+  # - Ubuntu1804
 
 platform: x64
 
@@ -12,8 +13,8 @@ environment:
   MSVC_DEFAULT_OPTIONS: ON
   CMAKE_TOOLCHAIN_FILE: -DCMAKE_TOOLCHAIN_FILE="C:\tools\vcpkg\scripts\buildsystems\vcpkg.cmake"
   matrix:
-    - CMAKE_GENERATOR: -G"Visual Studio 16 2019"
-      CMAKE_TOOLCHAIN: -T"v142"
+    - CMAKE_GENERATOR: -G"Visual Studio 15 2017 Win64"
+      CMAKE_TOOLCHAIN: -T"v141"
 
 # build configuration, i.e. Debug, Release, etc.
 configuration:
@@ -37,9 +38,9 @@ install:
   # Windows 10
   #------------------
   # update vcpkg
-  - cmd: cd C:\tools\vcpkg
-  - cmd: git pull
-  - cmd: .\bootstrap-vcpkg.bat
+  # - cmd: cd C:\tools\vcpkg
+  # - cmd: git pull
+  # - cmd: .\bootstrap-vcpkg.bat
 
   - cmd: if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
   - cmd: if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
@@ -57,14 +58,14 @@ install:
   - cmd: vcpkg integrate install
   - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
 
-  #------------------
-  # Ubuntu 16.04 LTS
-  #------------------
+  #-------------------------------
+  # Ubuntu 16.04 LTS && 18.04 LTS
+  #-------------------------------
   - sh: sudo apt-get update
   - sh: sudo apt-get --yes install build-essential cmake pkg-config git
   - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev
   - sh: sudo apt-get --yes install libnlopt-dev coinor-libipopt-dev libbullet-dev libflann-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libopenscenegraph-dev
-  - sh: sudo apt-get --yes install clang-format-3.8
+  - sh: sudo apt-get --yes install clang-format-6.0
 
 # preserve contents of selected directories and files across project builds
 cache:
@@ -76,11 +77,11 @@ build_script:
   #------------------
   - cmd: mkdir build && cd build
   - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
-  - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
+  # - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
 
-  #------------------
-  # Ubuntu 16.04 LTS
-  #------------------
+  #-------------------------------
+  # Ubuntu 16.04 LTS && 18.04 LTS
+  #-------------------------------
   - sh: mkdir build && cd build
   - sh: cmake -DCMAKE_BUILD_TYPE=$configuration -DDART_TREAT_WARNINGS_AS_ERRORS=ON ..
   - sh: make -j4 tests examples tutorials
