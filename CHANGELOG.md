@@ -7,6 +7,7 @@
 * GUI
 
   * Added heightmap support to OSG renderer: [#1293](https://github.com/dartsim/dart/pull/1293)
+  * Improved voxel grid and point cloud rendering performance: [#1294](https://github.com/dartsim/dart/pull/1294)
 
 #### Compilers Tested
 

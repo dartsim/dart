@@ -53,7 +53,7 @@ Eigen::Vector3d toVector3d(const octomap::point3d& point)
 PointCloudShape::PointCloudShape(double visualSize)
   : Shape(), mVisualSize(visualSize)
 {
-  mVariance = DYNAMIC_ELEMENTS;
+  // Do nothing
 }
 
 //==============================================================================
@@ -152,6 +152,12 @@ void PointCloudShape::setVisualSize(double size)
 double PointCloudShape::getVisualSize() const
 {
   return mVisualSize;
+}
+
+//==============================================================================
+void PointCloudShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
+{
+  incrementVersion();
 }
 
 //==============================================================================

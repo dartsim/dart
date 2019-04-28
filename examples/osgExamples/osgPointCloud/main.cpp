@@ -43,7 +43,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
 
-const std::string& robotName = "KR5";
+static const std::string& robotName = "KR5";
 
 class PointCloudWorld : public gui::osg::WorldNode
 {
@@ -72,13 +72,16 @@ public:
     if (!mRobot)
       return;
 
+    if (!mUpdate)
+      return;
+
     // Set robot pose
     Eigen::VectorXd pos = mRobot->getPositions();
     pos += 0.01 * Eigen::VectorXd::Random(pos.size());
     mRobot->setPositions(pos);
 
     // Generate point cloud from robot meshes
-    auto pointCloud = generatePointCloud(100);
+    auto pointCloud = generatePointCloud(500);
 
     // Update sensor position
     static double time = 0.0;
@@ -105,9 +108,20 @@ public:
   {
     return mPointCloudVisualAspect;
   }
+
   dynamics::VisualAspect* getVoxelGridVisualAspect()
   {
     return mVoxelGridVisualAspect;
+  }
+
+  void setUpdate(bool update)
+  {
+    mUpdate = update;
+  }
+
+  bool getUpdate() const
+  {
+    return mUpdate;
   }
 
 protected:
@@ -173,6 +187,8 @@ protected:
 
   dynamics::VisualAspect* mPointCloudVisualAspect;
   dynamics::VisualAspect* mVoxelGridVisualAspect;
+
+  bool mUpdate{true};
 };
 
 class PointCloudWidget : public dart::gui::osg::ImGuiWidget
@@ -247,6 +263,15 @@ public:
         if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
           mViewer->simulate(false);
       }
+
+      int robotUpdate = mNode->getUpdate() ? 0 : 1;
+      if (ImGui::RadioButton("Run Robot Updating", &robotUpdate, 0)
+          && mNode->getUpdate())
+        mNode->setUpdate(true);
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Stop Robot Updating", &robotUpdate, 1)
+          && mNode->getUpdate())
+        mNode->setUpdate(false);
     }
 
     if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
