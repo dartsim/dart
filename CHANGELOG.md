@@ -4,9 +4,9 @@
 
 #### Changes
 
-* XXX
+* Parser
 
-  * XXX: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+  * Changed URDF parser to use URDF material color when specified: [#1295](https://github.com/dartsim/dart/pull/1295)
 
 #### Compilers Tested
 
