@@ -4,9 +4,9 @@
 
 #### Changes
 
-* XXX
+* GUI
 
-  * XXX: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+  * Added heightmap support to OSG renderer: [#1293](https://github.com/dartsim/dart/pull/1293)
 
 #### Compilers Tested
 
