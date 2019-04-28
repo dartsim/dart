@@ -37,6 +37,7 @@
 
 #include <osg/CullFace>
 #include <osg/Geode>
+#include <osg/Geometry>
 #include <osg/Light>
 #include <osg/Material>
 #include <osg/MatrixTransform>
