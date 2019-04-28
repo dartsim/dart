@@ -4,9 +4,9 @@
 
 #### Changes
 
-* XXX
+* GUI
 
-  * XXX: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+  * Improved voxel grid and point cloud rendering performance: [#1294](https://github.com/dartsim/dart/pull/1294)
 
 #### Compilers Tested
 
