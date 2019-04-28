@@ -96,8 +96,6 @@ VoxelGridShape::VoxelGridShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
   }
 
   setOctree(std::move(octree));
-
-  mVariance = DYNAMIC_ELEMENTS;
 }
 
 //==============================================================================
@@ -210,6 +208,12 @@ Eigen::Matrix3d VoxelGridShape::computeInertia(double /*mass*/) const
   // TODO(JS): Not implemented. Do we really want to compute inertia out of
   // voxels?
   return Eigen::Matrix3d::Identity();
+}
+
+//==============================================================================
+void VoxelGridShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
+{
+  incrementVersion();
 }
 
 //==============================================================================

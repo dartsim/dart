@@ -68,6 +68,7 @@ protected:
 
   std::shared_ptr<dynamics::VoxelGridShape> mVoxelGridShape;
   VoxelGridShapeGeode* mGeode;
+  std::size_t mVoxelGridVersion;
 };
 
 } // namespace render
