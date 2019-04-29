@@ -4,6 +4,10 @@
 
 #### Changes
 
+* Parser
+
+  * Changed URDF parser to use URDF material color when specified: [#1295](https://github.com/dartsim/dart/pull/1295)
+
 * GUI
 
   * Improved voxel grid and point cloud rendering performance: [#1294](https://github.com/dartsim/dart/pull/1294)

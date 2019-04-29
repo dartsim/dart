@@ -293,20 +293,6 @@ int main()
       loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
-  // Set the colors of the models to obey the shape's color specification
-  for(std::size_t i=0; i<robot->getNumBodyNodes(); ++i)
-  {
-    BodyNode* bn = robot->getBodyNode(i);
-    auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAspect>();
-    for(auto shapeNode : shapeNodes)
-    {
-      std::shared_ptr<MeshShape> mesh =
-          std::dynamic_pointer_cast<MeshShape>(shapeNode->getShape());
-      if(mesh)
-        mesh->setColorMode(MeshShape::SHAPE_COLOR);
-    }
-  }
-
   // Rotate the robot so that z is upwards (default transform is not Identity)
   robot->getJoint(0)->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
 

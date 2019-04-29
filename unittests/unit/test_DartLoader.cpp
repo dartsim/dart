@@ -33,8 +33,10 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
 
+using namespace dart;
 using dart::common::Uri;
 using dart::utils::DartLoader;
 
@@ -406,4 +408,29 @@ TEST(DartLoader, MultiTreeRobot)
 
   EXPECT_EQ(robot->getNumBodyNodes(), 2u);
   EXPECT_EQ(robot->getNumTrees(), 2u);
+}
+
+//==============================================================================
+TEST(DartLoader, KR5MeshColor)
+{
+  DartLoader loader;
+  auto robot =
+      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  EXPECT_TRUE(nullptr != robot);
+
+  EXPECT_EQ(robot->getNumBodyNodes(), 7u);
+  EXPECT_EQ(robot->getNumTrees(), 1u);
+
+  for (auto i = 0u; i < robot->getNumBodyNodes(); ++i)
+  {
+    auto body = robot->getBodyNode(i);
+    for (auto shapeNode : body->getShapeNodesWith<dynamics::VisualAspect>())
+    {
+      auto shape = shapeNode->getShape();
+      if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape))
+      {
+        EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+      }
+    }
+  }
 }
