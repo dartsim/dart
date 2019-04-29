@@ -52,6 +52,7 @@
 #if HAVE_OCTOMAP
 #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 #endif
+#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
 #include "dart/gui/osg/render/WarningShapeNode.hpp"
 
 #include "dart/dynamics/Frame.hpp"
@@ -72,6 +73,7 @@
 #if HAVE_OCTOMAP
 #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
+#include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
@@ -313,6 +315,25 @@ void ShapeFrameNode::createShapeNode(
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
 #endif // HAVE_OCTOMAP
+  else if(HeightmapShapef::getStaticType() == shapeType)
+  {
+    std::shared_ptr<HeightmapShapef> lss =
+        std::dynamic_pointer_cast<HeightmapShapef>(shape);
+    if(lss)
+      mRenderShapeNode = new render::HeightmapShapeNode<float>(lss, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  // OpenSceneGraph currently doesn't support double precision for Heightmap
+  // else if(HeightmapShaped::getStaticType() == shapeType)
+  // {
+  //   std::shared_ptr<HeightmapShaped> lss =
+  //       std::dynamic_pointer_cast<HeightmapShaped>(shape);
+  //   if(lss)
+  //     mRenderShapeNode = new render::HeightmapShapeNode<double>(lss, this);
+  //   else
+  //     warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  // }
   else
   {
     mRenderShapeNode = new render::WarningShapeNode(shape, this);

@@ -529,6 +529,7 @@ bool DartLoader::createDartNodeProperties(
   return true;
 }
 
+//==============================================================================
 void setMaterial(
   const urdf::ModelInterface* model,
   dynamics::VisualAspect* visualAspect,
@@ -542,10 +543,16 @@ void setMaterial(
     if(m_it != model->materials_.end())
       urdf_color = m_it->second->color;
 
-    Eigen::Vector4d color(urdf_color.r, urdf_color.g,
-                          urdf_color.b, urdf_color.a);
-
+    const Eigen::Vector4d color(
+        static_cast<double>(urdf_color.r),
+        static_cast<double>(urdf_color.g),
+        static_cast<double>(urdf_color.b),
+        static_cast<double>(urdf_color.a));
     visualAspect->setColor(color);
+    auto shapeFrame = visualAspect->getComposite();
+    auto shape = shapeFrame->getShape();
+    if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape))
+      mesh->setColorMode(dynamics::MeshShape::ColorMode::SHAPE_COLOR);
   }
 }
 

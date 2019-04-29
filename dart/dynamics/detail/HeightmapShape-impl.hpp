@@ -68,7 +68,7 @@ const std::string& HeightmapShape<S>::getStaticType()
 
 //==============================================================================
 template <typename S>
-void HeightmapShape<S>::setScale(const Eigen::Vector3d& scale)
+void HeightmapShape<S>::setScale(const Vector3& scale)
 {
   assert(scale[0] > 0.0);
   assert(scale[1] > 0.0);
@@ -82,7 +82,7 @@ void HeightmapShape<S>::setScale(const Eigen::Vector3d& scale)
 
 //==============================================================================
 template <typename S>
-const Eigen::Vector3d& HeightmapShape<S>::getScale() const
+auto HeightmapShape<S>::getScale() const -> const Vector3&
 {
   return mScale;
 }
@@ -97,34 +97,31 @@ void HeightmapShape<S>::setHeightField(
   assert(heights.size() == width * depth);
   if ((width * depth) != heights.size())
   {
-    dterr << "Size of height field needs to be width*depth=" << width * depth
-          << std::endl;
+    dterr << "[HeightmapShape] Size of height field needs to be width*depth="
+          << width * depth << "\n";
     return;
   }
   if (heights.empty())
   {
-    dtwarn << "Empty height field makes no sense." << std::endl;
+    dtwarn << "Empty height field makes no sense.\n";
     return;
   }
-  mHeights = HeightField(depth, width);
-  for (size_t r = 0; r < depth; ++r)
-  {
-    for (size_t c = 0; c < width; ++c)
-    {
-      mHeights(r, c) = heights[r * width + c];
-    }
-  }
 
-  // compute minimum and maximum height
-  mMinHeight = std::numeric_limits<S>::max();
-  mMaxHeight = -std::numeric_limits<S>::max();
-  for (auto it = heights.begin(); it != heights.end(); ++it)
-  {
-    if (*it < mMinHeight)
-      mMinHeight = *it;
-    if (*it > mMaxHeight)
-      mMaxHeight = *it;
-  }
+  // make heightmap data local copy
+  const Eigen::Map<const HeightField> data(heights.data(), depth, width);
+
+  setHeightField(data);
+}
+
+//==============================================================================
+template <typename S>
+void HeightmapShape<S>::setHeightField(const HeightField& heights)
+{
+  mHeights = heights;
+
+  mMinHeight = heights.minCoeff();
+  mMaxHeight = heights.maxCoeff();
+
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 
@@ -178,6 +175,13 @@ template <typename S>
 std::size_t HeightmapShape<S>::getDepth() const
 {
   return mHeights.rows();
+}
+
+//==============================================================================
+template <typename S>
+void HeightmapShape<S>::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
+{
+  incrementVersion();
 }
 
 //==============================================================================

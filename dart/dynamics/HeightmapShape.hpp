@@ -48,6 +48,7 @@ class HeightmapShape : public Shape
 public:
   using S = S_;
 
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
   using HeightField
       = Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
@@ -72,37 +73,57 @@ public:
 
   /// Sets scale of this heightmap.
   /// \param[in] scale Scale of the height map.
-  void setScale(const Eigen::Vector3d& scale);
+  void setScale(const Vector3& scale);
 
   /// Returns scale of this heightmap.
-  const Eigen::Vector3d& getScale() const;
+  const Vector3& getScale() const;
 
   /// Sets the height field.
   ///
-  /// The data in \e heights will be copied locally.
-  /// It would be nice to have the option to use the values in
-  /// \e heights directly instead of copying them locally to a vector in this
-  /// class (this would avoid any data being kept twice). However some
-  /// collision engine implementations may require to transform the height
-  /// values, e.g. bullet needs the y values flipped. Therefore,
-  /// a (mutable) copy of the height values passed in \e heights will be kept
-  /// in this class. The copied data can be modified via
+  /// The data in \e heights will be copied locally. It would be nice to have
+  /// the option to use the values in \e heights directly instead of copying
+  /// them locally to a vector in this class (this would avoid any data being
+  /// kept twice). However some collision engine implementations may require to
+  /// transform the height values, e.g. bullet needs the y values flipped.
+  /// Therefore, a (mutable) copy of the height values passed in \e heights will
+  /// be kept in this class. The copied data can be modified via
   /// getHeightFieldModifiable() and with flipY().
   ///
   /// \param[in] width Width of the field (x axis)
   /// \param[in] depth Depth of the field (-y axis)
-  /// \param[in] heights The height data of size \e width * \e depth.
-  /// The heights are interpreted as z values, while \e width goes in x
-  /// direction and \e depth in -y (it goes to -y because traditionally
-  /// images are read from top row to bottom row).
-  /// In the geometry which is to be generated from this shape, the min/max
-  /// height value is also the min/max z value (so if the minimum height
-  /// value is -100, the lowest terrain point will be -100, times the z
-  /// scale to be applied).
+  /// \param[in] heights The height data of size \e width * \e depth. The
+  /// heights are interpreted as z values, while \e width goes in x direction
+  /// and \e depth in -y (it goes to -y because traditionally images are read
+  /// from top row to bottom row). In the geometry which is to be generated from
+  /// this shape, the min/max height value is also the min/max z value (so if
+  /// the minimum height value is -100, the lowest terrain point will be -100,
+  /// times the z scale to be applied).
   void setHeightField(
       const std::size_t& width,
       const std::size_t& depth,
       const std::vector<S>& heights);
+
+  /// Sets the height field.
+  ///
+  /// The data in \e heights will be copied locally. It would be nice to have
+  /// the option to use the values in \e heights directly instead of copying
+  /// them locally to a vector in this class (this would avoid any data being
+  /// kept twice). However some collision engine implementations may require to
+  /// transform the height values, e.g. bullet needs the y values flipped.
+  /// Therefore, a (mutable) copy of the height values passed in \e heights will
+  /// be kept in this class. The copied data can be modified via
+  /// getHeightFieldModifiable() and with flipY().
+  ///
+  /// \param[in] heights The height data of size \e width * \e depth where
+  /// number of columns and number of rows are the width of the field (x axis)
+  /// and the depth of the field (-y axis), respectively. The heights are
+  /// interpreted as z values, while \e width goes in x direction and \e depth
+  /// in -y (it goes to -y because traditionally images are read from top row to
+  /// bottom row). In the geometry which is to be generated from this shape, the
+  /// min/max height value is also the min/max z value (so if the minimum height
+  /// value is -100, the lowest terrain point will be -100, times the z scale to
+  /// be applied).
+  void setHeightField(const HeightField& heights);
 
   /// Returns the height field.
   const HeightField& getHeightField() const;
@@ -125,6 +146,9 @@ public:
   /// Returns the maximum height set by setHeightField()
   S getMaxHeight() const;
 
+  /// Set the color of this arrow
+  void notifyColorUpdated(const Eigen::Vector4d& color) override;
+
 protected:
   // Documentation inherited.
   void updateBoundingBox() const override;
@@ -143,7 +167,7 @@ protected:
 
 private:
   /// Scale of the heightmap
-  Eigen::Vector3d mScale;
+  Vector3 mScale;
 
   /// Height field
   mutable HeightField mHeights;

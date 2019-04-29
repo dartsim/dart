@@ -43,164 +43,113 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
 
-static const std::string& robotName = "KR5";
+template <typename S>
+dynamics::ShapePtr createHeightmapShape(
+    std::size_t xResolution = 20u,
+    std::size_t yResolution = 20u,
+    S xSize = S(2),
+    S ySize = S(2),
+    S zMin = S(0.0),
+    S zMax = S(0.1))
+{
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
 
-class PointCloudWorld : public gui::osg::WorldNode
+  typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
+  for (auto i = 0u; i < yResolution; ++i)
+  {
+    for (auto j = 0u; j < xResolution; ++j)
+    {
+      data(i, j) = math::Random::uniform(zMin, zMax);
+    }
+  }
+  auto scale = Vector3(xSize / xResolution, ySize / yResolution, 1);
+
+  auto terrainShape = std::make_shared<HeightmapShape<S>>();
+  terrainShape->setScale(scale);
+  terrainShape->setHeightField(data);
+
+  return std::move(terrainShape);
+}
+
+template <typename S>
+dynamics::SimpleFramePtr createHeightmapFrame(
+    std::size_t xResolution = 20u,
+    std::size_t yResolution = 20u,
+    S xSize = S(2),
+    S ySize = S(2),
+    S zMin = S(0.0),
+    S zMax = S(0.1))
+{
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+  auto tf = terrainFrame->getRelativeTransform();
+  tf.translation()[0] = -static_cast<double>(xSize) / 2.0;
+  tf.translation()[1] = +static_cast<double>(ySize) / 2.0;
+  terrainFrame->setRelativeTransform(tf);
+
+  terrainFrame->createVisualAspect();
+
+  // TODO(JS): Remove?
+  auto terrainShape = createHeightmapShape(
+      xResolution, yResolution, xSize, ySize, zMin, zMax);
+  terrainFrame->setShape(terrainShape);
+
+  return terrainFrame;
+}
+
+class HeightmapWorld : public gui::osg::WorldNode
 {
 public:
-  explicit PointCloudWorld(
-      simulation::WorldPtr world, dynamics::SkeletonPtr robot)
-    : gui::osg::WorldNode(std::move(world)), mRobot(std::move(robot))
+  explicit HeightmapWorld(simulation::WorldPtr world)
+    : gui::osg::WorldNode(std::move(world))
   {
-    auto pointCloudFrame = mWorld->getSimpleFrame("point cloud");
-    auto voxelGridFrame = mWorld->getSimpleFrame("voxel");
-
-    mPointCloudShape = std::dynamic_pointer_cast<dynamics::PointCloudShape>(
-        pointCloudFrame->getShape());
-    mVoxelGridShape = std::dynamic_pointer_cast<dynamics::VoxelGridShape>(
-        voxelGridFrame->getShape());
-
-    mPointCloudVisualAspect = pointCloudFrame->getVisualAspect();
-    mVoxelGridVisualAspect = voxelGridFrame->getVisualAspect();
-
-    assert(mVoxelGridShape);
+    // Do nothing
   }
 
   // Triggered at the beginning of each simulation step
   void customPreStep() override
   {
-    if (!mRobot)
-      return;
-
-    if (!mUpdate)
-      return;
-
-    // Set robot pose
-    Eigen::VectorXd pos = mRobot->getPositions();
-    pos += 0.01 * Eigen::VectorXd::Random(pos.size());
-    mRobot->setPositions(pos);
-
-    // Generate point cloud from robot meshes
-    auto pointCloud = generatePointCloud(500);
-
-    // Update sensor position
-    static double time = 0.0;
-    const double dt = 0.001;
-    const double radius = 1.0;
-    Eigen::Vector3d center = Eigen::Vector3d(0.0, 0.1, 0.0);
-    Eigen::Vector3d sensorPos = center;
-    sensorPos[0] = radius * std::sin(time);
-    sensorPos[1] = radius * std::cos(time);
-    sensorPos[2] = 0.5 + 0.25 * std::sin(time * 2.0);
-    time += dt;
-    auto sensorFrame = mWorld->getSimpleFrame("sensor");
-    assert(sensorFrame);
-    sensorFrame->setTranslation(sensorPos);
-
-    // Update point cloud
-    mPointCloudShape->setPoints(pointCloud);
-
-    // Update voxel
-    mVoxelGridShape->updateOccupancy(pointCloud, sensorPos);
-  }
-
-  dynamics::VisualAspect* getPointCloudVisualAspect()
-  {
-    return mPointCloudVisualAspect;
-  }
-
-  dynamics::VisualAspect* getVoxelGridVisualAspect()
-  {
-    return mVoxelGridVisualAspect;
-  }
-
-  void setUpdate(bool update)
-  {
-    mUpdate = update;
-  }
-
-  bool getUpdate() const
-  {
-    return mUpdate;
+    // Do nothing
   }
 
 protected:
-  octomap::Pointcloud generatePointCloud(std::size_t numPoints)
-  {
-    octomap::Pointcloud pointCloud;
-
-    const auto numBodies = mRobot->getNumBodyNodes();
-    assert(numBodies > 0);
-    while (true)
-    {
-      const auto bodyIndex
-          = math::Random::uniform<std::size_t>(0, numBodies - 1);
-      auto body = mRobot->getBodyNode(bodyIndex);
-      auto shapeNodes = body->getShapeNodesWith<dynamics::VisualAspect>();
-      if (shapeNodes.empty())
-        continue;
-
-      const auto shapeIndex
-          = math::Random::uniform<std::size_t>(0, shapeNodes.size() - 1);
-      auto shapeNode = shapeNodes[shapeIndex];
-      auto shape = shapeNode->getShape();
-      assert(shape);
-
-      if (!shape->is<dynamics::MeshShape>())
-        continue;
-      auto mesh = std::static_pointer_cast<dynamics::MeshShape>(shape);
-
-      auto assimpScene = mesh->getMesh();
-      assert(assimpScene);
-
-      if (assimpScene->mNumMeshes < 1)
-        continue;
-      const auto meshIndex
-          = math::Random::uniform<std::size_t>(0, assimpScene->mNumMeshes - 1);
-
-      auto assimpMesh = assimpScene->mMeshes[meshIndex];
-      auto numVertices = assimpMesh->mNumVertices;
-
-      auto vertexIndex
-          = math::Random::uniform<unsigned int>(0, numVertices - 1);
-      auto vertex = assimpMesh->mVertices[vertexIndex];
-
-      Eigen::Isometry3d tf = shapeNode->getWorldTransform();
-      Eigen::Vector3d eigenVertex
-          = Eigen::Vector3f(vertex.x, vertex.y, vertex.z).cast<double>();
-      eigenVertex = tf * eigenVertex;
-
-      pointCloud.push_back(
-          static_cast<float>(eigenVertex.x()),
-          static_cast<float>(eigenVertex.y()),
-          static_cast<float>(eigenVertex.z()));
-
-      if (pointCloud.size() == numPoints)
-        return pointCloud;
-    }
-  }
-
-  SkeletonPtr mRobot;
-
-  std::shared_ptr<dynamics::PointCloudShape> mPointCloudShape;
-  std::shared_ptr<dynamics::VoxelGridShape> mVoxelGridShape;
-
-  dynamics::VisualAspect* mPointCloudVisualAspect;
-  dynamics::VisualAspect* mVoxelGridVisualAspect;
-
-  bool mUpdate{true};
 };
 
-class PointCloudWidget : public dart::gui::osg::ImGuiWidget
+template <typename S>
+class HeightmapWidget : public dart::gui::osg::ImGuiWidget
 {
 public:
-  PointCloudWidget(
+  HeightmapWidget(
       dart::gui::osg::ImGuiViewer* viewer,
-      PointCloudWorld* node,
-      gui::osg::GridVisual* grid)
-    : mViewer(viewer), mNode(node), mGrid(grid)
+      HeightmapWorld* node,
+      dynamics::SimpleFramePtr terrain,
+      gui::osg::GridVisual* grid,
+      std::size_t xResolution = 20u,
+      std::size_t yResolution = 20u,
+      S xSize = S(2),
+      S ySize = S(2),
+      S zMin = S(0.0),
+      S zMax = S(0.1))
+    : mViewer(viewer), mNode(node), mTerrain(std::move(terrain)), mGrid(grid)
   {
-    // Do nothing
+    mXResolution = xResolution;
+    mYResolution = yResolution;
+    mXSize = xSize;
+    mYSize = ySize;
+    mZMin = zMin;
+    mZMax = zMax;
+
+    updateHeightmapShape();
+  }
+
+  void updateHeightmapShape()
+  {
+    mTerrain->setShape(createHeightmapShape(
+        mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
+
+    auto tf = mTerrain->getRelativeTransform();
+    tf.translation()[0] = -static_cast<double>(mXSize) / 2.0;
+    tf.translation()[1] = +static_cast<double>(mYSize) / 2.0;
+    mTerrain->setRelativeTransform(tf);
   }
 
   void render() override
@@ -236,13 +185,9 @@ public:
       ImGui::EndMenuBar();
     }
 
-    ImGui::Text("Point cloud and voxel grid rendering example");
+    ImGui::Text("Heightmap rendering example");
     ImGui::Spacing();
-    ImGui::TextWrapped(
-        "The robot is moving by random joint velocities. The small blue boxes "
-        "and orange boxes represent point cloud and voxel grid, respectively. "
-        "The moving red sphere represents the sensor origin that generates the "
-        "point cloud.");
+    ImGui::TextWrapped("TODO.");
 
     if (ImGui::CollapsingHeader("Help"))
     {
@@ -263,47 +208,109 @@ public:
         if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
           mViewer->simulate(false);
       }
-
-      int robotUpdate = mNode->getUpdate() ? 0 : 1;
-      if (ImGui::RadioButton("Run Robot Updating", &robotUpdate, 0)
-          && mNode->getUpdate())
-        mNode->setUpdate(true);
-      ImGui::SameLine();
-      if (ImGui::RadioButton("Stop Robot Updating", &robotUpdate, 1)
-          && mNode->getUpdate())
-        mNode->setUpdate(false);
     }
 
-    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
+    if (mTerrain)
     {
-      if (mViewer->isAllowingSimulation())
+      if (ImGui::CollapsingHeader("Heightmap", ImGuiTreeNodeFlags_DefaultOpen))
       {
-        bool pcShow = !mNode->getPointCloudVisualAspect()->isHidden();
-        if (ImGui::Checkbox("Point Cloud", &pcShow))
+        ImGui::Text("Terrain");
+
+        auto aspect = mTerrain->getVisualAspect();
+        bool display = !aspect->isHidden();
+        if (ImGui::Checkbox("Show##Terrain", &display))
         {
-          if (pcShow)
-            mNode->getPointCloudVisualAspect()->show();
+          if (display)
+            aspect->show();
           else
-            mNode->getPointCloudVisualAspect()->hide();
+            aspect->hide();
         }
 
-        bool vgShow = !mNode->getVoxelGridVisualAspect()->isHidden();
-        if (ImGui::Checkbox("Voxel Grid", &vgShow))
+        auto shape = std::dynamic_pointer_cast<dynamics::HeightmapShapef>(
+            mTerrain->getShape());
+        assert(shape);
+
+        int xResolution = static_cast<int>(mXResolution);
+        if (ImGui::InputInt("X Resolution", &xResolution, 5, 10))
         {
-          if (vgShow)
-            mNode->getVoxelGridVisualAspect()->show();
-          else
-            mNode->getVoxelGridVisualAspect()->hide();
+          if (xResolution < 5)
+            xResolution = 5;
+
+          if (static_cast<int>(mXResolution) != xResolution)
+          {
+            mXResolution = xResolution;
+            updateHeightmapShape();
+          }
+        }
+
+        int yResolution = static_cast<int>(mYResolution);
+        if (ImGui::InputInt("Y Resolution", &yResolution, 5, 10))
+        {
+          if (yResolution < 5)
+            yResolution = 5;
+
+          if (static_cast<int>(mYResolution) != yResolution)
+          {
+            mYResolution = yResolution;
+            updateHeightmapShape();
+          }
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::InputFloat("X Size", &mXSize, 0.1, 0.2))
+        {
+          if (mXSize < 0.1)
+            mXSize = 0.1;
+
+          updateHeightmapShape();
+        }
+
+        if (ImGui::InputFloat("Y Size", &mYSize, 0.1, 0.2))
+        {
+          if (mYSize < 0.1)
+            mYSize = 0.1;
+
+          updateHeightmapShape();
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::InputFloat("Z Min", &mZMin, 0.05, 0.1))
+          updateHeightmapShape();
+
+        if (ImGui::InputFloat("Z Max", &mZMax, 0.05, 0.1))
+          updateHeightmapShape();
+
+        ImGui::Separator();
+
+        auto visualAspect = mTerrain->getVisualAspect();
+
+        float color[4];
+        auto visualColor = visualAspect->getRGBA();
+        color[0] = static_cast<float>(visualColor[0]);
+        color[1] = static_cast<float>(visualColor[1]);
+        color[2] = static_cast<float>(visualColor[2]);
+        color[3] = static_cast<float>(visualColor[3]);
+        if (ImGui::ColorEdit4("Color##Heightmap", color))
+        {
+          visualColor[0] = static_cast<double>(color[0]);
+          visualColor[1] = static_cast<double>(color[1]);
+          visualColor[2] = static_cast<double>(color[2]);
+          visualColor[3] = static_cast<double>(color[3]);
+          visualAspect->setColor(visualColor);
         }
       }
+    }
 
+    if (mGrid)
+    {
       if (ImGui::CollapsingHeader("Grid", ImGuiTreeNodeFlags_None))
       {
-        assert(mGrid);
         ImGui::Text("Grid");
 
         bool display = mGrid->isDisplayed();
-        if (ImGui::Checkbox("Show", &display))
+        if (ImGui::Checkbox("Show##Grid", &display))
           mGrid->display(display);
 
         if (display)
@@ -420,106 +427,29 @@ public:
 
 protected:
   dart::gui::osg::ImGuiViewer* mViewer;
-  PointCloudWorld* mNode;
+  HeightmapWorld* mNode;
+  dynamics::SimpleFramePtr mTerrain;
   ::osg::ref_ptr<gui::osg::GridVisual> mGrid;
+  std::size_t mXResolution;
+  std::size_t mYResolution;
+  float mXSize;
+  float mYSize;
+  float mZMin;
+  float mZMax;
 };
-
-dynamics::SkeletonPtr createRobot(const std::string& name)
-{
-  auto urdfParser = dart::utils::DartLoader();
-
-  // Load the robot
-  auto robot
-      = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
-
-  // Rotate the robot so that z is upwards (default transform is not Identity)
-  robot->getJoint(0)->setTransformFromParentBodyNode(
-      Eigen::Isometry3d::Identity());
-
-  robot->setName(name);
-
-  return robot;
-}
-
-dynamics::SkeletonPtr createGround()
-{
-  auto urdfParser = dart::utils::DartLoader();
-
-  auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
-
-  // Rotate and move the ground so that z is upwards
-  Eigen::Isometry3d ground_tf
-      = ground->getJoint(0)->getTransformFromParentBodyNode();
-  ground_tf.pretranslate(Eigen::Vector3d(0, 0, 0.5));
-  ground_tf.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d(1, 0, 0)));
-  ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
-
-  return ground;
-}
-
-dynamics::SimpleFramePtr createVoxelFrame(double resolution = 0.01)
-{
-  auto voxelShape
-      = ::std::make_shared<dart::dynamics::VoxelGridShape>(resolution);
-  auto voxelFrame = ::dart::dynamics::SimpleFrame::createShared(
-      dart::dynamics::Frame::World());
-  voxelFrame->setName("voxel");
-  voxelFrame->setShape(voxelShape);
-  auto visualAspect = voxelFrame->createVisualAspect();
-  visualAspect->setRGBA(Color::Orange(0.5));
-
-  return voxelFrame;
-}
-
-dynamics::SimpleFramePtr createPointCloudFrame()
-{
-  auto pointCloudShape
-      = ::std::make_shared<::dart::dynamics::PointCloudShape>();
-  auto pointCloudFrame = ::dart::dynamics::SimpleFrame::createShared(
-      dart::dynamics::Frame::World());
-  pointCloudFrame->setName("point cloud");
-  pointCloudFrame->setShape(pointCloudShape);
-  auto visualAspect = pointCloudFrame->createVisualAspect();
-  visualAspect->setRGB(Color::Blue());
-
-  return pointCloudFrame;
-}
-
-dynamics::SimpleFramePtr createSensorFrame()
-{
-  auto sphereShape = ::std::make_shared<dart::dynamics::SphereShape>(0.05);
-  auto sensorFrame = ::dart::dynamics::SimpleFrame::createShared(
-      dart::dynamics::Frame::World());
-  sensorFrame->setName("sensor");
-  sensorFrame->setShape(sphereShape);
-  auto visualAspect = sensorFrame->createVisualAspect();
-  visualAspect->setRGB(Color::Red());
-
-  return sensorFrame;
-}
 
 int main()
 {
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = createRobot(robotName);
-  world->addSkeleton(robot);
+  auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, 0.f, 0.1f);
+  world->addSimpleFrame(terrain);
 
-  auto ground = createGround();
-  world->addSkeleton(ground);
-
-  auto pointCloud = createPointCloudFrame();
-  world->addSimpleFrame(pointCloud);
-
-  auto voxel = createVoxelFrame(0.05);
-  world->addSimpleFrame(voxel);
-
-  auto sensor = createSensorFrame();
-  world->addSimpleFrame(sensor);
+  assert(world->getNumSimpleFrames() == 1u);
 
   // Create an instance of our customized WorldNode
-  ::osg::ref_ptr<PointCloudWorld> node = new PointCloudWorld(world, robot);
+  ::osg::ref_ptr<HeightmapWorld> node = new HeightmapWorld(world);
   node->setNumStepsPerCycle(16);
 
   // Create the Viewer instance
@@ -531,8 +461,8 @@ int main()
   ::osg::ref_ptr<gui::osg::GridVisual> grid = new gui::osg::GridVisual();
 
   // Add control widget for atlas
-  viewer.getImGuiHandler()->addWidget(
-      std::make_shared<PointCloudWidget>(&viewer, node.get(), grid));
+  viewer.getImGuiHandler()->addWidget(std::make_shared<HeightmapWidget<float>>(
+      &viewer, node.get(), terrain, grid));
 
   viewer.addAttachment(grid);
 
