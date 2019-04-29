@@ -283,7 +283,6 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   for(std::size_t a=0; a<3; ++a)
   {
     Eigen::Vector3d tail(Eigen::Vector3d::Zero());
-//    tail[a] = 1.2*plane_length;
     tail[a] = ring_inner_scale;
     Eigen::Vector3d head(Eigen::Vector3d::Zero());
     head[a] = size;
@@ -302,7 +301,6 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
           dart::dynamics::ShapePtr(
             new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
 
-//    tail[a] = -1.2*plane_length;
     tail[a] = -ring_inner_scale;
     head[a] = -size;
 
@@ -363,8 +361,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
         }
         color1[r] = 1.0;
         color2[r] = 0.6;
-        color1[3] = getTool(InteractiveTool::ANGULAR,r)->getDefaultAlpha();
-        color2[3] = getTool(InteractiveTool::ANGULAR,r)->getDefaultAlpha();
+        color1.a = getTool(InteractiveTool::ANGULAR,r)->getDefaultAlpha();
+        color2.a = getTool(InteractiveTool::ANGULAR,r)->getDefaultAlpha();
         mesh->mColors[0][4*i+j] = ((4*i+j)%2 == 0)? color1 : color2;
         mesh->mColors[0][4*i+j+R] = ((4*i+j+R)%2 == 0)? color1 : color2;
         mesh->mColors[0][4*i+2+j] = ((4*i+2+j)%2 == 0)? color1 : color2;
