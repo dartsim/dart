@@ -192,7 +192,7 @@ void MeshShape::notifyAlphaUpdated(double alpha)
   {
     aiMesh* mesh = mMesh->mMeshes[i];
     for(std::size_t j=0; j<mesh->mNumVertices; ++j)
-      mesh->mColors[0][j][3] = alpha;
+      mesh->mColors[0][j].a = alpha;
   }
 }
 
