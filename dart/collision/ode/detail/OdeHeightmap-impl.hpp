@@ -49,7 +49,7 @@ void setOdeHeightfieldDetails(
     const S* heights,
     const std::size_t& width,
     const std::size_t& height,
-    const Eigen::Vector3d& scale,
+    const Eigen::Matrix<S, 3, 1>& scale,
     typename std::enable_if<std::is_same<float, S>::value>::type* = 0)
 {
   assert(width >= 2);
@@ -82,7 +82,7 @@ void setOdeHeightfieldDetails(
     const S* heights,
     const std::size_t& width,
     const std::size_t& height,
-    const Eigen::Vector3d& scale,
+    const Eigen::Matrix<S, 3, 1>& scale,
     typename std::enable_if<std::is_same<double, S>::value>::type* = 0)
 {
   assert(width >= 2);
@@ -118,7 +118,7 @@ OdeHeightmap<S>::OdeHeightmap(
   assert(heightMap);
 
   // get the heightmap parameters
-  const Eigen::Vector3d& scale = heightMap->getScale();
+  const auto& scale = heightMap->getScale();
   const auto& heights = heightMap->getHeightField();
 
   // Create the ODE heightfield

@@ -227,7 +227,7 @@ void VoxelGridShapeDrawable::refresh(bool /*firstTime*/)
   // the color could be updated in the version up. So we always update the
   // color.
   {
-    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
+    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 
   mVoxelVersion = mVoxelGridShape->getVersion();

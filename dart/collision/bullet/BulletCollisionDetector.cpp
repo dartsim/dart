@@ -964,7 +964,7 @@ createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap)
 {
   // get the heightmap parameters
-  const Eigen::Vector3d& scale = heightMap->getScale();
+  const auto& scale = heightMap->getScale();
   const auto minHeight = heightMap->getMinHeight();
   const auto maxHeight = heightMap->getMaxHeight();
 
@@ -977,12 +977,6 @@ createBulletCollisionShapeFromHeightmap(
     // take this back in as soon as it is supported
     // scalarType = PHY_DOUBLE;
   }
-
-  // TODO take this out when testing is finished
-/*  dtdbg << "Creating height shape, heights w = "
-        << heightMap->getWidth() << ", h = " << heightMap->getDepth()
-        << " min/max = " << minHeight << "/" << maxHeight << " scale = "
-        << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;*/
 
   // the y-values in the height field need to be flipped
   heightMap->flipY();
