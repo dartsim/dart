@@ -1,5 +1,4 @@
 # Dependency checks
-dart_find_package(NLOPT)
 dart_find_package(pagmo)
 dart_check_optional_package(pagmo "dart-optimizer-pagmo" "pagmo" "2.8")
 if(pagmo_FOUND)
@@ -21,7 +20,7 @@ set(component_name optimizer-pagmo)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_link_libraries(${target_name} PUBLIC dart Pagmo::pagmo NLOPT::nlopt)
+target_link_libraries(${target_name} PUBLIC dart Pagmo::pagmo)
 
 # Thread
 if(THREADS_HAVE_PTHREAD_ARG)
