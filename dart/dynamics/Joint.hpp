@@ -116,6 +116,7 @@ public:
   Joint& operator=(const Joint& _otherJoint);
 
   /// \brief Set joint name and return the name.
+  /// \param[in] _name The specified joint name to be set.
   /// \param[in] _renameDofs If true, the names of the joint's degrees of
   /// freedom will be updated by calling updateDegreeOfFreedomNames().
   ///
@@ -644,7 +645,7 @@ public:
   /// BodyNode expressed in the child BodyNode frame
   const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
 
-  /// Get J * \ddot{q} of this joint
+  /// Get J * \f$ \ddot{q} \f$ of this joint
   const Eigen::Vector6d& getRelativePrimaryAcceleration() const;
 
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
@@ -740,7 +741,6 @@ protected:
   virtual void registerDofs() = 0;
 
   /// \brief Create a DegreeOfFreedom pointer.
-  /// \param[in] _name DegreeOfFreedom's name.
   /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
   /// that the index should be unique within the joint.
   ///
@@ -793,7 +793,7 @@ protected:
   /// BodyNode expressed in the child BodyNode frame
   virtual void updateRelativeSpatialAcceleration() const = 0;
 
-  /// Update J * \ddot{q} of this joint
+  /// Update J * \f$ \ddot{q} \f$ of this joint
   virtual void updateRelativePrimaryAcceleration() const = 0;
 
   /// Update spatial Jacobian of the child BodyNode relative to the parent
@@ -890,6 +890,9 @@ protected:
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
+  /// \param[in] _timeStep
+  /// \param[in] _withDampingForces
+  /// \param[in] _withSpringForces
   virtual void updateForceID(const Eigen::Vector6d& _bodyForce,
                              double _timeStep,
                              bool _withDampingForces,
@@ -899,6 +902,9 @@ protected:
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
+  /// \param[in] _timeStep
+  /// \param[in] _withDampingForces
+  /// \param[in] _withSpringForces
   virtual void updateForceFD(const Eigen::Vector6d& _bodyForce,
                              double _timeStep,
                              bool _withDampingForcese,

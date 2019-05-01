@@ -83,7 +83,7 @@ public:
 
   /// Sets boxed LCP (BLCP) solver
   ///
-  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
+  /// \param[in] lcpSolver The primary boxed LCP solver. When nullptr is
   /// passed, Dantzig solver will be used.
   void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
 

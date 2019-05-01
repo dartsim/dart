@@ -130,12 +130,12 @@ public:
   /// \param[in] withRespectTo The relative Frame of "newTransform".
   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
   /// BodyNode.
-  /// \param[in] velrelativeTo The relative frame of "newSpatialVelocity".
-  /// \param[in] velinCoordinatesOf The reference frame of "newSpatialVelocity".
+  /// \param[in] velRelativeTo The relative frame of "newSpatialVelocity".
+  /// \param[in] velInCoordinatesOf The reference frame of "newSpatialVelocity".
   /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
   /// child BodyNode.
-  /// \param[in] accrelativeTo The relative frame of "newSpatialAcceleration".
-  /// \param[in] accinCoordinatesOf The reference frame of
+  /// \param[in] accRelativeTo The relative frame of "newSpatialAcceleration".
+  /// \param[in] accInCoordinatesOf The reference frame of
   /// "newSpatialAcceleration".
   void setSpatialMotion(
       const Eigen::Isometry3d* newTransform,
@@ -188,6 +188,7 @@ public:
   /// Note that the angular portion of claasical velocity of the child
   /// BodyNode will not be changed after this function called.
   ///
+  /// \param[in] newLinearVelocity
   /// \param[in] relativeTo The relative frame of "newLinearVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
   void setLinearVelocity(const Eigen::Vector3d& newLinearVelocity,
@@ -200,15 +201,16 @@ public:
   /// Note that the linear portion of claasical velocity of the child
   /// BodyNode will not be changed after this function called.
   ///
-  /// \param[in] relativeTo The relative frame of "newLinearVelocity".
-  /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
+  /// \param[in] newAngularVelocity
+  /// \param[in] relativeTo The relative frame of "newAngularVelocity".
+  /// \param[in] inCoordinatesOf The reference frame of "newAngularVelocity".
   void setAngularVelocity(const Eigen::Vector3d& newAngularVelocity,
                           const Frame* relativeTo = Frame::World(),
                           const Frame* inCoordinatesOf = Frame::World());
 
   /// Set the spatial acceleration of the child BodyNode relative to the parent
   /// BodyNode.
-  /// \param[in] newSpatialVelocity Desired spatial acceleration of the child
+  /// \param[in] newSpatialAcceleration Desired spatial acceleration of the child
   /// BodyNode. The reference frame of "newSpatialAcceleration" is the child
   /// BodyNode.
   void setRelativeSpatialAcceleration(
@@ -241,8 +243,9 @@ public:
   /// Note that the angular portion of claasical acceleration of the child
   /// BodyNode will not be changed after this function called.
   ///
-  /// \param[in] relativeTo The relative frame of "newLinearVelocity".
-  /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
+  /// \param[in] newLinearAcceleration
+  /// \param[in] relativeTo The relative frame of "newLinearAcceleration".
+  /// \param[in] inCoordinatesOf The reference frame of "newLinearAcceleration".
   void setLinearAcceleration(const Eigen::Vector3d& newLinearAcceleration,
                              const Frame* relativeTo = Frame::World(),
                              const Frame* inCoordinatesOf = Frame::World());
@@ -253,8 +256,9 @@ public:
   /// Note that the linear portion of claasical acceleration of the child
   /// BodyNode will not be changed after this function called.
   ///
-  /// \param[in] relativeTo The relative frame of "newLinearVelocity".
-  /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
+  /// \param[in] newAngularAcceleration
+  /// \param[in] relativeTo The relative frame of "newAngularAcceleration".
+  /// \param[in] inCoordinatesOf The reference frame of "newAngularAcceleration".
   void setAngularAcceleration(const Eigen::Vector3d& newAngularAcceleration,
                               const Frame* relativeTo = Frame::World(),
                               const Frame* inCoordinatesOf = Frame::World());

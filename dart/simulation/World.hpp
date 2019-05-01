@@ -138,7 +138,7 @@ public:
   dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
 
   /// Find a Skeleton by name
-  /// \param[in] The name of the Skeleton you are looking for.
+  /// \param[in] _name The name of the Skeleton you are looking for.
   /// \return If the skeleton does not exist then return nullptr.
   dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 

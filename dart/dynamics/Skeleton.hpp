@@ -691,10 +691,10 @@ public:
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
   /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp1, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
-  /// \param _bodyNode Body node contraint impulse, _imp2, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode2
+  /// \param _bodyNode1 Body node contraint impulse, _imp1, is applied
+  /// \param _imp1 Constraint impulse expressed in body frame of _bodyNode1
+  /// \param _bodyNode2 Body node contraint impulse, _imp2, is applied
+  /// \param _imp2 Constraint impulse expressed in body frame of _bodyNode2
   void updateBiasImpulse(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
                          BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
 

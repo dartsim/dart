@@ -75,6 +75,7 @@ public:
   /// Compute moments of inertia of a capsule
   /// \param[in] radius Radius of the capsule.
   /// \param[in] height Height of the cylindrical part.
+  /// \param[in] mass Mass of the capsule.
   static Eigen::Matrix3d computeInertia(
       double radius, double height, double mass);
 

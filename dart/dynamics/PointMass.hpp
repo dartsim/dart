@@ -195,7 +195,7 @@ public:
   /// Set whether this point mass is colliding with other objects. Note that
   /// this status is set by the constraint solver during dynamics simulation but
   /// not by collision detector.
-  /// \param[in] True if this point mass is colliding.
+  /// \param[in] _isColliding True if this point mass is colliding.
   void setColliding(bool _isColliding);
 
   /// Return whether this point mass is set to be colliding with other objects.
@@ -435,8 +435,8 @@ protected:
 
   /// \brief Update bias force associated with the articulated body inertia.
   /// Forward dynamics routine.
+  /// \param[in] _dt Required for implicit joint stiffness and damping.
   /// \param[in] _gravity Vector of gravitational acceleration
-  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
   void updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity);
 
   /// \brief Update bias impulse associated with the articulated body inertia.
