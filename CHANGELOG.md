@@ -4,6 +4,10 @@
 
 #### Changes
 
+* Parser
+
+  * Fixed VskParker returning incorrect resource retriever: [#1300](https://github.com/dartsim/dart/pull/1300)
+
 * Build
 
   * Fixed building with pagmo's optional dependencies: [#1301](https://github.com/dartsim/dart/pull/1301)
