@@ -907,7 +907,7 @@ protected:
   /// \param[in] _withSpringForces
   virtual void updateForceFD(const Eigen::Vector6d& _bodyForce,
                              double _timeStep,
-                             bool _withDampingForcese,
+                             bool _withDampingForces,
                              bool _withSpringForces) = 0;
 
   /// Update joint impulses for inverse dynamics
