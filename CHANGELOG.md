@@ -1,5 +1,24 @@
 ## DART 6
 
+### [DART 6.8.3 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/55?closed=1)
+
+#### Changes
+
+* Parser
+
+  * Fixed VskParker returning incorrect resource retriever: [#1300](https://github.com/dartsim/dart/pull/1300)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC 64-bit: 5.4.0, 7.3.0, 8.2.0
+  * GCC 32-bit: 5.4.0
+
+* macOS
+
+  * AppleClang: 9.1.0, 10.0.0
+
 ### [DART 6.8.2 (2019-04-23)](https://github.com/dartsim/dart/milestone/54?closed=1)
 
 #### Changes
