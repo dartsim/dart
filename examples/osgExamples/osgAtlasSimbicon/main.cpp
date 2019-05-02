@@ -93,4 +93,7 @@ int main()
 
   // Begin running the application loop
   viewer.run();
+
+  // Ensure all the threads are done
+  viewer.stopThreading();
 }

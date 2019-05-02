@@ -61,7 +61,9 @@ AtlasSimbiconWidget::AtlasSimbiconWidget(
 void AtlasSimbiconWidget::render()
 {
   ImGui::SetNextWindowPos(ImVec2(10,20));
-  if (!ImGui::Begin("Atlas Control", nullptr, ImVec2(360,340), 0.5f,
+  ImGui::SetNextWindowSize(ImVec2(360,340));
+  ImGui::SetNextWindowBgAlpha(0.5f);
+  if (!ImGui::Begin("Atlas Control", nullptr,
                     ImGuiWindowFlags_MenuBar |
                     ImGuiWindowFlags_HorizontalScrollbar))
   {
@@ -76,7 +78,9 @@ void AtlasSimbiconWidget::render()
     if (ImGui::BeginMenu("Menu"))
     {
       if (ImGui::MenuItem("Exit"))
+      {
         mViewer->setDone(true);
+      }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Help"))

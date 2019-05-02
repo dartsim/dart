@@ -96,9 +96,6 @@ ImGuiHandler::ImGuiHandler()
   ImGui::StyleColorsDark();
 
   ImGui_ImplOpenGL2_Init();
-
-  ImGuiIO& io = ImGui::GetIO();
-  io.RenderDrawListsFn = ImGui_ImplOpenGL2_RenderDrawData;
 }
 
 //==============================================================================
@@ -282,6 +279,9 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   }
 
   ImGui::Render();
+
+  auto* drawData = ImGui::GetDrawData();
+  ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 
 } // namespace osg

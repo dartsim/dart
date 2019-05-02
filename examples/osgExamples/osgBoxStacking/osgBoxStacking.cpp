@@ -238,11 +238,11 @@ public:
   void render() override
   {
     ImGui::SetNextWindowPos(ImVec2(10, 20));
+    ImGui::SetNextWindowSize(ImVec2(240, 320));
+    ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Box Stacking",
             nullptr,
-            ImVec2(240, 320),
-            0.5f,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar
                 | ImGuiWindowFlags_HorizontalScrollbar))
     {
