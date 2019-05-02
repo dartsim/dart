@@ -34,11 +34,11 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/VskParser.hpp"
 
@@ -65,14 +65,23 @@ TEST(VskParser, EmptySkeleton)
 }
 
 //==============================================================================
+TEST(VskParser, LoadFromFileURI)
+{
+  const std::string prefix = "file://" DART_DATA_LOCAL_PATH "vsk/";
+
+  EXPECT_EQ(VskParser::readSkeleton(prefix + "test/empty.vsk"), nullptr);
+  EXPECT_NE(VskParser::readSkeleton(prefix + "Nick01.vsk"), nullptr);
+  EXPECT_NE(VskParser::readSkeleton(prefix + "Yuting.vsk"), nullptr);
+}
+
+//==============================================================================
 TEST(VskParser, SingleStepSimulations)
 {
   WorldPtr world = World::create();
-  EXPECT_NE(world , nullptr);
+  EXPECT_NE(world, nullptr);
 
-  SkeletonPtr nick
-      = VskParser::readSkeleton("dart://sample/vsk/Nick01.vsk");
-  EXPECT_NE(nick  , nullptr);
+  SkeletonPtr nick = VskParser::readSkeleton("dart://sample/vsk/Nick01.vsk");
+  EXPECT_NE(nick, nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   SkeletonPtr sehoon
@@ -80,8 +89,7 @@ TEST(VskParser, SingleStepSimulations)
   EXPECT_NE(sehoon, nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 
-  SkeletonPtr yuting
-      = VskParser::readSkeleton("dart://sample/vsk/Yuting.vsk");
+  SkeletonPtr yuting = VskParser::readSkeleton("dart://sample/vsk/Yuting.vsk");
   EXPECT_NE(yuting, nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 

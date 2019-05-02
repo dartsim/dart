@@ -83,3 +83,4 @@ foreach(collision_engine
 endforeach()
 
 dart_format_add(test_Inertia.cpp)
+dart_format_add(test_VskParser.cpp)
