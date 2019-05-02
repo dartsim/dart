@@ -62,7 +62,7 @@ public:
   ///   means the simulation will try to run at half of real-time speed (slowed
   ///   down).
   ///
-  /// \param[in] shadowTech
+  /// \param[in] shadower
   ///   The shading technique to use when rendering this world.
   RealTimeWorldNode(
       const std::shared_ptr<dart::simulation::World>& world = nullptr,

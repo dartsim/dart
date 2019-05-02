@@ -182,7 +182,7 @@ public:
   /// taken care of automatically, and Problem::setInitialGuess(~) will be
   /// called with the current positions of the Degrees Of Freedom.
   ///
-  /// \param[out] position The solution of the IK problem. If the solver failed
+  /// \param[out] positions The solution of the IK problem. If the solver failed
   /// to find a solution then it will still set the position with the best
   /// guess. For example, iterative solvers will fill \c positions with the last
   /// result of the iterations.
