@@ -1,5 +1,24 @@
 ## DART 6
 
+### [DART 6.8.4 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/56?closed=1)
+
+#### Changes
+
+* GUI
+
+  * Fixed crashing on exiting OSG + ImGui applications: [#1303](https://github.com/dartsim/dart/pull/1303)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC 64-bit: 5.4.0, 7.3.0, 8.2.0
+  * GCC 32-bit: 5.4.0
+
+* macOS
+
+  * AppleClang: 9.1.0, 10.0.0
+
 ### [DART 6.8.3 (2019-05-01)](https://github.com/dartsim/dart/milestone/55?closed=1)
 
 #### Changes
