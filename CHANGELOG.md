@@ -2,8 +2,6 @@
 
 ### [DART 6.9.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/52?closed=1)
 
-#### Changes
-
 * Parser
 
   * Changed URDF parser to use URDF material color when specified: [#1295](https://github.com/dartsim/dart/pull/1295)
@@ -13,6 +11,14 @@
   * Added heightmap support to OSG renderer: [#1293](https://github.com/dartsim/dart/pull/1293)
   * Improved voxel grid and point cloud rendering performance: [#1294](https://github.com/dartsim/dart/pull/1294)
   * Fixed incorrect alpha value update of InteractiveFrame: [#1297](https://github.com/dartsim/dart/pull/1297)
+
+### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
+
+#### Changes
+
+* GUI
+
+  * Fixed crashing on exiting OSG + ImGui applications: [#1303](https://github.com/dartsim/dart/pull/1303)
 
 #### Compilers Tested
 
@@ -24,10 +30,6 @@
 * macOS
 
   * AppleClang: 9.1.0, 10.0.0
-
-* Windows
-
-  * MSVC: 19.20
 
 ### [DART 6.8.3 (2019-05-01)](https://github.com/dartsim/dart/milestone/55?closed=1)
 
