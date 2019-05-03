@@ -63,37 +63,34 @@ int main()
       = new AtlasSimbiconWorldNode(world, atlas);
 
   // Create a Viewer and set it up with the WorldNode
-  dart::gui::osg::ImGuiViewer viewer;
-  viewer.addWorldNode(node);
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer = new dart::gui::osg::ImGuiViewer();
+  viewer->addWorldNode(node);
 
   // Add control widget for atlas
-  viewer.getImGuiHandler()->addWidget(
-        std::make_shared<AtlasSimbiconWidget>(&viewer, node.get()));
+  viewer->getImGuiHandler()->addWidget(
+        std::make_shared<AtlasSimbiconWidget>(viewer, node.get()));
 
   // Pass in the custom event handler
-  viewer.addEventHandler(new AtlasSimbiconEventHandler(node));
+  viewer->addEventHandler(new AtlasSimbiconEventHandler(node));
 
   // Set the dimensions for the window
-  viewer.setUpViewInWindow(0, 0, 1280, 960);
+  viewer->setUpViewInWindow(0, 0, 1280, 960);
 
   // Set the window name
-  viewer.realize();
+  viewer->realize();
   osgViewer::Viewer::Windows windows;
-  viewer.getWindows(windows);
+  viewer->getWindows(windows);
   windows.front()->setWindowName("Atlas Simbicon");
 
   // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
+  viewer->getCameraManipulator()->setHomePosition(
         ::osg::Vec3d( 5.14,  3.28, 6.28)*2.0,
         ::osg::Vec3d( 1.00,  0.00, 0.00),
         ::osg::Vec3d( 0.00,  0.1, 0.00));
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+  viewer->setCameraManipulator(viewer->getCameraManipulator());
 
   // Begin running the application loop
-  viewer.run();
-
-  // Ensure all the threads are done
-  viewer.stopThreading();
+  viewer->run();
 }

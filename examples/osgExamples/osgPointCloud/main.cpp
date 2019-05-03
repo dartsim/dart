@@ -190,11 +190,11 @@ public:
   void render() override
   {
     ImGui::SetNextWindowPos(ImVec2(10, 20));
+    ImGui::SetNextWindowSize(ImVec2(360, 600));
+    ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Point Cloud & Voxel Grid Demo",
             nullptr,
-            ImVec2(360, 600),
-            0.5f,
             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar))
     {
       // Early out if the window is collapsed, as an optimization.
@@ -394,7 +394,7 @@ public:
   }
 
 protected:
-  dart::gui::osg::ImGuiViewer* mViewer;
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
   PointCloudWorld* mNode;
   ::osg::ref_ptr<gui::osg::GridVisual> mGrid;
 };
@@ -512,33 +512,34 @@ int main()
   node->setNumStepsPerCycle(16);
 
   // Create the Viewer instance
-  dart::gui::osg::ImGuiViewer viewer;
-  viewer.addWorldNode(node);
-  viewer.simulate(true);
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
+  viewer->addWorldNode(node);
+  viewer->simulate(true);
 
   // Create grid
   ::osg::ref_ptr<gui::osg::GridVisual> grid = new gui::osg::GridVisual();
 
   // Add control widget for atlas
-  viewer.getImGuiHandler()->addWidget(
-      std::make_shared<PointCloudWidget>(&viewer, node.get(), grid));
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<PointCloudWidget>(viewer, node.get(), grid));
 
-  viewer.addAttachment(grid);
+  viewer->addAttachment(grid);
 
   // Print out instructions
-  std::cout << viewer.getInstructions() << std::endl;
+  std::cout << viewer->getInstructions() << std::endl;
 
   // Set up the window to be 1280x720 pixels
-  viewer.setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindow(0, 0, 1280, 720);
 
-  viewer.getCameraManipulator()->setHomePosition(
+  viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.57f, 3.14f, 1.64f),
       ::osg::Vec3(0.00f, 0.00f, 0.30f),
       ::osg::Vec3(-0.24f, -0.25f, 0.94f));
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+  viewer->setCameraManipulator(viewer->getCameraManipulator());
 
   // Begin the application loop
-  viewer.run();
+  viewer->run();
 }

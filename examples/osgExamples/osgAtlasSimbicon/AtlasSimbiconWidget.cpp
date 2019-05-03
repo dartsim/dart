@@ -78,9 +78,7 @@ void AtlasSimbiconWidget::render()
     if (ImGui::BeginMenu("Menu"))
     {
       if (ImGui::MenuItem("Exit"))
-      {
         mViewer->setDone(true);
-      }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Help"))

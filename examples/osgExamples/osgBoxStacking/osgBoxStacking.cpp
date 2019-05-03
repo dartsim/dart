@@ -396,7 +396,7 @@ protected:
       mWorld->setGravity(Eigen::Vector3d::Zero());
   }
 
-  dart::gui::osg::ImGuiViewer* mViewer;
+  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
   dart::simulation::WorldPtr mWorld;
   bool mGuiGravity;
   bool mGravity;
@@ -418,31 +418,32 @@ int main()
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
 
   // Create a Viewer and set it up with the WorldNode
-  dart::gui::osg::ImGuiViewer viewer;
-  viewer.addWorldNode(node);
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
+  viewer->addWorldNode(node);
 
   // Add control widget for atlas
-  viewer.getImGuiHandler()->addWidget(
-      std::make_shared<TestWidget>(&viewer, world));
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<TestWidget>(viewer, world));
 
   // Pass in the custom event handler
-  viewer.addEventHandler(new CustomEventHandler);
+  viewer->addEventHandler(new CustomEventHandler);
 
   // Set up the window to be 800x640
-  viewer.setUpViewInWindow(0, 0, 800, 640);
+  viewer->setUpViewInWindow(0, 0, 800, 640);
 
   // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
+  viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(12.00f, 12.00f, 9.00f),
       ::osg::Vec3(0.00f, 0.00f, 2.00f),
       ::osg::Vec3(0.00f, 0.00f, 1.00f));
 
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+  viewer->setCameraManipulator(viewer->getCameraManipulator());
 
   // Begin running the application loop
-  viewer.run();
+  viewer->run();
 
   return 0;
 }
