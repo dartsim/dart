@@ -59,7 +59,7 @@ protected:
 
   void setGravity(bool gravity);
 
-  dart::gui::osg::ImGuiViewer* mViewer;
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
 
   TinkertoyWorldNode* mNode;
 

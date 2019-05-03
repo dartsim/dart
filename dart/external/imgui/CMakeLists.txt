@@ -18,6 +18,7 @@ target_link_libraries(${target_name} PUBLIC OpenGL::GL)
 if(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${target_name} PRIVATE -w)
 endif()
+target_compile_definitions(${target_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

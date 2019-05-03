@@ -59,7 +59,9 @@ TinkertoyWidget::TinkertoyWidget(
 void TinkertoyWidget::render()
 {
   ImGui::SetNextWindowPos(ImVec2(10,20));
-  if (!ImGui::Begin("Tinkertoy Control", nullptr, ImVec2(360,640), 0.5f,
+  ImGui::SetNextWindowSize(ImVec2(360, 640));
+  ImGui::SetNextWindowBgAlpha(0.5f);
+  if (!ImGui::Begin("Tinkertoy Control", nullptr,
                     ImGuiWindowFlags_NoResize |
                     ImGuiWindowFlags_MenuBar |
                     ImGuiWindowFlags_HorizontalScrollbar))

@@ -175,32 +175,33 @@ int main()
   osg::ref_ptr<TinkertoyWorldNode> node = new TinkertoyWorldNode(world);
 
   // Create the viewer
-  dart::gui::osg::ImGuiViewer viewer;
-  viewer.addWorldNode(node);
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
+  viewer->addWorldNode(node);
 
   // Add control widget for atlas
-  viewer.getImGuiHandler()->addWidget(
-        std::make_shared<TinkertoyWidget>(&viewer, node.get()));
+  viewer->getImGuiHandler()->addWidget(
+        std::make_shared<TinkertoyWidget>(viewer, node.get()));
 
   // Add the keyboard input handler
   osg::ref_ptr<TinkertoyInputHandler> input =
-      new TinkertoyInputHandler(&viewer, node);
-  viewer.addEventHandler(input.get());
+      new TinkertoyInputHandler(viewer, node);
+  viewer->addEventHandler(input.get());
 
   // Add the mouse input handler
   std::shared_ptr<TinkertoyMouseHandler> mouse =
       std::make_shared<TinkertoyMouseHandler>(input);
-  viewer.getDefaultEventHandler()->addMouseEventHandler(mouse.get());
+  viewer->getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
   // Set the dimensions for the window
-  viewer.setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindow(0, 0, 1280, 720);
 
   // Set the window name
-  viewer.realize();
+  viewer->realize();
   osgViewer::Viewer::Windows windows;
-  viewer.getWindows(windows);
+  viewer->getWindows(windows);
   windows.front()->setWindowName("Tinkertoy");
 
   // Run the GUI application
-  viewer.run();
+  viewer->run();
 }

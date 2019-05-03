@@ -56,35 +56,35 @@ namespace osg {
 //==============================================================================
 struct ImGuiNewFrameCallback : public ::osg::Camera::DrawCallback
 {
-  ImGuiNewFrameCallback(ImGuiHandler& handler) : mHandler(handler)
+  ImGuiNewFrameCallback(ImGuiHandler* handler) : mHandler(handler)
   {
     // Do nothing
   }
 
   virtual void operator()(::osg::RenderInfo& renderInfo) const
   {
-    mHandler.newFrame(renderInfo);
+    mHandler->newFrame(renderInfo);
   }
 
 private:
-  ImGuiHandler& mHandler;
+  ::osg::ref_ptr<ImGuiHandler> mHandler;
 };
 
 //==============================================================================
 struct ImGuiDrawCallback : public ::osg::Camera::DrawCallback
 {
-  ImGuiDrawCallback(ImGuiHandler& handler) : mHandler(handler)
+  ImGuiDrawCallback(ImGuiHandler* handler) : mHandler(handler)
   {
     // Do nothing
   }
 
   virtual void operator()(::osg::RenderInfo& renderInfo) const
   {
-    mHandler.render(renderInfo);
+    mHandler->render(renderInfo);
   }
 
 private:
-  ImGuiHandler& mHandler;
+  ::osg::ref_ptr<ImGuiHandler> mHandler;
 };
 
 //==============================================================================
@@ -96,9 +96,6 @@ ImGuiHandler::ImGuiHandler()
   ImGui::StyleColorsDark();
 
   ImGui_ImplOpenGL2_Init();
-
-  ImGuiIO& io = ImGui::GetIO();
-  io.RenderDrawListsFn = ImGui_ImplOpenGL2_RenderDrawData;
 }
 
 //==============================================================================
@@ -113,10 +110,10 @@ void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
   if (nullptr == camera)
     return;
 
-  ImGuiDrawCallback* postDrawCallback = new ImGuiDrawCallback(*this);
+  ImGuiDrawCallback* postDrawCallback = new ImGuiDrawCallback(this);
   camera->setPostDrawCallback(postDrawCallback);
 
-  ImGuiNewFrameCallback* preDrawCallback = new ImGuiNewFrameCallback(*this);
+  ImGuiNewFrameCallback* preDrawCallback = new ImGuiNewFrameCallback(this);
   camera->setPreDrawCallback(preDrawCallback);
 }
 
@@ -282,6 +279,9 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   }
 
   ImGui::Render();
+
+  auto* drawData = ImGui::GetDrawData();
+  ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 
 } // namespace osg
