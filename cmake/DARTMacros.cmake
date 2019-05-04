@@ -195,3 +195,81 @@ function(dart_format_add)
     endif()
   endforeach()
 endfunction()
+
+#===============================================================================
+# dart_build_target_in_source(target
+#   [LINK_LIBRARIES library1 ...])
+#   [COMPILE_FEATURES feature1 ...]
+#   [COMPILE_OPTIONS option1 ...]
+# )
+function(dart_build_target_in_source target)
+  set(prefix example)
+  set(options )
+  set(oneValueArgs )
+  set(multiValueArgs LINK_LIBRARIES COMPILE_FEATURES COMPILE_OPTIONS)
+  cmake_parse_arguments("${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(example_LINK_LIBRARIES)
+    foreach(dep_target ${example_LINK_LIBRARIES})
+      if(NOT TARGET ${dep_target})
+        if(DART_VERBOSE)
+          message(WARNING "Skip ${target} because required target '${target}' not found")
+        endif()
+        return()
+      endif()
+    endforeach()
+  endif()
+
+  file(GLOB srcs "*.cpp" "*.hpp")
+
+  add_executable(${target} ${srcs})
+
+  if(example_LINK_LIBRARIES)
+    foreach(dep_target ${example_LINK_LIBRARIES})
+      target_link_libraries(${target} ${dep_target})
+    endforeach()
+  endif()
+
+  if(example_COMPILE_FEATURES)
+    foreach(comple_feature ${example_COMPILE_FEATURES})
+      target_compile_features(${target} PUBLIC ${comple_feature})
+    endforeach()
+  endif()
+
+  if(example_COMPILE_OPTIONS)
+    foreach(comple_option ${example_COMPILE_OPTIONS})
+      target_compile_options(${target} PUBLIC ${comple_option})
+    endforeach()
+  endif()
+
+  set_target_properties(${target}
+    PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
+
+  dart_add_example(${target})
+
+  dart_format_add(${srcs})
+endfunction()
+
+#===============================================================================
+# dart_build_example_in_source(target
+#   [LINK_LIBRARIES library1 ...])
+#   [COMPILE_FEATURES feature1 ...]
+#   [COMPILE_OPTIONS option1 ...]
+# )
+function(dart_build_example_in_source target)
+  dart_build_target_in_source(${target} ${ARGN})
+  dart_add_example(${target})
+endfunction()
+
+#===============================================================================
+# dart_build_tutorial_in_source(target
+#   [LINK_LIBRARIES library1 ...])
+#   [COMPILE_FEATURES feature1 ...]
+#   [COMPILE_OPTIONS option1 ...]
+# )
+function(dart_build_example_in_source target)
+  dart_build_target_in_source(${target} ${ARGN})
+  dart_add_tutorial(${target})
+endfunction()
