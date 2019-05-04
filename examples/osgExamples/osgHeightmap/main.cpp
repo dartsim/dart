@@ -155,11 +155,11 @@ public:
   void render() override
   {
     ImGui::SetNextWindowPos(ImVec2(10, 20));
+    ImGui::SetNextWindowSize(ImVec2(360, 600));
+    ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Point Cloud & Voxel Grid Demo",
             nullptr,
-            ImVec2(360, 600),
-            0.5f,
             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar))
     {
       // Early out if the window is collapsed, as an optimization.
