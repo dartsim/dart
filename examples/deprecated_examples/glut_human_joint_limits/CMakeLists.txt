@@ -5,8 +5,21 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 project(${example_name})
 
 set(TinyDNN_USE_SERIALIZER ON)
-find_package(TinyDNN REQUIRED)
-find_package(Threads REQUIRED)
+find_package(TinyDNN QUIET)
+if(NOT TinyDNN_FOUND)
+  if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
+    message(STATUS "Failed to find TinyDNN. glut_human_joint_limits is disabled.")
+  endif()
+  return()
+endif()
+
+find_package(Threads QUIET)
+if(NOT Threads_FOUND)
+  if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
+    message(STATUS "Failed to find Threads. glut_human_joint_limits is disabled.")
+  endif()
+  return()
+endif()
 
 set(required_components utils-urdf gui collision-ode collision-bullet)
 set(required_libraries
