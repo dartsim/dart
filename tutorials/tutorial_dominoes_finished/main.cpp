@@ -42,15 +42,13 @@ const double default_distance = default_domino_height / 2.0;
 const double default_angle = 20.0 * M_PI / 180.0;
 
 const double default_domino_density = 2.6e3; // kg/m^3
-const double default_domino_mass =
-    default_domino_density
-    * default_domino_height
-    * default_domino_width
-    * default_domino_depth;
+const double default_domino_mass
+    = default_domino_density * default_domino_height * default_domino_width
+      * default_domino_depth;
 
 const double default_push_force = 8.0;  // N
 const int default_force_duration = 200; // # iterations
-const int default_push_duration = 1000;  // # iterations
+const int default_push_duration = 1000; // # iterations
 
 const double default_endeffector_offset = 0.05;
 
@@ -62,7 +60,6 @@ using namespace dart::math;
 class Controller
 {
 public:
-
   Controller(const SkeletonPtr& manipulator, const SkeletonPtr& domino)
     : mManipulator(manipulator)
   {
@@ -70,7 +67,8 @@ public:
     mQDesired = mManipulator->getPositions();
 
     // Grab the last body in the manipulator, and use it as an end effector
-    mEndEffector = mManipulator->getBodyNode(mManipulator->getNumBodyNodes() - 1);
+    mEndEffector
+        = mManipulator->getBodyNode(mManipulator->getNumBodyNodes() - 1);
 
     // Compute the body frame offset for the end effector
     mOffset = default_endeffector_offset * Eigen::Vector3d::UnitX();
@@ -80,13 +78,13 @@ public:
 
     // Create a transform from the center of the domino to the top of the domino
     Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
-    target_offset.translation() =
-        default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+    target_offset.translation()
+        = default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
 
     // Rotate the transform so that it matches the orientation of the end
     // effector
-    target_offset.linear() =
-        mEndEffector->getTransform(domino->getBodyNode(0)).linear();
+    target_offset.linear()
+        = mEndEffector->getTransform(domino->getBodyNode(0)).linear();
 
     // Place the mTarget SimpleFrame at the top of the domino
     mTarget->setTransform(target_offset, domino->getBodyNode(0));
@@ -104,7 +102,7 @@ public:
   /// Coriolis forces
   void setPDForces()
   {
-    if(nullptr == mManipulator)
+    if (nullptr == mManipulator)
       return;
 
     // Compute the joint position error
@@ -131,7 +129,7 @@ public:
   /// Compute an operational space controller to push on the first domino
   void setOperationalSpaceForces()
   {
-    if(nullptr == mManipulator)
+    if (nullptr == mManipulator)
       return;
 
     const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
@@ -139,19 +137,23 @@ public:
     // Compute the Jacobian
     Jacobian J = mEndEffector->getWorldJacobian(mOffset);
     // Compute the pseudo-inverse of the Jacobian
-    Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
-                           + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+    Eigen::MatrixXd pinv_J
+        = J.transpose()
+          * (J * J.transpose() + 0.0025 * Eigen::Matrix6d::Identity())
+                .inverse();
 
     // Compute the Jacobian time derivative
     Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
     // Comptue the pseudo-inverse of the Jacobian time derivative
-    Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
-                            + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+    Eigen::MatrixXd pinv_dJ
+        = dJ.transpose()
+          * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix6d::Identity())
+                .inverse();
 
     // Compute the linear error
     Eigen::Vector6d e;
     e.tail<3>() = mTarget->getWorldTransform().translation()
-                - mEndEffector->getWorldTransform() * mOffset;
+                  - mEndEffector->getWorldTransform() * mOffset;
 
     // Compute the angular error
     Eigen::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
@@ -159,7 +161,7 @@ public:
 
     // Compute the time derivative of the error
     Eigen::Vector6d de = -mEndEffector->getSpatialVelocity(
-          mOffset, mTarget.get(), Frame::World());
+        mOffset, mTarget.get(), Frame::World());
 
     // Compute the forces needed to compensate for Coriolis forces and gravity
     const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
@@ -177,14 +179,13 @@ public:
 
     // Compute the control forces
     Eigen::VectorXd dq = mManipulator->getVelocities();
-    mForces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e)
-              - Kd * dq + Kd * pinv_J * Kp * e + Cg + f;
+    mForces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e) - Kd * dq
+              + Kd * pinv_J * Kp * e + Cg + f;
 
     mManipulator->setForces(mForces);
   }
 
 protected:
-
   /// The manipulator Skeleton that we will be controlling
   SkeletonPtr mManipulator;
 
@@ -222,7 +223,6 @@ protected:
 class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
-
   MyWindow(const WorldPtr& world)
     : mTotalAngle(0.0),
       mHasEverRun(false),
@@ -245,12 +245,13 @@ public:
     SkeletonPtr newDomino = mFirstDomino->cloneSkeleton();
     newDomino->setName("domino #" + std::to_string(mDominoes.size() + 1));
 
-    const SkeletonPtr& lastDomino = mDominoes.size() > 0 ?
-          mDominoes.back() : mFirstDomino;
+    const SkeletonPtr& lastDomino
+        = mDominoes.size() > 0 ? mDominoes.back() : mFirstDomino;
 
     // Compute the position for the new domino
-    Eigen::Vector3d dx = default_distance * Eigen::Vector3d(
-          cos(mTotalAngle), sin(mTotalAngle), 0.0);
+    Eigen::Vector3d dx
+        = default_distance
+          * Eigen::Vector3d(cos(mTotalAngle), sin(mTotalAngle), 0.0);
 
     Eigen::Vector6d x = lastDomino->getPositions();
     x.tail<3>() += dx;
@@ -263,26 +264,26 @@ public:
     // Check if the new domino collides with anything in the world.
     // Get the collision frames of all things in the world
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
-    
+
     // Create a new collision group which only contains the new domino
-    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();    
+    auto collisionEngine
+        = mWorld->getConstraintSolver()->getCollisionDetector();
     auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
-    
+
     // Remove the floor from all things in the world, because the floor
     // will always collide with the new domino.
     collisionGroup->removeShapeFramesOf(mFloor.get());
-    
+
     // Now check if the new domino collides with all the remaining things in
     // the world.
-    bool dominoCollision
-        = collisionGroup->collide(newGroup.get());
-    
+    bool dominoCollision = collisionGroup->collide(newGroup.get());
+
     // Put the floor back to all things in the world, otherwise the dominos
     // will fall to neverland once the simulation starts.
     collisionGroup->addShapeFramesOf(mFloor.get());
 
     // If the new domino is not penetrating an existing one
-    if(!dominoCollision)
+    if (!dominoCollision)
     {
       mWorld->addSkeleton(newDomino);
       // Record the latest domino addition
@@ -292,8 +293,10 @@ public:
     }
     else
     {
-      std::cout << "The new domino would penetrate something. I will not add"    << std::endl;
-      std::cout << "it to the world. Remove some dominos with 'd' and try again" << std::endl;
+      std::cout << "The new domino would penetrate something. I will not add"
+                << std::endl;
+      std::cout << "it to the world. Remove some dominos with 'd' and try again"
+                << std::endl;
     }
   }
 
@@ -301,7 +304,7 @@ public:
   // original domino)
   void deleteLastDomino()
   {
-    if(mDominoes.size() > 0)
+    if (mDominoes.size() > 0)
     {
       SkeletonPtr lastDomino = mDominoes.back();
       mDominoes.pop_back();
@@ -314,9 +317,9 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    if(!mHasEverRun)
+    if (!mHasEverRun)
     {
-      switch(key)
+      switch (key)
       {
         case 'q':
           attemptToCreateDomino(default_angle);
@@ -337,7 +340,7 @@ public:
     }
     else
     {
-      switch(key)
+      switch (key)
       {
         case 'f':
           mForceCountDown = default_force_duration;
@@ -356,18 +359,18 @@ public:
   {
     // If the user has pressed the 'f' key, apply a force to the first domino in
     // order to push it over
-    if(mForceCountDown > 0)
+    if (mForceCountDown > 0)
     {
       Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
-      Eigen::Vector3d location =
-          default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+      Eigen::Vector3d location
+          = default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
       mFirstDomino->getBodyNode(0)->addExtForce(force, location);
 
       --mForceCountDown;
     }
 
     // Run the controller for the manipulator
-    if(mPushCountDown > 0)
+    if (mPushCountDown > 0)
     {
       mController->setOperationalSpaceForces();
       --mPushCountDown;
@@ -381,7 +384,6 @@ public:
   }
 
 protected:
-
   /// Base domino. Used to clone new dominoes.
   SkeletonPtr mFirstDomino;
 
@@ -409,7 +411,6 @@ protected:
   int mPushCountDown;
 
   std::unique_ptr<Controller> mController;
-
 };
 
 SkeletonPtr createDomino()
@@ -418,14 +419,12 @@ SkeletonPtr createDomino()
   SkeletonPtr domino = Skeleton::create("domino");
 
   // Create a body for the domino
-  BodyNodePtr body =
-      domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+  BodyNodePtr body
+      = domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
 
   // Create a shape for the domino
-  std::shared_ptr<BoxShape> box(
-        new BoxShape(Eigen::Vector3d(default_domino_depth,
-                                     default_domino_width,
-                                     default_domino_height)));
+  std::shared_ptr<BoxShape> box(new BoxShape(Eigen::Vector3d(
+      default_domino_depth, default_domino_width, default_domino_height)));
   body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 
   // Set up inertia for the domino
@@ -444,16 +443,18 @@ SkeletonPtr createFloor()
   SkeletonPtr floor = Skeleton::create("floor");
 
   // Give the floor a body
-  BodyNodePtr body =
-      floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+  BodyNodePtr body
+      = floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
 
   // Give the body a shape
   double floor_width = 10.0;
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
-        new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
-  auto shapeNode
-      = body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
+      new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
+  auto shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(box);
   shapeNode->getVisualAspect()->setColor(dart::Color::Black());
 
   // Put the body into position
@@ -468,8 +469,8 @@ SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
   dart::utils::DartLoader loader;
-  SkeletonPtr manipulator =
-      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  SkeletonPtr manipulator
+      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   manipulator->setName("manipulator");
 
   // Position its base in a reasonable way
@@ -497,16 +498,23 @@ int main(int argc, char* argv[])
 
   MyWindow window(world);
 
-  std::cout << "Before simulation has started, you can create new dominoes:" << std::endl;
+  std::cout << "Before simulation has started, you can create new dominoes:"
+            << std::endl;
   std::cout << "'w': Create new domino angled forward" << std::endl;
   std::cout << "'q': Create new domino angled to the left" << std::endl;
   std::cout << "'e': Create new domino angled to the right" << std::endl;
   std::cout << "'d': Delete the last domino that was created" << std::endl;
   std::cout << std::endl;
-  std::cout << "spacebar: Begin simulation (you can no longer create or remove dominoes)" << std::endl;
+  std::cout << "spacebar: Begin simulation (you can no longer create or remove "
+               "dominoes)"
+            << std::endl;
   std::cout << "'p': replay simulation" << std::endl;
-  std::cout << "'f': Push the first domino with a disembodied force so that it falls over" << std::endl;
-  std::cout << "'r': Push the first domino with the manipulator so that it falls over" << std::endl;
+  std::cout << "'f': Push the first domino with a disembodied force so that it "
+               "falls over"
+            << std::endl;
+  std::cout
+      << "'r': Push the first domino with the manipulator so that it falls over"
+      << std::endl;
   std::cout << "'v': Turn contact force visualization on/off" << std::endl;
 
   glutInit(&argc, argv);

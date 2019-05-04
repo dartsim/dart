@@ -41,15 +41,13 @@ const double default_distance = default_domino_height / 2.0;
 const double default_angle = 20.0 * M_PI / 180.0;
 
 const double default_domino_density = 2.6e3; // kg/m^3
-const double default_domino_mass =
-    default_domino_density
-    * default_domino_height
-    * default_domino_width
-    * default_domino_depth;
+const double default_domino_mass
+    = default_domino_density * default_domino_height * default_domino_width
+      * default_domino_depth;
 
 const double default_push_force = 8.0;  // N
 const int default_force_duration = 200; // # iterations
-const int default_push_duration = 1000;  // # iterations
+const int default_push_duration = 1000; // # iterations
 
 const double defaultmEndEffectormOffset = 0.05;
 
@@ -60,7 +58,6 @@ using namespace dart::math;
 class Controller
 {
 public:
-
   Controller(const SkeletonPtr& manipulator, const SkeletonPtr& /*domino*/)
     : mManipulator(manipulator)
   {
@@ -72,7 +69,7 @@ public:
 
     // Set PD control gains
     mKpPD = 200.0;
-    mKdPD =  20.0;
+    mKdPD = 20.0;
 
     // Set operational space control gains
     mKpOS = 5.0;
@@ -97,7 +94,6 @@ public:
   }
 
 protected:
-
   /// The manipulator Skeleton that we will be controlling
   SkeletonPtr mManipulator;
 
@@ -135,7 +131,6 @@ protected:
 class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
-
   MyWindow(const WorldPtr& world)
     : mTotalAngle(0.0),
       mHasEverRun(false),
@@ -171,12 +166,12 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    if(!mHasEverRun)
+    if (!mHasEverRun)
     {
-      switch(key)
+      switch (key)
       {
         case 'q':
-          attemptToCreateDomino( default_angle);
+          attemptToCreateDomino(default_angle);
           break;
         case 'w':
           attemptToCreateDomino(0.0);
@@ -194,7 +189,7 @@ public:
     }
     else
     {
-      switch(key)
+      switch (key)
       {
         case 'f':
           mForceCountDown = default_force_duration;
@@ -213,14 +208,14 @@ public:
   {
     // If the user has pressed the 'f' key, apply a force to the first domino in
     // order to push it over
-    if(mForceCountDown > 0)
+    if (mForceCountDown > 0)
     {
       // Lesson 1d
       --mForceCountDown;
     }
 
     // Run the controller for the manipulator
-    if(mPushCountDown > 0)
+    if (mPushCountDown > 0)
     {
       mController->setOperationalSpaceForces();
       --mPushCountDown;
@@ -234,7 +229,6 @@ public:
   }
 
 protected:
-
   /// Base domino. Used to clone new dominoes.
   SkeletonPtr mFirstDomino;
 
@@ -262,7 +256,6 @@ protected:
   int mPushCountDown;
 
   std::unique_ptr<Controller> mController;
-
 };
 
 SkeletonPtr createDomino()
@@ -271,14 +264,12 @@ SkeletonPtr createDomino()
   SkeletonPtr domino = Skeleton::create("domino");
 
   // Create a body for the domino
-  BodyNodePtr body =
-      domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+  BodyNodePtr body
+      = domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
 
   // Create a shape for the domino
-  std::shared_ptr<BoxShape> box(
-        new BoxShape(Eigen::Vector3d(default_domino_depth,
-                                     default_domino_width,
-                                     default_domino_height)));
+  std::shared_ptr<BoxShape> box(new BoxShape(Eigen::Vector3d(
+      default_domino_depth, default_domino_width, default_domino_height)));
   body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 
   // Set up inertia for the domino
@@ -297,16 +288,18 @@ SkeletonPtr createFloor()
   SkeletonPtr floor = Skeleton::create("floor");
 
   // Give the floor a body
-  BodyNodePtr body =
-      floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+  BodyNodePtr body
+      = floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
 
   // Give the body a shape
   double floor_width = 10.0;
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
-        new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
-  auto shapeNode
-      = body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
+      new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
+  auto shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(box);
   shapeNode->getVisualAspect()->setColor(dart::Color::Black());
 
   // Put the body into position
@@ -336,16 +329,23 @@ int main(int argc, char* argv[])
 
   MyWindow window(world);
 
-  std::cout << "Before simulation has started, you can create new dominoes:" << std::endl;
+  std::cout << "Before simulation has started, you can create new dominoes:"
+            << std::endl;
   std::cout << "'w': Create new domino angled forward" << std::endl;
   std::cout << "'q': Create new domino angled to the left" << std::endl;
   std::cout << "'e': Create new domino angled to the right" << std::endl;
   std::cout << "'d': Delete the last domino that was created" << std::endl;
   std::cout << std::endl;
-  std::cout << "spacebar: Begin simulation (you can no longer create or remove dominoes)" << std::endl;
+  std::cout << "spacebar: Begin simulation (you can no longer create or remove "
+               "dominoes)"
+            << std::endl;
   std::cout << "'p': replay simulation" << std::endl;
-  std::cout << "'f': Push the first domino with a disembodies force so that it falls over" << std::endl;
-  std::cout << "'r': Push the first domino with the manipulator so that it falls over" << std::endl;
+  std::cout << "'f': Push the first domino with a disembodies force so that it "
+               "falls over"
+            << std::endl;
+  std::cout
+      << "'r': Push the first domino with the manipulator so that it falls over"
+      << std::endl;
   std::cout << "'v': Turn contact force visualization on/off" << std::endl;
 
   glutInit(&argc, argv);

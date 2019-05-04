@@ -35,23 +35,23 @@
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 
-const double default_shape_density = 1000; // kg/m^3
-const double default_shape_height  = 0.1;  // m
-const double default_shape_width   = 0.03; // m
+const double default_shape_density = 1000;  // kg/m^3
+const double default_shape_height = 0.1;    // m
+const double default_shape_width = 0.03;    // m
 const double default_skin_thickness = 1e-3; // m
 
-const double default_start_height = 0.4;  // m
+const double default_start_height = 0.4; // m
 
 const double minimum_start_v = 2.5; // m/s
 const double maximum_start_v = 4.0; // m/s
 const double default_start_v = 3.5; // m/s
 
-const double minimum_launch_angle = 30.0*M_PI/180.0; // rad
-const double maximum_launch_angle = 70.0*M_PI/180.0; // rad
-const double default_launch_angle = 45.0*M_PI/180.0; // rad
+const double minimum_launch_angle = 30.0 * M_PI / 180.0; // rad
+const double maximum_launch_angle = 70.0 * M_PI / 180.0; // rad
+const double default_launch_angle = 45.0 * M_PI / 180.0; // rad
 
-const double maximum_start_w = 6*M_PI; // rad/s
-const double default_start_w = 3*M_PI;  // rad/s
+const double maximum_start_w = 6 * M_PI; // rad/s
+const double default_start_w = 3 * M_PI; // rad/s
 
 const double ring_spring_stiffness = 0.5;
 const double ring_damping_coefficient = 0.05;
@@ -60,7 +60,7 @@ const double default_damping_coefficient = 0.001;
 const double default_ground_width = 2;
 const double default_wall_thickness = 0.1;
 const double default_wall_height = 1;
-const double default_spawn_range = 0.9*default_ground_width/2;
+const double default_spawn_range = 0.9 * default_ground_width / 2;
 
 const double default_restitution = 0.6;
 
@@ -91,10 +91,13 @@ void setupRing(const SkeletonPtr& /*ring*/)
 class MyWindow : public SimWindow
 {
 public:
-
-  MyWindow(const WorldPtr& world, const SkeletonPtr& ball,
-           const SkeletonPtr& softBody, const SkeletonPtr& hybridBody,
-           const SkeletonPtr& rigidChain, const SkeletonPtr& rigidRing)
+  MyWindow(
+      const WorldPtr& world,
+      const SkeletonPtr& ball,
+      const SkeletonPtr& softBody,
+      const SkeletonPtr& hybridBody,
+      const SkeletonPtr& rigidChain,
+      const SkeletonPtr& rigidRing)
     : mRandomize(true),
       mRD(),
       mMT(mRD()),
@@ -111,7 +114,7 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    switch(key)
+    switch (key)
     {
       case '1':
         addObject(mOriginalBall->cloneSkeleton());
@@ -134,15 +137,15 @@ public:
         break;
 
       case 'd':
-        if(mWorld->getNumSkeletons() > 2)
+        if (mWorld->getNumSkeletons() > 2)
           removeSkeleton(mWorld->getSkeleton(2));
-        std::cout << "Remaining objects: " << mWorld->getNumSkeletons()-2
+        std::cout << "Remaining objects: " << mWorld->getNumSkeletons() - 2
                   << std::endl;
         break;
 
       case 'r':
         mRandomize = !mRandomize;
-        std::cout << "Randomization: " << (mRandomize? "on" : "off")
+        std::cout << "Randomization: " << (mRandomize ? "on" : "off")
                   << std::endl;
         break;
 
@@ -175,7 +178,6 @@ public:
   }
 
 protected:
-
   /// Add an object to the world and toss it at the wall
   bool addObject(const SkeletonPtr& /*object*/)
   {
@@ -210,7 +212,7 @@ protected:
   {
     setupRing(ring);
 
-    if(!addObject(ring))
+    if (!addObject(ring))
       return;
 
     // Create a closed loop to turn the chain into a ring
@@ -221,16 +223,16 @@ protected:
   /// it, if one existed
   void removeSkeleton(const SkeletonPtr& skel)
   {
-    for(std::size_t i=0; i<mJointConstraints.size(); ++i)
+    for (std::size_t i = 0; i < mJointConstraints.size(); ++i)
     {
-      const dart::constraint::JointConstraintPtr& constraint =
-          mJointConstraints[i];
+      const dart::constraint::JointConstraintPtr& constraint
+          = mJointConstraints[i];
 
-      if(constraint->getBodyNode1()->getSkeleton() == skel
-         || constraint->getBodyNode2()->getSkeleton() == skel)
+      if (constraint->getBodyNode1()->getSkeleton() == skel
+          || constraint->getBodyNode2()->getSkeleton() == skel)
       {
         mWorld->getConstraintSolver()->removeConstraint(constraint);
-        mJointConstraints.erase(mJointConstraints.begin()+i);
+        mJointConstraints.erase(mJointConstraints.begin() + i);
         break; // There should only be one constraint per skeleton
       }
     }
@@ -268,13 +270,15 @@ protected:
   /// Keep track of how many Skeletons we spawn to ensure we can give them all
   /// unique names
   std::size_t mSkelCount;
-
 };
 
 /// Add a rigid body with the specified Joint type to a chain
-template<class JointType>
-BodyNode* addRigidBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
-                       Shape::ShapeType /*type*/, BodyNode* /*parent*/ = nullptr)
+template <class JointType>
+BodyNode* addRigidBody(
+    const SkeletonPtr& /*chain*/,
+    const std::string& /*name*/,
+    Shape::ShapeType /*type*/,
+    BodyNode* /*parent*/ = nullptr)
 {
   // Set the Joint properties
   // Lesson 1a
@@ -298,16 +302,20 @@ BodyNode* addRigidBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/
   return bn;
 }
 
-enum SoftShapeType {
+enum SoftShapeType
+{
   SOFT_BOX = 0,
   SOFT_CYLINDER,
   SOFT_ELLIPSOID
 };
 
 /// Add a soft body with the specified Joint type to a chain
-template<class JointType>
-BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
-                      SoftShapeType /*type*/, BodyNode* /*parent*/ = nullptr)
+template <class JointType>
+BodyNode* addSoftBody(
+    const SkeletonPtr& /*chain*/,
+    const std::string& /*name*/,
+    SoftShapeType /*type*/,
+    BodyNode* /*parent*/ = nullptr)
 {
   // Set the Joint properties
   // Lesson 2a
@@ -331,11 +339,11 @@ BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
 void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
 {
   // Set the color of all the shapes in the object
-  for(std::size_t i=0; i < object->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
     auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
-    for(auto visualShapeNode : visualShapeNodes)
+    for (auto visualShapeNode : visualShapeNodes)
       visualShapeNode->getVisualAspect()->setColor(color);
   }
 }
@@ -388,7 +396,7 @@ SkeletonPtr createSoftBody()
   SkeletonPtr soft = Skeleton::create("soft");
 
   // Add a soft body
-  /*BodyNode* bn =*/ addSoftBody<FreeJoint>(soft, "soft box", SOFT_BOX);
+  /*BodyNode* bn =*/addSoftBody<FreeJoint>(soft, "soft box", SOFT_BOX);
 
   // Add a rigid collision geometry and inertia
   // Lesson 2f
@@ -403,7 +411,8 @@ SkeletonPtr createHybridBody()
   SkeletonPtr hybrid = Skeleton::create("hybrid");
 
   // Add a soft body
-  /*BodyNode* bn =*/ addSoftBody<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
+  /*BodyNode* bn =*/addSoftBody<FreeJoint>(
+      hybrid, "soft sphere", SOFT_ELLIPSOID);
 
   // Add a rigid body attached by a WeldJoint
   // Lesson 2g
@@ -419,11 +428,11 @@ SkeletonPtr createGround()
 
   BodyNode* bn = ground->createJointAndBodyNodePair<WeldJoint>().second;
 
-  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(
-        Eigen::Vector3d(default_ground_width, default_ground_width,
-                        default_wall_thickness));
+  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+      default_ground_width, default_ground_width, default_wall_thickness));
   auto shapeNode
-      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          shape);
   shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
 
   return ground;
@@ -435,17 +444,18 @@ SkeletonPtr createWall()
 
   BodyNode* bn = wall->createJointAndBodyNodePair<WeldJoint>().second;
 
-  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(
-        Eigen::Vector3d(default_wall_thickness, default_ground_width,
-                        default_wall_height));
+  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+      default_wall_thickness, default_ground_width, default_wall_height));
   auto shapeNode
-      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          shape);
   shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(
-        (default_ground_width + default_wall_thickness)/2.0, 0.0,
-        (default_wall_height  - default_wall_thickness)/2.0);
+      (default_ground_width + default_wall_thickness) / 2.0,
+      0.0,
+      (default_wall_height - default_wall_thickness) / 2.0);
   bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   bn->setRestitutionCoeff(0.2);
@@ -459,8 +469,13 @@ int main(int argc, char* argv[])
   world->addSkeleton(createGround());
   world->addSkeleton(createWall());
 
-  MyWindow window(world, createBall(), createSoftBody(), createHybridBody(),
-                  createRigidChain(), createRigidRing());
+  MyWindow window(
+      world,
+      createBall(),
+      createSoftBody(),
+      createHybridBody(),
+      createRigidChain(),
+      createRigidRing());
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'1': toss a rigid ball" << std::endl;
@@ -470,10 +485,14 @@ int main(int argc, char* argv[])
   std::cout << "'5': toss a ring of rigid bodies" << std::endl;
 
   std::cout << "\n'd': delete the oldest object" << std::endl;
-  std::cout <<   "'r': toggle randomness" << std::endl;
+  std::cout << "'r': toggle randomness" << std::endl;
 
-  std::cout << "\nWarning: Let objects settle before tossing a new one, or the simulation could explode." << std::endl;
-  std::cout <<   "         If the simulation freezes, you may need to force quit the application.\n" << std::endl;
+  std::cout << "\nWarning: Let objects settle before tossing a new one, or the "
+               "simulation could explode."
+            << std::endl;
+  std::cout << "         If the simulation freezes, you may need to force quit "
+               "the application.\n"
+            << std::endl;
 
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Collisions");
