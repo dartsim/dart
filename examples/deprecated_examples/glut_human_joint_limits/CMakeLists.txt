@@ -13,6 +13,7 @@ if(NOT TinyDNN_FOUND)
   return()
 endif()
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads QUIET)
 if(NOT Threads_FOUND)
   if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
@@ -29,23 +30,15 @@ set(required_libraries
   dart-collision-ode
   dart-collision-bullet
   ${TinyDNN_LIBRARIES}
+  Threads::Threads
 )
 
 if(DART_IN_SOURCE_BUILD)
-  if(THREADS_HAVE_PTHREAD_ARG)
     dart_build_example_in_source(${example_name}
       LINK_LIBRARIES ${required_libraries}
-      COMPILE_OPTIONS "-pthread"
-      COMPILE_FEATURES cxx_std_14
-    )
-  elseif(CMAKE_THREAD_LIBS_INIT)
-    dart_build_example_in_source(${example_name}
-      LINK_LIBRARIES ${required_libraries} ${CMAKE_THREAD_LIBS_INIT}
-      COMPILE_OPTIONS "-pthread"
       COMPILE_FEATURES cxx_std_14
     )
   endif()
-
   return()
 endif()
 
@@ -55,10 +48,3 @@ file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} PUBLIC ${required_libraries})
 target_compile_features(dart PUBLIC cxx_std_14)
-
-# Thread
-if(THREADS_HAVE_PTHREAD_ARG)
-  target_compile_options(${example_name} PUBLIC "-pthread")
-elseif(CMAKE_THREAD_LIBS_INIT)
-  target_link_libraries(${example_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
-endif()

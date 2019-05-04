@@ -213,7 +213,7 @@ function(dart_build_target_in_source target)
     foreach(dep_target ${example_LINK_LIBRARIES})
       if(NOT TARGET ${dep_target})
         if(DART_VERBOSE)
-          message(WARNING "Skip ${target} because required target '${target}' not found")
+          message(WARNING "Skipping ${target} because required target '${dep_target}' not found")
         endif()
         return()
       endif()
@@ -247,8 +247,6 @@ function(dart_build_target_in_source target)
       RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
-  dart_add_example(${target})
-
   dart_format_add(${srcs})
 endfunction()
 
@@ -269,7 +267,7 @@ endfunction()
 #   [COMPILE_FEATURES feature1 ...]
 #   [COMPILE_OPTIONS option1 ...]
 # )
-function(dart_build_example_in_source target)
+function(dart_build_tutorial_in_source target)
   dart_build_target_in_source(${target} ${ARGN})
   dart_add_tutorial(${target})
 endfunction()
