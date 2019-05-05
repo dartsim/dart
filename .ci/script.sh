@@ -80,10 +80,10 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   # make pytest
 fi
 
-if [ "$OS_NAME" = "linux" ] && [ "$CODECOV" = "OFF" ]; then
-  make -j$num_threads all tutorials examples tests
-else
+if [ "$CODECOV" = "ON" ]; then
   make -j$num_threads all tests
+else
+  make -j$num_threads all tutorials examples tests
 fi
 
 if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
