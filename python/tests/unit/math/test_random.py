@@ -3,7 +3,13 @@ import pytest
 from dartpy.math import Random
 
 
+def test_create():
+    rand = Random()
+
+
 def test_seed():
+    rand = Random()
+
     N = 10
 
     min = -10

@@ -64,26 +64,28 @@ fi
 
 mkdir build && cd build
 
+if [ "$OS_NAME" = "linux" ]; then
+  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
+fi
+
 cmake .. \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_BUILD_DARTPY=$BUILD_DARTPY \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_BUILD_EXTRAS=ON \
-  -DDART_CODECOV=$CODECOV
-
-if [ "$BUILD_DARTPY" = "ON" ]; then
-  make -j$num_threads binding
-  make -j$num_threads dartpy
-
-  # Disabled for now
-  # make pytest
-fi
+  -DDART_CODECOV=$CODECOV \
+  ${install_prefix_option}
 
 if [ "$CODECOV" = "ON" ]; then
   make -j$num_threads all tests
 else
   make -j$num_threads all tutorials examples tests
+fi
+
+if [ "$BUILD_DARTPY" = "ON" ]; then
+  make -j$num_threads dartpy
+  make pytest
 fi
 
 if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
@@ -104,3 +106,9 @@ cd $BUILD_DIR/examples/hello_world
 mkdir build && cd build
 cmake ..
 make -j$num_threads
+
+# Run a python example (experimental)
+if [ "$BUILD_DARTPY" = "ON" ]; then
+  cd $BUILD_DIR/python/examples/hello_world
+  python3 main.py
+fi

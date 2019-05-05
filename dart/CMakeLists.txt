@@ -143,9 +143,9 @@ if(NOT MSVC)
   target_link_libraries(dart PUBLIC Boost::regex)
 endif()
 if(CMAKE_VERSION VERSION_LESS 3.8.2)
-  target_compile_options(dart PUBLIC -std=c++11)
+  target_compile_options(dart PUBLIC -std=c++14)
 else()
-  target_compile_features(dart PUBLIC cxx_std_11)
+  target_compile_features(dart PUBLIC cxx_std_14)
 endif()
 
 # Build DART with all available SIMD instructions

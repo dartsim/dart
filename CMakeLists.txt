@@ -94,6 +94,10 @@ option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 option(DART_BUILD_DARTPY "Build dartpy (the python binding)" OFF)
 
+if(DART_BUILD_DARTPY)
+  set(BUILD_SHARED_LIBS OFF)
+endif()
+
 #===============================================================================
 # Print intro
 #===============================================================================
@@ -159,7 +163,7 @@ endif()
 #===============================================================================
 if(MSVC)
 
-  # Visual Studio enables c++11 support by default
+  # Visual Studio enables C++14 support by default
   if(MSVC_VERSION VERSION_LESS 1900)
     message(FATAL_ERROR "${PROJECT_NAME} requires VS2017 or greater.")
   endif()
@@ -195,8 +199,8 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   set(CXX_COMPILER_VERSION ${GCC_VERSION})
-  if(GCC_VERSION VERSION_LESS 4.8)
-    message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 4.8 or greater.")
+  if(GCC_VERSION VERSION_LESS 5.3.1)
+    message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 5.3.1 or greater.")
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
@@ -218,8 +222,8 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
   set(CXX_COMPILER_VERSION ${CLANG_VERSION})
-  if(CLANG_VERSION VERSION_LESS 3.3)
-    message(FATAL_ERROR "The installed Clang version is ${CLANG_VERSION}. ${PROJECT_NAME} requires clang 3.3 or greater.")
+  if(CLANG_VERSION VERSION_LESS 3.8)
+    message(FATAL_ERROR "The installed Clang version is ${CLANG_VERSION}. ${PROJECT_NAME} requires clang 3.8 or greater.")
   endif()
   if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
