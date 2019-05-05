@@ -80,7 +80,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   # make pytest
 fi
 
-if [ "$OS_NAME" = "linux" ]; then
+if [ "$OS_NAME" = "linux" ] && [ "$CODECOV" = "OFF" ]; then
   make -j$num_threads all tutorials examples tests
 else
   make -j$num_threads all tests
@@ -91,16 +91,16 @@ if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
 fi
 
 if [ $CODECOV = ON ]; then
-  make -j4 codecov
+  make -j$num_threads codecov
 else
-  ctest --output-on-failure -j4
+  ctest --output-on-failure -j$num_threads
 fi
 
 # Make sure we can install with no issues
-$SUDO make -j4 install
+$SUDO make -j$num_threads install
 
 # Build an example using installed DART
 cd $BUILD_DIR/examples/rigidCubes
 mkdir build && cd build
 cmake ..
-make -j4
+make -j$num_threads
