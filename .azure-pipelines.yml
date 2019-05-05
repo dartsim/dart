@@ -2,13 +2,13 @@
 # Ref: https://docs.microsoft.com/en-us/azure/devops/pipelines
 
 jobs:
-- job: xenial_gcc_debug
+- job: xenial_gcc_release
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'ubuntu-16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
-    BUILD_TYPE: Debug
+    BUILD_TYPE: Release
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-xenial
   steps:
@@ -16,7 +16,7 @@ jobs:
 
 - job: xenial_32bit_gcc_release
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'ubuntu-16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
@@ -26,22 +26,21 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: bionic_gcc_debug_with_codecov
+- job: bionic_gcc_debug
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'ubuntu-16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-bionic
-    CODECOV: ON
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
 - job: bionic_gcc_dartpy_release
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'ubuntu-16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
@@ -53,22 +52,9 @@ jobs:
   - template: .ci/azure-pipelines/docker.yml
   timeoutInMinutes: 0
 
-- job: cosmic_gcc_debug
-  pool:
-    vmImage: 'Ubuntu 16.04'
-  variables:
-    OS_NAME: linux
-    COMPILER: gcc
-    BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-cosmic
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
-
 - job: disco_gcc_debug
-  continueOnError: true
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'ubuntu-16.04'
   variables:
     OS_NAME: linux
     COMPILER: gcc
@@ -78,9 +64,9 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: high_sierra_clang_debug
+- job: mojav_clang_debug
   pool:
-    vmImage: 'macOS 10.13'
+    vmImage: 'macOS-10.14'
   variables:
     OS_NAME: osx
     BUILD_TYPE: Debug
