@@ -17,4 +17,5 @@ function(dartpy_add_example example_name) # ARGN for source file
   )
 endfunction()
 
-add_subdirectory(rigid_cubes)
+add_subdirectory(hello_world)
+add_subdirectory(hello_world_gui)

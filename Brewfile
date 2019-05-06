@@ -19,3 +19,7 @@ brew 'open-scene-graph'
 #brew 'pagmo'  # disabled to reduce the build time
 brew 'tinyxml2'
 brew 'urdfdom'
+
+# dartpy dependencies
+brew 'pybind11'
+brew 'numpy'

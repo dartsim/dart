@@ -16,6 +16,10 @@
 
   * Updated examples directory to make dart::gui::osg more accessible: [#1305](https://github.com/dartsim/dart/pull/1305)
 
+* dartpy
+
+  * Switched to pybind11: [#1307](https://github.com/dartsim/dart/pull/1307)
+
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 
 #### Changes
