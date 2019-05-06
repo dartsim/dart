@@ -100,7 +100,7 @@ fi
 $SUDO make -j$num_threads install
 
 # Build an example using installed DART
-cd $BUILD_DIR/examples/rigidCubes
+cd $BUILD_DIR/examples/hello_world
 mkdir build && cd build
 cmake ..
 make -j$num_threads
