@@ -41,5 +41,9 @@ add_subdirectory(ode)
 add_subdirectory(bullet)
 
 dart_format_add(
+  RaycastOption.hpp
+  RaycastOption.cpp
+  RaycastResult.hpp
+  RaycastResult.cpp
   SmartPointer.hpp
 )

@@ -57,6 +57,19 @@ CollisionDetector::createCollisionGroupAsSharedPtr()
 }
 
 //==============================================================================
+bool CollisionDetector::raycast(
+    CollisionGroup* /*group*/,
+    const Eigen::Vector3d& /*from*/,
+    const Eigen::Vector3d& /*to*/,
+    const RaycastOption& /*option*/,
+    RaycastResult* /*result*/)
+{
+  dtwarn << "[CollisionDetector] Raycast is not supported by '" << getType()
+         << "'\n";
+  return false;
+}
+
+//==============================================================================
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
