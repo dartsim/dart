@@ -46,8 +46,6 @@
 namespace dart {
 namespace collision {
 
-class BulletCollisionObject;
-
 class BulletCollisionDetector : public CollisionDetector
 {
 public:
@@ -58,7 +56,7 @@ public:
   static std::shared_ptr<BulletCollisionDetector> create();
 
   /// Constructor
-  virtual ~BulletCollisionDetector();
+  ~BulletCollisionDetector() override;
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() const
@@ -98,6 +96,14 @@ public:
       CollisionGroup* group2,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
+
+  // Documentation inherited
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override;
 
 protected:
 

@@ -33,6 +33,8 @@
 // Must be included before any Bullet headers.
 #include "dart/config.hpp"
 
+#include <algorithm>
+
 #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <BulletCollision/Gimpact/btGImpactShape.h>
@@ -73,6 +75,16 @@ void reportContacts(btCollisionWorld* collWorld,
                      const CollisionOption& option,
                      CollisionResult& result);
 
+void reportRayHits(
+    const btCollisionWorld::ClosestRayResultCallback callback,
+    const RaycastOption& option,
+    RaycastResult& result);
+
+void reportRayHits(
+    const btCollisionWorld::AllHitsRayResultCallback callback,
+    const RaycastOption& option,
+    RaycastResult& result);
+
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ);
 
@@ -84,6 +96,7 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(const
 template <typename HeightmapShapeT>
 std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap);
+
 } // anonymous namespace
 
 //==============================================================================
@@ -320,6 +333,61 @@ double BulletCollisionDetector::distance(
          << "not support (signed) distance queries. Returning.\n";
 
   return 0.0;
+}
+
+//==============================================================================
+bool BulletCollisionDetector::raycast(
+    CollisionGroup* group,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result)
+{
+  if (result)
+    result->clear();
+
+  // Check if 'this' is the collision engine of 'group'.
+  if (!checkGroupValidity(this, group))
+    return false;
+
+  auto castedGroup = static_cast<BulletCollisionGroup*>(group);
+  auto collisionWorld = castedGroup->getBulletCollisionWorld();
+
+  const auto btFrom = convertVector3(from);
+  const auto btTo = convertVector3(to);
+
+  if (option.mEnableAllHits)
+  {
+    auto callback = btCollisionWorld::AllHitsRayResultCallback(btFrom, btTo);
+    castedGroup->updateEngineData();
+    collisionWorld->rayTest(btFrom, btTo, callback);
+
+    if (result)
+    {
+      reportRayHits(callback, option, *result);
+      return result->hasHit();
+    }
+    else
+    {
+      return callback.hasHit();
+    }
+  }
+  else
+  {
+    auto callback = btCollisionWorld::ClosestRayResultCallback(btFrom, btTo);
+    castedGroup->updateEngineData();
+    collisionWorld->rayTest(btFrom, btTo, callback);
+
+    if (result)
+    {
+      reportRayHits(callback, option, *result);
+      return result->hasHit();
+    }
+    else
+    {
+      return callback.hasHit();
+    }
+  }
 }
 
 //==============================================================================
@@ -692,6 +760,77 @@ void reportContacts(
       }
     }
   }
+}
+
+//==============================================================================
+RayHit convertRayHit(
+    const btCollisionObject* btCollObj,
+    btVector3	hitPointWorld,
+    btVector3	hitNormalWorld,
+    btScalar closestHitFraction)
+{
+  RayHit rayHit;
+  assert(btCollObj);
+  const auto* userPointer = btCollObj->getUserPointer();
+  assert(userPointer);
+  const auto* collObj = static_cast<const BulletCollisionObject*>(userPointer);
+  assert(collObj);
+  rayHit.mCollisionObject = collObj;
+  rayHit.mPoint = convertVector3(hitPointWorld);
+  rayHit.mNormal = convertVector3(hitNormalWorld);
+  rayHit.mFraction = static_cast<double>(closestHitFraction);
+
+  return rayHit;
+}
+
+//==============================================================================
+void reportRayHits(
+    const btCollisionWorld::ClosestRayResultCallback callback,
+    const RaycastOption& /*option*/,
+    RaycastResult& result)
+{
+  const auto rayHit = convertRayHit(
+      callback.m_collisionObject,
+      callback.m_hitPointWorld,
+      callback.m_hitNormalWorld,
+      callback.m_closestHitFraction);
+
+  result.mRayHits.clear();
+  result.mRayHits.reserve(1);
+  result.mRayHits.emplace_back(rayHit);
+}
+
+//==============================================================================
+struct FractionLess
+{
+  bool operator()(const RayHit& a, const RayHit& b)
+  {
+    return a.mFraction < b.mFraction;
+  }
+};
+
+//==============================================================================
+void reportRayHits(
+    const btCollisionWorld::AllHitsRayResultCallback callback,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  result.mRayHits.clear();
+  result.mRayHits.reserve(
+      static_cast<std::size_t>(callback.m_hitPointWorld.size()));
+
+  for (auto i = 0; i < callback.m_hitPointWorld.size(); ++i)
+  {
+    const auto rayHit = convertRayHit(
+        callback.m_collisionObjects[i],
+        callback.m_hitPointWorld[i],
+        callback.m_hitNormalWorld[i],
+        callback.m_hitFractions[i]);
+    result.mRayHits.emplace_back(rayHit);
+  }
+
+  if (option.mSortByClosest)
+    std::sort(result.mRayHits.begin(), result.mRayHits.end(), FractionLess());
 }
 
 //==============================================================================
