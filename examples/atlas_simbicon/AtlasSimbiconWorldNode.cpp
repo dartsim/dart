@@ -121,8 +121,8 @@ void AtlasSimbiconWorldNode::showShadow()
       = dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer);
   if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get()))
   {
-    auto mapres = static_cast<short>(std::pow(2, 12));
-    sm->setTextureSize(::osg::Vec2s(mapres, mapres));
+    auto mapResolution = static_cast<short>(std::pow(2, 12));
+    sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
   }
 
   setShadowTechnique(shadow);

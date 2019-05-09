@@ -173,7 +173,8 @@ protected:
 
   void refreshShapeFrameNode(dart::dynamics::Frame* frame);
 
-  using NodeMap = std::unordered_map<dart::dynamics::Frame*, ShapeFrameNode*>;
+  using NodeMap = std::unordered_map<
+      dart::dynamics::Frame*, ::osg::ref_ptr<ShapeFrameNode>>;
 
   /// Map from Frame pointers to FrameNode pointers
   NodeMap mFrameToNode;

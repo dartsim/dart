@@ -67,6 +67,9 @@ int main()
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
 
+  // Enable shadow
+  node->showShadow();
+
   // Add control widget for atlas
   viewer->getImGuiHandler()->addWidget(
       std::make_shared<AtlasSimbiconWidget>(viewer, node));

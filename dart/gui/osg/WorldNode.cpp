@@ -351,7 +351,10 @@ void WorldNode::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> sh
 }
 
 //==============================================================================
-::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::createDefaultShadowTechnique(const Viewer* viewer) {
+::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::createDefaultShadowTechnique(const Viewer* viewer)
+{
+  assert(viewer);
+
   ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
   // increase the resolution of default shadow texture for higher quality
   auto mapres = static_cast<short>(std::pow(2, 13));
