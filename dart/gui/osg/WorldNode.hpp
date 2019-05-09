@@ -194,7 +194,7 @@ protected:
   ::osg::ref_ptr<::osg::Group> mNormalGroup;
 
   /// OSG group for shadowed objects
-  ::osg::ref_ptr<::osg::Group> mShadowedGroup;
+  ::osg::ref_ptr<::osgShadow::ShadowedScene> mShadowedGroup;
 
   /// Whether the shadows are enabled
   bool mShadowed;

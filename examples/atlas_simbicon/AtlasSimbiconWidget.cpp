@@ -60,7 +60,7 @@ AtlasSimbiconWidget::AtlasSimbiconWidget(
 void AtlasSimbiconWidget::render()
 {
   ImGui::SetNextWindowPos(ImVec2(10, 20));
-  ImGui::SetNextWindowSize(ImVec2(360, 340));
+  ImGui::SetNextWindowSize(ImVec2(360, 400));
   ImGui::SetNextWindowBgAlpha(0.5f);
   if (!ImGui::Begin(
           "Atlas Control",
@@ -130,8 +130,20 @@ void AtlasSimbiconWidget::render()
 
     // Headlights
     mGuiHeadlights = mViewer->checkHeadlights();
-    ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights);
-    mViewer->switchHeadlights(mGuiHeadlights);
+    if (ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights))
+    {
+      mViewer->switchHeadlights(mGuiHeadlights);
+    }
+
+    // Shadow
+    mShadow = mNode->isShadowed();
+    if (ImGui::Checkbox("Shadow On/Off", &mShadow))
+    {
+      if (mShadow)
+        mNode->showShadow();
+      else
+        mNode->hideShadow();
+    }
   }
 
   if (ImGui::CollapsingHeader(

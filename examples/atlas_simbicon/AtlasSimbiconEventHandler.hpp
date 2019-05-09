@@ -48,7 +48,7 @@ public:
       const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override;
 
 protected:
-  AtlasSimbiconWorldNode* mNode;
+  ::osg::ref_ptr<AtlasSimbiconWorldNode> mNode;
 };
 
 #endif // DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONEVENTHANDLER_HPP_

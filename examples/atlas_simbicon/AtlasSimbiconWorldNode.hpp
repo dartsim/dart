@@ -61,6 +61,9 @@ public:
   void switchToShortStrideWalking();
   void switchToNoControl();
 
+  void showShadow();
+  void hideShadow();
+
 protected:
   std::unique_ptr<Controller> mController;
   Eigen::Vector3d mExternalForce;

@@ -69,7 +69,7 @@ int main()
 
   // Add control widget for atlas
   viewer->getImGuiHandler()->addWidget(
-      std::make_shared<AtlasSimbiconWidget>(viewer, node.get()));
+      std::make_shared<AtlasSimbiconWidget>(viewer, node));
 
   // Pass in the custom event handler
   viewer->addEventHandler(new AtlasSimbiconEventHandler(node));
