@@ -67,10 +67,10 @@ public:
                  WorldNode* worldNode);
 
   /// Pointer to the ShapeFrame associated with this ShapeFrameNode
-  dart::dynamics::ShapeFrame* getShapeFrame();
+  dart::dynamics::ShapeFrame* getShapeFrame(bool checkUtilization = false);
 
   /// Pointer to the ShapeFrame associated with this ShapeFrameNode
-  const dart::dynamics::ShapeFrame* getShapeFrame() const;
+  const dart::dynamics::ShapeFrame* getShapeFrame(bool checkUtilization = false) const;
 
   WorldNode* getWorldNode();
 

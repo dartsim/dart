@@ -218,11 +218,8 @@ void WorldNode::clearUnusedNodes()
   {
     NodeMap::iterator it = mFrameToNode.find(frame);
     ShapeFrameNode* node = it->second;
-    if(!node->getShapeFrame() || !node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) {
-      mNormalGroup->removeChild(node);
-    }
-    else
-      mShadowedGroup->removeChild(node);
+    mNormalGroup->removeChild(node);
+    mShadowedGroup->removeChild(node);
     mFrameToNode.erase(it);
   }
 }
@@ -289,6 +286,8 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
     if(!node)
       return;
 
+    node->refresh(true);
+
     // update the group that ShapeFrameNode should be
     if((!node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) && node->getParent(0) != mNormalGroup) {
       mShadowedGroup->removeChild(node);
@@ -299,7 +298,6 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
       mShadowedGroup->addChild(node);
     }
 
-    node->refresh(true);
     return;
   }
 

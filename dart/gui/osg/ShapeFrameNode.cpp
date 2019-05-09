@@ -94,14 +94,31 @@ ShapeFrameNode::ShapeFrameNode(
 }
 
 //==============================================================================
-dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame()
+dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
 {
+  if (!mUtilized && checkUtilization)
+  {
+    dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+           << "ShapeFrameNode. This can be dangerous because unused "
+           << "ShapeFrameNode implies that it's possible that the ShapeFrame "
+           << "already got deleted.\n";
+  }
+
   return mShapeFrame;
 }
 
 //==============================================================================
-const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame() const
+const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
+    bool checkUtilization) const
 {
+  if (!mUtilized && checkUtilization)
+  {
+    dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+           << "ShapeFrameNode. This can be dangerous because unused "
+           << "ShapeFrameNode implies that it's possible that the ShapeFrame "
+           << "already got deleted.\n";
+  }
+
   return mShapeFrame;
 }
 
