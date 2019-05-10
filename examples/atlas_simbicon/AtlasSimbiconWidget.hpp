@@ -59,13 +59,15 @@ protected:
 
   ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
 
-  AtlasSimbiconWorldNode* mNode;
+  ::osg::ref_ptr<AtlasSimbiconWorldNode> mNode;
 
   float mGuiGravityAcc;
 
   float mGravityAcc;
 
   bool mGuiHeadlights;
+
+  bool mShadow;
 
   /// Control mode value for GUI
   int mGuiControlMode;

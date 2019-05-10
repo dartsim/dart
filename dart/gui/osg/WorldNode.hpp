@@ -173,7 +173,8 @@ protected:
 
   void refreshShapeFrameNode(dart::dynamics::Frame* frame);
 
-  using NodeMap = std::unordered_map<dart::dynamics::Frame*, ShapeFrameNode*>;
+  using NodeMap = std::unordered_map<
+      dart::dynamics::Frame*, ::osg::ref_ptr<ShapeFrameNode>>;
 
   /// Map from Frame pointers to FrameNode pointers
   NodeMap mFrameToNode;
@@ -194,7 +195,7 @@ protected:
   ::osg::ref_ptr<::osg::Group> mNormalGroup;
 
   /// OSG group for shadowed objects
-  ::osg::ref_ptr<::osg::Group> mShadowedGroup;
+  ::osg::ref_ptr<::osgShadow::ShadowedScene> mShadowedGroup;
 
   /// Whether the shadows are enabled
   bool mShadowed;

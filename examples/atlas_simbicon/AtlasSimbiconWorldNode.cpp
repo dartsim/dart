@@ -32,6 +32,8 @@
 
 #include "AtlasSimbiconWorldNode.hpp"
 
+#include <osgShadow/ShadowMap>
+
 //==============================================================================
 AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     const dart::simulation::WorldPtr& world,
@@ -110,4 +112,24 @@ void AtlasSimbiconWorldNode::switchToShortStrideWalking()
 void AtlasSimbiconWorldNode::switchToNoControl()
 {
   mController->changeStateMachine("standing", mWorld->getTime());
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::showShadow()
+{
+  auto shadow
+      = dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer);
+  if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get()))
+  {
+    auto mapResolution = static_cast<short>(std::pow(2, 12));
+    sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
+  }
+
+  setShadowTechnique(shadow);
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::hideShadow()
+{
+  setShadowTechnique(nullptr);
 }
