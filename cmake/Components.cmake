@@ -69,12 +69,14 @@ function(add_component package_name component)
   set(target "${component_prefix}${component}")
   add_custom_target("${target}")
 
-  install(EXPORT "${target}"
-    FILE "${package_name}_${component}Targets.cmake"
-    DESTINATION "${CONFIG_INSTALL_DIR}"
-    )
-  # TODO(JS): It would be nice if we could check if ${target} has at least one
-  # dependency target.
+  if(NOT DART_BUILD_DARTPY)
+    install(EXPORT "${target}"
+      FILE "${package_name}_${component}Targets.cmake"
+      DESTINATION "${CONFIG_INSTALL_DIR}"
+      )
+    # TODO(JS): It would be nice if we could check if ${target} has at least one
+    # dependency target.
+  endif()
 
   set_property(TARGET "${target}" PROPERTY "${component_prefix}COMPONENT" TRUE)
   set_property(TARGET "${target}" PROPERTY "${component_prefix}DEPENDENCIES")
@@ -165,11 +167,13 @@ function(add_component_targets package_name component)
         " are supported.")
     endif()
 
-    install(TARGETS "${dependency_target}"
-      EXPORT "${target}"
-      ARCHIVE DESTINATION "${LIBRARY_INSTALL_DIR}"
-      LIBRARY DESTINATION "${LIBRARY_INSTALL_DIR}"
+    if(NOT DART_BUILD_DARTPY)
+      install(TARGETS "${dependency_target}"
+        EXPORT "${target}"
+        ARCHIVE DESTINATION "${LIBRARY_INSTALL_DIR}"
+        LIBRARY DESTINATION "${LIBRARY_INSTALL_DIR}"
       )
+    endif()
   endforeach()
 
   set_property(TARGET "${target}" APPEND
@@ -215,13 +219,17 @@ function(install_component_exports package_name)
         endif()
       endforeach()
       if(NOT "${find_pkg_path}" STREQUAL "")
-        install(FILES "${find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
+        if(NOT DART_BUILD_DARTPY)
+          install(FILES "${find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
+        endif()
       endif()
       if("${dart_find_pkg_path}" STREQUAL "")
         message(FATAL_ERROR "Failed to find '${dart_find_pkg_path}'.")
       endif()
       list(APPEND external_dependencies ${dependent_package})
-      install(FILES "${dart_find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
+      if(NOT DART_BUILD_DARTPY)
+        install(FILES "${dart_find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
+      endif()
     endforeach()
 
     configure_file(
@@ -229,7 +237,8 @@ function(install_component_exports package_name)
       "${output_path}"
       @ONLY)
 
-    install(FILES "${output_path}"
-      DESTINATION "${CONFIG_INSTALL_DIR}")
+    if(NOT DART_BUILD_DARTPY)
+      install(FILES "${output_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
+    endif()
   endforeach()
 endfunction()
