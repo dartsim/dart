@@ -6,6 +6,10 @@
 
   * Added raycast query to BulletCollisionDetector: [#1309](https://github.com/dartsim/dart/pull/1309)
 
+* Dynamics
+
+  * Added safeguard for accessing Assimp color: [#1313](https://github.com/dartsim/dart/pull/1313)
+
 * Parser
 
   * Changed URDF parser to use URDF material color when specified: [#1295](https://github.com/dartsim/dart/pull/1295)

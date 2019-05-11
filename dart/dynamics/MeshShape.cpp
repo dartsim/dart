@@ -192,7 +192,13 @@ void MeshShape::notifyAlphaUpdated(double alpha)
   {
     aiMesh* mesh = mMesh->mMeshes[i];
     for(std::size_t j=0; j<mesh->mNumVertices; ++j)
-      mesh->mColors[0][j].a = alpha;
+    {
+      if (mColorIndex < AI_MAX_NUMBER_OF_COLOR_SETS)
+      {
+        if (mesh->mColors[mColorIndex])
+          mesh->mColors[mColorIndex][j].a = static_cast<float>(alpha);
+      }
+    }
   }
 }
 
