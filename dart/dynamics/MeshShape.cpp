@@ -136,6 +136,7 @@ MeshShape::MeshShape(
   : Shape(MESH),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
+    mAlphaMode(AUTO),
     mColorIndex(0)
 {
   setMesh(mesh, path, std::move(resourceRetriever));
@@ -183,23 +184,6 @@ const common::Uri& MeshShape::getMeshUri2() const
 void MeshShape::update()
 {
   // Do nothing
-}
-
-//==============================================================================
-void MeshShape::notifyAlphaUpdated(double alpha)
-{
-  for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
-  {
-    aiMesh* mesh = mMesh->mMeshes[i];
-    for(std::size_t j=0; j<mesh->mNumVertices; ++j)
-    {
-      if (mColorIndex < AI_MAX_NUMBER_OF_COLOR_SETS)
-      {
-        if (mesh->mColors[mColorIndex])
-          mesh->mColors[mColorIndex][j].a = static_cast<float>(alpha);
-      }
-    }
-  }
 }
 
 //==============================================================================
@@ -278,6 +262,18 @@ void MeshShape::setColorMode(ColorMode mode)
 MeshShape::ColorMode MeshShape::getColorMode() const
 {
   return mColorMode;
+}
+
+//==============================================================================
+void MeshShape::setAlphaMode(MeshShape::AlphaMode mode)
+{
+  mAlphaMode = mode;
+}
+
+//==============================================================================
+MeshShape::AlphaMode MeshShape::getAlphaMode() const
+{
+  return mAlphaMode;
 }
 
 //==============================================================================

@@ -701,6 +701,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
       if(colors)
       {
+        auto visualAspect = mMainNode->getVisualAspect();
+
         isColored = true;
 
         if(mColors->size() != mVertices->size())
@@ -709,7 +711,14 @@ void MeshShapeGeometry::extractData(bool firstTime)
         for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
         {
           const aiColor4D& c = colors[i];
-          (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a);
+          if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_COLOR_ALPHA)
+          {
+            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, static_cast<float>(visualAspect->getAlpha()));
+          }
+          else
+          {
+            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a);
+          }
         }
 
         setColorArray(mColors);
@@ -720,14 +729,31 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
     {
       unsigned int matIndex = mAiMesh->mMaterialIndex;
-      if(matIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
+      if(matIndex != static_cast<unsigned int>(-1)) // -1 is being used by us to indicate no material
       {
         isColored = true;
-        getOrCreateStateSet()->setAttributeAndModes(
-              mMainNode->getMaterial(mAiMesh->mMaterialIndex));
+        auto material = mMainNode->getMaterial(mAiMesh->mMaterialIndex);
+        if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_COLOR_ALPHA)
+        {
+          ::osg::ref_ptr<::osg::Material> newMaterial = new ::osg::Material(*material);
+          auto visualAspect = mMainNode->getVisualAspect();
+          if (visualAspect)
+          {
+            newMaterial->setAlpha(
+                ::osg::Material::Face::FRONT_AND_BACK,
+                static_cast<float>(visualAspect->getAlpha()));
+          }
+          getOrCreateStateSet()->setAttributeAndModes(newMaterial);
+        }
+        else
+        {
+          getOrCreateStateSet()->setAttributeAndModes(material);
+        }
       }
       else
+      {
         getOrCreateStateSet()->removeAttribute(::osg::StateAttribute::MATERIAL);
+      }
     }
     else
     {
