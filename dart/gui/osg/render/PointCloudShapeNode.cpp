@@ -30,10 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <osg/Billboard>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
+#include <osg/Texture2D>
 
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
@@ -48,50 +50,218 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-class PointCloudShapeDrawable : public ::osg::ShapeDrawable
+class BoxDrawable final : public ::osg::ShapeDrawable
 {
 public:
-  PointCloudShapeDrawable(
-      dart::dynamics::PointCloudShape* shape,
-      dart::dynamics::VisualAspect* visualAspect);
+  BoxDrawable(double size, const Eigen::Vector4d& color)
+  {
+    mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
+    setColor(eigToOsgVec4f(color));
+    setShape(mShape);
+    setDataVariance(::osg::Object::DYNAMIC);
+  }
 
-  void refresh(bool firstTime);
+  void updateSize(double size)
+  {
+    mShape->setHalfLengths(::osg::Vec3(
+        static_cast<float>(size * 0.5),
+        static_cast<float>(size * 0.5),
+        static_cast<float>(size * 0.5)));
+    dirtyBound();
+    dirtyDisplayList();
+  }
+
+  void updateColor(const Eigen::Vector4d& color)
+  {
+    setColor(eigToOsgVec4f(color));
+  }
 
 protected:
-  virtual ~PointCloudShapeDrawable();
-
-  dart::dynamics::PointCloudShape* mPointCloudShape;
-  dart::dynamics::VisualAspect* mVisualAspect;
-
-  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
-  ::osg::ref_ptr<::osg::Vec4Array> mColors;
-
-  ::osg::ref_ptr<::osg::CompositeShape> mOsgShape;
-
-private:
-  void addBoxes(
-      ::osg::CompositeShape* osgShape,
-      const std::vector<Eigen::Vector3d>& points,
-      double size);
-  std::vector<::osg::ref_ptr<::osg::Box>> mBoxes;
+  ::osg::ref_ptr<::osg::Box> mShape;
 };
 
 //==============================================================================
-class PointCloudShapeGeode : public ShapeNode, public ::osg::Geode
+class QuadDrawable : public ::osg::Geometry
 {
 public:
-  PointCloudShapeGeode(
-      std::shared_ptr<dart::dynamics::PointCloudShape> shape,
-      ShapeFrameNode* parent);
+  QuadDrawable(double size, const Eigen::Vector4d& color)
+  {
+    mVertices = new ::osg::Vec3Array(4);
+    mNormals = new ::osg::Vec3Array(1);
+    mColors = new ::osg::Vec4Array(1);
 
-  void refresh();
-  void extractData(bool firstTime);
+    updateSize(size);
+    updateColor(color);
+
+    addPrimitiveSet(new ::osg::DrawArrays(::osg::PrimitiveSet::QUADS, 0, 4));
+
+    setDataVariance(::osg::Object::DYNAMIC);
+  }
+
+  void updateSize(double size)
+  {
+    mHalfSize = static_cast<float>(size) / 2.0f;
+
+    mVertices->at(0) = ::osg::Vec3(-mHalfSize, 0, -mHalfSize);
+    mVertices->at(1) = ::osg::Vec3(+mHalfSize, 0, -mHalfSize);
+    mVertices->at(2) = ::osg::Vec3(+mHalfSize, 0, +mHalfSize);
+    mVertices->at(3) = ::osg::Vec3(-mHalfSize, 0, +mHalfSize);
+    setVertexArray(mVertices);
+
+    mNormals->at(0) = ::osg::Vec3(0, -1, 0);
+    setNormalArray(mNormals, ::osg::Array::BIND_OVERALL);
+  }
+
+  void updateColor(const Eigen::Vector4d& color)
+  {
+    mColors->at(0) = eigToOsgVec4f(color);
+    setColorArray(mColors);
+    setColorBinding(::osg::Geometry::BIND_OVERALL);
+  }
 
 protected:
-  virtual ~PointCloudShapeGeode();
+  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
+  ::osg::ref_ptr<::osg::Vec3Array> mNormals;
+  ::osg::ref_ptr<::osg::Vec4Array> mColors;
+  float mHalfSize;
+};
 
-  std::shared_ptr<dart::dynamics::PointCloudShape> mPointCloudShape;
-  PointCloudShapeDrawable* mDrawable;
+//==============================================================================
+class CircleDrawable : public ::osg::Geometry
+{
+public:
+  CircleDrawable(double size, const Eigen::Vector4d& color)
+  {
+    mVertices = new ::osg::Vec3Array(4);
+    mNormals = new ::osg::Vec3Array(1);
+    mColors = new ::osg::Vec4Array(1);
+
+    addPrimitiveSet(new ::osg::DrawArrays(::osg::PrimitiveSet::POLYGON, 0, 0));
+
+    updateSize(size);
+    updateColor(color);
+
+    setDataVariance(::osg::Object::DYNAMIC);
+  }
+
+  void updateSize(double size)
+  {
+    mRadius = static_cast<float>(size) / 2.0f;
+
+    const auto segmentCount = 16u;
+    const auto pi = math::constantsf::pi();
+    const auto ratio = 2.0f * pi / segmentCount;
+
+    mVertices->resize(segmentCount);
+    for (auto i = 0u; i < segmentCount; ++i)
+    {
+      const auto angle = i * ratio;
+      mVertices->at(i) = ::osg::Vec3(
+          mRadius * ::std::cos(angle), 0, mRadius * ::std::sin(angle));
+    }
+    setVertexArray(mVertices);
+
+    mNormals->at(0) = ::osg::Vec3(0, -1, 0);
+    setNormalArray(mNormals, ::osg::Array::BIND_OVERALL);
+
+    setPrimitiveSet(
+        0,
+        new ::osg::DrawArrays(::osg::PrimitiveSet::POLYGON, 0, segmentCount));
+  }
+
+  void updateColor(const Eigen::Vector4d& color)
+  {
+    mColors->at(0) = eigToOsgVec4f(color);
+    setColorArray(mColors);
+    setColorBinding(::osg::Geometry::BIND_OVERALL);
+  }
+
+protected:
+  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
+  ::osg::ref_ptr<::osg::Vec3Array> mNormals;
+  ::osg::ref_ptr<::osg::Vec4Array> mColors;
+  float mRadius;
+};
+
+//==============================================================================
+class PointNode : public ::osg::MatrixTransform
+{
+public:
+  PointNode() = default;
+
+  void updateCenter(const Eigen::Vector3d& point)
+  {
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = point;
+    setMatrix(eigToOsgMatrix(tf));
+  }
+
+  virtual void updateSize(double size) = 0;
+  virtual void updateColor(const Eigen::Vector4d& color) = 0;
+};
+
+//==============================================================================
+class BoxPointNode final : public PointNode
+{
+public:
+  BoxPointNode(
+      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
+  {
+    mDrawable = new BoxDrawable(size, color);
+    mGeode = new ::osg::Geode();
+
+    mGeode->addDrawable(mDrawable);
+    addChild(mGeode);
+
+    updateCenter(point);
+  }
+
+  void updateSize(double size) override
+  {
+    mDrawable->updateSize(size);
+  }
+
+  void updateColor(const Eigen::Vector4d& color) override
+  {
+    mDrawable->updateColor(color);
+  }
+
+protected:
+  ::osg::ref_ptr<BoxDrawable> mDrawable;
+  ::osg::ref_ptr<::osg::Geode> mGeode;
+};
+
+//==============================================================================
+template <typename T>
+class BillboardPointNode final : public PointNode
+{
+public:
+  BillboardPointNode(
+      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
+  {
+    mDrawable = new T(size, color);
+    mGeode = new ::osg::Billboard();
+    mGeode->setMode(::osg::Billboard::POINT_ROT_EYE);
+
+    mGeode->addDrawable(mDrawable);
+    addChild(mGeode);
+
+    updateCenter(point);
+  }
+
+  void updateSize(double size) override
+  {
+    mDrawable->updateSize(size);
+  }
+
+  void updateColor(const Eigen::Vector4d& color) override
+  {
+    mDrawable->updateColor(color);
+  }
+
+protected:
+  ::osg::ref_ptr<T> mDrawable;
+  ::osg::ref_ptr<::osg::Billboard> mGeode;
 };
 
 //==============================================================================
@@ -100,8 +270,8 @@ PointCloudShapeNode::PointCloudShapeNode(
     ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mPointCloudShape(shape),
-    mGeode(nullptr),
-    mPointCloudVersion(dynamics::INVALID_INDEX)
+    mPointCloudVersion(dynamics::INVALID_INDEX),
+    mPointShapeType(shape->getPointShapeType())
 {
   mNode = this;
   extractData(true);
@@ -127,16 +297,56 @@ void PointCloudShapeNode::refresh()
 }
 
 //==============================================================================
-void PointCloudShapeNode::extractData(bool /*firstTime*/)
+void PointCloudShapeNode::extractData(bool firstTime)
 {
-  if (nullptr == mGeode)
+  if (firstTime)
   {
-    mGeode = new PointCloudShapeGeode(mPointCloudShape, mParentShapeFrameNode);
-    addChild(mGeode);
-    return;
+    mPointShapeType = mPointCloudShape->getPointShapeType();
+  }
+  else if (mPointShapeType != mPointCloudShape->getPointShapeType())
+  {
+    mPointNodes.clear();
+    mPointShapeType = mPointCloudShape->getPointShapeType();
+    removeChildren(0, getNumChildren());
   }
 
-  mGeode->refresh();
+  const auto visualSize = mPointCloudShape->getVisualSize();
+  const auto& points = mPointCloudShape->getPoints();
+  const auto& colors = mPointCloudShape->getColors();
+
+  // Pre-allocate for the case that the size of new points are greater than
+  // previous update
+  mPointNodes.reserve(points.size());
+
+  // Update position of cache boxes. The number of being updated boxes is
+  // whichever the lower number of cache boxes and new points.
+  const auto numUpdatingPoints = std::min(mPointNodes.size(), points.size());
+  for (auto i = 0u; i < numUpdatingPoints; ++i)
+  {
+    mPointNodes[i]->updateCenter(points[i]);
+    mPointNodes[i]->updateSize(visualSize);
+    mPointNodes[i]->updateColor(colors[i]);
+  }
+
+  // If the number of new points is greater than cache box, then create new
+  // boxes that many.
+  for (auto i = mPointNodes.size(); i < points.size(); ++i)
+  {
+    auto osgSphere = createPointNode(points[i], visualSize, colors[i]);
+    assert(osgSphere);
+    mPointNodes.emplace_back(osgSphere);
+    addChild(mPointNodes.back());
+  }
+
+  // Fit the size of cache box list to the new points. No effect new boxes are
+  // added to the list.
+  if (mPointNodes.size() > points.size())
+  {
+    removeChildren(
+        static_cast<unsigned int>(points.size()),
+        static_cast<unsigned int>(mPointNodes.size() - points.size()));
+    mPointNodes.resize(points.size());
+  }
 }
 
 //==============================================================================
@@ -146,124 +356,27 @@ PointCloudShapeNode::~PointCloudShapeNode()
 }
 
 //==============================================================================
-PointCloudShapeGeode::PointCloudShapeGeode(
-    std::shared_ptr<dart::dynamics::PointCloudShape> shape,
-    ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mPointCloudShape(shape), mDrawable(nullptr)
+::osg::ref_ptr<PointNode> PointCloudShapeNode::createPointNode(
+    const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  extractData(true);
-}
-
-//==============================================================================
-void PointCloudShapeGeode::refresh()
-{
-  mUtilized = true;
-
-  extractData(false);
-}
-
-//==============================================================================
-void PointCloudShapeGeode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mDrawable)
+  if (mPointShapeType == dynamics::PointCloudShape::PointShapeType::BOX)
   {
-    mDrawable
-        = new PointCloudShapeDrawable(mPointCloudShape.get(), mVisualAspect);
-    addDrawable(mDrawable);
-    return;
+    return new BoxPointNode(point, size, color);
+  }
+  else if (
+      mPointShapeType
+      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_QUAD)
+  {
+    return new BillboardPointNode<QuadDrawable>(point, size, color);
+  }
+  else if (
+      mPointShapeType
+      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE)
+  {
+    return new BillboardPointNode<CircleDrawable>(point, size, color);
   }
 
-  mDrawable->refresh(false);
-}
-
-//==============================================================================
-PointCloudShapeGeode::~PointCloudShapeGeode()
-{
-  // Do nothing
-}
-
-//==============================================================================
-PointCloudShapeDrawable::PointCloudShapeDrawable(
-    dart::dynamics::PointCloudShape* shape,
-    dart::dynamics::VisualAspect* visualAspect)
-  : mPointCloudShape(shape),
-    mVisualAspect(visualAspect),
-    mVertices(new ::osg::Vec3Array),
-    mColors(new ::osg::Vec4Array),
-    mOsgShape(new ::osg::CompositeShape())
-{
-  refresh(true);
-}
-
-//==============================================================================
-void PointCloudShapeDrawable::refresh(bool /*firstTime*/)
-{
-  if (mPointCloudShape->getDataVariance() == dart::dynamics::Shape::STATIC)
-    setDataVariance(::osg::Object::STATIC);
-  else
-    setDataVariance(::osg::Object::DYNAMIC);
-
-  // This function is called whenever the point cloud version is increased, and
-  // the point cloud could be updated in the version up. So we always update the
-  // point cloud.
-  {
-    const auto size = mPointCloudShape->getVisualSize();
-    const auto& points = mPointCloudShape->getPoints();
-
-    auto osgShape = new ::osg::CompositeShape();
-    addBoxes(osgShape, points, size);
-
-    setShape(osgShape);
-    dirtyDisplayList();
-  }
-
-  // This function is called whenever the point cloud version is increased, and
-  // the color could be updated in the version up. So we always update the
-  // color.
-  {
-    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
-  }
-}
-
-//==============================================================================
-void PointCloudShapeDrawable::addBoxes(
-    ::osg::CompositeShape* osgShape,
-    const std::vector<Eigen::Vector3d>& points,
-    double size)
-{
-  // Pre-allocate for the case that the size of new points are greater than
-  // previous update
-  mBoxes.reserve(points.size());
-
-  // Update position of cache boxes. The number of being updated boxes is
-  // whichever the lower number of cache boxes and new points.
-  const auto numUpdatingBoxes = std::min(mBoxes.size(), points.size());
-  for (auto i = 0u; i < numUpdatingBoxes; ++i)
-  {
-    mBoxes[i]->setCenter(eigToOsgVec3(points[i]));
-    osgShape->addChild(mBoxes[i]);
-  }
-
-  // If the number of new points is greater than cache box, then create new
-  // boxes that many.
-  for (auto i = mBoxes.size(); i < points.size(); ++i)
-  {
-    auto osgSphere
-        = new ::osg::Box(eigToOsgVec3(points[i]), static_cast<float>(size));
-    mBoxes.emplace_back(osgSphere);
-    osgShape->addChild(mBoxes.back());
-  }
-
-  // Fit the size of cache box list to the new points. No effect new boxes are
-  // added to the list.
-  mBoxes.resize(points.size());
-}
-
-//==============================================================================
-PointCloudShapeDrawable::~PointCloudShapeDrawable()
-{
-  // Do nothing
+  return nullptr;
 }
 
 } // namespace render
