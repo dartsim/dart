@@ -609,6 +609,30 @@ void MeshShapeGeometry::refresh()
 }
 
 //==============================================================================
+void blendMaterialAlpha(::osg::Material* material, const float alpha)
+{
+  ::osg::Vec4 ambient
+      = material->getAmbient(::osg::Material::Face::FRONT_AND_BACK);
+  ambient.a() *= alpha;
+  material->setAmbient(::osg::Material::Face::FRONT_AND_BACK, ambient);
+
+  ::osg::Vec4 diffuse
+      = material->getDiffuse(::osg::Material::Face::FRONT_AND_BACK);
+  diffuse.a() *= alpha;
+  material->setDiffuse(::osg::Material::Face::FRONT_AND_BACK, diffuse);
+
+  ::osg::Vec4 specular
+      = material->getSpecular(::osg::Material::Face::FRONT_AND_BACK);
+  specular.a() *= alpha;
+  material->setSpecular(::osg::Material::Face::FRONT_AND_BACK, specular);
+
+  ::osg::Vec4 emission
+      = material->getEmission(::osg::Material::Face::FRONT_AND_BACK);
+  emission.a() *= alpha;
+  material->setEmission(::osg::Material::Face::FRONT_AND_BACK, emission);
+}
+
+//==============================================================================
 void MeshShapeGeometry::extractData(bool firstTime)
 {
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
@@ -660,7 +684,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(mNormals->size() != mAiMesh->mNumVertices)
       mNormals->resize(mAiMesh->mNumVertices);
 
-    const Eigen::Vector3d s = mMeshShape->getScale();
+    const Eigen::Vector3f s = mMeshShape->getScale().cast<float>();
 
     for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
     {
@@ -701,8 +725,6 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
       if(colors)
       {
-        auto visualAspect = mMainNode->getVisualAspect();
-
         isColored = true;
 
         if(mColors->size() != mVertices->size())
@@ -711,9 +733,13 @@ void MeshShapeGeometry::extractData(bool firstTime)
         for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
         {
           const aiColor4D& c = colors[i];
-          if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_COLOR_ALPHA)
+          if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA)
           {
-            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, static_cast<float>(visualAspect->getAlpha()));
+            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, static_cast<float>(mVisualAspect->getAlpha()));
+          }
+          else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND)
+          {
+            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a * static_cast<float>(mVisualAspect->getAlpha()));
           }
           else
           {
@@ -728,21 +754,24 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
     if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
     {
-      unsigned int matIndex = mAiMesh->mMaterialIndex;
+      const unsigned int matIndex = mAiMesh->mMaterialIndex;
       if(matIndex != static_cast<unsigned int>(-1)) // -1 is being used by us to indicate no material
       {
         isColored = true;
-        auto material = mMainNode->getMaterial(mAiMesh->mMaterialIndex);
-        if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_COLOR_ALPHA)
+        auto material = mMainNode->getMaterial(matIndex);
+        if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA)
         {
           ::osg::ref_ptr<::osg::Material> newMaterial = new ::osg::Material(*material);
-          auto visualAspect = mMainNode->getVisualAspect();
-          if (visualAspect)
-          {
-            newMaterial->setAlpha(
+          newMaterial->setAlpha(
                 ::osg::Material::Face::FRONT_AND_BACK,
-                static_cast<float>(visualAspect->getAlpha()));
-          }
+                static_cast<float>(mVisualAspect->getAlpha()));
+          getOrCreateStateSet()->setAttributeAndModes(newMaterial);
+        }
+        else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND)
+        {
+          const auto shapeAlpha = static_cast<float>(mVisualAspect->getAlpha());
+          ::osg::ref_ptr<::osg::Material> newMaterial = new ::osg::Material(*material);
+          blendMaterialAlpha(newMaterial, shapeAlpha);
           getOrCreateStateSet()->setAttributeAndModes(newMaterial);
         }
         else
@@ -767,7 +796,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(!isColored
        || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
     {
-      const Eigen::Vector4d& c = mVisualAspect->getRGBA();
+      const Eigen::Vector4f& c = mVisualAspect->getRGBA().cast<float>();
 
       if(mColors->size() != 1)
         mColors->resize(1);

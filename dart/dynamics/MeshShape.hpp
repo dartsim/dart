@@ -53,10 +53,27 @@ public:
     SHAPE_COLOR,        ///< Use the color specified by the visual aspect
   };
 
+  /// Alpha mode to specify how the alpha of this mesh should be determined. The
+  /// final alpha value is affected by ColorMode and visual aspect that holds
+  /// this mesh.
   enum AlphaMode
   {
-    AUTO = 0,          ///< Inherit the alpha of the current color mode
-    SHAPE_COLOR_ALPHA  ///< Use the alpha specified by the visual aspect
+    /// Blend alphas of visual aspect and mesh. This is the default.
+    /// - MATERIAL_COLOR: Blend the alpha of visual aspect and the alpha values
+    ///                   of the mesh materials.
+    /// - COLOR_INDEX: Blend the alpha of visual aspect and the alpha value of
+    ///                mesh color
+    /// - SHAPE_COLOR: Use the alpha of visual aspect.
+    BLEND = 0,
+
+    /// Use the alpha of mesh or visual aspect.
+    /// - MATERIAL_COLOR: Use the alpha values of mesh materials.
+    /// - COLOR_INDEX: Use the alpha value of mesh color.
+    /// - SHAPE_COLOR: Use the alpha of visual aspect.
+    AUTO,
+
+    /// Always use the alpha of visual aspect.
+    SHAPE_ALPHA
   };
 
   /// Constructor.

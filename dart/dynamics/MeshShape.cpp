@@ -136,7 +136,7 @@ MeshShape::MeshShape(
   : Shape(MESH),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
-    mAlphaMode(AUTO),
+    mAlphaMode(BLEND),
     mColorIndex(0)
 {
   setMesh(mesh, path, std::move(resourceRetriever));
