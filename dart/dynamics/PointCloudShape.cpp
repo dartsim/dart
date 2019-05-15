@@ -32,6 +32,8 @@
 
 #include "dart/dynamics/PointCloudShape.hpp"
 
+#include "dart/common/Console.hpp"
+
 namespace dart {
 namespace dynamics {
 
@@ -51,7 +53,10 @@ Eigen::Vector3d toVector3d(const octomap::point3d& point)
 
 //==============================================================================
 PointCloudShape::PointCloudShape(double visualSize)
-  : Shape(), mVisualSize(visualSize)
+  : Shape(),
+    mPointShapeType(BOX),
+    mColorMode(USE_SHAPE_COLOR),
+    mVisualSize(visualSize)
 {
   // Do nothing
 }
@@ -143,9 +148,82 @@ void PointCloudShape::removeAllPoints()
 }
 
 //==============================================================================
+void PointCloudShape::setPointShapeType(PointCloudShape::PointShapeType type)
+{
+  if (mPointShapeType == type)
+    return;
+
+  mPointShapeType = type;
+  incrementVersion();
+}
+
+//==============================================================================
+PointCloudShape::PointShapeType PointCloudShape::getPointShapeType() const
+{
+  return mPointShapeType;
+}
+
+//==============================================================================
+void PointCloudShape::setColorMode(PointCloudShape::ColorMode mode)
+{
+  mColorMode = mode;
+}
+
+//==============================================================================
+PointCloudShape::ColorMode PointCloudShape::getColorMode() const
+{
+  return mColorMode;
+}
+
+//==============================================================================
+void PointCloudShape::setOverallColor(const Eigen::Vector4d& color)
+{
+  mColors.resize(1);
+  mColors[0] = color;
+}
+
+//==============================================================================
+Eigen::Vector4d PointCloudShape::getOverallColor() const
+{
+  if (mColors.empty())
+  {
+    dtwarn << "[PointCloudShape] Attempt to get the overall color when the "
+           << "color array is empty. Returning (RGBA: [0.5, 0.5, 0.5, 0.5]) "
+           << "color\n";
+    return Eigen::Vector4d(0.5, 0.5, 0.5, 0.5);
+  }
+
+  if (mColors.size() > 1)
+  {
+    dtwarn << "[PointCloudShape] Attempting to get the overal color when the "
+           << "color array contains more than one color. This is potentially "
+           << "an error. Returning the first color in the color array.\n";
+  }
+
+  return mColors[0];
+}
+
+//==============================================================================
+void PointCloudShape::setColors(
+    const std::vector<
+        Eigen::Vector4d,
+        Eigen::aligned_allocator<Eigen::Vector4d> >& colors)
+{
+  mColors = colors;
+}
+
+//==============================================================================
+const std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> >&
+PointCloudShape::getColors() const
+{
+  return mColors;
+}
+
+//==============================================================================
 void PointCloudShape::setVisualSize(double size)
 {
   mVisualSize = size;
+  incrementVersion();
 }
 
 //==============================================================================
