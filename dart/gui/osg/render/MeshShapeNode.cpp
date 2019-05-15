@@ -715,6 +715,10 @@ void MeshShapeGeometry::extractData(bool firstTime)
           {
             (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, static_cast<float>(visualAspect->getAlpha()));
           }
+          else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND)
+          {
+            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a * static_cast<float>(visualAspect->getAlpha()));
+          }
           else
           {
             (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a);
@@ -728,17 +732,30 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
     if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
     {
-      unsigned int matIndex = mAiMesh->mMaterialIndex;
+      const unsigned int matIndex = mAiMesh->mMaterialIndex;
       if(matIndex != static_cast<unsigned int>(-1)) // -1 is being used by us to indicate no material
       {
         isColored = true;
-        auto material = mMainNode->getMaterial(mAiMesh->mMaterialIndex);
+        auto material = mMainNode->getMaterial(matIndex);
         if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_COLOR_ALPHA)
         {
           ::osg::ref_ptr<::osg::Material> newMaterial = new ::osg::Material(*material);
           auto visualAspect = mMainNode->getVisualAspect();
           if (visualAspect)
           {
+            newMaterial->setAlpha(
+                ::osg::Material::Face::FRONT_AND_BACK,
+                static_cast<float>(visualAspect->getAlpha()));
+          }
+          getOrCreateStateSet()->setAttributeAndModes(newMaterial);
+        }
+        else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND)
+        {
+          ::osg::ref_ptr<::osg::Material> newMaterial = new ::osg::Material(*material);
+          auto visualAspect = mMainNode->getVisualAspect();
+          if (visualAspect)
+          {
+//            newMaterial->
             newMaterial->setAlpha(
                 ::osg::Material::Face::FRONT_AND_BACK,
                 static_cast<float>(visualAspect->getAlpha()));

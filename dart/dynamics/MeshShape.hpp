@@ -56,6 +56,7 @@ public:
   enum AlphaMode
   {
     AUTO = 0,          ///< Inherit the alpha of the current color mode
+    BLEND,             ///< Blend the alpha of visual aspect and
     SHAPE_COLOR_ALPHA  ///< Use the alpha specified by the visual aspect
   };
 
