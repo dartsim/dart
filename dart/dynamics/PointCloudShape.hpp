@@ -48,9 +48,14 @@ class PointCloudShape : public Shape
 public:
   enum ColorMode
   {
-    BIND_OVERALL = 0, ///< Use one color for all the points
-    BIND_PER_POINT,   ///< Use one color per point
-    USE_SHAPE_COLOR,  ///< Use the color specified by the ShapeAspect
+    /// Use the color specified by the ShapeAspect. This is the default.
+    USE_SHAPE_COLOR = 0,
+
+    /// Use one color for all the points
+    BIND_OVERALL,
+
+    /// Use one color per point
+    BIND_PER_POINT,
   };
 
   enum PointShapeType
