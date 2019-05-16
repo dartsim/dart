@@ -359,7 +359,7 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
 
   auto solver1
-      = dart::common::make_unique<constraint::BoxedLcpConstraintSolver>(
+      = std::make_unique<constraint::BoxedLcpConstraintSolver>(
           std::make_shared<constraint::DantzigBoxedLcpSolver>());
   EXPECT_TRUE(solver1->getSkeletons().size() == 0);
   EXPECT_TRUE(solver1->getConstraints().size() == 0);
@@ -369,7 +369,7 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
 
   auto solver2
-      = dart::common::make_unique<constraint::BoxedLcpConstraintSolver>(
+      = std::make_unique<constraint::BoxedLcpConstraintSolver>(
           std::make_shared<constraint::PgsBoxedLcpSolver>());
   EXPECT_TRUE(solver2->getSkeletons().size() == 0);
   EXPECT_TRUE(solver2->getConstraints().size() == 0);

@@ -47,7 +47,7 @@ void testContactWithKinematicJoint(
 {
   auto world = std::make_shared<simulation::World>();
   world->setConstraintSolver(
-      common::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver));
+      std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver));
 
   auto skeleton1 = dynamics::Skeleton::create("skeleton1");
   auto pair1 = skeleton1->createJointAndBodyNodePair<dynamics::FreeJoint>();

@@ -50,7 +50,7 @@ namespace common {
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 {
-  typedef typename std::remove_const<_Tp>::type _Tp_nc;
+  using _Tp_nc = typename std::remove_const<_Tp>::type;
 
 #if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
   return std::allocate_shared<_Tp>(detail::aligned_allocator_cpp11<_Tp_nc>(),
@@ -65,11 +65,8 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)
 {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  return std::make_unique<T>(std::forward<Args>(args)...);
 }
-// TODO(JS): This is a stopgap solution as it was omitted from C++11 as "partly
-// an oversight". This can be replaced by std::make_unique<T> of the standard
-// library when we migrate to using C++14.
 
 } // namespace common
 } // namespace dart

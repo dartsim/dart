@@ -14919,7 +14919,7 @@ SharedLibraryWamIkFast::SharedLibraryWamIkFast(
 std::unique_ptr<dart::dynamics::InverseKinematics::GradientMethod>
 SharedLibraryWamIkFast::clone(dart::dynamics::InverseKinematics* newIK) const
 {
-  return dart::common::make_unique<SharedLibraryWamIkFast>(
+  return std::make_unique<SharedLibraryWamIkFast>(
       newIK, mDofs, mFreeDofs, getMethodName(), getAnalyticalProperties());
 }
 

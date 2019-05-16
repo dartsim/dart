@@ -354,24 +354,24 @@ protected:
     {
       // auto solver
       //     =
-      //     common::make_unique<constraint::SequentialImpulseConstraintSolver>(
+      //     std::make_unique<constraint::SequentialImpulseConstraintSolver>(
       //         mWorld->getTimeStep());
       auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
-      auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
+      auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>(
           lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else if (solverType == 1)
     {
       auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
-      auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
+      auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>(
           lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else if (solverType == 2)
     {
       auto lcpSolver = std::make_shared<constraint::PgsBoxedLcpSolver>();
-      auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
+      auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>(
           lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }

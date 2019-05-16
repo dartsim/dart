@@ -148,7 +148,7 @@ const std::string& OdeCollisionDetector::getStaticType()
 //==============================================================================
 std::unique_ptr<CollisionGroup> OdeCollisionDetector::createCollisionGroup()
 {
-  return common::make_unique<OdeCollisionGroup>(shared_from_this());
+  return std::make_unique<OdeCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================

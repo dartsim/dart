@@ -152,7 +152,7 @@ public:
 
     // If the correct type of Composite is not available, we store this on the
     // heap until this Aspect is moved.
-    mTemporaryState = make_unique<State>(state);
+    mTemporaryState = std::make_unique<State>(state);
   }
 
   // Documentation inherited
@@ -184,7 +184,7 @@ public:
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(this->getState());
+    return std::make_unique<Derived>(this->getState());
   }
 
 protected:
@@ -196,7 +196,7 @@ protected:
       DelegateTag, const StateData& state,
       RemainingArgs&&... remainingArgs)
     : Base(std::forward<RemainingArgs>(remainingArgs)...),
-      mTemporaryState(make_unique<State>(state))
+      mTemporaryState(std::make_unique<State>(state))
   {
     // Do nothing
   }
@@ -226,7 +226,7 @@ protected:
   /// Save the embedded State of this Composite before we remove the Aspect
   void loseComposite(Composite* oldComposite) override
   {
-    mTemporaryState = make_unique<State>(
+    mTemporaryState = std::make_unique<State>(
           GetEmbeddedState(static_cast<const Derived*>(this)));
     Base::loseComposite(oldComposite);
   }
@@ -325,7 +325,7 @@ public:
 
     // If the correct type of Composite is not available, we store this on the
     // heap until this Aspect is moved.
-    mTemporaryProperties = make_unique<Properties>(properties);
+    mTemporaryProperties = std::make_unique<Properties>(properties);
   }
 
   // Documentation inherited
@@ -356,7 +356,7 @@ public:
 
   std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(this->getProperties());
+    return std::make_unique<Derived>(this->getProperties());
   }
 
 protected:
@@ -368,7 +368,7 @@ protected:
       DelegateTag, const PropertiesData& properties,
       RemainingArgs&&... remainingArgs)
     : Base(std::forward<RemainingArgs>(remainingArgs)...),
-      mTemporaryProperties(make_unique<Properties>(properties))
+      mTemporaryProperties(std::make_unique<Properties>(properties))
   {
     // Do nothing
   }
@@ -399,7 +399,7 @@ protected:
   /// Save the embedded Properties of this Composite before we remove the Aspect
   void loseComposite(Composite* oldComposite) override
   {
-    mTemporaryProperties = make_unique<Properties>(
+    mTemporaryProperties = std::make_unique<Properties>(
           GetEmbeddedProperties(static_cast<Derived*>(this)));
     Base::loseComposite(oldComposite);
   }

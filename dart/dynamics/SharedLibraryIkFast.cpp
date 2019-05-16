@@ -131,7 +131,7 @@ SharedLibraryIkFast::SharedLibraryIkFast(InverseKinematics* ik,
 auto SharedLibraryIkFast::clone(InverseKinematics* newIK) const
     -> std::unique_ptr<GradientMethod>
 {
-  return dart::common::make_unique<SharedLibraryIkFast>(
+  return std::make_unique<SharedLibraryIkFast>(
       newIK,
       mFilePath,
       mDofs,

@@ -75,7 +75,7 @@ public:
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyStateAspect>();
+    return std::make_unique<ProxyStateAspect>();
   }
 
 protected:
@@ -144,7 +144,7 @@ public:
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyPropertiesAspect>();
+    return std::make_unique<ProxyPropertiesAspect>();
   }
 
 protected:

@@ -221,7 +221,7 @@ public:
     setWorld(world);
 
     mController
-        = dart::common::make_unique<Controller>(mWorld->getSkeleton("biped"));
+        = std::make_unique<Controller>(mWorld->getSkeleton("biped"));
   }
 
   /// Handle keyboard input
