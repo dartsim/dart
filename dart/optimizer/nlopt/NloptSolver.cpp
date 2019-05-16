@@ -97,7 +97,7 @@ bool NloptSolver::solve()
      || mOpt->get_dimension() != dimension
      || mOpt->get_algorithm() != mAlg)
   {
-    mOpt = common::make_unique<nlopt::opt>(mAlg, dimension);
+    mOpt = std::make_unique<nlopt::opt>(mAlg, dimension);
   }
   else
   {

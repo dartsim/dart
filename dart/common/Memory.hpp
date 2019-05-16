@@ -47,7 +47,9 @@ namespace common {
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
+/// \deprecated Deprecated in 6.9. Use std::make_unique instead.
 template<typename T, typename... Args>
+DART_DEPRECATED(6.9)
 std::unique_ptr<T> make_unique(Args&&... args);
 
 #if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
@@ -172,7 +174,7 @@ public:                                                                        \
       class_name,                                                              \
       DART_UNIQUE_PTR_CREATOR_NAME,                                            \
       std::unique_ptr,                                                         \
-      ::dart::common::make_unique)
+      ::std::make_unique)
 
 // Define static creator function that returns std::unique_ptr to the object
 // where the constructor is protected
@@ -182,7 +184,7 @@ public:                                                                        \
       class_name,                                                              \
       DART_UNIQUE_PTR_CREATOR_NAME,                                            \
       std::unique_ptr,                                                         \
-      ::dart::common::make_unique)
+      ::std::make_unique)
 
 // Define two static creator functions that returns std::unique_ptr and
 // std::unique_ptr, respectively, to the object

@@ -2,6 +2,10 @@
 
 ### [DART 6.9.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/52?closed=1)
 
+* Common
+
+  * Deprecated custom make_unique in favor of std::make_unique: [#1317](https://github.com/dartsim/dart/pull/1317)
+
 * Collision Detection
 
   * Added raycast query to BulletCollisionDetector: [#1309](https://github.com/dartsim/dart/pull/1309)

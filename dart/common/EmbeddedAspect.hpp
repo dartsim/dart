@@ -361,7 +361,7 @@ public:
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(this->getState(), this->getProperties());
+    return std::make_unique<Derived>(this->getState(), this->getProperties());
   }
 
 };

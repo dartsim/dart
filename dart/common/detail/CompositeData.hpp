@@ -123,7 +123,7 @@ public:
     using DataType = typename GetData<Aspect>::Type;
 
     std::unique_ptr<DataType>& data = this->mMap[typeid(AspectType)]
-        = make_unique<Data>(std::forward<Args>(args)...);
+        = std::make_unique<Data>(std::forward<Args>(args)...);
     return static_cast<Data&>(*data);
   }
 
@@ -158,7 +158,7 @@ public:
 
     const bool exists = !it.second;
     if(!exists)
-      it.first = make_unique<Data>(std::forward<Args>(args)...);
+      it.first = std::make_unique<Data>(std::forward<Args>(args)...);
 
     return static_cast<Data&>(*it.first);
   }

@@ -126,7 +126,7 @@ MakeCloneable<Base, Mixin>& MakeCloneable<Base, Mixin>::operator=(
 template <class Base, class Mixin>
 std::unique_ptr<Base> MakeCloneable<Base, Mixin>::clone() const
 {
-  return common::make_unique<MakeCloneable<Base, Mixin>>(*this);
+  return std::make_unique<MakeCloneable<Base, Mixin>>(*this);
 }
 
 //==============================================================================
@@ -142,7 +142,7 @@ template <class Base, class OwnerT, class DataT,
           DataT (*getData)(const OwnerT*)>
 ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable()
   : mOwner(nullptr),
-    mData(make_unique<Data>())
+    mData(std::make_unique<Data>())
 {
   // Do nothing
 }
@@ -178,7 +178,7 @@ template <typename... Args>
 ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable(
     Args&&... args)
   : mOwner(nullptr),
-    mData(dart::common::make_unique<Data>(std::forward<Args>(args)...))
+    mData(std::make_unique<Data>(std::forward<Args>(args)...))
 {
   // Do nothing
 }
@@ -265,7 +265,7 @@ void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     return;
   }
 
-  mData = make_unique<Data>(data);
+  mData = std::make_unique<Data>(data);
 }
 
 //==============================================================================
@@ -281,7 +281,7 @@ void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     return;
   }
 
-  mData = dart::common::make_unique<Data>(std::move(data));
+  mData = std::make_unique<Data>(std::move(data));
 }
 
 //==============================================================================
@@ -341,7 +341,7 @@ template <class Base, class OwnerT, class DataT,
 std::unique_ptr<Base> ProxyCloneable<
     Base, OwnerT, DataT, setData, getData>::clone() const
 {
-  return dart::common::make_unique<ProxyCloneable>(get());
+  return std::make_unique<ProxyCloneable>(get());
 }
 
 //==============================================================================
@@ -566,7 +566,7 @@ std::unique_ptr< CloneableVector<T> > CloneableVector<T>::clone() const
   for(const T& entry : mVector)
     clonedVector.push_back(entry->clone());
 
-  return common::make_unique< CloneableVector<T> >( std::move(clonedVector) );
+  return std::make_unique< CloneableVector<T> >( std::move(clonedVector) );
 }
 
 //==============================================================================

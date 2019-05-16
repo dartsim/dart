@@ -72,7 +72,7 @@ World::World(const std::string& _name)
 {
   mIndices.push_back(0);
 
-  auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>();
+  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
   setConstraintSolver(std::move(solver));
 }
 
