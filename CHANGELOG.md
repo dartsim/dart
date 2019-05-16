@@ -22,6 +22,7 @@
   * Fixed dereferencing a dangling pointer in WorldNode: [#1311](https://github.com/dartsim/dart/pull/1311)
   * Removed warning of ImGuiViewer + OSG shadow: [#1312](https://github.com/dartsim/dart/pull/1312)
   * Added shape type and color options to PointCloudShape: [#1314](https://github.com/dartsim/dart/pull/1314)
+  * Fixed incorrect transparency of MeshShape for MATERIAL_COLOR mode: [#1315](https://github.com/dartsim/dart/pull/1315)
 
 * Examples and Tutorials
 
