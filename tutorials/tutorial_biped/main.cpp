@@ -151,8 +151,7 @@ public:
   {
     setWorld(world);
 
-    mController
-        = std::make_unique<Controller>(mWorld->getSkeleton("biped"));
+    mController = std::make_unique<Controller>(mWorld->getSkeleton("biped"));
   }
 
   /// Handle keyboard input
