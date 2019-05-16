@@ -399,25 +399,27 @@ public:
         }
 
         auto pointCloudShape = mNode->getPointCloudShape();
-        int pointShapeType;
-        if (pointCloudShape->getPointShapeType()
-            == dynamics::PointCloudShape::BOX)
+
+        ImGui::Text("Color Mode:");
+        int colorMode = pointCloudShape->getColorMode();
+        if (ImGui::RadioButton("Use shape color", &colorMode, 0))
         {
-          pointShapeType = 0;
+          pointCloudShape->setColorMode(
+              dynamics::PointCloudShape::USE_SHAPE_COLOR);
         }
-        else if (
-            pointCloudShape->getPointShapeType()
-            == dynamics::PointCloudShape::BILLBOARD_QUAD)
+        else if (ImGui::RadioButton("Bind overall", &colorMode, 1))
         {
-          pointShapeType = 1;
+          pointCloudShape->setColorMode(
+              dynamics::PointCloudShape::BIND_OVERALL);
         }
-        else if (
-            pointCloudShape->getPointShapeType()
-            == dynamics::PointCloudShape::BILLBOARD_CIRCLE)
+        else if (ImGui::RadioButton("Bind per point", &colorMode, 2))
         {
-          pointShapeType = 2;
+          pointCloudShape->setColorMode(
+              dynamics::PointCloudShape::BIND_PER_POINT);
         }
 
+        ImGui::Text("Point Shape Type:");
+        int pointShapeType = pointCloudShape->getPointShapeType();
         if (ImGui::RadioButton("Box", &pointShapeType, 0))
         {
           pointCloudShape->setPointShapeType(dynamics::PointCloudShape::BOX);
