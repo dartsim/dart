@@ -297,14 +297,18 @@ void PointCloudShapeNode::refresh()
 }
 
 //==============================================================================
-bool checkValidityOfColorMode(
+bool shouldUseVisualAspectColor(
     const std::vector<Eigen::Vector3d>& points,
     const std::vector<
         Eigen::Vector4d,
         Eigen::aligned_allocator<Eigen::Vector4d>>& colors,
     dynamics::PointCloudShape::ColorMode colorMode)
 {
-  if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
+  if (colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
+  {
+    return true;
+  }
+  else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
   {
     if (colors.empty())
     {
@@ -312,7 +316,7 @@ bool checkValidityOfColorMode(
              << "is empty while the color mode is BIND_OVERALL, which "
              << "requires at least on color in the color array. "
              << "Using visual aspect color instead.\n";
-      return false;
+      return true;
     }
   }
   else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
@@ -323,11 +327,17 @@ bool checkValidityOfColorMode(
              << "has different size from the point array while the color mode "
              << "is BIND_PER_POINT, which requires the same number of colors. "
              << "Using visual aspect color instead.\n";
-      return false;
+      return true;
     }
   }
+  else
+  {
+    dtwarn << "[PointCloudShapeNode] The current color mode '" << colorMode
+           << "' is not supported by OSG renderer.\n";
+    return true;
+  }
 
-  return true;
+  return false;
 }
 
 //==============================================================================
@@ -350,7 +360,7 @@ void PointCloudShapeNode::extractData(bool firstTime)
   const auto colorMode = mPointCloudShape->getColorMode();
 
   const bool useVisualAspectColor
-      = !checkValidityOfColorMode(points, colors, colorMode);
+      = shouldUseVisualAspectColor(points, colors, colorMode);
 
   // Pre-allocate for the case that the size of new points are greater than
   // previous update
@@ -363,29 +373,18 @@ void PointCloudShapeNode::extractData(bool firstTime)
   {
     mPointNodes[i]->updateCenter(points[i]);
     mPointNodes[i]->updateSize(visualSize);
-    if (colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
+    if (useVisualAspectColor
+        || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
     {
       mPointNodes[i]->updateColor(mVisualAspect->getRGBA());
     }
     else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
     {
-      if (useVisualAspectColor)
-        mPointNodes[i]->updateColor(mVisualAspect->getRGBA());
-      else
-        mPointNodes[i]->updateColor(colors[0]);
+      mPointNodes[i]->updateColor(colors[0]);
     }
     else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
     {
-      if (useVisualAspectColor)
-        mPointNodes[i]->updateColor(mVisualAspect->getRGBA());
-      else
-        mPointNodes[i]->updateColor(colors[i]);
-    }
-    else
-    {
-      dtwarn << "[PointCloudShapeNode] The current color mode '" << colorMode
-             << "' is not supported by OSG renderer.\n";
-      mPointNodes[i]->updateColor(mVisualAspect->getRGBA());
+      mPointNodes[i]->updateColor(colors[i]);
     }
   }
 
@@ -394,41 +393,19 @@ void PointCloudShapeNode::extractData(bool firstTime)
   for (auto i = mPointNodes.size(); i < points.size(); ++i)
   {
     ::osg::ref_ptr<PointNode> pointNode;
-    if (colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
+    if (useVisualAspectColor
+        || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
     {
       pointNode
           = createPointNode(points[i], visualSize, mVisualAspect->getRGBA());
     }
     else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
     {
-      if (useVisualAspectColor)
-      {
-        pointNode
-            = createPointNode(points[i], visualSize, mVisualAspect->getRGBA());
-      }
-      else
-      {
-        pointNode = createPointNode(points[i], visualSize, colors[0]);
-      }
+      pointNode = createPointNode(points[i], visualSize, colors[0]);
     }
     else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
     {
-      if (useVisualAspectColor)
-      {
-        pointNode
-            = createPointNode(points[i], visualSize, mVisualAspect->getRGBA());
-      }
-      else
-      {
-        pointNode = createPointNode(points[i], visualSize, colors[i]);
-      }
-    }
-    else
-    {
-      dtwarn << "[PointCloudShapeNode] The current color mode '" << colorMode
-             << "' is not supported by OSG renderer.\n";
-      pointNode
-          = createPointNode(points[i], visualSize, mVisualAspect->getRGBA());
+      pointNode = createPointNode(points[i], visualSize, colors[i]);
     }
     mPointNodes.emplace_back(pointNode);
     addChild(mPointNodes.back());
