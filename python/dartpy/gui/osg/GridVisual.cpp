@@ -30,22 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/osg/osg.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
+
+namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void GridVisual(pybind11::module& sm);
-void RealTimeWorldNode(pybind11::module& sm);
-void Viewer(pybind11::module& sm);
-
-void dart_gui_osg(pybind11::module& m)
+void GridVisual(pybind11::module& m)
 {
-  auto sm = m.def_submodule("osg");
+  ::pybind11::class_<
+      dart::gui::osg::GridVisual,
+      ::osg::ref_ptr<dart::gui::osg::GridVisual>>(m, "GridVisual")
+      .def(py::init<>())
+      .def(
+          "setNumCells",
+          +[](dart::gui::osg::GridVisual* self, std::size_t cells) {
+            self->setNumCells(cells);
+          })
+      .def(
+          "setMinorLineStepSize",
+          +[](dart::gui::osg::GridVisual* self, double size) {
+            self->setMinorLineStepSize(size);
+          })
+      .def(
+          "setNumMinorLinesPerMajorLine",
+          +[](dart::gui::osg::GridVisual* self, std::size_t size) {
+            self->setNumMinorLinesPerMajorLine(size);
+          })
+      .def(
+          "setPlaneType",
+          +[](dart::gui::osg::GridVisual* self,
+              dart::gui::osg::GridVisual::PlaneType type) {
+            self->setPlaneType(type);
+          })
+      .def(
+          "setOffset",
+          +[](dart::gui::osg::GridVisual* self, const Eigen::Vector3d& offset) {
+            self->setOffset(offset);
+          });
 
-  GridVisual(sm);
-  RealTimeWorldNode(sm);
-  Viewer(sm);
+  auto attr = m.attr("GridVisual");
+  ::pybind11::enum_<dart::gui::osg::GridVisual::PlaneType>(attr, "PlaneType")
+      .value("XY", dart::gui::osg::GridVisual::PlaneType::XY)
+      .value("YZ", dart::gui::osg::GridVisual::PlaneType::YZ)
+      .value("ZX", dart::gui::osg::GridVisual::PlaneType::ZX);
 }
 
 } // namespace python

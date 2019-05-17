@@ -10,11 +10,20 @@ def main():
     ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
     world.addSkeleton(kr5)
     world.addSkeleton(ground)
+    world.setGravity([0, -9.81, 0])
 
     node = dart.gui.osg.RealTimeWorldNode(world)
 
+    # Create world node and add it to viewer
     viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
+
+    # Grid settings
+    grid = dart.gui.osg.GridVisual()
+    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
+    grid.setOffset([0, -0.55, 0])
+    viewer.addAttachment(grid)
+
     viewer.setUpViewInWindow(0, 0, 640, 480)
     viewer.run()
 
