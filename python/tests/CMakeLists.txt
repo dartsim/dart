@@ -26,6 +26,7 @@ set(dartpy_test_utils
 set(dartpy_test_files
   unit/common/test_uri.py
   unit/math/test_random.py
+  unit/dynamics/test_meta_skeleton.py
   unit/simulation/test_world.py
   unit/utils/test_dart_loader.py
 )
