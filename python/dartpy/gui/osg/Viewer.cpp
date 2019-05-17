@@ -42,31 +42,41 @@ namespace python {
 
 void Viewer(pybind11::module& m)
 {
-  ::pybind11::
-      class_<dart::gui::osg::Viewer, ::osg::ref_ptr<dart::gui::osg::Viewer>>(
-          m, "Viewer")
-          .def(py::init<>())
-          .def(
-              "run",
-              +[](dart::gui::osg::Viewer* self) -> int { return self->run(); })
-          .def(
-              "setUpViewInWindow",
-              +[](dart::gui::osg::Viewer* self,
-                  int x,
-                  int y,
-                  int width,
-                  int height) { self->setUpViewInWindow(x, y, width, height); })
-          .def(
-              "addWorldNode",
-              +[](dart::gui::osg::Viewer* self,
-                  dart::gui::osg::RealTimeWorldNode* newWorldNode) {
-                self->addWorldNode(newWorldNode);
-              })
-          .def(
-              "addWorldNode",
-              +[](dart::gui::osg::Viewer* self,
-                  dart::gui::osg::RealTimeWorldNode* newWorldNode,
-                  bool active) { self->addWorldNode(newWorldNode, active); });
+  ::pybind11::class_<
+      dart::gui::osg::Viewer,
+      ::osg::ref_ptr<dart::gui::osg::Viewer>>(m, "Viewer")
+      .def(py::init<>())
+      .def(
+          "run",
+          +[](dart::gui::osg::Viewer* self) -> int { return self->run(); })
+      .def(
+          "setUpViewInWindow",
+          +[](dart::gui::osg::Viewer* self,
+              int x,
+              int y,
+              int width,
+              int height) { self->setUpViewInWindow(x, y, width, height); })
+      .def(
+          "addWorldNode",
+          +[](dart::gui::osg::Viewer* self,
+              dart::gui::osg::RealTimeWorldNode* newWorldNode) {
+            self->addWorldNode(newWorldNode);
+          })
+      .def(
+          "addWorldNode",
+          +[](dart::gui::osg::Viewer* self,
+              dart::gui::osg::RealTimeWorldNode* newWorldNode,
+              bool active) { self->addWorldNode(newWorldNode, active); })
+      .def(
+          "addAttachment",
+          +[](dart::gui::osg::Viewer* self, dart::gui::osg::GridVisual* grid) {
+            self->addAttachment(grid);
+          })
+      .def(
+          "removeAttachment",
+          +[](dart::gui::osg::Viewer* self, dart::gui::osg::GridVisual* grid) {
+            self->removeAttachment(grid);
+          });
 }
 
 } // namespace python
