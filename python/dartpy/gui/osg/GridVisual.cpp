@@ -45,6 +45,7 @@ void GridVisual(pybind11::module& m)
 {
   ::pybind11::class_<
       dart::gui::osg::GridVisual,
+      dart::gui::osg::ViewerAttachment,
       ::osg::ref_ptr<dart::gui::osg::GridVisual>>(m, "GridVisual")
       .def(py::init<>())
       .def(

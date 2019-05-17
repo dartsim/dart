@@ -146,10 +146,10 @@ public:
   /// the default ShadowTechnique is ShadowMap
   static ::osg::ref_ptr<osgShadow::ShadowTechnique> createDefaultShadowTechnique(const Viewer* viewer);
 
-protected:
-
   /// Destructor
   virtual ~WorldNode();
+
+protected:
 
   /// Called when this world gets added to an dart::gui::osg::Viewer. Override
   /// this function to customize the way your WorldNode starts up in an
