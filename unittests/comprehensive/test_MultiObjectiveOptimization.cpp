@@ -62,7 +62,7 @@ public:
 
   UniqueFunctionPtr clone() const
   {
-    return dart::common::make_unique<Func1>(*this);
+    return std::make_unique<Func1>(*this);
   }
 
   std::size_t getParameterDimension() const
@@ -85,7 +85,7 @@ public:
 
   UniqueFunctionPtr clone() const
   {
-    return dart::common::make_unique<Func2>(*this);
+    return std::make_unique<Func2>(*this);
   }
 
   std::size_t getParameterDimension() const
