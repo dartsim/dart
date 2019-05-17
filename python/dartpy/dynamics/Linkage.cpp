@@ -89,8 +89,7 @@ void Linkage(pybind11::module& m)
           ::pybind11::arg("criteria"),
           ::pybind11::arg("name"));
 
-  ::pybind11::class_<dart::dynamics::Linkage::Criteria>(
-      m, "LinkageCriteria")
+  ::pybind11::class_<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
       .def(
           "satisfy",
           +[](const dart::dynamics::Linkage::Criteria* self)

@@ -31,6 +31,7 @@
  */
 
 #include <dart/dart.hpp>
+#include <pybind11/stl.h>
 #include <pybind11/pybind11.h>
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
@@ -357,12 +358,14 @@ void Skeleton(pybind11::module& m)
           "getJoint",
           +[](dart::dynamics::Skeleton* self, std::size_t _idx)
               -> dart::dynamics::Joint* { return self->getJoint(_idx); },
-          ::pybind11::arg("idx"))
+          ::pybind11::arg("idx"),
+          pybind11::return_value_policy::reference_internal)
       .def(
           "getJoint",
           +[](dart::dynamics::Skeleton* self, const std::string& name)
               -> dart::dynamics::Joint* { return self->getJoint(name); },
-          ::pybind11::arg("name"))
+          ::pybind11::arg("name"),
+          pybind11::return_value_policy::reference_internal)
       .def(
           "getJoints",
           +[](dart::dynamics::Skeleton* self)

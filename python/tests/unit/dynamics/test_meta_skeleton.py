@@ -23,6 +23,17 @@ def test_basic():
     print(chain.getNumBodyNodes())
     assert chain.getNumBodyNodes() is 2
 
+    assert len(kr5.getPositions()) is not 0
+    assert kr5.getNumJoints() is not 0
+    assert kr5.getRootJoint() is not None
+    assert len(kr5.getRootJoint().getPositions()) is 0
+
+    rootBody = kr5.getBodyNode(0)
+    assert rootBody is not None
+
+    rootJoint = kr5.getJoint(0)
+    assert rootJoint is not None
+
 
 if __name__ == "__main__":
     pytest.main()

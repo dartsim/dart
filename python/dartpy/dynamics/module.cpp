@@ -35,26 +35,30 @@
 namespace dart {
 namespace python {
 
-void BodyNode(pybind11::module& sm);
-void Chain(pybind11::module& sm);
 void Frame(pybind11::module& sm);
+void BodyNode(pybind11::module& sm);
+
 void Joint(pybind11::module& sm);
-void Linkage(pybind11::module& sm);
+
 void MetaSkeleton(pybind11::module& sm);
 void ReferentialSkeleton(pybind11::module& sm);
+void Linkage(pybind11::module& sm);
+void Chain(pybind11::module& sm);
 void Skeleton(pybind11::module& sm);
 
 void dart_dynamics(pybind11::module& m)
 {
   auto sm = m.def_submodule("dynamics");
 
-  Chain(sm);
-  BodyNode(sm);
   Frame(sm);
+  BodyNode(sm);
+
   Joint(sm);
-  Linkage(sm);
+
   MetaSkeleton(sm);
   ReferentialSkeleton(sm);
+  Linkage(sm);
+  Chain(sm);
   Skeleton(sm);
 }
 
