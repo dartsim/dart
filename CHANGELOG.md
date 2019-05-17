@@ -36,6 +36,7 @@
 
   * Switched to pybind11: [#1307](https://github.com/dartsim/dart/pull/1307)
   * Added grid visual: [#1318](https://github.com/dartsim/dart/pull/1318)
+  * Added ReferentialSkeleton, Linkage, and Chain: [#1321](https://github.com/dartsim/dart/pull/1321)
 
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 
