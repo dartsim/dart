@@ -103,13 +103,13 @@ void Viewer(pybind11::module& m)
           +[](dart::gui::osg::Viewer* self, bool _on) {
             self->switchDefaultEventHandler(_on);
           },
-          ::pybind11::arg("_on"))
+          ::pybind11::arg("on"))
       .def(
           "switchHeadlights",
           +[](dart::gui::osg::Viewer* self, bool _on) {
             self->switchHeadlights(_on);
           },
-          ::pybind11::arg("_on"))
+          ::pybind11::arg("on"))
       .def(
           "checkHeadlights",
           +[](const dart::gui::osg::Viewer* self) -> bool {
@@ -121,42 +121,42 @@ void Viewer(pybind11::module& m)
               dart::gui::osg::WorldNode* _newWorldNode) {
             self->addWorldNode(_newWorldNode);
           },
-          ::pybind11::arg("_newWorldNode"))
+          ::pybind11::arg("newWorldNode"))
       .def(
           "addWorldNode",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::WorldNode* _newWorldNode,
               bool _active) { self->addWorldNode(_newWorldNode, _active); },
-          ::pybind11::arg("_newWorldNode"),
-          ::pybind11::arg("_active"))
+          ::pybind11::arg("newWorldNode"),
+          ::pybind11::arg("active"))
       .def(
           "removeWorldNode",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::WorldNode* _oldWorldNode) {
             self->removeWorldNode(_oldWorldNode);
           },
-          ::pybind11::arg("_oldWorldNode"))
+          ::pybind11::arg("oldWorldNode"))
       .def(
           "removeWorldNode",
           +[](dart::gui::osg::Viewer* self,
               std::shared_ptr<dart::simulation::World> _oldWorld) {
             self->removeWorldNode(_oldWorld);
           },
-          ::pybind11::arg("_oldWorld"))
+          ::pybind11::arg("oldWorld"))
       .def(
           "addAttachment",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::ViewerAttachment* _attachment) {
             self->addAttachment(_attachment);
           },
-          ::pybind11::arg("_attachment"))
+          ::pybind11::arg("attachment"))
       .def(
           "removeAttachment",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::ViewerAttachment* _attachment) {
             self->removeAttachment(_attachment);
           },
-          ::pybind11::arg("_attachment"))
+          ::pybind11::arg("attachment"))
       .def(
           "setupDefaultLights",
           +[](dart::gui::osg::Viewer* self) { self->setupDefaultLights(); })
@@ -165,44 +165,44 @@ void Viewer(pybind11::module& m)
           +[](dart::gui::osg::Viewer* self, const osg::Vec3& _up) {
             self->setUpwardsDirection(_up);
           },
-          ::pybind11::arg("_up"))
+          ::pybind11::arg("up"))
       .def(
           "setUpwardsDirection",
           +[](dart::gui::osg::Viewer* self, const Eigen::Vector3d& _up) {
             self->setUpwardsDirection(_up);
           },
-          ::pybind11::arg("_up"))
+          ::pybind11::arg("up"))
       .def(
           "setWorldNodeActive",
           +[](dart::gui::osg::Viewer* self, dart::gui::osg::WorldNode* _node) {
             self->setWorldNodeActive(_node);
           },
-          ::pybind11::arg("_node"))
+          ::pybind11::arg("node"))
       .def(
           "setWorldNodeActive",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::WorldNode* _node,
               bool _active) { self->setWorldNodeActive(_node, _active); },
-          ::pybind11::arg("_node"),
-          ::pybind11::arg("_active"))
+          ::pybind11::arg("node"),
+          ::pybind11::arg("active"))
       .def(
           "setWorldNodeActive",
           +[](dart::gui::osg::Viewer* self,
               std::shared_ptr<dart::simulation::World> _world) {
             self->setWorldNodeActive(_world);
           },
-          ::pybind11::arg("_world"))
+          ::pybind11::arg("world"))
       .def(
           "setWorldNodeActive",
           +[](dart::gui::osg::Viewer* self,
               std::shared_ptr<dart::simulation::World> _world,
               bool _active) { self->setWorldNodeActive(_world, _active); },
-          ::pybind11::arg("_world"),
-          ::pybind11::arg("_active"))
+          ::pybind11::arg("world"),
+          ::pybind11::arg("active"))
       .def(
           "simulate",
           +[](dart::gui::osg::Viewer* self, bool _on) { self->simulate(_on); },
-          ::pybind11::arg("_on"))
+          ::pybind11::arg("on"))
       .def(
           "isSimulating",
           +[](const dart::gui::osg::Viewer* self) -> bool {
@@ -213,7 +213,7 @@ void Viewer(pybind11::module& m)
           +[](dart::gui::osg::Viewer* self, bool _allow) {
             self->allowSimulation(_allow);
           },
-          ::pybind11::arg("_allow"))
+          ::pybind11::arg("allow"))
       .def(
           "isAllowingSimulation",
           +[](const dart::gui::osg::Viewer* self) -> bool {
@@ -223,33 +223,33 @@ void Viewer(pybind11::module& m)
           "disableDragAndDrop",
           +[](dart::gui::osg::Viewer* self, dart::gui::osg::DragAndDrop* _dnd)
               -> bool { return self->disableDragAndDrop(_dnd); },
-          ::pybind11::arg("_dnd"))
+          ::pybind11::arg("dnd"))
       .def(
           "disableDragAndDrop",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::SimpleFrameDnD* _dnd) -> bool {
             return self->disableDragAndDrop(_dnd);
           },
-          ::pybind11::arg("_dnd"))
+          ::pybind11::arg("dnd"))
       .def(
           "disableDragAndDrop",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::SimpleFrameShapeDnD* _dnd) -> bool {
             return self->disableDragAndDrop(_dnd);
           },
-          ::pybind11::arg("_dnd"))
+          ::pybind11::arg("dnd"))
       .def(
           "disableDragAndDrop",
           +[](dart::gui::osg::Viewer* self,
               dart::gui::osg::InteractiveFrameDnD* _dnd) -> bool {
             return self->disableDragAndDrop(_dnd);
           },
-          ::pybind11::arg("_dnd"))
+          ::pybind11::arg("dnd"))
       .def(
           "disableDragAndDrop",
           +[](dart::gui::osg::Viewer* self, dart::gui::osg::BodyNodeDnD* _dnd)
               -> bool { return self->disableDragAndDrop(_dnd); },
-          ::pybind11::arg("_dnd"))
+          ::pybind11::arg("dnd"))
       .def(
           "getInstructions",
           +[](const dart::gui::osg::Viewer* self) -> const std::string& {
@@ -261,7 +261,7 @@ void Viewer(pybind11::module& m)
           +[](dart::gui::osg::Viewer* self, const std::string& _instruction) {
             self->addInstructionText(_instruction);
           },
-          ::pybind11::arg("_instruction"))
+          ::pybind11::arg("instruction"))
       .def(
           "updateViewer",
           +[](dart::gui::osg::Viewer* self) { self->updateViewer(); })

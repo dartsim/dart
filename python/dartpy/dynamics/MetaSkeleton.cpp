@@ -84,13 +84,13 @@ void MetaSkeleton(pybind11::module& m)
           +[](dart::dynamics::MetaSkeleton* self, std::size_t index)
               -> dart::dynamics::BodyNode* { return self->getBodyNode(index); },
           ::pybind11::arg("index"),
-          pybind11::return_value_policy::reference_internal)
+          pybind11::return_value_policy::reference)
       .def(
           "getBodyNode",
           +[](dart::dynamics::MetaSkeleton* self, const std::string& name)
               -> dart::dynamics::BodyNode* { return self->getBodyNode(name); },
           ::pybind11::arg("treeIndex"),
-          pybind11::return_value_policy::reference_internal)
+          pybind11::return_value_policy::reference)
       .def(
           "getBodyNodes",
           +[](dart::dynamics::MetaSkeleton* self, const std::string& name)

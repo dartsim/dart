@@ -23,13 +23,7 @@ set(dartpy_test_utils
   util.py
 )
 
-set(dartpy_test_files
-  unit/common/test_uri.py
-  unit/math/test_random.py
-  unit/dynamics/test_meta_skeleton.py
-  unit/simulation/test_world.py
-  unit/utils/test_dart_loader.py
-)
+file(GLOB_RECURSE dartpy_test_files "test_*.py")
 
 # Add custom target to run the tests
 add_custom_target(pytest

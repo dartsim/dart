@@ -19,3 +19,4 @@ endfunction()
 
 add_subdirectory(hello_world)
 add_subdirectory(hello_world_gui)
+add_subdirectory(operational_space_control)
