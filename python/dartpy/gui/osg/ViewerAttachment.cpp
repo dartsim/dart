@@ -30,28 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
+
+namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void WorldNode(pybind11::module& sm);
-void RealTimeWorldNode(pybind11::module& sm);
-
-void Viewer(pybind11::module& sm);
-void ViewerAttachment(pybind11::module& sm);
-void GridVisual(pybind11::module& sm);
-
-void dart_gui_osg(pybind11::module& m)
+void ViewerAttachment(pybind11::module& m)
 {
-  auto sm = m.def_submodule("osg");
-
-  WorldNode(sm);
-  RealTimeWorldNode(sm);
-
-  Viewer(sm);
-  ViewerAttachment(sm);
-  GridVisual(sm);
+  ::pybind11::class_<
+      dart::gui::osg::ViewerAttachment,
+      ::osg::ref_ptr<dart::gui::osg::ViewerAttachment>>(m, "ViewerAttachment")
+      .def("refresh", +[](dart::gui::osg::ViewerAttachment* self) {
+        self->refresh();
+      });
 }
 
 } // namespace python

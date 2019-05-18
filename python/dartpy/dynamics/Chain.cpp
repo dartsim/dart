@@ -130,7 +130,7 @@ void Chain(pybind11::module& m)
   ::pybind11::enum_<dart::dynamics::Chain::IncludeUpstreamParentJointTag>(
       attr, "IncludeUpstreamParentJointTag")
       .value(
-          "IncludeBoth",
+          "IncludeUpstreamParentJoint",
           dart::dynamics::Chain::IncludeUpstreamParentJointTag::
               IncludeUpstreamParentJoint)
       .export_values();

@@ -93,9 +93,6 @@ public:
   /// Get the highest real time factor that has been hit during the simulation.
   double getHighestRealTimeFactor() const;
 
-  /// Turn the text displaying the real time factor on or off
-  void setRealTimeFactorDisplay(bool on);
-
   // Documentation inherited
   void refresh() override;
 

@@ -1,5 +1,30 @@
-import argparse
 import dartpy as dart
+
+
+class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
+  # Use this function to execute custom code before each time that the
+  # window is rendered. This function can be deleted if it does not need
+  # to be used.
+  def customPreRefresh(self):
+    pass
+
+  # Use this function to execute custom code after each time that the
+  # window is rendered. This function can be deleted if it does not need
+  # to be used.
+  def customPostRefresh(self):
+    pass
+
+  # Use this function to execute custom code before each simulation time
+  # step is performed. This function can be deleted if it does not need
+  # to be used.
+  def customPreStep(self):
+    pass
+
+  # Use this function to execute custom code after each simulation time
+  # step is performed. This function can be deleted if it does not need
+  # to be used.
+  def customPostStep(self):
+    pass
 
 
 def main():
@@ -12,7 +37,7 @@ def main():
     world.addSkeleton(ground)
     world.setGravity([0, -9.81, 0])
 
-    node = dart.gui.osg.RealTimeWorldNode(world)
+    node = HelloWorldNode(world)
 
     # Create world node and add it to viewer
     viewer = dart.gui.osg.Viewer()
@@ -25,6 +50,9 @@ def main():
     viewer.addAttachment(grid)
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
+    viewer.setCameraHomePosition([2.0, 1.0, 2.0],
+                                 [0.00, 0.00, 0.00],
+                                 [-0.24, 0.94, -0.25])
     viewer.run()
 
 
