@@ -925,11 +925,25 @@ void Skeleton(pybind11::module& m)
               std::size_t treeIndex) -> const Eigen::MatrixXd& {
             return self->getMassMatrix(treeIndex);
           })
+      // TODO(JS): Redefining get[~]() that are already defined in MetaSkeleton.
+      // We need this because the methods with same name (but different
+      // arguments) are hidden. Update (or remove) once following issue is
+      // resolved: https://github.com/pybind/pybind11/issues/974
+      .def(
+          "getMassMatrix",
+          +[](const dart::dynamics::Skeleton* self) -> const Eigen::MatrixXd& {
+            return self->getMassMatrix();
+          })
       .def(
           "getAugMassMatrix",
           +[](const dart::dynamics::Skeleton* self,
               std::size_t treeIndex) -> const Eigen::MatrixXd& {
             return self->getAugMassMatrix(treeIndex);
+          })
+      .def(
+          "getAugMassMatrix",
+          +[](const dart::dynamics::Skeleton* self) -> const Eigen::MatrixXd& {
+            return self->getAugMassMatrix();
           })
       .def(
           "getInvMassMatrix",
@@ -938,10 +952,20 @@ void Skeleton(pybind11::module& m)
             return self->getInvMassMatrix(treeIndex);
           })
       .def(
+          "getInvMassMatrix",
+          +[](const dart::dynamics::Skeleton* self) -> const Eigen::MatrixXd& {
+            return self->getInvMassMatrix();
+          })
+      .def(
           "getCoriolisForces",
           +[](dart::dynamics::Skeleton* self,
               std::size_t treeIndex) -> const Eigen::VectorXd& {
             return self->getCoriolisForces(treeIndex);
+          })
+      .def(
+          "getCoriolisForces",
+          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+            return self->getCoriolisForces();
           })
       .def(
           "getGravityForces",
@@ -950,10 +974,20 @@ void Skeleton(pybind11::module& m)
             return self->getCoriolisForces(treeIndex);
           })
       .def(
+          "getGravityForces",
+          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+            return self->getCoriolisForces();
+          })
+      .def(
           "getCoriolisAndGravityForces",
           +[](dart::dynamics::Skeleton* self,
               std::size_t treeIndex) -> const Eigen::VectorXd& {
             return self->getCoriolisAndGravityForces(treeIndex);
+          })
+      .def(
+          "getCoriolisAndGravityForces",
+          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+            return self->getCoriolisAndGravityForces();
           })
       .def(
           "getExternalForces",
@@ -962,10 +996,20 @@ void Skeleton(pybind11::module& m)
             return self->getCoriolisAndGravityForces(treeIndex);
           })
       .def(
+          "getExternalForces",
+          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+            return self->getCoriolisAndGravityForces();
+          })
+      .def(
           "getConstraintForces",
           +[](dart::dynamics::Skeleton* self,
               std::size_t treeIndex) -> const Eigen::VectorXd& {
             return self->getConstraintForces(treeIndex);
+          })
+      .def(
+          "getConstraintForces",
+          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+            return self->getConstraintForces();
           })
       .def(
           "clearExternalForces",
