@@ -57,6 +57,13 @@ void Entity(pybind11::module& m)
           },
           ::pybind11::return_value_policy::reference_internal)
       .def(
+          "getParentFrame",
+          +[](const dart::dynamics::Entity* self)
+              -> const dart::dynamics::Frame* {
+            return self->getParentFrame();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
           "descendsFrom",
           +[](const dart::dynamics::Entity* self,
               const dart::dynamics::Frame* someFrame) -> bool {
