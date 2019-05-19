@@ -115,7 +115,7 @@ void Entity(pybind11::module& m)
               dart::dynamics::Frame* _newParentFrame) {
             self->setParentFrame(_newParentFrame);
           },
-          ::pybind11::arg("_newParentFrame"));
+          ::pybind11::arg("newParentFrame"));
 }
 
 } // namespace python
