@@ -85,9 +85,9 @@ void Linkage(pybind11::module& m)
       .def(
           "reassemble",
           +[](dart::dynamics::Linkage* self) { self->reassemble(); })
-      .def(
-          "satisfyCriteria",
-          +[](dart::dynamics::Linkage* self) { self->satisfyCriteria(); });
+      .def("satisfyCriteria", +[](dart::dynamics::Linkage* self) {
+        self->satisfyCriteria();
+      });
 
   ::pybind11::class_<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
       .def(
