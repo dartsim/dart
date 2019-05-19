@@ -70,13 +70,11 @@ public:
 
     if(mViewer->mRecording || mViewer->mScreenCapture)
     {
-      int x, y;
-      unsigned int width, height;
-      ::osg::ref_ptr<::osg::Viewport> vp = mCamera->getViewport();
-      x = vp->x();
-      y = vp->y();
-      width = vp->width();
-      height = vp->height();
+      ::osg::ref_ptr<const ::osg::Viewport> vp = mCamera->getViewport();
+      const int x = static_cast<int>(vp->x());
+      const int y = static_cast<int>(vp->y());
+      const int width = static_cast<int>(vp->width());
+      const int height = static_cast<int>(vp->height());
 
       mImage->readPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE);
     }
@@ -87,7 +85,8 @@ public:
       {
         std::stringstream str;
         str << mViewer->mImageDirectory << "/" << mViewer->mImagePrefix
-            << std::setfill('0') << std::setw(mViewer->mImageDigits)
+            << std::setfill('0')
+            << std::setw(static_cast<int>(mViewer->mImageDigits))
             << mViewer->mImageSequenceNum << std::setw(0) << ".png";
 
         if(::osgDB::writeImageFile(*mImage, str.str()))

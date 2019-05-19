@@ -45,6 +45,22 @@ void Skeleton(pybind11::module& m)
       dart::dynamics::Skeleton,
       dart::dynamics::MetaSkeleton,
       std::shared_ptr<dart::dynamics::Skeleton>>(m, "Skeleton")
+      .def(::pybind11::init(+[]() -> dart::dynamics::SkeletonPtr {
+        return dart::dynamics::Skeleton::create();
+      }))
+      .def(
+          ::pybind11::init(
+              +[](const std::string& _name) -> dart::dynamics::SkeletonPtr {
+                return dart::dynamics::Skeleton::create(_name);
+              }),
+          ::pybind11::arg("name"))
+      .def(
+          ::pybind11::init(
+              +[](const dart::dynamics::Skeleton::AspectPropertiesData&
+                      properties) -> dart::dynamics::SkeletonPtr {
+                return dart::dynamics::Skeleton::create(properties);
+              }),
+          ::pybind11::arg("properties"))
       .def(
           "getPtr",
           +[](dart::dynamics::Skeleton* self) -> dart::dynamics::SkeletonPtr {
@@ -1211,23 +1227,6 @@ void Skeleton(pybind11::module& m)
           "resetUnion",
           +[](dart::dynamics::Skeleton* self)
               -> void { return self->resetUnion(); })
-      .def_static(
-          "create",
-          +[]() -> dart::dynamics::
-                    SkeletonPtr { return dart::dynamics::Skeleton::create(); })
-      .def_static(
-          "create",
-          +[](const std::string& _name) -> dart::dynamics::SkeletonPtr {
-            return dart::dynamics::Skeleton::create(_name);
-          },
-          ::pybind11::arg("name"))
-      .def_static(
-          "create",
-          +[](const dart::dynamics::Skeleton::AspectPropertiesData& properties)
-              -> dart::dynamics::SkeletonPtr {
-            return dart::dynamics::Skeleton::create(properties);
-          },
-          ::pybind11::arg("properties"))
       .def_readwrite(
           "mUnionRootSkeleton", &dart::dynamics::Skeleton::mUnionRootSkeleton)
       .def_readwrite("mUnionSize", &dart::dynamics::Skeleton::mUnionSize)

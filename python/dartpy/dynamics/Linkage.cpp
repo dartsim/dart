@@ -45,6 +45,21 @@ void Linkage(pybind11::module& m)
       dart::dynamics::ReferentialSkeleton,
       std::shared_ptr<dart::dynamics::Linkage>>(m, "Linkage")
       .def(
+          ::pybind11::init(
+              +[](const dart::dynamics::Linkage::Criteria& criteria)
+                  -> dart::dynamics::LinkagePtr {
+                return dart::dynamics::Linkage::create(criteria);
+              }),
+          ::pybind11::arg("criteria"))
+      .def(
+          ::pybind11::init(
+              +[](const dart::dynamics::Linkage::Criteria& criteria,
+                  const std::string& name) -> dart::dynamics::LinkagePtr {
+                return dart::dynamics::Linkage::create(criteria, name);
+              }),
+          ::pybind11::arg("criteria"),
+          ::pybind11::arg("name"))
+      .def(
           "cloneLinkage",
           +[](const dart::dynamics::Linkage* self)
               -> dart::dynamics::LinkagePtr { return self->cloneLinkage(); })
@@ -72,22 +87,7 @@ void Linkage(pybind11::module& m)
           +[](dart::dynamics::Linkage* self) { self->reassemble(); })
       .def(
           "satisfyCriteria",
-          +[](dart::dynamics::Linkage* self) { self->satisfyCriteria(); })
-      .def_static(
-          "create",
-          +[](const dart::dynamics::Linkage::Criteria& criteria)
-              -> dart::dynamics::LinkagePtr {
-            return dart::dynamics::Linkage::create(criteria);
-          },
-          ::pybind11::arg("criteria"))
-      .def_static(
-          "create",
-          +[](const dart::dynamics::Linkage::Criteria& criteria,
-              const std::string& name) -> dart::dynamics::LinkagePtr {
-            return dart::dynamics::Linkage::create(criteria, name);
-          },
-          ::pybind11::arg("criteria"),
-          ::pybind11::arg("name"));
+          +[](dart::dynamics::Linkage* self) { self->satisfyCriteria(); });
 
   ::pybind11::class_<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
       .def(

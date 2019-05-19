@@ -46,6 +46,13 @@ void World(pybind11::module& m)
       std::shared_ptr<dart::simulation::World>>(m, "World")
       .def(::pybind11::init<>())
       .def(::pybind11::init<const std::string&>(), ::pybind11::arg("name"))
+      .def(::pybind11::init(+[]() -> dart::simulation::WorldPtr {
+        return dart::simulation::World::create();
+      }))
+      .def(::pybind11::init(
+          +[](const std::string& name) -> dart::simulation::WorldPtr {
+            return dart::simulation::World::create(name);
+          }))
       .def(
           "clone",
           +[](const dart::simulation::World* self)
@@ -229,18 +236,6 @@ void World(pybind11::module& m)
       .def(
           "bake",
           +[](dart::simulation::World* self) -> void { return self->bake(); })
-      .def_static(
-          "create",
-          +[]() -> std::shared_ptr<dart::simulation::World> {
-            return dart::simulation::World::create();
-          })
-      .def_static(
-          "create",
-          +[](const std::string& name)
-              -> std::shared_ptr<dart::simulation::World> {
-            return dart::simulation::World::create(name);
-          },
-          ::pybind11::arg("name"))
       .def_readonly("onNameChanged", &dart::simulation::World::onNameChanged);
 }
 

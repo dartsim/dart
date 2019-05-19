@@ -17,7 +17,7 @@ def test_basic():
     elbow = kr5.getBodyNode('elbow')
     assert elbow is not None
 
-    chain = dart.dynamics.Chain.create(shoulder, elbow, 'midchain')
+    chain = dart.dynamics.Chain(shoulder, elbow, 'midchain')
     assert chain is not None
 
     print(chain.getNumBodyNodes())
