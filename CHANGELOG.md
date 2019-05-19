@@ -30,7 +30,7 @@
 
 * Examples and Tutorials
 
-  * Updated examples directory to make dart::gui::osg more accessible: [#1305](https://github.com/dartsim/dart/pull/1305)
+  * Updated examples directory to make dart::gui::osg more accessible: [#1324](https://github.com/dartsim/dart/pull/1324)
 
 * dartpy
 
@@ -39,6 +39,7 @@
   * Added ReferentialSkeleton, Linkage, and Chain: [#1321](https://github.com/dartsim/dart/pull/1321)
   * Enabled WorldNode classes to overload virtual functions in Python: [#1322](https://github.com/dartsim/dart/pull/1322)
   * Added JacobianNode and operational space controller example: [#1323](https://github.com/dartsim/dart/pull/1323)
+  * Removed static create() functions in favor of custom constructors: [#1323](https://github.com/dartsim/dart/pull/1323)
 
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 
