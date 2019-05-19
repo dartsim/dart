@@ -3,14 +3,18 @@ import dartpy as dart
 
 
 class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
-    def __init__(self, world, kr5, target_pose = [0.3, 0.3, 0.3]):
+    def __init__(self, world, kr5):
         super(HelloWorldNode, self).__init__(world)
         self.kr5 = kr5
         self.dofs = self.kr5.getNumDofs()
         self.ee = kr5.getBodyNode('palm')
-        self.target_pose = target_pose
         self.Kp = np.eye(3) * 50.0
         self.Kd = np.eye(self.dofs) * 5.0
+        self.ee_offset = [0.05, 0, 0]
+
+        tf = self.ee.getTransform()
+        tf.pretranslate(self.ee_offset)
+        self.target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "target", tf)
 
     def customPreStep(self):
         M = self.kr5.getMassMatrix()
@@ -26,7 +30,7 @@ class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
         dJdJt = np.matmul(dJ, dJt)
         invdJ = np.matmul(dJt, np.linalg.inv(dJdJt + kI))
 
-        e = self.target_pose - self.ee.getTransform().translation()
+        e = self.target.getTransform().translation() - self.ee.getTransform().translation()
         de = -self.ee.getLinearVelocity()
 
         cg = self.kr5.getCoriolisAndGravityForces()
@@ -53,7 +57,7 @@ def main():
     world.addSkeleton(ground)
     world.setGravity([0, -9.81, 0])
 
-    node = HelloWorldNode(world, kr5, target_pose=[0.3, 0.3, 0.3])
+    node = HelloWorldNode(world, kr5)
 
     # Create world node and add it to viewer
     viewer = dart.gui.osg.Viewer()

@@ -64,7 +64,7 @@ public:
   SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame = Frame::World());
 
   /// Destructor
-  virtual ~SimpleFrame();
+  ~SimpleFrame() override;
 
   // Documentation inherited
   const std::string& setName(const std::string& _name) override;
