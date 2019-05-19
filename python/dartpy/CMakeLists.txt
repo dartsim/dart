@@ -35,7 +35,7 @@ if(NOT pybind11_FOUND)
   return()
 endif()
 
-file(GLOB_RECURSE dartpy_headers "*.hpp")
+file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
 
 # Build a Python extension module:
@@ -65,6 +65,9 @@ target_link_libraries(dartpy
     dart-gui-osg
     ${PYTHON_LIBRARIES}
 )
+if(TARGET dart-optimizer-nlopt)
+  target_link_libraries(dartpy PUBLIC dart-optimizer-nlopt)
+endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(dartpy PUBLIC dart-collision-bullet)
 endif()
@@ -81,10 +84,10 @@ install(TARGETS dartpy
 )
 
 list(REMOVE_ITEM dartpy_headers
-  eigen_geometry_pybind.h
-  eigen_pybind.h
+  ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h
+  ${CMAKE_CURRENT_LIST_DIR}/eigen_pybind.h
 )
 list(REMOVE_ITEM dartpy_sources
-  eigen_geometry_pybind.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.cpp
 )
 dart_format_add(${dartpy_headers} ${dartpy_sources})

@@ -161,7 +161,7 @@ TEST(Optimizer, BasicNlopt)
   prob->addIneqConstraint(const1);
   prob->addIneqConstraint(const2);
 
-  NloptSolver solver(prob, nlopt::LD_MMA);
+  NloptSolver solver(prob, NloptSolver::LD_MMA);
   EXPECT_TRUE(solver.solve());
 
   double minF = prob->getOptimumValue();

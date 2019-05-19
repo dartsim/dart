@@ -39,7 +39,5 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-
-
 } // namespace python
 } // namespace dart
