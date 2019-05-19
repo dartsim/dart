@@ -41,6 +41,7 @@
   * Added JacobianNode and operational space controller example: [#1323](https://github.com/dartsim/dart/pull/1323)
   * Removed static create() functions in favor of custom constructors: [#1324](https://github.com/dartsim/dart/pull/1324)
   * Added optimizer APIs with GradientDescentSolver and NloptSolver: [#1325](https://github.com/dartsim/dart/pull/1325)
+  * Added SimpleFrame: [#1326](https://github.com/dartsim/dart/pull/1326)
 
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 
