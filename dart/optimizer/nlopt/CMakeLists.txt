@@ -34,3 +34,5 @@ install(
   DESTINATION include/dart/optimizer/nlopt
   COMPONENT headers
 )
+
+dart_format_add(${hdrs} ${srcs})

@@ -30,38 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
 #include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void eigen_geometry(pybind11::module& m);
+void Solver(pybind11::module& sm);
+void GradientDescentSolver(pybind11::module& sm);
+#if HAVE_NLOPT
+void NloptSolver(pybind11::module& sm);
+#endif // HAVE_NLOPT
 
-void dart_common(pybind11::module& m);
-void dart_math(pybind11::module& m);
-void dart_optimizer(pybind11::module& m);
-void dart_dynamics(pybind11::module& m);
-void dart_simulation(pybind11::module& m);
-void dart_utils(pybind11::module& m);
-void dart_gui(pybind11::module& m);
+void Function(pybind11::module& sm);
 
-PYBIND11_MODULE(dartpy, m)
+void Problem(pybind11::module& sm);
+
+void dart_optimizer(pybind11::module& m)
 {
-  py::module::import("numpy");
+  auto sm = m.def_submodule("optimizer");
 
-  m.doc() = "DART python bindings";
+  Solver(sm);
+  GradientDescentSolver(sm);
+#if HAVE_NLOPT
+  NloptSolver(sm);
+#endif // HAVE_NLOPT
 
-  eigen_geometry(m);
+  Function(sm);
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  Problem(sm);
 }
 
 } // namespace python
