@@ -45,6 +45,7 @@ void SimpleFrame(pybind11::module& m)
       dart::dynamics::ShapeFrame,
       dart::dynamics::Detachable,
       std::shared_ptr<dart::dynamics::SimpleFrame> >(m, "SimpleFrame")
+      .def(::pybind11::init<>())
       .def(
           ::pybind11::init<dart::dynamics::Frame*>(),
           ::pybind11::arg("refFrame"))
