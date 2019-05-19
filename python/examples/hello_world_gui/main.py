@@ -28,7 +28,7 @@ class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 
 def main():
-    world = dart.simulation.World.create()
+    world = dart.simulation.World()
 
     urdfParser = dart.utils.DartLoader()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")

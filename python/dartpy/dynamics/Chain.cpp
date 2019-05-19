@@ -45,6 +45,75 @@ void Chain(pybind11::module& m)
       dart::dynamics::Linkage,
       std::shared_ptr<dart::dynamics::Chain>>(m, "Chain")
       .def(
+          ::pybind11::init(
+              +[](const dart::dynamics::Chain::Criteria& criteria)
+                  -> dart::dynamics::ChainPtr {
+                return dart::dynamics::Chain::create(criteria);
+              }),
+          ::pybind11::arg("criteria"))
+      .def(
+          ::pybind11::init(
+              +[](const dart::dynamics::Chain::Criteria& criteria,
+                  const std::string& name) -> dart::dynamics::ChainPtr {
+                return dart::dynamics::Chain::create(criteria, name);
+              }),
+          ::pybind11::arg("criteria"),
+          ::pybind11::arg("name"))
+      .def(
+          ::pybind11::init(
+              +[](dart::dynamics::BodyNode* start,
+                  dart::dynamics::BodyNode* target)
+                  -> dart::dynamics::ChainPtr {
+                return dart::dynamics::Chain::create(start, target);
+              }),
+          ::pybind11::arg("start"),
+          ::pybind11::arg("target"))
+      .def(
+          ::pybind11::init(
+              +[](dart::dynamics::BodyNode* start,
+                  dart::dynamics::BodyNode* target,
+                  const std::string& name) -> dart::dynamics::ChainPtr {
+                return dart::dynamics::Chain::create(start, target, name);
+              }),
+          ::pybind11::arg("start"),
+          ::pybind11::arg("target"),
+          ::pybind11::arg("name"))
+      .def(
+          ::pybind11::init(
+              +[](dart::dynamics::BodyNode* start,
+                  dart::dynamics::BodyNode* target,
+                  bool includeUpstreamParentJoint) -> dart::dynamics::ChainPtr {
+                if (includeUpstreamParentJoint)
+                  return dart::dynamics::Chain::create(
+                      start,
+                      target,
+                      dart::dynamics::Chain::IncludeUpstreamParentJoint);
+                else
+                  return dart::dynamics::Chain::create(start, target);
+              }),
+          ::pybind11::arg("start"),
+          ::pybind11::arg("target"),
+          ::pybind11::arg("includeUpstreamParentJoint"))
+      .def(
+          ::pybind11::init(
+              +[](dart::dynamics::BodyNode* start,
+                  dart::dynamics::BodyNode* target,
+                  bool includeUpstreamParentJoint,
+                  const std::string& name) -> dart::dynamics::ChainPtr {
+                if (includeUpstreamParentJoint)
+                  return dart::dynamics::Chain::create(
+                      start,
+                      target,
+                      dart::dynamics::Chain::IncludeUpstreamParentJoint,
+                      name);
+                else
+                  return dart::dynamics::Chain::create(start, target, name);
+              }),
+          ::pybind11::arg("start"),
+          ::pybind11::arg("target"),
+          ::pybind11::arg("includeUpstreamParentJoint"),
+          ::pybind11::arg("name"))
+      .def(
           "cloneChain",
           +[](const dart::dynamics::Chain* self) -> dart::dynamics::ChainPtr {
             return self->cloneChain();
@@ -63,77 +132,9 @@ void Chain(pybind11::module& m)
             return self->cloneMetaSkeleton(cloneName);
           },
           ::pybind11::arg("cloneName"))
-      .def(
-          "isStillChain",
-          +[](const dart::dynamics::Chain* self) -> bool {
-            return self->isStillChain();
-          })
-      .def_static(
-          "create",
-          +[](const dart::dynamics::Chain::Criteria& criteria)
-              -> dart::dynamics::ChainPtr {
-            return dart::dynamics::Chain::create(criteria);
-          },
-          ::pybind11::arg("criteria"))
-      .def_static(
-          "create",
-          +[](const dart::dynamics::Chain::Criteria& criteria,
-              const std::string& name) -> dart::dynamics::ChainPtr {
-            return dart::dynamics::Chain::create(criteria, name);
-          },
-          ::pybind11::arg("criteria"),
-          ::pybind11::arg("name"))
-      .def_static(
-          "create",
-          +[](dart::dynamics::BodyNode* start,
-              dart::dynamics::BodyNode* target) -> dart::dynamics::ChainPtr {
-            return dart::dynamics::Chain::create(start, target);
-          },
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"))
-      .def_static(
-          "create",
-          +[](dart::dynamics::BodyNode* start,
-              dart::dynamics::BodyNode* target,
-              const std::string& name) -> dart::dynamics::ChainPtr {
-            return dart::dynamics::Chain::create(start, target, name);
-          },
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("name"))
-      .def_static(
-          "create",
-          +[](dart::dynamics::BodyNode* start,
-              dart::dynamics::BodyNode* target,
-              dart::dynamics::Chain::IncludeUpstreamParentJointTag _arg2_)
-              -> dart::dynamics::ChainPtr {
-            return dart::dynamics::Chain::create(start, target, _arg2_);
-          },
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("arg2_"))
-      .def_static(
-          "create",
-          +[](dart::dynamics::BodyNode* start,
-              dart::dynamics::BodyNode* target,
-              dart::dynamics::Chain::IncludeUpstreamParentJointTag _arg2_,
-              const std::string& name) -> dart::dynamics::ChainPtr {
-            return dart::dynamics::Chain::create(start, target, _arg2_, name);
-          },
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("arg2_"),
-          ::pybind11::arg("name"));
-
-  auto attr = m.attr("Chain");
-
-  ::pybind11::enum_<dart::dynamics::Chain::IncludeUpstreamParentJointTag>(
-      attr, "IncludeUpstreamParentJointTag")
-      .value(
-          "IncludeUpstreamParentJoint",
-          dart::dynamics::Chain::IncludeUpstreamParentJointTag::
-              IncludeUpstreamParentJoint)
-      .export_values();
+      .def("isStillChain", +[](const dart::dynamics::Chain* self) -> bool {
+        return self->isStillChain();
+      });
 
   ::pybind11::class_<dart::dynamics::Chain::Criteria>(m, "ChainCriteria")
       .def(
