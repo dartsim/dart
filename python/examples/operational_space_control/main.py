@@ -63,6 +63,12 @@ def main():
     viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
 
+    target = dart.dynamics.SimpleFrame()
+    world.addSimpleFrame(target)
+    viewer.enableDragAndDrop(target)
+    ee = kr5.getBodyNode('palm')
+    viewer.enableDragAndDrop(ee)
+
     # Grid settings
     grid = dart.gui.osg.GridVisual()
     grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
