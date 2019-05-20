@@ -44,6 +44,7 @@
   * Added SimpleFrame: [#1326](https://github.com/dartsim/dart/pull/1326)
   * Added basic inverse kinematics APIs: [#1327](https://github.com/dartsim/dart/pull/1327)
   * Added shapes and ShapeFrame aspects: [#1328](https://github.com/dartsim/dart/pull/1328)
+  * Added collision APIs: [#1329](https://github.com/dartsim/dart/pull/1329)
 
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 
