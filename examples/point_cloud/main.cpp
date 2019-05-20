@@ -407,7 +407,25 @@ public:
           pointCloudShape->setColorMode(
               dynamics::PointCloudShape::USE_SHAPE_COLOR);
         }
-        else if (ImGui::RadioButton("Bind overall", &colorMode, 1))
+        if (colorMode == 0)
+        {
+          auto visual = mNode->getPointCloudVisualAspect();
+          Eigen::Vector4d rgba = visual->getRGBA();
+          float color_rbga[4];
+          color_rbga[0] = static_cast<float>(rgba[0]);
+          color_rbga[1] = static_cast<float>(rgba[1]);
+          color_rbga[2] = static_cast<float>(rgba[2]);
+          color_rbga[3] = static_cast<float>(rgba[3]);
+          if (ImGui::ColorEdit4("Color", color_rbga))
+          {
+            rgba[0] = static_cast<double>(color_rbga[0]);
+            rgba[1] = static_cast<double>(color_rbga[1]);
+            rgba[2] = static_cast<double>(color_rbga[2]);
+            rgba[3] = static_cast<double>(color_rbga[3]);
+            visual->setRGBA(rgba);
+          }
+        }
+        if (ImGui::RadioButton("Bind overall", &colorMode, 1))
         {
           pointCloudShape->setColorMode(
               dynamics::PointCloudShape::BIND_OVERALL);
