@@ -30,40 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void eigen_geometry(pybind11::module& m);
-
-void dart_common(pybind11::module& m);
-void dart_math(pybind11::module& m);
-void dart_optimizer(pybind11::module& m);
-void dart_dynamics(pybind11::module& m);
-void dart_collision(pybind11::module& m);
-void dart_simulation(pybind11::module& m);
-void dart_utils(pybind11::module& m);
-void dart_gui(pybind11::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+void CollisionResult(pybind11::module& m)
 {
-  py::module::import("numpy");
-
-  m.doc() = "DART python bindings";
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  ::pybind11::class_<dart::collision::CollisionResult>(m, "CollisionResult")
+      .def(::pybind11::init<>())
+      .def(
+          "getNumContacts",
+          +[](const dart::collision::CollisionResult* self) -> std::size_t {
+            return self->getNumContacts();
+          })
+      .def(
+          "inCollision",
+          +[](const dart::collision::CollisionResult* self,
+              const dart::dynamics::BodyNode* bn) -> bool {
+            return self->inCollision(bn);
+          },
+          ::pybind11::arg("bn"))
+      .def(
+          "inCollision",
+          +[](const dart::collision::CollisionResult* self,
+              const dart::dynamics::ShapeFrame* frame) -> bool {
+            return self->inCollision(frame);
+          },
+          ::pybind11::arg("frame"))
+      .def(
+          "isCollision",
+          +[](const dart::collision::CollisionResult* self) -> bool {
+            return self->isCollision();
+          })
+      .def("clear", +[](dart::collision::CollisionResult* self) {
+        self->clear();
+      });
 }
 
 } // namespace python

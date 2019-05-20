@@ -30,40 +30,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void eigen_geometry(pybind11::module& m);
-
-void dart_common(pybind11::module& m);
-void dart_math(pybind11::module& m);
-void dart_optimizer(pybind11::module& m);
-void dart_dynamics(pybind11::module& m);
-void dart_collision(pybind11::module& m);
-void dart_simulation(pybind11::module& m);
-void dart_utils(pybind11::module& m);
-void dart_gui(pybind11::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+void Contact(pybind11::module& m)
 {
-  py::module::import("numpy");
-
-  m.doc() = "DART python bindings";
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  ::pybind11::class_<dart::collision::Contact>(m, "Contact")
+      .def(::pybind11::init<>())
+      .def_static(
+          "getNormalEpsilon",
+          +[]() -> double {
+            return dart::collision::Contact::getNormalEpsilon();
+          })
+      .def_static(
+          "getNormalEpsilonSquared",
+          +[]() -> double {
+            return dart::collision::Contact::getNormalEpsilonSquared();
+          })
+      .def_static(
+          "isZeroNormal",
+          +[](const Eigen::Vector3d& normal) -> bool {
+            return dart::collision::Contact::isZeroNormal(normal);
+          },
+          ::pybind11::arg("normal"))
+      .def_static(
+          "isNonZeroNormal",
+          +[](const Eigen::Vector3d& normal) -> bool {
+            return dart::collision::Contact::isNonZeroNormal(normal);
+          },
+          ::pybind11::arg("normal"))
+      .def_readwrite("point", &dart::collision::Contact::point)
+      .def_readwrite("normal", &dart::collision::Contact::normal)
+      .def_readwrite("force", &dart::collision::Contact::force)
+      .def_readwrite(
+          "collisionObject1", &dart::collision::Contact::collisionObject1)
+      .def_readwrite(
+          "collisionObject2", &dart::collision::Contact::collisionObject2)
+      .def_readwrite(
+          "penetrationDepth", &dart::collision::Contact::penetrationDepth)
+      .def_readwrite("triID1", &dart::collision::Contact::triID1)
+      .def_readwrite("triID2", &dart::collision::Contact::triID2)
+      .def_readwrite("userData", &dart::collision::Contact::userData);
 }
 
 } // namespace python
