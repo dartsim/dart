@@ -17,7 +17,7 @@ def test_create_collision_groups():
     simple_frame1.setShape(sphere1)
     simple_frame2.setShape(sphere2)
 
-    cd = dart.collision.FCLCollisionDetector.create()
+    cd = dart.collision.FCLCollisionDetector()
     group = cd.createCollisionGroup()
     group.addShapeFrame(simple_frame1)
     group.addShapeFrame(simple_frame2)

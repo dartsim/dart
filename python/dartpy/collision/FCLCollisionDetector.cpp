@@ -43,6 +43,11 @@ void FCLCollisionDetector(pybind11::module& m)
             dart::collision::FCLCollisionDetector,
             std::shared_ptr<dart::collision::FCLCollisionDetector>,
             dart::collision::CollisionDetector>(m, "FCLCollisionDetector")
+            .def(::pybind11::init(
+                +[]()
+                    -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+                  return dart::collision::FCLCollisionDetector::create();
+                }))
             .def(
                 "cloneWithoutCollisionObjects",
                 +[](dart::collision::FCLCollisionDetector* self)
@@ -87,12 +92,6 @@ void FCLCollisionDetector(pybind11::module& m)
                         ContactPointComputationMethod {
                           return self->getContactPointComputationMethod();
                         })
-            .def_static(
-                "create",
-                +[]()
-                    -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
-                  return dart::collision::FCLCollisionDetector::create();
-                })
             .def_static(
                 "getStaticType",
                 +[]() -> const std::string& {
