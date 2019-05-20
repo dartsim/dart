@@ -422,6 +422,496 @@ void Shape(pybind11::module& m)
       .export_values();
 
   ::pybind11::class_<
+      dart::dynamics::ArrowShape,
+      dart::dynamics::MeshShape,
+      std::shared_ptr<dart::dynamics::ArrowShape>>(m, "ArrowShape")
+      .def(
+          ::pybind11::init<const Eigen::Vector3d&, const Eigen::Vector3d&>(),
+          ::pybind11::arg("tail"),
+          ::pybind11::arg("head"))
+      .def(
+          ::pybind11::init<
+              const Eigen::Vector3d&,
+              const Eigen::Vector3d&,
+              const dart::dynamics::ArrowShape::Properties&>(),
+          ::pybind11::arg("tail"),
+          ::pybind11::arg("head"),
+          ::pybind11::arg("properties"))
+      .def(
+          ::pybind11::init<
+              const Eigen::Vector3d&,
+              const Eigen::Vector3d&,
+              const dart::dynamics::ArrowShape::Properties&,
+              const Eigen::Vector4d&>(),
+          ::pybind11::arg("tail"),
+          ::pybind11::arg("head"),
+          ::pybind11::arg("properties"),
+          ::pybind11::arg("color"))
+      .def(
+          ::pybind11::init<
+              const Eigen::Vector3d&,
+              const Eigen::Vector3d&,
+              const dart::dynamics::ArrowShape::Properties&,
+              const Eigen::Vector4d&,
+              std::size_t>(),
+          ::pybind11::arg("tail"),
+          ::pybind11::arg("head"),
+          ::pybind11::arg("properties"),
+          ::pybind11::arg("color"),
+          ::pybind11::arg("resolution"))
+      .def(
+          "setPositions",
+          +[](dart::dynamics::ArrowShape* self,
+              const Eigen::Vector3d& _tail,
+              const Eigen::Vector3d& _head) {
+            self->setPositions(_tail, _head);
+          },
+          ::pybind11::arg("tail"),
+          ::pybind11::arg("head"))
+      .def(
+          "getTail",
+          +[](const dart::dynamics::ArrowShape* self)
+              -> const Eigen::Vector3d& { return self->getTail(); },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "getHead",
+          +[](const dart::dynamics::ArrowShape* self)
+              -> const Eigen::Vector3d& { return self->getHead(); },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "setProperties",
+          +[](dart::dynamics::ArrowShape* self,
+              const dart::dynamics::ArrowShape::Properties& _properties) {
+            self->setProperties(_properties);
+          },
+          ::pybind11::arg("properties"))
+      .def(
+          "notifyColorUpdated",
+          +[](dart::dynamics::ArrowShape* self, const Eigen::Vector4d& _color) {
+            self->notifyColorUpdated(_color);
+          },
+          ::pybind11::arg("color"))
+      .def(
+          "getProperties",
+          +[](const dart::dynamics::ArrowShape* self)
+              -> const dart::dynamics::ArrowShape::Properties& {
+            return self->getProperties();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "configureArrow",
+          +[](dart::dynamics::ArrowShape* self,
+              const Eigen::Vector3d& _tail,
+              const Eigen::Vector3d& _head,
+              const dart::dynamics::ArrowShape::Properties& _properties) {
+            self->configureArrow(_tail, _head, _properties);
+          },
+          ::pybind11::arg("tail"),
+          ::pybind11::arg("head"),
+          ::pybind11::arg("properties"));
+
+  ::pybind11::class_<dart::dynamics::ArrowShape::Properties>(
+      m, "ArrowShapeProperties")
+      .def(::pybind11::init<>())
+      .def(::pybind11::init<double>(), ::pybind11::arg("radius"))
+      .def(
+          ::pybind11::init<double, double>(),
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("headRadiusScale"))
+      .def(
+          ::pybind11::init<double, double, double>(),
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("headRadiusScale"),
+          ::pybind11::arg("headLengthScale"))
+      .def(
+          ::pybind11::init<double, double, double, double>(),
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("headRadiusScale"),
+          ::pybind11::arg("headLengthScale"),
+          ::pybind11::arg("minHeadLength"))
+      .def(
+          ::pybind11::init<double, double, double, double, double>(),
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("headRadiusScale"),
+          ::pybind11::arg("headLengthScale"),
+          ::pybind11::arg("minHeadLength"),
+          ::pybind11::arg("maxHeadLength"))
+      .def(
+          ::pybind11::init<double, double, double, double, double, bool>(),
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("headRadiusScale"),
+          ::pybind11::arg("headLengthScale"),
+          ::pybind11::arg("minHeadLength"),
+          ::pybind11::arg("maxHeadLength"),
+          ::pybind11::arg("doubleArrow"))
+      .def_readwrite(
+          "mRadius", &dart::dynamics::ArrowShape::Properties::mRadius)
+      .def_readwrite(
+          "mHeadRadiusScale",
+          &dart::dynamics::ArrowShape::Properties::mHeadRadiusScale)
+      .def_readwrite(
+          "mHeadLengthScale",
+          &dart::dynamics::ArrowShape::Properties::mHeadLengthScale)
+      .def_readwrite(
+          "mMinHeadLength",
+          &dart::dynamics::ArrowShape::Properties::mMinHeadLength)
+      .def_readwrite(
+          "mMaxHeadLength",
+          &dart::dynamics::ArrowShape::Properties::mMaxHeadLength)
+      .def_readwrite(
+          "mDoubleArrow",
+          &dart::dynamics::ArrowShape::Properties::mDoubleArrow);
+
+  ::pybind11::class_<
+      dart::dynamics::PlaneShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::PlaneShape>>(m, "PlaneShape")
+      .def(
+          ::pybind11::init<const Eigen::Vector3d&, double>(),
+          ::pybind11::arg("normal"),
+          ::pybind11::arg("offset"))
+      .def(
+          ::pybind11::init<const Eigen::Vector3d&, const Eigen::Vector3d&>(),
+          ::pybind11::arg("normal"),
+          ::pybind11::arg("point"))
+      .def(
+          "getType",
+          +[](const dart::dynamics::PlaneShape* self) -> const std::string& {
+            return self->getType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::PlaneShape* self, double mass)
+              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          ::pybind11::arg("mass"))
+      .def(
+          "setNormal",
+          +[](dart::dynamics::PlaneShape* self,
+              const Eigen::Vector3d& _normal) { self->setNormal(_normal); },
+          ::pybind11::arg("normal"))
+      .def(
+          "getNormal",
+          +[](const dart::dynamics::PlaneShape* self)
+              -> const Eigen::Vector3d& { return self->getNormal(); },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "setOffset",
+          +[](dart::dynamics::PlaneShape* self, double _offset) {
+            self->setOffset(_offset);
+          },
+          ::pybind11::arg("offset"))
+      .def(
+          "getOffset",
+          +[](const dart::dynamics::PlaneShape* self) -> double {
+            return self->getOffset();
+          })
+      .def(
+          "setNormalAndOffset",
+          +[](dart::dynamics::PlaneShape* self,
+              const Eigen::Vector3d& _normal,
+              double _offset) { self->setNormalAndOffset(_normal, _offset); },
+          ::pybind11::arg("normal"),
+          ::pybind11::arg("offset"))
+      .def(
+          "setNormalAndPoint",
+          +[](dart::dynamics::PlaneShape* self,
+              const Eigen::Vector3d& _normal,
+              const Eigen::Vector3d& _point) {
+            self->setNormalAndPoint(_normal, _point);
+          },
+          ::pybind11::arg("normal"),
+          ::pybind11::arg("point"))
+      .def(
+          "computeDistance",
+          +[](const dart::dynamics::PlaneShape* self,
+              const Eigen::Vector3d& _point) -> double {
+            return self->computeDistance(_point);
+          },
+          ::pybind11::arg("point"))
+      .def(
+          "computeSignedDistance",
+          +[](const dart::dynamics::PlaneShape* self,
+              const Eigen::Vector3d& _point) -> double {
+            return self->computeSignedDistance(_point);
+          },
+          ::pybind11::arg("point"))
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::PlaneShape::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal);
+
+  ::pybind11::class_<
+      dart::dynamics::SphereShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::SphereShape>>(m, "SphereShape")
+      .def(::pybind11::init<double>(), ::pybind11::arg("radius"))
+      .def(
+          "getType",
+          +[](const dart::dynamics::SphereShape* self) -> const std::string& {
+            return self->getType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "setRadius",
+          +[](dart::dynamics::SphereShape* self, double radius) {
+            self->setRadius(radius);
+          },
+          ::pybind11::arg("radius"))
+      .def(
+          "getRadius",
+          +[](const dart::dynamics::SphereShape* self) -> double {
+            return self->getRadius();
+          })
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::SphereShape* self, double mass)
+              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          ::pybind11::arg("mass"))
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::SphereShape::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def_static(
+          "computeVolumeOf",
+          +[](double radius) -> double {
+            return dart::dynamics::SphereShape::computeVolume(radius);
+          },
+          ::pybind11::arg("radius"))
+      .def_static(
+          "computeInertiaOf",
+          +[](double radius, double mass) -> Eigen::Matrix3d {
+            return dart::dynamics::SphereShape::computeInertia(radius, mass);
+          },
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("mass"));
+
+  ::pybind11::class_<
+      dart::dynamics::CapsuleShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::CapsuleShape>>(m, "CapsuleShape")
+      .def(
+          ::pybind11::init<double, double>(),
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("height"))
+      .def(
+          "getType",
+          +[](const dart::dynamics::CapsuleShape* self) -> const std::string& {
+            return self->getType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "getRadius",
+          +[](const dart::dynamics::CapsuleShape* self) -> double {
+            return self->getRadius();
+          })
+      .def(
+          "setRadius",
+          +[](dart::dynamics::CapsuleShape* self, double radius) {
+            self->setRadius(radius);
+          },
+          ::pybind11::arg("radius"))
+      .def(
+          "getHeight",
+          +[](const dart::dynamics::CapsuleShape* self) -> double {
+            return self->getHeight();
+          })
+      .def(
+          "setHeight",
+          +[](dart::dynamics::CapsuleShape* self, double height) {
+            self->setHeight(height);
+          },
+          ::pybind11::arg("height"))
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::CapsuleShape* self, double mass)
+              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          ::pybind11::arg("mass"))
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::CapsuleShape::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def_static(
+          "computeVolumeOf",
+          +[](double radius, double height) -> double {
+            return dart::dynamics::CapsuleShape::computeVolume(radius, height);
+          },
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("height"))
+      .def_static(
+          "computeInertiaOf",
+          +[](double radius, double height, double mass) -> Eigen::Matrix3d {
+            return dart::dynamics::CapsuleShape::computeInertia(
+                radius, height, mass);
+          },
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("height"),
+          ::pybind11::arg("mass"));
+
+  ::pybind11::class_<
+      dart::dynamics::CylinderShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::CylinderShape>>(m, "CylinderShape")
+      .def(
+          ::pybind11::init<double, double>(),
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("height"))
+      .def(
+          "getType",
+          +[](const dart::dynamics::CylinderShape* self) -> const std::string& {
+            return self->getType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "getRadius",
+          +[](const dart::dynamics::CylinderShape* self) -> double {
+            return self->getRadius();
+          })
+      .def(
+          "setRadius",
+          +[](dart::dynamics::CylinderShape* self, double _radius) {
+            self->setRadius(_radius);
+          },
+          ::pybind11::arg("radius"))
+      .def(
+          "getHeight",
+          +[](const dart::dynamics::CylinderShape* self) -> double {
+            return self->getHeight();
+          })
+      .def(
+          "setHeight",
+          +[](dart::dynamics::CylinderShape* self, double _height) {
+            self->setHeight(_height);
+          },
+          ::pybind11::arg("height"))
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::CylinderShape* self, double mass)
+              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          ::pybind11::arg("mass"))
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::CylinderShape::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def_static(
+          "computeVolumeOf",
+          +[](double radius, double height) -> double {
+            return dart::dynamics::CylinderShape::computeVolume(radius, height);
+          },
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("height"))
+      .def_static(
+          "computeInertiaOf",
+          +[](double radius, double height, double mass) -> Eigen::Matrix3d {
+            return dart::dynamics::CylinderShape::computeInertia(
+                radius, height, mass);
+          },
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("height"),
+          ::pybind11::arg("mass"));
+
+  ::pybind11::class_<
+      dart::dynamics::SoftMeshShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::SoftMeshShape>>(m, "SoftMeshShape")
+      .def(
+          ::pybind11::init<dart::dynamics::SoftBodyNode*>(),
+          ::pybind11::arg("softBodyNode"))
+      .def(
+          "getType",
+          +[](const dart::dynamics::SoftMeshShape* self) -> const std::string& {
+            return self->getType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "update",
+          +[](dart::dynamics::SoftMeshShape* self) { self->update(); })
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::SoftMeshShape* self, double mass)
+              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          ::pybind11::arg("mass"))
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::SoftMeshShape::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal);
+
+  ::pybind11::class_<
+      dart::dynamics::EllipsoidShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::EllipsoidShape>>(m, "EllipsoidShape")
+      .def(
+          ::pybind11::init<const Eigen::Vector3d&>(),
+          ::pybind11::arg("diameters"))
+      .def(
+          "getType",
+          +[](const dart::dynamics::EllipsoidShape* self)
+              -> const std::string& { return self->getType(); },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "setDiameters",
+          +[](dart::dynamics::EllipsoidShape* self,
+              const Eigen::Vector3d& diameters) {
+            self->setDiameters(diameters);
+          },
+          ::pybind11::arg("diameters"))
+      .def(
+          "getDiameters",
+          +[](const dart::dynamics::EllipsoidShape* self)
+              -> const Eigen::Vector3d& { return self->getDiameters(); },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "setRadii",
+          +[](dart::dynamics::EllipsoidShape* self,
+              const Eigen::Vector3d& radii) { self->setRadii(radii); },
+          ::pybind11::arg("radii"))
+      .def(
+          "getRadii",
+          +[](const dart::dynamics::EllipsoidShape* self)
+              -> const Eigen::Vector3d { return self->getRadii(); })
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::EllipsoidShape* self, double mass)
+              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          ::pybind11::arg("mass"))
+      .def(
+          "isSphere",
+          +[](const dart::dynamics::EllipsoidShape* self) -> bool {
+            return self->isSphere();
+          })
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::EllipsoidShape::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def_static(
+          "computeVolumeOf",
+          +[](const Eigen::Vector3d& diameters) -> double {
+            return dart::dynamics::EllipsoidShape::computeVolume(diameters);
+          },
+          ::pybind11::arg("diameters"))
+      .def_static(
+          "computeInertiaOf",
+          +[](const Eigen::Vector3d& diameters,
+              double mass) -> Eigen::Matrix3d {
+            return dart::dynamics::EllipsoidShape::computeInertia(
+                diameters, mass);
+          },
+          ::pybind11::arg("diameters"),
+          ::pybind11::arg("mass"));
+
+  ::pybind11::class_<
       dart::dynamics::LineSegmentShape,
       dart::dynamics::Shape,
       std::shared_ptr<dart::dynamics::LineSegmentShape>>(m, "LineSegmentShape")
@@ -518,6 +1008,64 @@ void Shape(pybind11::module& m)
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::LineSegmentShape::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal);
+
+  ::pybind11::class_<
+      dart::dynamics::MultiSphereConvexHullShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::MultiSphereConvexHullShape>>(
+      m, "MultiSphereConvexHullShape")
+      .def(
+          ::pybind11::init<
+              const dart::dynamics::MultiSphereConvexHullShape::Spheres&>(),
+          ::pybind11::arg("spheres"))
+      .def(
+          "getType",
+          +[](const dart::dynamics::MultiSphereConvexHullShape* self)
+              -> const std::string& { return self->getType(); },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "addSpheres",
+          +[](dart::dynamics::MultiSphereConvexHullShape* self,
+              const dart::dynamics::MultiSphereConvexHullShape::Spheres&
+                  spheres) { self->addSpheres(spheres); },
+          ::pybind11::arg("spheres"))
+      .def(
+          "addSphere",
+          +[](dart::dynamics::MultiSphereConvexHullShape* self,
+              const dart::dynamics::MultiSphereConvexHullShape::Sphere&
+                  sphere) { self->addSphere(sphere); },
+          ::pybind11::arg("sphere"))
+      .def(
+          "addSphere",
+          +[](dart::dynamics::MultiSphereConvexHullShape* self,
+              double radius,
+              const Eigen::Vector3d& position) {
+            self->addSphere(radius, position);
+          },
+          ::pybind11::arg("radius"),
+          ::pybind11::arg("position"))
+      .def(
+          "removeAllSpheres",
+          +[](dart::dynamics::MultiSphereConvexHullShape* self) {
+            self->removeAllSpheres();
+          })
+      .def(
+          "getNumSpheres",
+          +[](const dart::dynamics::MultiSphereConvexHullShape* self)
+              -> std::size_t { return self->getNumSpheres(); })
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::MultiSphereConvexHullShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
+          ::pybind11::arg("mass"))
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::MultiSphereConvexHullShape::getStaticType();
           },
           ::pybind11::return_value_policy::reference_internal);
 }
