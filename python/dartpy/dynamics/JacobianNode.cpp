@@ -47,9 +47,22 @@ void JacobianNode(pybind11::module& m)
       std::shared_ptr<dart::dynamics::JacobianNode>>(m, "JacobianNode")
       .def(
           "getIK",
-          +[](const dart::dynamics::JacobianNode* self)
-              -> std::shared_ptr<const dart::dynamics::InverseKinematics> {
+          +[](dart::dynamics::JacobianNode* self)
+              -> std::shared_ptr<dart::dynamics::InverseKinematics> {
             return self->getIK();
+          })
+      .def(
+          "getIK",
+          +[](dart::dynamics::JacobianNode* self, bool createIfNull)
+              -> std::shared_ptr<dart::dynamics::InverseKinematics> {
+            return self->getIK(createIfNull);
+          },
+          ::pybind11::arg("createIfNull"))
+      .def(
+          "getOrCreateIK",
+          +[](dart::dynamics::JacobianNode* self)
+              -> std::shared_ptr<dart::dynamics::InverseKinematics> {
+            return self->getOrCreateIK();
           })
       .def(
           "clearIK",

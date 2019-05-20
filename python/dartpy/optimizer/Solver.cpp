@@ -125,7 +125,9 @@ void Solver(pybind11::module& m)
       .def_readwrite(
           "mResultFile", &dart::optimizer::Solver::Properties::mResultFile);
 
-  ::pybind11::class_<dart::optimizer::Solver>(m, "Solver")
+  ::pybind11::class_<
+      dart::optimizer::Solver,
+      std::shared_ptr<dart::optimizer::Solver>>(m, "Solver")
       .def(
           "solve",
           +[](dart::optimizer::Solver* self) -> bool { return self->solve(); })

@@ -46,12 +46,15 @@ void JacobianNode(pybind11::module& sm);
 void BodyNode(pybind11::module& sm);
 
 void Joint(pybind11::module& sm);
+void FreeJoint(pybind11::module& sm);
 
 void MetaSkeleton(pybind11::module& sm);
 void ReferentialSkeleton(pybind11::module& sm);
 void Linkage(pybind11::module& sm);
 void Chain(pybind11::module& sm);
 void Skeleton(pybind11::module& sm);
+
+void InverseKinematics(pybind11::module& sm);
 
 void dart_dynamics(pybind11::module& m)
 {
@@ -68,12 +71,15 @@ void dart_dynamics(pybind11::module& m)
   BodyNode(sm);
 
   Joint(sm);
+  FreeJoint(sm);
 
   MetaSkeleton(sm);
   ReferentialSkeleton(sm);
   Linkage(sm);
   Chain(sm);
   Skeleton(sm);
+
+  InverseKinematics(sm);
 }
 
 } // namespace python

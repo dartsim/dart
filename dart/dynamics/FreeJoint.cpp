@@ -84,6 +84,13 @@ void FreeJoint::setTransform(Joint* joint,
                              const Eigen::Isometry3d& tf,
                              const Frame* withRespectTo)
 {
+  return setTransformOf(joint, tf, withRespectTo);
+}
+
+//==============================================================================
+void FreeJoint::setTransformOf(
+    Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
+{
   if (nullptr == joint)
     return;
 
@@ -105,10 +112,17 @@ void FreeJoint::setTransform(BodyNode* bodyNode,
                              const Eigen::Isometry3d& tf,
                              const Frame* withRespectTo)
 {
+  setTransformOf(bodyNode, tf, withRespectTo);
+}
+
+//==============================================================================
+void FreeJoint::setTransformOf(
+    BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
+{
   if (nullptr == bodyNode)
     return;
 
-  setTransform(bodyNode->getParentJoint(), tf, withRespectTo);
+  setTransformOf(bodyNode->getParentJoint(), tf, withRespectTo);
 }
 
 //==============================================================================
@@ -116,6 +130,16 @@ void FreeJoint::setTransform(Skeleton* skeleton,
                              const Eigen::Isometry3d& tf,
                              const Frame* withRespectTo,
                              bool applyToAllRootBodies)
+{
+  setTransformOf(skeleton, tf, withRespectTo, applyToAllRootBodies);
+}
+
+//==============================================================================
+void FreeJoint::setTransformOf(
+    Skeleton* skeleton,
+    const Eigen::Isometry3d& tf,
+    const Frame* withRespectTo,
+    bool applyToAllRootBodies)
 {
   if (nullptr == skeleton)
     return;
@@ -127,12 +151,12 @@ void FreeJoint::setTransform(Skeleton* skeleton,
 
   if (!applyToAllRootBodies)
   {
-    setTransform(skeleton->getRootBodyNode(), tf, withRespectTo);
+    setTransformOf(skeleton->getRootBodyNode(), tf, withRespectTo);
     return;
   }
 
   for (std::size_t i = 0; i < numTrees; ++i)
-    setTransform(skeleton->getRootBodyNode(i), tf, withRespectTo);
+    setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
 }
 
 //==============================================================================
