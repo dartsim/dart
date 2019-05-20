@@ -35,6 +35,8 @@
 namespace dart {
 namespace python {
 
+void Shape(pybind11::module& sm);
+
 void Entity(pybind11::module& sm);
 void Frame(pybind11::module& sm);
 void ShapeFrame(pybind11::module& sm);
@@ -59,6 +61,8 @@ void InverseKinematics(pybind11::module& sm);
 void dart_dynamics(pybind11::module& m)
 {
   auto sm = m.def_submodule("dynamics");
+
+  Shape(sm);
 
   Entity(sm);
   Frame(sm);

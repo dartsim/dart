@@ -30,22 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
 namespace dart {
 namespace python {
 
-void Observer(pybind11::module& sm);
-void Subject(pybind11::module& sm);
-void Uri(pybind11::module& sm);
-
-void dart_common(pybind11::module& m)
+void Observer(pybind11::module& m)
 {
-  auto sm = m.def_submodule("common");
-
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
+  ::pybind11::
+      class_<dart::common::Observer, std::shared_ptr<dart::common::Observer>>(
+          m, "Observer");
 }
 
 } // namespace python
