@@ -57,9 +57,6 @@ void Frame(pybind11::module& m)
       .def(
           "getTransform",
           +[](const dart::dynamics::Frame* self) -> Eigen::Isometry3d {
-            //            std::cout << "[DEBUG] tf: \n"
-            //                      << self->getTransform().matrix() <<
-            //                      std::endl;
             return self->getTransform();
           })
       .def(
@@ -318,8 +315,11 @@ void Frame(pybind11::module& m)
       .def(
           "dirtyVelocity",
           +[](dart::dynamics::Frame* self) { self->dirtyVelocity(); })
-      .def("dirtyAcceleration", +[](dart::dynamics::Frame* self) {
-        self->dirtyAcceleration();
+      .def(
+          "dirtyAcceleration",
+          +[](dart::dynamics::Frame* self) { self->dirtyAcceleration(); })
+      .def_static("World", +[]() -> std::shared_ptr<dart::dynamics::Frame> {
+        return dart::dynamics::Frame::WorldShared();
       });
 }
 

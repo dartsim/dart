@@ -37,6 +37,8 @@ namespace python {
 
 void Entity(pybind11::module& sm);
 void Frame(pybind11::module& sm);
+void ShapeFrame(pybind11::module& sm);
+void SimpleFrame(pybind11::module& sm);
 
 void Node(pybind11::module& sm);
 void JacobianNode(pybind11::module& sm);
@@ -57,6 +59,8 @@ void dart_dynamics(pybind11::module& m)
 
   Entity(sm);
   Frame(sm);
+  ShapeFrame(sm);
+  SimpleFrame(sm);
 
   Node(sm);
   JacobianNode(sm);

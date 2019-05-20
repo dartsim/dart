@@ -57,6 +57,13 @@ void Entity(pybind11::module& m)
           },
           ::pybind11::return_value_policy::reference_internal)
       .def(
+          "getParentFrame",
+          +[](const dart::dynamics::Entity* self)
+              -> const dart::dynamics::Frame* {
+            return self->getParentFrame();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
           "descendsFrom",
           +[](const dart::dynamics::Entity* self,
               const dart::dynamics::Frame* someFrame) -> bool {
@@ -73,8 +80,6 @@ void Entity(pybind11::module& m)
           +[](const dart::dynamics::Entity* self) -> bool {
             return self->isQuiet();
           })
-      // .def("notifyTransformUpdate", +[](dart::dynamics::Entity *self) {
-      // self->notifyTransformUpdate(); })
       .def(
           "dirtyTransform",
           +[](dart::dynamics::Entity* self) { self->dirtyTransform(); })
@@ -83,8 +88,6 @@ void Entity(pybind11::module& m)
           +[](const dart::dynamics::Entity* self) -> bool {
             return self->needsTransformUpdate();
           })
-      // .def("notifyVelocityUpdate", +[](dart::dynamics::Entity *self) {
-      // self->notifyVelocityUpdate(); })
       .def(
           "dirtyVelocity",
           +[](dart::dynamics::Entity* self) { self->dirtyVelocity(); })
@@ -93,8 +96,6 @@ void Entity(pybind11::module& m)
           +[](const dart::dynamics::Entity* self) -> bool {
             return self->needsVelocityUpdate();
           })
-      // .def("notifyAccelerationUpdate", +[](dart::dynamics::Entity *self) {
-      // self->notifyAccelerationUpdate(); })
       .def(
           "dirtyAcceleration",
           +[](dart::dynamics::Entity* self) { self->dirtyAcceleration(); })
@@ -103,6 +104,18 @@ void Entity(pybind11::module& m)
           +[](const dart::dynamics::Entity* self) -> bool {
             return self->needsAccelerationUpdate();
           });
+
+  ::pybind11::class_<
+      dart::dynamics::Detachable,
+      dart::dynamics::Entity,
+      std::shared_ptr<dart::dynamics::Detachable>>(m, "Detachable")
+      .def(
+          "setParentFrame",
+          +[](dart::dynamics::Detachable* self,
+              dart::dynamics::Frame* _newParentFrame) {
+            self->setParentFrame(_newParentFrame);
+          },
+          ::pybind11::arg("newParentFrame"));
 }
 
 } // namespace python
