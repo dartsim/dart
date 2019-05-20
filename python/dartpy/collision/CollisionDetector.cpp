@@ -53,14 +53,8 @@ void CollisionDetector(pybind11::module& m)
           +[](const dart::collision::CollisionDetector* self)
               -> const std::string& { return self->getType(); },
           ::pybind11::return_value_policy::reference_internal)
-      //.def(
-      //    "createCollisionGroup",
-      //    +[](dart::collision::CollisionDetector* self)
-      //        -> std::unique_ptr<dart::collision::CollisionGroup> {
-      //      return self->createCollisionGroup();
-      //    })
       .def(
-          "createCollisionGroupAsSharedPtr",
+          "createCollisionGroup",
           +[](dart::collision::CollisionDetector* self)
               -> std::shared_ptr<dart::collision::CollisionGroup> {
             return self->createCollisionGroupAsSharedPtr();
