@@ -46,8 +46,10 @@ namespace python {
 
 void NloptSolver(pybind11::module& m)
 {
-  ::pybind11::class_<dart::optimizer::NloptSolver, dart::optimizer::Solver>(
-      m, "NloptSolver")
+  ::pybind11::class_<
+      dart::optimizer::NloptSolver,
+      dart::optimizer::Solver,
+      std::shared_ptr<dart::optimizer::NloptSolver>>(m, "NloptSolver")
       .def(::pybind11::init<>())
       .def(
           ::pybind11::init<const dart::optimizer::Solver::Properties&>(),

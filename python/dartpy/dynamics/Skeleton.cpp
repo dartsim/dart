@@ -276,6 +276,27 @@ void Skeleton(pybind11::module& m)
           },
           ::pybind11::return_value_policy::reference_internal)
       .def(
+          "createFreeJointAndBodyNode",
+          +[](dart::dynamics::Skeleton* self)
+              -> std::
+                  pair<dart::dynamics::FreeJoint*, dart::dynamics::BodyNode*> {
+                    return self->createJointAndBodyNodePair<
+                        dart::dynamics::FreeJoint,
+                        dart::dynamics::BodyNode>();
+                  },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "createRevoluteJointAndBodyNode",
+          +[](dart::dynamics::Skeleton* self)
+              -> std::pair<
+                  dart::dynamics::RevoluteJoint*,
+                  dart::dynamics::BodyNode*> {
+            return self->createJointAndBodyNodePair<
+                dart::dynamics::RevoluteJoint,
+                dart::dynamics::BodyNode>();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
           "getNumBodyNodes",
           +[](const dart::dynamics::Skeleton* self) -> std::size_t {
             return self->getNumBodyNodes();

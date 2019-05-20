@@ -160,7 +160,9 @@ void GradientDescentSolver(pybind11::module& m)
 
   ::pybind11::class_<
       dart::optimizer::GradientDescentSolver,
-      dart::optimizer::Solver>(m, "GradientDescentSolver")
+      dart::optimizer::Solver,
+      std::shared_ptr<dart::optimizer::GradientDescentSolver>>(
+      m, "GradientDescentSolver")
       .def(::pybind11::init<>())
       .def(
           ::pybind11::init<

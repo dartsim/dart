@@ -306,7 +306,17 @@ void eigen_geometry(pybind11::module& parent_m)
       })
       .def("conjugate", [](const Class* self) {
         return self->conjugate();
-      });
+      })
+      //========================
+      // Begin: added by dartpy
+      //========================
+      .def("to_rotation_matrix", [](Class* self) -> Eigen::Matrix<T, 3, 3> {
+        return self->toRotationMatrix();
+      })
+      //========================
+      // End: added by dartpy
+      //========================
+      ;
   }
 
   // Angle-axis.
@@ -382,7 +392,17 @@ void eigen_geometry(pybind11::module& parent_m)
       })
       .def("inverse", [](const Class* self) {
         return self->inverse();
-      });
+      })
+      //========================
+      // Begin: added by dartpy
+      //========================
+      .def("to_rotation_matrix", [](Class* self) -> Eigen::Matrix<T, 3, 3> {
+        return self->toRotationMatrix();
+      })
+      //========================
+      // End: added by dartpy
+      //========================
+      ;
   }
 }
 
