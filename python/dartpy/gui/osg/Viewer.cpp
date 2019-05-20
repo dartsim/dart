@@ -220,6 +220,73 @@ void Viewer(pybind11::module& m)
             return self->isAllowingSimulation();
           })
       .def(
+          "enableDragAndDrop",
+          +[](dart::gui::osg::Viewer* self,
+              dart::dynamics::Entity* entity) -> dart::gui::osg::DragAndDrop* {
+            return self->enableDragAndDrop(entity);
+          },
+          pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("entity"))
+      .def(
+          "enableDragAndDrop",
+          +[](dart::gui::osg::Viewer* self, dart::dynamics::SimpleFrame* frame)
+              -> dart::gui::osg::SimpleFrameDnD* {
+            return self->enableDragAndDrop(frame);
+          },
+          pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("frame"))
+      .def(
+          "enableDragAndDrop",
+          +[](dart::gui::osg::Viewer* self,
+              dart::dynamics::SimpleFrame* frame,
+              dart::dynamics::Shape* shape)
+              -> dart::gui::osg::SimpleFrameShapeDnD* {
+            return self->enableDragAndDrop(frame, shape);
+          },
+          pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("frame"),
+          ::pybind11::arg("shape"))
+      .def(
+          "enableDragAndDrop",
+          +[](dart::gui::osg::Viewer* self, dart::dynamics::BodyNode* bodyNode)
+              -> dart::gui::osg::BodyNodeDnD* {
+            return self->enableDragAndDrop(bodyNode);
+          },
+          pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("bodyNode"))
+      .def(
+          "enableDragAndDrop",
+          +[](dart::gui::osg::Viewer* self,
+              dart::dynamics::BodyNode* bodyNode,
+              bool useExternalIK) -> dart::gui::osg::BodyNodeDnD* {
+            return self->enableDragAndDrop(bodyNode, useExternalIK);
+          },
+          pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("bodyNode"),
+          ::pybind11::arg("useExternalIK"))
+      .def(
+          "enableDragAndDrop",
+          +[](dart::gui::osg::Viewer* self,
+              dart::dynamics::BodyNode* bodyNode,
+              bool useExternalIK,
+              bool useWholeBody) -> dart::gui::osg::BodyNodeDnD* {
+            return self->enableDragAndDrop(
+                bodyNode, useExternalIK, useWholeBody);
+          },
+          pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("bodyNode"),
+          ::pybind11::arg("useExternalIK"),
+          ::pybind11::arg("useWholeBody"))
+      .def(
+          "enableDragAndDrop",
+          +[](dart::gui::osg::Viewer* self,
+              dart::gui::osg::InteractiveFrame* frame)
+              -> dart::gui::osg::InteractiveFrameDnD* {
+            return self->enableDragAndDrop(frame);
+          },
+          pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("frame"))
+      .def(
           "disableDragAndDrop",
           +[](dart::gui::osg::Viewer* self, dart::gui::osg::DragAndDrop* _dnd)
               -> bool { return self->disableDragAndDrop(_dnd); },

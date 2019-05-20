@@ -42,6 +42,8 @@ void Viewer(pybind11::module& sm);
 void ViewerAttachment(pybind11::module& sm);
 void GridVisual(pybind11::module& sm);
 
+void DragAndDrop(pybind11::module& sm);
+
 void dart_gui_osg(pybind11::module& m)
 {
   auto sm = m.def_submodule("osg");
@@ -52,6 +54,8 @@ void dart_gui_osg(pybind11::module& m)
   Viewer(sm);
   ViewerAttachment(sm);
   GridVisual(sm);
+
+  DragAndDrop(sm);
 }
 
 } // namespace python
