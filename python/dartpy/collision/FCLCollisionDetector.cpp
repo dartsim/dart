@@ -62,7 +62,7 @@ void FCLCollisionDetector(pybind11::module& m)
             .def(
                 "createCollisionGroup",
                 +[](dart::collision::FCLCollisionDetector* self)
-                    -> std::unique_ptr<dart::collision::CollisionGroup> {
+                    -> std::shared_ptr<dart::collision::CollisionGroup> {
                   return self->createCollisionGroup();
                 })
             .def(
