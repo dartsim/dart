@@ -32,38 +32,34 @@
 
 #include <pybind11/pybind11.h>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void eigen_geometry(pybind11::module& m);
+void Contact(pybind11::module& sm);
 
-void dart_common(pybind11::module& m);
-void dart_math(pybind11::module& m);
-void dart_optimizer(pybind11::module& m);
-void dart_dynamics(pybind11::module& m);
-void dart_collision(pybind11::module& m);
-void dart_simulation(pybind11::module& m);
-void dart_utils(pybind11::module& m);
-void dart_gui(pybind11::module& m);
+void CollisionOption(pybind11::module& sm);
+void CollisionResult(pybind11::module& sm);
 
-PYBIND11_MODULE(dartpy, m)
+void CollisionDetector(pybind11::module& sm);
+void FCLCollisionDetector(pybind11::module& sm);
+
+void CollisionGroup(pybind11::module& sm);
+void FCLCollisionGroup(pybind11::module& sm);
+
+void dart_collision(pybind11::module& m)
 {
-  py::module::import("numpy");
+  auto sm = m.def_submodule("collision");
 
-  m.doc() = "DART python bindings";
+  Contact(sm);
 
-  eigen_geometry(m);
+  CollisionOption(sm);
+  CollisionResult(sm);
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  CollisionDetector(sm);
+  FCLCollisionDetector(sm);
+
+  CollisionGroup(sm);
+  FCLCollisionGroup(sm);
 }
 
 } // namespace python

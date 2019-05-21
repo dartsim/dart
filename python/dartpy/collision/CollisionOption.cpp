@@ -30,40 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void eigen_geometry(pybind11::module& m);
-
-void dart_common(pybind11::module& m);
-void dart_math(pybind11::module& m);
-void dart_optimizer(pybind11::module& m);
-void dart_dynamics(pybind11::module& m);
-void dart_collision(pybind11::module& m);
-void dart_simulation(pybind11::module& m);
-void dart_utils(pybind11::module& m);
-void dart_gui(pybind11::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+void CollisionOption(pybind11::module& m)
 {
-  py::module::import("numpy");
-
-  m.doc() = "DART python bindings";
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  ::pybind11::class_<dart::collision::CollisionOption>(m, "CollisionOption")
+      .def(::pybind11::init<>())
+      .def(::pybind11::init<bool>(), ::pybind11::arg("enableContact"))
+      .def(
+          ::pybind11::init<bool, std::size_t>(),
+          ::pybind11::arg("enableContact"),
+          ::pybind11::arg("maxNumContacts"))
+      .def(
+          ::pybind11::init<
+              bool,
+              std::size_t,
+              const std::shared_ptr<dart::collision::CollisionFilter>&>(),
+          ::pybind11::arg("enableContact"),
+          ::pybind11::arg("maxNumContacts"),
+          ::pybind11::arg("collisionFilter"))
+      .def_readwrite(
+          "enableContact", &dart::collision::CollisionOption::enableContact)
+      .def_readwrite(
+          "maxNumContacts", &dart::collision::CollisionOption::maxNumContacts)
+      .def_readwrite(
+          "collisionFilter",
+          &dart::collision::CollisionOption::collisionFilter);
 }
 
 } // namespace python
