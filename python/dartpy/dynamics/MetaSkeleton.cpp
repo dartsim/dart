@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -134,6 +135,18 @@ void MetaSkeleton(pybind11::module& m)
             return self->getNumJoints();
           })
       .def(
+          "getJoint",
+          +[](dart::dynamics::MetaSkeleton* self, std::size_t index)
+              -> dart::dynamics::Joint* { return self->getJoint(index); },
+          ::pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("index"))
+      .def(
+          "getJoint",
+          +[](dart::dynamics::MetaSkeleton* self, const std::string& name)
+              -> dart::dynamics::Joint* { return self->getJoint(name); },
+          ::pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("name"))
+      .def(
           "getJoints",
           +[](dart::dynamics::MetaSkeleton* self)
               -> std::vector<dart::dynamics::Joint*> {
@@ -188,11 +201,20 @@ void MetaSkeleton(pybind11::module& m)
             return self->getNumDofs();
           })
       .def(
+          "getDof",
+          +[](dart::dynamics::MetaSkeleton* self,
+              std::size_t index) -> dart::dynamics::DegreeOfFreedom* {
+            return self->getDof(index);
+          },
+          ::pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("index"))
+      .def(
           "getDofs",
-          +[](const dart::dynamics::MetaSkeleton* self)
-              -> std::vector<const dart::dynamics::DegreeOfFreedom*> {
+          +[](dart::dynamics::MetaSkeleton* self)
+              -> std::vector<dart::dynamics::DegreeOfFreedom*> {
             return self->getDofs();
-          })
+          },
+          ::pybind11::return_value_policy::reference_internal)
       .def(
           "getIndexOf",
           +[](const dart::dynamics::MetaSkeleton* self,

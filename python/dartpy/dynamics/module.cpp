@@ -44,6 +44,9 @@ void SimpleFrame(pybind11::module& sm);
 
 void Node(pybind11::module& sm);
 void JacobianNode(pybind11::module& sm);
+void ShapeNode(pybind11::module& sm);
+
+void DegreeOfFreedom(pybind11::module& sm);
 
 void BodyNode(pybind11::module& sm);
 
@@ -71,6 +74,9 @@ void dart_dynamics(pybind11::module& m)
 
   Node(sm);
   JacobianNode(sm);
+  ShapeNode(sm);
+
+  DegreeOfFreedom(sm);
 
   BodyNode(sm);
 

@@ -458,6 +458,14 @@ void Skeleton(pybind11::module& m)
             return self->getNumDofs();
           })
       .def(
+          "getDof",
+          +[](dart::dynamics::Skeleton* self,
+              const std::string& name) -> dart::dynamics::DegreeOfFreedom* {
+            return self->getDof(name);
+          },
+          ::pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("index"))
+      .def(
           "getDofs",
           +[](const dart::dynamics::Skeleton* self)
               -> std::vector<const dart::dynamics::DegreeOfFreedom*> {

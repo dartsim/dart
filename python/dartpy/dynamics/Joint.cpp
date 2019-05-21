@@ -754,22 +754,11 @@ void Joint(pybind11::module& m)
             return self->getCoulombFriction(index);
           },
           ::pybind11::arg("index"))
-      //      .def("getPotentialEnergy", +[](const dart::dynamics::Joint *self)
-      //      -> double { return self->getPotentialEnergy(); })
       .def(
           "computePotentialEnergy",
           +[](const dart::dynamics::Joint* self) -> double {
             return self->computePotentialEnergy();
           })
-      //      .def("getLocalJacobian", +[](const dart::dynamics::Joint *self) ->
-      //      const dart::math::Jacobian { return self->getLocalJacobian(); })
-      //      .def("getLocalJacobian", +[](const dart::dynamics::Joint *self,
-      //      const Eigen::VectorXd & positions) -> dart::math::Jacobian {
-      //      return self->getLocalJacobian(positions); },
-      //      ::pybind11::arg("positions")) .def("getLocalJacobianTimeDeriv",
-      //      +[](const dart::dynamics::Joint *self) -> const
-      //      dart::math::Jacobian { return self->getLocalJacobianTimeDeriv();
-      //      })
       .def(
           "getRelativeJacobian",
           +[](const dart::dynamics::Joint* self) -> const dart::math::Jacobian {
@@ -792,20 +781,14 @@ void Joint(pybind11::module& m)
           +[](const dart::dynamics::Joint* self) -> Eigen::Vector6d {
             return self->getBodyConstraintWrench();
           })
-      //      .def("notifyPositionUpdate", +[](dart::dynamics::Joint *self) ->
-      //      void { return self->notifyPositionUpdate(); })
       .def(
           "notifyPositionUpdated",
           +[](dart::dynamics::Joint* self)
               -> void { return self->notifyPositionUpdated(); })
-      //      .def("notifyVelocityUpdate", +[](dart::dynamics::Joint *self) ->
-      //      void { return self->notifyVelocityUpdate(); })
       .def(
           "notifyVelocityUpdated",
           +[](dart::dynamics::Joint* self)
               -> void { return self->notifyVelocityUpdated(); })
-      //      .def("notifyAccelerationUpdate", +[](dart::dynamics::Joint *self)
-      //      -> void { return self->notifyAccelerationUpdate(); })
       .def(
           "notifyAccelerationUpdated",
           +[](dart::dynamics::Joint* self) -> void {
@@ -819,6 +802,17 @@ void Joint(pybind11::module& m)
       .def_readonly_static("LOCKED", &dart::dynamics::Joint::LOCKED)
       .def_readonly_static(
           "DefaultActuatorType", &dart::dynamics::Joint::DefaultActuatorType);
+
+  auto attr = m.attr("Joint");
+
+  ::pybind11::enum_<dart::dynamics::detail::ActuatorType>(attr, "ActuatorType")
+      .value("FORCE", dart::dynamics::detail::ActuatorType::FORCE)
+      .value("PASSIVE", dart::dynamics::detail::ActuatorType::PASSIVE)
+      .value("SERVO", dart::dynamics::detail::ActuatorType::SERVO)
+      .value("MIMIC", dart::dynamics::detail::ActuatorType::MIMIC)
+      .value("ACCELERATION", dart::dynamics::detail::ActuatorType::ACCELERATION)
+      .value("VELOCITY", dart::dynamics::detail::ActuatorType::VELOCITY)
+      .value("LOCKED", dart::dynamics::detail::ActuatorType::LOCKED);
 }
 
 } // namespace python

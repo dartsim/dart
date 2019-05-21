@@ -253,17 +253,32 @@ void ShapeFrame(pybind11::module& m)
               const Eigen::Vector4d& color) { self->setRGBA(color); },
           ::pybind11::arg("color"))
       .def(
+          "getRGBA",
+          +[](dart::dynamics::VisualAspect* self) -> const Eigen::Vector4d& {
+            return self->getRGBA();
+          })
+      .def(
           "setHidden",
           +[](dart::dynamics::VisualAspect* self, const bool& value) {
             self->setHidden(value);
           },
           ::pybind11::arg("value"))
       .def(
+          "getHidden",
+          +[](dart::dynamics::VisualAspect* self) -> bool {
+            return self->getHidden();
+          })
+      .def(
           "setShadowed",
           +[](dart::dynamics::VisualAspect* self, const bool& value) {
             self->setShadowed(value);
           },
           ::pybind11::arg("value"))
+      .def(
+          "getShadowed",
+          +[](dart::dynamics::VisualAspect* self) -> bool {
+            return self->getShadowed();
+          })
       .def(
           "setColor",
           +[](dart::dynamics::VisualAspect* self,
@@ -326,6 +341,11 @@ void ShapeFrame(pybind11::module& m)
           },
           ::pybind11::arg("value"))
       .def(
+          "getCollidable",
+          +[](const dart::dynamics::CollisionAspect* self) -> bool {
+            return self->getCollidable();
+          })
+      .def(
           "isCollidable",
           +[](const dart::dynamics::CollisionAspect* self) -> bool {
             return self->isCollidable();
@@ -350,11 +370,21 @@ void ShapeFrame(pybind11::module& m)
           },
           ::pybind11::arg("value"))
       .def(
+          "getFrictionCoeff",
+          +[](const dart::dynamics::DynamicsAspect* self) -> double {
+            return self->getFrictionCoeff();
+          })
+      .def(
           "setRestitutionCoeff",
           +[](dart::dynamics::DynamicsAspect* self, const double& value) {
             self->setRestitutionCoeff(value);
           },
-          ::pybind11::arg("value"));
+          ::pybind11::arg("value"))
+      .def(
+          "getRestitutionCoeff",
+          +[](const dart::dynamics::DynamicsAspect* self) -> double {
+            return self->getRestitutionCoeff();
+          });
 }
 
 } // namespace python

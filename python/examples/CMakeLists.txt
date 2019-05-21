@@ -17,6 +17,7 @@ function(dartpy_add_example example_name) # ARGN for source file
   )
 endfunction()
 
+add_subdirectory(biped_stand)
 add_subdirectory(hello_world)
 add_subdirectory(hello_world_gui)
 add_subdirectory(operational_space_control)
