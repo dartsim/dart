@@ -59,6 +59,7 @@ public:
     setColor(eigToOsgVec4f(color));
     setShape(mShape);
     setDataVariance(::osg::Object::DYNAMIC);
+    getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   }
 
   void updateSize(double size)
@@ -96,6 +97,7 @@ public:
     addPrimitiveSet(new ::osg::DrawArrays(::osg::PrimitiveSet::QUADS, 0, 4));
 
     setDataVariance(::osg::Object::DYNAMIC);
+    getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   }
 
   void updateSize(double size)
@@ -142,6 +144,7 @@ public:
     updateColor(color);
 
     setDataVariance(::osg::Object::DYNAMIC);
+    getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   }
 
   void updateSize(double size)
