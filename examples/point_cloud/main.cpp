@@ -45,7 +45,7 @@ using namespace dart::math;
 
 static const std::string& robotName = "KR5";
 
-class PointCloudWorld : public gui::osg::WorldNode
+class PointCloudWorld : public gui::osg::RealTimeWorldNode
 {
 public:
   enum PointSamplingMode
@@ -56,7 +56,7 @@ public:
 
   explicit PointCloudWorld(
       simulation::WorldPtr world, dynamics::SkeletonPtr robot)
-    : gui::osg::WorldNode(std::move(world)),
+    : gui::osg::RealTimeWorldNode(std::move(world)),
       mSampleingMode(SAMPLE_ON_ROBOT),
       mRobot(std::move(robot))
   {
