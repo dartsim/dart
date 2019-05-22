@@ -269,13 +269,9 @@ void JacobianNode(pybind11::module& m)
             return self->getAngularJacobianDeriv(_inCoordinatesOf);
           },
           ::pybind11::arg("inCoordinatesOf"))
-      // .def("notifyJacobianUpdate", +[](dart::dynamics::JacobianNode *self) {
-      // self->notifyJacobianUpdate(); })
       .def(
           "dirtyJacobian",
           +[](dart::dynamics::JacobianNode* self) { self->dirtyJacobian(); })
-      // .def("notifyJacobianDerivUpdate", +[](dart::dynamics::JacobianNode
-      // *self) { self->notifyJacobianDerivUpdate(); })
       .def("dirtyJacobianDeriv", +[](dart::dynamics::JacobianNode* self) {
         self->dirtyJacobianDeriv();
       });

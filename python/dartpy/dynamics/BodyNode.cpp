@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -793,13 +794,8 @@ void BodyNode(pybind11::module& m)
           +[](dart::dynamics::BodyNode* self)
               -> const std::vector<dart::dynamics::ShapeNode*> {
             return self->getShapeNodes();
-          })
-      .def(
-          "getShapeNodes",
-          +[](const dart::dynamics::BodyNode* self)
-              -> const std::vector<const dart::dynamics::ShapeNode*> {
-            return self->getShapeNodes();
-          })
+          },
+          ::pybind11::return_value_policy::reference_internal)
       .def(
           "removeAllShapeNodes",
           +[](dart::dynamics::BodyNode* self) { self->removeAllShapeNodes(); })
