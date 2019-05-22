@@ -40,7 +40,9 @@ namespace python {
 
 void FreeJoint(pybind11::module& m)
 {
-  ::pybind11::class_<dart::dynamics::FreeJoint::Properties>(
+  ::pybind11::class_<
+      dart::dynamics::FreeJoint::Properties,
+      dart::dynamics::GenericJoint<math::SE3Space>::Properties>(
       m, "FreeJointProperties")
       .def(::pybind11::init<>())
       .def(
@@ -50,9 +52,8 @@ void FreeJoint(pybind11::module& m)
 
   ::pybind11::class_<
       dart::dynamics::FreeJoint,
-      dart::dynamics::Joint
-      //      dart::dynamics::GenericJoint<dart::math::SE3Space>
-      >(m, "FreeJoint")
+      dart::dynamics::GenericJoint<dart::math::SE3Space>,
+      std::shared_ptr<dart::dynamics::FreeJoint>>(m, "FreeJoint")
       .def(
           "getFreeJointProperties",
           +[](const dart::dynamics::FreeJoint* self)

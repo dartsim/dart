@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import dartpy as dart
 
@@ -25,10 +26,10 @@ def main():
     dof = chain.getNumDofs()
 
     init_pose = np.zeros(dof)
-    init_pose[20] = 3.14159 * 0.4
-    init_pose[23] = 3.14159 * 0.4
-    init_pose[26] = 3.14159 * 0.4
-    init_pose[29] = 3.14159 * 0.4
+    init_pose[20] = math.pi * 0.4
+    init_pose[23] = math.pi * 0.4
+    init_pose[26] = math.pi * 0.4
+    init_pose[29] = math.pi * 0.4
     chain.setPositions(init_pose)
 
     # Create a ball joint contraint
@@ -52,6 +53,12 @@ def main():
     # Create world node and add it to viewer
     viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
+
+    # Grid settings
+    grid = dart.gui.osg.GridVisual()
+    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
+    grid.setOffset([0, -0.55, 0])
+    viewer.addAttachment(grid)
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
     viewer.setCameraHomePosition([0.6, 0.3, 0.6], [0, -0.2, 0], [0, 1, 0])

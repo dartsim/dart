@@ -1,1 +1,0 @@
-dartpy_add_example(pyexam_hello_world_gui main.py)

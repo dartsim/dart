@@ -12,7 +12,7 @@ def test_solve_for_free_joint():
     '''
 
     skel = dart.dynamics.Skeleton()
-    [joint0, body0] = skel.createFreeJointAndBodyNode()
+    [joint0, body0] = skel.createFreeJointAndBodyNodePair()
 
     ik = body0.getOrCreateIK()
     assert ik.isActive()
