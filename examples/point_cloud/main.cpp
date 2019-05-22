@@ -71,7 +71,7 @@ public:
 
     mPointCloudVisualAspect = pointCloudFrame->getVisualAspect();
     mVoxelGridVisualAspect = voxelGridFrame->getVisualAspect();
-    mVoxelGridVisualAspect->hide();
+    mVoxelGridVisualAspect->show();
 
     assert(mVoxelGridShape);
   }
@@ -389,6 +389,7 @@ public:
     {
       if (mViewer->isAllowingSimulation())
       {
+        // Point cloud settings
         bool pcShow = !mNode->getPointCloudVisualAspect()->isHidden();
         if (ImGui::Checkbox("Point Cloud", &pcShow))
         {
@@ -398,61 +399,94 @@ public:
             mNode->getPointCloudVisualAspect()->hide();
         }
 
-        auto pointCloudShape = mNode->getPointCloudShape();
+        if (pcShow)
+        {
+          auto pointCloudShape = mNode->getPointCloudShape();
 
-        ImGui::Text("Color Mode:");
-        int colorMode = pointCloudShape->getColorMode();
-        if (ImGui::RadioButton("Use shape color", &colorMode, 0))
-        {
-          pointCloudShape->setColorMode(
-              dynamics::PointCloudShape::USE_SHAPE_COLOR);
-        }
-        if (colorMode == 0)
-        {
-          auto visual = mNode->getPointCloudVisualAspect();
-          Eigen::Vector4d rgba = visual->getRGBA();
-          float color_rbga[4];
-          color_rbga[0] = static_cast<float>(rgba[0]);
-          color_rbga[1] = static_cast<float>(rgba[1]);
-          color_rbga[2] = static_cast<float>(rgba[2]);
-          color_rbga[3] = static_cast<float>(rgba[3]);
-          if (ImGui::ColorEdit4("Color", color_rbga))
+          const char* colorModeItems[]
+              = {"Use shape color", "Bind overall", "Bind per point"};
+          int colorMode = pointCloudShape->getColorMode();
+          if (ImGui::Combo(
+                  "Color Mode",
+                  &colorMode,
+                  colorModeItems,
+                  IM_ARRAYSIZE(colorModeItems)))
           {
-            rgba[0] = static_cast<double>(color_rbga[0]);
-            rgba[1] = static_cast<double>(color_rbga[1]);
-            rgba[2] = static_cast<double>(color_rbga[2]);
-            rgba[3] = static_cast<double>(color_rbga[3]);
-            visual->setRGBA(rgba);
+            if (colorMode == 0)
+            {
+              pointCloudShape->setColorMode(
+                  dynamics::PointCloudShape::USE_SHAPE_COLOR);
+            }
+            else if (colorMode == 1)
+            {
+              pointCloudShape->setColorMode(
+                  dynamics::PointCloudShape::BIND_OVERALL);
+            }
+            else if (colorMode == 2)
+            {
+              pointCloudShape->setColorMode(
+                  dynamics::PointCloudShape::BIND_PER_POINT);
+            }
+          }
+          if (colorMode == 0)
+          {
+            auto visual = mNode->getPointCloudVisualAspect();
+            Eigen::Vector4d rgba = visual->getRGBA();
+            float color_rbga[4];
+            color_rbga[0] = static_cast<float>(rgba[0]);
+            color_rbga[1] = static_cast<float>(rgba[1]);
+            color_rbga[2] = static_cast<float>(rgba[2]);
+            color_rbga[3] = static_cast<float>(rgba[3]);
+            if (ImGui::ColorEdit4("Color", color_rbga))
+            {
+              rgba[0] = static_cast<double>(color_rbga[0]);
+              rgba[1] = static_cast<double>(color_rbga[1]);
+              rgba[2] = static_cast<double>(color_rbga[2]);
+              rgba[3] = static_cast<double>(color_rbga[3]);
+              visual->setRGBA(rgba);
+            }
+          }
+
+          const char* pointShapeTypeItems[]
+              = {"Box", "Billboard Square", "Billboard Circle"};
+          int pointShapeType = pointCloudShape->getPointShapeType();
+          if (ImGui::Combo(
+                  "Point Shape Type",
+                  &pointShapeType,
+                  pointShapeTypeItems,
+                  IM_ARRAYSIZE(pointShapeTypeItems)))
+          {
+            if (pointShapeType == 0)
+            {
+              pointCloudShape->setPointShapeType(
+                  dynamics::PointCloudShape::BOX);
+            }
+            else if (pointShapeType == 1)
+            {
+              pointCloudShape->setPointShapeType(
+                  dynamics::PointCloudShape::BILLBOARD_SQUARE);
+            }
+            else if (pointShapeType == 2)
+            {
+              pointCloudShape->setPointShapeType(
+                  dynamics::PointCloudShape::BILLBOARD_CIRCLE);
+            }
+          }
+
+          float visualSize
+              = static_cast<float>(pointCloudShape->getVisualSize());
+          if (ImGui::InputFloat(
+                  "Visual Size", &visualSize, 0.01f, 0.02f, "%.2f"))
+          {
+            if (visualSize < 0.01f)
+              visualSize = 0.01f;
+            pointCloudShape->setVisualSize(static_cast<double>(visualSize));
           }
         }
-        if (ImGui::RadioButton("Bind overall", &colorMode, 1))
-        {
-          pointCloudShape->setColorMode(
-              dynamics::PointCloudShape::BIND_OVERALL);
-        }
-        else if (ImGui::RadioButton("Bind per point", &colorMode, 2))
-        {
-          pointCloudShape->setColorMode(
-              dynamics::PointCloudShape::BIND_PER_POINT);
-        }
 
-        ImGui::Text("Point Shape Type:");
-        int pointShapeType = pointCloudShape->getPointShapeType();
-        if (ImGui::RadioButton("Box", &pointShapeType, 0))
-        {
-          pointCloudShape->setPointShapeType(dynamics::PointCloudShape::BOX);
-        }
-        else if (ImGui::RadioButton("Billboard Quad", &pointShapeType, 1))
-        {
-          pointCloudShape->setPointShapeType(
-              dynamics::PointCloudShape::BILLBOARD_QUAD);
-        }
-        else if (ImGui::RadioButton("Billboard Circe", &pointShapeType, 2))
-        {
-          pointCloudShape->setPointShapeType(
-              dynamics::PointCloudShape::BILLBOARD_CIRCLE);
-        }
+        ::ImGui::Separator();
 
+        // Voxel settings
         bool vgShow = !mNode->getVoxelGridVisualAspect()->isHidden();
         if (ImGui::Checkbox("Voxel Grid", &vgShow))
         {
@@ -461,13 +495,23 @@ public:
           else
             mNode->getVoxelGridVisualAspect()->hide();
         }
-
-        float visualSize = static_cast<float>(pointCloudShape->getVisualSize());
-        if (ImGui::InputFloat("Visual Size", &visualSize, 0.01f, 0.02f, "%.2f"))
+        if (vgShow)
         {
-          if (visualSize < 0.01f)
-            visualSize = 0.01f;
-          pointCloudShape->setVisualSize(static_cast<double>(visualSize));
+          auto visual = mNode->getVoxelGridVisualAspect();
+          Eigen::Vector4d rgba = visual->getRGBA();
+          float color_rbga[4];
+          color_rbga[0] = static_cast<float>(rgba[0]);
+          color_rbga[1] = static_cast<float>(rgba[1]);
+          color_rbga[2] = static_cast<float>(rgba[2]);
+          color_rbga[3] = static_cast<float>(rgba[3]);
+          if (ImGui::ColorEdit4("Voxel grid color", color_rbga))
+          {
+            rgba[0] = static_cast<double>(color_rbga[0]);
+            rgba[1] = static_cast<double>(color_rbga[1]);
+            rgba[2] = static_cast<double>(color_rbga[2]);
+            rgba[3] = static_cast<double>(color_rbga[3]);
+            visual->setRGBA(rgba);
+          }
         }
       }
 
@@ -694,7 +738,6 @@ int main()
 
   // Create an instance of our customized WorldNode
   ::osg::ref_ptr<PointCloudWorld> node = new PointCloudWorld(world, robot);
-  node->setNumStepsPerCycle(16);
 
   // Create the Viewer instance
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
