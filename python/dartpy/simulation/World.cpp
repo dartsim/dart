@@ -206,6 +206,12 @@ void World(pybind11::module& m)
           ::pybind11::arg("option"),
           ::pybind11::arg("result"))
       .def(
+          "getLastCollisionResult",
+          +[](dart::simulation::World* self)
+              -> const collision::CollisionResult& {
+            return self->getLastCollisionResult();
+          })
+      .def(
           "reset",
           +[](dart::simulation::World* self) -> void { return self->reset(); })
       .def(
@@ -233,6 +239,12 @@ void World(pybind11::module& m)
           +[](const dart::simulation::World* self) -> int {
             return self->getSimFrames();
           })
+      .def(
+          "getConstraintSolver",
+          +[](dart::simulation::World* self) -> constraint::ConstraintSolver* {
+            return self->getConstraintSolver();
+          },
+          ::pybind11::return_value_policy::reference_internal)
       .def(
           "bake",
           +[](dart::simulation::World* self) -> void { return self->bake(); })

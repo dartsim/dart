@@ -120,12 +120,12 @@ public:
   friend class ConstraintSolver;
   friend class ConstrainedGroup;
 
+  /// Destructor
+  virtual ~ConstraintBase();
+
 protected:
   /// Default contructor
   ConstraintBase();
-
-  /// Destructor
-  virtual ~ConstraintBase();
 
 protected:
   /// Dimension of constraint
