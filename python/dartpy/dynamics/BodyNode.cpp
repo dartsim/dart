@@ -790,6 +790,14 @@ void BodyNode(pybind11::module& m)
             return self->getNumShapeNodes();
           })
       .def(
+          "getShapeNode",
+          +[](dart::dynamics::BodyNode* self,
+              std::size_t index) -> dart::dynamics::ShapeNode* {
+            return self->getShapeNode(index);
+          },
+          ::pybind11::return_value_policy::reference_internal,
+          ::pybind11::arg("index"))
+      .def(
           "getShapeNodes",
           +[](dart::dynamics::BodyNode* self)
               -> const std::vector<dart::dynamics::ShapeNode*> {

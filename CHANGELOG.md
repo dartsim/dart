@@ -47,6 +47,7 @@
   * Added shapes and ShapeFrame aspects: [#1328](https://github.com/dartsim/dart/pull/1328)
   * Added collision APIs: [#1329](https://github.com/dartsim/dart/pull/1329)
   * Added DegreeOfFreedom and ShapeNode: [#1332](https://github.com/dartsim/dart/pull/1332)
+  * Added constraint APIs: [#1333](https://github.com/dartsim/dart/pull/1333)
 
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 

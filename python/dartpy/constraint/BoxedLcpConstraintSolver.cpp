@@ -30,42 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void eigen_geometry(pybind11::module& m);
-
-void dart_common(pybind11::module& m);
-void dart_math(pybind11::module& m);
-void dart_optimizer(pybind11::module& m);
-void dart_dynamics(pybind11::module& m);
-void dart_collision(pybind11::module& m);
-void dart_constraint(pybind11::module& m);
-void dart_simulation(pybind11::module& m);
-void dart_utils(pybind11::module& m);
-void dart_gui(pybind11::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+void BoxedLcpConstraintSolver(pybind11::module& m)
 {
-  py::module::import("numpy");
-
-  m.doc() = "DART python bindings";
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  ::pybind11::class_<
+      dart::constraint::BoxedLcpConstraintSolver,
+      dart::constraint::ConstraintSolver,
+      std::shared_ptr<dart::constraint::BoxedLcpConstraintSolver>>(
+      m, "BoxedLcpConstraintSolver")
+      .def(::pybind11::init<double>(), ::pybind11::arg("timeStep"))
+      .def(
+          ::pybind11::init<double, dart::constraint::BoxedLcpSolverPtr>(),
+          ::pybind11::arg("timeStep"),
+          ::pybind11::arg("boxedLcpSolver"))
+      .def(
+          "setBoxedLcpSolver",
+          +[](dart::constraint::BoxedLcpConstraintSolver* self,
+              dart::constraint::BoxedLcpSolverPtr lcpSolver) {
+            self->setBoxedLcpSolver(lcpSolver);
+          },
+          ::pybind11::arg("lcpSolver"))
+      .def(
+          "getBoxedLcpSolver",
+          +[](const dart::constraint::BoxedLcpConstraintSolver* self)
+              -> dart::constraint::ConstBoxedLcpSolverPtr {
+            return self->getBoxedLcpSolver();
+          });
 }
 
 } // namespace python
