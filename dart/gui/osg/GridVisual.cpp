@@ -521,6 +521,8 @@ void GridVisual::initialize()
   mAxisLineVertices = new ::osg::Vec3Array;
   mAxisLineGeom->setVertexArray(mAxisLineVertices);
   mAxisLineGeom->setDataVariance(::osg::Object::STATIC);
+  mAxisLineGeom->getOrCreateStateSet()->setMode(
+      GL_BLEND, ::osg::StateAttribute::ON);
 
   // Set grid color
   static const ::osg::Vec4 majorLineColor(0.4f, 0.4f, 0.4f, 1.0f);
@@ -540,12 +542,16 @@ void GridVisual::initialize()
   mMajorLineColor->at(0) = majorLineColor;
   mMajorLineGeom->setColorArray(mMajorLineColor);
   mMajorLineGeom->setColorBinding(::osg::Geometry::BIND_OVERALL);
+  mMajorLineGeom->getOrCreateStateSet()->setMode(
+      GL_BLEND, ::osg::StateAttribute::ON);
 
   mMinorLineColor = new ::osg::Vec4Array;
   mMinorLineColor->resize(1);
   mMinorLineColor->at(0) = minorLineColor;
   mMinorLineGeom->setColorArray(mMinorLineColor);
   mMinorLineGeom->setColorBinding(::osg::Geometry::BIND_OVERALL);
+  mMinorLineGeom->getOrCreateStateSet()->setMode(
+      GL_BLEND, ::osg::StateAttribute::ON);
 
   mMinorLineFaces = new ::osg::DrawElementsUInt(::osg::PrimitiveSet::LINES, 0);
   mMinorLineGeom->addPrimitiveSet(mMinorLineFaces);

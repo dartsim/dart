@@ -49,50 +49,73 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-class VoxelGridShapeDrawable : public ::osg::ShapeDrawable
+class BoxDrawable final : public ::osg::ShapeDrawable
 {
 public:
-  VoxelGridShapeDrawable(
-      dynamics::VoxelGridShape* shape,
-      dynamics::VisualAspect* visualAspect,
-      VoxelGridShapeGeode* parent);
+  BoxDrawable(double size, const Eigen::Vector4d& color)
+  {
+    mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
+    setColor(eigToOsgVec4f(color));
+    setShape(mShape);
+    setDataVariance(::osg::Object::DYNAMIC);
+    getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  }
 
-  void refresh(bool firstTime);
+  void updateSize(double size)
+  {
+    mShape->setHalfLengths(::osg::Vec3(
+        static_cast<float>(size * 0.5),
+        static_cast<float>(size * 0.5),
+        static_cast<float>(size * 0.5)));
+    dirtyBound();
+    dirtyDisplayList();
+  }
+
+  void updateColor(const Eigen::Vector4d& color)
+  {
+    setColor(eigToOsgVec4f(color));
+  }
 
 protected:
-  ~VoxelGridShapeDrawable() override = default;
-
-  dynamics::VoxelGridShape* mVoxelGridShape;
-  dynamics::VisualAspect* mVisualAspect;
-  VoxelGridShapeGeode* mParent;
-  std::size_t mVoxelVersion;
-
-private:
-  void updateBoxes(
-      ::osg::CompositeShape* osgShape,
-      const octomap::OcTree* tree,
-      double threashold);
-  std::vector<::osg::ref_ptr<::osg::Box>> mBoxes;
+  ::osg::ref_ptr<::osg::Box> mShape;
 };
 
 //==============================================================================
-class VoxelGridShapeGeode : public ShapeNode, public ::osg::Geode
+class VoxelNode : public ::osg::MatrixTransform
 {
 public:
-  VoxelGridShapeGeode(
-      dynamics::VoxelGridShape* shape,
-      ShapeFrameNode* parentShapeFrame,
-      VoxelGridShapeNode* parentNode);
+  VoxelNode(
+      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
+  {
+    mDrawable = new BoxDrawable(size, color);
+    mGeode = new ::osg::Geode();
 
-  void refresh();
-  void extractData();
+    mGeode->addDrawable(mDrawable);
+    addChild(mGeode);
+
+    updateCenter(point);
+  }
+
+  void updateCenter(const Eigen::Vector3d& point)
+  {
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = point;
+    setMatrix(eigToOsgMatrix(tf));
+  }
+
+  void updateSize(double size)
+  {
+    mDrawable->updateSize(size);
+  }
+
+  void updateColor(const Eigen::Vector4d& color)
+  {
+    mDrawable->updateColor(color);
+  }
 
 protected:
-  virtual ~VoxelGridShapeGeode();
-
-  VoxelGridShapeNode* mParentNode;
-  dynamics::VoxelGridShape* mVoxelGridShape;
-  VoxelGridShapeDrawable* mDrawable;
+  ::osg::ref_ptr<BoxDrawable> mDrawable;
+  ::osg::ref_ptr<::osg::Geode> mGeode;
 };
 
 //==============================================================================
@@ -126,156 +149,67 @@ void VoxelGridShapeNode::refresh()
 }
 
 //==============================================================================
+Eigen::Vector3d toVector3d(const octomap::point3d& point)
+{
+  return Eigen::Vector3d(
+      static_cast<double>(point.x()),
+      static_cast<double>(point.y()),
+      static_cast<double>(point.z()));
+}
+
+//==============================================================================
 void VoxelGridShapeNode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
+  auto tree = mVoxelGridShape->getOctree();
+  const auto visualSize = tree->getResolution();
+  const auto& color = mVisualAspect->getRGBA();
+
+  // Pre-allocate for the case that the size of new points are greater than
+  // previous update
+  const auto newVoxels = tree->getNumLeafNodes();
+  mVoxelNodes.reserve(newVoxels);
+
+  // Update position of cache boxes.
+  std::size_t boxIndex = 0u;
+  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end; ++it)
   {
-    mGeode = new VoxelGridShapeGeode(
-        mVoxelGridShape.get(), mParentShapeFrameNode, this);
-    addChild(mGeode);
-    return;
+    auto threashold = tree->getOccupancyThres();
+
+    if (it->getOccupancy() < threashold)
+      continue;
+
+    if (boxIndex < mVoxelNodes.size())
+    {
+      mVoxelNodes[boxIndex]->updateCenter(toVector3d(it.getCoordinate()));
+      mVoxelNodes[boxIndex]->updateSize(visualSize);
+      mVoxelNodes[boxIndex]->updateColor(color);
+    }
+    else
+    {
+      ::osg::ref_ptr<VoxelNode> voxelNode
+          = new VoxelNode(toVector3d(it.getCoordinate()), visualSize, color);
+      mVoxelNodes.emplace_back(voxelNode);
+      addChild(mVoxelNodes.back());
+    }
+
+    boxIndex++;
   }
 
-  mGeode->refresh();
+  // Fit the size of cache box list to the new points. No effect new boxes are
+  // added to the list.
+  if (mVoxelNodes.size() > boxIndex)
+  {
+    removeChildren(
+        static_cast<unsigned int>(boxIndex),
+        static_cast<unsigned int>(mVoxelNodes.size() - boxIndex));
+    mVoxelNodes.resize(boxIndex);
+  }
 }
 
 //==============================================================================
 VoxelGridShapeNode::~VoxelGridShapeNode()
 {
   // Do nothing
-}
-
-//==============================================================================
-VoxelGridShapeGeode::VoxelGridShapeGeode(
-    dynamics::VoxelGridShape* shape,
-    ShapeFrameNode* parentShapeFrame,
-    VoxelGridShapeNode* parentNode)
-  : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
-    mParentNode(parentNode),
-    mVoxelGridShape(shape),
-    mDrawable(nullptr)
-{
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  extractData();
-}
-
-//==============================================================================
-void VoxelGridShapeGeode::refresh()
-{
-  mUtilized = true;
-
-  extractData();
-}
-
-//==============================================================================
-void VoxelGridShapeGeode::extractData()
-{
-  if (nullptr == mDrawable)
-  {
-    mDrawable
-        = new VoxelGridShapeDrawable(mVoxelGridShape, mVisualAspect, this);
-    addDrawable(mDrawable);
-    return;
-  }
-
-  mDrawable->refresh(false);
-}
-
-//==============================================================================
-VoxelGridShapeGeode::~VoxelGridShapeGeode()
-{
-  // Do nothing
-}
-
-//==============================================================================
-VoxelGridShapeDrawable::VoxelGridShapeDrawable(
-    dynamics::VoxelGridShape* shape,
-    dynamics::VisualAspect* visualAspect,
-    VoxelGridShapeGeode* parent)
-  : mVoxelGridShape(shape),
-    mVisualAspect(visualAspect),
-    mParent(parent),
-    mVoxelVersion(dynamics::INVALID_INDEX)
-{
-  refresh(true);
-}
-
-//==============================================================================
-void VoxelGridShapeDrawable::refresh(bool /*firstTime*/)
-{
-  if (mVoxelGridShape->getDataVariance() == dynamics::Shape::STATIC)
-    setDataVariance(::osg::Object::STATIC);
-  else
-    setDataVariance(::osg::Object::DYNAMIC);
-
-  // This function is called whenever the voxel grid version is increased, and
-  // the voxel grid could be updated in the version up. So we always update the
-  // voxel grid.
-  {
-    if (mVoxelVersion != mVoxelGridShape->getVersion())
-    {
-      auto osgShape = new ::osg::CompositeShape();
-      auto octomap = mVoxelGridShape->getOctree();
-      updateBoxes(osgShape, octomap.get(), 0.75);
-
-      setShape(osgShape);
-      dirtyDisplayList();
-    }
-  }
-
-  // This function is called whenever the point voxel grid is increased, and
-  // the color could be updated in the version up. So we always update the
-  // color.
-  {
-    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
-  }
-
-  mVoxelVersion = mVoxelGridShape->getVersion();
-}
-
-//==============================================================================
-::osg::Vec3 toVec3(const octomap::point3d& point)
-{
-  return ::osg::Vec3(point.x(), point.y(), point.z());
-}
-
-//==============================================================================
-void VoxelGridShapeDrawable::updateBoxes(
-    ::osg::CompositeShape* osgShape,
-    const octomap::OcTree* tree,
-    double threashold)
-{
-  const auto size = static_cast<float>(tree->getResolution());
-  const auto newNumBoxes = tree->getNumLeafNodes();
-  mBoxes.reserve(newNumBoxes);
-
-  // TODO(JS): Use begin_leafs_bbx/end_leafs_bbx to only render voxels that
-  // are in the view sight. For this, camera view frustum would be required.
-
-  std::size_t boxIndex = 0u;
-  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end; ++it)
-  {
-    threashold = tree->getOccupancyThres();
-
-    if (it->getOccupancy() < threashold)
-      continue;
-
-    if (boxIndex < mBoxes.size())
-    {
-      mBoxes[boxIndex]->setCenter(toVec3(it.getCoordinate()));
-    }
-    else
-    {
-      auto osgSphere = new ::osg::Box(toVec3(it.getCoordinate()), size);
-      mBoxes.emplace_back(osgSphere);
-    }
-
-    osgShape->addChild(mBoxes[boxIndex]);
-
-    boxIndex++;
-  }
-
-  mBoxes.resize(boxIndex);
 }
 
 } // namespace render
