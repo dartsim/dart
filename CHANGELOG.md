@@ -49,6 +49,7 @@
   * Added collision APIs: [#1329](https://github.com/dartsim/dart/pull/1329)
   * Added DegreeOfFreedom and ShapeNode: [#1332](https://github.com/dartsim/dart/pull/1332)
   * Added constraint APIs: [#1333](https://github.com/dartsim/dart/pull/1333)
+  * Added BallJoint, RevoluteJoint, joint properties, and chain tutorial (incomplete): [#1335](https://github.com/dartsim/dart/pull/1335)
 
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 

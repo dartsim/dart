@@ -40,7 +40,77 @@ namespace python {
 
 void Joint(pybind11::module& m)
 {
-  ::pybind11::class_<dart::dynamics::Joint>(m, "Joint")
+  ::pybind11::class_<dart::dynamics::detail::JointProperties>(
+      m, "JointProperties")
+      .def(::pybind11::init<>())
+      .def(::pybind11::init<const std::string&>(), ::pybind11::arg("name"))
+      .def_readwrite("mName", &dart::dynamics::detail::JointProperties::mName)
+      .def_readwrite(
+          "mT_ParentBodyToJoint",
+          &dart::dynamics::detail::JointProperties::mT_ParentBodyToJoint)
+      .def_readwrite(
+          "mT_ChildBodyToJoint",
+          &dart::dynamics::detail::JointProperties::mT_ChildBodyToJoint)
+      .def_readwrite(
+          "mIsPositionLimitEnforced",
+          &dart::dynamics::detail::JointProperties::mIsPositionLimitEnforced)
+      .def_readwrite(
+          "mActuatorType",
+          &dart::dynamics::detail::JointProperties::mActuatorType)
+      .def_readwrite(
+          "mMimicJoint", &dart::dynamics::detail::JointProperties::mMimicJoint)
+      .def_readwrite(
+          "mMimicMultiplier",
+          &dart::dynamics::detail::JointProperties::mMimicMultiplier)
+      .def_readwrite(
+          "mMimicOffset",
+          &dart::dynamics::detail::JointProperties::mMimicOffset);
+
+  ::pybind11::class_<
+      dart::common::SpecializedForAspect<dart::common::EmbeddedPropertiesAspect<
+          dart::dynamics::Joint,
+          dart::dynamics::detail::JointProperties>>,
+      dart::common::Composite,
+      std::shared_ptr<dart::common::SpecializedForAspect<
+          dart::common::EmbeddedPropertiesAspect<
+              dart::dynamics::Joint,
+              dart::dynamics::detail::JointProperties>>>>(
+      m, "SpecializedForAspect_EmbeddedPropertiesAspect_Joint_JointProperties")
+      .def(::pybind11::init<>());
+
+  ::pybind11::class_<
+      dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect<
+          dart::dynamics::Joint,
+          dart::dynamics::detail::JointProperties>>,
+      dart::common::SpecializedForAspect<dart::common::EmbeddedPropertiesAspect<
+          dart::dynamics::Joint,
+          dart::dynamics::detail::JointProperties>>,
+      std::shared_ptr<
+          dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect<
+              dart::dynamics::Joint,
+              dart::dynamics::detail::JointProperties>>>>(
+      m, "RequiresAspect_EmbeddedPropertiesAspect_Joint_JointProperties")
+      .def(::pybind11::init<>());
+
+  ::pybind11::class_<
+      dart::common::EmbedProperties<
+          dart::dynamics::Joint,
+          dart::dynamics::detail::JointProperties>,
+      dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect<
+          dart::dynamics::Joint,
+          dart::dynamics::detail::JointProperties>>,
+      std::shared_ptr<dart::common::EmbedProperties<
+          dart::dynamics::Joint,
+          dart::dynamics::detail::JointProperties>>>(
+      m, "EmbedProperties_Joint_JointProperties");
+
+  ::pybind11::class_<
+      dart::dynamics::Joint,
+      dart::common::Subject,
+      dart::common::EmbedProperties<
+          dart::dynamics::Joint,
+          dart::dynamics::detail::JointProperties>,
+      std::shared_ptr<dart::dynamics::Joint>>(m, "Joint")
       .def(
           "hasJointAspect",
           +[](const dart::dynamics::Joint* self) -> bool {
@@ -150,6 +220,18 @@ void Joint(pybind11::module& m)
             return self->isDynamic();
           })
       .def(
+          "getChildBodyNode",
+          +[](dart::dynamics::Joint* self) -> dart::dynamics::BodyNode* {
+            return self->getChildBodyNode();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "getParentBodyNode",
+          +[](dart::dynamics::Joint* self) -> dart::dynamics::BodyNode* {
+            return self->getParentBodyNode();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
           "getSkeleton",
           +[](dart::dynamics::Joint* self) -> dart::dynamics::SkeletonPtr {
             return self->getSkeleton();
@@ -251,9 +333,8 @@ void Joint(pybind11::module& m)
           ::pybind11::arg("index"))
       .def(
           "getNumDofs",
-          +[](const dart::dynamics::Joint* self) -> std::size_t {
-            return self->getNumDofs();
-          })
+          +[](const dart::dynamics::Joint* self)
+              -> std::size_t { return self->getNumDofs(); })
       .def(
           "setCommand",
           +[](dart::dynamics::Joint* self, std::size_t index, double command)

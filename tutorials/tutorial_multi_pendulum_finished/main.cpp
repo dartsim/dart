@@ -367,11 +367,11 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   properties.mSpringStiffnesses = Eigen::Vector3d::Constant(default_stiffness);
   properties.mDampingCoefficients = Eigen::Vector3d::Constant(default_damping);
 
-  BodyNodePtr bn
-      = pendulum
-            ->createJointAndBodyNodePair<BallJoint>(
-                nullptr, properties, BodyNode::AspectProperties(name))
-            .second;
+  auto bodyProp = BodyNode::Properties(BodyNode::AspectProperties(name));
+  BodyNodePtr bn = pendulum
+                       ->createJointAndBodyNodePair<BallJoint>(
+                           nullptr, properties, bodyProp)
+                       .second;
 
   // Make a shape for the Joint
   const double& R = default_width;

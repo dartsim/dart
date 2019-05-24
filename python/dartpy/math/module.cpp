@@ -36,12 +36,14 @@ namespace dart {
 namespace python {
 
 void Random(pybind11::module& sm);
+void EulerAngles(pybind11::module& sm);
 
 void dart_math(pybind11::module& m)
 {
   auto sm = m.def_submodule("math");
 
   Random(sm);
+  EulerAngles(sm);
 }
 
 } // namespace python

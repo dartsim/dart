@@ -51,6 +51,9 @@ void DegreeOfFreedom(pybind11::module& sm);
 void BodyNode(pybind11::module& sm);
 
 void Joint(pybind11::module& sm);
+void GenericJoint(pybind11::module& sm);
+void RevoluteJoint(pybind11::module& sm);
+void BallJoint(pybind11::module& sm);
 void FreeJoint(pybind11::module& sm);
 
 void MetaSkeleton(pybind11::module& sm);
@@ -81,6 +84,9 @@ void dart_dynamics(pybind11::module& m)
   BodyNode(sm);
 
   Joint(sm);
+  GenericJoint(sm);
+  RevoluteJoint(sm);
+  BallJoint(sm);
   FreeJoint(sm);
 
   MetaSkeleton(sm);
