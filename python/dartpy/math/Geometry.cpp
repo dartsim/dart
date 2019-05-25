@@ -56,7 +56,7 @@
 namespace dart {
 namespace python {
 
-void EulerAngles(pybind11::module& m)
+void Geometry(pybind11::module& m)
 {
   DARTPY_DEFINE_EULAERTOMATRIX(XYX);
   DARTPY_DEFINE_EULAERTOMATRIX(XYZ);
@@ -83,6 +83,62 @@ void EulerAngles(pybind11::module& m)
   DARTPY_DEFINE_MATRIXTOEULAER(ZYX);
   // DARTPY_DEFINE_MATRIXTOEULAER(ZXZ);
   // DARTPY_DEFINE_MATRIXTOEULAER(ZYZ);
+
+  m.def(
+      "expMap",
+      +[](const Eigen::Vector6d& _S) -> Eigen::Isometry3d {
+        return dart::math::expMap(_S);
+      },
+      ::pybind11::arg("S"));
+
+  m.def(
+      "expMapJac",
+      +[](const Eigen::Vector3d& _expmap) -> Eigen::Matrix3d {
+        return dart::math::expMapJac(_expmap);
+      },
+      ::pybind11::arg("expmap"));
+
+  m.def(
+      "expMapRot",
+      +[](const Eigen::Vector3d& _expmap) -> Eigen::Matrix3d {
+        return dart::math::expMapRot(_expmap);
+      },
+      ::pybind11::arg("expmap"));
+
+  m.def(
+      "expToQuat",
+      +[](const Eigen::Vector3d& _v) -> Eigen::Quaterniond {
+        return dart::math::expToQuat(_v);
+      },
+      ::pybind11::arg("v"));
+
+  m.def(
+      "quatToExp",
+      +[](const Eigen::Quaterniond& _q) -> Eigen::Vector3d {
+        return dart::math::quatToExp(_q);
+      },
+      ::pybind11::arg("q"));
+
+  m.def(
+      "expAngular",
+      +[](const Eigen::Vector3d& _s) -> Eigen::Isometry3d {
+        return dart::math::expAngular(_s);
+      },
+      ::pybind11::arg("s"));
+
+  m.def(
+      "verifyRotation",
+      +[](const Eigen::Matrix3d& _R) -> bool {
+        return dart::math::verifyRotation(_R);
+      },
+      ::pybind11::arg("R"));
+
+  m.def(
+      "verifyTransform",
+      +[](const Eigen::Isometry3d& _T) -> bool {
+        return dart::math::verifyTransform(_T);
+      },
+      ::pybind11::arg("T"));
 }
 
 } // namespace python
