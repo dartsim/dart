@@ -30,20 +30,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
+#include <eigen_geometry_pybind.h>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include "Joint.hpp"
 
 namespace dart {
 namespace python {
 
-void Random(pybind11::module& sm);
-void Geometry(pybind11::module& sm);
-
-void dart_math(pybind11::module& m)
+void WeldJoint(pybind11::module& m)
 {
-  auto sm = m.def_submodule("math");
-
-  Random(sm);
-  Geometry(sm);
+  ::pybind11::class_<
+      dart::dynamics::WeldJoint,
+      dart::dynamics::ZeroDofJoint,
+      std::shared_ptr<dart::dynamics::WeldJoint>>(m, "WeldJoint")
+      .def(
+          "getWeldJointProperties",
+          +[](const dart::dynamics::WeldJoint* self)
+              -> dart::dynamics::WeldJoint::Properties {
+            return self->getWeldJointProperties();
+          })
+      .def(
+          "getType",
+          +[](const dart::dynamics::WeldJoint* self) -> const std::string& {
+            return self->getType();
+          },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "isCyclic",
+          +[](const dart::dynamics::WeldJoint* self,
+              std::size_t _index) -> bool { return self->isCyclic(_index); },
+          ::pybind11::arg("index"))
+      .def(
+          "setTransformFromParentBodyNode",
+          +[](dart::dynamics::WeldJoint* self, const Eigen::Isometry3d& _T) {
+            self->setTransformFromParentBodyNode(_T);
+          },
+          ::pybind11::arg("T"))
+      .def(
+          "setTransformFromChildBodyNode",
+          +[](dart::dynamics::WeldJoint* self, const Eigen::Isometry3d& _T) {
+            self->setTransformFromChildBodyNode(_T);
+          },
+          ::pybind11::arg("T"))
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::WeldJoint::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal);
 }
 
 } // namespace python

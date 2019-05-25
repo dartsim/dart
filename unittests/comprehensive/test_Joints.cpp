@@ -163,8 +163,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       dq(i) = Random::uniform(-constantsd::pi()*1.0, constantsd::pi()*1.0);
     }
 
-    skeleton->setPositions(q);
-    skeleton->setVelocities(dq);
+    joint->setPositions(q);
+    joint->setVelocities(dq);
 
     if (dof == 0)
       return;

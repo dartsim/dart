@@ -841,6 +841,26 @@ void Joint(pybind11::module& m)
             return self->computePotentialEnergy();
           })
       .def(
+          "getRelativeTransform",
+          +[](const dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
+            return self->getRelativeTransform();
+          })
+      .def(
+          "getRelativeSpatialVelocity",
+          +[](const dart::dynamics::Joint* self) -> const Eigen::Vector6d& {
+            return self->getRelativeSpatialVelocity();
+          })
+      .def(
+          "getRelativeSpatialAcceleration",
+          +[](const dart::dynamics::Joint* self) -> const Eigen::Vector6d& {
+            return self->getRelativeSpatialAcceleration();
+          })
+      .def(
+          "getRelativePrimaryAcceleration",
+          +[](const dart::dynamics::Joint* self) -> const Eigen::Vector6d& {
+            return self->getRelativePrimaryAcceleration();
+          })
+      .def(
           "getRelativeJacobian",
           +[](const dart::dynamics::Joint* self) -> const dart::math::Jacobian {
             return self->getRelativeJacobian();

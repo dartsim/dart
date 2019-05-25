@@ -51,9 +51,18 @@ void DegreeOfFreedom(pybind11::module& sm);
 void BodyNode(pybind11::module& sm);
 
 void Joint(pybind11::module& sm);
+void ZeroDofJoint(pybind11::module& sm);
+void WeldJoint(pybind11::module& sm);
 void GenericJoint(pybind11::module& sm);
 void RevoluteJoint(pybind11::module& sm);
+void PrismaticJoint(pybind11::module& sm);
+void ScrewJoint(pybind11::module& sm);
+void UniversalJoint(pybind11::module& sm);
+void TranslationalJoint2D(pybind11::module& sm);
+void PlanarJoint(pybind11::module& sm);
+void EulerJoint(pybind11::module& sm);
 void BallJoint(pybind11::module& sm);
+void TranslationalJoint(pybind11::module& sm);
 void FreeJoint(pybind11::module& sm);
 
 void MetaSkeleton(pybind11::module& sm);
@@ -84,9 +93,18 @@ void dart_dynamics(pybind11::module& m)
   BodyNode(sm);
 
   Joint(sm);
+  ZeroDofJoint(sm);
+  WeldJoint(sm);
   GenericJoint(sm);
   RevoluteJoint(sm);
+  PrismaticJoint(sm);
+  ScrewJoint(sm);
+  UniversalJoint(sm);
+  TranslationalJoint2D(sm);
+  PlanarJoint(sm);
+  EulerJoint(sm);
   BallJoint(sm);
+  TranslationalJoint(sm);
   FreeJoint(sm);
 
   MetaSkeleton(sm);

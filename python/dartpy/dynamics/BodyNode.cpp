@@ -38,6 +38,46 @@
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, dart::dynamics::TemplateBodyNodePtr<T>, true);
 
+#define DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(joint_type)        \
+  .def(                                                                        \
+      "create" #joint_type "AndBodyNodePair",                                  \
+      +[](dart::dynamics::BodyNode* self)                                      \
+          -> std::                                                             \
+              pair<dart::dynamics::joint_type*, dart::dynamics::BodyNode*> {   \
+                return self->createChildJointAndBodyNodePair<                  \
+                    dart::dynamics::joint_type,                                \
+                    dart::dynamics::BodyNode>();                               \
+              },                                                               \
+      ::pybind11::return_value_policy::reference_internal)                     \
+      .def(                                                                    \
+          "create" #joint_type "AndBodyNodePair",                              \
+          +[](dart::dynamics::BodyNode* self,                                  \
+              const dart::dynamics::joint_type::Properties& jointProperties)   \
+              -> std::pair<                                                    \
+                  dart::dynamics::joint_type*,                                 \
+                  dart::dynamics::BodyNode*> {                                 \
+            return self->createChildJointAndBodyNodePair<                      \
+                dart::dynamics::joint_type,                                    \
+                dart::dynamics::BodyNode>(jointProperties);                    \
+          },                                                                   \
+          ::pybind11::return_value_policy::reference_internal,                 \
+          ::pybind11::arg("jointProperties"))                                  \
+      .def(                                                                    \
+          "create" #joint_type "AndBodyNodePair",                              \
+          +[](dart::dynamics::BodyNode* self,                                  \
+              const dart::dynamics::joint_type::Properties& jointProperties,   \
+              const dart::dynamics::BodyNode::Properties& bodyProperties)      \
+              -> std::pair<                                                    \
+                  dart::dynamics::joint_type*,                                 \
+                  dart::dynamics::BodyNode*> {                                 \
+            return self->createChildJointAndBodyNodePair<                      \
+                dart::dynamics::joint_type,                                    \
+                dart::dynamics::BodyNode>(jointProperties, bodyProperties);    \
+          },                                                                   \
+          ::pybind11::return_value_policy::reference_internal,                 \
+          ::pybind11::arg("jointProperties"),                                  \
+          ::pybind11::arg("bodyProperties"))
+
 namespace dart {
 namespace python {
 
@@ -863,6 +903,19 @@ void BodyNode(pybind11::module& m)
             return self->getParentBodyNode();
           },
           ::pybind11::return_value_policy::reference_internal)
+      // clang-format off
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(WeldJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(RevoluteJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(PrismaticJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(ScrewJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(UniversalJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(TranslationalJoint2D)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(PlanarJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(EulerJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(BallJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(TranslationalJoint)
+      DARTPY_DEFINE_CREATE_CHILD_JOINT_AND_BODY_NODE_PAIR(FreeJoint)
+      // clang-format on
       .def(
           "getNumChildBodyNodes",
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {
