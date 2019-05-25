@@ -1,5 +1,11 @@
 ## DART 6
 
+### [DART 6.8.5 (2019-05-25)](https://github.com/dartsim/dart/milestone/57?closed=1)
+
+* Collision
+
+  * Fixed handling of submeshes in ODE collision detector: [#1336](https://github.com/dartsim/dart/pull/1336)
+
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 
 #### Changes
