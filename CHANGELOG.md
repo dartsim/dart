@@ -52,6 +52,23 @@
   * Added BallJoint, RevoluteJoint, joint properties, and chain tutorial (incomplete): [#1335](https://github.com/dartsim/dart/pull/1335)
   * Added all the joints: [#1337](https://github.com/dartsim/dart/pull/1337)
 
+### [DART 6.8.5 (2019-05-26)](https://github.com/dartsim/dart/milestone/57?closed=1)
+
+* Collision
+
+  * Fixed handling of submeshes in ODE collision detector: [#1336](https://github.com/dartsim/dart/pull/1336)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC 64-bit: 5.4.0, 7.3.0, 8.2.0
+  * GCC 32-bit: 5.4.0
+
+* macOS
+
+  * AppleClang: 9.1.0, 10.0.0
+
 ### [DART 6.8.4 (2019-05-03)](https://github.com/dartsim/dart/milestone/56?closed=1)
 
 #### Changes
