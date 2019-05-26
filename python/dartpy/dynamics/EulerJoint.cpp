@@ -36,41 +36,43 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void EulerJoint(pybind11::module& m)
+void EulerJoint(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::EulerJoint::UniqueProperties>(
+  ::py::class_<dart::dynamics::EulerJoint::UniqueProperties>(
       m, "EulerJointUniqueProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<dart::dynamics::detail::AxisOrder>(),
-          ::pybind11::arg("axisOrder"));
+          ::py::init<dart::dynamics::detail::AxisOrder>(),
+          ::py::arg("axisOrder"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::EulerJoint::Properties,
       dart::dynamics::GenericJoint<math::R3Space>::Properties,
       dart::dynamics::EulerJoint::UniqueProperties>(m, "EulerJointProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::R3Space>::Properties&>(),
-          ::pybind11::arg("genericJointProperties"))
+          ::py::arg("genericJointProperties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::dynamics::GenericJoint<
                   dart::math::R3Space>::Properties&,
               const dart::dynamics::EulerJoint::UniqueProperties&>(),
-          ::pybind11::arg("genericJointProperties"),
-          ::pybind11::arg("uniqueProperties"))
+          ::py::arg("genericJointProperties"),
+          ::py::arg("uniqueProperties"))
       .def_readwrite(
           "mAxisOrder",
           &dart::dynamics::detail::EulerJointUniqueProperties::mAxisOrder);
 
   DARTPY_DEFINE_JOINT_COMMON_BASE(EulerJoint, R3Space)
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::EulerJoint,
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::EulerJoint,
@@ -92,7 +94,7 @@ void EulerJoint(pybind11::module& m)
                       dart::math::RealVectorSpace<3>>>::Aspect* aspect) {
             self->setEulerJointAspect(aspect);
           },
-          ::pybind11::arg("aspect"))
+          ::py::arg("aspect"))
       .def(
           "removeEulerJointAspect",
           +[](dart::dynamics::EulerJoint* self) {
@@ -114,14 +116,14 @@ void EulerJoint(pybind11::module& m)
               const dart::dynamics::EulerJoint::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProperties",
           +[](dart::dynamics::EulerJoint* self,
               const dart::dynamics::EulerJoint::UniqueProperties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::EulerJoint* self,
@@ -131,7 +133,7 @@ void EulerJoint(pybind11::module& m)
                   dart::dynamics::GenericJoint<
                       dart::math::RealVectorSpace<3>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getEulerJointProperties",
           +[](const dart::dynamics::EulerJoint* self)
@@ -144,32 +146,32 @@ void EulerJoint(pybind11::module& m)
               const dart::dynamics::EulerJoint* _otherJoint) {
             self->copy(_otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "getType",
           +[](const dart::dynamics::EulerJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::EulerJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setAxisOrder",
           +[](dart::dynamics::EulerJoint* self,
               dart::dynamics::EulerJoint::AxisOrder _order) {
             self->setAxisOrder(_order);
           },
-          ::pybind11::arg("order"))
+          ::py::arg("order"))
       .def(
           "setAxisOrder",
           +[](dart::dynamics::EulerJoint* self,
               dart::dynamics::EulerJoint::AxisOrder _order,
               bool _renameDofs) { self->setAxisOrder(_order, _renameDofs); },
-          ::pybind11::arg("order"),
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("order"),
+          ::py::arg("renameDofs"))
       .def(
           "getAxisOrder",
           +[](const dart::dynamics::EulerJoint* self)
@@ -182,14 +184,14 @@ void EulerJoint(pybind11::module& m)
               const Eigen::Vector3d& _positions) -> Eigen::Isometry3d {
             return self->convertToTransform(_positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def(
           "convertToRotation",
           +[](const dart::dynamics::EulerJoint* self,
               const Eigen::Vector3d& _positions) -> Eigen::Matrix3d {
             return self->convertToRotation(_positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::EulerJoint* self,
@@ -197,14 +199,14 @@ void EulerJoint(pybind11::module& m)
               -> Eigen::Matrix<double, 6, 3> {
             return self->getRelativeJacobianStatic(_positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::
                     string& {
                       return dart::dynamics::EulerJoint::getStaticType();
                     },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def_static(
           "convertToTransformOf",
           +[](const Eigen::Vector3d& _positions,
@@ -213,8 +215,8 @@ void EulerJoint(pybind11::module& m)
             return dart::dynamics::EulerJoint::convertToTransform(
                 _positions, _ordering);
           },
-          ::pybind11::arg("positions"),
-          ::pybind11::arg("ordering"))
+          ::py::arg("positions"),
+          ::py::arg("ordering"))
       .def_static(
           "convertToRotationOf",
           +[](const Eigen::Vector3d& _positions,
@@ -223,8 +225,8 @@ void EulerJoint(pybind11::module& m)
             return dart::dynamics::EulerJoint::convertToRotation(
                 _positions, _ordering);
           },
-          ::pybind11::arg("positions"),
-          ::pybind11::arg("ordering"));
+          ::py::arg("positions"),
+          ::py::arg("ordering"));
 }
 
 } // namespace python

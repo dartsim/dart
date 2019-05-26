@@ -33,12 +33,14 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void CollisionGroup(pybind11::module& m)
+void CollisionGroup(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::collision::CollisionGroup,
       std::shared_ptr<dart::collision::CollisionGroup> >(m, "CollisionGroup")
       .def(
@@ -59,13 +61,13 @@ void CollisionGroup(pybind11::module& m)
               const dart::dynamics::ShapeFrame* shapeFrame) {
             self->addShapeFrame(shapeFrame);
           },
-          ::pybind11::arg("shapeFrame"))
+          ::py::arg("shapeFrame"))
       .def(
           "addShapeFrames",
           +[](dart::collision::CollisionGroup* self,
               const std::vector<const dart::dynamics::ShapeFrame*>&
                   shapeFrames) { self->addShapeFrames(shapeFrames); },
-          ::pybind11::arg("shapeFrames"))
+          ::py::arg("shapeFrames"))
       .def(
           "addShapeFramesOf",
           +[](dart::collision::CollisionGroup* self) {
@@ -80,13 +82,13 @@ void CollisionGroup(pybind11::module& m)
               const dart::dynamics::ShapeFrame* shapeFrame) {
             self->removeShapeFrame(shapeFrame);
           },
-          ::pybind11::arg("shapeFrame"))
+          ::py::arg("shapeFrame"))
       .def(
           "removeShapeFrames",
           +[](dart::collision::CollisionGroup* self,
               const std::vector<const dart::dynamics::ShapeFrame*>&
                   shapeFrames) { self->removeShapeFrames(shapeFrames); },
-          ::pybind11::arg("shapeFrames"))
+          ::py::arg("shapeFrames"))
       .def(
           "removeShapeFramesOf",
           +[](dart::collision::CollisionGroup* self) {
@@ -103,7 +105,7 @@ void CollisionGroup(pybind11::module& m)
               const dart::dynamics::ShapeFrame* shapeFrame) -> bool {
             return self->hasShapeFrame(shapeFrame);
           },
-          ::pybind11::arg("shapeFrame"))
+          ::py::arg("shapeFrame"))
       .def(
           "getNumShapeFrames",
           +[](const dart::collision::CollisionGroup* self) -> std::size_t {
@@ -120,7 +122,7 @@ void CollisionGroup(pybind11::module& m)
               const dart::collision::CollisionOption& option) -> bool {
             return self->collide(option);
           },
-          ::pybind11::arg("option"))
+          ::py::arg("option"))
       .def(
           "collide",
           +[](dart::collision::CollisionGroup* self,
@@ -128,8 +130,8 @@ void CollisionGroup(pybind11::module& m)
               dart::collision::CollisionResult* result) -> bool {
             return self->collide(option, result);
           },
-          ::pybind11::arg("option"),
-          ::pybind11::arg("result"))
+          ::py::arg("option"),
+          ::py::arg("result"))
       .def(
           "distance",
           +[](dart::collision::CollisionGroup* self) -> double {
@@ -141,7 +143,7 @@ void CollisionGroup(pybind11::module& m)
               const dart::collision::DistanceOption& option) -> double {
             return self->distance(option);
           },
-          ::pybind11::arg("option"))
+          ::py::arg("option"))
       .def(
           "distance",
           +[](dart::collision::CollisionGroup* self,
@@ -149,8 +151,8 @@ void CollisionGroup(pybind11::module& m)
               dart::collision::DistanceResult* result) -> double {
             return self->distance(option, result);
           },
-          ::pybind11::arg("option"),
-          ::pybind11::arg("result"))
+          ::py::arg("option"),
+          ::py::arg("result"))
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
@@ -158,8 +160,8 @@ void CollisionGroup(pybind11::module& m)
               const Eigen::Vector3d& to) -> bool {
             return self->raycast(from, to);
           },
-          ::pybind11::arg("from"),
-          ::pybind11::arg("to"))
+          ::py::arg("from"),
+          ::py::arg("to"))
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
@@ -168,9 +170,9 @@ void CollisionGroup(pybind11::module& m)
               const dart::collision::RaycastOption& option) -> bool {
             return self->raycast(from, to, option);
           },
-          ::pybind11::arg("from"),
-          ::pybind11::arg("to"),
-          ::pybind11::arg("option"))
+          ::py::arg("from"),
+          ::py::arg("to"),
+          ::py::arg("option"))
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
@@ -180,10 +182,10 @@ void CollisionGroup(pybind11::module& m)
               dart::collision::RaycastResult* result) -> bool {
             return self->raycast(from, to, option, result);
           },
-          ::pybind11::arg("from"),
-          ::pybind11::arg("to"),
-          ::pybind11::arg("option"),
-          ::pybind11::arg("result"))
+          ::py::arg("from"),
+          ::py::arg("to"),
+          ::py::arg("option"),
+          ::py::arg("result"))
       .def(
           "setAutomaticUpdate",
           +[](dart::collision::CollisionGroup* self) {
@@ -194,7 +196,7 @@ void CollisionGroup(pybind11::module& m)
           +[](dart::collision::CollisionGroup* self, bool automatic) {
             self->setAutomaticUpdate(automatic);
           },
-          ::pybind11::arg("automatic"))
+          ::py::arg("automatic"))
       .def(
           "getAutomaticUpdate",
           +[](const dart::collision::CollisionGroup* self) -> bool {

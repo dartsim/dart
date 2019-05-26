@@ -36,40 +36,42 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void PrismaticJoint(pybind11::module& m)
+void PrismaticJoint(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::PrismaticJoint::UniqueProperties>(
+  ::py::class_<dart::dynamics::PrismaticJoint::UniqueProperties>(
       m, "PrismaticJointUniqueProperties")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<const Eigen::Vector3d&>(), ::pybind11::arg("axis"));
+      .def(::py::init<>())
+      .def(::py::init<const Eigen::Vector3d&>(), ::py::arg("axis"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::PrismaticJoint::Properties,
       dart::dynamics::GenericJoint<math::R1Space>::Properties,
       dart::dynamics::PrismaticJoint::UniqueProperties>(
       m, "PrismaticJointProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::R1Space>::Properties&>(),
-          ::pybind11::arg("genericJointProperties"))
+          ::py::arg("genericJointProperties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::dynamics::GenericJoint<
                   dart::math::R1Space>::Properties&,
               const dart::dynamics::PrismaticJoint::UniqueProperties&>(),
-          ::pybind11::arg("genericJointProperties"),
-          ::pybind11::arg("revoluteProperties"))
+          ::py::arg("genericJointProperties"),
+          ::py::arg("revoluteProperties"))
       .def_readwrite(
           "mAxis",
           &dart::dynamics::detail::PrismaticJointUniqueProperties::mAxis);
 
   DARTPY_DEFINE_JOINT_COMMON_BASE(PrismaticJoint, R1Space)
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::PrismaticJoint,
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::PrismaticJoint,
@@ -91,7 +93,7 @@ void PrismaticJoint(pybind11::module& m)
                       dart::math::RealVectorSpace<1>>>::Aspect* aspect) {
             self->setPrismaticJointAspect(aspect);
           },
-          ::pybind11::arg("aspect"))
+          ::py::arg("aspect"))
       .def(
           "removePrismaticJointAspect",
           +[](dart::dynamics::PrismaticJoint* self) {
@@ -113,13 +115,13 @@ void PrismaticJoint(pybind11::module& m)
               const dart::dynamics::PrismaticJoint::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProperties",
           +[](dart::dynamics::PrismaticJoint* self,
               const dart::dynamics::PrismaticJoint::UniqueProperties&
                   _properties) { self->setProperties(_properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::PrismaticJoint* self,
@@ -129,7 +131,7 @@ void PrismaticJoint(pybind11::module& m)
                   dart::dynamics::GenericJoint<
                       dart::math::RealVectorSpace<1>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getPrismaticJointProperties",
           +[](const dart::dynamics::PrismaticJoint* self)
@@ -142,27 +144,27 @@ void PrismaticJoint(pybind11::module& m)
               const dart::dynamics::PrismaticJoint* _otherJoint) {
             self->copy(_otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "getType",
           +[](const dart::dynamics::PrismaticJoint* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::PrismaticJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setAxis",
           +[](dart::dynamics::PrismaticJoint* self,
               const Eigen::Vector3d& _axis) { self->setAxis(_axis); },
-          ::pybind11::arg("axis"))
+          ::py::arg("axis"))
       .def(
           "getAxis",
           +[](const dart::dynamics::PrismaticJoint* self)
               -> const Eigen::Vector3d& { return self->getAxis(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::PrismaticJoint* self,
@@ -172,13 +174,13 @@ void PrismaticJoint(pybind11::module& m)
                   dart::math::RealVectorSpace<1>>::JacobianMatrix {
             return self->getRelativeJacobianStatic(positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::PrismaticJoint::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

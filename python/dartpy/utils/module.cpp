@@ -32,13 +32,15 @@
 
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void DartLoader(pybind11::module& sm);
-void SkelParser(pybind11::module& sm);
+void DartLoader(py::module& sm);
+void SkelParser(py::module& sm);
 
-void dart_utils(pybind11::module& m)
+void dart_utils(py::module& m)
 {
   auto sm = m.def_submodule("utils");
 

@@ -38,37 +38,39 @@
 #include <pybind11/pybind11.h>
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
 #define DARTPY_DEFINE_ALGORITHM(alg_name)                                      \
   .value(#alg_name, dart::optimizer::NloptSolver::Algorithm::alg_name)
 
-void NloptSolver(pybind11::module& m)
+void NloptSolver(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::NloptSolver,
       dart::optimizer::Solver,
       std::shared_ptr<dart::optimizer::NloptSolver>>(m, "NloptSolver")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::optimizer::Solver::Properties&>(),
-          ::pybind11::arg("properties"))
+          ::py::init<const dart::optimizer::Solver::Properties&>(),
+          ::py::arg("properties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::optimizer::Solver::Properties&,
               dart::optimizer::NloptSolver::Algorithm>(),
-          ::pybind11::arg("properties"),
-          ::pybind11::arg("alg"))
+          ::py::arg("properties"),
+          ::py::arg("alg"))
       .def(
-          ::pybind11::init<std::shared_ptr<dart::optimizer::Problem>>(),
-          ::pybind11::arg("problem"))
+          ::py::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          ::py::arg("problem"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               std::shared_ptr<dart::optimizer::Problem>,
               dart::optimizer::NloptSolver::Algorithm>(),
-          ::pybind11::arg("problem"),
-          ::pybind11::arg("alg"))
+          ::py::arg("problem"),
+          ::py::arg("alg"))
       .def(
           "solve",
           +[](dart::optimizer::NloptSolver* self) -> bool {
@@ -96,7 +98,7 @@ void NloptSolver(pybind11::module& m)
               dart::optimizer::NloptSolver::Algorithm _alg) {
             self->setAlgorithm(_alg);
           },
-          ::pybind11::arg("alg"))
+          ::py::arg("alg"))
       .def(
           "getAlgorithm",
           +[](const dart::optimizer::NloptSolver* self)
@@ -107,7 +109,7 @@ void NloptSolver(pybind11::module& m)
   auto attr = m.attr("NloptSolver");
 
   // clang-format off
-  ::pybind11::enum_<dart::optimizer::NloptSolver::Algorithm>(attr, "Algorithm")
+  ::py::enum_<dart::optimizer::NloptSolver::Algorithm>(attr, "Algorithm")
       DARTPY_DEFINE_ALGORITHM(GN_DIRECT)
       DARTPY_DEFINE_ALGORITHM(GN_DIRECT_L)
       DARTPY_DEFINE_ALGORITHM(GN_DIRECT_L_RAND)

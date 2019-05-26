@@ -99,29 +99,29 @@ public:
   }
 };
 
-void WorldNode(pybind11::module& m)
+void WorldNode(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::WorldNode,
       PyWorldNode,
       ::osg::ref_ptr<dart::gui::osg::WorldNode>>(m, "WorldNode")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<std::shared_ptr<dart::simulation::World>>(),
-          ::pybind11::arg("world"))
+          ::py::init<std::shared_ptr<dart::simulation::World>>(),
+          ::py::arg("world"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               std::shared_ptr<dart::simulation::World>,
               osg::ref_ptr<osgShadow::ShadowTechnique>>(),
-          ::pybind11::arg("world"),
-          ::pybind11::arg("shadowTechnique"))
+          ::py::arg("world"),
+          ::py::arg("shadowTechnique"))
       .def(
           "setWorld",
           +[](dart::gui::osg::WorldNode* self,
               std::shared_ptr<dart::simulation::World> newWorld) {
             self->setWorld(newWorld);
           },
-          ::pybind11::arg("newWorld"))
+          ::py::arg("newWorld"))
       .def(
           "getWorld",
           +[](const dart::gui::osg::WorldNode* self)
@@ -149,13 +149,13 @@ void WorldNode(pybind11::module& m)
       .def(
           "simulate",
           +[](dart::gui::osg::WorldNode* self, bool on) { self->simulate(on); },
-          ::pybind11::arg("on"))
+          ::py::arg("on"))
       .def(
           "setNumStepsPerCycle",
           +[](dart::gui::osg::WorldNode* self, std::size_t steps) {
             self->setNumStepsPerCycle(steps);
           },
-          ::pybind11::arg("steps"))
+          ::py::arg("steps"))
       .def(
           "getNumStepsPerCycle",
           +[](const dart::gui::osg::WorldNode* self) -> std::size_t {
@@ -175,7 +175,7 @@ void WorldNode(pybind11::module& m)
               osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique) {
             self->setShadowTechnique(shadowTechnique);
           },
-          ::pybind11::arg("shadowTechnique"))
+          ::py::arg("shadowTechnique"))
       .def(
           "getShadowTechnique",
           +[](const dart::gui::osg::WorldNode* self)
@@ -189,7 +189,7 @@ void WorldNode(pybind11::module& m)
             return dart::gui::osg::WorldNode::createDefaultShadowTechnique(
                 viewer);
           },
-          ::pybind11::arg("viewer"));
+          ::py::arg("viewer"));
 }
 
 } // namespace python

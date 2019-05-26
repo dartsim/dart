@@ -37,19 +37,21 @@
 #include <dart/collision/bullet/bullet.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void BulletCollisionGroup(pybind11::module& m)
+void BulletCollisionGroup(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::collision::BulletCollisionGroup,
       dart::collision::CollisionGroup,
       std::shared_ptr<dart::collision::BulletCollisionGroup>>(
       m, "BulletCollisionGroup")
       .def(
-          ::pybind11::init<const dart::collision::CollisionDetectorPtr&>(),
-          ::pybind11::arg("collisionDetector"));
+          ::py::init<const dart::collision::CollisionDetectorPtr&>(),
+          ::py::arg("collisionDetector"));
 }
 
 } // namespace python

@@ -33,24 +33,26 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void JointCoulombFrictionConstraint(pybind11::module& m)
+void JointCoulombFrictionConstraint(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::JointCoulombFrictionConstraint,
       dart::constraint::ConstraintBase,
       std::shared_ptr<dart::constraint::JointCoulombFrictionConstraint>>(
       m, "JointCoulombFrictionConstraint")
-      .def(::pybind11::init<dart::dynamics::Joint*>(), ::pybind11::arg("joint"))
+      .def(::py::init<dart::dynamics::Joint*>(), ::py::arg("joint"))
       .def_static(
           "setConstraintForceMixing",
           +[](double _cfm) {
             dart::constraint::JointCoulombFrictionConstraint::
                 setConstraintForceMixing(_cfm);
           },
-          ::pybind11::arg("cfm"))
+          ::py::arg("cfm"))
       .def_static("getConstraintForceMixing", +[]() -> double {
         return dart::constraint::JointCoulombFrictionConstraint::
             getConstraintForceMixing();

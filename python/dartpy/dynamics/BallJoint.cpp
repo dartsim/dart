@@ -35,22 +35,24 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void BallJoint(pybind11::module& m)
+void BallJoint(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::BallJoint::Properties,
       dart::dynamics::detail::GenericJointProperties<dart::math::SO3Space>>(
       m, "BallJointProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::SO3Space>::Properties&>(),
-          ::pybind11::arg("properties"));
+          ::py::arg("properties"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::BallJoint,
       dart::dynamics::GenericJoint<dart::math::SO3Space>,
       std::shared_ptr<dart::dynamics::BallJoint>>(m, "BallJoint")
@@ -59,12 +61,12 @@ void BallJoint(pybind11::module& m)
           +[](const dart::dynamics::BallJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::BallJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getBallJointProperties",
           +[](const dart::dynamics::BallJoint* self)
@@ -78,7 +80,7 @@ void BallJoint(pybind11::module& m)
               -> Eigen::Matrix<double, 6, 3> {
             return self->getRelativeJacobianStatic(_positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def(
           "getPositionDifferencesStatic",
           +[](const dart::dynamics::BallJoint* self,
@@ -86,26 +88,26 @@ void BallJoint(pybind11::module& m)
               const Eigen::Vector3d& _q1) -> Eigen::Vector3d {
             return self->getPositionDifferencesStatic(_q2, _q1);
           },
-          ::pybind11::arg("q2"),
-          ::pybind11::arg("q1"))
+          ::py::arg("q2"),
+          ::py::arg("q1"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::BallJoint::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def_static(
           "convertToTransform",
           +[](const Eigen::Vector3d& _positions) -> Eigen::Isometry3d {
             return dart::dynamics::BallJoint::convertToTransform(_positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "convertToRotation",
           +[](const Eigen::Vector3d& _positions) -> Eigen::Matrix3d {
             return dart::dynamics::BallJoint::convertToRotation(_positions);
           },
-          ::pybind11::arg("positions"));
+          ::py::arg("positions"));
 }
 
 } // namespace python

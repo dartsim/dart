@@ -35,6 +35,8 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 #define DARTPY_DEFINE_SPECIALIZED_ASPECT(name)                                 \
   .def(                                                                        \
       "has" #name,                                                             \
@@ -46,28 +48,28 @@
           +[](dart::dynamics::ShapeFrame* self) -> dart::dynamics::name* {     \
             return self->get##name();                                          \
           },                                                                   \
-          pybind11::return_value_policy::reference_internal)                   \
+          py::return_value_policy::reference_internal)                         \
       .def(                                                                    \
           "get" #name,                                                         \
           +[](dart::dynamics::ShapeFrame* self,                                \
               bool createIfNull) -> dart::dynamics::name* {                    \
             return self->get##name(createIfNull);                              \
           },                                                                   \
-          pybind11::return_value_policy::reference_internal,                   \
-          ::pybind11::arg("createIfNull"))                                     \
+          py::return_value_policy::reference_internal,                         \
+          ::py::arg("createIfNull"))                                           \
       .def(                                                                    \
           "set" #name,                                                         \
           +[](dart::dynamics::ShapeFrame* self,                                \
               const dart::dynamics::name* aspect) {                            \
             self->set##name(aspect);                                           \
           },                                                                   \
-          ::pybind11::arg("aspect"))                                           \
+          ::py::arg("aspect"))                                                 \
       .def(                                                                    \
           "create" #name,                                                      \
           +[](dart::dynamics::ShapeFrame* self) -> dart::dynamics::name* {     \
             return self->create##name();                                       \
           },                                                                   \
-          pybind11::return_value_policy::reference_internal)                   \
+          py::return_value_policy::reference_internal)                         \
       .def(                                                                    \
           "remove" #name,                                                      \
           +[](dart::dynamics::ShapeFrame* self) { self->remove##name(); })     \
@@ -81,9 +83,9 @@
 namespace dart {
 namespace python {
 
-void ShapeFrame(pybind11::module& m)
+void ShapeFrame(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::ShapeFrame,
       // dart::common::EmbedPropertiesOnTopOf<
       //     dart::dynamics::ShapeFrame,
@@ -100,7 +102,7 @@ void ShapeFrame(pybind11::module& m)
               const dart::dynamics::ShapeFrame::UniqueProperties& properties) {
             self->setProperties(properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::ShapeFrame* self,
@@ -112,12 +114,12 @@ void ShapeFrame(pybind11::module& m)
                       dart::dynamics::CollisionAspect,
                       dart::dynamics::DynamicsAspect>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setShape",
           +[](dart::dynamics::ShapeFrame* self,
               const dart::dynamics::ShapePtr& shape) { self->setShape(shape); },
-          ::pybind11::arg("shape"))
+          ::py::arg("shape"))
       .def(
           "getShape",
           +[](dart::dynamics::ShapeFrame* self) -> dart::dynamics::ShapePtr {
@@ -136,23 +138,21 @@ void ShapeFrame(pybind11::module& m)
         return self->isShapeNode();
       });
 
-  ::pybind11::class_<dart::dynamics::VisualAspect>(m, "VisualAspect")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::dynamics::VisualAspect>(m, "VisualAspect")
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<
-              const dart::common::detail::AspectWithVersionedProperties<
-                  dart::common::CompositeTrackingAspect<
-                      dart::dynamics::ShapeFrame>,
-                  dart::dynamics::VisualAspect,
-                  dart::dynamics::detail::VisualAspectProperties,
-                  dart::dynamics::ShapeFrame,
-                  &dart::common::detail::NoOp>::PropertiesData&>(),
-          ::pybind11::arg("properties"))
+          ::py::init<const dart::common::detail::AspectWithVersionedProperties<
+              dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>,
+              dart::dynamics::VisualAspect,
+              dart::dynamics::detail::VisualAspectProperties,
+              dart::dynamics::ShapeFrame,
+              &dart::common::detail::NoOp>::PropertiesData&>(),
+          ::py::arg("properties"))
       .def(
           "setRGBA",
           +[](dart::dynamics::VisualAspect* self,
               const Eigen::Vector4d& color) { self->setRGBA(color); },
-          ::pybind11::arg("color"))
+          ::py::arg("color"))
       .def(
           "getRGBA",
           +[](dart::dynamics::VisualAspect* self) -> const Eigen::Vector4d& {
@@ -163,7 +163,7 @@ void ShapeFrame(pybind11::module& m)
           +[](dart::dynamics::VisualAspect* self, const bool& value) {
             self->setHidden(value);
           },
-          ::pybind11::arg("value"))
+          ::py::arg("value"))
       .def(
           "getHidden",
           +[](dart::dynamics::VisualAspect* self) -> bool {
@@ -174,7 +174,7 @@ void ShapeFrame(pybind11::module& m)
           +[](dart::dynamics::VisualAspect* self, const bool& value) {
             self->setShadowed(value);
           },
-          ::pybind11::arg("value"))
+          ::py::arg("value"))
       .def(
           "getShadowed",
           +[](dart::dynamics::VisualAspect* self) -> bool {
@@ -184,24 +184,24 @@ void ShapeFrame(pybind11::module& m)
           "setColor",
           +[](dart::dynamics::VisualAspect* self,
               const Eigen::Vector3d& color) { self->setColor(color); },
-          ::pybind11::arg("color"))
+          ::py::arg("color"))
       .def(
           "setColor",
           +[](dart::dynamics::VisualAspect* self,
               const Eigen::Vector4d& color) { self->setColor(color); },
-          ::pybind11::arg("color"))
+          ::py::arg("color"))
       .def(
           "setRGB",
           +[](dart::dynamics::VisualAspect* self, const Eigen::Vector3d& rgb) {
             self->setRGB(rgb);
           },
-          ::pybind11::arg("rgb"))
+          ::py::arg("rgb"))
       .def(
           "setAlpha",
           +[](dart::dynamics::VisualAspect* self, const double alpha) {
             self->setAlpha(alpha);
           },
-          ::pybind11::arg("alpha"))
+          ::py::arg("alpha"))
       .def(
           "getColor",
           +[](const dart::dynamics::VisualAspect* self) -> Eigen::Vector3d {
@@ -223,24 +223,22 @@ void ShapeFrame(pybind11::module& m)
         return self->isHidden();
       });
 
-  ::pybind11::class_<dart::dynamics::CollisionAspect>(m, "CollisionAspect")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::dynamics::CollisionAspect>(m, "CollisionAspect")
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<
-              const dart::common::detail::AspectWithVersionedProperties<
-                  dart::common::CompositeTrackingAspect<
-                      dart::dynamics::ShapeFrame>,
-                  dart::dynamics::CollisionAspect,
-                  dart::dynamics::detail::CollisionAspectProperties,
-                  dart::dynamics::ShapeFrame,
-                  &dart::common::detail::NoOp>::PropertiesData&>(),
-          ::pybind11::arg("properties"))
+          ::py::init<const dart::common::detail::AspectWithVersionedProperties<
+              dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>,
+              dart::dynamics::CollisionAspect,
+              dart::dynamics::detail::CollisionAspectProperties,
+              dart::dynamics::ShapeFrame,
+              &dart::common::detail::NoOp>::PropertiesData&>(),
+          ::py::arg("properties"))
       .def(
           "setCollidable",
           +[](dart::dynamics::CollisionAspect* self, const bool& value) {
             self->setCollidable(value);
           },
-          ::pybind11::arg("value"))
+          ::py::arg("value"))
       .def(
           "getCollidable",
           +[](const dart::dynamics::CollisionAspect* self) -> bool {
@@ -252,24 +250,22 @@ void ShapeFrame(pybind11::module& m)
             return self->isCollidable();
           });
 
-  ::pybind11::class_<dart::dynamics::DynamicsAspect>(m, "DynamicsAspect")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::dynamics::DynamicsAspect>(m, "DynamicsAspect")
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<
-              const dart::common::detail::AspectWithVersionedProperties<
-                  dart::common::CompositeTrackingAspect<
-                      dart::dynamics::ShapeFrame>,
-                  dart::dynamics::DynamicsAspect,
-                  dart::dynamics::detail::DynamicsAspectProperties,
-                  dart::dynamics::ShapeFrame,
-                  &dart::common::detail::NoOp>::PropertiesData&>(),
-          ::pybind11::arg("properties"))
+          ::py::init<const dart::common::detail::AspectWithVersionedProperties<
+              dart::common::CompositeTrackingAspect<dart::dynamics::ShapeFrame>,
+              dart::dynamics::DynamicsAspect,
+              dart::dynamics::detail::DynamicsAspectProperties,
+              dart::dynamics::ShapeFrame,
+              &dart::common::detail::NoOp>::PropertiesData&>(),
+          ::py::arg("properties"))
       .def(
           "setFrictionCoeff",
           +[](dart::dynamics::DynamicsAspect* self, const double& value) {
             self->setFrictionCoeff(value);
           },
-          ::pybind11::arg("value"))
+          ::py::arg("value"))
       .def(
           "getFrictionCoeff",
           +[](const dart::dynamics::DynamicsAspect* self) -> double {
@@ -280,7 +276,7 @@ void ShapeFrame(pybind11::module& m)
           +[](dart::dynamics::DynamicsAspect* self, const double& value) {
             self->setRestitutionCoeff(value);
           },
-          ::pybind11::arg("value"))
+          ::py::arg("value"))
       .def(
           "getRestitutionCoeff",
           +[](const dart::dynamics::DynamicsAspect* self) -> double {

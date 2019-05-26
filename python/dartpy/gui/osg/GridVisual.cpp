@@ -41,9 +41,9 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void GridVisual(pybind11::module& m)
+void GridVisual(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::GridVisual,
       dart::gui::osg::ViewerAttachment,
       ::osg::ref_ptr<dart::gui::osg::GridVisual>>(m, "GridVisual")
@@ -76,7 +76,7 @@ void GridVisual(pybind11::module& m)
           });
 
   auto attr = m.attr("GridVisual");
-  ::pybind11::enum_<dart::gui::osg::GridVisual::PlaneType>(attr, "PlaneType")
+  ::py::enum_<dart::gui::osg::GridVisual::PlaneType>(attr, "PlaneType")
       .value("XY", dart::gui::osg::GridVisual::PlaneType::XY)
       .value("YZ", dart::gui::osg::GridVisual::PlaneType::YZ)
       .value("ZX", dart::gui::osg::GridVisual::PlaneType::ZX);

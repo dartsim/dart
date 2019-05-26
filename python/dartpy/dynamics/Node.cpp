@@ -35,12 +35,14 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Node(pybind11::module& m)
+void Node(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::Node,
       /*dart::common::VersionCounter,*/ dart::common::Subject,
       std::shared_ptr<dart::dynamics::Node> >(m, "Node")
@@ -48,21 +50,21 @@ void Node(pybind11::module& m)
           "setName",
           +[](dart::dynamics::Node* self, const std::string& newName)
               -> const std::string& { return self->setName(newName); },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("newName"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("newName"))
       .def(
           "getName",
           +[](const dart::dynamics::Node* self) -> const std::string& {
             return self->getName();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "setNodeState",
           +[](dart::dynamics::Node* self,
               const dart::dynamics::Node::State& otherState) {
             self->setNodeState(otherState);
           },
-          ::pybind11::arg("otherState"))
+          ::py::arg("otherState"))
       .def(
           "getNodeState",
           +[](const dart::dynamics::Node* self)
@@ -75,7 +77,7 @@ void Node(pybind11::module& m)
               const dart::dynamics::Node::Properties& properties) {
             self->setNodeProperties(properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getNodeProperties",
           +[](const dart::dynamics::Node* self)

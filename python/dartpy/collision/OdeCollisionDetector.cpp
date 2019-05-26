@@ -37,16 +37,18 @@
 #include <dart/collision/ode/ode.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void OdeCollisionDetector(pybind11::module& m)
+void OdeCollisionDetector(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::collision::OdeCollisionDetector,
       std::shared_ptr<dart::collision::OdeCollisionDetector>,
       dart::collision::CollisionDetector>(m, "OdeCollisionDetector")
-      .def(::pybind11::init(
+      .def(::py::init(
           +[]() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
             return dart::collision::OdeCollisionDetector::create();
           }))
@@ -60,7 +62,7 @@ void OdeCollisionDetector(pybind11::module& m)
           "getType",
           +[](const dart::collision::OdeCollisionDetector* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "createCollisionGroup",
           +[](dart::collision::OdeCollisionDetector* self)
@@ -72,7 +74,7 @@ void OdeCollisionDetector(pybind11::module& m)
           +[]() -> const std::string& {
             return dart::collision::OdeCollisionDetector::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

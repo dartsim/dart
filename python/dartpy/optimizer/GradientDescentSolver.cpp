@@ -35,48 +35,50 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void GradientDescentSolver(pybind11::module& m)
+void GradientDescentSolver(py::module& m)
 {
-  ::pybind11::class_<dart::optimizer::GradientDescentSolver::UniqueProperties>(
+  ::py::class_<dart::optimizer::GradientDescentSolver::UniqueProperties>(
       m, "GradientDescentSolverUniqueProperties")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<double>(), ::pybind11::arg("stepMultiplier"))
+      .def(::py::init<>())
+      .def(::py::init<double>(), ::py::arg("stepMultiplier"))
       .def(
-          ::pybind11::init<double, std::size_t>(),
-          ::pybind11::arg("stepMultiplier"),
-          ::pybind11::arg("maxAttempts"))
+          ::py::init<double, std::size_t>(),
+          ::py::arg("stepMultiplier"),
+          ::py::arg("maxAttempts"))
       .def(
-          ::pybind11::init<double, std::size_t, std::size_t>(),
-          ::pybind11::arg("stepMultiplier"),
-          ::pybind11::arg("maxAttempts"),
-          ::pybind11::arg("perturbationStep"))
+          ::py::init<double, std::size_t, std::size_t>(),
+          ::py::arg("stepMultiplier"),
+          ::py::arg("maxAttempts"),
+          ::py::arg("perturbationStep"))
       .def(
-          ::pybind11::init<double, std::size_t, std::size_t, double>(),
-          ::pybind11::arg("stepMultiplier"),
-          ::pybind11::arg("maxAttempts"),
-          ::pybind11::arg("perturbationStep"),
-          ::pybind11::arg("maxPerturbationFactor"))
+          ::py::init<double, std::size_t, std::size_t, double>(),
+          ::py::arg("stepMultiplier"),
+          ::py::arg("maxAttempts"),
+          ::py::arg("perturbationStep"),
+          ::py::arg("maxPerturbationFactor"))
       .def(
-          ::pybind11::init<double, std::size_t, std::size_t, double, double>(),
-          ::pybind11::arg("stepMultiplier"),
-          ::pybind11::arg("maxAttempts"),
-          ::pybind11::arg("perturbationStep"),
-          ::pybind11::arg("maxPerturbationFactor"),
-          ::pybind11::arg("maxRandomizationStep"))
+          ::py::init<double, std::size_t, std::size_t, double, double>(),
+          ::py::arg("stepMultiplier"),
+          ::py::arg("maxAttempts"),
+          ::py::arg("perturbationStep"),
+          ::py::arg("maxPerturbationFactor"),
+          ::py::arg("maxRandomizationStep"))
       .def(
-          ::pybind11::
+          ::py::
               init<double, std::size_t, std::size_t, double, double, double>(),
-          ::pybind11::arg("stepMultiplier"),
-          ::pybind11::arg("maxAttempts"),
-          ::pybind11::arg("perturbationStep"),
-          ::pybind11::arg("maxPerturbationFactor"),
-          ::pybind11::arg("maxRandomizationStep"),
-          ::pybind11::arg("defaultConstraintWeight"))
+          ::py::arg("stepMultiplier"),
+          ::py::arg("maxAttempts"),
+          ::py::arg("perturbationStep"),
+          ::py::arg("maxPerturbationFactor"),
+          ::py::arg("maxRandomizationStep"),
+          ::py::arg("defaultConstraintWeight"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               double,
               std::size_t,
               std::size_t,
@@ -84,15 +86,15 @@ void GradientDescentSolver(pybind11::module& m)
               double,
               double,
               Eigen::VectorXd>(),
-          ::pybind11::arg("stepMultiplier"),
-          ::pybind11::arg("maxAttempts"),
-          ::pybind11::arg("perturbationStep"),
-          ::pybind11::arg("maxPerturbationFactor"),
-          ::pybind11::arg("maxRandomizationStep"),
-          ::pybind11::arg("defaultConstraintWeight"),
-          ::pybind11::arg("eqConstraintWeights"))
+          ::py::arg("stepMultiplier"),
+          ::py::arg("maxAttempts"),
+          ::py::arg("perturbationStep"),
+          ::py::arg("maxPerturbationFactor"),
+          ::py::arg("maxRandomizationStep"),
+          ::py::arg("defaultConstraintWeight"),
+          ::py::arg("eqConstraintWeights"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               double,
               std::size_t,
               std::size_t,
@@ -101,14 +103,14 @@ void GradientDescentSolver(pybind11::module& m)
               double,
               Eigen::VectorXd,
               Eigen::VectorXd>(),
-          ::pybind11::arg("stepMultiplier"),
-          ::pybind11::arg("maxAttempts"),
-          ::pybind11::arg("perturbationStep"),
-          ::pybind11::arg("maxPerturbationFactor"),
-          ::pybind11::arg("maxRandomizationStep"),
-          ::pybind11::arg("defaultConstraintWeight"),
-          ::pybind11::arg("eqConstraintWeights"),
-          ::pybind11::arg("ineqConstraintWeights"))
+          ::py::arg("stepMultiplier"),
+          ::py::arg("maxAttempts"),
+          ::py::arg("perturbationStep"),
+          ::py::arg("maxPerturbationFactor"),
+          ::py::arg("maxRandomizationStep"),
+          ::py::arg("defaultConstraintWeight"),
+          ::py::arg("eqConstraintWeights"),
+          ::py::arg("ineqConstraintWeights"))
       .def_readwrite(
           "mStepSize",
           &dart::optimizer::GradientDescentSolver::UniqueProperties::mStepSize)
@@ -141,36 +143,36 @@ void GradientDescentSolver(pybind11::module& m)
           &dart::optimizer::GradientDescentSolver::UniqueProperties::
               mIneqConstraintWeights);
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::GradientDescentSolver::Properties,
       dart::optimizer::Solver::Properties,
       dart::optimizer::GradientDescentSolver::UniqueProperties>(
       m, "GradientDescentSolverProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::optimizer::Solver::Properties&>(),
-          ::pybind11::arg("solverProperties"))
+          ::py::init<const dart::optimizer::Solver::Properties&>(),
+          ::py::arg("solverProperties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::optimizer::Solver::Properties&,
               const dart::optimizer::GradientDescentSolver::
                   UniqueProperties&>(),
-          ::pybind11::arg("solverProperties"),
-          ::pybind11::arg("descentProperties"));
+          ::py::arg("solverProperties"),
+          ::py::arg("descentProperties"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::GradientDescentSolver,
       dart::optimizer::Solver,
       std::shared_ptr<dart::optimizer::GradientDescentSolver>>(
       m, "GradientDescentSolver")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::optimizer::GradientDescentSolver::Properties&>(),
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
-          ::pybind11::init<std::shared_ptr<dart::optimizer::Problem>>(),
-          ::pybind11::arg("problem"))
+          ::py::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          ::py::arg("problem"))
       .def(
           "solve",
           +[](dart::optimizer::GradientDescentSolver* self) -> bool {
@@ -195,13 +197,13 @@ void GradientDescentSolver(pybind11::module& m)
           +[](dart::optimizer::GradientDescentSolver* self,
               const dart::optimizer::GradientDescentSolver::Properties&
                   _properties) { self->setProperties(_properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProperties",
           +[](dart::optimizer::GradientDescentSolver* self,
               const dart::optimizer::GradientDescentSolver::UniqueProperties&
                   _properties) { self->setProperties(_properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getGradientDescentProperties",
           +[](const dart::optimizer::GradientDescentSolver* self)
@@ -212,7 +214,7 @@ void GradientDescentSolver(pybind11::module& m)
           "setStepSize",
           +[](dart::optimizer::GradientDescentSolver* self,
               double _newMultiplier) { self->setStepSize(_newMultiplier); },
-          ::pybind11::arg("newMultiplier"))
+          ::py::arg("newMultiplier"))
       .def(
           "getStepSize",
           +[](const dart::optimizer::GradientDescentSolver* self) -> double {
@@ -222,7 +224,7 @@ void GradientDescentSolver(pybind11::module& m)
           "setMaxAttempts",
           +[](dart::optimizer::GradientDescentSolver* self,
               std::size_t _maxAttempts) { self->setMaxAttempts(_maxAttempts); },
-          ::pybind11::arg("maxAttempts"))
+          ::py::arg("maxAttempts"))
       .def(
           "getMaxAttempts",
           +[](const dart::optimizer::GradientDescentSolver* self)
@@ -232,7 +234,7 @@ void GradientDescentSolver(pybind11::module& m)
           +[](dart::optimizer::GradientDescentSolver* self, std::size_t _step) {
             self->setPerturbationStep(_step);
           },
-          ::pybind11::arg("step"))
+          ::py::arg("step"))
       .def(
           "getPerturbationStep",
           +[](const dart::optimizer::GradientDescentSolver* self)
@@ -242,7 +244,7 @@ void GradientDescentSolver(pybind11::module& m)
           +[](dart::optimizer::GradientDescentSolver* self, double _factor) {
             self->setMaxPerturbationFactor(_factor);
           },
-          ::pybind11::arg("factor"))
+          ::py::arg("factor"))
       .def(
           "getMaxPerturbationFactor",
           +[](const dart::optimizer::GradientDescentSolver* self) -> double {
@@ -254,7 +256,7 @@ void GradientDescentSolver(pybind11::module& m)
               double _newDefault) {
             self->setDefaultConstraintWeight(_newDefault);
           },
-          ::pybind11::arg("newDefault"))
+          ::py::arg("newDefault"))
       .def(
           "getDefaultConstraintWeight",
           +[](const dart::optimizer::GradientDescentSolver* self) -> double {
@@ -264,12 +266,12 @@ void GradientDescentSolver(pybind11::module& m)
           "randomizeConfiguration",
           +[](dart::optimizer::GradientDescentSolver* self,
               Eigen::VectorXd& _x) { self->randomizeConfiguration(_x); },
-          ::pybind11::arg("x"))
+          ::py::arg("x"))
       .def(
           "clampToBoundary",
           +[](dart::optimizer::GradientDescentSolver* self,
               Eigen::VectorXd& _x) { self->clampToBoundary(_x); },
-          ::pybind11::arg("x"))
+          ::py::arg("x"))
       .def(
           "getLastNumIterations",
           +[](const dart::optimizer::GradientDescentSolver* self)

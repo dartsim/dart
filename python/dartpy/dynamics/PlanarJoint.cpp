@@ -36,31 +36,33 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void PlanarJoint(pybind11::module& m)
+void PlanarJoint(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::PlanarJoint::UniqueProperties>(
+  ::py::class_<dart::dynamics::PlanarJoint::UniqueProperties>(
       m, "PlanarJointUniqueProperties")
-      .def(::pybind11::init<>());
+      .def(::py::init<>());
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::PlanarJoint::Properties,
       dart::dynamics::GenericJoint<math::R3Space>::Properties,
       dart::dynamics::PlanarJoint::UniqueProperties>(m, "PlanarJointProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::R3Space>::Properties&>(),
-          ::pybind11::arg("genericJointProperties"))
+          ::py::arg("genericJointProperties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::dynamics::GenericJoint<
                   dart::math::R3Space>::Properties&,
               const dart::dynamics::PlanarJoint::UniqueProperties&>(),
-          ::pybind11::arg("genericJointProperties"),
-          ::pybind11::arg("uniqueProperties"))
+          ::py::arg("genericJointProperties"),
+          ::py::arg("uniqueProperties"))
       .def_readwrite(
           "mPlaneType",
           &dart::dynamics::detail::PlanarJointUniqueProperties::mPlaneType)
@@ -76,7 +78,7 @@ void PlanarJoint(pybind11::module& m)
 
   DARTPY_DEFINE_JOINT_COMMON_BASE(PlanarJoint, R3Space)
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::PlanarJoint,
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::PlanarJoint,
@@ -98,7 +100,7 @@ void PlanarJoint(pybind11::module& m)
                       dart::math::RealVectorSpace<3>>>::Aspect* aspect) {
             self->setPlanarJointAspect(aspect);
           },
-          ::pybind11::arg("aspect"))
+          ::py::arg("aspect"))
       .def(
           "removePlanarJointAspect",
           +[](dart::dynamics::PlanarJoint* self) {
@@ -120,13 +122,13 @@ void PlanarJoint(pybind11::module& m)
               const dart::dynamics::PlanarJoint::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProperties",
           +[](dart::dynamics::PlanarJoint* self,
               const dart::dynamics::PlanarJoint::UniqueProperties&
                   _properties) { self->setProperties(_properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::PlanarJoint* self,
@@ -136,7 +138,7 @@ void PlanarJoint(pybind11::module& m)
                   dart::dynamics::GenericJoint<
                       dart::math::RealVectorSpace<3>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getPlanarJointProperties",
           +[](const dart::dynamics::PlanarJoint* self)
@@ -149,18 +151,18 @@ void PlanarJoint(pybind11::module& m)
               const dart::dynamics::PlanarJoint* _otherJoint) {
             self->copy(_otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "getType",
           +[](const dart::dynamics::PlanarJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::PlanarJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setXYPlane",
           +[](dart::dynamics::PlanarJoint* self) { self->setXYPlane(); })
@@ -169,7 +171,7 @@ void PlanarJoint(pybind11::module& m)
           +[](dart::dynamics::PlanarJoint* self, bool _renameDofs) {
             self->setXYPlane(_renameDofs);
           },
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("renameDofs"))
       .def(
           "setYZPlane",
           +[](dart::dynamics::PlanarJoint* self) { self->setYZPlane(); })
@@ -178,7 +180,7 @@ void PlanarJoint(pybind11::module& m)
           +[](dart::dynamics::PlanarJoint* self, bool _renameDofs) {
             self->setYZPlane(_renameDofs);
           },
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("renameDofs"))
       .def(
           "setZXPlane",
           +[](dart::dynamics::PlanarJoint* self) { self->setZXPlane(); })
@@ -187,7 +189,7 @@ void PlanarJoint(pybind11::module& m)
           +[](dart::dynamics::PlanarJoint* self, bool _renameDofs) {
             self->setZXPlane(_renameDofs);
           },
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("renameDofs"))
       .def(
           "setArbitraryPlane",
           +[](dart::dynamics::PlanarJoint* self,
@@ -195,8 +197,8 @@ void PlanarJoint(pybind11::module& m)
               const Eigen::Vector3d& _transAxis2) {
             self->setArbitraryPlane(_transAxis1, _transAxis2);
           },
-          ::pybind11::arg("transAxis1"),
-          ::pybind11::arg("transAxis2"))
+          ::py::arg("transAxis1"),
+          ::py::arg("transAxis2"))
       .def(
           "setArbitraryPlane",
           +[](dart::dynamics::PlanarJoint* self,
@@ -205,9 +207,9 @@ void PlanarJoint(pybind11::module& m)
               bool _renameDofs) {
             self->setArbitraryPlane(_transAxis1, _transAxis2, _renameDofs);
           },
-          ::pybind11::arg("transAxis1"),
-          ::pybind11::arg("transAxis2"),
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("transAxis1"),
+          ::py::arg("transAxis2"),
+          ::py::arg("renameDofs"))
       .def(
           "getPlaneType",
           +[](const dart::dynamics::PlanarJoint* self)
@@ -218,21 +220,21 @@ void PlanarJoint(pybind11::module& m)
           "getRotationalAxis",
           +[](const dart::dynamics::PlanarJoint* self)
               -> const Eigen::Vector3d& { return self->getRotationalAxis(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getTranslationalAxis1",
           +[](const dart::dynamics::PlanarJoint* self)
               -> const Eigen::Vector3d& {
             return self->getTranslationalAxis1();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getTranslationalAxis2",
           +[](const dart::dynamics::PlanarJoint* self)
               -> const Eigen::Vector3d& {
             return self->getTranslationalAxis2();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::PlanarJoint* self,
@@ -240,14 +242,14 @@ void PlanarJoint(pybind11::module& m)
               -> Eigen::Matrix<double, 6, 3> {
             return self->getRelativeJacobianStatic(_positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::
                     string& {
                       return dart::dynamics::PlanarJoint::getStaticType();
                     },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

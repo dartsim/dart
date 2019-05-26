@@ -33,14 +33,15 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Observer(pybind11::module& m)
+void Observer(py::module& m)
 {
-  ::pybind11::
-      class_<dart::common::Observer, std::shared_ptr<dart::common::Observer>>(
-          m, "Observer");
+  ::py::class_<dart::common::Observer, std::shared_ptr<dart::common::Observer>>(
+      m, "Observer");
 }
 
 } // namespace python

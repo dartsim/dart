@@ -33,37 +33,39 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void PgsBoxedLcpSolver(pybind11::module& m)
+void PgsBoxedLcpSolver(py::module& m)
 {
-  ::pybind11::class_<dart::constraint::PgsBoxedLcpSolver::Option>(
+  ::py::class_<dart::constraint::PgsBoxedLcpSolver::Option>(
       m, "PgsBoxedLcpSolverOption")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<int>(), ::pybind11::arg("maxIteration"))
+      .def(::py::init<>())
+      .def(::py::init<int>(), ::py::arg("maxIteration"))
       .def(
-          ::pybind11::init<int, double>(),
-          ::pybind11::arg("maxIteration"),
-          ::pybind11::arg("deltaXTolerance"))
+          ::py::init<int, double>(),
+          ::py::arg("maxIteration"),
+          ::py::arg("deltaXTolerance"))
       .def(
-          ::pybind11::init<int, double, double>(),
-          ::pybind11::arg("maxIteration"),
-          ::pybind11::arg("deltaXTolerance"),
-          ::pybind11::arg("relativeDeltaXTolerance"))
+          ::py::init<int, double, double>(),
+          ::py::arg("maxIteration"),
+          ::py::arg("deltaXTolerance"),
+          ::py::arg("relativeDeltaXTolerance"))
       .def(
-          ::pybind11::init<int, double, double, double>(),
-          ::pybind11::arg("maxIteration"),
-          ::pybind11::arg("deltaXTolerance"),
-          ::pybind11::arg("relativeDeltaXTolerance"),
-          ::pybind11::arg("epsilonForDivision"))
+          ::py::init<int, double, double, double>(),
+          ::py::arg("maxIteration"),
+          ::py::arg("deltaXTolerance"),
+          ::py::arg("relativeDeltaXTolerance"),
+          ::py::arg("epsilonForDivision"))
       .def(
-          ::pybind11::init<int, double, double, double, bool>(),
-          ::pybind11::arg("maxIteration"),
-          ::pybind11::arg("deltaXTolerance"),
-          ::pybind11::arg("relativeDeltaXTolerance"),
-          ::pybind11::arg("epsilonForDivision"),
-          ::pybind11::arg("randomizeConstraintOrder"))
+          ::py::init<int, double, double, double, bool>(),
+          ::py::arg("maxIteration"),
+          ::py::arg("deltaXTolerance"),
+          ::py::arg("relativeDeltaXTolerance"),
+          ::py::arg("epsilonForDivision"),
+          ::py::arg("randomizeConstraintOrder"))
       .def_readwrite(
           "mMaxIteration",
           &dart::constraint::PgsBoxedLcpSolver::Option::mMaxIteration)
@@ -82,7 +84,7 @@ void PgsBoxedLcpSolver(pybind11::module& m)
           &dart::constraint::PgsBoxedLcpSolver::Option::
               mRandomizeConstraintOrder);
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::PgsBoxedLcpSolver,
       dart::constraint::BoxedLcpSolver,
       std::shared_ptr<dart::constraint::PgsBoxedLcpSolver>>(
@@ -91,7 +93,7 @@ void PgsBoxedLcpSolver(pybind11::module& m)
           "getType",
           +[](const dart::constraint::PgsBoxedLcpSolver* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "solve",
           +[](dart::constraint::PgsBoxedLcpSolver* self,
@@ -107,28 +109,28 @@ void PgsBoxedLcpSolver(pybind11::module& m)
             return self->solve(
                 n, A, x, b, nub, lo, hi, findex, earlyTermination);
           },
-          ::pybind11::arg("n"),
-          ::pybind11::arg("A"),
-          ::pybind11::arg("x"),
-          ::pybind11::arg("b"),
-          ::pybind11::arg("nub"),
-          ::pybind11::arg("lo"),
-          ::pybind11::arg("hi"),
-          ::pybind11::arg("findex"),
-          ::pybind11::arg("earlyTermination"))
+          ::py::arg("n"),
+          ::py::arg("A"),
+          ::py::arg("x"),
+          ::py::arg("b"),
+          ::py::arg("nub"),
+          ::py::arg("lo"),
+          ::py::arg("hi"),
+          ::py::arg("findex"),
+          ::py::arg("earlyTermination"))
       .def(
           "setOption",
           +[](dart::constraint::PgsBoxedLcpSolver* self,
               const dart::constraint::PgsBoxedLcpSolver::Option& option) {
             self->setOption(option);
           },
-          ::pybind11::arg("option"))
+          ::py::arg("option"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::constraint::PgsBoxedLcpSolver::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

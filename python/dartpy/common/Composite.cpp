@@ -33,22 +33,24 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Composite(pybind11::module& m)
+void Composite(py::module& m)
 {
-  ::pybind11::
+  ::py::
       class_<dart::common::Composite, std::shared_ptr<dart::common::Composite>>(
           m, "Composite")
-          .def(::pybind11::init<>())
+          .def(::py::init<>())
           .def(
               "setCompositeState",
               +[](dart::common::Composite* self,
                   const dart::common::Composite::State& newStates) {
                 self->setCompositeState(newStates);
               },
-              ::pybind11::arg("newStates"))
+              ::py::arg("newStates"))
           .def(
               "getCompositeState",
               +[](const dart::common::Composite* self)
@@ -61,14 +63,14 @@ void Composite(pybind11::module& m)
                   dart::common::Composite::State& outgoingStates) {
                 self->copyCompositeStateTo(outgoingStates);
               },
-              ::pybind11::arg("outgoingStates"))
+              ::py::arg("outgoingStates"))
           .def(
               "setCompositeProperties",
               +[](dart::common::Composite* self,
                   const dart::common::Composite::Properties& newProperties) {
                 self->setCompositeProperties(newProperties);
               },
-              ::pybind11::arg("newProperties"))
+              ::py::arg("newProperties"))
           .def(
               "getCompositeProperties",
               +[](const dart::common::Composite* self)
@@ -81,21 +83,21 @@ void Composite(pybind11::module& m)
                   dart::common::Composite::Properties& outgoingProperties) {
                 self->copyCompositePropertiesTo(outgoingProperties);
               },
-              ::pybind11::arg("outgoingProperties"))
+              ::py::arg("outgoingProperties"))
           .def(
               "duplicateAspects",
               +[](dart::common::Composite* self,
                   const dart::common::Composite* fromComposite) {
                 self->duplicateAspects(fromComposite);
               },
-              ::pybind11::arg("fromComposite"))
+              ::py::arg("fromComposite"))
           .def(
               "matchAspects",
               +[](dart::common::Composite* self,
                   const dart::common::Composite* otherComposite) {
                 self->matchAspects(otherComposite);
               },
-              ::pybind11::arg("otherComposite"));
+              ::py::arg("otherComposite"));
 }
 
 } // namespace python

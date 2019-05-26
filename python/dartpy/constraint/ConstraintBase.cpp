@@ -33,12 +33,14 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void ConstraintBase(pybind11::module& m)
+void ConstraintBase(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::ConstraintBase,
       std::shared_ptr<dart::constraint::ConstraintBase> >(m, "ConstraintBase")
       .def(
@@ -55,20 +57,20 @@ void ConstraintBase(pybind11::module& m)
               dart::constraint::ConstraintInfo* info) {
             self->getInformation(info);
           },
-          ::pybind11::arg("info"))
+          ::py::arg("info"))
       .def(
           "applyUnitImpulse",
           +[](dart::constraint::ConstraintBase* self, std::size_t index) {
             self->applyUnitImpulse(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getVelocityChange",
           +[](dart::constraint::ConstraintBase* self,
               double* vel,
               bool withCfm) { self->getVelocityChange(vel, withCfm); },
-          ::pybind11::arg("vel"),
-          ::pybind11::arg("withCfm"))
+          ::py::arg("vel"),
+          ::py::arg("withCfm"))
       .def(
           "excite",
           +[](dart::constraint::ConstraintBase* self) { self->excite(); })
@@ -80,7 +82,7 @@ void ConstraintBase(pybind11::module& m)
           +[](dart::constraint::ConstraintBase* self, double* lambda) {
             self->applyImpulse(lambda);
           },
-          ::pybind11::arg("lambda"))
+          ::py::arg("lambda"))
       .def(
           "isActive",
           +[](const dart::constraint::ConstraintBase* self) -> bool {
@@ -103,14 +105,14 @@ void ConstraintBase(pybind11::module& m)
               -> dart::dynamics::SkeletonPtr {
             return dart::constraint::ConstraintBase::compressPath(skeleton);
           },
-          ::pybind11::arg("skeleton"))
+          ::py::arg("skeleton"))
       .def_static(
           "getRootSkeletonOf",
           +[](dart::dynamics::SkeletonPtr skeleton)
               -> dart::dynamics::SkeletonPtr {
             return dart::constraint::ConstraintBase::getRootSkeleton(skeleton);
           },
-          ::pybind11::arg("skeleton"));
+          ::py::arg("skeleton"));
 }
 
 } // namespace python

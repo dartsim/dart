@@ -34,13 +34,15 @@
 #include <dart/utils/urdf/urdf.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void DartLoader(pybind11::module& m)
+void DartLoader(py::module& m)
 {
-  ::pybind11::class_<dart::utils::DartLoader>(m, "DartLoader")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::utils::DartLoader>(m, "DartLoader")
+      .def(::py::init<>())
       .def(
           "addPackageDirectory",
           +[](dart::utils::DartLoader* self,
@@ -48,15 +50,15 @@ void DartLoader(pybind11::module& m)
               const std::string& _packageDirectory) -> void {
             return self->addPackageDirectory(_packageName, _packageDirectory);
           },
-          ::pybind11::arg("packageName"),
-          ::pybind11::arg("packageDirectory"))
+          ::py::arg("packageName"),
+          ::py::arg("packageDirectory"))
       .def(
           "parseSkeleton",
           +[](dart::utils::DartLoader* self,
               const dart::common::Uri& _uri) -> dart::dynamics::SkeletonPtr {
             return self->parseSkeleton(_uri);
           },
-          ::pybind11::arg("uri"))
+          ::py::arg("uri"))
       .def(
           "parseSkeleton",
           +[](dart::utils::DartLoader* self,
@@ -65,8 +67,8 @@ void DartLoader(pybind11::module& m)
               -> dart::dynamics::SkeletonPtr {
             return self->parseSkeleton(_uri, _resourceRetriever);
           },
-          ::pybind11::arg("uri"),
-          ::pybind11::arg("resourceRetriever"))
+          ::py::arg("uri"),
+          ::py::arg("resourceRetriever"))
       .def(
           "parseSkeletonString",
           +[](dart::utils::DartLoader* self,
@@ -75,8 +77,8 @@ void DartLoader(pybind11::module& m)
               -> dart::dynamics::SkeletonPtr {
             return self->parseSkeletonString(_urdfString, _baseUri);
           },
-          ::pybind11::arg("urdfString"),
-          ::pybind11::arg("baseUri"))
+          ::py::arg("urdfString"),
+          ::py::arg("baseUri"))
       .def(
           "parseSkeletonString",
           +[](dart::utils::DartLoader* self,
@@ -87,14 +89,14 @@ void DartLoader(pybind11::module& m)
             return self->parseSkeletonString(
                 _urdfString, _baseUri, _resourceRetriever);
           },
-          ::pybind11::arg("urdfString"),
-          ::pybind11::arg("baseUri"),
-          ::pybind11::arg("resourceRetriever"))
+          ::py::arg("urdfString"),
+          ::py::arg("baseUri"),
+          ::py::arg("resourceRetriever"))
       .def(
           "parseWorld",
           +[](dart::utils::DartLoader* self, const dart::common::Uri& _uri)
               -> dart::simulation::WorldPtr { return self->parseWorld(_uri); },
-          ::pybind11::arg("uri"))
+          ::py::arg("uri"))
       .def(
           "parseWorld",
           +[](dart::utils::DartLoader* self,
@@ -103,8 +105,8 @@ void DartLoader(pybind11::module& m)
               -> dart::simulation::WorldPtr {
             return self->parseWorld(_uri, _resourceRetriever);
           },
-          ::pybind11::arg("uri"),
-          ::pybind11::arg("resourceRetriever"))
+          ::py::arg("uri"),
+          ::py::arg("resourceRetriever"))
       .def(
           "parseWorldString",
           +[](dart::utils::DartLoader* self,
@@ -112,8 +114,8 @@ void DartLoader(pybind11::module& m)
               const dart::common::Uri& _baseUri) -> dart::simulation::WorldPtr {
             return self->parseWorldString(_urdfString, _baseUri);
           },
-          ::pybind11::arg("urdfString"),
-          ::pybind11::arg("baseUri"))
+          ::py::arg("urdfString"),
+          ::py::arg("baseUri"))
       .def(
           "parseWorldString",
           +[](dart::utils::DartLoader* self,
@@ -124,9 +126,9 @@ void DartLoader(pybind11::module& m)
             return self->parseWorldString(
                 _urdfString, _baseUri, _resourceRetriever);
           },
-          ::pybind11::arg("urdfString"),
-          ::pybind11::arg("baseUri"),
-          ::pybind11::arg("resourceRetriever"));
+          ::py::arg("urdfString"),
+          ::py::arg("baseUri"),
+          ::py::arg("resourceRetriever"));
 }
 
 } // namespace python

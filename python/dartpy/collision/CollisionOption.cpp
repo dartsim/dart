@@ -33,26 +33,28 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void CollisionOption(pybind11::module& m)
+void CollisionOption(py::module& m)
 {
-  ::pybind11::class_<dart::collision::CollisionOption>(m, "CollisionOption")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<bool>(), ::pybind11::arg("enableContact"))
+  ::py::class_<dart::collision::CollisionOption>(m, "CollisionOption")
+      .def(::py::init<>())
+      .def(::py::init<bool>(), ::py::arg("enableContact"))
       .def(
-          ::pybind11::init<bool, std::size_t>(),
-          ::pybind11::arg("enableContact"),
-          ::pybind11::arg("maxNumContacts"))
+          ::py::init<bool, std::size_t>(),
+          ::py::arg("enableContact"),
+          ::py::arg("maxNumContacts"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               bool,
               std::size_t,
               const std::shared_ptr<dart::collision::CollisionFilter>&>(),
-          ::pybind11::arg("enableContact"),
-          ::pybind11::arg("maxNumContacts"),
-          ::pybind11::arg("collisionFilter"))
+          ::py::arg("enableContact"),
+          ::py::arg("maxNumContacts"),
+          ::py::arg("collisionFilter"))
       .def_readwrite(
           "enableContact", &dart::collision::CollisionOption::enableContact)
       .def_readwrite(

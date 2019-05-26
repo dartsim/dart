@@ -33,11 +33,18 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void CollisionObject(pybind11::module& /*m*/)
+void CollisionObject(py::module& m)
 {
+  ::pybind11::class_<dart::collision::CollisionObject>(m, "CollisionObject")
+      .def(
+          "getShape",
+          +[](const dart::collision::CollisionObject* self)
+              -> dart::dynamics::ConstShapePtr { return self->getShape(); });
 }
 
 } // namespace python

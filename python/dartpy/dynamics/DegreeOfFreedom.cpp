@@ -35,12 +35,14 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void DegreeOfFreedom(pybind11::module& m)
+void DegreeOfFreedom(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::DegreeOfFreedom,
       dart::common::Subject,
       std::shared_ptr<dart::dynamics::DegreeOfFreedom>>(m, "DegreeOfFreedom")
@@ -48,8 +50,8 @@ void DegreeOfFreedom(pybind11::module& m)
           "setName",
           +[](dart::dynamics::DegreeOfFreedom* self, const std::string& _name)
               -> const std::string& { return self->setName(_name); },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("name"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name"))
       .def(
           "setName",
           +[](dart::dynamics::DegreeOfFreedom* self,
@@ -57,20 +59,20 @@ void DegreeOfFreedom(pybind11::module& m)
               bool _preserveName) -> const std::string& {
             return self->setName(_name, _preserveName);
           },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("name"),
-          ::pybind11::arg("preserveName"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name"),
+          ::py::arg("preserveName"))
       .def(
           "getName",
           +[](const dart::dynamics::DegreeOfFreedom* self)
               -> const std::string& { return self->getName(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "preserveName",
           +[](dart::dynamics::DegreeOfFreedom* self, bool _preserve) {
             self->preserveName(_preserve);
           },
-          ::pybind11::arg("preserve"))
+          ::py::arg("preserve"))
       .def(
           "isNamePreserved",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> bool {
@@ -101,7 +103,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _command) {
             self->setCommand(_command);
           },
-          ::pybind11::arg("command"))
+          ::py::arg("command"))
       .def(
           "getCommand",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -115,7 +117,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _position) {
             self->setPosition(_position);
           },
-          ::pybind11::arg("position"))
+          ::py::arg("position"))
       .def(
           "getPosition",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -128,15 +130,15 @@ void DegreeOfFreedom(pybind11::module& m)
               double _upperLimit) {
             self->setPositionLimits(_lowerLimit, _upperLimit);
           },
-          ::pybind11::arg("lowerLimit"),
-          ::pybind11::arg("upperLimit"))
+          ::py::arg("lowerLimit"),
+          ::py::arg("upperLimit"))
       .def(
           "setPositionLimits",
           +[](dart::dynamics::DegreeOfFreedom* self,
               const std::pair<double, double>& _limits) {
             self->setPositionLimits(_limits);
           },
-          ::pybind11::arg("limits"))
+          ::py::arg("limits"))
       .def(
           "getPositionLimits",
           +[](const dart::dynamics::DegreeOfFreedom* self)
@@ -148,7 +150,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setPositionLowerLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getPositionLowerLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -159,7 +161,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setPositionUpperLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getPositionUpperLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -183,7 +185,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _initial) {
             self->setInitialPosition(_initial);
           },
-          ::pybind11::arg("initial"))
+          ::py::arg("initial"))
       .def(
           "getInitialPosition",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -194,7 +196,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _velocity) {
             self->setVelocity(_velocity);
           },
-          ::pybind11::arg("velocity"))
+          ::py::arg("velocity"))
       .def(
           "getVelocity",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -207,15 +209,15 @@ void DegreeOfFreedom(pybind11::module& m)
               double _upperLimit) {
             self->setVelocityLimits(_lowerLimit, _upperLimit);
           },
-          ::pybind11::arg("lowerLimit"),
-          ::pybind11::arg("upperLimit"))
+          ::py::arg("lowerLimit"),
+          ::py::arg("upperLimit"))
       .def(
           "setVelocityLimits",
           +[](dart::dynamics::DegreeOfFreedom* self,
               const std::pair<double, double>& _limits) {
             self->setVelocityLimits(_limits);
           },
-          ::pybind11::arg("limits"))
+          ::py::arg("limits"))
       .def(
           "getVelocityLimits",
           +[](const dart::dynamics::DegreeOfFreedom* self)
@@ -227,7 +229,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setVelocityLowerLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getVelocityLowerLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -238,7 +240,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setVelocityUpperLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getVelocityUpperLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -252,7 +254,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _initial) {
             self->setInitialVelocity(_initial);
           },
-          ::pybind11::arg("initial"))
+          ::py::arg("initial"))
       .def(
           "getInitialVelocity",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -263,7 +265,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _acceleration) {
             self->setAcceleration(_acceleration);
           },
-          ::pybind11::arg("acceleration"))
+          ::py::arg("acceleration"))
       .def(
           "getAcceleration",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -281,15 +283,15 @@ void DegreeOfFreedom(pybind11::module& m)
               double _upperLimit) {
             self->setAccelerationLimits(_lowerLimit, _upperLimit);
           },
-          ::pybind11::arg("lowerLimit"),
-          ::pybind11::arg("upperLimit"))
+          ::py::arg("lowerLimit"),
+          ::py::arg("upperLimit"))
       .def(
           "setAccelerationLimits",
           +[](dart::dynamics::DegreeOfFreedom* self,
               const std::pair<double, double>& _limits) {
             self->setAccelerationLimits(_limits);
           },
-          ::pybind11::arg("limits"))
+          ::py::arg("limits"))
       .def(
           "getAccelerationLimits",
           +[](const dart::dynamics::DegreeOfFreedom* self)
@@ -301,7 +303,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setAccelerationLowerLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getAccelerationLowerLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -312,7 +314,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setAccelerationUpperLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getAccelerationUpperLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -323,7 +325,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _force) {
             self->setForce(_force);
           },
-          ::pybind11::arg("force"))
+          ::py::arg("force"))
       .def(
           "getForce",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -339,15 +341,15 @@ void DegreeOfFreedom(pybind11::module& m)
               double _upperLimit) {
             self->setForceLimits(_lowerLimit, _upperLimit);
           },
-          ::pybind11::arg("lowerLimit"),
-          ::pybind11::arg("upperLimit"))
+          ::py::arg("lowerLimit"),
+          ::py::arg("upperLimit"))
       .def(
           "setForceLimits",
           +[](dart::dynamics::DegreeOfFreedom* self,
               const std::pair<double, double>& _limits) {
             self->setForceLimits(_limits);
           },
-          ::pybind11::arg("limits"))
+          ::py::arg("limits"))
       .def(
           "getForceLimits",
           +[](const dart::dynamics::DegreeOfFreedom* self)
@@ -357,7 +359,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setForceLowerLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getForceLowerLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -368,7 +370,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
             self->setForceUpperLimit(_limit);
           },
-          ::pybind11::arg("limit"))
+          ::py::arg("limit"))
       .def(
           "getForceUpperLimit",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -379,7 +381,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _velocityChange) {
             self->setVelocityChange(_velocityChange);
           },
-          ::pybind11::arg("velocityChange"))
+          ::py::arg("velocityChange"))
       .def(
           "getVelocityChange",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -395,7 +397,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _impulse) {
             self->setConstraintImpulse(_impulse);
           },
-          ::pybind11::arg("impulse"))
+          ::py::arg("impulse"))
       .def(
           "getConstraintImpulse",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -411,7 +413,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _k) {
             self->setSpringStiffness(_k);
           },
-          ::pybind11::arg("k"))
+          ::py::arg("k"))
       .def(
           "getSpringStiffness",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -422,7 +424,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _q0) {
             self->setRestPosition(_q0);
           },
-          ::pybind11::arg("q0"))
+          ::py::arg("q0"))
       .def(
           "getRestPosition",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -433,7 +435,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _coeff) {
             self->setDampingCoefficient(_coeff);
           },
-          ::pybind11::arg("coeff"))
+          ::py::arg("coeff"))
       .def(
           "getDampingCoefficient",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {
@@ -444,7 +446,7 @@ void DegreeOfFreedom(pybind11::module& m)
           +[](dart::dynamics::DegreeOfFreedom* self, double _friction) {
             self->setCoulombFriction(_friction);
           },
-          ::pybind11::arg("friction"))
+          ::py::arg("friction"))
       .def(
           "getCoulombFriction",
           +[](const dart::dynamics::DegreeOfFreedom* self) -> double {

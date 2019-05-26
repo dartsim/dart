@@ -36,36 +36,38 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void TranslationalJoint2D(pybind11::module& m)
+void TranslationalJoint2D(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::TranslationalJoint2D::UniqueProperties>(
+  ::py::class_<dart::dynamics::TranslationalJoint2D::UniqueProperties>(
       m, "TranslationalJoint2DUniqueProperties")
-      .def(::pybind11::init<>());
+      .def(::py::init<>());
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::TranslationalJoint2D::Properties,
       dart::dynamics::GenericJoint<math::R2Space>::Properties,
       dart::dynamics::TranslationalJoint2D::UniqueProperties>(
       m, "TranslationalJoint2DProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::R2Space>::Properties&>(),
-          ::pybind11::arg("genericJointProperties"))
+          ::py::arg("genericJointProperties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::dynamics::GenericJoint<
                   dart::math::R2Space>::Properties&,
               const dart::dynamics::TranslationalJoint2D::UniqueProperties&>(),
-          ::pybind11::arg("genericJointProperties"),
-          ::pybind11::arg("uniqueProperties"));
+          ::py::arg("genericJointProperties"),
+          ::py::arg("uniqueProperties"));
 
   DARTPY_DEFINE_JOINT_COMMON_BASE(TranslationalJoint2D, R2Space)
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::TranslationalJoint2D,
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::TranslationalJoint2D,
@@ -88,7 +90,7 @@ void TranslationalJoint2D(pybind11::module& m)
                       dart::math::RealVectorSpace<2> > >::Aspect* aspect) {
             self->setTranslationalJoint2DAspect(aspect);
           },
-          ::pybind11::arg("aspect"))
+          ::py::arg("aspect"))
       .def(
           "removeTranslationalJoint2DAspect",
           +[](dart::dynamics::TranslationalJoint2D* self) {
@@ -109,13 +111,13 @@ void TranslationalJoint2D(pybind11::module& m)
           +[](dart::dynamics::TranslationalJoint2D* self,
               const dart::dynamics::TranslationalJoint2D::Properties&
                   properties) { self->setProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProperties",
           +[](dart::dynamics::TranslationalJoint2D* self,
               const dart::dynamics::TranslationalJoint2D::UniqueProperties&
                   properties) { self->setProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::TranslationalJoint2D* self,
@@ -125,7 +127,7 @@ void TranslationalJoint2D(pybind11::module& m)
                   dart::dynamics::GenericJoint<
                       dart::math::RealVectorSpace<2> > >::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getTranslationalJoint2DProperties",
           +[](const dart::dynamics::TranslationalJoint2D* self)
@@ -138,17 +140,17 @@ void TranslationalJoint2D(pybind11::module& m)
               const dart::dynamics::TranslationalJoint2D* otherJoint) {
             self->copy(otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "getType",
           +[](const dart::dynamics::TranslationalJoint2D* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::TranslationalJoint2D* self,
               std::size_t index) -> bool { return self->isCyclic(index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setXYPlane",
           +[](dart::dynamics::TranslationalJoint2D* self) {
@@ -159,7 +161,7 @@ void TranslationalJoint2D(pybind11::module& m)
           +[](dart::dynamics::TranslationalJoint2D* self, bool renameDofs) {
             self->setXYPlane(renameDofs);
           },
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("renameDofs"))
       .def(
           "setYZPlane",
           +[](dart::dynamics::TranslationalJoint2D* self) {
@@ -170,7 +172,7 @@ void TranslationalJoint2D(pybind11::module& m)
           +[](dart::dynamics::TranslationalJoint2D* self, bool renameDofs) {
             self->setYZPlane(renameDofs);
           },
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("renameDofs"))
       .def(
           "setZXPlane",
           +[](dart::dynamics::TranslationalJoint2D* self) {
@@ -181,7 +183,7 @@ void TranslationalJoint2D(pybind11::module& m)
           +[](dart::dynamics::TranslationalJoint2D* self, bool renameDofs) {
             self->setZXPlane(renameDofs);
           },
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("renameDofs"))
       .def(
           "setArbitraryPlane",
           +[](dart::dynamics::TranslationalJoint2D* self,
@@ -189,8 +191,8 @@ void TranslationalJoint2D(pybind11::module& m)
               const Eigen::Vector3d& transAxis2) {
             self->setArbitraryPlane(transAxis1, transAxis2);
           },
-          ::pybind11::arg("transAxis1"),
-          ::pybind11::arg("transAxis2"))
+          ::py::arg("transAxis1"),
+          ::py::arg("transAxis2"))
       .def(
           "setArbitraryPlane",
           +[](dart::dynamics::TranslationalJoint2D* self,
@@ -199,9 +201,9 @@ void TranslationalJoint2D(pybind11::module& m)
               bool renameDofs) {
             self->setArbitraryPlane(transAxis1, transAxis2, renameDofs);
           },
-          ::pybind11::arg("transAxis1"),
-          ::pybind11::arg("transAxis2"),
-          ::pybind11::arg("renameDofs"))
+          ::py::arg("transAxis1"),
+          ::py::arg("transAxis2"),
+          ::py::arg("renameDofs"))
       .def(
           "getPlaneType",
           +[](const dart::dynamics::TranslationalJoint2D* self)
@@ -222,13 +224,13 @@ void TranslationalJoint2D(pybind11::module& m)
               const Eigen::Vector2d& positions) -> Eigen::Matrix<double, 6, 2> {
             return self->getRelativeJacobianStatic(positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::TranslationalJoint2D::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

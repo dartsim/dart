@@ -33,24 +33,26 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void JointLimitConstraint(pybind11::module& m)
+void JointLimitConstraint(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::JointLimitConstraint,
       dart::constraint::ConstraintBase,
       std::shared_ptr<dart::constraint::JointLimitConstraint>>(
       m, "JointLimitConstraint")
-      .def(::pybind11::init<dart::dynamics::Joint*>(), ::pybind11::arg("joint"))
+      .def(::py::init<dart::dynamics::Joint*>(), ::py::arg("joint"))
       .def_static(
           "setErrorAllowance",
           +[](double _allowance) {
             dart::constraint::JointLimitConstraint::setErrorAllowance(
                 _allowance);
           },
-          ::pybind11::arg("allowance"))
+          ::py::arg("allowance"))
       .def_static(
           "getErrorAllowance",
           +[]() -> double {
@@ -62,7 +64,7 @@ void JointLimitConstraint(pybind11::module& m)
             dart::constraint::JointLimitConstraint::setErrorReductionParameter(
                 _erp);
           },
-          ::pybind11::arg("erp"))
+          ::py::arg("erp"))
       .def_static(
           "getErrorReductionParameter",
           +[]() -> double {
@@ -75,7 +77,7 @@ void JointLimitConstraint(pybind11::module& m)
             dart::constraint::JointLimitConstraint::
                 setMaxErrorReductionVelocity(_erv);
           },
-          ::pybind11::arg("erv"))
+          ::py::arg("erv"))
       .def_static(
           "getMaxErrorReductionVelocity",
           +[]() -> double {
@@ -88,7 +90,7 @@ void JointLimitConstraint(pybind11::module& m)
             dart::constraint::JointLimitConstraint::setConstraintForceMixing(
                 _cfm);
           },
-          ::pybind11::arg("cfm"))
+          ::py::arg("cfm"))
       .def_static("getConstraintForceMixing", +[]() -> double {
         return dart::constraint::JointLimitConstraint::
             getConstraintForceMixing();

@@ -33,19 +33,21 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void BoxedLcpSolver(pybind11::module& m)
+void BoxedLcpSolver(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::BoxedLcpSolver,
       std::shared_ptr<dart::constraint::BoxedLcpSolver>>(m, "BoxedLcpSolver")
       .def(
           "getType",
           +[](const dart::constraint::BoxedLcpSolver* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "solve",
           +[](dart::constraint::BoxedLcpSolver* self,
@@ -57,14 +59,14 @@ void BoxedLcpSolver(pybind11::module& m)
               double* lo,
               double* hi,
               int* findex) { self->solve(n, A, x, b, nub, lo, hi, findex); },
-          ::pybind11::arg("n"),
-          ::pybind11::arg("A"),
-          ::pybind11::arg("x"),
-          ::pybind11::arg("b"),
-          ::pybind11::arg("nub"),
-          ::pybind11::arg("lo"),
-          ::pybind11::arg("hi"),
-          ::pybind11::arg("findex"));
+          ::py::arg("n"),
+          ::py::arg("A"),
+          ::py::arg("x"),
+          ::py::arg("b"),
+          ::py::arg("nub"),
+          ::py::arg("lo"),
+          ::py::arg("hi"),
+          ::py::arg("findex"));
 }
 
 } // namespace python

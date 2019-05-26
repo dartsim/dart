@@ -35,15 +35,16 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Joint(pybind11::module& m)
+void Joint(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::detail::JointProperties>(
-      m, "JointProperties")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<const std::string&>(), ::pybind11::arg("name"))
+  ::py::class_<dart::dynamics::detail::JointProperties>(m, "JointProperties")
+      .def(::py::init<>())
+      .def(::py::init<const std::string&>(), ::py::arg("name"))
       .def_readwrite("mName", &dart::dynamics::detail::JointProperties::mName)
       .def_readwrite(
           "mT_ParentBodyToJoint",
@@ -66,7 +67,7 @@ void Joint(pybind11::module& m)
           "mMimicOffset",
           &dart::dynamics::detail::JointProperties::mMimicOffset);
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::common::SpecializedForAspect<dart::common::EmbeddedPropertiesAspect<
           dart::dynamics::Joint,
           dart::dynamics::detail::JointProperties>>,
@@ -76,9 +77,9 @@ void Joint(pybind11::module& m)
               dart::dynamics::Joint,
               dart::dynamics::detail::JointProperties>>>>(
       m, "SpecializedForAspect_EmbeddedPropertiesAspect_Joint_JointProperties")
-      .def(::pybind11::init<>());
+      .def(::py::init<>());
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect<
           dart::dynamics::Joint,
           dart::dynamics::detail::JointProperties>>,
@@ -90,9 +91,9 @@ void Joint(pybind11::module& m)
               dart::dynamics::Joint,
               dart::dynamics::detail::JointProperties>>>>(
       m, "RequiresAspect_EmbeddedPropertiesAspect_Joint_JointProperties")
-      .def(::pybind11::init<>());
+      .def(::py::init<>());
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::common::EmbedProperties<
           dart::dynamics::Joint,
           dart::dynamics::detail::JointProperties>,
@@ -104,7 +105,7 @@ void Joint(pybind11::module& m)
           dart::dynamics::detail::JointProperties>>>(
       m, "EmbedProperties_Joint_JointProperties");
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::Joint,
       dart::common::Subject,
       dart::common::EmbedProperties<
@@ -123,7 +124,7 @@ void Joint(pybind11::module& m)
                   dart::dynamics::Joint,
                   dart::dynamics::detail::JointProperties>::Aspect* aspect)
               -> void { return self->setJointAspect(aspect); },
-          ::pybind11::arg("aspect"))
+          ::py::arg("aspect"))
       .def(
           "removeJointAspect",
           +[](dart::dynamics::Joint* self) -> void {
@@ -143,7 +144,7 @@ void Joint(pybind11::module& m)
               const dart::dynamics::Joint::Properties& properties) -> void {
             return self->setProperties(properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::Joint* self,
@@ -153,27 +154,27 @@ void Joint(pybind11::module& m)
                   properties) -> void {
             return self->setAspectProperties(properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "copy",
           +[](dart::dynamics::Joint* self,
               const dart::dynamics::Joint& otherJoint) -> void {
             return self->copy(otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "copy",
           +[](dart::dynamics::Joint* self,
               const dart::dynamics::Joint* otherJoint) -> void {
             return self->copy(otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "setName",
           +[](dart::dynamics::Joint* self, const std::string& name)
               -> const std::string& { return self->setName(name); },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("name"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name"))
       .def(
           "setName",
           +[](dart::dynamics::Joint* self,
@@ -181,28 +182,28 @@ void Joint(pybind11::module& m)
               bool renameDofs) -> const std::string& {
             return self->setName(name, renameDofs);
           },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("name"),
-          ::pybind11::arg("renameDofs"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name"),
+          ::py::arg("renameDofs"))
       .def(
           "getName",
           +[](const dart::dynamics::Joint* self) -> const std::string& {
             return self->getName();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getType",
           +[](const dart::dynamics::Joint* self) -> const std::string& {
             return self->getType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "setActuatorType",
           +[](dart::dynamics::Joint* self,
               dart::dynamics::Joint::ActuatorType actuatorType) -> void {
             return self->setActuatorType(actuatorType);
           },
-          ::pybind11::arg("actuatorType"))
+          ::py::arg("actuatorType"))
       .def(
           "getActuatorType",
           +[](const dart::dynamics::Joint* self)
@@ -224,13 +225,13 @@ void Joint(pybind11::module& m)
           +[](dart::dynamics::Joint* self) -> dart::dynamics::BodyNode* {
             return self->getChildBodyNode();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getParentBodyNode",
           +[](dart::dynamics::Joint* self) -> dart::dynamics::BodyNode* {
             return self->getParentBodyNode();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getSkeleton",
           +[](dart::dynamics::Joint* self) -> dart::dynamics::SkeletonPtr {
@@ -247,20 +248,20 @@ void Joint(pybind11::module& m)
           +[](dart::dynamics::Joint* self, const Eigen::Isometry3d& T) -> void {
             return self->setTransformFromParentBodyNode(T);
           },
-          ::pybind11::arg("T"))
+          ::py::arg("T"))
       .def(
           "setTransformFromChildBodyNode",
           +[](dart::dynamics::Joint* self, const Eigen::Isometry3d& T) -> void {
             return self->setTransformFromChildBodyNode(T);
           },
-          ::pybind11::arg("T"))
+          ::py::arg("T"))
       .def(
           "setPositionLimitEnforced",
           +[](dart::dynamics::Joint* self,
               bool isPositionLimitEnforced) -> void {
             return self->setPositionLimitEnforced(isPositionLimitEnforced);
           },
-          ::pybind11::arg("isPositionLimitEnforced"))
+          ::py::arg("isPositionLimitEnforced"))
       .def(
           "isPositionLimitEnforced",
           +[](const dart::dynamics::Joint* self) -> bool {
@@ -270,12 +271,12 @@ void Joint(pybind11::module& m)
           "getIndexInSkeleton",
           +[](const dart::dynamics::Joint* self, std::size_t index)
               -> std::size_t { return self->getIndexInSkeleton(index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getIndexInTree",
           +[](const dart::dynamics::Joint* self, std::size_t index)
               -> std::size_t { return self->getIndexInTree(index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getJointIndexInSkeleton",
           +[](const dart::dynamics::Joint* self) -> std::size_t {
@@ -298,9 +299,9 @@ void Joint(pybind11::module& m)
               const std::string& name) -> const std::string& {
             return self->setDofName(index, name);
           },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("index"),
-          ::pybind11::arg("name"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("index"),
+          ::py::arg("name"))
       .def(
           "setDofName",
           +[](dart::dynamics::Joint* self,
@@ -309,28 +310,28 @@ void Joint(pybind11::module& m)
               bool preserveName) -> const std::string& {
             return self->setDofName(index, name, preserveName);
           },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("index"),
-          ::pybind11::arg("name"),
-          ::pybind11::arg("preserveName"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("index"),
+          ::py::arg("name"),
+          ::py::arg("preserveName"))
       .def(
           "preserveDofName",
           +[](dart::dynamics::Joint* self, std::size_t index, bool preserve)
               -> void { return self->preserveDofName(index, preserve); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("preserve"))
+          ::py::arg("index"),
+          ::py::arg("preserve"))
       .def(
           "isDofNamePreserved",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> bool {
             return self->isDofNamePreserved(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getDofName",
           +[](const dart::dynamics::Joint* self, std::size_t index)
               -> const std::string& { return self->getDofName(index); },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("index"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("index"))
       .def(
           "getNumDofs",
           +[](const dart::dynamics::Joint* self)
@@ -339,19 +340,19 @@ void Joint(pybind11::module& m)
           "setCommand",
           +[](dart::dynamics::Joint* self, std::size_t index, double command)
               -> void { return self->setCommand(index, command); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("command"))
+          ::py::arg("index"),
+          ::py::arg("command"))
       .def(
           "getCommand",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getCommand(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setCommands",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& commands)
               -> void { return self->setCommands(commands); },
-          ::pybind11::arg("commands"))
+          ::py::arg("commands"))
       .def(
           "getCommands",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -365,19 +366,19 @@ void Joint(pybind11::module& m)
           "setPosition",
           +[](dart::dynamics::Joint* self, std::size_t index, double position)
               -> void { return self->setPosition(index, position); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("position"))
+          ::py::arg("index"),
+          ::py::arg("position"))
       .def(
           "getPosition",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getPosition(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setPositions",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& positions)
               -> void { return self->setPositions(positions); },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def(
           "getPositions",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -387,19 +388,19 @@ void Joint(pybind11::module& m)
           "setPositionLowerLimit",
           +[](dart::dynamics::Joint* self, std::size_t index, double position)
               -> void { return self->setPositionLowerLimit(index, position); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("position"))
+          ::py::arg("index"),
+          ::py::arg("position"))
       .def(
           "getPositionLowerLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getPositionLowerLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setPositionLowerLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
               -> void { return self->setPositionLowerLimits(lowerLimits); },
-          ::pybind11::arg("lowerLimits"))
+          ::py::arg("lowerLimits"))
       .def(
           "getPositionLowerLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -409,19 +410,19 @@ void Joint(pybind11::module& m)
           "setPositionUpperLimit",
           +[](dart::dynamics::Joint* self, std::size_t index, double position)
               -> void { return self->setPositionUpperLimit(index, position); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("position"))
+          ::py::arg("index"),
+          ::py::arg("position"))
       .def(
           "getPositionUpperLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getPositionUpperLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setPositionUpperLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
               -> void { return self->setPositionUpperLimits(upperLimits); },
-          ::pybind11::arg("upperLimits"))
+          ::py::arg("upperLimits"))
       .def(
           "getPositionUpperLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -432,19 +433,19 @@ void Joint(pybind11::module& m)
           +[](const dart::dynamics::Joint* self, std::size_t index) -> bool {
             return self->isCyclic(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "hasPositionLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> bool {
             return self->hasPositionLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "resetPosition",
           +[](dart::dynamics::Joint* self, std::size_t index) -> void {
             return self->resetPosition(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "resetPositions",
           +[](dart::dynamics::Joint* self)
@@ -453,19 +454,19 @@ void Joint(pybind11::module& m)
           "setInitialPosition",
           +[](dart::dynamics::Joint* self, std::size_t index, double initial)
               -> void { return self->setInitialPosition(index, initial); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("initial"))
+          ::py::arg("index"),
+          ::py::arg("initial"))
       .def(
           "getInitialPosition",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getInitialPosition(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setInitialPositions",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& initial)
               -> void { return self->setInitialPositions(initial); },
-          ::pybind11::arg("initial"))
+          ::py::arg("initial"))
       .def(
           "getInitialPositions",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -475,19 +476,19 @@ void Joint(pybind11::module& m)
           "setVelocity",
           +[](dart::dynamics::Joint* self, std::size_t index, double velocity)
               -> void { return self->setVelocity(index, velocity); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("velocity"))
+          ::py::arg("index"),
+          ::py::arg("velocity"))
       .def(
           "getVelocity",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getVelocity(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setVelocities",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& velocities)
               -> void { return self->setVelocities(velocities); },
-          ::pybind11::arg("velocities"))
+          ::py::arg("velocities"))
       .def(
           "getVelocities",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -497,19 +498,19 @@ void Joint(pybind11::module& m)
           "setVelocityLowerLimit",
           +[](dart::dynamics::Joint* self, std::size_t index, double velocity)
               -> void { return self->setVelocityLowerLimit(index, velocity); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("velocity"))
+          ::py::arg("index"),
+          ::py::arg("velocity"))
       .def(
           "getVelocityLowerLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getVelocityLowerLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setVelocityLowerLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
               -> void { return self->setVelocityLowerLimits(lowerLimits); },
-          ::pybind11::arg("lowerLimits"))
+          ::py::arg("lowerLimits"))
       .def(
           "getVelocityLowerLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -519,19 +520,19 @@ void Joint(pybind11::module& m)
           "setVelocityUpperLimit",
           +[](dart::dynamics::Joint* self, std::size_t index, double velocity)
               -> void { return self->setVelocityUpperLimit(index, velocity); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("velocity"))
+          ::py::arg("index"),
+          ::py::arg("velocity"))
       .def(
           "getVelocityUpperLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getVelocityUpperLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setVelocityUpperLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
               -> void { return self->setVelocityUpperLimits(upperLimits); },
-          ::pybind11::arg("upperLimits"))
+          ::py::arg("upperLimits"))
       .def(
           "getVelocityUpperLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -542,7 +543,7 @@ void Joint(pybind11::module& m)
           +[](dart::dynamics::Joint* self, std::size_t index) -> void {
             return self->resetVelocity(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "resetVelocities",
           +[](dart::dynamics::Joint* self)
@@ -551,19 +552,19 @@ void Joint(pybind11::module& m)
           "setInitialVelocity",
           +[](dart::dynamics::Joint* self, std::size_t index, double initial)
               -> void { return self->setInitialVelocity(index, initial); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("initial"))
+          ::py::arg("index"),
+          ::py::arg("initial"))
       .def(
           "getInitialVelocity",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getInitialVelocity(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setInitialVelocities",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& initial)
               -> void { return self->setInitialVelocities(initial); },
-          ::pybind11::arg("initial"))
+          ::py::arg("initial"))
       .def(
           "getInitialVelocities",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -576,19 +577,19 @@ void Joint(pybind11::module& m)
               double acceleration) -> void {
             return self->setAcceleration(index, acceleration);
           },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("acceleration"))
+          ::py::arg("index"),
+          ::py::arg("acceleration"))
       .def(
           "getAcceleration",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getAcceleration(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setAccelerations",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& accelerations)
               -> void { return self->setAccelerations(accelerations); },
-          ::pybind11::arg("accelerations"))
+          ::py::arg("accelerations"))
       .def(
           "getAccelerations",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -605,19 +606,19 @@ void Joint(pybind11::module& m)
               double acceleration) -> void {
             return self->setAccelerationLowerLimit(index, acceleration);
           },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("acceleration"))
+          ::py::arg("index"),
+          ::py::arg("acceleration"))
       .def(
           "getAccelerationLowerLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getAccelerationLowerLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setAccelerationLowerLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
               -> void { return self->setAccelerationLowerLimits(lowerLimits); },
-          ::pybind11::arg("lowerLimits"))
+          ::py::arg("lowerLimits"))
       .def(
           "getAccelerationLowerLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -630,19 +631,19 @@ void Joint(pybind11::module& m)
               double acceleration) -> void {
             return self->setAccelerationUpperLimit(index, acceleration);
           },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("acceleration"))
+          ::py::arg("index"),
+          ::py::arg("acceleration"))
       .def(
           "getAccelerationUpperLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getAccelerationUpperLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setAccelerationUpperLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
               -> void { return self->setAccelerationUpperLimits(upperLimits); },
-          ::pybind11::arg("upperLimits"))
+          ::py::arg("upperLimits"))
       .def(
           "getAccelerationUpperLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -653,19 +654,19 @@ void Joint(pybind11::module& m)
           +[](dart::dynamics::Joint* self,
               std::size_t index,
               double force) -> void { return self->setForce(index, force); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("force"))
+          ::py::arg("index"),
+          ::py::arg("force"))
       .def(
           "getForce",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getForce(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setForces",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& forces)
               -> void { return self->setForces(forces); },
-          ::pybind11::arg("forces"))
+          ::py::arg("forces"))
       .def(
           "getForces",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -679,19 +680,19 @@ void Joint(pybind11::module& m)
           "setForceLowerLimit",
           +[](dart::dynamics::Joint* self, std::size_t index, double force)
               -> void { return self->setForceLowerLimit(index, force); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("force"))
+          ::py::arg("index"),
+          ::py::arg("force"))
       .def(
           "getForceLowerLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getForceLowerLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setForceLowerLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
               -> void { return self->setForceLowerLimits(lowerLimits); },
-          ::pybind11::arg("lowerLimits"))
+          ::py::arg("lowerLimits"))
       .def(
           "getForceLowerLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -701,19 +702,19 @@ void Joint(pybind11::module& m)
           "setForceUpperLimit",
           +[](dart::dynamics::Joint* self, std::size_t index, double force)
               -> void { return self->setForceUpperLimit(index, force); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("force"))
+          ::py::arg("index"),
+          ::py::arg("force"))
       .def(
           "getForceUpperLimit",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getForceUpperLimit(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setForceUpperLimits",
           +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
               -> void { return self->setForceUpperLimits(upperLimits); },
-          ::pybind11::arg("upperLimits"))
+          ::py::arg("upperLimits"))
       .def(
           "getForceUpperLimits",
           +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
@@ -728,7 +729,7 @@ void Joint(pybind11::module& m)
           +[](const dart::dynamics::Joint* self, bool printWarnings) -> bool {
             return self->checkSanity(printWarnings);
           },
-          ::pybind11::arg("printWarnings"))
+          ::py::arg("printWarnings"))
       .def(
           "setVelocityChange",
           +[](dart::dynamics::Joint* self,
@@ -736,14 +737,14 @@ void Joint(pybind11::module& m)
               double velocityChange) -> void {
             return self->setVelocityChange(index, velocityChange);
           },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("velocityChange"))
+          ::py::arg("index"),
+          ::py::arg("velocityChange"))
       .def(
           "getVelocityChange",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getVelocityChange(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "resetVelocityChanges",
           +[](dart::dynamics::Joint* self)
@@ -752,14 +753,14 @@ void Joint(pybind11::module& m)
           "setConstraintImpulse",
           +[](dart::dynamics::Joint* self, std::size_t index, double impulse)
               -> void { return self->setConstraintImpulse(index, impulse); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("impulse"))
+          ::py::arg("index"),
+          ::py::arg("impulse"))
       .def(
           "getConstraintImpulse",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getConstraintImpulse(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "resetConstraintImpulses",
           +[](dart::dynamics::Joint* self)
@@ -769,13 +770,13 @@ void Joint(pybind11::module& m)
           +[](dart::dynamics::Joint* self, double dt) -> void {
             return self->integratePositions(dt);
           },
-          ::pybind11::arg("dt"))
+          ::py::arg("dt"))
       .def(
           "integrateVelocities",
           +[](dart::dynamics::Joint* self, double dt) -> void {
             return self->integrateVelocities(dt);
           },
-          ::pybind11::arg("dt"))
+          ::py::arg("dt"))
       .def(
           "getPositionDifferences",
           +[](const dart::dynamics::Joint* self,
@@ -783,58 +784,58 @@ void Joint(pybind11::module& m)
               const Eigen::VectorXd& q1) -> Eigen::VectorXd {
             return self->getPositionDifferences(q2, q1);
           },
-          ::pybind11::arg("q2"),
-          ::pybind11::arg("q1"))
+          ::py::arg("q2"),
+          ::py::arg("q1"))
       .def(
           "setSpringStiffness",
           +[](dart::dynamics::Joint* self,
               std::size_t index,
               double k) -> void { return self->setSpringStiffness(index, k); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("k"))
+          ::py::arg("index"),
+          ::py::arg("k"))
       .def(
           "getSpringStiffness",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getSpringStiffness(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setRestPosition",
           +[](dart::dynamics::Joint* self,
               std::size_t index,
               double q0) -> void { return self->setRestPosition(index, q0); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("q0"))
+          ::py::arg("index"),
+          ::py::arg("q0"))
       .def(
           "getRestPosition",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getRestPosition(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setDampingCoefficient",
           +[](dart::dynamics::Joint* self, std::size_t index, double coeff)
               -> void { return self->setDampingCoefficient(index, coeff); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("coeff"))
+          ::py::arg("index"),
+          ::py::arg("coeff"))
       .def(
           "getDampingCoefficient",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getDampingCoefficient(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setCoulombFriction",
           +[](dart::dynamics::Joint* self, std::size_t index, double friction)
               -> void { return self->setCoulombFriction(index, friction); },
-          ::pybind11::arg("index"),
-          ::pybind11::arg("friction"))
+          ::py::arg("index"),
+          ::py::arg("friction"))
       .def(
           "getCoulombFriction",
           +[](const dart::dynamics::Joint* self, std::size_t index) -> double {
             return self->getCoulombFriction(index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "computePotentialEnergy",
           +[](const dart::dynamics::Joint* self) -> double {
@@ -871,7 +872,7 @@ void Joint(pybind11::module& m)
               const Eigen::VectorXd& positions) -> dart::math::Jacobian {
             return self->getRelativeJacobian(positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def(
           "getRelativeJacobianTimeDeriv",
           +[](const dart::dynamics::Joint* self) -> const dart::math::Jacobian {
@@ -906,7 +907,7 @@ void Joint(pybind11::module& m)
 
   auto attr = m.attr("Joint");
 
-  ::pybind11::enum_<dart::dynamics::detail::ActuatorType>(attr, "ActuatorType")
+  ::py::enum_<dart::dynamics::detail::ActuatorType>(attr, "ActuatorType")
       .value("FORCE", dart::dynamics::detail::ActuatorType::FORCE)
       .value("PASSIVE", dart::dynamics::detail::ActuatorType::PASSIVE)
       .value("SERVO", dart::dynamics::detail::ActuatorType::SERVO)

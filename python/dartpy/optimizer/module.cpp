@@ -33,20 +33,22 @@
 #include <dart/config.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Solver(pybind11::module& sm);
-void GradientDescentSolver(pybind11::module& sm);
+void Solver(py::module& sm);
+void GradientDescentSolver(py::module& sm);
 #if HAVE_NLOPT
-void NloptSolver(pybind11::module& sm);
+void NloptSolver(py::module& sm);
 #endif // HAVE_NLOPT
 
-void Function(pybind11::module& sm);
+void Function(py::module& sm);
 
-void Problem(pybind11::module& sm);
+void Problem(py::module& sm);
 
-void dart_optimizer(pybind11::module& m)
+void dart_optimizer(py::module& m)
 {
   auto sm = m.def_submodule("optimizer");
 

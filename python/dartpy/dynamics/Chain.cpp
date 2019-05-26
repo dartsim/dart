@@ -35,51 +35,53 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Chain(pybind11::module& m)
+void Chain(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::Chain,
       dart::dynamics::Linkage,
       std::shared_ptr<dart::dynamics::Chain>>(m, "Chain")
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](const dart::dynamics::Chain::Criteria& criteria)
                   -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(criteria);
               }),
-          ::pybind11::arg("criteria"))
+          ::py::arg("criteria"))
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](const dart::dynamics::Chain::Criteria& criteria,
                   const std::string& name) -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(criteria, name);
               }),
-          ::pybind11::arg("criteria"),
-          ::pybind11::arg("name"))
+          ::py::arg("criteria"),
+          ::py::arg("name"))
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target)
                   -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(start, target);
               }),
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"))
+          ::py::arg("start"),
+          ::py::arg("target"))
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target,
                   const std::string& name) -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(start, target, name);
               }),
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("name"))
+          ::py::arg("start"),
+          ::py::arg("target"),
+          ::py::arg("name"))
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target,
                   bool includeUpstreamParentJoint) -> dart::dynamics::ChainPtr {
@@ -91,11 +93,11 @@ void Chain(pybind11::module& m)
                 else
                   return dart::dynamics::Chain::create(start, target);
               }),
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("includeUpstreamParentJoint"))
+          ::py::arg("start"),
+          ::py::arg("target"),
+          ::py::arg("includeUpstreamParentJoint"))
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target,
                   bool includeUpstreamParentJoint,
@@ -109,10 +111,10 @@ void Chain(pybind11::module& m)
                 else
                   return dart::dynamics::Chain::create(start, target, name);
               }),
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("includeUpstreamParentJoint"),
-          ::pybind11::arg("name"))
+          ::py::arg("start"),
+          ::py::arg("target"),
+          ::py::arg("includeUpstreamParentJoint"),
+          ::py::arg("name"))
       .def(
           "cloneChain",
           +[](const dart::dynamics::Chain* self) -> dart::dynamics::ChainPtr {
@@ -124,32 +126,31 @@ void Chain(pybind11::module& m)
               const std::string& cloneName) -> dart::dynamics::ChainPtr {
             return self->cloneChain(cloneName);
           },
-          ::pybind11::arg("cloneName"))
+          ::py::arg("cloneName"))
       .def(
           "cloneMetaSkeleton",
           +[](const dart::dynamics::Chain* self,
               const std::string& cloneName) -> dart::dynamics::MetaSkeletonPtr {
             return self->cloneMetaSkeleton(cloneName);
           },
-          ::pybind11::arg("cloneName"))
+          ::py::arg("cloneName"))
       .def("isStillChain", +[](const dart::dynamics::Chain* self) -> bool {
         return self->isStillChain();
       });
 
-  ::pybind11::class_<dart::dynamics::Chain::Criteria>(m, "ChainCriteria")
+  ::py::class_<dart::dynamics::Chain::Criteria>(m, "ChainCriteria")
       .def(
-          ::pybind11::
-              init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"))
+          ::py::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
+          ::py::arg("start"),
+          ::py::arg("target"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
               bool>(),
-          ::pybind11::arg("start"),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("includeBoth"))
+          ::py::arg("start"),
+          ::py::arg("target"),
+          ::py::arg("includeBoth"))
       .def(
           "satisfy",
           +[](const dart::dynamics::Chain::Criteria* self)
@@ -166,7 +167,7 @@ void Chain(pybind11::module& m)
               -> dart::dynamics::Chain::Criteria {
             return dart::dynamics::Chain::Criteria::convert(criteria);
           },
-          ::pybind11::arg("criteria"))
+          ::py::arg("criteria"))
       .def_readwrite("mStart", &dart::dynamics::Chain::Criteria::mStart)
       .def_readwrite("mTarget", &dart::dynamics::Chain::Criteria::mTarget)
       .def_readwrite(
