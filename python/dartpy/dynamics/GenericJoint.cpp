@@ -35,37 +35,38 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 #define DARTPY_DEFINE_GENERICJOINT(name, space)                                \
-  ::pybind11::class_<                                                          \
-      dart::dynamics::detail::GenericJointUniqueProperties<space>>(            \
+  ::py::class_<dart::dynamics::detail::GenericJointUniqueProperties<space>>(   \
       m, "GenericJointUniqueProperties_" #name)                                \
-      .def(::pybind11::init<>())                                               \
+      .def(::py::init<>())                                                     \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&>(),                                  \
-          ::pybind11::arg("positionLowerLimits"))                              \
+          ::py::arg("positionLowerLimits"))                                    \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::EuclideanPoint&,                                     \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::EuclideanPoint&>(),                                  \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"))                              \
-      .def(                                                                    \
-          ::pybind11::init<                                                    \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::EuclideanPoint&,                                     \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&>(),                                  \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"))                                 \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"))                                    \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::EuclideanPoint&,                                     \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::EuclideanPoint&,                                     \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::EuclideanPoint&>(),                                  \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"))                                       \
+      .def(                                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -74,12 +75,12 @@
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"))                              \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"))                                    \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -90,13 +91,13 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"))                              \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"))                                    \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -109,14 +110,14 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"))                                \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"))                                      \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -131,49 +132,21 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"))                          \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"))                                \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&,                                             \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&,                                             \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&,                                             \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&,                                             \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"),                          \
-          ::pybind11::arg("accelerationUpperLimits"))                          \
-      .def(                                                                    \
-          ::pybind11::init<                                                    \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::EuclideanPoint&,                                     \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::EuclideanPoint&,                                     \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::EuclideanPoint&,                                     \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -184,25 +157,22 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"),                          \
-          ::pybind11::arg("accelerationUpperLimits"),                          \
-          ::pybind11::arg("forceLowerLimits"))                                 \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"),                                \
+          ::py::arg("accelerationUpperLimits"))                                \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -215,26 +185,23 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"),                          \
-          ::pybind11::arg("accelerationUpperLimits"),                          \
-          ::pybind11::arg("forceLowerLimits"),                                 \
-          ::pybind11::arg("forceUpperLimits"))                                 \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"),                                \
+          ::py::arg("accelerationUpperLimits"),                                \
+          ::py::arg("forceLowerLimits"))                                       \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
-              const dart::dynamics::detail::GenericJointUniqueProperties<      \
-                  space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -249,19 +216,53 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"),                          \
-          ::pybind11::arg("accelerationUpperLimits"),                          \
-          ::pybind11::arg("forceLowerLimits"),                                 \
-          ::pybind11::arg("forceUpperLimits"),                                 \
-          ::pybind11::arg("springStiffness"))                                  \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"),                                \
+          ::py::arg("accelerationUpperLimits"),                                \
+          ::py::arg("forceLowerLimits"),                                       \
+          ::py::arg("forceUpperLimits"))                                       \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::EuclideanPoint&,                                     \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::EuclideanPoint&,                                     \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::EuclideanPoint&,                                     \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&,                                             \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&,                                             \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&,                                             \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&,                                             \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&,                                             \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&,                                             \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&,                                             \
+              const dart::dynamics::detail::GenericJointUniqueProperties<      \
+                  space>::Vector&>(),                                          \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"),                                \
+          ::py::arg("accelerationUpperLimits"),                                \
+          ::py::arg("forceLowerLimits"),                                       \
+          ::py::arg("forceUpperLimits"),                                       \
+          ::py::arg("springStiffness"))                                        \
+      .def(                                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -286,20 +287,20 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&>(),                                  \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"),                          \
-          ::pybind11::arg("accelerationUpperLimits"),                          \
-          ::pybind11::arg("forceLowerLimits"),                                 \
-          ::pybind11::arg("forceUpperLimits"),                                 \
-          ::pybind11::arg("springStiffness"),                                  \
-          ::pybind11::arg("restPosition"))                                     \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"),                                \
+          ::py::arg("accelerationUpperLimits"),                                \
+          ::py::arg("forceLowerLimits"),                                       \
+          ::py::arg("forceUpperLimits"),                                       \
+          ::py::arg("springStiffness"),                                        \
+          ::py::arg("restPosition"))                                           \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -326,21 +327,21 @@
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"),                          \
-          ::pybind11::arg("accelerationUpperLimits"),                          \
-          ::pybind11::arg("forceLowerLimits"),                                 \
-          ::pybind11::arg("forceUpperLimits"),                                 \
-          ::pybind11::arg("springStiffness"),                                  \
-          ::pybind11::arg("restPosition"),                                     \
-          ::pybind11::arg("dampingCoefficient"))                               \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"),                                \
+          ::py::arg("accelerationUpperLimits"),                                \
+          ::py::arg("forceLowerLimits"),                                       \
+          ::py::arg("forceUpperLimits"),                                       \
+          ::py::arg("springStiffness"),                                        \
+          ::py::arg("restPosition"),                                           \
+          ::py::arg("dampingCoefficient"))                                     \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::EuclideanPoint&,                                     \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
@@ -369,20 +370,20 @@
                   space>::Vector&,                                             \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>::Vector&>(),                                          \
-          ::pybind11::arg("positionLowerLimits"),                              \
-          ::pybind11::arg("positionUpperLimits"),                              \
-          ::pybind11::arg("initialPositions"),                                 \
-          ::pybind11::arg("velocityLowerLimits"),                              \
-          ::pybind11::arg("velocityUpperLimits"),                              \
-          ::pybind11::arg("initialVelocities"),                                \
-          ::pybind11::arg("accelerationLowerLimits"),                          \
-          ::pybind11::arg("accelerationUpperLimits"),                          \
-          ::pybind11::arg("forceLowerLimits"),                                 \
-          ::pybind11::arg("forceUpperLimits"),                                 \
-          ::pybind11::arg("springStiffness"),                                  \
-          ::pybind11::arg("restPosition"),                                     \
-          ::pybind11::arg("dampingCoefficient"),                               \
-          ::pybind11::arg("coulombFrictions"))                                 \
+          ::py::arg("positionLowerLimits"),                                    \
+          ::py::arg("positionUpperLimits"),                                    \
+          ::py::arg("initialPositions"),                                       \
+          ::py::arg("velocityLowerLimits"),                                    \
+          ::py::arg("velocityUpperLimits"),                                    \
+          ::py::arg("initialVelocities"),                                      \
+          ::py::arg("accelerationLowerLimits"),                                \
+          ::py::arg("accelerationUpperLimits"),                                \
+          ::py::arg("forceLowerLimits"),                                       \
+          ::py::arg("forceUpperLimits"),                                       \
+          ::py::arg("springStiffness"),                                        \
+          ::py::arg("restPosition"),                                           \
+          ::py::arg("dampingCoefficient"),                                     \
+          ::py::arg("coulombFrictions"))                                       \
       .def_readwrite(                                                          \
           "mPositionLowerLimits",                                              \
           &dart::dynamics::detail::GenericJointUniqueProperties<               \
@@ -448,24 +449,24 @@
           &dart::dynamics::detail::GenericJointUniqueProperties<               \
               space>::mDofNames);                                              \
                                                                                \
-  ::pybind11::class_<                                                          \
+  ::py::class_<                                                                \
       dart::dynamics::detail::GenericJointProperties<space>,                   \
       dart::dynamics::detail::JointProperties,                                 \
       dart::dynamics::detail::GenericJointUniqueProperties<space>>(            \
       m, "GenericJointProperties_" #name)                                      \
-      .def(::pybind11::init<>())                                               \
+      .def(::py::init<>())                                                     \
       .def(                                                                    \
-          ::pybind11::init<const dart::dynamics::Joint::Properties&>(),        \
-          ::pybind11::arg("jointProperties"))                                  \
+          ::py::init<const dart::dynamics::Joint::Properties&>(),              \
+          ::py::arg("jointProperties"))                                        \
       .def(                                                                    \
-          ::pybind11::init<                                                    \
+          ::py::init<                                                          \
               const dart::dynamics::Joint::Properties&,                        \
               const dart::dynamics::detail::GenericJointUniqueProperties<      \
                   space>&>(),                                                  \
-          ::pybind11::arg("jointProperties"),                                  \
-          ::pybind11::arg("genericProperties"));                               \
+          ::py::arg("jointProperties"),                                        \
+          ::py::arg("genericProperties"));                                     \
                                                                                \
-  ::pybind11::class_<                                                          \
+  ::py::class_<                                                                \
       dart::common::SpecializedForAspect<                                      \
           dart::common::EmbeddedStateAndPropertiesAspect<                      \
               dart::dynamics::GenericJoint<space>,                             \
@@ -480,9 +481,9 @@
       m,                                                                       \
       "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_"                 \
       "GenericJoint_" #name "_GenericJointState_GenericJointUniqueProperties") \
-      .def(::pybind11::init<>());                                              \
+      .def(::py::init<>());                                                    \
                                                                                \
-  ::pybind11::class_<                                                          \
+  ::py::class_<                                                                \
       dart::common::RequiresAspect<                                            \
           dart::common::EmbeddedStateAndPropertiesAspect<                      \
               dart::dynamics::GenericJoint<space>,                             \
@@ -501,9 +502,9 @@
       m,                                                                       \
       "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_" #name    \
       "_GenericJointState_GenericJointUniqueProperties")                       \
-      .def(::pybind11::init<>());                                              \
+      .def(::py::init<>());                                                    \
                                                                                \
-  ::pybind11::class_<                                                          \
+  ::py::class_<                                                                \
       dart::common::EmbedStateAndProperties<                                   \
           dart::dynamics::GenericJoint<space>,                                 \
           dart::dynamics::detail::GenericJointState<space>,                    \
@@ -521,7 +522,7 @@
       "EmbedStateAndProperties_GenericJoint_" #name                            \
       "GenericJointState_GenericJointUniqueProperties");                       \
                                                                                \
-  ::pybind11::class_<                                                          \
+  ::py::class_<                                                                \
       dart::common::CompositeJoiner<                                           \
           dart::common::EmbedStateAndProperties<                               \
               dart::dynamics::GenericJoint<space>,                             \
@@ -543,7 +544,7 @@
       "CompositeJoiner_EmbedStateAndProperties_GenericJoint_" #name            \
       "GenericJointStateGenericJointUniqueProperties_Joint");                  \
                                                                                \
-  ::pybind11::class_<                                                          \
+  ::py::class_<                                                                \
       dart::common::EmbedStateAndPropertiesOnTopOf<                            \
           dart::dynamics::GenericJoint<space>,                                 \
           dart::dynamics::detail::GenericJointState<space>,                    \
@@ -564,7 +565,7 @@
       "EmbedStateAndPropertiesOnTopOf_GenericJoint_" #name                     \
       "_GenericJointState_GenericJointUniqueProperties_Joint");                \
                                                                                \
-  ::pybind11::class_<                                                          \
+  ::py::class_<                                                                \
       dart::dynamics::GenericJoint<space>,                                     \
       dart::common::EmbedStateAndPropertiesOnTopOf<                            \
           dart::dynamics::GenericJoint<space>,                                 \
@@ -584,7 +585,7 @@
               const dart::dynamics::GenericJoint<space>::Aspect* aspect) {     \
             self->setGenericJointAspect(aspect);                               \
           },                                                                   \
-          ::pybind11::arg("aspect"))                                           \
+          ::py::arg("aspect"))                                                 \
       .def(                                                                    \
           "removeGenericJointAspect",                                          \
           +[](dart::dynamics::GenericJoint<space>* self) {                     \
@@ -602,26 +603,26 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::Properties&           \
                   properties) { self->setProperties(properties); },            \
-          ::pybind11::arg("properties"))                                       \
+          ::py::arg("properties"))                                             \
       .def(                                                                    \
           "setProperties",                                                     \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::UniqueProperties&     \
                   properties) { self->setProperties(properties); },            \
-          ::pybind11::arg("properties"))                                       \
+          ::py::arg("properties"))                                             \
       .def(                                                                    \
           "setAspectState",                                                    \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::AspectState& state) { \
             self->setAspectState(state);                                       \
           },                                                                   \
-          ::pybind11::arg("state"))                                            \
+          ::py::arg("state"))                                                  \
       .def(                                                                    \
           "setAspectProperties",                                               \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::AspectProperties&     \
                   properties) { self->setAspectProperties(properties); },      \
-          ::pybind11::arg("properties"))                                       \
+          ::py::arg("properties"))                                             \
       .def(                                                                    \
           "getGenericJointProperties",                                         \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -633,13 +634,13 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::ThisClass&            \
                   otherJoint) { self->copy(otherJoint); },                     \
-          ::pybind11::arg("otherJoint"))                                       \
+          ::py::arg("otherJoint"))                                             \
       .def(                                                                    \
           "copy",                                                              \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::ThisClass*            \
                   otherJoint) { self->copy(otherJoint); },                     \
-          ::pybind11::arg("otherJoint"))                                       \
+          ::py::arg("otherJoint"))                                             \
       .def(                                                                    \
           "getNumDofs",                                                        \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -651,9 +652,9 @@
               const std::string& name) -> const std::string& {                 \
             return self->setDofName(index, name);                              \
           },                                                                   \
-          ::pybind11::return_value_policy::reference_internal,                 \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("name"))                                             \
+          ::py::return_value_policy::reference_internal,                       \
+          ::py::arg("index"),                                                  \
+          ::py::arg("name"))                                                   \
       .def(                                                                    \
           "setDofName",                                                        \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
@@ -662,59 +663,59 @@
               bool preserveName) -> const std::string& {                       \
             return self->setDofName(index, name, preserveName);                \
           },                                                                   \
-          ::pybind11::return_value_policy::reference_internal,                 \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("name"),                                             \
-          ::pybind11::arg("preserveName"))                                     \
+          ::py::return_value_policy::reference_internal,                       \
+          ::py::arg("index"),                                                  \
+          ::py::arg("name"),                                                   \
+          ::py::arg("preserveName"))                                           \
       .def(                                                                    \
           "preserveDofName",                                                   \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               bool preserve) { self->preserveDofName(index, preserve); },      \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("preserve"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("preserve"))                                               \
       .def(                                                                    \
           "isDofNamePreserved",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self, size_t index)   \
               -> bool { return self->isDofNamePreserved(index); },             \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "getDofName",                                                        \
           +[](const dart::dynamics::GenericJoint<space>* self, size_t index)   \
               -> const std::string& { return self->getDofName(index); },       \
-          ::pybind11::return_value_policy::reference_internal,                 \
-          ::pybind11::arg("index"))                                            \
+          ::py::return_value_policy::reference_internal,                       \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "getIndexInSkeleton",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self, size_t index)   \
               -> size_t { return self->getIndexInSkeleton(index); },           \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "getIndexInTree",                                                    \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               size_t index) -> size_t { return self->getIndexInTree(index); }, \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setCommand",                                                        \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               std::size_t index,                                               \
               double command) { self->setCommand(index, command); },           \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("command"))                                          \
+          ::py::arg("index"),                                                  \
+          ::py::arg("command"))                                                \
       .def(                                                                    \
           "getCommand",                                                        \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getCommand(index);                                    \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setCommands",                                                       \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& commands) {                               \
             self->setCommands(commands);                                       \
           },                                                                   \
-          ::pybind11::arg("commands"))                                         \
+          ::py::arg("commands"))                                               \
       .def(                                                                    \
           "getCommands",                                                       \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -729,22 +730,22 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               std::size_t index,                                               \
               double position) { self->setPosition(index, position); },        \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("position"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("position"))                                               \
       .def(                                                                    \
           "getPosition",                                                       \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getPosition(index);                                   \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setPositions",                                                      \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& positions) {                              \
             self->setPositions(positions);                                     \
           },                                                                   \
-          ::pybind11::arg("positions"))                                        \
+          ::py::arg("positions"))                                              \
       .def(                                                                    \
           "getPositions",                                                      \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -756,22 +757,22 @@
               double position) {                                               \
             self->setPositionLowerLimit(index, position);                      \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("position"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("position"))                                               \
       .def(                                                                    \
           "getPositionLowerLimit",                                             \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getPositionLowerLimit(index);                         \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setPositionLowerLimits",                                            \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& lowerLimits) {                            \
             self->setPositionLowerLimits(lowerLimits);                         \
           },                                                                   \
-          ::pybind11::arg("lowerLimits"))                                      \
+          ::py::arg("lowerLimits"))                                            \
       .def(                                                                    \
           "getPositionLowerLimits",                                            \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -783,22 +784,22 @@
               double position) {                                               \
             self->setPositionUpperLimit(index, position);                      \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("position"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("position"))                                               \
       .def(                                                                    \
           "getPositionUpperLimit",                                             \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getPositionUpperLimit(index);                         \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setPositionUpperLimits",                                            \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& upperLimits) {                            \
             self->setPositionUpperLimits(upperLimits);                         \
           },                                                                   \
-          ::pybind11::arg("upperLimits"))                                      \
+          ::py::arg("upperLimits"))                                            \
       .def(                                                                    \
           "getPositionUpperLimits",                                            \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -809,13 +810,13 @@
               std::size_t index) -> bool {                                     \
             return self->hasPositionLimit(index);                              \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "resetPosition",                                                     \
           +[](dart::dynamics::GenericJoint<space>* self, std::size_t index) {  \
             self->resetPosition(index);                                        \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "resetPositions",                                                    \
           +[](dart::dynamics::GenericJoint<space>* self) {                     \
@@ -826,22 +827,22 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double initial) { self->setInitialPosition(index, initial); },   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("initial"))                                          \
+          ::py::arg("index"),                                                  \
+          ::py::arg("initial"))                                                \
       .def(                                                                    \
           "getInitialPosition",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getInitialPosition(index);                            \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setInitialPositions",                                               \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& initial) {                                \
             self->setInitialPositions(initial);                                \
           },                                                                   \
-          ::pybind11::arg("initial"))                                          \
+          ::py::arg("initial"))                                                \
       .def(                                                                    \
           "getInitialPositions",                                               \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -852,42 +853,42 @@
               const dart::dynamics::GenericJoint<space>::Vector& positions) {  \
             self->setPositionsStatic(positions);                               \
           },                                                                   \
-          ::pybind11::arg("positions"))                                        \
+          ::py::arg("positions"))                                              \
       .def(                                                                    \
           "setVelocitiesStatic",                                               \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::Vector& velocities) { \
             self->setVelocitiesStatic(velocities);                             \
           },                                                                   \
-          ::pybind11::arg("velocities"))                                       \
+          ::py::arg("velocities"))                                             \
       .def(                                                                    \
           "setAccelerationsStatic",                                            \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const dart::dynamics::GenericJoint<space>::Vector& accels) {     \
             self->setAccelerationsStatic(accels);                              \
           },                                                                   \
-          ::pybind11::arg("accels"))                                           \
+          ::py::arg("accels"))                                                 \
       .def(                                                                    \
           "setVelocity",                                                       \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               std::size_t index,                                               \
               double velocity) { self->setVelocity(index, velocity); },        \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("velocity"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("velocity"))                                               \
       .def(                                                                    \
           "getVelocity",                                                       \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getVelocity(index);                                   \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setVelocities",                                                     \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& velocities) {                             \
             self->setVelocities(velocities);                                   \
           },                                                                   \
-          ::pybind11::arg("velocities"))                                       \
+          ::py::arg("velocities"))                                             \
       .def(                                                                    \
           "getVelocities",                                                     \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -899,22 +900,22 @@
               double velocity) {                                               \
             self->setVelocityLowerLimit(index, velocity);                      \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("velocity"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("velocity"))                                               \
       .def(                                                                    \
           "getVelocityLowerLimit",                                             \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getVelocityLowerLimit(index);                         \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setVelocityLowerLimits",                                            \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& lowerLimits) {                            \
             self->setVelocityLowerLimits(lowerLimits);                         \
           },                                                                   \
-          ::pybind11::arg("lowerLimits"))                                      \
+          ::py::arg("lowerLimits"))                                            \
       .def(                                                                    \
           "getVelocityLowerLimits",                                            \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -926,22 +927,22 @@
               double velocity) {                                               \
             self->setVelocityUpperLimit(index, velocity);                      \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("velocity"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("velocity"))                                               \
       .def(                                                                    \
           "getVelocityUpperLimit",                                             \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getVelocityUpperLimit(index);                         \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setVelocityUpperLimits",                                            \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& upperLimits) {                            \
             self->setVelocityUpperLimits(upperLimits);                         \
           },                                                                   \
-          ::pybind11::arg("upperLimits"))                                      \
+          ::py::arg("upperLimits"))                                            \
       .def(                                                                    \
           "getVelocityUpperLimits",                                            \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -951,7 +952,7 @@
           +[](dart::dynamics::GenericJoint<space>* self, std::size_t index) {  \
             self->resetVelocity(index);                                        \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "resetVelocities",                                                   \
           +[](dart::dynamics::GenericJoint<space>*                             \
@@ -961,22 +962,22 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double initial) { self->setInitialVelocity(index, initial); },   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("initial"))                                          \
+          ::py::arg("index"),                                                  \
+          ::py::arg("initial"))                                                \
       .def(                                                                    \
           "getInitialVelocity",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getInitialVelocity(index);                            \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setInitialVelocities",                                              \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& initial) {                                \
             self->setInitialVelocities(initial);                               \
           },                                                                   \
-          ::pybind11::arg("initial"))                                          \
+          ::py::arg("initial"))                                                \
       .def(                                                                    \
           "getInitialVelocities",                                              \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -988,22 +989,22 @@
               double acceleration) {                                           \
             self->setAcceleration(index, acceleration);                        \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("acceleration"))                                     \
+          ::py::arg("index"),                                                  \
+          ::py::arg("acceleration"))                                           \
       .def(                                                                    \
           "getAcceleration",                                                   \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getAcceleration(index);                               \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setAccelerations",                                                  \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& accelerations) {                          \
             self->setAccelerations(accelerations);                             \
           },                                                                   \
-          ::pybind11::arg("accelerations"))                                    \
+          ::py::arg("accelerations"))                                          \
       .def(                                                                    \
           "getAccelerations",                                                  \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -1015,22 +1016,22 @@
               double acceleration) {                                           \
             self->setAccelerationLowerLimit(index, acceleration);              \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("acceleration"))                                     \
+          ::py::arg("index"),                                                  \
+          ::py::arg("acceleration"))                                           \
       .def(                                                                    \
           "getAccelerationLowerLimit",                                         \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getAccelerationLowerLimit(index);                     \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setAccelerationLowerLimits",                                        \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& lowerLimits) {                            \
             self->setAccelerationLowerLimits(lowerLimits);                     \
           },                                                                   \
-          ::pybind11::arg("lowerLimits"))                                      \
+          ::py::arg("lowerLimits"))                                            \
       .def(                                                                    \
           "getAccelerationLowerLimits",                                        \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -1044,22 +1045,22 @@
               double acceleration) {                                           \
             self->setAccelerationUpperLimit(index, acceleration);              \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("acceleration"))                                     \
+          ::py::arg("index"),                                                  \
+          ::py::arg("acceleration"))                                           \
       .def(                                                                    \
           "getAccelerationUpperLimit",                                         \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getAccelerationUpperLimit(index);                     \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setAccelerationUpperLimits",                                        \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& upperLimits) {                            \
             self->setAccelerationUpperLimits(upperLimits);                     \
           },                                                                   \
-          ::pybind11::arg("upperLimits"))                                      \
+          ::py::arg("upperLimits"))                                            \
       .def(                                                                    \
           "getAccelerationUpperLimits",                                        \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -1076,18 +1077,18 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               std::size_t index,                                               \
               double force) { self->setForce(index, force); },                 \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("force"))                                            \
+          ::py::arg("index"),                                                  \
+          ::py::arg("force"))                                                  \
       .def(                                                                    \
           "getForce",                                                          \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double { return self->getForce(index); },  \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setForces",                                                         \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& forces) { self->setForces(forces); },     \
-          ::pybind11::arg("forces"))                                           \
+          ::py::arg("forces"))                                                 \
       .def(                                                                    \
           "getForces",                                                         \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -1097,22 +1098,22 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double force) { self->setForceLowerLimit(index, force); },       \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("force"))                                            \
+          ::py::arg("index"),                                                  \
+          ::py::arg("force"))                                                  \
       .def(                                                                    \
           "getForceLowerLimit",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getForceLowerLimit(index);                            \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setForceLowerLimits",                                               \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& lowerLimits) {                            \
             self->setForceLowerLimits(lowerLimits);                            \
           },                                                                   \
-          ::pybind11::arg("lowerLimits"))                                      \
+          ::py::arg("lowerLimits"))                                            \
       .def(                                                                    \
           "getForceLowerLimits",                                               \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -1122,20 +1123,20 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double force) { self->setForceUpperLimit(index, force); },       \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("force"))                                            \
+          ::py::arg("index"),                                                  \
+          ::py::arg("force"))                                                  \
       .def(                                                                    \
           "getForceUpperLimit",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self, size_t index)   \
               -> double { return self->getForceUpperLimit(index); },           \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setForceUpperLimits",                                               \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               const Eigen::VectorXd& upperLimits) {                            \
             self->setForceUpperLimits(upperLimits);                            \
           },                                                                   \
-          ::pybind11::arg("upperLimits"))                                      \
+          ::py::arg("upperLimits"))                                            \
       .def(                                                                    \
           "getForceUpperLimits",                                               \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -1151,15 +1152,15 @@
               double velocityChange) {                                         \
             self->setVelocityChange(index, velocityChange);                    \
           },                                                                   \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("velocityChange"))                                   \
+          ::py::arg("index"),                                                  \
+          ::py::arg("velocityChange"))                                         \
       .def(                                                                    \
           "getVelocityChange",                                                 \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getVelocityChange(index);                             \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "resetVelocityChanges",                                              \
           +[](dart::dynamics::GenericJoint<space>* self) {                     \
@@ -1170,15 +1171,15 @@
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               std::size_t index,                                               \
               double impulse) { self->setConstraintImpulse(index, impulse); }, \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("impulse"))                                          \
+          ::py::arg("index"),                                                  \
+          ::py::arg("impulse"))                                                \
       .def(                                                                    \
           "getConstraintImpulse",                                              \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getConstraintImpulse(index);                          \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "resetConstraintImpulses",                                           \
           +[](dart::dynamics::GenericJoint<space>* self) {                     \
@@ -1189,13 +1190,13 @@
           +[](dart::dynamics::GenericJoint<space>* self, double dt) {          \
             self->integratePositions(dt);                                      \
           },                                                                   \
-          ::pybind11::arg("dt"))                                               \
+          ::py::arg("dt"))                                                     \
       .def(                                                                    \
           "integrateVelocities",                                               \
           +[](dart::dynamics::GenericJoint<space>* self, double dt) {          \
             self->integrateVelocities(dt);                                     \
           },                                                                   \
-          ::pybind11::arg("dt"))                                               \
+          ::py::arg("dt"))                                                     \
       .def(                                                                    \
           "getPositionDifferences",                                            \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
@@ -1203,8 +1204,8 @@
               const Eigen::VectorXd& q1) -> Eigen::VectorXd {                  \
             return self->getPositionDifferences(q2, q1);                       \
           },                                                                   \
-          ::pybind11::arg("q2"),                                               \
-          ::pybind11::arg("q1"))                                               \
+          ::py::arg("q2"),                                                     \
+          ::py::arg("q1"))                                                     \
       .def(                                                                    \
           "getPositionDifferencesStatic",                                      \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
@@ -1213,64 +1214,64 @@
               -> dart::dynamics::GenericJoint<space>::Vector {                 \
             return self->getPositionDifferencesStatic(q2, q1);                 \
           },                                                                   \
-          ::pybind11::arg("q2"),                                               \
-          ::pybind11::arg("q1"))                                               \
+          ::py::arg("q2"),                                                     \
+          ::py::arg("q1"))                                                     \
       .def(                                                                    \
           "setSpringStiffness",                                                \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double k) { self->setSpringStiffness(index, k); },               \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("k"))                                                \
+          ::py::arg("index"),                                                  \
+          ::py::arg("k"))                                                      \
       .def(                                                                    \
           "getSpringStiffness",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getSpringStiffness(index);                            \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setRestPosition",                                                   \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double q0) { self->setRestPosition(index, q0); },                \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("q0"))                                               \
+          ::py::arg("index"),                                                  \
+          ::py::arg("q0"))                                                     \
       .def(                                                                    \
           "getRestPosition",                                                   \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getRestPosition(index);                               \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setDampingCoefficient",                                             \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double d) { self->setDampingCoefficient(index, d); },            \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("d"))                                                \
+          ::py::arg("index"),                                                  \
+          ::py::arg("d"))                                                      \
       .def(                                                                    \
           "getDampingCoefficient",                                             \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getDampingCoefficient(index);                         \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "setCoulombFriction",                                                \
           +[](dart::dynamics::GenericJoint<space>* self,                       \
               size_t index,                                                    \
               double friction) { self->setCoulombFriction(index, friction); }, \
-          ::pybind11::arg("index"),                                            \
-          ::pybind11::arg("friction"))                                         \
+          ::py::arg("index"),                                                  \
+          ::py::arg("friction"))                                               \
       .def(                                                                    \
           "getCoulombFriction",                                                \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
               std::size_t index) -> double {                                   \
             return self->getCoulombFriction(index);                            \
           },                                                                   \
-          ::pybind11::arg("index"))                                            \
+          ::py::arg("index"))                                                  \
       .def(                                                                    \
           "computePotentialEnergy",                                            \
           +[](const dart::dynamics::GenericJoint<space>* self) -> double {     \
@@ -1292,7 +1293,7 @@
               const Eigen::VectorXd& _positions) -> dart::math::Jacobian {     \
             return self->getRelativeJacobian(_positions);                      \
           },                                                                   \
-          ::pybind11::arg("positions"))                                        \
+          ::py::arg("positions"))                                              \
       .def(                                                                    \
           "getRelativeJacobianStatic",                                         \
           +[](const dart::dynamics::GenericJoint<space>* self,                 \
@@ -1300,7 +1301,7 @@
               -> dart::dynamics::GenericJoint<space>::JacobianMatrix {         \
             return self->getRelativeJacobianStatic(positions);                 \
           },                                                                   \
-          ::pybind11::arg("positions"))                                        \
+          ::py::arg("positions"))                                              \
       .def(                                                                    \
           "getRelativeJacobianTimeDeriv",                                      \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
@@ -1313,7 +1314,7 @@
 namespace dart {
 namespace python {
 
-void GenericJoint(pybind11::module& m)
+void GenericJoint(py::module& m)
 {
   DARTPY_DEFINE_GENERICJOINT(R1, ::dart::math::RealVectorSpace<1>);
   DARTPY_DEFINE_GENERICJOINT(R2, ::dart::math::RealVectorSpace<2>);

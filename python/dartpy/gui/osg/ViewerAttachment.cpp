@@ -42,9 +42,9 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ViewerAttachment(pybind11::module& m)
+void ViewerAttachment(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::ViewerAttachment,
       ::osg::ref_ptr<dart::gui::osg::ViewerAttachment>>(m, "ViewerAttachment")
       .def("refresh", +[](dart::gui::osg::ViewerAttachment* self) {

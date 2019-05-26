@@ -36,36 +36,38 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void ScrewJoint(pybind11::module& m)
+void ScrewJoint(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::ScrewJoint::UniqueProperties>(
+  ::py::class_<dart::dynamics::ScrewJoint::UniqueProperties>(
       m, "ScrewJointUniqueProperties")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<const Eigen::Vector3d&>(), ::pybind11::arg("axis"))
+      .def(::py::init<>())
+      .def(::py::init<const Eigen::Vector3d&>(), ::py::arg("axis"))
       .def(
-          ::pybind11::init<const Eigen::Vector3d&, double>(),
-          ::pybind11::arg("axis"),
-          ::pybind11::arg("pitch"));
+          ::py::init<const Eigen::Vector3d&, double>(),
+          ::py::arg("axis"),
+          ::py::arg("pitch"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::ScrewJoint::Properties,
       dart::dynamics::GenericJoint<math::R1Space>::Properties,
       dart::dynamics::ScrewJoint::UniqueProperties>(m, "ScrewJointProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::R1Space>::Properties&>(),
-          ::pybind11::arg("genericJointProperties"))
+          ::py::arg("genericJointProperties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::dynamics::GenericJoint<
                   dart::math::R1Space>::Properties&,
               const dart::dynamics::ScrewJoint::UniqueProperties&>(),
-          ::pybind11::arg("genericJointProperties"),
-          ::pybind11::arg("revoluteProperties"))
+          ::py::arg("genericJointProperties"),
+          ::py::arg("revoluteProperties"))
       .def_readwrite(
           "mAxis", &dart::dynamics::detail::ScrewJointUniqueProperties::mAxis)
       .def_readwrite(
@@ -74,7 +76,7 @@ void ScrewJoint(pybind11::module& m)
 
   DARTPY_DEFINE_JOINT_COMMON_BASE(ScrewJoint, R1Space)
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::ScrewJoint,
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::ScrewJoint,
@@ -96,7 +98,7 @@ void ScrewJoint(pybind11::module& m)
                       dart::math::RealVectorSpace<1>>>::Aspect* aspect) {
             self->setScrewJointAspect(aspect);
           },
-          ::pybind11::arg("aspect"))
+          ::py::arg("aspect"))
       .def(
           "removeScrewJointAspect",
           +[](dart::dynamics::ScrewJoint* self) {
@@ -118,14 +120,14 @@ void ScrewJoint(pybind11::module& m)
               const dart::dynamics::ScrewJoint::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProperties",
           +[](dart::dynamics::ScrewJoint* self,
               const dart::dynamics::ScrewJoint::UniqueProperties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::ScrewJoint* self,
@@ -135,7 +137,7 @@ void ScrewJoint(pybind11::module& m)
                   dart::dynamics::GenericJoint<
                       dart::math::RealVectorSpace<1>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getScrewJointProperties",
           +[](const dart::dynamics::ScrewJoint* self)
@@ -148,35 +150,35 @@ void ScrewJoint(pybind11::module& m)
               const dart::dynamics::ScrewJoint* _otherJoint) {
             self->copy(_otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "getType",
           +[](const dart::dynamics::ScrewJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::ScrewJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setAxis",
           +[](dart::dynamics::ScrewJoint* self, const Eigen::Vector3d& _axis) {
             self->setAxis(_axis);
           },
-          ::pybind11::arg("axis"))
+          ::py::arg("axis"))
       .def(
           "getAxis",
           +[](const dart::dynamics::ScrewJoint* self)
               -> const Eigen::Vector3d& { return self->getAxis(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "setPitch",
           +[](dart::dynamics::ScrewJoint* self, double _pitch) {
             self->setPitch(_pitch);
           },
-          ::pybind11::arg("pitch"))
+          ::py::arg("pitch"))
       .def(
           "getPitch",
           +[](const dart::dynamics::ScrewJoint* self) -> double {
@@ -191,14 +193,14 @@ void ScrewJoint(pybind11::module& m)
                   dart::math::RealVectorSpace<1>>::JacobianMatrix {
             return self->getRelativeJacobianStatic(positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::
                     string& {
                       return dart::dynamics::ScrewJoint::getStaticType();
                     },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

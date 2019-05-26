@@ -36,12 +36,14 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void WeldJoint(pybind11::module& m)
+void WeldJoint(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::WeldJoint,
       dart::dynamics::ZeroDofJoint,
       std::shared_ptr<dart::dynamics::WeldJoint>>(m, "WeldJoint")
@@ -56,30 +58,30 @@ void WeldJoint(pybind11::module& m)
           +[](const dart::dynamics::WeldJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::WeldJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setTransformFromParentBodyNode",
           +[](dart::dynamics::WeldJoint* self, const Eigen::Isometry3d& _T) {
             self->setTransformFromParentBodyNode(_T);
           },
-          ::pybind11::arg("T"))
+          ::py::arg("T"))
       .def(
           "setTransformFromChildBodyNode",
           +[](dart::dynamics::WeldJoint* self, const Eigen::Isometry3d& _T) {
             self->setTransformFromChildBodyNode(_T);
           },
-          ::pybind11::arg("T"))
+          ::py::arg("T"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::WeldJoint::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

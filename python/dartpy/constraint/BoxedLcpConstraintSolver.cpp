@@ -33,28 +33,30 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void BoxedLcpConstraintSolver(pybind11::module& m)
+void BoxedLcpConstraintSolver(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::BoxedLcpConstraintSolver,
       dart::constraint::ConstraintSolver,
       std::shared_ptr<dart::constraint::BoxedLcpConstraintSolver>>(
       m, "BoxedLcpConstraintSolver")
-      .def(::pybind11::init<double>(), ::pybind11::arg("timeStep"))
+      .def(::py::init<double>(), ::py::arg("timeStep"))
       .def(
-          ::pybind11::init<double, dart::constraint::BoxedLcpSolverPtr>(),
-          ::pybind11::arg("timeStep"),
-          ::pybind11::arg("boxedLcpSolver"))
+          ::py::init<double, dart::constraint::BoxedLcpSolverPtr>(),
+          ::py::arg("timeStep"),
+          ::py::arg("boxedLcpSolver"))
       .def(
           "setBoxedLcpSolver",
           +[](dart::constraint::BoxedLcpConstraintSolver* self,
               dart::constraint::BoxedLcpSolverPtr lcpSolver) {
             self->setBoxedLcpSolver(lcpSolver);
           },
-          ::pybind11::arg("lcpSolver"))
+          ::py::arg("lcpSolver"))
       .def(
           "getBoxedLcpSolver",
           +[](const dart::constraint::BoxedLcpConstraintSolver* self)

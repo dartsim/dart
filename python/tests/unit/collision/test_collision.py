@@ -3,7 +3,7 @@ import pytest
 import dartpy as dart
 
 
-def test_create_collision_groups():
+def collision_groups_tester(cd):
     size = [1, 1, 1]
     pos1 = [0, 0, 0]
     pos2 = [0.5, 0, 0]
@@ -50,6 +50,22 @@ def test_create_collision_groups():
     group.collide(option, result)
     assert result.isCollision()
     assert result.getNumContacts() is not 0
+
+
+def test_collision_groups():
+    cd = dart.collision.FCLCollisionDetector()
+    collision_groups_tester(cd)
+
+    cd = dart.collision.DARTCollisionDetector()
+    collision_groups_tester(cd)
+
+    if hasattr(dart.collision, "BulletCollisionDetector"):
+        cd = dart.collision.BulletCollisionDetector()
+        collision_groups_tester(cd)
+
+    if hasattr(dart.collision, "OdeCollisionDetector"):
+        cd = dart.collision.OdeCollisionDetector()
+        collision_groups_tester(cd)
 
 
 if __name__ == "__main__":

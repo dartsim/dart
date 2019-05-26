@@ -33,13 +33,15 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Contact(pybind11::module& m)
+void Contact(py::module& m)
 {
-  ::pybind11::class_<dart::collision::Contact>(m, "Contact")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::collision::Contact>(m, "Contact")
+      .def(::py::init<>())
       .def_static(
           "getNormalEpsilon",
           +[]() -> double {
@@ -55,13 +57,13 @@ void Contact(pybind11::module& m)
           +[](const Eigen::Vector3d& normal) -> bool {
             return dart::collision::Contact::isZeroNormal(normal);
           },
-          ::pybind11::arg("normal"))
+          ::py::arg("normal"))
       .def_static(
           "isNonZeroNormal",
           +[](const Eigen::Vector3d& normal) -> bool {
             return dart::collision::Contact::isNonZeroNormal(normal);
           },
-          ::pybind11::arg("normal"))
+          ::py::arg("normal"))
       .def_readwrite("point", &dart::collision::Contact::point)
       .def_readwrite("normal", &dart::collision::Contact::normal)
       .def_readwrite("force", &dart::collision::Contact::force)

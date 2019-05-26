@@ -51,6 +51,7 @@
   * Added constraint APIs: [#1333](https://github.com/dartsim/dart/pull/1333)
   * Added BallJoint, RevoluteJoint, joint properties, and chain tutorial (incomplete): [#1335](https://github.com/dartsim/dart/pull/1335)
   * Added all the joints: [#1337](https://github.com/dartsim/dart/pull/1337)
+  * Added DART, Bullet, Ode collision detectors: [#1339](https://github.com/dartsim/dart/pull/1339)
 
 ### [DART 6.8.5 (2019-05-26)](https://github.com/dartsim/dart/milestone/57?closed=1)
 

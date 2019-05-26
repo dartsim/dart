@@ -36,6 +36,8 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
@@ -68,77 +70,77 @@ public:
   }
 };
 
-void Function(pybind11::module& m)
+void Function(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::Function,
       PyFunction,
       std::shared_ptr<dart::optimizer::Function>>(m, "Function")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<const std::string&>(), ::pybind11::arg("name"))
+      .def(::py::init<>())
+      .def(::py::init<const std::string&>(), ::py::arg("name"))
       .def(
           "setName",
           +[](dart::optimizer::Function* self, const std::string& newName) {
             self->setName(newName);
           },
-          ::pybind11::arg("newName"))
+          ::py::arg("newName"))
       .def(
           "getName",
           +[](const dart::optimizer::Function* self) -> const std::string& {
             return self->getName();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "eval",
           +[](dart::optimizer::Function* self,
               const Eigen::VectorXd& x) -> double { return self->eval(x); },
-          ::pybind11::arg("x"))
+          ::py::arg("x"))
       .def(
           "evalGradient",
           +[](dart::optimizer::Function* self,
               const Eigen::VectorXd& _x,
               Eigen::VectorXd& _grad) { self->evalGradient(_x, _grad); },
-          ::pybind11::arg("x"),
-          ::pybind11::arg("grad"));
+          ::py::arg("x"),
+          ::py::arg("grad"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::NullFunction,
       dart::optimizer::Function,
       std::shared_ptr<dart::optimizer::NullFunction>>(m, "NullFunction")
-      //      .def(::pybind11::init<>())
-      //      .def(::pybind11::init<const std::string &>(),
-      //      ::pybind11::arg("name"))
+      //      .def(::py::init<>())
+      //      .def(::py::init<const std::string &>(),
+      //      ::py::arg("name"))
       .def(
           "eval",
           +[](dart::optimizer::NullFunction* self,
               const Eigen::VectorXd& _arg0_) -> double {
             return self->eval(_arg0_);
           },
-          ::pybind11::arg("arg0_"));
+          ::py::arg("arg0_"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::MultiFunction,
       std::shared_ptr<dart::optimizer::MultiFunction>>(m, "MultiFunction");
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::ModularFunction,
       dart::optimizer::Function,
       std::shared_ptr<dart::optimizer::ModularFunction>>(m, "ModularFunction")
-      //      .def(::pybind11::init<>())
-      //      .def(::pybind11::init<const std::string &>(),
-      //      ::pybind11::arg("name"))
+      //      .def(::py::init<>())
+      //      .def(::py::init<const std::string &>(),
+      //      ::py::arg("name"))
       .def(
           "eval",
           +[](dart::optimizer::ModularFunction* self,
               const Eigen::VectorXd& _x) -> double { return self->eval(_x); },
-          ::pybind11::arg("x"))
+          ::py::arg("x"))
       .def(
           "setCostFunction",
           +[](dart::optimizer::ModularFunction* self,
               dart::optimizer::CostFunction _cost) {
             self->setCostFunction(_cost);
           },
-          ::pybind11::arg("cost"))
+          ::py::arg("cost"))
       .def(
           "clearCostFunction",
           +[](dart::optimizer::ModularFunction* self) {
@@ -149,14 +151,14 @@ void Function(pybind11::module& m)
           +[](dart::optimizer::ModularFunction* self, bool _printWarning) {
             self->clearCostFunction(_printWarning);
           },
-          ::pybind11::arg("printWarning"))
+          ::py::arg("printWarning"))
       .def(
           "setGradientFunction",
           +[](dart::optimizer::ModularFunction* self,
               dart::optimizer::GradientFunction _gradient) {
             self->setGradientFunction(_gradient);
           },
-          ::pybind11::arg("gradient"))
+          ::py::arg("gradient"))
       .def(
           "clearGradientFunction",
           +[](dart::optimizer::ModularFunction* self) {
@@ -168,7 +170,7 @@ void Function(pybind11::module& m)
               dart::optimizer::HessianFunction _hessian) {
             self->setHessianFunction(_hessian);
           },
-          ::pybind11::arg("hessian"))
+          ::py::arg("hessian"))
       .def("clearHessianFunction", +[](dart::optimizer::ModularFunction* self) {
         self->clearHessianFunction();
       });

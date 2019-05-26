@@ -32,12 +32,14 @@
 
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void World(pybind11::module& sm);
+void World(py::module& sm);
 
-void dart_simulation(pybind11::module& m)
+void dart_simulation(py::module& m)
 {
   auto sm = m.def_submodule("simulation");
 

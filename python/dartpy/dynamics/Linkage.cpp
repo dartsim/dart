@@ -35,30 +35,32 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Linkage(pybind11::module& m)
+void Linkage(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::Linkage,
       dart::dynamics::ReferentialSkeleton,
       std::shared_ptr<dart::dynamics::Linkage>>(m, "Linkage")
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](const dart::dynamics::Linkage::Criteria& criteria)
                   -> dart::dynamics::LinkagePtr {
                 return dart::dynamics::Linkage::create(criteria);
               }),
-          ::pybind11::arg("criteria"))
+          ::py::arg("criteria"))
       .def(
-          ::pybind11::init(
+          ::py::init(
               +[](const dart::dynamics::Linkage::Criteria& criteria,
                   const std::string& name) -> dart::dynamics::LinkagePtr {
                 return dart::dynamics::Linkage::create(criteria, name);
               }),
-          ::pybind11::arg("criteria"),
-          ::pybind11::arg("name"))
+          ::py::arg("criteria"),
+          ::py::arg("name"))
       .def(
           "cloneLinkage",
           +[](const dart::dynamics::Linkage* self)
@@ -69,14 +71,14 @@ void Linkage(pybind11::module& m)
               const std::string& cloneName) -> dart::dynamics::LinkagePtr {
             return self->cloneLinkage(cloneName);
           },
-          ::pybind11::arg("cloneName"))
+          ::py::arg("cloneName"))
       .def(
           "cloneMetaSkeleton",
           +[](const dart::dynamics::Linkage* self,
               const std::string& cloneName) -> dart::dynamics::MetaSkeletonPtr {
             return self->cloneMetaSkeleton(cloneName);
           },
-          ::pybind11::arg("cloneName"))
+          ::py::arg("cloneName"))
       .def(
           "isAssembled",
           +[](const dart::dynamics::Linkage* self) -> bool {
@@ -89,7 +91,7 @@ void Linkage(pybind11::module& m)
         self->satisfyCriteria();
       });
 
-  ::pybind11::class_<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
+  ::py::class_<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
       .def(
           "satisfy",
           +[](const dart::dynamics::Linkage::Criteria* self)
@@ -101,7 +103,7 @@ void Linkage(pybind11::module& m)
       .def_readwrite(
           "mTerminals", &dart::dynamics::Linkage::Criteria::mTerminals);
 
-  ::pybind11::enum_<dart::dynamics::Linkage::Criteria::ExpansionPolicy>(
+  ::py::enum_<dart::dynamics::Linkage::Criteria::ExpansionPolicy>(
       m.attr("LinkageCriteria"), "ExpansionPolicy")
       .value(
           "INCLUDE",
@@ -117,42 +119,38 @@ void Linkage(pybind11::module& m)
           dart::dynamics::Linkage::Criteria::ExpansionPolicy::UPSTREAM)
       .export_values();
 
-  ::pybind11::class_<dart::dynamics::Linkage::Criteria::Terminal>(
+  ::py::class_<dart::dynamics::Linkage::Criteria::Terminal>(
       m.attr("LinkageCriteria"), "Terminal")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
+      .def(::py::init<dart::dynamics::BodyNode*>(), ::py::arg("terminal"))
       .def(
-          ::pybind11::init<dart::dynamics::BodyNode*>(),
-          ::pybind11::arg("terminal"))
-      .def(
-          ::pybind11::init<dart::dynamics::BodyNode*, bool>(),
-          ::pybind11::arg("terminal"),
-          ::pybind11::arg("inclusive"))
+          ::py::init<dart::dynamics::BodyNode*, bool>(),
+          ::py::arg("terminal"),
+          ::py::arg("inclusive"))
       .def_readwrite(
           "mTerminal", &dart::dynamics::Linkage::Criteria::Terminal::mTerminal)
       .def_readwrite(
           "mInclusive",
           &dart::dynamics::Linkage::Criteria::Terminal::mInclusive);
 
-  ::pybind11::class_<dart::dynamics::Linkage::Criteria::Target>(
+  ::py::class_<dart::dynamics::Linkage::Criteria::Target>(
       m.attr("LinkageCriteria"), "Target")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
+      .def(::py::init<dart::dynamics::BodyNode*>(), ::py::arg("target"))
       .def(
-          ::pybind11::init<dart::dynamics::BodyNode*>(),
-          ::pybind11::arg("target"))
-      .def(
-          ::pybind11::init<
+          ::py::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::Linkage::Criteria::ExpansionPolicy>(),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("policy"))
+          ::py::arg("target"),
+          ::py::arg("policy"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::Linkage::Criteria::ExpansionPolicy,
               bool>(),
-          ::pybind11::arg("target"),
-          ::pybind11::arg("policy"),
-          ::pybind11::arg("chain"))
+          ::py::arg("target"),
+          ::py::arg("policy"),
+          ::py::arg("chain"))
       .def_readwrite("mNode", &dart::dynamics::Linkage::Criteria::Target::mNode)
       .def_readwrite(
           "mPolicy", &dart::dynamics::Linkage::Criteria::Target::mPolicy)

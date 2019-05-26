@@ -33,17 +33,19 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void FCLCollisionDetector(pybind11::module& m)
+void FCLCollisionDetector(py::module& m)
 {
   auto fclCollisionDetector
-      = ::pybind11::class_<
+      = ::py::class_<
             dart::collision::FCLCollisionDetector,
             std::shared_ptr<dart::collision::FCLCollisionDetector>,
             dart::collision::CollisionDetector>(m, "FCLCollisionDetector")
-            .def(::pybind11::init(
+            .def(::py::init(
                 +[]()
                     -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
                   return dart::collision::FCLCollisionDetector::create();
@@ -58,7 +60,7 @@ void FCLCollisionDetector(pybind11::module& m)
                 "getType",
                 +[](const dart::collision::FCLCollisionDetector* self)
                     -> const std::string& { return self->getType(); },
-                ::pybind11::return_value_policy::reference_internal)
+                ::py::return_value_policy::reference_internal)
             .def(
                 "createCollisionGroup",
                 +[](dart::collision::FCLCollisionDetector* self)
@@ -70,7 +72,7 @@ void FCLCollisionDetector(pybind11::module& m)
                 +[](dart::collision::FCLCollisionDetector* self,
                     dart::collision::FCLCollisionDetector::PrimitiveShape
                         type) { self->setPrimitiveShapeType(type); },
-                ::pybind11::arg("type"))
+                ::py::arg("type"))
             .def(
                 "getPrimitiveShapeType",
                 +[](const dart::collision::FCLCollisionDetector* self)
@@ -84,7 +86,7 @@ void FCLCollisionDetector(pybind11::module& m)
                         ContactPointComputationMethod method) {
                   self->setContactPointComputationMethod(method);
                 },
-                ::pybind11::arg("method"))
+                ::py::arg("method"))
             .def(
                 "getContactPointComputationMethod",
                 +[](const dart::collision::FCLCollisionDetector* self)
@@ -97,9 +99,9 @@ void FCLCollisionDetector(pybind11::module& m)
                 +[]() -> const std::string& {
                   return dart::collision::FCLCollisionDetector::getStaticType();
                 },
-                ::pybind11::return_value_policy::reference_internal);
+                ::py::return_value_policy::reference_internal);
 
-  ::pybind11::enum_<dart::collision::FCLCollisionDetector::PrimitiveShape>(
+  ::py::enum_<dart::collision::FCLCollisionDetector::PrimitiveShape>(
       fclCollisionDetector, "PrimitiveShape")
       .value(
           "PRIMITIVE",
@@ -108,7 +110,7 @@ void FCLCollisionDetector(pybind11::module& m)
           "MESH", dart::collision::FCLCollisionDetector::PrimitiveShape::MESH)
       .export_values();
 
-  ::pybind11::enum_<
+  ::py::enum_<
       dart::collision::FCLCollisionDetector::ContactPointComputationMethod>(
       fclCollisionDetector, "ContactPointComputationMethod")
       .value(

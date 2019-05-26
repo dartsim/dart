@@ -42,9 +42,9 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DragAndDrop(pybind11::module& m)
+void DragAndDrop(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::DragAndDrop,
       dart::common::Observer,
       dart::common::Subject,
@@ -55,7 +55,7 @@ void DragAndDrop(pybind11::module& m)
           +[](dart::gui::osg::DragAndDrop* self, bool _obstructable) {
             self->setObstructable(_obstructable);
           },
-          ::pybind11::arg("obstructable"))
+          ::py::arg("obstructable"))
       .def(
           "isObstructable",
           +[](const dart::gui::osg::DragAndDrop* self) -> bool {
@@ -86,14 +86,14 @@ void DragAndDrop(pybind11::module& m)
           +[](dart::gui::osg::DragAndDrop* self, const Eigen::Vector3d& slope) {
             self->constrainToLine(slope);
           },
-          ::pybind11::arg("slope"))
+          ::py::arg("slope"))
       .def(
           "constrainToPlane",
           +[](dart::gui::osg::DragAndDrop* self,
               const Eigen::Vector3d& normal) {
             self->constrainToPlane(normal);
           },
-          ::pybind11::arg("normal"))
+          ::py::arg("normal"))
       .def(
           "isMoving",
           +[](const dart::gui::osg::DragAndDrop* self) -> bool {
@@ -105,7 +105,7 @@ void DragAndDrop(pybind11::module& m)
               dart::gui::osg::DragAndDrop::RotationOption option) {
             self->setRotationOption(option);
           },
-          ::pybind11::arg("option"))
+          ::py::arg("option"))
       .def(
           "getRotationOption",
           +[](const dart::gui::osg::DragAndDrop* self)
@@ -118,7 +118,7 @@ void DragAndDrop(pybind11::module& m)
               osgGA::GUIEventAdapter::ModKeyMask rotationModKey) {
             self->setRotationModKey(rotationModKey);
           },
-          ::pybind11::arg("rotationModKey"))
+          ::py::arg("rotationModKey"))
       .def(
           "getRotationModKey",
           +[](const dart::gui::osg::DragAndDrop* self)
@@ -128,7 +128,7 @@ void DragAndDrop(pybind11::module& m)
 
   auto attr = m.attr("DragAndDrop");
 
-  ::pybind11::enum_<dart::gui::osg::DragAndDrop::RotationOption>(
+  ::py::enum_<dart::gui::osg::DragAndDrop::RotationOption>(
       attr, "RotationOption")
       .value(
           "HOLD_MODKEY",
@@ -139,62 +139,60 @@ void DragAndDrop(pybind11::module& m)
           "ALWAYS_OFF", dart::gui::osg::DragAndDrop::RotationOption::ALWAYS_OFF)
       .export_values();
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::SimpleFrameDnD,
       dart::gui::osg::DragAndDrop,
       ::std::shared_ptr<dart::gui::osg::SimpleFrameDnD>>(m, "SimpleFrameDnD")
       .def(
-          ::pybind11::
-              init<dart::gui::osg::Viewer*, dart::dynamics::SimpleFrame*>(),
-          ::pybind11::arg("viewer"),
-          ::pybind11::arg("frame"))
+          ::py::init<dart::gui::osg::Viewer*, dart::dynamics::SimpleFrame*>(),
+          ::py::arg("viewer"),
+          ::py::arg("frame"))
       .def("move", +[](dart::gui::osg::SimpleFrameDnD* self) { self->move(); })
       .def("saveState", +[](dart::gui::osg::SimpleFrameDnD* self) {
         self->saveState();
       });
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::SimpleFrameShapeDnD,
       dart::gui::osg::SimpleFrameDnD,
       std::shared_ptr<dart::gui::osg::SimpleFrameShapeDnD>>(
       m, "SimpleFrameShapeDnD")
       .def(
-          ::pybind11::init<
+          ::py::init<
               dart::gui::osg::Viewer*,
               dart::dynamics::SimpleFrame*,
               dart::dynamics::Shape*>(),
-          ::pybind11::arg("viewer"),
-          ::pybind11::arg("frame"),
-          ::pybind11::arg("shape"))
+          ::py::arg("viewer"),
+          ::py::arg("frame"),
+          ::py::arg("shape"))
       .def("update", +[](dart::gui::osg::SimpleFrameShapeDnD* self) {
         self->update();
       });
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::BodyNodeDnD,
       dart::gui::osg::DragAndDrop,
       std::shared_ptr<dart::gui::osg::BodyNodeDnD>>(m, "BodyNodeDnD")
       .def(
-          ::pybind11::
-              init<dart::gui::osg::Viewer*, dart::dynamics::BodyNode*>(),
-          ::pybind11::arg("viewer"),
-          ::pybind11::arg("bn"))
+          ::py::init<dart::gui::osg::Viewer*, dart::dynamics::BodyNode*>(),
+          ::py::arg("viewer"),
+          ::py::arg("bn"))
       .def(
-          ::pybind11::
+          ::py::
               init<dart::gui::osg::Viewer*, dart::dynamics::BodyNode*, bool>(),
-          ::pybind11::arg("viewer"),
-          ::pybind11::arg("bn"),
-          ::pybind11::arg("useExternalIK"))
+          ::py::arg("viewer"),
+          ::py::arg("bn"),
+          ::py::arg("useExternalIK"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               dart::gui::osg::Viewer*,
               dart::dynamics::BodyNode*,
               bool,
               bool>(),
-          ::pybind11::arg("viewer"),
-          ::pybind11::arg("bn"),
-          ::pybind11::arg("useExternalIK"),
-          ::pybind11::arg("useWholeBody"))
+          ::py::arg("viewer"),
+          ::py::arg("bn"),
+          ::py::arg("useExternalIK"),
+          ::py::arg("useWholeBody"))
       .def("update", +[](dart::gui::osg::BodyNodeDnD* self) { self->update(); })
       .def("move", +[](dart::gui::osg::BodyNodeDnD* self) { self->move(); })
       .def(
@@ -208,7 +206,7 @@ void DragAndDrop(pybind11::module& m)
           +[](dart::gui::osg::BodyNodeDnD* self, bool external) {
             self->useExternalIK(external);
           },
-          ::pybind11::arg("external"))
+          ::py::arg("external"))
       .def(
           "isUsingExternalIK",
           +[](const dart::gui::osg::BodyNodeDnD* self) -> bool {
@@ -219,7 +217,7 @@ void DragAndDrop(pybind11::module& m)
           +[](dart::gui::osg::BodyNodeDnD* self, bool wholeBody) {
             self->useWholeBody(wholeBody);
           },
-          ::pybind11::arg("wholeBody"))
+          ::py::arg("wholeBody"))
       .def(
           "isUsingWholeBody",
           +[](const dart::gui::osg::BodyNodeDnD* self) -> bool {
@@ -231,7 +229,7 @@ void DragAndDrop(pybind11::module& m)
               osgGA::GUIEventAdapter::ModKeyMask modkey) {
             self->setPreserveOrientationModKey(modkey);
           },
-          ::pybind11::arg("modkey"))
+          ::py::arg("modkey"))
       .def(
           "getPreserveOrientationModKey",
           +[](const dart::gui::osg::BodyNodeDnD* self)
@@ -244,7 +242,7 @@ void DragAndDrop(pybind11::module& m)
               osgGA::GUIEventAdapter::ModKeyMask modkey) {
             self->setJointRestrictionModKey(modkey);
           },
-          ::pybind11::arg("modkey"))
+          ::py::arg("modkey"))
       .def(
           "getJointRestrictionModKey",
           +[](const dart::gui::osg::BodyNodeDnD* self)
@@ -252,17 +250,17 @@ void DragAndDrop(pybind11::module& m)
             return self->getJointRestrictionModKey();
           });
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::InteractiveFrameDnD,
       dart::gui::osg::DragAndDrop,
       std::shared_ptr<dart::gui::osg::InteractiveFrameDnD>>(
       m, "InteractiveFrameDnD")
       .def(
-          ::pybind11::init<
+          ::py::init<
               dart::gui::osg::Viewer*,
               dart::gui::osg::InteractiveFrame*>(),
-          ::pybind11::arg("viewer"),
-          ::pybind11::arg("frame"))
+          ::py::arg("viewer"),
+          ::py::arg("frame"))
       .def(
           "update",
           +[](dart::gui::osg::InteractiveFrameDnD* self) { self->update(); })

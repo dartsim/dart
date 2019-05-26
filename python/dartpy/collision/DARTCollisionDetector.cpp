@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,15 +38,39 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DartLoader(py::module& sm);
-void SkelParser(py::module& sm);
-
-void dart_utils(py::module& m)
+void DARTCollisionDetector(py::module& m)
 {
-  auto sm = m.def_submodule("utils");
-
-  DartLoader(sm);
-  SkelParser(sm);
+  ::py::class_<
+      dart::collision::DARTCollisionDetector,
+      std::shared_ptr<dart::collision::DARTCollisionDetector>,
+      dart::collision::CollisionDetector>(m, "DARTCollisionDetector")
+      .def(::py::init(
+          +[]() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
+            return dart::collision::DARTCollisionDetector::create();
+          }))
+      .def(
+          "cloneWithoutCollisionObjects",
+          +[](const dart::collision::DARTCollisionDetector* self)
+              -> std::shared_ptr<dart::collision::CollisionDetector> {
+            return self->cloneWithoutCollisionObjects();
+          })
+      .def(
+          "getType",
+          +[](const dart::collision::DARTCollisionDetector* self)
+              -> const std::string& { return self->getType(); },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "createCollisionGroup",
+          +[](dart::collision::DARTCollisionDetector* self)
+              -> std::unique_ptr<dart::collision::CollisionGroup> {
+            return self->createCollisionGroup();
+          })
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::collision::DARTCollisionDetector::getStaticType();
+          },
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

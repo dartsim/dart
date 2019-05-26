@@ -35,12 +35,14 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Entity(pybind11::module& m)
+void Entity(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::Entity,
       dart::common::Subject,
       std::shared_ptr<dart::dynamics::Entity>>(m, "Entity")
@@ -48,28 +50,28 @@ void Entity(pybind11::module& m)
           "setName",
           +[](dart::dynamics::Entity* self, const std::string& name)
               -> const std::string& { return self->setName(name); },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("name"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name"))
       .def(
           "getName",
           +[](const dart::dynamics::Entity* self) -> const std::string& {
             return self->getName();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getParentFrame",
           +[](const dart::dynamics::Entity* self)
               -> const dart::dynamics::Frame* {
             return self->getParentFrame();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "descendsFrom",
           +[](const dart::dynamics::Entity* self,
               const dart::dynamics::Frame* someFrame) -> bool {
             return self->descendsFrom(someFrame);
           },
-          ::pybind11::arg("someFrame"))
+          ::py::arg("someFrame"))
       .def(
           "isFrame",
           +[](const dart::dynamics::Entity* self) -> bool {
@@ -105,7 +107,7 @@ void Entity(pybind11::module& m)
             return self->needsAccelerationUpdate();
           });
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::Detachable,
       dart::dynamics::Entity,
       std::shared_ptr<dart::dynamics::Detachable>>(m, "Detachable")
@@ -115,7 +117,7 @@ void Entity(pybind11::module& m)
               dart::dynamics::Frame* _newParentFrame) {
             self->setParentFrame(_newParentFrame);
           },
-          ::pybind11::arg("newParentFrame"));
+          ::py::arg("newParentFrame"));
 }
 
 } // namespace python

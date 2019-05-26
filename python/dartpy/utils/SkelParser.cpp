@@ -34,10 +34,12 @@
 #include <dart/utils/utils.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void SkelParser(pybind11::module& m)
+void SkelParser(py::module& m)
 {
   auto sm = m.def_submodule("SkelParser");
 

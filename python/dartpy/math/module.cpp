@@ -32,13 +32,15 @@
 
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Random(pybind11::module& sm);
-void Geometry(pybind11::module& sm);
+void Random(py::module& sm);
+void Geometry(py::module& sm);
 
-void dart_math(pybind11::module& m)
+void dart_math(py::module& m)
 {
   auto sm = m.def_submodule("math");
 

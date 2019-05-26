@@ -33,15 +33,17 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Uri(pybind11::module& m)
+void Uri(py::module& m)
 {
-  ::pybind11::class_<dart::common::Uri>(m, "Uri")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<const std::string&>(), ::pybind11::arg("input"))
-      .def(::pybind11::init<const char*>(), ::pybind11::arg("input"))
+  ::py::class_<dart::common::Uri>(m, "Uri")
+      .def(::py::init<>())
+      .def(::py::init<const std::string&>(), ::py::arg("input"))
+      .def(::py::init<const char*>(), ::py::arg("input"))
       .def(
           "clear",
           +[](dart::common::Uri* self) -> void { return self->clear(); })
@@ -50,19 +52,19 @@ void Uri(pybind11::module& m)
           +[](dart::common::Uri* self, const std::string& _input) -> bool {
             return self->fromString(_input);
           },
-          ::pybind11::arg("input"))
+          ::py::arg("input"))
       .def(
           "fromPath",
           +[](dart::common::Uri* self, const std::string& _path) -> bool {
             return self->fromPath(_path);
           },
-          ::pybind11::arg("path"))
+          ::py::arg("path"))
       .def(
           "fromStringOrPath",
           +[](dart::common::Uri* self, const std::string& _input) -> bool {
             return self->fromStringOrPath(_input);
           },
-          ::pybind11::arg("input"))
+          ::py::arg("input"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -70,8 +72,8 @@ void Uri(pybind11::module& m)
               const std::string& _relative) -> bool {
             return self->fromRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -80,15 +82,15 @@ void Uri(pybind11::module& m)
               bool _strict) -> bool {
             return self->fromRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self, const char* _base, const char* _relative)
               -> bool { return self->fromRelativeUri(_base, _relative); },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -97,9 +99,9 @@ void Uri(pybind11::module& m)
               bool _strict) -> bool {
             return self->fromRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -107,8 +109,8 @@ void Uri(pybind11::module& m)
               const std::string& _relative) -> bool {
             return self->fromRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -117,9 +119,9 @@ void Uri(pybind11::module& m)
               bool _strict) -> bool {
             return self->fromRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -127,8 +129,8 @@ void Uri(pybind11::module& m)
               const char* _relative) -> bool {
             return self->fromRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -137,9 +139,9 @@ void Uri(pybind11::module& m)
               bool _strict) -> bool {
             return self->fromRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -147,8 +149,8 @@ void Uri(pybind11::module& m)
               const dart::common::Uri& _relative) -> bool {
             return self->fromRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def(
           "fromRelativeUri",
           +[](dart::common::Uri* self,
@@ -157,9 +159,9 @@ void Uri(pybind11::module& m)
               bool _strict) -> bool {
             return self->fromRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def(
           "toString",
           +[](const dart::common::Uri* self) -> std::string {
@@ -180,27 +182,27 @@ void Uri(pybind11::module& m)
           +[](const std::string& _input) -> dart::common::Uri {
             return dart::common::Uri::createFromString(_input);
           },
-          ::pybind11::arg("input"))
+          ::py::arg("input"))
       .def_static(
           "createFromPath",
           +[](const std::string& _path) -> dart::common::Uri {
             return dart::common::Uri::createFromPath(_path);
           },
-          ::pybind11::arg("path"))
+          ::py::arg("path"))
       .def_static(
           "createFromStringOrPath",
           +[](const std::string& _input) -> dart::common::Uri {
             return dart::common::Uri::createFromStringOrPath(_input);
           },
-          ::pybind11::arg("input"))
+          ::py::arg("input"))
       .def_static(
           "createFromRelativeUri",
           +[](const std::string& _base,
               const std::string& _relative) -> dart::common::Uri {
             return dart::common::Uri::createFromRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def_static(
           "createFromRelativeUri",
           +[](const std::string& _base,
@@ -209,17 +211,17 @@ void Uri(pybind11::module& m)
             return dart::common::Uri::createFromRelativeUri(
                 _base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def_static(
           "createFromRelativeUri",
           +[](const dart::common::Uri& _base,
               const std::string& _relative) -> dart::common::Uri {
             return dart::common::Uri::createFromRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def_static(
           "createFromRelativeUri",
           +[](const dart::common::Uri& _base,
@@ -228,17 +230,17 @@ void Uri(pybind11::module& m)
             return dart::common::Uri::createFromRelativeUri(
                 _base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def_static(
           "createFromRelativeUri",
           +[](const dart::common::Uri& _base,
               const dart::common::Uri& _relative) -> dart::common::Uri {
             return dart::common::Uri::createFromRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def_static(
           "createFromRelativeUri",
           +[](const dart::common::Uri& _base,
@@ -247,23 +249,23 @@ void Uri(pybind11::module& m)
             return dart::common::Uri::createFromRelativeUri(
                 _base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def_static(
           "getUri",
           +[](const std::string& _input) -> std::string {
             return dart::common::Uri::getUri(_input);
           },
-          ::pybind11::arg("input"))
+          ::py::arg("input"))
       .def_static(
           "getRelativeUri",
           +[](const std::string& _base,
               const std::string& _relative) -> std::string {
             return dart::common::Uri::getRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def_static(
           "getRelativeUri",
           +[](const std::string& _base,
@@ -271,17 +273,17 @@ void Uri(pybind11::module& m)
               bool _strict) -> std::string {
             return dart::common::Uri::getRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def_static(
           "getRelativeUri",
           +[](const dart::common::Uri& _base,
               const std::string& _relative) -> std::string {
             return dart::common::Uri::getRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def_static(
           "getRelativeUri",
           +[](const dart::common::Uri& _base,
@@ -289,17 +291,17 @@ void Uri(pybind11::module& m)
               bool _strict) -> std::string {
             return dart::common::Uri::getRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def_static(
           "getRelativeUri",
           +[](const dart::common::Uri& _base,
               const dart::common::Uri& _relative) -> std::string {
             return dart::common::Uri::getRelativeUri(_base, _relative);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"))
+          ::py::arg("base"),
+          ::py::arg("relative"))
       .def_static(
           "getRelativeUri",
           +[](const dart::common::Uri& _base,
@@ -307,16 +309,16 @@ void Uri(pybind11::module& m)
               bool _strict) -> std::string {
             return dart::common::Uri::getRelativeUri(_base, _relative, _strict);
           },
-          ::pybind11::arg("base"),
-          ::pybind11::arg("relative"),
-          ::pybind11::arg("strict"))
+          ::py::arg("base"),
+          ::py::arg("relative"),
+          ::py::arg("strict"))
       .def_readwrite("mScheme", &dart::common::Uri::mScheme)
       .def_readwrite("mAuthority", &dart::common::Uri::mAuthority)
       .def_readwrite("mPath", &dart::common::Uri::mPath)
       .def_readwrite("mQuery", &dart::common::Uri::mQuery)
       .def_readwrite("mFragment", &dart::common::Uri::mFragment);
 
-  ::pybind11::implicitly_convertible<std::string, dart::common::Uri>();
+  ::py::implicitly_convertible<std::string, dart::common::Uri>();
 }
 
 } // namespace python

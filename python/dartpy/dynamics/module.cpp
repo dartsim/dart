@@ -32,48 +32,50 @@
 
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Shape(pybind11::module& sm);
+void Shape(py::module& sm);
 
-void Entity(pybind11::module& sm);
-void Frame(pybind11::module& sm);
-void ShapeFrame(pybind11::module& sm);
-void SimpleFrame(pybind11::module& sm);
+void Entity(py::module& sm);
+void Frame(py::module& sm);
+void ShapeFrame(py::module& sm);
+void SimpleFrame(py::module& sm);
 
-void Node(pybind11::module& sm);
-void JacobianNode(pybind11::module& sm);
-void ShapeNode(pybind11::module& sm);
+void Node(py::module& sm);
+void JacobianNode(py::module& sm);
+void ShapeNode(py::module& sm);
 
-void DegreeOfFreedom(pybind11::module& sm);
+void DegreeOfFreedom(py::module& sm);
 
-void BodyNode(pybind11::module& sm);
+void BodyNode(py::module& sm);
 
-void Joint(pybind11::module& sm);
-void ZeroDofJoint(pybind11::module& sm);
-void WeldJoint(pybind11::module& sm);
-void GenericJoint(pybind11::module& sm);
-void RevoluteJoint(pybind11::module& sm);
-void PrismaticJoint(pybind11::module& sm);
-void ScrewJoint(pybind11::module& sm);
-void UniversalJoint(pybind11::module& sm);
-void TranslationalJoint2D(pybind11::module& sm);
-void PlanarJoint(pybind11::module& sm);
-void EulerJoint(pybind11::module& sm);
-void BallJoint(pybind11::module& sm);
-void TranslationalJoint(pybind11::module& sm);
-void FreeJoint(pybind11::module& sm);
+void Joint(py::module& sm);
+void ZeroDofJoint(py::module& sm);
+void WeldJoint(py::module& sm);
+void GenericJoint(py::module& sm);
+void RevoluteJoint(py::module& sm);
+void PrismaticJoint(py::module& sm);
+void ScrewJoint(py::module& sm);
+void UniversalJoint(py::module& sm);
+void TranslationalJoint2D(py::module& sm);
+void PlanarJoint(py::module& sm);
+void EulerJoint(py::module& sm);
+void BallJoint(py::module& sm);
+void TranslationalJoint(py::module& sm);
+void FreeJoint(py::module& sm);
 
-void MetaSkeleton(pybind11::module& sm);
-void ReferentialSkeleton(pybind11::module& sm);
-void Linkage(pybind11::module& sm);
-void Chain(pybind11::module& sm);
-void Skeleton(pybind11::module& sm);
+void MetaSkeleton(py::module& sm);
+void ReferentialSkeleton(py::module& sm);
+void Linkage(py::module& sm);
+void Chain(py::module& sm);
+void Skeleton(py::module& sm);
 
-void InverseKinematics(pybind11::module& sm);
+void InverseKinematics(py::module& sm);
 
-void dart_dynamics(pybind11::module& m)
+void dart_dynamics(py::module& m)
 {
   auto sm = m.def_submodule("dynamics");
 

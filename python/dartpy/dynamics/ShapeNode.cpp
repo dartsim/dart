@@ -35,12 +35,14 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void ShapeNode(pybind11::module& m)
+void ShapeNode(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::ShapeNode,
       dart::dynamics::ShapeFrame,
       std::shared_ptr<dart::dynamics::ShapeNode>>(m, "ShapeNode")
@@ -50,7 +52,7 @@ void ShapeNode(pybind11::module& m)
               const dart::dynamics::ShapeNode::Properties& properties) {
             self->setProperties(properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getShapeNodeProperties",
           +[](const dart::dynamics::ShapeNode* self)
@@ -61,21 +63,21 @@ void ShapeNode(pybind11::module& m)
           "copy",
           +[](dart::dynamics::ShapeNode* self,
               const dart::dynamics::ShapeNode* other) { self->copy(other); },
-          ::pybind11::arg("other"))
+          ::py::arg("other"))
       .def(
           "setRelativeTransform",
           +[](dart::dynamics::ShapeNode* self,
               const Eigen::Isometry3d& transform) {
             self->setRelativeTransform(transform);
           },
-          ::pybind11::arg("transform"))
+          ::py::arg("transform"))
       .def(
           "setRelativeRotation",
           +[](dart::dynamics::ShapeNode* self,
               const Eigen::Matrix3d& rotation) {
             self->setRelativeRotation(rotation);
           },
-          ::pybind11::arg("rotation"))
+          ::py::arg("rotation"))
       .def(
           "getRelativeRotation",
           +[](const dart::dynamics::ShapeNode* self) -> Eigen::Matrix3d {
@@ -87,13 +89,13 @@ void ShapeNode(pybind11::module& m)
               const Eigen::Vector3d& translation) {
             self->setRelativeTranslation(translation);
           },
-          ::pybind11::arg("translation"))
+          ::py::arg("translation"))
       .def(
           "setOffset",
           +[](dart::dynamics::ShapeNode* self, const Eigen::Vector3d& offset) {
             self->setOffset(offset);
           },
-          ::pybind11::arg("offset"))
+          ::py::arg("offset"))
       .def(
           "getRelativeTranslation",
           +[](const dart::dynamics::ShapeNode* self) -> Eigen::Vector3d {

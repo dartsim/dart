@@ -36,40 +36,42 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void RevoluteJoint(pybind11::module& m)
+void RevoluteJoint(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::RevoluteJoint::UniqueProperties>(
+  ::py::class_<dart::dynamics::RevoluteJoint::UniqueProperties>(
       m, "RevoluteJointUniqueProperties")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<const Eigen::Vector3d&>(), ::pybind11::arg("axis"));
+      .def(::py::init<>())
+      .def(::py::init<const Eigen::Vector3d&>(), ::py::arg("axis"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::RevoluteJoint::Properties,
       dart::dynamics::GenericJoint<math::R1Space>::Properties,
       dart::dynamics::RevoluteJoint::UniqueProperties>(
       m, "RevoluteJointProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::R1Space>::Properties&>(),
-          ::pybind11::arg("genericJointProperties"))
+          ::py::arg("genericJointProperties"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const dart::dynamics::GenericJoint<
                   dart::math::R1Space>::Properties&,
               const dart::dynamics::RevoluteJoint::UniqueProperties&>(),
-          ::pybind11::arg("genericJointProperties"),
-          ::pybind11::arg("uniqueProperties"))
+          ::py::arg("genericJointProperties"),
+          ::py::arg("uniqueProperties"))
       .def_readwrite(
           "mAxis",
           &dart::dynamics::detail::RevoluteJointUniqueProperties::mAxis);
 
   DARTPY_DEFINE_JOINT_COMMON_BASE(RevoluteJoint, R1Space)
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::RevoluteJoint,
       dart::dynamics::detail::RevoluteJointBase,
       std::shared_ptr<dart::dynamics::RevoluteJoint>>(m, "RevoluteJoint")
@@ -88,7 +90,7 @@ void RevoluteJoint(pybind11::module& m)
                       dart::math::RealVectorSpace<1>>>::Aspect* aspect) {
             self->setRevoluteJointAspect(aspect);
           },
-          ::pybind11::arg("aspect"))
+          ::py::arg("aspect"))
       .def(
           "removeRevoluteJointAspect",
           +[](dart::dynamics::RevoluteJoint* self) {
@@ -110,13 +112,13 @@ void RevoluteJoint(pybind11::module& m)
               const dart::dynamics::RevoluteJoint::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProperties",
           +[](dart::dynamics::RevoluteJoint* self,
               const dart::dynamics::RevoluteJoint::UniqueProperties&
                   _properties) { self->setProperties(_properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::RevoluteJoint* self,
@@ -126,7 +128,7 @@ void RevoluteJoint(pybind11::module& m)
                   dart::dynamics::GenericJoint<
                       dart::math::RealVectorSpace<1>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "getRevoluteJointProperties",
           +[](const dart::dynamics::RevoluteJoint* self)
@@ -139,28 +141,28 @@ void RevoluteJoint(pybind11::module& m)
               const dart::dynamics::RevoluteJoint* _otherJoint) {
             self->copy(_otherJoint);
           },
-          ::pybind11::arg("otherJoint"))
+          ::py::arg("otherJoint"))
       .def(
           "getType",
           +[](const dart::dynamics::RevoluteJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::RevoluteJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "setAxis",
           +[](dart::dynamics::RevoluteJoint* self,
               const Eigen::Vector3d& _axis) { self->setAxis(_axis); },
-          ::pybind11::arg("axis"))
+          ::py::arg("axis"))
       .def(
           "getAxis",
           +[](const dart::dynamics::RevoluteJoint* self)
               -> const Eigen::Vector3d& { return self->getAxis(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::RevoluteJoint* self,
@@ -170,13 +172,13 @@ void RevoluteJoint(pybind11::module& m)
                   dart::math::RealVectorSpace<1>>::JacobianMatrix {
             return self->getRelativeJacobianStatic(positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::RevoluteJoint::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

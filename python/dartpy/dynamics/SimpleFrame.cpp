@@ -35,44 +35,44 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void SimpleFrame(pybind11::module& m)
+void SimpleFrame(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::SimpleFrame,
       dart::dynamics::ShapeFrame,
       dart::dynamics::Detachable,
       std::shared_ptr<dart::dynamics::SimpleFrame> >(m, "SimpleFrame")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
+      .def(::py::init<dart::dynamics::Frame*>(), ::py::arg("refFrame"))
       .def(
-          ::pybind11::init<dart::dynamics::Frame*>(),
-          ::pybind11::arg("refFrame"))
+          ::py::init<dart::dynamics::Frame*, const std::string&>(),
+          ::py::arg("refFrame"),
+          ::py::arg("name"))
       .def(
-          ::pybind11::init<dart::dynamics::Frame*, const std::string&>(),
-          ::pybind11::arg("refFrame"),
-          ::pybind11::arg("name"))
-      .def(
-          ::pybind11::init<
+          ::py::init<
               dart::dynamics::Frame*,
               const std::string&,
               const Eigen::Isometry3d&>(),
-          ::pybind11::arg("refFrame"),
-          ::pybind11::arg("name"),
-          ::pybind11::arg("relativeTransform"))
+          ::py::arg("refFrame"),
+          ::py::arg("name"),
+          ::py::arg("relativeTransform"))
       .def(
           "setName",
           +[](dart::dynamics::SimpleFrame* self, const std::string& _name)
               -> const std::string& { return self->setName(_name); },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("name"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name"))
       .def(
           "getName",
           +[](const dart::dynamics::SimpleFrame* self) -> const std::string& {
             return self->getName();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "clone",
           +[](const dart::dynamics::SimpleFrame* self)
@@ -86,14 +86,14 @@ void SimpleFrame(pybind11::module& m)
               -> std::shared_ptr<dart::dynamics::SimpleFrame> {
             return self->clone(_refFrame);
           },
-          ::pybind11::arg("refFrame"))
+          ::py::arg("refFrame"))
       .def(
           "copy",
           +[](dart::dynamics::SimpleFrame* self,
               const dart::dynamics::Frame* _otherFrame) {
             self->copy(_otherFrame);
           },
-          ::pybind11::arg("otherFrame"))
+          ::py::arg("otherFrame"))
       .def(
           "copy",
           +[](dart::dynamics::SimpleFrame* self,
@@ -101,8 +101,8 @@ void SimpleFrame(pybind11::module& m)
               dart::dynamics::Frame* _refFrame) {
             self->copy(_otherFrame, _refFrame);
           },
-          ::pybind11::arg("otherFrame"),
-          ::pybind11::arg("refFrame"))
+          ::py::arg("otherFrame"),
+          ::py::arg("refFrame"))
       .def(
           "copy",
           +[](dart::dynamics::SimpleFrame* self,
@@ -111,9 +111,9 @@ void SimpleFrame(pybind11::module& m)
               bool _copyProperties) {
             self->copy(_otherFrame, _refFrame, _copyProperties);
           },
-          ::pybind11::arg("otherFrame"),
-          ::pybind11::arg("refFrame"),
-          ::pybind11::arg("copyProperties"))
+          ::py::arg("otherFrame"),
+          ::py::arg("refFrame"),
+          ::py::arg("copyProperties"))
       .def(
           "spawnChildSimpleFrame",
           +[](dart::dynamics::SimpleFrame* self)
@@ -126,7 +126,7 @@ void SimpleFrame(pybind11::module& m)
               -> std::shared_ptr<dart::dynamics::SimpleFrame> {
             return self->spawnChildSimpleFrame(name);
           },
-          ::pybind11::arg("name"))
+          ::py::arg("name"))
       .def(
           "spawnChildSimpleFrame",
           +[](dart::dynamics::SimpleFrame* self,
@@ -135,36 +135,36 @@ void SimpleFrame(pybind11::module& m)
               -> std::shared_ptr<dart::dynamics::SimpleFrame> {
             return self->spawnChildSimpleFrame(name, relativeTransform);
           },
-          ::pybind11::arg("name"),
-          ::pybind11::arg("relativeTransform"))
+          ::py::arg("name"),
+          ::py::arg("relativeTransform"))
       .def(
           "setRelativeTransform",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Isometry3d& _newRelTransform) {
             self->setRelativeTransform(_newRelTransform);
           },
-          ::pybind11::arg("newRelTransform"))
+          ::py::arg("newRelTransform"))
       .def(
           "setRelativeTranslation",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Vector3d& _newTranslation) {
             self->setRelativeTranslation(_newTranslation);
           },
-          ::pybind11::arg("newTranslation"))
+          ::py::arg("newTranslation"))
       .def(
           "setRelativeRotation",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Matrix3d& _newRotation) {
             self->setRelativeRotation(_newRotation);
           },
-          ::pybind11::arg("newRotation"))
+          ::py::arg("newRotation"))
       .def(
           "setTransform",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Isometry3d& _newTransform) {
             self->setTransform(_newTransform);
           },
-          ::pybind11::arg("newTransform"))
+          ::py::arg("newTransform"))
       .def(
           "setTransform",
           +[](dart::dynamics::SimpleFrame* self,
@@ -172,15 +172,15 @@ void SimpleFrame(pybind11::module& m)
               const dart::dynamics::Frame* _withRespectTo) {
             self->setTransform(_newTransform, _withRespectTo);
           },
-          ::pybind11::arg("newTransform"),
-          ::pybind11::arg("withRespectTo"))
+          ::py::arg("newTransform"),
+          ::py::arg("withRespectTo"))
       .def(
           "setTranslation",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Vector3d& _newTranslation) {
             self->setTranslation(_newTranslation);
           },
-          ::pybind11::arg("newTranslation"))
+          ::py::arg("newTranslation"))
       .def(
           "setTranslation",
           +[](dart::dynamics::SimpleFrame* self,
@@ -188,15 +188,15 @@ void SimpleFrame(pybind11::module& m)
               const dart::dynamics::Frame* _withRespectTo) {
             self->setTranslation(_newTranslation, _withRespectTo);
           },
-          ::pybind11::arg("newTranslation"),
-          ::pybind11::arg("withRespectTo"))
+          ::py::arg("newTranslation"),
+          ::py::arg("withRespectTo"))
       .def(
           "setRotation",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Matrix3d& _newRotation) {
             self->setRotation(_newRotation);
           },
-          ::pybind11::arg("newRotation"))
+          ::py::arg("newRotation"))
       .def(
           "setRotation",
           +[](dart::dynamics::SimpleFrame* self,
@@ -204,15 +204,15 @@ void SimpleFrame(pybind11::module& m)
               const dart::dynamics::Frame* _withRespectTo) {
             self->setRotation(_newRotation, _withRespectTo);
           },
-          ::pybind11::arg("newRotation"),
-          ::pybind11::arg("withRespectTo"))
+          ::py::arg("newRotation"),
+          ::py::arg("withRespectTo"))
       .def(
           "setRelativeSpatialVelocity",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Vector6d& _newSpatialVelocity) {
             self->setRelativeSpatialVelocity(_newSpatialVelocity);
           },
-          ::pybind11::arg("newSpatialVelocity"))
+          ::py::arg("newSpatialVelocity"))
       .def(
           "setRelativeSpatialVelocity",
           +[](dart::dynamics::SimpleFrame* self,
@@ -221,15 +221,15 @@ void SimpleFrame(pybind11::module& m)
             self->setRelativeSpatialVelocity(
                 _newSpatialVelocity, _inCoordinatesOf);
           },
-          ::pybind11::arg("newSpatialVelocity"),
-          ::pybind11::arg("inCoordinatesOf"))
+          ::py::arg("newSpatialVelocity"),
+          ::py::arg("inCoordinatesOf"))
       .def(
           "setRelativeSpatialAcceleration",
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Vector6d& _newSpatialAcceleration) {
             self->setRelativeSpatialAcceleration(_newSpatialAcceleration);
           },
-          ::pybind11::arg("newSpatialAcceleration"))
+          ::py::arg("newSpatialAcceleration"))
       .def(
           "setRelativeSpatialAcceleration",
           +[](dart::dynamics::SimpleFrame* self,
@@ -238,8 +238,8 @@ void SimpleFrame(pybind11::module& m)
             self->setRelativeSpatialAcceleration(
                 _newSpatialAcceleration, _inCoordinatesOf);
           },
-          ::pybind11::arg("newSpatialAcceleration"),
-          ::pybind11::arg("inCoordinatesOf"))
+          ::py::arg("newSpatialAcceleration"),
+          ::py::arg("inCoordinatesOf"))
       .def(
           "setClassicDerivatives",
           +[](dart::dynamics::SimpleFrame* self) {
@@ -251,7 +251,7 @@ void SimpleFrame(pybind11::module& m)
               const Eigen::Vector3d& _linearVelocity) {
             self->setClassicDerivatives(_linearVelocity);
           },
-          ::pybind11::arg("linearVelocity"))
+          ::py::arg("linearVelocity"))
       .def(
           "setClassicDerivatives",
           +[](dart::dynamics::SimpleFrame* self,
@@ -259,8 +259,8 @@ void SimpleFrame(pybind11::module& m)
               const Eigen::Vector3d& _angularVelocity) {
             self->setClassicDerivatives(_linearVelocity, _angularVelocity);
           },
-          ::pybind11::arg("linearVelocity"),
-          ::pybind11::arg("angularVelocity"))
+          ::py::arg("linearVelocity"),
+          ::py::arg("angularVelocity"))
       .def(
           "setClassicDerivatives",
           +[](dart::dynamics::SimpleFrame* self,
@@ -270,9 +270,9 @@ void SimpleFrame(pybind11::module& m)
             self->setClassicDerivatives(
                 _linearVelocity, _angularVelocity, _linearAcceleration);
           },
-          ::pybind11::arg("linearVelocity"),
-          ::pybind11::arg("angularVelocity"),
-          ::pybind11::arg("linearAcceleration"))
+          ::py::arg("linearVelocity"),
+          ::py::arg("angularVelocity"),
+          ::py::arg("linearAcceleration"))
       .def(
           "setClassicDerivatives",
           +[](dart::dynamics::SimpleFrame* self,
@@ -286,10 +286,10 @@ void SimpleFrame(pybind11::module& m)
                 _linearAcceleration,
                 _angularAcceleration);
           },
-          ::pybind11::arg("linearVelocity"),
-          ::pybind11::arg("angularVelocity"),
-          ::pybind11::arg("linearAcceleration"),
-          ::pybind11::arg("angularAcceleration"));
+          ::py::arg("linearVelocity"),
+          ::py::arg("angularVelocity"),
+          ::py::arg("linearAcceleration"),
+          ::py::arg("angularAcceleration"));
 }
 
 } // namespace python

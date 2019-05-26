@@ -30,6 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
+#if HAVE_ODE
+
+#include <dart/collision/ode/ode.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,16 +42,19 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DartLoader(py::module& sm);
-void SkelParser(py::module& sm);
-
-void dart_utils(py::module& m)
+void OdeCollisionGroup(py::module& m)
 {
-  auto sm = m.def_submodule("utils");
-
-  DartLoader(sm);
-  SkelParser(sm);
+  ::py::class_<
+      dart::collision::OdeCollisionGroup,
+      dart::collision::CollisionGroup,
+      std::shared_ptr<dart::collision::OdeCollisionGroup>>(
+      m, "OdeCollisionGroup")
+      .def(
+          ::py::init<const dart::collision::CollisionDetectorPtr&>(),
+          ::py::arg("collisionDetector"));
 }
 
 } // namespace python
 } // namespace dart
+
+#endif // HAVE_ODE

@@ -33,12 +33,14 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void CollisionDetector(pybind11::module& m)
+void CollisionDetector(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::collision::CollisionDetector,
       std::shared_ptr<dart::collision::CollisionDetector> >(
       m, "CollisionDetector")
@@ -52,7 +54,7 @@ void CollisionDetector(pybind11::module& m)
           "getType",
           +[](const dart::collision::CollisionDetector* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "createCollisionGroup",
           +[](dart::collision::CollisionDetector* self)

@@ -98,47 +98,47 @@ public:
   }
 };
 
-void RealTimeWorldNode(pybind11::module& m)
+void RealTimeWorldNode(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::gui::osg::RealTimeWorldNode,
       dart::gui::osg::WorldNode,
       PyPyRealTimeWorldNodeNode,
       ::osg::ref_ptr<dart::gui::osg::RealTimeWorldNode>>(m, "RealTimeWorldNode")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const std::shared_ptr<dart::simulation::World>&>(),
-          ::pybind11::arg("world"))
+          ::py::init<const std::shared_ptr<dart::simulation::World>&>(),
+          ::py::arg("world"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const std::shared_ptr<dart::simulation::World>&,
               const osg::ref_ptr<osgShadow::ShadowTechnique>&>(),
-          ::pybind11::arg("world"),
-          ::pybind11::arg("shadower"))
+          ::py::arg("world"),
+          ::py::arg("shadower"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const std::shared_ptr<dart::simulation::World>&,
               const osg::ref_ptr<osgShadow::ShadowTechnique>&,
               double>(),
-          ::pybind11::arg("world"),
-          ::pybind11::arg("shadower"),
-          ::pybind11::arg("targetFrequency"))
+          ::py::arg("world"),
+          ::py::arg("shadower"),
+          ::py::arg("targetFrequency"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               const std::shared_ptr<dart::simulation::World>&,
               const osg::ref_ptr<osgShadow::ShadowTechnique>&,
               double,
               double>(),
-          ::pybind11::arg("world"),
-          ::pybind11::arg("shadower"),
-          ::pybind11::arg("targetFrequency"),
-          ::pybind11::arg("targetRealTimeFactor"))
+          ::py::arg("world"),
+          ::py::arg("shadower"),
+          ::py::arg("targetFrequency"),
+          ::py::arg("targetRealTimeFactor"))
       .def(
           "setTargetFrequency",
           +[](dart::gui::osg::RealTimeWorldNode* self, double targetFrequency) {
             self->setTargetFrequency(targetFrequency);
           },
-          ::pybind11::arg("targetFrequency"))
+          ::py::arg("targetFrequency"))
       .def(
           "getTargetFrequency",
           +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
@@ -149,7 +149,7 @@ void RealTimeWorldNode(pybind11::module& m)
           +[](dart::gui::osg::RealTimeWorldNode* self, double targetRTF) {
             self->setTargetRealTimeFactor(targetRTF);
           },
-          ::pybind11::arg("targetRTF"))
+          ::py::arg("targetRTF"))
       .def(
           "getTargetRealTimeFactor",
           +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {

@@ -32,12 +32,14 @@
 
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void dart_gui_osg(pybind11::module& m);
+void dart_gui_osg(py::module& m);
 
-void dart_gui(pybind11::module& m)
+void dart_gui(py::module& m)
 {
   auto sm = m.def_submodule("gui");
 

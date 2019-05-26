@@ -32,15 +32,17 @@
 
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Observer(pybind11::module& sm);
-void Subject(pybind11::module& sm);
-void Uri(pybind11::module& sm);
-void Composite(pybind11::module& sm);
+void Observer(py::module& sm);
+void Subject(py::module& sm);
+void Uri(py::module& sm);
+void Composite(py::module& sm);
 
-void dart_common(pybind11::module& m)
+void dart_common(py::module& m)
 {
   auto sm = m.def_submodule("common");
 

@@ -33,12 +33,14 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void ConstraintSolver(pybind11::module& m)
+void ConstraintSolver(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::ConstraintSolver,
       std::shared_ptr<dart::constraint::ConstraintSolver>>(
       m, "ConstraintSolver")
@@ -48,28 +50,28 @@ void ConstraintSolver(pybind11::module& m)
               const dart::dynamics::SkeletonPtr& skeleton) {
             self->addSkeleton(skeleton);
           },
-          ::pybind11::arg("skeleton"))
+          ::py::arg("skeleton"))
       .def(
           "addSkeletons",
           +[](dart::constraint::ConstraintSolver* self,
               const std::vector<dart::dynamics::SkeletonPtr>& skeletons) {
             self->addSkeletons(skeletons);
           },
-          ::pybind11::arg("skeletons"))
+          ::py::arg("skeletons"))
       .def(
           "removeSkeleton",
           +[](dart::constraint::ConstraintSolver* self,
               const dart::dynamics::SkeletonPtr& skeleton) {
             self->removeSkeleton(skeleton);
           },
-          ::pybind11::arg("skeleton"))
+          ::py::arg("skeleton"))
       .def(
           "removeSkeletons",
           +[](dart::constraint::ConstraintSolver* self,
               const std::vector<dart::dynamics::SkeletonPtr>& skeletons) {
             self->removeSkeletons(skeletons);
           },
-          ::pybind11::arg("skeletons"))
+          ::py::arg("skeletons"))
       .def(
           "removeAllSkeletons",
           +[](dart::constraint::ConstraintSolver* self) {
@@ -81,14 +83,14 @@ void ConstraintSolver(pybind11::module& m)
               const dart::constraint::ConstraintBasePtr& constraint) {
             self->addConstraint(constraint);
           },
-          ::pybind11::arg("constraint"))
+          ::py::arg("constraint"))
       .def(
           "removeConstraint",
           +[](dart::constraint::ConstraintSolver* self,
               const dart::constraint::ConstraintBasePtr& constraint) {
             self->removeConstraint(constraint);
           },
-          ::pybind11::arg("constraint"))
+          ::py::arg("constraint"))
       .def(
           "removeAllConstraints",
           +[](dart::constraint::ConstraintSolver* self) {
@@ -104,7 +106,7 @@ void ConstraintSolver(pybind11::module& m)
           +[](dart::constraint::ConstraintSolver* self, double _timeStep) {
             self->setTimeStep(_timeStep);
           },
-          ::pybind11::arg("timeStep"))
+          ::py::arg("timeStep"))
       .def(
           "getTimeStep",
           +[](const dart::constraint::ConstraintSolver* self) -> double {
@@ -117,7 +119,7 @@ void ConstraintSolver(pybind11::module& m)
                   collisionDetector) {
             self->setCollisionDetector(collisionDetector);
           },
-          ::pybind11::arg("collisionDetector"))
+          ::py::arg("collisionDetector"))
       .def(
           "getCollisionDetector",
           +[](dart::constraint::ConstraintSolver* self)

@@ -30,23 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
 #include <pybind11/pybind11.h>
+
+namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Contact(pybind11::module& sm);
+void Contact(py::module& sm);
 
-void CollisionOption(pybind11::module& sm);
-void CollisionResult(pybind11::module& sm);
+void CollisionOption(py::module& sm);
+void CollisionResult(py::module& sm);
 
-void CollisionDetector(pybind11::module& sm);
-void FCLCollisionDetector(pybind11::module& sm);
+void CollisionDetector(py::module& sm);
+void FCLCollisionDetector(py::module& sm);
+void DARTCollisionDetector(py::module& sm);
 
-void CollisionGroup(pybind11::module& sm);
-void FCLCollisionGroup(pybind11::module& sm);
+void CollisionGroup(py::module& sm);
+void FCLCollisionGroup(py::module& sm);
+void DARTCollisionGroup(py::module& sm);
 
-void dart_collision(pybind11::module& m)
+#if HAVE_BULLET
+void BulletCollisionDetector(py::module& sm);
+void BulletCollisionGroup(py::module& sm);
+#endif // HAVE_BULLET
+
+#if HAVE_ODE
+void OdeCollisionDetector(py::module& sm);
+void OdeCollisionGroup(py::module& sm);
+#endif // HAVE_ODE
+
+void dart_collision(py::module& m)
 {
   auto sm = m.def_submodule("collision");
 
@@ -57,9 +72,21 @@ void dart_collision(pybind11::module& m)
 
   CollisionDetector(sm);
   FCLCollisionDetector(sm);
+  DARTCollisionDetector(sm);
 
   CollisionGroup(sm);
   FCLCollisionGroup(sm);
+  DARTCollisionGroup(sm);
+
+#if HAVE_BULLET
+  BulletCollisionDetector(sm);
+  BulletCollisionGroup(sm);
+#endif // HAVE_BULLET
+
+#if HAVE_ODE
+  OdeCollisionDetector(sm);
+  OdeCollisionGroup(sm);
+#endif // HAVE_ODE
 }
 
 } // namespace python

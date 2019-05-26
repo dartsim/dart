@@ -34,66 +34,68 @@
 #include <pybind11/pybind11.h>
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void Solver(pybind11::module& m)
+void Solver(py::module& m)
 {
-  ::pybind11::class_<dart::optimizer::Solver::Properties>(m, "SolverProperties")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::optimizer::Solver::Properties>(m, "SolverProperties")
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<std::shared_ptr<dart::optimizer::Problem>>(),
-          ::pybind11::arg("problem"))
+          ::py::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          ::py::arg("problem"))
       .def(
-          ::pybind11::init<std::shared_ptr<dart::optimizer::Problem>, double>(),
-          ::pybind11::arg("problem"),
-          ::pybind11::arg("tolerance"))
+          ::py::init<std::shared_ptr<dart::optimizer::Problem>, double>(),
+          ::py::arg("problem"),
+          ::py::arg("tolerance"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t>(),
-          ::pybind11::arg("problem"),
-          ::pybind11::arg("tolerance"),
-          ::pybind11::arg("numMaxIterations"))
+          ::py::arg("problem"),
+          ::py::arg("tolerance"),
+          ::py::arg("numMaxIterations"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
               std::size_t>(),
-          ::pybind11::arg("problem"),
-          ::pybind11::arg("tolerance"),
-          ::pybind11::arg("numMaxIterations"),
-          ::pybind11::arg("iterationsPerPrint"))
+          ::py::arg("problem"),
+          ::py::arg("tolerance"),
+          ::py::arg("numMaxIterations"),
+          ::py::arg("iterationsPerPrint"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
               std::size_t,
               std::ostream*>(),
-          ::pybind11::arg("problem"),
-          ::pybind11::arg("tolerance"),
-          ::pybind11::arg("numMaxIterations"),
-          ::pybind11::arg("iterationsPerPrint"),
-          ::pybind11::arg("ostream"))
+          ::py::arg("problem"),
+          ::py::arg("tolerance"),
+          ::py::arg("numMaxIterations"),
+          ::py::arg("iterationsPerPrint"),
+          ::py::arg("ostream"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
               std::size_t,
               std::ostream*,
               bool>(),
-          ::pybind11::arg("problem"),
-          ::pybind11::arg("tolerance"),
-          ::pybind11::arg("numMaxIterations"),
-          ::pybind11::arg("iterationsPerPrint"),
-          ::pybind11::arg("ostream"),
-          ::pybind11::arg("printFinalResult"))
+          ::py::arg("problem"),
+          ::py::arg("tolerance"),
+          ::py::arg("numMaxIterations"),
+          ::py::arg("iterationsPerPrint"),
+          ::py::arg("ostream"),
+          ::py::arg("printFinalResult"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
@@ -101,13 +103,13 @@ void Solver(pybind11::module& m)
               std::ostream*,
               bool,
               const std::string&>(),
-          ::pybind11::arg("problem"),
-          ::pybind11::arg("tolerance"),
-          ::pybind11::arg("numMaxIterations"),
-          ::pybind11::arg("iterationsPerPrint"),
-          ::pybind11::arg("ostream"),
-          ::pybind11::arg("printFinalResult"),
-          ::pybind11::arg("resultFile"))
+          ::py::arg("problem"),
+          ::py::arg("tolerance"),
+          ::py::arg("numMaxIterations"),
+          ::py::arg("iterationsPerPrint"),
+          ::py::arg("ostream"),
+          ::py::arg("printFinalResult"),
+          ::py::arg("resultFile"))
       .def_readwrite("mProblem", &dart::optimizer::Solver::Properties::mProblem)
       .def_readwrite(
           "mTolerance", &dart::optimizer::Solver::Properties::mTolerance)
@@ -125,7 +127,7 @@ void Solver(pybind11::module& m)
       .def_readwrite(
           "mResultFile", &dart::optimizer::Solver::Properties::mResultFile);
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::optimizer::Solver,
       std::shared_ptr<dart::optimizer::Solver>>(m, "Solver")
       .def(
@@ -148,14 +150,14 @@ void Solver(pybind11::module& m)
               const dart::optimizer::Solver::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::pybind11::arg("properties"))
+          ::py::arg("properties"))
       .def(
           "setProblem",
           +[](dart::optimizer::Solver* self,
               std::shared_ptr<dart::optimizer::Problem> _newProblem) {
             self->setProblem(_newProblem);
           },
-          ::pybind11::arg("newProblem"))
+          ::py::arg("newProblem"))
       .def(
           "getProblem",
           +[](const dart::optimizer::Solver* self)
@@ -167,7 +169,7 @@ void Solver(pybind11::module& m)
           +[](dart::optimizer::Solver* self, double _newTolerance) {
             self->setTolerance(_newTolerance);
           },
-          ::pybind11::arg("newTolerance"))
+          ::py::arg("newTolerance"))
       .def(
           "getTolerance",
           +[](const dart::optimizer::Solver* self) -> double {
@@ -178,7 +180,7 @@ void Solver(pybind11::module& m)
           +[](dart::optimizer::Solver* self, std::size_t _newMax) {
             self->setNumMaxIterations(_newMax);
           },
-          ::pybind11::arg("newMax"))
+          ::py::arg("newMax"))
       .def(
           "getNumMaxIterations",
           +[](const dart::optimizer::Solver* self) -> std::size_t {
@@ -189,7 +191,7 @@ void Solver(pybind11::module& m)
           +[](dart::optimizer::Solver* self, std::size_t _newRatio) {
             self->setIterationsPerPrint(_newRatio);
           },
-          ::pybind11::arg("newRatio"))
+          ::py::arg("newRatio"))
       .def(
           "getIterationsPerPrint",
           +[](const dart::optimizer::Solver* self) -> std::size_t {
@@ -200,13 +202,13 @@ void Solver(pybind11::module& m)
           +[](dart::optimizer::Solver* self, std::ostream* _os) {
             self->setOutStream(_os);
           },
-          ::pybind11::arg("os"))
+          ::py::arg("os"))
       .def(
           "setPrintFinalResult",
           +[](dart::optimizer::Solver* self, bool _print) {
             self->setPrintFinalResult(_print);
           },
-          ::pybind11::arg("print"))
+          ::py::arg("print"))
       .def(
           "getPrintFinalResult",
           +[](const dart::optimizer::Solver* self) -> bool {
@@ -217,13 +219,13 @@ void Solver(pybind11::module& m)
           +[](dart::optimizer::Solver* self, const std::string& _resultFile) {
             self->setResultFileName(_resultFile);
           },
-          ::pybind11::arg("resultFile"))
+          ::py::arg("resultFile"))
       .def(
           "getResultFileName",
           +[](const dart::optimizer::Solver* self) -> const std::string& {
             return self->getResultFileName();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

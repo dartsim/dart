@@ -34,12 +34,14 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void JointConstraint(pybind11::module& m)
+void JointConstraint(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::JointConstraint,
       dart::constraint::ConstraintBase,
       std::shared_ptr<dart::constraint::JointConstraint>>(m, "JointConstraint")
@@ -48,7 +50,7 @@ void JointConstraint(pybind11::module& m)
           +[](double _allowance) {
             dart::constraint::JointConstraint::setErrorAllowance(_allowance);
           },
-          ::pybind11::arg("allowance"))
+          ::py::arg("allowance"))
       .def_static(
           "getErrorAllowance",
           +[]() -> double {
@@ -59,7 +61,7 @@ void JointConstraint(pybind11::module& m)
           +[](double _erp) {
             dart::constraint::JointConstraint::setErrorReductionParameter(_erp);
           },
-          ::pybind11::arg("erp"))
+          ::py::arg("erp"))
       .def_static(
           "getErrorReductionParameter",
           +[]() -> double {
@@ -72,7 +74,7 @@ void JointConstraint(pybind11::module& m)
             dart::constraint::JointConstraint::setMaxErrorReductionVelocity(
                 _erv);
           },
-          ::pybind11::arg("erv"))
+          ::py::arg("erv"))
       .def_static(
           "getMaxErrorReductionVelocity",
           +[]() -> double {
@@ -84,49 +86,46 @@ void JointConstraint(pybind11::module& m)
           +[](double _cfm) {
             dart::constraint::JointConstraint::setConstraintForceMixing(_cfm);
           },
-          ::pybind11::arg("cfm"))
+          ::py::arg("cfm"))
       .def_static("getConstraintForceMixing", +[]() -> double {
         return dart::constraint::JointConstraint::getConstraintForceMixing();
       });
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::BallJointConstraint,
       dart::constraint::JointConstraint,
       std::shared_ptr<dart::constraint::BallJointConstraint>>(
       m, "BallJointConstraint")
       .def(
-          ::pybind11::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
-          ::pybind11::arg("body"),
-          ::pybind11::arg("jointPos"))
+          ::py::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
+          ::py::arg("body"),
+          ::py::arg("jointPos"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&>(),
-          ::pybind11::arg("body1"),
-          ::pybind11::arg("body2"),
-          ::pybind11::arg("jointPos"));
+          ::py::arg("body1"),
+          ::py::arg("body2"),
+          ::py::arg("jointPos"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::WeldJointConstraint,
       dart::constraint::JointConstraint,
       std::shared_ptr<dart::constraint::WeldJointConstraint>>(
       m, "WeldJointConstraint")
+      .def(::py::init<dart::dynamics::BodyNode*>(), ::py::arg("body"))
       .def(
-          ::pybind11::init<dart::dynamics::BodyNode*>(),
-          ::pybind11::arg("body"))
-      .def(
-          ::pybind11::
-              init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
-          ::pybind11::arg("body1"),
-          ::pybind11::arg("body2"))
+          ::py::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
+          ::py::arg("body1"),
+          ::py::arg("body2"))
       .def(
           "setRelativeTransform",
           +[](dart::constraint::WeldJointConstraint* self,
               const Eigen::Isometry3d& _tf) {
             self->setRelativeTransform(_tf);
           },
-          ::pybind11::arg("tf"));
+          ::py::arg("tf"));
 }
 
 } // namespace python

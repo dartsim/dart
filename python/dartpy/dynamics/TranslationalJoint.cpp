@@ -36,20 +36,22 @@
 #include <pybind11/pybind11.h>
 #include "Joint.hpp"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void TranslationalJoint(pybind11::module& m)
+void TranslationalJoint(py::module& m)
 {
-  ::pybind11::class_<dart::dynamics::TranslationalJoint::Properties>(
+  ::py::class_<dart::dynamics::TranslationalJoint::Properties>(
       m, "TranslationalJointProperties")
-      .def(::pybind11::init<>())
+      .def(::py::init<>())
       .def(
-          ::pybind11::init<const dart::dynamics::GenericJoint<
+          ::py::init<const dart::dynamics::GenericJoint<
               dart::math::RealVectorSpace<3>>::Properties&>(),
-          ::pybind11::arg("properties"));
+          ::py::arg("properties"));
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::TranslationalJoint,
       dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3>>,
       std::shared_ptr<dart::dynamics::TranslationalJoint>>(
@@ -64,12 +66,12 @@ void TranslationalJoint(pybind11::module& m)
           "getType",
           +[](const dart::dynamics::TranslationalJoint* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::TranslationalJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::TranslationalJoint* self,
@@ -77,13 +79,13 @@ void TranslationalJoint(pybind11::module& m)
               -> Eigen::Matrix<double, 6, 3> {
             return self->getRelativeJacobianStatic(_positions);
           },
-          ::pybind11::arg("positions"))
+          ::py::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::TranslationalJoint::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

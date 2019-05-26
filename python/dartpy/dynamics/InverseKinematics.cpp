@@ -35,12 +35,14 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void InverseKinematics(pybind11::module& m)
+void InverseKinematics(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::InverseKinematics::ErrorMethod,
       dart::common::Subject,
       std::shared_ptr<dart::dynamics::InverseKinematics::ErrorMethod>>(
@@ -53,7 +55,7 @@ void InverseKinematics(pybind11::module& m)
                   dart::dynamics::InverseKinematics::ErrorMethod> {
             return self->clone(_newIK);
           },
-          ::pybind11::arg("newIK"))
+          ::py::arg("newIK"))
       .def(
           "computeError",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -65,13 +67,13 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector6d& _error) -> Eigen::Isometry3d {
             return self->computeDesiredTransform(_currentTf, _error);
           },
-          ::pybind11::arg("currentTf"),
-          ::pybind11::arg("error"))
+          ::py::arg("currentTf"),
+          ::py::arg("error"))
       .def(
           "getMethodName",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
               -> const std::string& { return self->getMethodName(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self) {
@@ -81,7 +83,7 @@ void InverseKinematics(pybind11::module& m)
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const Eigen::Vector6d& _lower) { self->setBounds(_lower); },
-          ::pybind11::arg("lower"))
+          ::py::arg("lower"))
       .def(
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
@@ -89,15 +91,15 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector6d& _upper) {
             self->setBounds(_lower, _upper);
           },
-          ::pybind11::arg("lower"),
-          ::pybind11::arg("upper"))
+          ::py::arg("lower"),
+          ::py::arg("upper"))
       .def(
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds) {
             self->setBounds(_bounds);
           },
-          ::pybind11::arg("bounds"))
+          ::py::arg("bounds"))
       .def(
           "getBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -115,7 +117,7 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector3d& _lower) {
             self->setAngularBounds(_lower);
           },
-          ::pybind11::arg("lower"))
+          ::py::arg("lower"))
       .def(
           "setAngularBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
@@ -123,15 +125,15 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector3d& _upper) {
             self->setAngularBounds(_lower, _upper);
           },
-          ::pybind11::arg("lower"),
-          ::pybind11::arg("upper"))
+          ::py::arg("lower"),
+          ::py::arg("upper"))
       .def(
           "setAngularBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
             self->setAngularBounds(_bounds);
           },
-          ::pybind11::arg("bounds"))
+          ::py::arg("bounds"))
       .def(
           "getAngularBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -147,7 +149,7 @@ void InverseKinematics(pybind11::module& m)
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const Eigen::Vector3d& _lower) { self->setLinearBounds(_lower); },
-          ::pybind11::arg("lower"))
+          ::py::arg("lower"))
       .def(
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
@@ -155,15 +157,15 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector3d& _upper) {
             self->setLinearBounds(_lower, _upper);
           },
-          ::pybind11::arg("lower"),
-          ::pybind11::arg("upper"))
+          ::py::arg("lower"),
+          ::py::arg("upper"))
       .def(
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
             self->setLinearBounds(_bounds);
           },
-          ::pybind11::arg("bounds"))
+          ::py::arg("bounds"))
       .def(
           "getLinearBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -179,7 +181,7 @@ void InverseKinematics(pybind11::module& m)
           "setErrorLengthClamp",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               double _clampSize) { self->setErrorLengthClamp(_clampSize); },
-          ::pybind11::arg("clampSize"))
+          ::py::arg("clampSize"))
       .def(
           "getErrorLengthClamp",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -190,7 +192,7 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector6d& _weights) {
             self->setErrorWeights(_weights);
           },
-          ::pybind11::arg("weights"))
+          ::py::arg("weights"))
       .def(
           "setAngularErrorWeights",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self) {
@@ -202,7 +204,7 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector3d& _weights) {
             self->setAngularErrorWeights(_weights);
           },
-          ::pybind11::arg("weights"))
+          ::py::arg("weights"))
       .def(
           "getAngularErrorWeights",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -218,7 +220,7 @@ void InverseKinematics(pybind11::module& m)
               const Eigen::Vector3d& _weights) {
             self->setLinearErrorWeights(_weights);
           },
-          ::pybind11::arg("weights"))
+          ::py::arg("weights"))
       .def(
           "getLinearErrorWeights",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -235,7 +237,7 @@ void InverseKinematics(pybind11::module& m)
             self->clearCache();
           });
 
-  ::pybind11::class_<
+  ::py::class_<
       dart::dynamics::InverseKinematics,
       dart::common::Subject,
       std::shared_ptr<dart::dynamics::InverseKinematics>>(
@@ -247,7 +249,7 @@ void InverseKinematics(pybind11::module& m)
               -> dart::dynamics::InverseKinematicsPtr {
             return self->clone(_newNode);
           },
-          ::pybind11::arg("newNode"))
+          ::py::arg("newNode"))
       .def(
           "setActive",
           +[](dart::dynamics::InverseKinematics* self) { self->setActive(); })
@@ -256,7 +258,7 @@ void InverseKinematics(pybind11::module& m)
           +[](dart::dynamics::InverseKinematics* self, bool _active) {
             self->setActive(_active);
           },
-          ::pybind11::arg("active"))
+          ::py::arg("active"))
       .def(
           "setInactive",
           +[](dart::dynamics::InverseKinematics* self) { self->setInactive(); })
@@ -270,7 +272,7 @@ void InverseKinematics(pybind11::module& m)
           +[](dart::dynamics::InverseKinematics* self, std::size_t _level) {
             self->setHierarchyLevel(_level);
           },
-          ::pybind11::arg("level"))
+          ::py::arg("level"))
       .def(
           "getHierarchyLevel",
           +[](const dart::dynamics::InverseKinematics* self) -> std::size_t {
@@ -288,14 +290,14 @@ void InverseKinematics(pybind11::module& m)
           "setDofs",
           +[](dart::dynamics::InverseKinematics* self,
               const std::vector<std::size_t>& _dofs) { self->setDofs(_dofs); },
-          ::pybind11::arg("dofs"))
+          ::py::arg("dofs"))
       .def(
           "setObjective",
           +[](dart::dynamics::InverseKinematics* self,
               const std::shared_ptr<dart::optimizer::Function>& _objective) {
             self->setObjective(_objective);
           },
-          ::pybind11::arg("objective"))
+          ::py::arg("objective"))
       .def(
           "getObjective",
           +[](const dart::dynamics::InverseKinematics* self)
@@ -308,7 +310,7 @@ void InverseKinematics(pybind11::module& m)
               const std::shared_ptr<dart::optimizer::Function>& _nsObjective) {
             self->setNullSpaceObjective(_nsObjective);
           },
-          ::pybind11::arg("nsObjective"))
+          ::py::arg("nsObjective"))
       .def(
           "getNullSpaceObjective",
           +[](const dart::dynamics::InverseKinematics* self)
@@ -326,7 +328,7 @@ void InverseKinematics(pybind11::module& m)
               -> dart::dynamics::InverseKinematics::ErrorMethod& {
             return self->getErrorMethod();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "getProblem",
           +[](const dart::dynamics::InverseKinematics* self)
@@ -343,14 +345,14 @@ void InverseKinematics(pybind11::module& m)
           +[](dart::dynamics::InverseKinematics* self, bool _clearSeeds) {
             self->resetProblem(_clearSeeds);
           },
-          ::pybind11::arg("clearSeeds"))
+          ::py::arg("clearSeeds"))
       .def(
           "setSolver",
           +[](dart::dynamics::InverseKinematics* self,
               const std::shared_ptr<dart::optimizer::Solver>& _newSolver) {
             self->setSolver(_newSolver);
           },
-          ::pybind11::arg("newSolver"))
+          ::py::arg("newSolver"))
       .def(
           "getSolver",
           +[](dart::dynamics::InverseKinematics* self)
@@ -364,12 +366,12 @@ void InverseKinematics(pybind11::module& m)
           "setOffset",
           +[](dart::dynamics::InverseKinematics* self,
               const Eigen::Vector3d& _offset) { self->setOffset(_offset); },
-          ::pybind11::arg("offset"))
+          ::py::arg("offset"))
       .def(
           "getOffset",
           +[](const dart::dynamics::InverseKinematics* self)
               -> const Eigen::Vector3d& { return self->getOffset(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "hasOffset",
           +[](const dart::dynamics::InverseKinematics* self) -> bool {
@@ -381,7 +383,7 @@ void InverseKinematics(pybind11::module& m)
               std::shared_ptr<dart::dynamics::SimpleFrame> _newTarget) {
             self->setTarget(_newTarget);
           },
-          ::pybind11::arg("newTarget"))
+          ::py::arg("newTarget"))
       .def(
           "getTarget",
           +[](dart::dynamics::InverseKinematics* self)
@@ -402,7 +404,7 @@ void InverseKinematics(pybind11::module& m)
           "setPositions",
           +[](dart::dynamics::InverseKinematics* self,
               const Eigen::VectorXd& _q) { self->setPositions(_q); },
-          ::pybind11::arg("q"))
+          ::py::arg("q"))
       .def(
           "clearCaches",
           +[](dart::dynamics::InverseKinematics* self) { self->clearCaches(); })
@@ -412,7 +414,7 @@ void InverseKinematics(pybind11::module& m)
               -> dart::dynamics::InverseKinematicsPtr {
             return dart::dynamics::InverseKinematics::create(_node);
           },
-          ::pybind11::arg("node"));
+          ::py::arg("node"));
 }
 
 } // namespace python

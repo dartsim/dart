@@ -36,20 +36,22 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void World(pybind11::module& m)
+void World(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::simulation::World,
       std::shared_ptr<dart::simulation::World>>(m, "World")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<const std::string&>(), ::pybind11::arg("name"))
-      .def(::pybind11::init(+[]() -> dart::simulation::WorldPtr {
+      .def(::py::init<>())
+      .def(::py::init<const std::string&>(), ::py::arg("name"))
+      .def(::py::init(+[]() -> dart::simulation::WorldPtr {
         return dart::simulation::World::create();
       }))
-      .def(::pybind11::init(
+      .def(::py::init(
           +[](const std::string& name) -> dart::simulation::WorldPtr {
             return dart::simulation::World::create(name);
           }))
@@ -63,31 +65,31 @@ void World(pybind11::module& m)
           "setName",
           +[](dart::simulation::World* self, const std::string& _newName)
               -> const std::string& { return self->setName(_newName); },
-          ::pybind11::return_value_policy::reference_internal,
-          ::pybind11::arg("newName"))
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("newName"))
       .def(
           "getName",
           +[](const dart::simulation::World* self) -> const std::string& {
             return self->getName();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "setGravity",
           +[](dart::simulation::World* self, const Eigen::Vector3d& _gravity)
               -> void { return self->setGravity(_gravity); },
-          ::pybind11::arg("gravity"))
+          ::py::arg("gravity"))
       .def(
           "getGravity",
           +[](const dart::simulation::World* self) -> const Eigen::Vector3d& {
             return self->getGravity();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "setTimeStep",
           +[](dart::simulation::World* self, double _timeStep) -> void {
             return self->setTimeStep(_timeStep);
           },
-          ::pybind11::arg("timeStep"))
+          ::py::arg("timeStep"))
       .def(
           "getTimeStep",
           +[](const dart::simulation::World* self) -> double {
@@ -99,14 +101,14 @@ void World(pybind11::module& m)
               std::size_t _index) -> dart::dynamics::SkeletonPtr {
             return self->getSkeleton(_index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getSkeleton",
           +[](const dart::simulation::World* self,
               const std::string& _name) -> dart::dynamics::SkeletonPtr {
             return self->getSkeleton(_name);
           },
-          ::pybind11::arg("name"))
+          ::py::arg("name"))
       .def(
           "getNumSkeletons",
           +[](const dart::simulation::World* self) -> std::size_t {
@@ -118,14 +120,14 @@ void World(pybind11::module& m)
               const dart::dynamics::SkeletonPtr& _skeleton) -> std::string {
             return self->addSkeleton(_skeleton);
           },
-          ::pybind11::arg("skeleton"))
+          ::py::arg("skeleton"))
       .def(
           "removeSkeleton",
           +[](dart::simulation::World* self,
               const dart::dynamics::SkeletonPtr& _skeleton) -> void {
             return self->removeSkeleton(_skeleton);
           },
-          ::pybind11::arg("skeleton"))
+          ::py::arg("skeleton"))
       .def(
           "removeAllSkeletons",
           +[](dart::simulation::World* self)
@@ -138,27 +140,27 @@ void World(pybind11::module& m)
               const dart::dynamics::ConstSkeletonPtr& skeleton) -> bool {
             return self->hasSkeleton(skeleton);
           },
-          ::pybind11::arg("skeleton"))
+          ::py::arg("skeleton"))
       .def(
           "getIndex",
           +[](const dart::simulation::World* self, int _index) -> int {
             return self->getIndex(_index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getSimpleFrame",
           +[](const dart::simulation::World* self,
               std::size_t _index) -> dart::dynamics::SimpleFramePtr {
             return self->getSimpleFrame(_index);
           },
-          ::pybind11::arg("index"))
+          ::py::arg("index"))
       .def(
           "getSimpleFrame",
           +[](const dart::simulation::World* self,
               const std::string& _name) -> dart::dynamics::SimpleFramePtr {
             return self->getSimpleFrame(_name);
           },
-          ::pybind11::arg("name"))
+          ::py::arg("name"))
       .def(
           "getNumSimpleFrames",
           +[](const dart::simulation::World* self) -> std::size_t {
@@ -170,14 +172,14 @@ void World(pybind11::module& m)
               const dart::dynamics::SimpleFramePtr& _frame) -> std::string {
             return self->addSimpleFrame(_frame);
           },
-          ::pybind11::arg("frame"))
+          ::py::arg("frame"))
       .def(
           "removeSimpleFrame",
           +[](dart::simulation::World* self,
               const dart::dynamics::SimpleFramePtr& _frame) -> void {
             return self->removeSimpleFrame(_frame);
           },
-          ::pybind11::arg("frame"))
+          ::py::arg("frame"))
       .def(
           "removeAllSimpleFrames",
           +[](dart::simulation::World* self)
@@ -195,7 +197,7 @@ void World(pybind11::module& m)
               const dart::collision::CollisionOption& option) -> bool {
             return self->checkCollision(option);
           },
-          ::pybind11::arg("option"))
+          ::py::arg("option"))
       .def(
           "checkCollision",
           +[](dart::simulation::World* self,
@@ -203,8 +205,8 @@ void World(pybind11::module& m)
               dart::collision::CollisionResult* result) -> bool {
             return self->checkCollision(option, result);
           },
-          ::pybind11::arg("option"),
-          ::pybind11::arg("result"))
+          ::py::arg("option"),
+          ::py::arg("result"))
       .def(
           "getLastCollisionResult",
           +[](dart::simulation::World* self)
@@ -222,13 +224,13 @@ void World(pybind11::module& m)
           +[](dart::simulation::World* self, bool _resetCommand) -> void {
             return self->step(_resetCommand);
           },
-          ::pybind11::arg("resetCommand"))
+          ::py::arg("resetCommand"))
       .def(
           "setTime",
           +[](dart::simulation::World* self, double _time) -> void {
             return self->setTime(_time);
           },
-          ::pybind11::arg("time"))
+          ::py::arg("time"))
       .def(
           "getTime",
           +[](const dart::simulation::World* self) -> double {
@@ -244,7 +246,7 @@ void World(pybind11::module& m)
           +[](dart::simulation::World* self) -> constraint::ConstraintSolver* {
             return self->getConstraintSolver();
           },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "bake",
           +[](dart::simulation::World* self) -> void { return self->bake(); })

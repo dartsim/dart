@@ -32,26 +32,28 @@
 
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void ConstraintBase(pybind11::module& sm);
-void JointConstraint(pybind11::module& sm);
-void JointLimitConstraint(pybind11::module& sm);
-void JointCoulombFrictionConstraint(pybind11::module& sm);
+void ConstraintBase(py::module& sm);
+void JointConstraint(py::module& sm);
+void JointLimitConstraint(py::module& sm);
+void JointCoulombFrictionConstraint(py::module& sm);
 
-void BoxedLcpSolver(pybind11::module& sm);
-void DantzigBoxedLcpSolver(pybind11::module& sm);
-void PgsBoxedLcpSolver(pybind11::module& sm);
+void BoxedLcpSolver(py::module& sm);
+void DantzigBoxedLcpSolver(py::module& sm);
+void PgsBoxedLcpSolver(py::module& sm);
 
-void ConstraintSolver(pybind11::module& sm);
-void BoxedLcpConstraintSolver(pybind11::module& sm);
+void ConstraintSolver(py::module& sm);
+void BoxedLcpConstraintSolver(py::module& sm);
 
-// void ConstraintBase(pybind11::module& sm);
-// void ConstraintBase(pybind11::module& sm);
-// void ConstraintBase(pybind11::module& sm);
+// void ConstraintBase(py::module& sm);
+// void ConstraintBase(py::module& sm);
+// void ConstraintBase(py::module& sm);
 
-void dart_constraint(pybind11::module& m)
+void dart_constraint(py::module& m)
 {
   auto sm = m.def_submodule("constraint");
 

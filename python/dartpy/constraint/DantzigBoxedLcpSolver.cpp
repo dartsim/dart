@@ -33,12 +33,14 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
+namespace py = pybind11;
+
 namespace dart {
 namespace python {
 
-void DantzigBoxedLcpSolver(pybind11::module& m)
+void DantzigBoxedLcpSolver(py::module& m)
 {
-  ::pybind11::class_<
+  ::py::class_<
       dart::constraint::DantzigBoxedLcpSolver,
       dart::constraint::BoxedLcpSolver,
       std::shared_ptr<dart::constraint::DantzigBoxedLcpSolver>>(
@@ -47,7 +49,7 @@ void DantzigBoxedLcpSolver(pybind11::module& m)
           "getType",
           +[](const dart::constraint::DantzigBoxedLcpSolver* self)
               -> const std::string& { return self->getType(); },
-          ::pybind11::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal)
       .def(
           "solve",
           +[](dart::constraint::DantzigBoxedLcpSolver* self,
@@ -63,21 +65,21 @@ void DantzigBoxedLcpSolver(pybind11::module& m)
             return self->solve(
                 n, A, x, b, nub, lo, hi, findex, earlyTermination);
           },
-          ::pybind11::arg("n"),
-          ::pybind11::arg("A"),
-          ::pybind11::arg("x"),
-          ::pybind11::arg("b"),
-          ::pybind11::arg("nub"),
-          ::pybind11::arg("lo"),
-          ::pybind11::arg("hi"),
-          ::pybind11::arg("findex"),
-          ::pybind11::arg("earlyTermination"))
+          ::py::arg("n"),
+          ::py::arg("A"),
+          ::py::arg("x"),
+          ::py::arg("b"),
+          ::py::arg("nub"),
+          ::py::arg("lo"),
+          ::py::arg("hi"),
+          ::py::arg("findex"),
+          ::py::arg("earlyTermination"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::constraint::DantzigBoxedLcpSolver::getStaticType();
           },
-          ::pybind11::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python
