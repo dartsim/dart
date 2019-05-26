@@ -71,6 +71,9 @@ endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(dartpy PUBLIC dart-collision-bullet)
 endif()
+if(TARGET dart-collision-ode)
+  target_link_libraries(dartpy PUBLIC dart-collision-ode)
+endif()
 
 set_target_properties(dartpy
   PROPERTIES

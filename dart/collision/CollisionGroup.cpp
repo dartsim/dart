@@ -221,6 +221,19 @@ double CollisionGroup::distance(
 }
 
 //==============================================================================
+bool CollisionGroup::raycast(
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result)
+{
+  if(mUpdateAutomatically)
+    update();
+
+  return mCollisionDetector->raycast(this, from, to, option, result);
+}
+
+//==============================================================================
 void CollisionGroup::setAutomaticUpdate(const bool automatic)
 {
   mUpdateAutomatically = automatic;

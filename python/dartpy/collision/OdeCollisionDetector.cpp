@@ -31,61 +31,51 @@
  */
 
 #include <dart/config.hpp>
+
+#if HAVE_ODE
+
+#include <dart/collision/ode/ode.hpp>
 #include <pybind11/pybind11.h>
 
 namespace dart {
 namespace python {
 
-void Contact(pybind11::module& sm);
-
-void CollisionOption(pybind11::module& sm);
-void CollisionResult(pybind11::module& sm);
-
-void CollisionDetector(pybind11::module& sm);
-void FCLCollisionDetector(pybind11::module& sm);
-void DARTCollisionDetector(pybind11::module& sm);
-
-void CollisionGroup(pybind11::module& sm);
-void FCLCollisionGroup(pybind11::module& sm);
-void DARTCollisionGroup(pybind11::module& sm);
-
-#if HAVE_BULLET
-void BulletCollisionDetector(pybind11::module& sm);
-void BulletCollisionGroup(pybind11::module& sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-void OdeCollisionDetector(pybind11::module& sm);
-void OdeCollisionGroup(pybind11::module& sm);
-#endif // HAVE_ODE
-
-void dart_collision(pybind11::module& m)
+void OdeCollisionDetector(pybind11::module& m)
 {
-  auto sm = m.def_submodule("collision");
-
-  Contact(sm);
-
-  CollisionOption(sm);
-  CollisionResult(sm);
-
-  CollisionDetector(sm);
-  FCLCollisionDetector(sm);
-  DARTCollisionDetector(sm);
-
-  CollisionGroup(sm);
-  FCLCollisionGroup(sm);
-  DARTCollisionGroup(sm);
-
-#if HAVE_BULLET
-  BulletCollisionDetector(sm);
-  BulletCollisionGroup(sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-  OdeCollisionDetector(sm);
-  OdeCollisionGroup(sm);
-#endif // HAVE_ODE
+  ::pybind11::class_<
+      dart::collision::OdeCollisionDetector,
+      std::shared_ptr<dart::collision::OdeCollisionDetector>,
+      dart::collision::CollisionDetector>(m, "OdeCollisionDetector")
+      .def(::pybind11::init(
+          +[]() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
+            return dart::collision::OdeCollisionDetector::create();
+          }))
+      .def(
+          "cloneWithoutCollisionObjects",
+          +[](const dart::collision::OdeCollisionDetector* self)
+              -> std::shared_ptr<dart::collision::CollisionDetector> {
+            return self->cloneWithoutCollisionObjects();
+          })
+      .def(
+          "getType",
+          +[](const dart::collision::OdeCollisionDetector* self)
+              -> const std::string& { return self->getType(); },
+          ::pybind11::return_value_policy::reference_internal)
+      .def(
+          "createCollisionGroup",
+          +[](dart::collision::OdeCollisionDetector* self)
+              -> std::unique_ptr<dart::collision::CollisionGroup> {
+            return self->createCollisionGroup();
+          })
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::collision::OdeCollisionDetector::getStaticType();
+          },
+          ::pybind11::return_value_policy::reference_internal);
 }
 
 } // namespace python
 } // namespace dart
+
+#endif // HAVE_ODE

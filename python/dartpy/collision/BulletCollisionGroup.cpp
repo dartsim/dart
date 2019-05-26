@@ -31,61 +31,28 @@
  */
 
 #include <dart/config.hpp>
+
+#if HAVE_BULLET
+
+#include <dart/collision/bullet/bullet.hpp>
 #include <pybind11/pybind11.h>
 
 namespace dart {
 namespace python {
 
-void Contact(pybind11::module& sm);
-
-void CollisionOption(pybind11::module& sm);
-void CollisionResult(pybind11::module& sm);
-
-void CollisionDetector(pybind11::module& sm);
-void FCLCollisionDetector(pybind11::module& sm);
-void DARTCollisionDetector(pybind11::module& sm);
-
-void CollisionGroup(pybind11::module& sm);
-void FCLCollisionGroup(pybind11::module& sm);
-void DARTCollisionGroup(pybind11::module& sm);
-
-#if HAVE_BULLET
-void BulletCollisionDetector(pybind11::module& sm);
-void BulletCollisionGroup(pybind11::module& sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-void OdeCollisionDetector(pybind11::module& sm);
-void OdeCollisionGroup(pybind11::module& sm);
-#endif // HAVE_ODE
-
-void dart_collision(pybind11::module& m)
+void BulletCollisionGroup(pybind11::module& m)
 {
-  auto sm = m.def_submodule("collision");
-
-  Contact(sm);
-
-  CollisionOption(sm);
-  CollisionResult(sm);
-
-  CollisionDetector(sm);
-  FCLCollisionDetector(sm);
-  DARTCollisionDetector(sm);
-
-  CollisionGroup(sm);
-  FCLCollisionGroup(sm);
-  DARTCollisionGroup(sm);
-
-#if HAVE_BULLET
-  BulletCollisionDetector(sm);
-  BulletCollisionGroup(sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-  OdeCollisionDetector(sm);
-  OdeCollisionGroup(sm);
-#endif // HAVE_ODE
+  ::pybind11::class_<
+      dart::collision::BulletCollisionGroup,
+      dart::collision::CollisionGroup,
+      std::shared_ptr<dart::collision::BulletCollisionGroup>>(
+      m, "BulletCollisionGroup")
+      .def(
+          ::pybind11::init<const dart::collision::CollisionDetectorPtr&>(),
+          ::pybind11::arg("collisionDetector"));
 }
 
 } // namespace python
 } // namespace dart
+
+#endif // HAVE_BULLET

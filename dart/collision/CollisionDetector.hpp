@@ -158,7 +158,7 @@ public:
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) = 0;
 
-  /// Perform raycast to a collision group.
+  /// Performs raycast to a collision group.
   ///
   /// \param[in] group The collision group the ray will be casted onto.
   /// \param[in] from The start point of the ray in world coordinates.

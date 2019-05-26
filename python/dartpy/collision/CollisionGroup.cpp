@@ -131,6 +131,60 @@ void CollisionGroup(pybind11::module& m)
           ::pybind11::arg("option"),
           ::pybind11::arg("result"))
       .def(
+          "distance",
+          +[](dart::collision::CollisionGroup* self) -> double {
+            return self->distance();
+          })
+      .def(
+          "distance",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::collision::DistanceOption& option) -> double {
+            return self->distance(option);
+          },
+          ::pybind11::arg("option"))
+      .def(
+          "distance",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::collision::DistanceOption& option,
+              dart::collision::DistanceResult* result) -> double {
+            return self->distance(option, result);
+          },
+          ::pybind11::arg("option"),
+          ::pybind11::arg("result"))
+      .def(
+          "raycast",
+          +[](dart::collision::CollisionGroup* self,
+              const Eigen::Vector3d& from,
+              const Eigen::Vector3d& to) -> bool {
+            return self->raycast(from, to);
+          },
+          ::pybind11::arg("from"),
+          ::pybind11::arg("to"))
+      .def(
+          "raycast",
+          +[](dart::collision::CollisionGroup* self,
+              const Eigen::Vector3d& from,
+              const Eigen::Vector3d& to,
+              const dart::collision::RaycastOption& option) -> bool {
+            return self->raycast(from, to, option);
+          },
+          ::pybind11::arg("from"),
+          ::pybind11::arg("to"),
+          ::pybind11::arg("option"))
+      .def(
+          "raycast",
+          +[](dart::collision::CollisionGroup* self,
+              const Eigen::Vector3d& from,
+              const Eigen::Vector3d& to,
+              const dart::collision::RaycastOption& option,
+              dart::collision::RaycastResult* result) -> bool {
+            return self->raycast(from, to, option, result);
+          },
+          ::pybind11::arg("from"),
+          ::pybind11::arg("to"),
+          ::pybind11::arg("option"),
+          ::pybind11::arg("result"))
+      .def(
           "setAutomaticUpdate",
           +[](dart::collision::CollisionGroup* self) {
             self->setAutomaticUpdate();

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -53,7 +54,7 @@ PYBIND11_MODULE(dartpy, m)
 {
   py::module::import("numpy");
 
-  m.doc() = "DART python bindings";
+  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
 
   eigen_geometry(m);
 
