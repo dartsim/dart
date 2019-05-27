@@ -16,21 +16,8 @@ import distutils.log
 dart_root = os.path.abspath(os.path.dirname(__file__))
 dartpy_root = os.path.join(dart_root, 'python')
 
-long_description = \
-    """
-    dartpy is the Python API of DART (Dynamic Animation and Robotics Toolkit).
-    The library provides data structures and algorithms for kinematic and
-    dynamic applications in robotics and computer animation. DART is
-    distinguished by its accuracy and stability due to its use of generalized
-    coordinates to represent articulated rigid body systems and Featherstone’s
-    Articulated Body Algorithm to compute the dynamics of motion. For
-    developers, in contrast to many popular physics engines which view the
-    simulator as a black box, DART gives full access to internal kinematic and
-    dynamic quantities, such as the mass matrix, Coriolis and centrifugal
-    forces, transformation matrices and their derivatives. DART also provides
-    an efficient computation of Jacobian matrices for arbitrary body points and
-    coordinate frames.
-    """
+with open(os.path.join(dart_root, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 description = 'Python API of Dynamic Animation and Robotics Toolkit.'
 
 distutils.log.set_verbosity(distutils.log.DEBUG)  # Set DEBUG level
@@ -105,9 +92,10 @@ sources.extend(glob.glob('doxygen/**/*', recursive=True))
 # Set up the python package wrapping this extension.
 setup(
     name='dartpy',
-    version='0.0.1-8',
+    version='0.0.1-10',
     description=description,
     long_description=long_description,
+    long_description_content_type='text/markdown',
     ext_modules=[CMakeExtension('dartpy', sources=sources)],
     url='https://github.com/dartsim/dart',
     author='Jeongseok Lee',
@@ -116,7 +104,7 @@ setup(
     keywords='dartsim robotics',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
-        'Framework :: Robot Framework'
+        'Framework :: Robot Framework',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Topic :: Scientific/Engineering',
