@@ -1,5 +1,11 @@
 ## DART 6
 
+### [DART 6.9.1 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/59?closed=1)
+
+* dartpy
+
+  * Updated build scripts for uploading dartpy to PyPI: [#1341](https://github.com/dartsim/dart/pull/1341)
+
 ### [DART 6.9.0 (2019-05-26)](https://github.com/dartsim/dart/milestone/52?closed=1)
 
 * Common
