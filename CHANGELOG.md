@@ -1,5 +1,11 @@
 ## DART 6
 
+### [DART 6.10.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/58?closed=1)
+
+*
+
+  *
+
 ### [DART 6.9.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/52?closed=1)
 
 * Common
