@@ -335,7 +335,7 @@ if (DART_BUILD_DARTPY)
   add_subdirectory(python)
 endif()
 
-if(DART_BUILD_EXTRAS)
+if(DART_BUILD_EXTRAS AND NOT DART_BUILD_DARTPY)
   add_subdirectory(extras)
 endif()
 
