@@ -54,7 +54,7 @@ def test_gradient_descent_solver():
 
 def test_nlopt_solver():
     if not hasattr(dart.optimizer, 'NloptSolver'):
-        pass
+        return
 
     prob = dart.optimizer.Problem(2)
     assert prob.getDimension() is 2
