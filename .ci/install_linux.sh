@@ -54,6 +54,9 @@ elif [ $(lsb_release -sc) = "cosmic" ]; then
 elif [ $(lsb_release -sc) = "disco" ]; then
   $SUDO apt-get -y install libnlopt-cxx-dev
   $SUDO apt-get -y install liboctomap-dev libode-dev
+elif [ $(lsb_release -sc) = "eoan" ]; then
+  $SUDO apt-get -y install libnlopt-cxx-dev
+  $SUDO apt-get -y install liboctomap-dev libode-dev
 else
   echo -e "$(lsb_release -sc) is not supported."
   exit 1
@@ -86,6 +89,9 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
     $SUDO apt-get -y install pybind11-dev python3 libpython3-dev python3-pytest \
       python3-distutils
   elif [ $(lsb_release -sc) = "disco" ]; then
+    $SUDO apt-get -y install pybind11-dev python3 libpython3-dev python3-pytest \
+      python3-distutils
+  elif [ $(lsb_release -sc) = "eoan" ]; then
     $SUDO apt-get -y install pybind11-dev python3 libpython3-dev python3-pytest \
       python3-distutils
   else
