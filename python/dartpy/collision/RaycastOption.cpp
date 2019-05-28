@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -39,44 +38,19 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Contact(py::module& m)
+void RaycastOption(py::module& m)
 {
-  ::py::class_<dart::collision::Contact>(m, "Contact")
-      .def(::py::init<>())
-      .def_static(
-          "getNormalEpsilon",
-          +[]() -> double {
-            return dart::collision::Contact::getNormalEpsilon();
-          })
-      .def_static(
-          "getNormalEpsilonSquared",
-          +[]() -> double {
-            return dart::collision::Contact::getNormalEpsilonSquared();
-          })
-      .def_static(
-          "isZeroNormal",
-          +[](const Eigen::Vector3d& normal) -> bool {
-            return dart::collision::Contact::isZeroNormal(normal);
-          },
-          ::py::arg("normal"))
-      .def_static(
-          "isNonZeroNormal",
-          +[](const Eigen::Vector3d& normal) -> bool {
-            return dart::collision::Contact::isNonZeroNormal(normal);
-          },
-          ::py::arg("normal"))
-      .def_readwrite("point", &dart::collision::Contact::point)
-      .def_readwrite("normal", &dart::collision::Contact::normal)
-      .def_readwrite("force", &dart::collision::Contact::force)
+  ::pybind11::class_<dart::collision::RaycastOption>(m, "RaycastOption")
+      .def(::pybind11::init<>())
+      .def(::pybind11::init<bool>(), ::pybind11::arg("enableAllHits"))
+      .def(
+          ::pybind11::init<bool, bool>(),
+          ::pybind11::arg("enableAllHits"),
+          ::pybind11::arg("sortByClosest"))
       .def_readwrite(
-          "collisionObject1", &dart::collision::Contact::collisionObject1)
+          "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
       .def_readwrite(
-          "collisionObject2", &dart::collision::Contact::collisionObject2)
-      .def_readwrite(
-          "penetrationDepth", &dart::collision::Contact::penetrationDepth)
-      .def_readwrite("triID1", &dart::collision::Contact::triID1)
-      .def_readwrite("triID2", &dart::collision::Contact::triID2)
-      .def_readwrite("userData", &dart::collision::Contact::userData);
+          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest);
 }
 
 } // namespace python

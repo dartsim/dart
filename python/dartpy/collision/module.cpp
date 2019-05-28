@@ -43,6 +43,12 @@ void Contact(py::module& sm);
 void CollisionOption(py::module& sm);
 void CollisionResult(py::module& sm);
 
+void DistanceOption(py::module& sm);
+void DistanceResult(py::module& sm);
+
+void RaycastOption(py::module& sm);
+void RaycastResult(py::module& sm);
+
 void CollisionDetector(py::module& sm);
 void FCLCollisionDetector(py::module& sm);
 void DARTCollisionDetector(py::module& sm);
@@ -69,6 +75,12 @@ void dart_collision(py::module& m)
 
   CollisionOption(sm);
   CollisionResult(sm);
+
+  DistanceOption(sm);
+  DistanceResult(sm);
+
+  RaycastOption(sm);
+  RaycastResult(sm);
 
   CollisionDetector(sm);
   FCLCollisionDetector(sm);

@@ -33,50 +33,34 @@
 #include <dart/dart.hpp>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Contact(py::module& m)
+void RaycastResult(py::module& m)
 {
-  ::py::class_<dart::collision::Contact>(m, "Contact")
-      .def(::py::init<>())
-      .def_static(
-          "getNormalEpsilon",
-          +[]() -> double {
-            return dart::collision::Contact::getNormalEpsilon();
+  ::pybind11::class_<dart::collision::RayHit>(m, "RayHit")
+      .def(::pybind11::init<>())
+      .def_readwrite(
+          "mCollisionObject", &dart::collision::RayHit::mCollisionObject)
+      .def_readwrite("mNormal", &dart::collision::RayHit::mNormal)
+      .def_readwrite("mPoint", &dart::collision::RayHit::mPoint)
+      .def_readwrite("mFraction", &dart::collision::RayHit::mFraction);
+
+  ::pybind11::class_<dart::collision::RaycastResult>(m, "RaycastResult")
+      .def(::pybind11::init<>())
+      .def(
+          "clear", +[](dart::collision::RaycastResult* self) { self->clear(); })
+      .def(
+          "hasHit",
+          +[](const dart::collision::RaycastResult* self) -> bool {
+            return self->hasHit();
           })
-      .def_static(
-          "getNormalEpsilonSquared",
-          +[]() -> double {
-            return dart::collision::Contact::getNormalEpsilonSquared();
-          })
-      .def_static(
-          "isZeroNormal",
-          +[](const Eigen::Vector3d& normal) -> bool {
-            return dart::collision::Contact::isZeroNormal(normal);
-          },
-          ::py::arg("normal"))
-      .def_static(
-          "isNonZeroNormal",
-          +[](const Eigen::Vector3d& normal) -> bool {
-            return dart::collision::Contact::isNonZeroNormal(normal);
-          },
-          ::py::arg("normal"))
-      .def_readwrite("point", &dart::collision::Contact::point)
-      .def_readwrite("normal", &dart::collision::Contact::normal)
-      .def_readwrite("force", &dart::collision::Contact::force)
-      .def_readwrite(
-          "collisionObject1", &dart::collision::Contact::collisionObject1)
-      .def_readwrite(
-          "collisionObject2", &dart::collision::Contact::collisionObject2)
-      .def_readwrite(
-          "penetrationDepth", &dart::collision::Contact::penetrationDepth)
-      .def_readwrite("triID1", &dart::collision::Contact::triID1)
-      .def_readwrite("triID2", &dart::collision::Contact::triID2)
-      .def_readwrite("userData", &dart::collision::Contact::userData);
+      .def_readwrite("mHasHit", &dart::collision::RaycastResult::mHasHit)
+      .def_readwrite("mRayHits", &dart::collision::RaycastResult::mRayHits);
 }
 
 } // namespace python

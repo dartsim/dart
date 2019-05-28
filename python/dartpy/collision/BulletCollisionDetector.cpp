@@ -66,8 +66,8 @@ void BulletCollisionDetector(py::module& m)
       .def(
           "createCollisionGroup",
           +[](dart::collision::BulletCollisionDetector* self)
-              -> std::unique_ptr<dart::collision::CollisionGroup> {
-            return self->createCollisionGroup();
+              -> std::shared_ptr<dart::collision::CollisionGroup> {
+            return self->createCollisionGroupAsSharedPtr();
           })
       .def_static(
           "getStaticType",
