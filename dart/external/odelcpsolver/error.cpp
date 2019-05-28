@@ -23,44 +23,46 @@
 #include "dart/external/odelcpsolver/odeconfig.h"
 #include "dart/external/odelcpsolver/error.h"
 
-
+namespace dart {
+namespace external {
+namespace ode {
 
 static dMessageFunction *error_function = 0;
 static dMessageFunction *debug_function = 0;
 static dMessageFunction *message_function = 0;
 
 
-extern "C" void dSetErrorHandler (dMessageFunction *fn)
+void dSetErrorHandler (dMessageFunction *fn)
 {
   error_function = fn;
 }
 
 
-extern "C" void dSetDebugHandler (dMessageFunction *fn)
+void dSetDebugHandler (dMessageFunction *fn)
 {
   debug_function = fn;
 }
 
 
-extern "C" void dSetMessageHandler (dMessageFunction *fn)
+void dSetMessageHandler (dMessageFunction *fn)
 {
   message_function = fn;
 }
 
 
-extern "C" dMessageFunction *dGetErrorHandler()
+dMessageFunction *dGetErrorHandler()
 {
   return error_function;
 }
 
 
-extern "C" dMessageFunction *dGetDebugHandler()
+dMessageFunction *dGetDebugHandler()
 {
   return debug_function;
 }
 
 
-extern "C" dMessageFunction *dGetMessageHandler()
+dMessageFunction *dGetMessageHandler()
 {
   return message_function;
 }
@@ -83,7 +85,7 @@ static void printMessage (int num, const char *msg1, const char *msg2,
 
 #ifndef _WIN32
 
-extern "C" void dError (int num, const char *msg, ...)
+void dError (int num, const char *msg, ...)
 {
   va_list ap;
   va_start (ap,msg);
@@ -93,7 +95,7 @@ extern "C" void dError (int num, const char *msg, ...)
 }
 
 
-extern "C" void dDebug (int num, const char *msg, ...)
+void dDebug (int num, const char *msg, ...)
 {
   va_list ap;
   va_start (ap,msg);
@@ -104,7 +106,7 @@ extern "C" void dDebug (int num, const char *msg, ...)
 }
 
 
-extern "C" void dMessage (int num, const char *msg, ...)
+void dMessage (int num, const char *msg, ...)
 {
   va_list ap;
   va_start (ap,msg);
@@ -135,7 +137,7 @@ extern "C" void dMessage (int num, const char *msg, ...)
 #endif
 
 
-extern "C" void dError (int num, const char *msg, ...)
+void dError (int num, const char *msg, ...)
 {
   va_list ap;
   va_start (ap,msg);
@@ -151,7 +153,7 @@ extern "C" void dError (int num, const char *msg, ...)
 }
 
 
-extern "C" void dDebug (int num, const char *msg, ...)
+void dDebug (int num, const char *msg, ...)
 {
   va_list ap;
   va_start (ap,msg);
@@ -167,7 +169,7 @@ extern "C" void dDebug (int num, const char *msg, ...)
 }
 
 
-extern "C" void dMessage (int num, const char *msg, ...)
+void dMessage (int num, const char *msg, ...)
 {
   va_list ap;
   va_start (ap,msg);
@@ -175,5 +177,8 @@ extern "C" void dMessage (int num, const char *msg, ...)
   else printMessage (num,"ODE Message",msg,ap);
 }
 
-
 #endif
+
+} // namespace ode
+} // namespace external
+} // namespace dart

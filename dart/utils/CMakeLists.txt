@@ -51,11 +51,13 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
-  DESTINATION include/dart/utils
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
+    DESTINATION include/dart/utils
+    COMPONENT headers
+  )
+endif()
 
 # Add subdirectories (components)
 add_subdirectory(urdf)

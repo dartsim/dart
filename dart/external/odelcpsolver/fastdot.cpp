@@ -24,6 +24,9 @@
 
 #include "dart/external/odelcpsolver/matrix.h"
 
+namespace dart {
+namespace external {
+namespace ode {
 
 dReal _dDot (const dReal *a, const dReal *b, int n)
 {  
@@ -59,3 +62,6 @@ dReal dDot (const dReal *a, const dReal *b, int n)
   return _dDot (a, b, n);
 }
 
+} // namespace ode
+} // namespace external
+} // namespace dart

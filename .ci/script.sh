@@ -77,38 +77,40 @@ cmake .. \
   -DDART_CODECOV=$CODECOV \
   ${install_prefix_option}
 
-if [ "$CODECOV" = "ON" ]; then
-  make -j$num_threads all tests
-else
-  make -j$num_threads all tutorials examples tests
-fi
-
 if [ "$BUILD_DARTPY" = "ON" ]; then
   make -j$num_threads dartpy
   make pytest
-fi
-
-if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
-  make check-format
-fi
-
-if [ $CODECOV = ON ]; then
-  make -j$num_threads codecov
 else
-  ctest --output-on-failure -j$num_threads
+  if [ "$CODECOV" = "ON" ]; then
+    make -j$num_threads all tests
+  else
+    make -j$num_threads all tutorials examples tests
+  fi
+
+  if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
+    make check-format
+  fi
+
+  if [ $CODECOV = "ON" ]; then
+    make -j$num_threads codecov
+  else
+    ctest --output-on-failure -j$num_threads
+  fi
 fi
 
 # Make sure we can install with no issues
 $SUDO make -j$num_threads install
 
-# Build an example using installed DART
-cd $BUILD_DIR/examples/hello_world
-mkdir build && cd build
-cmake ..
-make -j$num_threads
-
-# Run a python example (experimental)
 if [ "$BUILD_DARTPY" = "ON" ]; then
-  cd $BUILD_DIR/python/examples/hello_world
-  python3 main.py
+  # Run a python example (experimental)
+  if [ "$BUILD_DARTPY" = "ON" ]; then
+    cd $BUILD_DIR/python/examples/hello_world
+    python3 main.py
+  fi
+else
+  # Build an example using installed DART
+  cd $BUILD_DIR/examples/hello_world
+  mkdir build && cd build
+  cmake ..
+  make -j$num_threads
 fi

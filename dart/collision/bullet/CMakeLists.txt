@@ -71,11 +71,13 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp
-  DESTINATION include/dart/collision/bullet
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp
+    DESTINATION include/dart/collision/bullet
+    COMPONENT headers
+  )
+endif()
 
 dart_format_add(
   BulletCollisionShape.hpp

@@ -17,16 +17,18 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
-  DESTINATION include/dart/dynamics
-  COMPONENT headers
-)
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/dynamics/detail
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
+    DESTINATION include/dart/dynamics
+    COMPONENT headers
+  )
+  install(
+    FILES ${detail_hdrs}
+    DESTINATION include/dart/dynamics/detail
+    COMPONENT headers
+  )
+endif()
 
 dart_format_add(
   HeightmapShape.hpp
