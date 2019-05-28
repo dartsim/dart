@@ -54,7 +54,9 @@
 // misc defines
 #define ALLOCA dALLOCA16
 
-
+namespace dart {
+namespace external {
+namespace ode {
 
 void _dSetZero (dReal *a, size_t n)
 {
@@ -555,3 +557,7 @@ void dRemoveRowCol (dReal *A, int n, int nskip, int r)
 {
   _dRemoveRowCol (A, n, nskip, r);
 }
+
+} // namespace ode
+} // namespace external
+} // namespace dart

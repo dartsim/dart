@@ -27,11 +27,9 @@
 
 #include "dart/external/odelcpsolver/common.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+namespace dart {
+namespace external {
+namespace ode {
 
 /* set a vector/matrix of size n to all zeros, or to a specific value. */
 
@@ -272,9 +270,8 @@ PURE_INLINE size_t _dEstimateLDLTRemoveTmpbufSize(int n2, int nskip)
 
 //#endif // defined(__ODE__)
 
-
-#ifdef __cplusplus
-}
-#endif
+} // namespace ode
+} // namespace external
+} // namespace dart
 
 #endif
