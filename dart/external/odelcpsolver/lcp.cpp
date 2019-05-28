@@ -133,6 +133,10 @@ rows/columns and manipulate C.
 
 #define NUB_OPTIMIZATIONS
 
+namespace dart {
+namespace external {
+namespace ode {
+
 //***************************************************************************
 
 // swap row/column i1 with i2 in the n*n matrix A. the leading dimension of
@@ -1155,7 +1159,7 @@ size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
 //  return res;
 //}
 
-extern "C" ODE_API int dTestSolveLCP()
+ODE_API int dTestSolveLCP()
 {
   const int n = 100;
 
@@ -1285,3 +1289,7 @@ extern "C" ODE_API int dTestSolveLCP()
 
   return 1;
 }
+
+} // namespace ode
+} // namespace external
+} // namespace dart

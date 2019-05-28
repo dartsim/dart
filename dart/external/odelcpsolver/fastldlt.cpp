@@ -24,6 +24,10 @@
 
 #include "dart/external/odelcpsolver/matrix.h"
 
+namespace dart {
+namespace external {
+namespace ode {
+
 /* solve L*X=B, with B containing 1 right hand sides.
  * L is an n*n lower triangular matrix with ones on the diagonal.
  * L is stored by rows and its leading dimension is lskip.
@@ -410,3 +414,6 @@ void dFactorLDLT (dReal *A, dReal *d, int n, int nskip1)
   _dFactorLDLT (A, d, n, nskip1);
 }
 
+} // namespace ode
+} // namespace external
+} // namespace dart

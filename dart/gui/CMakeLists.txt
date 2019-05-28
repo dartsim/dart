@@ -103,8 +103,10 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
-  DESTINATION include/dart/gui
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
+    DESTINATION include/dart/gui
+    COMPONENT headers
+  )
+endif()

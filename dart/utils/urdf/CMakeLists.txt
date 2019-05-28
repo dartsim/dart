@@ -38,9 +38,11 @@ configure_file(
   ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
   @ONLY
 )
-install(FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
-  DESTINATION include/dart/utils/urdf
-)
+if(NOT DART_BUILD_DARTPY)
+  install(FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
+    DESTINATION include/dart/utils/urdf
+  )
+endif()
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
@@ -63,8 +65,10 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp
-  DESTINATION include/dart/utils/urdf
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp
+    DESTINATION include/dart/utils/urdf
+    COMPONENT headers
+  )
+endif()
