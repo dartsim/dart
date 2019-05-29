@@ -2,9 +2,9 @@
 
 ### [DART 6.10.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
-*
+* dartpy
 
-  *
+  * Added raycast option and result: [#1343](https://github.com/dartsim/dart/pull/1343)
 
 ### [DART 6.9.1 (2019-XX-XX)](https://github.com/dartsim/dart/milestone/59?closed=1)
 
