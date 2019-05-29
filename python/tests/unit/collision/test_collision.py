@@ -1,6 +1,7 @@
 import platform
 import pytest
 import dartpy as dart
+import numpy as np
 
 
 def collision_groups_tester(cd):
@@ -17,7 +18,6 @@ def collision_groups_tester(cd):
     simple_frame1.setShape(sphere1)
     simple_frame2.setShape(sphere2)
 
-    cd = dart.collision.FCLCollisionDetector()
     group = cd.createCollisionGroup()
     group.addShapeFrame(simple_frame1)
     group.addShapeFrame(simple_frame2)
@@ -66,6 +66,56 @@ def test_collision_groups():
     if hasattr(dart.collision, "OdeCollisionDetector"):
         cd = dart.collision.OdeCollisionDetector()
         collision_groups_tester(cd)
+
+
+def test_raycast():
+    cd = dart.collision.BulletCollisionDetector()
+
+    simple_frame = dart.dynamics.SimpleFrame()
+    sphere = dart.dynamics.SphereShape(1)
+    simple_frame.setShape(sphere)
+
+    group = cd.createCollisionGroup()
+    group.addShapeFrame(simple_frame)
+    assert group.getNumShapeFrames() == 1
+
+    option = dart.collision.RaycastOption()
+    option.mEnableAllHits = False
+
+    result = dart.collision.RaycastResult()
+    assert not result.hasHit()
+
+    ray_hit = dart.collision.RayHit()
+
+    result.clear()
+    simple_frame.setTranslation(np.zeros(3))
+    assert group.raycast([-2, 0, 0], [2, 0, 0], option, result)
+    assert result.hasHit()
+    assert len(result.mRayHits) == 1
+    ray_hit = result.mRayHits[0]
+    assert np.isclose(ray_hit.mPoint, [-1, 0, 0]).all()
+    assert np.isclose(ray_hit.mNormal, [-1, 0, 0]).all()
+    assert ray_hit.mFraction == pytest.approx(0.25)
+
+    result.clear()
+    simple_frame.setTranslation(np.zeros(3))
+    assert group.raycast([2, 0, 0], [-2, 0, 0], option, result)
+    assert result.hasHit()
+    assert len(result.mRayHits) == 1
+    ray_hit = result.mRayHits[0]
+    assert np.isclose(ray_hit.mPoint, [1, 0, 0]).all()
+    assert np.isclose(ray_hit.mNormal, [1, 0, 0]).all()
+    assert ray_hit.mFraction == pytest.approx(0.25)
+
+    result.clear()
+    simple_frame.setTranslation([1, 0, 0])
+    assert group.raycast([-2, 0, 0], [2, 0, 0], option, result)
+    assert result.hasHit()
+    assert len(result.mRayHits) == 1
+    ray_hit = result.mRayHits[0]
+    assert np.isclose(ray_hit.mPoint, [0, 0, 0]).all()
+    assert np.isclose(ray_hit.mNormal, [-1, 0, 0]).all()
+    assert ray_hit.mFraction == pytest.approx(0.5)
 
 
 if __name__ == "__main__":
