@@ -10,6 +10,6 @@ Visit the [DART website](http://dartsim.github.io/) for more information
 * [Tutorials (C++)](http://dartsim.github.io/tutorials_introduction.html)
 * [API Documentation (C++)](https://dartsim.github.io/dart/)
 * [Forum](https://dartsim.discourse.group/)
-* Python bindings: [dartpy](https://github.com/dartsim/dart/tree/master/python), [pydart2](https://github.com/sehoonha/pydart2)
-* OpenAI Gym with DART support: [gym-dart](https://github.com/dartsim/gym-dart) (dartpy based), [DartEnv](https://github.com/DartEnv/dart-env) (pydart2 based)
+* Python bindings: [dartpy](https://github.com/dartsim/dart/tree/master/python)
+* OpenAI Gym with DART support: [gym-dart](https://github.com/dartsim/gym-dart) (dartpy based)
 * If you use DART in an academic publication, please consider citing this [JOSS Paper](https://doi.org/10.21105/joss.00500). [[BibTeX](https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27)]
