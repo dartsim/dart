@@ -46,30 +46,31 @@ struct RayHit
   /// The collision object the ray hit
   const CollisionObject* mCollisionObject;
 
-  /// The normal at the hit point in the world coordinates
-  Eigen::Vector3d mNormal;
-
   /// The hit point in the world coordinates
   Eigen::Vector3d mPoint;
 
   /// The fraction from "from" point to "to" point
   double mFraction;
+
+  /// The normal at the hit point in the world coordinates
+  Eigen::Vector3d mNormal;
+
+  /// Constructor
+  RayHit();
 };
 
 struct RaycastResult
 {
-  /// Constructor
-  RaycastResult();
-
   /// Clear the result
   void clear();
 
   /// Returns true if there is a hit
   bool hasHit() const;
 
-  bool mHasHit;
-
   std::vector<RayHit> mRayHits;
+
+  /// Constructor
+  RaycastResult();
 };
 
 } // namespace collision
