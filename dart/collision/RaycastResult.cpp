@@ -36,7 +36,17 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-RaycastResult::RaycastResult()
+RayHit::RayHit()
+  : mCollisionObject(nullptr),
+    mPoint(Eigen::Vector3d::Zero()),
+    mFraction(0.0),
+    mNormal(Eigen::Vector3d::Zero())
+{
+  // Do nothing
+}
+
+//==============================================================================
+RaycastResult::RaycastResult() : mRayHits(false)
 {
   // Do nothing
 }
