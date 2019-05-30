@@ -4,7 +4,7 @@
 
 * Collision
 
-  * Added default constructors to RayHit and RaycastResult: [#1345](https://github.com/dartsim/dart/pull/1345)
+  * Added default constructor to RayHit: [#1345](https://github.com/dartsim/dart/pull/1345)
 
 * dartpy
 
