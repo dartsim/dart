@@ -11,6 +11,7 @@
 * dartpy
 
   * Updated build scripts for uploading dartpy to PyPI: [#1341](https://github.com/dartsim/dart/pull/1341)
+  * Added GUI event handler: [#1346](https://github.com/dartsim/dart/pull/1346)
 
 ### [DART 6.9.0 (2019-05-26)](https://github.com/dartsim/dart/milestone/52?closed=1)
 
