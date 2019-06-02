@@ -42,102 +42,141 @@ namespace python {
 
 void Shape(py::module& m)
 {
-  ::py::class_<
-      dart::dynamics::Shape,
-      dart::common::Subject,
-      std::shared_ptr<dart::dynamics::Shape>>(m, "Shape")
-      .def(
-          "getType",
-          +[](const dart::dynamics::Shape* self) -> const std::string& {
-            return self->getType();
-          },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "getBoundingBox",
-          +[](const dart::dynamics::Shape* self)
-              -> const dart::math::BoundingBox& {
-            return self->getBoundingBox();
-          },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "computeInertia",
-          +[](const dart::dynamics::Shape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
-          ::py::arg("mass"))
-      .def(
-          "computeInertiaFromDensity",
-          +[](const dart::dynamics::Shape* self,
-              double density) -> Eigen::Matrix3d {
-            return self->computeInertiaFromDensity(density);
-          },
-          ::py::arg("density"))
-      .def(
-          "computeInertiaFromMass",
-          +[](const dart::dynamics::Shape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertiaFromMass(mass); },
-          ::py::arg("mass"))
-      .def(
-          "getVolume",
-          +[](const dart::dynamics::Shape* self) -> double {
-            return self->getVolume();
-          })
-      .def(
-          "getID",
-          +[](const dart::dynamics::Shape* self) -> std::size_t {
-            return self->getID();
-          })
-      .def(
-          "setDataVariance",
-          +[](dart::dynamics::Shape* self, unsigned int _variance) {
-            self->setDataVariance(_variance);
-          },
-          ::py::arg("variance"))
-      .def(
-          "addDataVariance",
-          +[](dart::dynamics::Shape* self, unsigned int _variance) {
-            self->addDataVariance(_variance);
-          },
-          ::py::arg("variance"))
-      .def(
-          "removeDataVariance",
-          +[](dart::dynamics::Shape* self, unsigned int _variance) {
-            self->removeDataVariance(_variance);
-          },
-          ::py::arg("variance"))
-      .def(
-          "getDataVariance",
-          +[](const dart::dynamics::Shape* self) -> unsigned int {
-            return self->getDataVariance();
-          })
-      .def(
-          "checkDataVariance",
-          +[](const dart::dynamics::Shape* self,
-              dart::dynamics::Shape::DataVariance type) -> bool {
-            return self->checkDataVariance(type);
-          },
-          ::py::arg("type"))
-      .def(
-          "refreshData",
-          +[](dart::dynamics::Shape* self) { self->refreshData(); })
-      .def(
-          "notifyAlphaUpdated",
-          +[](dart::dynamics::Shape* self, double alpha) {
-            self->notifyAlphaUpdated(alpha);
-          },
-          ::py::arg("alpha"))
-      .def(
-          "notifyColorUpdated",
-          +[](dart::dynamics::Shape* self, const Eigen::Vector4d& color) {
-            self->notifyColorUpdated(color);
-          },
-          ::py::arg("color"))
-      .def(
-          "incrementVersion",
-          +[](dart::dynamics::Shape* self) -> std::size_t {
-            return self->incrementVersion();
-          })
-      .def_readonly(
-          "onVersionChanged", &dart::dynamics::Shape::onVersionChanged);
+  auto shape
+      = ::py::class_<
+            dart::dynamics::Shape,
+            dart::common::Subject,
+            std::shared_ptr<dart::dynamics::Shape>>(m, "Shape")
+            .def(
+                "getType",
+                +[](const dart::dynamics::Shape* self) -> const std::string& {
+                  return self->getType();
+                },
+                ::py::return_value_policy::reference_internal)
+            .def(
+                "getBoundingBox",
+                +[](const dart::dynamics::Shape* self)
+                    -> const dart::math::BoundingBox& {
+                  return self->getBoundingBox();
+                },
+                ::py::return_value_policy::reference_internal)
+            .def(
+                "computeInertia",
+                +[](const dart::dynamics::Shape* self, double mass)
+                    -> Eigen::Matrix3d { return self->computeInertia(mass); },
+                ::py::arg("mass"))
+            .def(
+                "computeInertiaFromDensity",
+                +[](const dart::dynamics::Shape* self,
+                    double density) -> Eigen::Matrix3d {
+                  return self->computeInertiaFromDensity(density);
+                },
+                ::py::arg("density"))
+            .def(
+                "computeInertiaFromMass",
+                +[](const dart::dynamics::Shape* self,
+                    double mass) -> Eigen::Matrix3d {
+                  return self->computeInertiaFromMass(mass);
+                },
+                ::py::arg("mass"))
+            .def(
+                "getVolume",
+                +[](const dart::dynamics::Shape* self) -> double {
+                  return self->getVolume();
+                })
+            .def(
+                "getID",
+                +[](const dart::dynamics::Shape* self) -> std::size_t {
+                  return self->getID();
+                })
+            .def(
+                "setDataVariance",
+                +[](dart::dynamics::Shape* self, unsigned int _variance) {
+                  self->setDataVariance(_variance);
+                },
+                ::py::arg("variance"))
+            .def(
+                "addDataVariance",
+                +[](dart::dynamics::Shape* self, unsigned int _variance) {
+                  self->addDataVariance(_variance);
+                },
+                ::py::arg("variance"))
+            .def(
+                "removeDataVariance",
+                +[](dart::dynamics::Shape* self, unsigned int _variance) {
+                  self->removeDataVariance(_variance);
+                },
+                ::py::arg("variance"))
+            .def(
+                "getDataVariance",
+                +[](const dart::dynamics::Shape* self) -> unsigned int {
+                  return self->getDataVariance();
+                })
+            .def(
+                "checkDataVariance",
+                +[](const dart::dynamics::Shape* self,
+                    dart::dynamics::Shape::DataVariance type) -> bool {
+                  return self->checkDataVariance(type);
+                },
+                ::py::arg("type"))
+            .def(
+                "refreshData",
+                +[](dart::dynamics::Shape* self) { self->refreshData(); })
+            .def(
+                "notifyAlphaUpdated",
+                +[](dart::dynamics::Shape* self, double alpha) {
+                  self->notifyAlphaUpdated(alpha);
+                },
+                ::py::arg("alpha"))
+            .def(
+                "notifyColorUpdated",
+                +[](dart::dynamics::Shape* self, const Eigen::Vector4d& color) {
+                  self->notifyColorUpdated(color);
+                },
+                ::py::arg("color"))
+            .def(
+                "incrementVersion",
+                +[](dart::dynamics::Shape* self) -> std::size_t {
+                  return self->incrementVersion();
+                })
+            .def_readonly(
+                "onVersionChanged", &dart::dynamics::Shape::onVersionChanged);
+
+#define DARTPY_DEFINE_SHAPE_TYPE(val)                                          \
+  .value(#val, dart::dynamics::Shape::ShapeType::val)
+
+  // clang-format off
+  ::py::enum_<dart::dynamics::Shape::ShapeType>(shape, "ShapeType")
+      DARTPY_DEFINE_SHAPE_TYPE(SPHERE)
+      DARTPY_DEFINE_SHAPE_TYPE(BOX)
+      DARTPY_DEFINE_SHAPE_TYPE(ELLIPSOID)
+      DARTPY_DEFINE_SHAPE_TYPE(CYLINDER)
+      DARTPY_DEFINE_SHAPE_TYPE(CAPSULE)
+      DARTPY_DEFINE_SHAPE_TYPE(CONE)
+      DARTPY_DEFINE_SHAPE_TYPE(PLANE)
+      DARTPY_DEFINE_SHAPE_TYPE(MULTISPHERE)
+      DARTPY_DEFINE_SHAPE_TYPE(MESH)
+      DARTPY_DEFINE_SHAPE_TYPE(SOFT_MESH)
+      DARTPY_DEFINE_SHAPE_TYPE(LINE_SEGMENT)
+      DARTPY_DEFINE_SHAPE_TYPE(HEIGHTMAP)
+      DARTPY_DEFINE_SHAPE_TYPE(UNSUPPORTED)
+      .export_values();
+  // clang-format on
+
+#define DARTPY_DEFINE_DATA_VARIANCE(val)                                       \
+  .value(#val, dart::dynamics::Shape::DataVariance::val)
+
+  // clang-format off
+  ::py::enum_<dart::dynamics::Shape::DataVariance>(shape, "DataVariance")
+      DARTPY_DEFINE_DATA_VARIANCE(STATIC           )
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_TRANSFORM)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_PRIMITIVE)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_COLOR    )
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_VERTICES )
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_ELEMENTS )
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC          )
+      .export_values();
+  // clang-format on
 
   ::py::class_<
       dart::dynamics::BoxShape,

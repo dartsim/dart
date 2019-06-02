@@ -2,9 +2,43 @@ import numpy as np
 import dartpy as dart
 
 
+class InputHandler(dart.gui.osg.GUIEventHandler):
+    def __init__(self, node):
+        super(InputHandler, self).__init__()
+        self.node = node
+        self.force = np.zeros(3)
+        self.impulse_duration = 0
+
+    def handle(self, ea, aa):
+        if ea.getEventType() == dart.gui.osg.GUIEventAdapter.KEYDOWN:
+            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_1:
+                ext_force = np.zeros(3)
+                ext_force[0] = 40
+                self.node.set_external_force(ext_force, 100)
+                return True
+            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_2:
+                ext_force = np.zeros(3)
+                ext_force[0] = -40
+                self.node.set_external_force(ext_force, 100)
+                return True
+            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_3:
+                ext_force = np.zeros(3)
+                ext_force[2] = 40
+                self.node.set_external_force(ext_force, 100)
+                return True
+            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_4:
+                ext_force = np.zeros(3)
+                ext_force[2] = -40
+                self.node.set_external_force(ext_force, 100)
+                return True
+
+        return False
+
+
 class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
     def __init__(self, world, skel):
         super(MyWorldNode, self).__init__(world)
+        self.world = world
         self.skel = skel
         self.dofs = self.skel.getNumDofs()
         self.left_heel = self.skel.getBodyNode('h_heel_left')
@@ -34,6 +68,19 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
             self.Kd[i, i] = 40.0
 
         self.pre_offset = 0
+
+        self.ext_force = np.zeros(3)
+        self.ext_force_duration = 0
+
+        self.ext_force_arrow_shape = dart.dynamics.ArrowShape([0, 0, 0], [0, 0, 0])
+
+        self.ext_force_simple_frame = dart.dynamics.SimpleFrame()
+        self.ext_force_simple_frame.setShape(self.ext_force_arrow_shape)
+        self.ext_force_visual = self.ext_force_simple_frame.createVisualAspect()
+        self.ext_force_visual.setColor([1.0, 0.0, 0.0])
+        self.ext_force_visual.hide()
+
+        self.world.addSimpleFrame(self.ext_force_simple_frame)
 
     def customPreStep(self):
         q = self.skel.getPositions();
@@ -76,6 +123,30 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
         self.skel.setForces(self.torques * 0.8)
 
+        # Apply external force
+        self.ext_force_duration = self.ext_force_duration - 1
+        if self.ext_force_duration <= 0:
+            self.ext_force_duration = 0
+            self.ext_force = np.zeros(3)
+        spine = self.skel.getBodyNode('h_spine')
+        spine.addExtForce(self.ext_force)
+        if self.ext_force_duration > 0:
+            arrow_head = spine.getTransform().translation()
+            arrow_tail = arrow_head - self.ext_force / 30
+            self.ext_force_arrow_shape.setPositions(arrow_tail, arrow_head)
+            self.ext_force_arrow_shape.setDataVariance(dart.dynamics.Shape.DYNAMIC)
+            self.ext_force_visual.show()
+        else:
+            self.ext_force_arrow_shape.setDataVariance(dart.dynamics.Shape.STATIC)
+            self.ext_force_visual.hide()
+
+    def set_external_force(self, force, duration=10):
+        self.ext_force = force
+        self.ext_force_duration = duration
+
+    def external_force(self):
+        return self.ext_force
+
 
 def main():
     world = dart.utils.SkelParser.readWorld('dart://sample/skel/fullbody1.skel')
@@ -97,8 +168,11 @@ def main():
     viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
 
+    input_handler = InputHandler(node)
+    viewer.addEventHandler(input_handler)
+
     viewer.setUpViewInWindow(0, 0, 640, 480)
-    viewer.setCameraHomePosition([2.0, 1.0, 2.0],
+    viewer.setCameraHomePosition([3.0, 1.5, 3.0],
                                  [0.00, 0.00, 0.00],
                                  [-0.24, 0.94, -0.25])
     viewer.run()

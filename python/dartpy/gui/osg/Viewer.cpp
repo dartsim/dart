@@ -44,8 +44,20 @@ namespace python {
 
 void Viewer(py::module& m)
 {
-  ::py::class_<dart::gui::osg::Viewer, ::osg::ref_ptr<dart::gui::osg::Viewer>>(
-      m, "Viewer")
+  ::py::class_<osgViewer::View, ::osg::ref_ptr<osgViewer::View>>(m, "osgViewer")
+      .def(::py::init<>())
+      .def(
+          "addEventHandler",
+          +[](osgViewer::View* self, osgGA::GUIEventHandler* eventHandler) {
+            self->addEventHandler(eventHandler);
+          },
+          ::py::arg("eventHandler"));
+
+  ::py::class_<
+      dart::gui::osg::Viewer,
+      osgViewer::View,
+      dart::common::Subject,
+      ::osg::ref_ptr<dart::gui::osg::Viewer>>(m, "Viewer")
       .def(::py::init<>())
       .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
       .def(
