@@ -891,7 +891,7 @@ public:
     mMoveComponents.resize(TeleoperationWorld::NUM_MOVE, false);
   }
 
-  virtual bool handle(
+  bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
     if (nullptr == mHubo)
