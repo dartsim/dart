@@ -47,8 +47,7 @@ void ShadowTechnique(py::module& m)
 {
   ::py::class_<
       ::osgShadow::ShadowTechnique,
-      ::osg::ref_ptr<::osgShadow::ShadowTechnique>>(m, "ShadowTechnique")
-      .def(::py::init<>());
+      ::osg::ref_ptr<::osgShadow::ShadowTechnique>>(m, "ShadowTechnique");
 
   ::py::class_<
       ::osgShadow::ShadowMap,
