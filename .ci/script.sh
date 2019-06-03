@@ -27,6 +27,11 @@ if [ -z "$OS_NAME" ]; then
   exit 1
 fi
 
+if [ -z "$MEMCHECK" ]; then
+  echo "Info: Environment variable MEMCHECK is unset. Using OFF by default."
+  MEMCHECK=OFF
+fi
+
 # Set number of threads for parallel build
 # Ref: https://unix.stackexchange.com/a/129401
 num_threads=4
@@ -95,6 +100,9 @@ else
     make -j$num_threads codecov
   else
     ctest --output-on-failure -j$num_threads
+    if [ $MEMCHECK = "ON" ]; then
+      ctest --test-action memcheck --output-on-failure -j4
+    fi
   fi
 fi
 
