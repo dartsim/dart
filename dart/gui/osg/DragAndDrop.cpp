@@ -797,7 +797,7 @@ void BodyNodeDnD::move()
   if(mUseExternalIK)
   {
     mIK->getSolver()->setNumMaxIterations(10);
-    mIK->solve();
+    mIK->solveAndApply(true);
   }
 }
 

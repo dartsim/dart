@@ -57,12 +57,16 @@ if [ "$IS_PULL_REQUEST" = "false" ]; then
   fi
 fi
 
-if [ $BUILD_NAME = DOCS ]; then
+if [ $BUILD_DOCS = "ON" ]; then
   . "${BUILD_DIR}/.ci/travis/build_docs.sh"
   exit 0
 fi
 
 mkdir build && cd build
+
+if [ "$OS_NAME" = "linux" ]; then
+  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
+fi
 
 cmake .. \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
@@ -70,40 +74,43 @@ cmake .. \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_BUILD_EXTRAS=ON \
-  -DDART_CODECOV=$CODECOV
+  -DDART_CODECOV=$CODECOV \
+  ${install_prefix_option}
 
 if [ "$BUILD_DARTPY" = "ON" ]; then
-  make -j$num_threads binding
   make -j$num_threads dartpy
-
-  # Disabled for now
-  # make pytest
-fi
-
-if [ "$OS_NAME" = "linux" ]; then
-  make -j$num_threads all tutorials examples tests
+  make pytest
 else
-  make -j$num_threads all tests
-fi
+  if [ "$CODECOV" = "ON" ]; then
+    make -j$num_threads all tests
+  else
+    make -j$num_threads all tutorials examples tests
+  fi
 
-if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
-  make check-format
-fi
+  if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
+    make check-format
+  fi
 
-if [ $CODECOV = ON ]; then
-  make -j4 codecov
-else
-  ctest --output-on-failure -j4
-  if [ $BUILD_TYPE = Debug ]; then
-    ctest --test-action memcheck --output-on-failure -j4
+  if [ $CODECOV = "ON" ]; then
+    make -j$num_threads codecov
+  else
+    ctest --output-on-failure -j$num_threads
   fi
 fi
 
 # Make sure we can install with no issues
-$SUDO make -j4 install
+$SUDO make -j$num_threads install
 
-# Build an example using installed DART
-cd $BUILD_DIR/examples/rigidCubes
-mkdir build && cd build
-cmake ..
-make -j4
+if [ "$BUILD_DARTPY" = "ON" ]; then
+  # Run a python example (experimental)
+  if [ "$BUILD_DARTPY" = "ON" ]; then
+    cd $BUILD_DIR/python/examples/hello_world
+    python3 main.py
+  fi
+else
+  # Build an example using installed DART
+  cd $BUILD_DIR/examples/hello_world
+  mkdir build && cd build
+  cmake ..
+  make -j$num_threads
+fi

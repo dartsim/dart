@@ -30,7 +30,7 @@ find_path(ODE_INCLUDE_DIRS
 
 # Libraries
 if(MSVC)
-  set(ODE_LIBRARIES optimized ode debug oded)
+  set(ODE_LIBRARIES "ode$<$<CONFIG:Debug>:d>")
 else()
   find_library(ODE_LIBRARIES
       NAMES ode

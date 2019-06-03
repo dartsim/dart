@@ -250,7 +250,7 @@ public:
 
   std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<GenericAspect>();
+    return std::make_unique<GenericAspect>();
   }
 
 };
@@ -267,7 +267,7 @@ public:
 
   std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<SpecializedAspect>();
+    return std::make_unique<SpecializedAspect>();
   }
 };
 
@@ -318,7 +318,7 @@ public:
 
   std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<StatefulAspect>(*this);
+    return std::make_unique<StatefulAspect>(*this);
   }
 
   void setAspectState(const Aspect::State& otherState) override

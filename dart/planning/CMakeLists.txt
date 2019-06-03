@@ -34,8 +34,10 @@ dart_generate_include_header_file(
 )
 
 ## Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
-  DESTINATION include/dart/planning
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
+    DESTINATION include/dart/planning
+    COMPONENT headers
+  )
+endif()

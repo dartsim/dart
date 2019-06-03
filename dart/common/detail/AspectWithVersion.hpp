@@ -234,7 +234,7 @@ std::unique_ptr<Aspect>
 AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
     cloneAspect() const
 {
-  return common::make_unique<Derived>(mState);
+  return std::make_unique<Derived>(mState);
 }
 
 //==============================================================================
@@ -312,7 +312,7 @@ AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              CompositeT, updateProperties>::
 cloneAspect() const
 {
-  return common::make_unique<Derived>(mProperties);
+  return std::make_unique<Derived>(mProperties);
 }
 
 //==============================================================================

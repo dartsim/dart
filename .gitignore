@@ -26,3 +26,7 @@ TAGS
 /doxygen/html/
 docs/readthedocs/site
 data/screencap/*
+
+# Python
+dist/
+*.egg-info

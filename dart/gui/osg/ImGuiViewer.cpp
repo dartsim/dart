@@ -60,13 +60,13 @@ ImGuiViewer::~ImGuiViewer()
 //==============================================================================
 ImGuiHandler* ImGuiViewer::getImGuiHandler()
 {
-  return mImGuiHandler;
+  return mImGuiHandler.get();
 }
 
 //==============================================================================
 const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
 {
-  return mImGuiHandler;
+  return mImGuiHandler.get();
 }
 
 //==============================================================================

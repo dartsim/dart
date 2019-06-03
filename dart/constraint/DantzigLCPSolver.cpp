@@ -163,7 +163,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 //  std::cout << std::endl;
 
   // Solve LCP using ODE's Dantzig algorithm
-  dSolveLCP(n, A, x, b, w, 0, lo, hi, findex);
+  external::ode::dSolveLCP(n, A, x, b, w, 0, lo, hi, findex);
 
   // Print LCP formulation
 //  dtdbg << "After solve:" << std::endl;

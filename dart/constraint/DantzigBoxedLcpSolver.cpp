@@ -51,7 +51,7 @@ const std::string& DantzigBoxedLcpSolver::getStaticType()
 }
 
 //==============================================================================
-void DantzigBoxedLcpSolver::solve(
+bool DantzigBoxedLcpSolver::solve(
     int n,
     double* A,
     double* x,
@@ -59,9 +59,11 @@ void DantzigBoxedLcpSolver::solve(
     int /*nub*/,
     double* lo,
     double* hi,
-    int* findex)
+    int* findex,
+    bool earlyTermination)
 {
-  dSolveLCP(n, A, x, b, nullptr, 0, lo, hi, findex);
+  return external::ode::dSolveLCP(
+      n, A, x, b, nullptr, 0, lo, hi, findex, earlyTermination);
 }
 
 #ifndef NDEBUG

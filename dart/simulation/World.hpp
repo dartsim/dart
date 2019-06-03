@@ -106,9 +106,6 @@ public:
 
   /// Create a clone of this World. All Skeletons and SimpleFrames that are held
   /// by this World will be copied over.
-  ///
-  /// Note that the states of the Skeletons will not be transferred over to this
-  /// clone [TODO: copy the states as well]
   std::shared_ptr<World> clone() const;
 
   //--------------------------------------------------------------------------
@@ -141,7 +138,7 @@ public:
   dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
 
   /// Find a Skeleton by name
-  /// \param[in] The name of the Skeleton you are looking for.
+  /// \param[in] _name The name of the Skeleton you are looking for.
   /// \return If the skeleton does not exist then return nullptr.
   dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 
@@ -236,10 +233,16 @@ public:
   //--------------------------------------------------------------------------
 
   /// Sets the constraint solver
+  ///
+  /// Note that the internal properties of \c solver will be overwritten by this
+  /// World.
   void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
 
   /// Get the constraint solver
-  constraint::ConstraintSolver* getConstraintSolver() const;
+  constraint::ConstraintSolver* getConstraintSolver();
+
+  /// Get the constraint solver
+  const constraint::ConstraintSolver* getConstraintSolver() const;
 
   /// Bake simulated current state and store it into mRecording
   void bake();

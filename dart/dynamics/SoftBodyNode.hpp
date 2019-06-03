@@ -365,10 +365,17 @@ public:
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
+  /// \param[in] _softBodyNode
+  /// \param[in] _size
+  /// \param[in] _localTransform
   /// \param[in] _frags Number of vertices of box mesh. Each component should be
   ///   equal or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
   ///   not.
   // TODO: The component of _frags should allow 2.
+  /// \param[in] _totalMass
+  /// \param[in] _vertexStiffness
+  /// \param[in] _edgeStiffness
+  /// \param[in] _dampingCoeff
   static void setBox(SoftBodyNode*            _softBodyNode,
       const Eigen::Vector3d&   _size,
       const Eigen::Isometry3d& _localTransform,

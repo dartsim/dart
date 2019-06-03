@@ -17,28 +17,29 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
-  DESTINATION include/dart/dynamics
-  COMPONENT headers
-)
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/dynamics/detail
-  COMPONENT headers
-)
-
-dart_format_add(
-  TranslationalJoint2D.hpp
-  TranslationalJoint2D.cpp
-  detail/TranslationalJoint2DAspect.hpp
-  detail/TranslationalJoint2DAspect.cpp
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
+    DESTINATION include/dart/dynamics
+    COMPONENT headers
+  )
+  install(
+    FILES ${detail_hdrs}
+    DESTINATION include/dart/dynamics/detail
+    COMPONENT headers
+  )
+endif()
 
 dart_format_add(
   HeightmapShape.hpp
+  PointCloudShape.hpp
+  PointCloudShape.cpp
   VoxelGridShape.hpp
   VoxelGridShape.cpp
   SmartPointer.hpp
+  TranslationalJoint2D.hpp
+  TranslationalJoint2D.cpp
   detail/HeightmapShape-impl.hpp
+  detail/TranslationalJoint2DAspect.hpp
+  detail/TranslationalJoint2DAspect.cpp
 )

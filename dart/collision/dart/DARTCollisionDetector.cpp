@@ -74,7 +74,7 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-DARTCollisionDetector::cloneWithoutCollisionObjects()
+DARTCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return DARTCollisionDetector::create();
 }
@@ -96,7 +96,7 @@ const std::string& DARTCollisionDetector::getStaticType()
 std::unique_ptr<CollisionGroup>
 DARTCollisionDetector::createCollisionGroup()
 {
-  return common::make_unique<DARTCollisionGroup>(shared_from_this());
+  return std::make_unique<DARTCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================

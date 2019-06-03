@@ -55,7 +55,7 @@ public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SimpleFrame)
 
   /// Constructor
-  explicit SimpleFrame(Frame* _refFrame,
+  explicit SimpleFrame(Frame* _refFrame = Frame::World(),
     const std::string& _name = "simple_frame",
     const Eigen::Isometry3d& _relativeTransform = Eigen::Isometry3d::Identity());
 
@@ -64,7 +64,7 @@ public:
   SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame = Frame::World());
 
   /// Destructor
-  virtual ~SimpleFrame();
+  ~SimpleFrame() override;
 
   // Documentation inherited
   const std::string& setName(const std::string& _name) override;

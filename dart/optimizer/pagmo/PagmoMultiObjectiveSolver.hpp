@@ -50,7 +50,9 @@ public:
   /// Reference: https://esa.github.io/pagmo2/docs/algorithm_list.html
   enum class Algorithm
   {
+#ifdef PAGMO_WITH_NLOPT
     Local_nlopt_COBYLA,
+#endif
     Global_MOEAD,
     Global_NSGA2,
   };

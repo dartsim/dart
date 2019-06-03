@@ -47,6 +47,7 @@ class BallJointConstraint : public JointConstraint
 {
 public:
   /// Constructor that takes one body and the joint position in the world frame
+  /// \param[in] _body
   /// \param[in] _jointPos Joint position expressed in world frame
   BallJointConstraint(dynamics::BodyNode* _body,
                       const Eigen::Vector3d& _jointPos);
@@ -54,6 +55,8 @@ public:
 
   /// Constructor that takes two bodies and the joint position in the frame of
   /// _body1
+  /// \param[in] _body1
+  /// \param[in] _body2
   /// \param[in] _jointPos Joint position expressed in world frame
   BallJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2,
                       const Eigen::Vector3d& _jointPos);

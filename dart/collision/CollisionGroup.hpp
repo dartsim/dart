@@ -41,6 +41,8 @@
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/DistanceOption.hpp"
 #include "dart/collision/DistanceResult.hpp"
+#include "dart/collision/RaycastOption.hpp"
+#include "dart/collision/RaycastResult.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -267,6 +269,19 @@ public:
       CollisionGroup* otherGroup,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr);
+
+  /// Performs raycast to this collision group.
+  ///
+  /// \param[in] from The start point of the ray in world coordinates.
+  /// \param[in] to The end point of the ray in world coordinates.
+  /// \param[in] option The raycast option.
+  /// \param[in] result The raycast result.
+  /// \return True if the ray hit an collision object.
+  bool raycast(
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr);
 
   /// Set whether this CollisionGroup will automatically check for updates.
   void setAutomaticUpdate(bool automatic = true);

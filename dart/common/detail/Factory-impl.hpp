@@ -61,7 +61,7 @@ struct DefaultCreator<T, std::unique_ptr<T>, Args...>
 {
   static std::unique_ptr<T> run(Args&&... args)
   {
-    return dart::common::make_unique<T>(std::forward<Args>(args)...);
+    return std::make_unique<T>(std::forward<Args>(args)...);
   }
 };
 

@@ -29,8 +29,12 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
-  DESTINATION include/dart/optimizer/nlopt
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
+    DESTINATION include/dart/optimizer/nlopt
+    COMPONENT headers
+  )
+endif()
+
+dart_format_add(${hdrs} ${srcs})

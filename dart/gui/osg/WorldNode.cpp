@@ -39,7 +39,6 @@
 
 #include "dart/gui/osg/WorldNode.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/ImGuiViewer.hpp"
 
 #include "dart/simulation/World.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -218,11 +217,8 @@ void WorldNode::clearUnusedNodes()
   {
     NodeMap::iterator it = mFrameToNode.find(frame);
     ShapeFrameNode* node = it->second;
-    if(!node->getShapeFrame() || !node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) {
-      mNormalGroup->removeChild(node);
-    }
-    else
-      mShadowedGroup->removeChild(node);
+    mNormalGroup->removeChild(node);
+    mShadowedGroup->removeChild(node);
     mFrameToNode.erase(it);
   }
 }
@@ -289,6 +285,8 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
     if(!node)
       return;
 
+    node->refresh(true);
+
     // update the group that ShapeFrameNode should be
     if((!node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) && node->getParent(0) != mNormalGroup) {
       mShadowedGroup->removeChild(node);
@@ -299,7 +297,6 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
       mShadowedGroup->addChild(node);
     }
 
-    node->refresh(true);
     return;
   }
 
@@ -329,33 +326,36 @@ bool WorldNode::isShadowed() const
 }
 
 //==============================================================================
-void WorldNode::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique) {
-  if(!shadowTechnique) {
+void WorldNode::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique)
+{
+  if(!shadowTechnique)
+  {
     mShadowed = false;
-    static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->setShadowTechnique(nullptr);
+    mShadowedGroup->setShadowTechnique(nullptr);
   }
-  else {
-    ImGuiViewer* viewer = mViewer ? dynamic_cast<ImGuiViewer*>(mViewer) : nullptr;
-    if(viewer)
-      dtwarn << "[WorldNode] You are enabling shadows inside an ImGuiViewer. "
-             << "The ImGui windows may not render properly.\n";
+  else
+  {
     mShadowed = true;
-    static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->setShadowTechnique(shadowTechnique.get());
+    mShadowedGroup->setShadowTechnique(shadowTechnique);
   }
 }
 
 //==============================================================================
-::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::getShadowTechnique() const {
+::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::getShadowTechnique() const
+{
   if(!mShadowed)
     return nullptr;
-  return static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->getShadowTechnique();
+  return mShadowedGroup->getShadowTechnique();
 }
 
 //==============================================================================
-::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::createDefaultShadowTechnique(const Viewer* viewer) {
+::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::createDefaultShadowTechnique(const Viewer* viewer)
+{
+  assert(viewer);
+
   ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
   // increase the resolution of default shadow texture for higher quality
-  int mapres = std::pow(2, 13);
+  auto mapres = static_cast<short>(std::pow(2, 13));
   sm->setTextureSize(::osg::Vec2s(mapres,mapres));
   // we are using Light1 because this is the highest one (on up direction)
   sm->setLight(viewer->getLightSource(0));

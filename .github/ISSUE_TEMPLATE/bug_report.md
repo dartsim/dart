@@ -6,18 +6,19 @@ labels: 'type: bug'
 assignees: ''
 
 ---
+
 > If you're not reporting a bug, please use the [forum](https://dartsim.discourse.group/) to ask questions.
 
 ### Bug Report
 > Please answer the following questions for yourself before reporting a bug.
-- [ ] I checked the [documentation](http://dartsim.github.io/) and found no answer.
+- [ ] I checked the [documentation](http://dartsim.github.io/) and the [forum](https://dartsim.discourse.group/) but found no answer.
 - [ ] I checked to make sure that this issue has not already been filed.
 
 #### Environment
 > Select the following information.
-* DART version: [e.g., master, 6.8.0]
-* OS name and version name(or number): [e.g., Ubuntu 16.04, macOS Sierra, Windows 10]
-* Compiler name and version number: [e.g., GCC 4.8.5, Clang 3.9.1]
+* DART version: [e.g., master, 6.8.3]
+* OS name and version name(or number): [e.g., Ubuntu 18.04, macOS Mojav, Windows 10]
+* Compiler name and version number: [e.g., GCC 7.4.0, Clang 3.9.1]
 
 #### Expected Behavior
 > Please describe the behavior you are expecting.

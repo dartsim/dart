@@ -57,7 +57,7 @@ using namespace dynamics;
 using namespace simulation;
 using namespace utils;
 
-class COLLISION : public testing::Test
+class Collision : public testing::Test
 {
 public:
     void unrotatedTest(dart::collision::fcl::CollisionGeometry* _coll1,
@@ -68,7 +68,7 @@ public:
   void printResult(const dart::collision::fcl::CollisionResult& _result);
 };
 
-void COLLISION::unrotatedTest(dart::collision::fcl::CollisionGeometry* _coll1,
+void Collision::unrotatedTest(dart::collision::fcl::CollisionGeometry* _coll1,
                               dart::collision::fcl::CollisionGeometry* _coll2,
                               double expectedContactPoint,
                               int _idxAxis)
@@ -126,7 +126,7 @@ void COLLISION::unrotatedTest(dart::collision::fcl::CollisionGeometry* _coll1,
     }
 }
 
-void COLLISION::dropWithRotation(dart::collision::fcl::CollisionGeometry* _object,
+void Collision::dropWithRotation(dart::collision::fcl::CollisionGeometry* _object,
                                  double EulerZ, double EulerY, double EulerX)
 {
     // Collision test setting
@@ -203,7 +203,7 @@ void COLLISION::dropWithRotation(dart::collision::fcl::CollisionGeometry* _objec
     }
 }
 
-void COLLISION::printResult(const dart::collision::fcl::CollisionResult& _result)
+void Collision::printResult(const dart::collision::fcl::CollisionResult& _result)
 {
   std::cout << "====== [ RESULT ] ======" << std::endl;
   std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
@@ -219,172 +219,7 @@ void COLLISION::printResult(const dart::collision::fcl::CollisionResult& _result
   std::cout << std::endl;
 }
 
-/* ********************************************************************************************* */
-
-//TEST_F(COLLISION, BOX_BOX_X) {
-//	dart::collision::fcl::Box box1(2, 2, 2);
-//	dart::collision::fcl::Box box2(1, 1, 1);
-//	unrotatedTest(&box1, &box2, 1.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, BOX_BOX_Y) {
-//	dart::collision::fcl::Box box1(2, 2, 2);
-//	dart::collision::fcl::Box box2(1, 1, 1);
-//	unrotatedTest(&box1, &box2, 1.0, 1); // y-axis
-//}
-
-//TEST_F(COLLISION, BOX_BOX_Z) {
-//	dart::collision::fcl::Box box1(2, 2, 2);
-//	dart::collision::fcl::Box box2(1, 1, 1);
-//	unrotatedTest(&box1, &box2, 1.0, 2); // z-axis
-//}
-
-//TEST_F(COLLISION, BOX_SPHERE_X) {
-//	dart::collision::fcl::Box box1(2, 2, 2);
-//	dart::collision::fcl::Sphere sphere(0.5);
-//	unrotatedTest(&box1, &sphere, 1.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, BOX_SPHERE_Y) {
-//	dart::collision::fcl::Box box1(2, 2, 2);
-//	dart::collision::fcl::Sphere sphere(0.5);
-//	unrotatedTest(&box1, &sphere, 1.0, 1); // y-axis
-//}
-
-//TEST_F(COLLISION, BOX_SPHERE_Z) {
-//	dart::collision::fcl::Box box1(2, 2, 2);
-//	dart::collision::fcl::Sphere sphere(0.5);
-//	unrotatedTest(&box1, &sphere, 1.0, 2); // z-axis
-//}
-
-//TEST_F(COLLISION, SPHERE_BOX_X) {
-//	dart::collision::fcl::Sphere obj1(0.5);
-//	dart::collision::fcl::Box obj2(2, 2, 2);
-//	unrotatedTest(&obj1, &obj2, 0.5, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, SPHERE_BOX_Y) {
-//	dart::collision::fcl::Sphere obj1(0.5);
-//	dart::collision::fcl::Box obj2(2, 2, 2);
-//	unrotatedTest(&obj1, &obj2, 0.5, 1); // y-axis
-//}
-
-//TEST_F(COLLISION, SPHERE_BOX_Z) {
-//	dart::collision::fcl::Sphere obj1(0.5);
-//	dart::collision::fcl::Box obj2(2, 2, 2);
-//	unrotatedTest(&obj1, &obj2, 0.5, 2); // z-axis
-//}
-
-//TEST_F(COLLISION, SPHERE_SPHERE_X) {
-//	dart::collision::fcl::Sphere sphere1(1);
-//	dart::collision::fcl::Sphere sphere2(0.5);
-//	unrotatedTest(&sphere1, &sphere2, 1.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, SPHERE_SPHERE_Y) {
-//	dart::collision::fcl::Sphere sphere1(1);
-//	dart::collision::fcl::Sphere sphere2(0.5);
-//	unrotatedTest(&sphere1, &sphere2, 1.0, 1); // y-axis
-//}
-
-//TEST_F(COLLISION, SPHERE_SPHERE_Z) {
-//	dart::collision::fcl::Sphere sphere1(1);
-//	dart::collision::fcl::Sphere sphere2(0.5);
-//	unrotatedTest(&sphere1, &sphere2, 1.0, 2); // z-axis
-//}
-
-//TEST_F(COLLISION, PLANE_BOX_X) {
-//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
-//	dart::collision::fcl::Box obj2(1, 1, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_BOX_Y) {
-//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
-//	dart::collision::fcl::Box obj2(1, 1, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_BOX_Z) {
-//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
-//	dart::collision::fcl::Box obj2(1, 1, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_SPHERE_X) {
-//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
-//	dart::collision::fcl::Sphere obj2(0.5);
-//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_SPHERE_Y) {
-//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
-//	dart::collision::fcl::Sphere obj2(0.5);
-//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_SPHERE_Z) {
-//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
-//	dart::collision::fcl::Sphere obj2(0.5);
-//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CYLINDER_X) {
-//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
-//	dart::collision::fcl::Cylinder obj2(0.5, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CYLINDER_Y) {
-//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
-//	dart::collision::fcl::Cylinder obj2(0.5, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CYLINDER_Z) {
-//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
-//	dart::collision::fcl::Cylinder obj2(0.5, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CAPSULE_X) {
-//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
-//	dart::collision::fcl::Capsule obj2(0.5, 2);
-//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CAPSULE_Y) {
-//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
-//	dart::collision::fcl::Capsule obj2(0.5, 2);
-//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CAPSULE_Z) {
-//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
-//	dart::collision::fcl::Capsule obj2(0.5, 2);
-//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CONE_X) {
-//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
-//	dart::collision::fcl::Cone obj2(0.5, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CONE_Y) {
-//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
-//	dart::collision::fcl::Cone obj2(0.5, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-//}
-
-//TEST_F(COLLISION, PLANE_CONE_Z) {
-//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
-//	dart::collision::fcl::Cone obj2(0.5, 1);
-//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-//}
-
-
-TEST_F(COLLISION, DROP)
+TEST_F(Collision, DROP)
 {
     dtdbg << "Unrotated box\n";
     dart::collision::fcl::Box box1(0.5, 0.5, 0.5);
@@ -403,7 +238,7 @@ TEST_F(COLLISION, DROP)
                      0.0);
 }
 
-TEST_F(COLLISION, FCL_BOX_BOX)
+TEST_F(Collision, FCL_BOX_BOX)
 {
     double EulerZ = 1;
     double EulerY = 2;
@@ -456,52 +291,6 @@ TEST_F(COLLISION, FCL_BOX_BOX)
         std::cout << "normal: " << result.getContact(i).normal << std::endl;
     }
 }
-
-//TEST_F(COLLISION, OWN_COLLISION_CODE)
-//{
-//    double EulerZ = 1;
-//    double EulerY = 2;
-//    double EulerX = 3;
-
-//    // Collision test setting
-//    CollisionInfoArray result;
-
-//    Vec3 size1(100.0, 100.0, 0.1);
-//    SE3 T1(Vec3(0.0, 0.0, -0.05));
-
-//    Vec3 size2(0.5, 0.5, 0.5);
-//    Vec3 pos2(0.0, 0.0, 5.0);
-//    SE3 T2;
-//    T2 = EulerZYX(Vec3(EulerZ, EulerY, EulerX));
-//    T2.setPosition(pos2);
-
-//    // Let's drop the object until it collide with ground
-//    do {
-//        T2.setPosition(pos2);
-
-//        _BoxBox_____________MARK8(size1, T1, size2, T2, result);
-
-//        pos2[2] -= 0.00001;
-//    }
-//    while (result.size() == 0);
-
-//    std::cout //<< "Current position of the object: "
-//              //<< dart::collision::fcl::getTranslation(objectTransf)
-//              //<< std::endl
-//              << "Number of contacts: "
-//              << result.size()
-//              << std::endl;
-
-//    for (int i = 0; i < result.size(); ++i)
-//    {
-//        std::cout << "----- CONTACT " << i << " --------" << std::endl;
-//        std::cout << "contact_points: " << result.at(i).point;
-//        std::cout << "penetration_depth: " << result.at(i).penetration << std::endl;
-//        std::cout << "normal: " << result.at(i).normal << std::endl;
-//    }
-
-
-//}
 
 //==============================================================================
 void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
@@ -588,7 +377,7 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST_F(COLLISION, SimpleFrames)
+TEST_F(Collision, SimpleFrames)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -719,7 +508,7 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 }
 
 //==============================================================================
-TEST_F(COLLISION, SphereSphere)
+TEST_F(Collision, SphereSphere)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -827,7 +616,7 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
 }
 
 //==============================================================================
-TEST_F(COLLISION, BoxBox)
+TEST_F(Collision, BoxBox)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -958,7 +747,7 @@ void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST_F(COLLISION, testCylinderCylinder)
+TEST_F(Collision, testCylinderCylinder)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -1029,7 +818,7 @@ void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST_F(COLLISION, testCapsuleCapsule)
+TEST_F(Collision, testCapsuleCapsule)
 {
   // auto fcl_mesh_dart = FCLCollisionDetector::create();
   // fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -1104,7 +893,7 @@ void testPlane(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST_F(COLLISION, testPlane)
+TEST_F(Collision, testPlane)
 {
 #if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
@@ -1129,6 +918,8 @@ void testHeightmapBox(CollisionDetector* cd,
                       const bool extendsUntilGroundPlane = false,
                       const S odeThck = 0)
 {
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
+
   ///////////////////////////////////////
   // Set test parameters.
   // The height field will have a flat, even
@@ -1136,22 +927,23 @@ void testHeightmapBox(CollisionDetector* cd,
   ///////////////////////////////////////
 
   // size of box
-  const S boxSize = 0.1;
+  const S boxSize = S(0.1);
   // terrain scale in x and y direction
-  const S terrainScale = 2.0;
+  const S terrainScale = S(2.0);
   // z values scale
-  const S zScale = 2.0;
+  const S zScale = S(2.0);
 
   // minimum hand maximum height of terrain to use
   const S minH = 1.0;  // note: ODE doesn't behave well with negative heights
   const S maxH = 3.0;
   // adjusted minimum height: If minH > 0, and extendsUntilGroundPlane true,
   // then the minimum height is actually 0.
-  const S adjMinH = (extendsUntilGroundPlane && (minH > 0.0)) ? 0.0 : minH;
-  const S halfHeight = minH+(maxH-minH)/2.0;
+  const S adjMinH = (extendsUntilGroundPlane && (minH > S(0))) ? 0.0 : minH;
+  const S halfHeight = minH+(maxH-minH)/S(2);
   // ODE thickness is only used if there is not already a layer of this
   // thickness due to a minH > 0 (for ODE, extendsUntilGroundPlane is true)
-  const S useOdeThck = (odeThck > 1.0e-06) ? std::max(odeThck-minH, S(0)) : 0.0;
+  const S useOdeThck
+      = (odeThck > S(1.0e-06)) ? std::max(odeThck - minH, S(0)) : 0.0;
 
   ///////////////////////////////////////
   // Create frames and shapes
@@ -1161,15 +953,15 @@ void testHeightmapBox(CollisionDetector* cd,
   auto terrainFrame = SimpleFrame::createShared(Frame::World());
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto terrainShape = std::make_shared<HeightmapShape<S>>();
-  auto boxShape = std::make_shared<BoxShape>(Eigen::Vector3d(boxSize,
-                                                             boxSize, boxSize));
+  auto boxShape = std::make_shared<BoxShape>(
+      Eigen::Vector3d::Constant(static_cast<double>(boxSize)));
 
   // make a terrain with a linearly increasing slope
   std::vector<S> heights = {minH, halfHeight, halfHeight, maxH};
   terrainShape->setHeightField(2u, 2u, heights);
   // set a scale to test this at the same time
   const S terrSize = terrainScale;
-  terrainShape->setScale(Eigen::Vector3d(terrainScale, terrainScale, zScale));
+  terrainShape->setScale(Vector3(terrainScale, terrainScale, zScale));
   EXPECT_EQ(terrainShape->getHeightField().size(), heights.size());
 
   terrainFrame->setShape(terrainShape);
@@ -1196,8 +988,8 @@ void testHeightmapBox(CollisionDetector* cd,
   // Some tolerance (useOdeThck) has to be added for ODE because it adds an
   // extra piece on the bottom to prevent objects from falling through
   // lowest points.
-  S transZ = adjMinH*zScale - boxSize*0.501 - useOdeThck;
-  boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, transZ));
+  S transZ = adjMinH*zScale - boxSize*S(0.501) - useOdeThck;
+  boxFrame->setTranslation(Vector3(0.0, 0.0, transZ).template cast<double>());
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
 
@@ -1205,8 +997,8 @@ void testHeightmapBox(CollisionDetector* cd,
   if (collidesUnderTerrain)
   {
     result.clear();
-    transZ = adjMinH*zScale - boxSize*0.499 - useOdeThck;
-    boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, transZ));
+    transZ = adjMinH*zScale - boxSize*S(0.499) - useOdeThck;
+    boxFrame->setTranslation(Vector3(0.0, 0.0, transZ).template cast<double>());
     EXPECT_TRUE(group->collide(option, &result));
     EXPECT_GT(result.getNumContacts(), 0u);
   }
@@ -1217,16 +1009,14 @@ void testHeightmapBox(CollisionDetector* cd,
   ///////////////////////////////////////
 
   // some helper vectors
-  Eigen::Vector3d slope(1.0, -1.0, maxH-minH);
+  Vector3 slope(1.0, -1.0, maxH-minH);
   slope.normalize();
-  Eigen::Vector3d crossSection(1.0, 1.0, heights[1]-heights[2]);
+  Vector3 crossSection(1.0, 1.0, heights[1]-heights[2]);
   crossSection.normalize();
-  const Eigen::Vector3d normal = slope.cross(crossSection);
+  const Vector3 normal = slope.cross(crossSection);
   // the two extreme corners:
-  const Eigen::Vector3d
-    highCorner(Eigen::Vector3d(terrSize/2.0, -terrSize/2.0, maxH*zScale));
-  const Eigen::Vector3d
-    lowCorner(Eigen::Vector3d(-terrSize/2.0, terrSize/2.0, maxH*zScale));
+  const Vector3 highCorner = Vector3(terrSize/S(2), -terrSize/S(2), maxH*zScale);
+  const Vector3 lowCorner = Vector3(-terrSize/S(2), terrSize/S(2), maxH*zScale);
 
   // ODE doesn't do nicely when boxes are close to the border of the terrain.
   // Shift the boxes along the slope (or normal to slope for some tests)
@@ -1235,19 +1025,19 @@ void testHeightmapBox(CollisionDetector* cd,
   // it basically has to ensure the box is inside or outside the terrain
   // bounds, so the slope plays a role for this factor.
   // But since the box is small, an estimate is used for now.
-  const S boxShift = boxSize * 1.5;
+  const S boxShift = boxSize * S(1.5);
 
   // expect collision at highest point (at max height)
-  Eigen::Vector3d cornerShift = highCorner - slope*boxShift;
+  Vector3 cornerShift = highCorner - slope*boxShift;
   result.clear();
-  boxFrame->setTranslation(cornerShift);
+  boxFrame->setTranslation(cornerShift.template cast<double>());
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
 
   // .. but not at opposite corner (lowest corner, at overall max height)
   result.clear();
-  cornerShift = Eigen::Vector3d(lowCorner + slope*boxShift);
-  boxFrame->setTranslation(cornerShift);
+  cornerShift = Vector3(lowCorner + slope*boxShift);
+  boxFrame->setTranslation(cornerShift.template cast<double>());
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
 
@@ -1257,15 +1047,15 @@ void testHeightmapBox(CollisionDetector* cd,
 
   // box should collide where it intersects the slope
   result.clear();
-  Eigen::Vector3d inMiddle(0.0, 0.0, halfHeight*zScale);
-  boxFrame->setTranslation(inMiddle);
+  Vector3 inMiddle(0.0, 0.0, halfHeight*zScale);
+  boxFrame->setTranslation(inMiddle.template cast<double>());
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
 
   // ... but not if the box is translated away from the slope
   result.clear();
-  Eigen::Vector3d onTopOfSlope = inMiddle + normal*boxShift;
-  boxFrame->setTranslation(onTopOfSlope);
+  Vector3 onTopOfSlope = inMiddle + normal*boxShift;
+  boxFrame->setTranslation(onTopOfSlope.template cast<double>());
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
 
@@ -1274,21 +1064,21 @@ void testHeightmapBox(CollisionDetector* cd,
   if (collidesUnderTerrain)
   {
     result.clear();
-    Eigen::Vector3d underSlope = inMiddle - normal*boxShift;
-    boxFrame->setTranslation(underSlope);
+    Vector3 underSlope = inMiddle - normal*boxShift;
+    boxFrame->setTranslation(underSlope.template cast<double>());
     EXPECT_TRUE(group->collide(option, &result));
     EXPECT_GT(result.getNumContacts(), 0u);
   }
 }
 
 //==============================================================================
-TEST_F(COLLISION, testHeightmapBox)
+TEST_F(Collision, testHeightmapBox)
 {
 #if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   // TODO take this message out as soon as testing is done
   dtdbg << "Testing ODE (float)" << std::endl;
-  testHeightmapBox<float>(ode.get(), true, true, 0.05);
+  testHeightmapBox<float>(ode.get(), true, true, 0.05f);
 
   // TODO take this message out as soon as testing is done
   dtdbg << "Testing ODE (double)" << std::endl;
@@ -1308,7 +1098,7 @@ TEST_F(COLLISION, testHeightmapBox)
 
 //==============================================================================
 // Tests HeightmapShape::flipY();
-TEST_F(COLLISION, HeightmapFlipY)
+TEST_F(Collision, testHeightmapFlipY)
 {
   using S = double;
 
@@ -1392,7 +1182,7 @@ TEST_F(COLLISION, HeightmapFlipY)
 }
 
 //==============================================================================
-TEST_F(COLLISION, Options)
+TEST_F(Collision, Options)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -1494,7 +1284,7 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST_F(COLLISION, Filter)
+TEST_F(Collision, Filter)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -1571,7 +1361,7 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get()));
 
   // Regression test for #666
-  auto world = common::make_unique<World>();
+  auto world = std::make_unique<World>();
   world->getConstraintSolver()->setCollisionDetector(cd);
   world->addSkeleton(boxSkeleton1);
   world->addSkeleton(boxSkeleton2);
@@ -1596,7 +1386,7 @@ DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
-TEST_F(COLLISION, CreateCollisionGroupFromVariousObject)
+TEST_F(Collision, CreateCollisionGroupFromVariousObject)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -1628,7 +1418,7 @@ TEST_F(COLLISION, CreateCollisionGroupFromVariousObject)
 }
 
 //==============================================================================
-TEST_F(COLLISION, CollisionOfPrescribedJoints)
+TEST_F(Collision, CollisionOfPrescribedJoints)
 {
   // There are one red plate (static skeleton) and 5 pendulums with different
   // actuator types. This test check if the motion prescribed joints are exactly
@@ -1710,7 +1500,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 }
 
 //==============================================================================
-TEST_F(COLLISION, Factory)
+TEST_F(Collision, Factory)
 {
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
@@ -1730,7 +1520,7 @@ TEST_F(COLLISION, Factory)
 
 //==============================================================================
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-TEST_F(COLLISION, VoxelGrid)
+TEST_F(Collision, VoxelGrid)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());

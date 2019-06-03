@@ -32,8 +32,11 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
 
+using namespace dart;
 using dart::common::Uri;
 using dart::utils::DartLoader;
 
@@ -248,7 +251,6 @@ TEST(DartLoader, mimicJoint)
   EXPECT_DOUBLE_EQ(joint2->getMimicOffset(), 0.1);
 }
 
-
 TEST(DartLoader, badMimicJoint)
 {
   std::string urdfStr =
@@ -329,4 +331,106 @@ TEST(DartLoader, badMimicJoint)
 
   EXPECT_TRUE(joint2->getActuatorType() != dart::dynamics::Joint::MIMIC);
   EXPECT_TRUE(nullptr == joint2->getMimicJoint());
+}
+
+TEST(DartLoader, WorldShouldBeTreatedAsKeyword)
+{
+  const std::string urdfStr =
+      "<robot name=\"testRobot\">                                       "
+      "  <link name=\"world\"/>                                         "
+      "  <joint name=\"world_to_1\" type=\"revolute\">                  "
+      "    <parent link=\"world\"/>                                     "
+      "    <child link=\"link_0\"/>                                     "
+      "    <axis xyz=\"0 0 1\"/>                                        "
+      "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+      "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+      "    <axis xyz=\"0 0 1\"/>                                        "
+      "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+      "  </joint>                                                       "
+      "  <link name=\"link_0\"/>                                        "
+      "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  EXPECT_TRUE(nullptr != robot);
+
+  EXPECT_TRUE(robot->getNumBodyNodes() == 1u);
+  EXPECT_TRUE(robot->getRootBodyNode()->getName() == "link_0");
+}
+
+TEST(DartLoader, SingleLinkWithoutJoint)
+{
+  const std::string urdfStr =
+      "<robot name=\"testRobot\">                                       "
+      "  <link name=\"link_0\"/>                                        "
+      "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  EXPECT_TRUE(nullptr != robot);
+
+  EXPECT_TRUE(robot->getNumBodyNodes() == 1u);
+  EXPECT_TRUE(robot->getRootBodyNode()->getName() == "link_0");
+  EXPECT_TRUE(robot->getRootJoint()->getType()
+      == dart::dynamics::FreeJoint::getStaticType());
+}
+
+TEST(DartLoader, MultiTreeRobot)
+{
+  const std::string urdfStr =
+      "<robot name=\"testRobot\">                                       "
+      "  <link name=\"world\"/>                                         "
+      "  <joint name=\"world_to_0\" type=\"revolute\">                  "
+      "    <parent link=\"world\"/>                                     "
+      "    <child link=\"link_0\"/>                                     "
+      "    <axis xyz=\"0 0 1\"/>                                        "
+      "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+      "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+      "    <axis xyz=\"0 0 1\"/>                                        "
+      "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+      "  </joint>                                                       "
+      "  <link name=\"link_0\"/>                                        "
+      "  <joint name=\"world_to_1\" type=\"revolute\">                  "
+      "    <parent link=\"world\"/>                                     "
+      "    <child link=\"link_1\"/>                                     "
+      "    <axis xyz=\"0 0 1\"/>                                        "
+      "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+      "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+      "    <axis xyz=\"0 0 1\"/>                                        "
+      "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+      "  </joint>                                                       "
+      "  <link name=\"link_1\"/>                                        "
+      "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  EXPECT_TRUE(nullptr != robot);
+
+  EXPECT_EQ(robot->getNumBodyNodes(), 2u);
+  EXPECT_EQ(robot->getNumTrees(), 2u);
+}
+
+//==============================================================================
+TEST(DartLoader, KR5MeshColor)
+{
+  DartLoader loader;
+  auto robot =
+      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  EXPECT_TRUE(nullptr != robot);
+
+  EXPECT_EQ(robot->getNumBodyNodes(), 7u);
+  EXPECT_EQ(robot->getNumTrees(), 1u);
+
+  for (auto i = 0u; i < robot->getNumBodyNodes(); ++i)
+  {
+    auto body = robot->getBodyNode(i);
+    for (auto shapeNode : body->getShapeNodesWith<dynamics::VisualAspect>())
+    {
+      auto shape = shapeNode->getShape();
+      if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape))
+      {
+        EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+      }
+    }
+  }
 }

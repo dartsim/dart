@@ -37,7 +37,7 @@ endif()
 
 # Libraries
 if(MSVC)
-  set(FCL_LIBRARIES optimized fcl debug fcld)
+  set(FCL_LIBRARIES "fcl$<$<CONFIG:Debug>:d>")
 else()
   # Give explicit precedence to ${PC_FCL_LIBDIR}
   find_library(FCL_LIBRARIES

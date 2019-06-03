@@ -72,7 +72,7 @@ public:
 protected:
 
   /// ImGui handler.
-  ImGuiHandler* mImGuiHandler;
+  ::osg::ref_ptr<ImGuiHandler> mImGuiHandler;
 
   /// About widget.
   std::shared_ptr<AboutWidget> mAboutWidget;

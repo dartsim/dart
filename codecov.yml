@@ -4,6 +4,7 @@ coverage:
   ignore:
     - "unittests"
     - "dart/external"
+    - "dart/gui"
 
 comment:
   layout: "diff, flags, files"

@@ -202,17 +202,14 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  const std::vector<Eigen::Vector3d>& vertices =
-      mLineSegmentShape->getVertices();
-
-  const common::aligned_vector<Eigen::Vector2i>& connections =
-      mLineSegmentShape->getConnections();
-
   if(   mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
+    const common::aligned_vector<Eigen::Vector2i>& connections =
+        mLineSegmentShape->getConnections();
+
     ::osg::ref_ptr<::osg::DrawElementsUInt> elements =
-        new ::osg::DrawElementsUInt(GL_LINES);
+        new ::osg::DrawElementsUInt(::osg::PrimitiveSet::LINES);
     elements->reserve(2*connections.size());
 
     for(std::size_t i=0; i < connections.size(); ++i)
@@ -229,6 +226,9 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
      || mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
+    const std::vector<Eigen::Vector3d>& vertices =
+        mLineSegmentShape->getVertices();
+
     if(mVertices->size() != vertices.size())
       mVertices->resize(vertices.size());
 
@@ -244,7 +244,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4(mVisualAspect->getRGBA());
+    (*mColors)[0] = eigToOsgVec4d(mVisualAspect->getRGBA());
 
     setColorArray(mColors, ::osg::Array::BIND_OVERALL);
   }

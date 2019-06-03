@@ -44,6 +44,8 @@
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/DistanceOption.hpp"
 #include "dart/collision/DistanceResult.hpp"
+#include "dart/collision/RaycastOption.hpp"
+#include "dart/collision/RaycastResult.hpp"
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -76,7 +78,7 @@ public:
 
   /// \brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
-  virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() = 0;
+  virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() const = 0;
 
   /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;
@@ -155,6 +157,21 @@ public:
       CollisionGroup* group2,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) = 0;
+
+  /// Performs raycast to a collision group.
+  ///
+  /// \param[in] group The collision group the ray will be casted onto.
+  /// \param[in] from The start point of the ray in world coordinates.
+  /// \param[in] to The end point of the ray in world coordinates.
+  /// \param[in] option The raycast option.
+  /// \param[in] result The raycast result.
+  /// \return True if the ray hit an collision object.
+  virtual bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr);
 
 protected:
 

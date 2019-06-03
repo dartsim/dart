@@ -33,15 +33,8 @@
 #ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
-//------------------------------------------------------------------------------
-// Workaround for bug:
-// (see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=684062)
-// This is fixed at IpOpt 3.11.4-1
-#define HAVE_CSTDDEF
 #include <coin/IpTNLP.hpp>
 #include <coin/IpIpoptApplication.hpp>
-#undef HAVE_CSTDDEF
-//------------------------------------------------------------------------------
 
 #include <memory>
 

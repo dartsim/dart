@@ -1,6 +1,0 @@
-#ifndef DARTPY_CONFIG_H_
-#define DARTPY_CONFIG_H_
-
-#cmakedefine DARTPY_HAS_STD_SHARED_GET_POINTER
-
-#endif // ifndef DARTPY_CONFIG_H_

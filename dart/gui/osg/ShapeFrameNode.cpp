@@ -48,6 +48,11 @@
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
+#include "dart/gui/osg/render/PointCloudShapeNode.hpp"
+#if HAVE_OCTOMAP
+#include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
+#endif
+#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
 #include "dart/gui/osg/render/WarningShapeNode.hpp"
 
 #include "dart/dynamics/Frame.hpp"
@@ -64,6 +69,11 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
+#include "dart/dynamics/PointCloudShape.hpp"
+#if HAVE_OCTOMAP
+#include "dart/dynamics/VoxelGridShape.hpp"
+#endif
+#include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
@@ -84,14 +94,31 @@ ShapeFrameNode::ShapeFrameNode(
 }
 
 //==============================================================================
-dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame()
+dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
 {
+  if (!mUtilized && checkUtilization)
+  {
+    dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+           << "ShapeFrameNode. This can be dangerous because unused "
+           << "ShapeFrameNode implies that it's possible that the ShapeFrame "
+           << "already got deleted.\n";
+  }
+
   return mShapeFrame;
 }
 
 //==============================================================================
-const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame() const
+const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
+    bool checkUtilization) const
 {
+  if (!mUtilized && checkUtilization)
+  {
+    dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+           << "ShapeFrameNode. This can be dangerous because unused "
+           << "ShapeFrameNode implies that it's possible that the ShapeFrame "
+           << "already got deleted.\n";
+  }
+
   return mShapeFrame;
 }
 
@@ -285,6 +312,45 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
+  else if(PointCloudShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<PointCloudShape> lss =
+        std::dynamic_pointer_cast<PointCloudShape>(shape);
+    if(lss)
+      mRenderShapeNode = new render::PointCloudShapeNode(lss, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+#if HAVE_OCTOMAP
+  else if(VoxelGridShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<VoxelGridShape> lss =
+        std::dynamic_pointer_cast<VoxelGridShape>(shape);
+    if(lss)
+      mRenderShapeNode = new render::VoxelGridShapeNode(lss, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+#endif // HAVE_OCTOMAP
+  else if(HeightmapShapef::getStaticType() == shapeType)
+  {
+    std::shared_ptr<HeightmapShapef> lss =
+        std::dynamic_pointer_cast<HeightmapShapef>(shape);
+    if(lss)
+      mRenderShapeNode = new render::HeightmapShapeNode<float>(lss, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  // OpenSceneGraph currently doesn't support double precision for Heightmap
+  // else if(HeightmapShaped::getStaticType() == shapeType)
+  // {
+  //   std::shared_ptr<HeightmapShaped> lss =
+  //       std::dynamic_pointer_cast<HeightmapShaped>(shape);
+  //   if(lss)
+  //     mRenderShapeNode = new render::HeightmapShapeNode<double>(lss, this);
+  //   else
+  //     warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  // }
   else
   {
     mRenderShapeNode = new render::WarningShapeNode(shape, this);

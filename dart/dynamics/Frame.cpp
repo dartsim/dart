@@ -76,6 +76,17 @@ Frame* Frame::World()
 }
 
 //==============================================================================
+std::shared_ptr<Frame> Frame::WorldShared()
+{
+  struct EnableMakeShared : WorldFrame
+  {
+    EnableMakeShared() : Entity(nullptr, true), WorldFrame() {}
+  };
+  static auto sharedWorld = std::make_shared<EnableMakeShared>();
+  return sharedWorld;
+}
+
+//==============================================================================
 const Eigen::Isometry3d& Frame::getWorldTransform() const
 {
   if(mAmWorld)

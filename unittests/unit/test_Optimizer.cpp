@@ -161,7 +161,7 @@ TEST(Optimizer, BasicNlopt)
   prob->addIneqConstraint(const1);
   prob->addIneqConstraint(const2);
 
-  NloptSolver solver(prob, nlopt::LD_MMA);
+  NloptSolver solver(prob, NloptSolver::LD_MMA);
   EXPECT_TRUE(solver.solve());
 
   double minF = prob->getOptimumValue();
@@ -212,36 +212,6 @@ TEST(Optimizer, BasicSnopt)
   return;
 }
 #endif
-
-//==============================================================================
-TEST(Optimizer, InverseKinematics)
-{
-  // Very simple test of InverseKinematics module, applied to a FreeJoint to
-  // ensure that the target is reachable
-
-  SkeletonPtr skel = Skeleton::create();
-  skel->createJointAndBodyNodePair<FreeJoint>();
-
-  std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
-
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);
-  tf.rotate(Eigen::AngleAxisd(M_PI/8, Eigen::Vector3d(0, 1, 0)));
-  ik->getTarget()->setTransform(tf);
-
-  ik->getErrorMethod().setBounds(Eigen::Vector6d::Constant(-1e-8),
-                                Eigen::Vector6d::Constant( 1e-8));
-
-  ik->getSolver()->setNumMaxIterations(100);
-
-  EXPECT_FALSE(equals(ik->getTarget()->getTransform().matrix(),
-                      skel->getBodyNode(0)->getTransform().matrix(), 1e-1));
-
-  EXPECT_TRUE(ik->getSolver()->solve());
-
-  EXPECT_TRUE(equals(ik->getTarget()->getTransform().matrix(),
-                     skel->getBodyNode(0)->getTransform().matrix(), 1e-8));
-}
 
 //==============================================================================
 bool compareStringAndFile(const std::string& content,

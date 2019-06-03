@@ -24,6 +24,10 @@
 #include "dart/external/odelcpsolver/misc.h"
 #include "dart/external/odelcpsolver/matrix.h"
 
+namespace dart {
+namespace external {
+namespace ode {
+
 //****************************************************************************
 // random numbers
 
@@ -192,3 +196,6 @@ dReal dMaxDifferenceLowerTriangle (const dReal *A, const dReal *B, int n)
   return max;
 }
 
+} // namespace ode
+} // namespace external
+} // namespace dart

@@ -17,4 +17,15 @@ function(dartpy_add_example example_name) # ARGN for source file
   )
 endfunction()
 
-add_subdirectory(rigid_cubes)
+# Automatically identify all directories in the apps folder
+file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
+foreach(child ${children})
+  if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${child}/main.py")
+      if(DART_VERBOSE)
+        message(STATUS "Adding Python example: " py_${child})
+      endif()
+    endif()
+    dartpy_add_example(py_example_${child} "${CMAKE_CURRENT_LIST_DIR}/${child}/main.py")
+  endif()
+endforeach()

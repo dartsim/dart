@@ -59,6 +59,10 @@
 #  define ODE_API_DEPRECATED
 #endif
 
+namespace dart {
+namespace external {
+namespace ode {
+
 /* Well-defined common data types...need to define for 64 bit systems */
 #if defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64) || defined(__x86_64__)
   #define X86_64_SYSTEM   1
@@ -77,6 +81,9 @@
   typedef unsigned char   uint8;
 #endif
 
+} // namespace ode
+} // namespace external
+} // namespace dart
 
 /* Define the dInfinity macro */
 #ifdef INFINITY

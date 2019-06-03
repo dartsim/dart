@@ -667,7 +667,7 @@ FCLCollisionDetector::~FCLCollisionDetector()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-FCLCollisionDetector::cloneWithoutCollisionObjects()
+FCLCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return FCLCollisionDetector::create();
 }
@@ -689,7 +689,7 @@ const std::string& FCLCollisionDetector::getStaticType()
 std::unique_ptr<CollisionGroup>
 FCLCollisionDetector::createCollisionGroup()
 {
-  return common::make_unique<FCLCollisionGroup>(shared_from_this());
+  return std::make_unique<FCLCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================

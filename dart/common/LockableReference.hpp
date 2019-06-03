@@ -86,6 +86,7 @@ public:
   /// \param[in] lockableHolder Weak pointer to an object that holds the
   /// lockable. This is used to check whether the lockable holder is not
   /// destructed before lock/unlock.
+  /// \param[in] lockable
   SingleLockableReference(
       std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept;
 

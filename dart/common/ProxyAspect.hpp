@@ -80,7 +80,7 @@ public:
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyStateAndPropertiesAspect>();
+    return std::make_unique<ProxyStateAndPropertiesAspect>();
   }
 
 };
