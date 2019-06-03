@@ -15,7 +15,7 @@ $SUDO apt-get -y install \
   pkg-config \
   sudo
 
-if [ $BUILD_TYPE = Debug ]; then
+if [ $MEMCHECK = "ON" ]; then
   if [ $(lsb_release -sc) = "xenial" ]; then
     $SUDO apt-get -y install wget
     wget http://valgrind.org/downloads/valgrind-3.14.0.tar.bz2

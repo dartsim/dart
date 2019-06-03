@@ -3,6 +3,8 @@
 # Build dependencies
 brew 'cmake'
 brew 'pkg-config'
+
+# Dependencies for testing
 brew 'valgrind'
 
 brew 'assimp'
