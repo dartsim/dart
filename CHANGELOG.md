@@ -2,6 +2,10 @@
 
 ### [DART 6.10.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
+* GUI
+
+  * Fixed memory leaks from dart::gui::osg::Viewer: [#1331](https://github.com/dartsim/dart/pull/1331)
+
 * dartpy
 
   * Added raycast option and result: [#1343](https://github.com/dartsim/dart/pull/1343)
