@@ -30,42 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <osgShadow/ShadowTechnique>
+#include <osgShadow/ShadowMap>
 #include <pybind11/pybind11.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void WorldNode(py::module& sm);
-void RealTimeWorldNode(py::module& sm);
-
-void GUIEventHandler(py::module& sm);
-
-void Viewer(py::module& sm);
-void ViewerAttachment(py::module& sm);
-void GridVisual(py::module& sm);
-
-void DragAndDrop(py::module& sm);
-
-void ShadowTechnique(py::module& sm);
-
-void dart_gui_osg(py::module& m)
+void ShadowTechnique(py::module& m)
 {
-  auto sm = m.def_submodule("osg");
+  ::py::class_<
+      ::osgShadow::ShadowTechnique,
+      ::osg::ref_ptr<::osgShadow::ShadowTechnique>>(m, "ShadowTechnique")
+      .def(::py::init<>());
 
-  WorldNode(sm);
-  RealTimeWorldNode(sm);
-
-  GUIEventHandler(sm);
-
-  Viewer(sm);
-  ViewerAttachment(sm);
-  GridVisual(sm);
-
-  DragAndDrop(sm);
-
-  ShadowTechnique(sm);
+  ::py::class_<
+      ::osgShadow::ShadowMap,
+      ::osgShadow::ShadowTechnique,
+      ::osg::ref_ptr<::osgShadow::ShadowMap>>(m, "ShadowMap")
+      .def(::py::init<>());
 }
 
 } // namespace python
