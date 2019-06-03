@@ -4,9 +4,6 @@
 brew 'cmake'
 brew 'pkg-config'
 
-# Dependencies for testing
-brew 'valgrind'
-
 brew 'assimp'
 brew 'boost'
 brew 'bullet'
