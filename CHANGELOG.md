@@ -2,6 +2,10 @@
 
 ### [DART 6.10.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
+* GUI
+
+  * Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351)
+
 * dartpy
 
   * Added raycast option and result: [#1343](https://github.com/dartsim/dart/pull/1343)
