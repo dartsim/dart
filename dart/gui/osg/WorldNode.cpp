@@ -355,7 +355,7 @@ void WorldNode::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> sh
 
   ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
   // increase the resolution of default shadow texture for higher quality
-  auto mapres = static_cast<short>(std::pow(2, 13));
+  auto mapres = static_cast<short>(std::pow(2, 12));
   sm->setTextureSize(::osg::Vec2s(mapres,mapres));
   // we are using Light1 because this is the highest one (on up direction)
   sm->setLight(viewer->getLightSource(0));

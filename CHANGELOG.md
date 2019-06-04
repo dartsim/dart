@@ -5,6 +5,7 @@
 * GUI
 
   * Fixed memory leaks from dart::gui::osg::Viewer: [#1331](https://github.com/dartsim/dart/pull/1331)
+  * Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351)
 
 * dartpy
 
@@ -16,6 +17,7 @@
 
   * Updated build scripts for uploading dartpy to PyPI: [#1341](https://github.com/dartsim/dart/pull/1341)
   * Added GUI event handler: [#1346](https://github.com/dartsim/dart/pull/1346)
+  * Added shadow technique: [#1348](https://github.com/dartsim/dart/pull/1348)
 
 ### [DART 6.9.0 (2019-05-26)](https://github.com/dartsim/dart/milestone/52?closed=1)
 

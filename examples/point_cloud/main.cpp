@@ -448,7 +448,7 @@ public:
           }
 
           const char* pointShapeTypeItems[]
-              = {"Box", "Billboard Square", "Billboard Circle"};
+              = {"Box", "Billboard Square", "Billboard Circle", "Point"};
           int pointShapeType = pointCloudShape->getPointShapeType();
           if (ImGui::Combo(
                   "Point Shape Type",
@@ -470,6 +470,11 @@ public:
             {
               pointCloudShape->setPointShapeType(
                   dynamics::PointCloudShape::BILLBOARD_CIRCLE);
+            }
+            else if (pointShapeType == 3)
+            {
+              pointCloudShape->setPointShapeType(
+                  dynamics::PointCloudShape::POINT);
             }
           }
 
@@ -693,6 +698,7 @@ dynamics::SimpleFramePtr createPointCloudFrame()
 {
   auto pointCloudShape
       = ::std::make_shared<::dart::dynamics::PointCloudShape>();
+  pointCloudShape->setPointShapeType(::dart::dynamics::PointCloudShape::BOX);
   auto pointCloudFrame = ::dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());
   pointCloudFrame->setName("point cloud");

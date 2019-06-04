@@ -48,6 +48,8 @@ void GridVisual(py::module& sm);
 
 void DragAndDrop(py::module& sm);
 
+void ShadowTechnique(py::module& sm);
+
 void dart_gui_osg(py::module& m)
 {
   auto sm = m.def_submodule("osg");
@@ -62,6 +64,8 @@ void dart_gui_osg(py::module& m)
   GridVisual(sm);
 
   DragAndDrop(sm);
+
+  ShadowTechnique(sm);
 }
 
 } // namespace python

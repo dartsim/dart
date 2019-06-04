@@ -153,14 +153,14 @@ def main():
     world.setGravity([0, -9.81, 0])
 
     biped = world.getSkeleton('fullbody1')
-    biped.getDof('j_pelvis_rot_y').setPosition(-0.20);
-    biped.getDof('j_thigh_left_z').setPosition(0.15);
-    biped.getDof('j_shin_left').setPosition(-0.40);
-    biped.getDof('j_heel_left_1').setPosition(0.25);
-    biped.getDof('j_thigh_right_z').setPosition(0.15);
-    biped.getDof('j_shin_right').setPosition(-0.40);
-    biped.getDof('j_heel_right_1').setPosition(0.25);
-    biped.getDof('j_abdomen_2').setPosition(0.00);
+    biped.getDof('j_pelvis_rot_y').setPosition(-0.20)
+    biped.getDof('j_thigh_left_z').setPosition(0.15)
+    biped.getDof('j_shin_left').setPosition(-0.40)
+    biped.getDof('j_heel_left_1').setPosition(0.25)
+    biped.getDof('j_thigh_right_z').setPosition(0.15)
+    biped.getDof('j_shin_right').setPosition(-0.40)
+    biped.getDof('j_heel_right_1').setPosition(0.25)
+    biped.getDof('j_abdomen_2').setPosition(0.00)
 
     node = MyWorldNode(world, biped)
 
@@ -172,9 +172,7 @@ def main():
     viewer.addEventHandler(input_handler)
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
-    viewer.setCameraHomePosition([3.0, 1.5, 3.0],
-                                 [0.00, 0.00, 0.00],
-                                 [-0.24, 0.94, -0.25])
+    viewer.setCameraHomePosition([3, 1.5, 3], [0, 0, 0], [0, 0, 0])
     viewer.run()
 
 

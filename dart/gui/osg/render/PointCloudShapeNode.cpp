@@ -34,6 +34,8 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
+#include <osg/MatrixTransform>
+#include <osg/Point>
 #include <osg/ShapeDrawable>
 #include <osg/Texture2D>
 
@@ -82,10 +84,10 @@ protected:
 };
 
 //==============================================================================
-class QuadDrawable final : public ::osg::Geometry
+class SquareDrawable final : public ::osg::Geometry
 {
 public:
-  QuadDrawable(double size, const Eigen::Vector4d& color)
+  SquareDrawable(double size, const Eigen::Vector4d& color)
   {
     mVertices = new ::osg::Vec3Array(4);
     mNormals = new ::osg::Vec3Array(1);
@@ -194,9 +196,9 @@ public:
 
   void updateCenter(const Eigen::Vector3d& point)
   {
-    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-    tf.translation() = point;
-    setMatrix(eigToOsgMatrix(tf));
+    ::osg::Matrix mat = getMatrix();
+    mat.setTrans(point[0], point[1], point[2]);
+    setMatrix(mat);
   }
 
   virtual void updateSize(double size) = 0;
@@ -268,36 +270,15 @@ protected:
 };
 
 //==============================================================================
-PointCloudShapeNode::PointCloudShapeNode(
-    std::shared_ptr<dart::dynamics::PointCloudShape> shape,
-    ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this),
-    mPointCloudShape(shape),
-    mPointCloudVersion(dynamics::INVALID_INDEX),
-    mPointShapeType(shape->getPointShapeType())
+class PointNodes : public ::osg::Group
 {
-  mNode = this;
-  extractData(true);
-  setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
-}
+public:
+  PointNodes() = default;
 
-//==============================================================================
-void PointCloudShapeNode::refresh()
-{
-  mUtilized = true;
+  virtual void refresh(bool /*firstTime*/) = 0;
 
-  setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
-
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
-      && mPointCloudVersion == mPointCloudShape->getVersion())
-  {
-    return;
-  }
-
-  extractData(false);
-
-  mPointCloudVersion = mPointCloudShape->getVersion();
-}
+protected:
+};
 
 //==============================================================================
 bool shouldUseVisualAspectColor(
@@ -344,85 +325,314 @@ bool shouldUseVisualAspectColor(
 }
 
 //==============================================================================
-void PointCloudShapeNode::extractData(bool firstTime)
+::osg::ref_ptr<PointNode> createPointNode(
+    dynamics::PointCloudShape::PointShapeType pointShapeType,
+    const Eigen::Vector3d& point,
+    double size,
+    const Eigen::Vector4d& color)
 {
-  if (firstTime)
+  if (pointShapeType == dynamics::PointCloudShape::PointShapeType::BOX)
   {
-    mPointShapeType = mPointCloudShape->getPointShapeType();
+    return new BoxPointNode(point, size, color);
+  }
+  else if (
+      pointShapeType
+      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_SQUARE)
+  {
+    return new BillboardPointNode<SquareDrawable>(point, size, color);
+  }
+  else if (
+      pointShapeType
+      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE)
+  {
+    return new BillboardPointNode<CircleDrawable>(point, size, color);
+  }
+  else
+  {
+    dterr << "[PointCloudShapeNode] Unsupported PointShapeType '"
+          << pointShapeType << "'. Using BOX instead.\n";
+    return new BoxPointNode(point, size, color);
+  }
+}
+
+//==============================================================================
+class NonVertexPointNodes : public PointNodes
+{
+public:
+  NonVertexPointNodes(
+      std::shared_ptr<dart::dynamics::PointCloudShape> pointCloudShape,
+      dart::dynamics::VisualAspect* visualAspect)
+    : mPointCloudShape(std::move(pointCloudShape)),
+      mVisualAspect(visualAspect),
+      mPointShapeType(mPointCloudShape->getPointShapeType())
+  {
+    // Do nothing
+  }
+
+  void refresh(bool firstTime) override
+  {
+    if (firstTime)
+    {
+      mPointShapeType = mPointCloudShape->getPointShapeType();
+    }
+    else if (mPointShapeType != mPointCloudShape->getPointShapeType())
+    {
+      mPointNodes.clear();
+      mPointShapeType = mPointCloudShape->getPointShapeType();
+      removeChildren(0, getNumChildren());
+    }
+
+    const auto visualSize = mPointCloudShape->getVisualSize();
+    const auto& points = mPointCloudShape->getPoints();
+    const auto& colors = mPointCloudShape->getColors();
+    const auto colorMode = mPointCloudShape->getColorMode();
+
+    const bool useVisualAspectColor
+        = shouldUseVisualAspectColor(points, colors, colorMode);
+
+    // Pre-allocate for the case that the size of new points are greater than
+    // previous update
+    mPointNodes.reserve(points.size());
+
+    // Update position of cache boxes. The number of being updated boxes is
+    // whichever the lower number of cache boxes and new points.
+    const auto numUpdatingPoints = std::min(mPointNodes.size(), points.size());
+    for (auto i = 0u; i < numUpdatingPoints; ++i)
+    {
+      mPointNodes[i]->updateCenter(points[i]);
+      mPointNodes[i]->updateSize(visualSize);
+      if (useVisualAspectColor
+          || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
+      {
+        mPointNodes[i]->updateColor(mVisualAspect->getRGBA());
+      }
+      else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
+      {
+        mPointNodes[i]->updateColor(colors[0]);
+      }
+      else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
+      {
+        mPointNodes[i]->updateColor(colors[i]);
+      }
+    }
+
+    // If the number of new points is greater than cache box, then create new
+    // boxes that many.
+    for (auto i = mPointNodes.size(); i < points.size(); ++i)
+    {
+      ::osg::ref_ptr<PointNode> pointNode;
+      if (useVisualAspectColor
+          || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
+      {
+        pointNode = createPointNode(
+            mPointShapeType, points[i], visualSize, mVisualAspect->getRGBA());
+      }
+      else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
+      {
+        pointNode = createPointNode(
+            mPointShapeType, points[i], visualSize, colors[0]);
+      }
+      else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
+      {
+        pointNode = createPointNode(
+            mPointShapeType, points[i], visualSize, colors[i]);
+      }
+      mPointNodes.emplace_back(pointNode);
+      addChild(mPointNodes.back());
+    }
+
+    // Fit the size of cache box list to the new points. No effect new boxes are
+    // added to the list.
+    if (mPointNodes.size() > points.size())
+    {
+      removeChildren(
+          static_cast<unsigned int>(points.size()),
+          static_cast<unsigned int>(mPointNodes.size() - points.size()));
+      mPointNodes.resize(points.size());
+    }
+  }
+
+protected:
+  std::shared_ptr<dart::dynamics::PointCloudShape> mPointCloudShape;
+  dart::dynamics::VisualAspect* mVisualAspect;
+  dynamics::PointCloudShape::PointShapeType mPointShapeType;
+
+  std::vector<::osg::ref_ptr<PointNode>> mPointNodes;
+};
+
+//==============================================================================
+class VertexPointNodes final : public PointNodes
+{
+public:
+  VertexPointNodes(
+      std::shared_ptr<dart::dynamics::PointCloudShape> pointCloudShape,
+      dart::dynamics::VisualAspect* visualAspect)
+    : mPointCloudShape(std::move(pointCloudShape)), mVisualAspect(visualAspect)
+  {
+    // Do nothing
+  }
+
+  void refresh(bool firstTime) override
+  {
+    if (firstTime)
+    {
+      mVertices = new ::osg::Vec3Array;
+      mColors = new ::osg::Vec4Array;
+      mPoint = new ::osg::Point();
+      mPrimitiveSet = new ::osg::DrawArrays(::osg::PrimitiveSet::POINTS);
+
+      mGeometry = new ::osg::Geometry;
+      mGeometry->setVertexArray(mVertices);
+      mGeometry->setDataVariance(::osg::Object::STATIC);
+      mGeometry->getOrCreateStateSet()->setMode(
+          GL_BLEND, ::osg::StateAttribute::ON);
+      mGeometry->addPrimitiveSet(mPrimitiveSet);
+      mGeometry->getOrCreateStateSet()->setAttribute(
+          mPoint, ::osg::StateAttribute::ON);
+
+      mGeode = new ::osg::Geode();
+      mGeode->getOrCreateStateSet()->setMode(
+          GL_LIGHTING, ::osg::StateAttribute::OFF);
+      mGeode->addDrawable(mGeometry);
+
+      addChild(mGeode);
+    }
+
+    const auto& points = mPointCloudShape->getPoints();
+    const auto& colors = mPointCloudShape->getColors();
+    const auto colorMode = mPointCloudShape->getColorMode();
+
+    const bool useVisualAspectColor
+        = shouldUseVisualAspectColor(points, colors, colorMode);
+
+    mVertices->resize(points.size());
+    for (auto i = 0u; i < points.size(); ++i)
+    {
+      const auto& point = points[i];
+      mVertices->at(i).set(
+          static_cast<float>(point.x()),
+          static_cast<float>(point.y()),
+          static_cast<float>(point.z()));
+    }
+
+    if (useVisualAspectColor
+        || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
+    {
+      mColors->resize(1);
+      const auto& color = mVisualAspect->getRGBA();
+      mColors->at(0).set(
+          static_cast<float>(color[0]),
+          static_cast<float>(color[1]),
+          static_cast<float>(color[2]),
+          static_cast<float>(color[3]));
+      mGeometry->setColorArray(mColors, ::osg::Array::BIND_OVERALL);
+    }
+    else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
+    {
+      mColors->resize(1);
+      const auto& color = colors[0];
+      mColors->at(0).set(
+          static_cast<float>(color[0]),
+          static_cast<float>(color[1]),
+          static_cast<float>(color[2]),
+          static_cast<float>(color[3]));
+      mGeometry->setColorArray(mColors, ::osg::Array::BIND_OVERALL);
+    }
+    else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
+    {
+      mColors->resize(colors.size());
+      for (auto i = 0u; i < colors.size(); ++i)
+      {
+        const auto& color = colors[i];
+        mColors->at(i).set(
+            static_cast<float>(color[0]),
+            static_cast<float>(color[1]),
+            static_cast<float>(color[2]),
+            static_cast<float>(color[3]));
+      }
+      mGeometry->setColorArray(mColors, ::osg::Array::BIND_PER_VERTEX);
+    }
+
+    mGeometry->setVertexArray(mVertices);
+    mPrimitiveSet->setFirst(0);
+    mPrimitiveSet->setCount(static_cast<int>(mVertices->size()));
+    mGeometry->setPrimitiveSet(0, mPrimitiveSet);
+
+    int visualSize = static_cast<int>(mPointCloudShape->getVisualSize());
+    visualSize = std::max(visualSize, 1);
+    mPoint->setSize(visualSize);
+    mGeometry->getOrCreateStateSet()->setAttribute(mPoint);
+  }
+
+private:
+  std::shared_ptr<dart::dynamics::PointCloudShape> mPointCloudShape;
+  dart::dynamics::VisualAspect* mVisualAspect;
+
+  ::osg::ref_ptr<::osg::Geode> mGeode;
+
+  ::osg::ref_ptr<::osg::Geometry> mGeometry;
+
+  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
+  ::osg::ref_ptr<::osg::Vec3Array> mNormals;
+  ::osg::ref_ptr<::osg::Vec4Array> mColors;
+  ::osg::ref_ptr<::osg::Point> mPoint;
+  ::osg::ref_ptr<::osg::DrawArrays> mPrimitiveSet;
+};
+
+//==============================================================================
+PointCloudShapeNode::PointCloudShapeNode(
+    std::shared_ptr<dart::dynamics::PointCloudShape> shape,
+    ShapeFrameNode* parent)
+  : ShapeNode(shape, parent, this),
+    mPointCloudShape(shape),
+    mPointNodes(nullptr),
+    mPointCloudVersion(dynamics::INVALID_INDEX),
+    mPointShapeType(shape->getPointShapeType())
+{
+  mNode = this;
+  extractData(true);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
+}
+
+//==============================================================================
+void PointCloudShapeNode::refresh()
+{
+  mUtilized = true;
+
+  setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
+
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
+      && mPointCloudVersion == mPointCloudShape->getVersion())
+  {
+    return;
+  }
+
+  extractData(false);
+
+  mPointCloudVersion = mPointCloudShape->getVersion();
+}
+
+//==============================================================================
+void PointCloudShapeNode::extractData(bool /*firstTime*/)
+{
+  if (mPointNodes == nullptr)
+  {
+    mPointNodes = createPointNodes();
+    addChild(mPointNodes);
+    mPointNodes->refresh(true);
+    return;
   }
   else if (mPointShapeType != mPointCloudShape->getPointShapeType())
   {
-    mPointNodes.clear();
     mPointShapeType = mPointCloudShape->getPointShapeType();
-    removeChildren(0, getNumChildren());
+    removeChild(mPointNodes);
+    mPointNodes = createPointNodes();
+    addChild(mPointNodes);
+    mPointNodes->refresh(true);
+    return;
   }
 
-  const auto visualSize = mPointCloudShape->getVisualSize();
-  const auto& points = mPointCloudShape->getPoints();
-  const auto& colors = mPointCloudShape->getColors();
-  const auto colorMode = mPointCloudShape->getColorMode();
-
-  const bool useVisualAspectColor
-      = shouldUseVisualAspectColor(points, colors, colorMode);
-
-  // Pre-allocate for the case that the size of new points are greater than
-  // previous update
-  mPointNodes.reserve(points.size());
-
-  // Update position of cache boxes. The number of being updated boxes is
-  // whichever the lower number of cache boxes and new points.
-  const auto numUpdatingPoints = std::min(mPointNodes.size(), points.size());
-  for (auto i = 0u; i < numUpdatingPoints; ++i)
-  {
-    mPointNodes[i]->updateCenter(points[i]);
-    mPointNodes[i]->updateSize(visualSize);
-    if (useVisualAspectColor
-        || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
-    {
-      mPointNodes[i]->updateColor(mVisualAspect->getRGBA());
-    }
-    else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
-    {
-      mPointNodes[i]->updateColor(colors[0]);
-    }
-    else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
-    {
-      mPointNodes[i]->updateColor(colors[i]);
-    }
-  }
-
-  // If the number of new points is greater than cache box, then create new
-  // boxes that many.
-  for (auto i = mPointNodes.size(); i < points.size(); ++i)
-  {
-    ::osg::ref_ptr<PointNode> pointNode;
-    if (useVisualAspectColor
-        || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR)
-    {
-      pointNode
-          = createPointNode(points[i], visualSize, mVisualAspect->getRGBA());
-    }
-    else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL)
-    {
-      pointNode = createPointNode(points[i], visualSize, colors[0]);
-    }
-    else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT)
-    {
-      pointNode = createPointNode(points[i], visualSize, colors[i]);
-    }
-    mPointNodes.emplace_back(pointNode);
-    addChild(mPointNodes.back());
-  }
-
-  // Fit the size of cache box list to the new points. No effect new boxes are
-  // added to the list.
-  if (mPointNodes.size() > points.size())
-  {
-    removeChildren(
-        static_cast<unsigned int>(points.size()),
-        static_cast<unsigned int>(mPointNodes.size() - points.size()));
-    mPointNodes.resize(points.size());
-  }
+  mPointNodes->refresh(false);
 }
 
 //==============================================================================
@@ -432,27 +642,26 @@ PointCloudShapeNode::~PointCloudShapeNode()
 }
 
 //==============================================================================
-::osg::ref_ptr<PointNode> PointCloudShapeNode::createPointNode(
-    const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
+::osg::ref_ptr<PointNodes> PointCloudShapeNode::createPointNodes()
 {
-  if (mPointShapeType == dynamics::PointCloudShape::PointShapeType::BOX)
+  if (mPointShapeType == dynamics::PointCloudShape::PointShapeType::BOX
+      || mPointShapeType
+             == dynamics::PointCloudShape::PointShapeType::BILLBOARD_SQUARE
+      || mPointShapeType
+             == dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE)
   {
-    return new BoxPointNode(point, size, color);
+    return new NonVertexPointNodes(mPointCloudShape, mVisualAspect);
   }
-  else if (
-      mPointShapeType
-      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_SQUARE)
+  else if (mPointShapeType == dynamics::PointCloudShape::PointShapeType::POINT)
   {
-    return new BillboardPointNode<QuadDrawable>(point, size, color);
+    return new VertexPointNodes(mPointCloudShape, mVisualAspect);
   }
-  else if (
-      mPointShapeType
-      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE)
+  else
   {
-    return new BillboardPointNode<CircleDrawable>(point, size, color);
+    dtwarn << "[PointCloudShapeNode] Unsupported PointShapeType '"
+           << mPointShapeType << "'. Using POINT instead.\n";
+    return new VertexPointNodes(mPointCloudShape, mVisualAspect);
   }
-
-  return nullptr;
 }
 
 } // namespace render

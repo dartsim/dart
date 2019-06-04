@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osg/Geode"
-#include "osg/Node"
-#include "osg/Group"
+#include <osg/Geode>
+#include <osg/Node>
+#include <osg/Group>
 
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
