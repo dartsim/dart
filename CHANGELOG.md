@@ -4,6 +4,7 @@
 
 * GUI
 
+  * Fixed memory leaks from dart::gui::osg::Viewer: [#1331](https://github.com/dartsim/dart/pull/1331)
   * Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351)
 
 * dartpy
