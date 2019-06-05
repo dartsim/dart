@@ -30,54 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void WorldNode(py::module& sm);
-void RealTimeWorldNode(py::module& sm);
-
-void GUIEventHandler(py::module& sm);
-
-void InteractiveFrame(py::module& sm);
-
-void ImGuiHandler(py::module& sm);
-void ImGuiWidget(py::module& sm);
-
-void Viewer(py::module& sm);
-void ImGuiViewer(py::module& sm);
-void ViewerAttachment(py::module& sm);
-void GridVisual(py::module& sm);
-
-void DragAndDrop(py::module& sm);
-
-void ShadowTechnique(py::module& sm);
-
-void dart_gui_osg(py::module& m)
+void ImGuiWidget(py::module& m)
 {
-  auto sm = m.def_submodule("osg");
-
-  WorldNode(sm);
-  RealTimeWorldNode(sm);
-
-  GUIEventHandler(sm);
-
-  InteractiveFrame(sm);
-
-  ImGuiHandler(sm);
-  ImGuiWidget(sm);
-
-  Viewer(sm);
-  ImGuiViewer(sm);
-  ViewerAttachment(sm);
-  GridVisual(sm);
-
-  DragAndDrop(sm);
-
-  ShadowTechnique(sm);
+  ::pybind11::class_<dart::gui::osg::ImGuiWidget>(m, "ImGuiWidget")
+      .def("render", +[](dart::gui::osg::ImGuiWidget* self) { self->render(); })
+      .def(
+          "setVisible",
+          +[](dart::gui::osg::ImGuiWidget* self, bool visible) {
+            self->setVisible(visible);
+          },
+          ::pybind11::arg("visible"))
+      .def(
+          "toggleVisible",
+          +[](dart::gui::osg::ImGuiWidget* self) { self->toggleVisible(); })
+      .def("show", +[](dart::gui::osg::ImGuiWidget* self) { self->show(); })
+      .def("hide", +[](dart::gui::osg::ImGuiWidget* self) { self->hide(); })
+      .def("isVisible", +[](const dart::gui::osg::ImGuiWidget* self) -> bool {
+        return self->isVisible();
+      });
 }
 
 } // namespace python

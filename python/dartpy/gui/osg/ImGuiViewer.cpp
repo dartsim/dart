@@ -30,54 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void WorldNode(py::module& sm);
-void RealTimeWorldNode(py::module& sm);
-
-void GUIEventHandler(py::module& sm);
-
-void InteractiveFrame(py::module& sm);
-
-void ImGuiHandler(py::module& sm);
-void ImGuiWidget(py::module& sm);
-
-void Viewer(py::module& sm);
-void ImGuiViewer(py::module& sm);
-void ViewerAttachment(py::module& sm);
-void GridVisual(py::module& sm);
-
-void DragAndDrop(py::module& sm);
-
-void ShadowTechnique(py::module& sm);
-
-void dart_gui_osg(py::module& m)
+void ImGuiViewer(py::module& m)
 {
-  auto sm = m.def_submodule("osg");
-
-  WorldNode(sm);
-  RealTimeWorldNode(sm);
-
-  GUIEventHandler(sm);
-
-  InteractiveFrame(sm);
-
-  ImGuiHandler(sm);
-  ImGuiWidget(sm);
-
-  Viewer(sm);
-  ImGuiViewer(sm);
-  ViewerAttachment(sm);
-  GridVisual(sm);
-
-  DragAndDrop(sm);
-
-  ShadowTechnique(sm);
+  ::py::class_<
+      dart::gui::osg::ImGuiViewer,
+      dart::gui::osg::Viewer,
+      osg::ref_ptr<dart::gui::osg::ImGuiViewer>>(m, "ImGuiViewer")
+      .def(::py::init<>())
+      .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
+      .def(
+          "getImGuiHandler",
+          +[](dart::gui::osg::ImGuiViewer* self)
+              -> dart::gui::osg::ImGuiHandler* {
+            return self->getImGuiHandler();
+          },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "showAbout",
+          +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
+      .def("hideAbout", +[](dart::gui::osg::ImGuiViewer* self) {
+        self->hideAbout();
+      });
 }
 
 } // namespace python
