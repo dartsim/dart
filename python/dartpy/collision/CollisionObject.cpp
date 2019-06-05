@@ -40,7 +40,7 @@ namespace python {
 
 void CollisionObject(py::module& m)
 {
-  ::pybind11::class_<dart::collision::CollisionObject>(m, "CollisionObject")
+  ::py::class_<dart::collision::CollisionObject>(m, "CollisionObject")
       .def(
           "getShape",
           +[](const dart::collision::CollisionObject* self)

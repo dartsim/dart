@@ -40,21 +40,21 @@ namespace python {
 
 void DistanceOption(py::module& m)
 {
-  ::pybind11::class_<dart::collision::DistanceOption>(m, "DistanceOption")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<bool>(), ::pybind11::arg("enableNearestPoints"))
+  ::py::class_<dart::collision::DistanceOption>(m, "DistanceOption")
+      .def(::py::init<>())
+      .def(::py::init<bool>(), ::py::arg("enableNearestPoints"))
       .def(
-          ::pybind11::init<bool, double>(),
-          ::pybind11::arg("enableNearestPoints"),
-          ::pybind11::arg("distanceLowerBound"))
+          ::py::init<bool, double>(),
+          ::py::arg("enableNearestPoints"),
+          ::py::arg("distanceLowerBound"))
       .def(
-          ::pybind11::init<
+          ::py::init<
               bool,
               double,
               const std::shared_ptr<dart::collision::DistanceFilter>&>(),
-          ::pybind11::arg("enableNearestPoints"),
-          ::pybind11::arg("distanceLowerBound"),
-          ::pybind11::arg("distanceFilter"))
+          ::py::arg("enableNearestPoints"),
+          ::py::arg("distanceLowerBound"),
+          ::py::arg("distanceFilter"))
       .def_readwrite(
           "enableNearestPoints",
           &dart::collision::DistanceOption::enableNearestPoints)

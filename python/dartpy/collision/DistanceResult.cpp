@@ -40,8 +40,8 @@ namespace python {
 
 void DistanceResult(py::module& m)
 {
-  ::pybind11::class_<dart::collision::DistanceResult>(m, "DistanceResult")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::collision::DistanceResult>(m, "DistanceResult")
+      .def(::py::init<>())
       .def(
           "clear",
           +[](dart::collision::DistanceResult* self) { self->clear(); })

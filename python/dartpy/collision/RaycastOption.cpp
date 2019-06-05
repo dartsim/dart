@@ -40,13 +40,13 @@ namespace python {
 
 void RaycastOption(py::module& m)
 {
-  ::pybind11::class_<dart::collision::RaycastOption>(m, "RaycastOption")
-      .def(::pybind11::init<>())
-      .def(::pybind11::init<bool>(), ::pybind11::arg("enableAllHits"))
+  ::py::class_<dart::collision::RaycastOption>(m, "RaycastOption")
+      .def(::py::init<>())
+      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
       .def(
-          ::pybind11::init<bool, bool>(),
-          ::pybind11::arg("enableAllHits"),
-          ::pybind11::arg("sortByClosest"))
+          ::py::init<bool, bool>(),
+          ::py::arg("enableAllHits"),
+          ::py::arg("sortByClosest"))
       .def_readwrite(
           "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
       .def_readwrite(

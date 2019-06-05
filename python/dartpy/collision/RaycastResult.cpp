@@ -42,16 +42,16 @@ namespace python {
 
 void RaycastResult(py::module& m)
 {
-  ::pybind11::class_<dart::collision::RayHit>(m, "RayHit")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::collision::RayHit>(m, "RayHit")
+      .def(::py::init<>())
       .def_readwrite(
           "mCollisionObject", &dart::collision::RayHit::mCollisionObject)
       .def_readwrite("mNormal", &dart::collision::RayHit::mNormal)
       .def_readwrite("mPoint", &dart::collision::RayHit::mPoint)
       .def_readwrite("mFraction", &dart::collision::RayHit::mFraction);
 
-  ::pybind11::class_<dart::collision::RaycastResult>(m, "RaycastResult")
-      .def(::pybind11::init<>())
+  ::py::class_<dart::collision::RaycastResult>(m, "RaycastResult")
+      .def(::py::init<>())
       .def(
           "clear", +[](dart::collision::RaycastResult* self) { self->clear(); })
       .def(
