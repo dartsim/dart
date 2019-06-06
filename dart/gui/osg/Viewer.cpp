@@ -58,8 +58,7 @@ public:
 
   SaveScreen(Viewer* viewer)
     : mViewer(viewer),
-      mImage(new ::osg::Image),
-      mCamera(mViewer->getCamera())
+      mImage(new ::osg::Image)
   {
     // Do nothing
   }
@@ -70,7 +69,7 @@ public:
 
     if(mViewer->mRecording || mViewer->mScreenCapture)
     {
-      ::osg::ref_ptr<const ::osg::Viewport> vp = mCamera->getViewport();
+      const ::osg::Viewport* vp = mViewer->getCamera()->getViewport();
       const int x = static_cast<int>(vp->x());
       const int y = static_cast<int>(vp->y());
       const int width = static_cast<int>(vp->width());
@@ -124,8 +123,6 @@ protected:
   Viewer* mViewer;
 
   ::osg::ref_ptr<::osg::Image> mImage;
-
-  ::osg::ref_ptr<::osg::Camera> mCamera;
 };
 
 //==============================================================================
@@ -387,7 +384,7 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
 //==============================================================================
 void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
 {
-  std::map<WorldNode*,bool>::iterator it = mWorldNodes.find(_oldWorldNode);
+  auto it = mWorldNodes.find(_oldWorldNode);
   if(it == mWorldNodes.end())
     return;
 
@@ -411,8 +408,8 @@ void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
 WorldNode* Viewer::getWorldNode(
     std::shared_ptr<dart::simulation::World> _world) const
 {
-  std::map<WorldNode*,bool>::const_iterator it = mWorldNodes.begin(),
-                                            end = mWorldNodes.end();
+  auto it = mWorldNodes.cbegin();
+  auto end = mWorldNodes.cend();
   WorldNode* node = nullptr;
   for( ; it != end; ++it)
   {
@@ -534,7 +531,7 @@ void Viewer::setUpwardsDirection(const Eigen::Vector3d& _up)
 //==============================================================================
 void Viewer::setWorldNodeActive(WorldNode* _node, bool _active)
 {
-  std::map<WorldNode*,bool>::iterator it = mWorldNodes.find(_node);
+  auto it = mWorldNodes.find(_node);
   if(it == mWorldNodes.end())
     return;
 

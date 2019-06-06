@@ -63,6 +63,7 @@ public:
     BOX = 0,          ///< 3D volumetric box
     BILLBOARD_SQUARE, ///< 2D square always facing the screen
     BILLBOARD_CIRCLE, ///< 2D circle always facing the screen
+    POINT,            ///< Vertex
   };
 
   /// Constructor

@@ -365,7 +365,7 @@ protected:
 
   /// Map of WorldNodes in this dart::gui::osg::Viewer. A WorldNode will map to
   /// true iff it is currently active
-  std::map<WorldNode*,bool> mWorldNodes;
+  std::map<::osg::ref_ptr<WorldNode>,bool> mWorldNodes;
 
   std::unordered_set<ViewerAttachment*> mAttachments;
 

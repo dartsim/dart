@@ -30,55 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_RENDER_POINTCLOUDSHAPENODE_HPP_
-#define DART_GUI_OSG_RENDER_POINTCLOUDSHAPENODE_HPP_
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <osgShadow/ShadowTechnique>
+#include <osgShadow/ShadowMap>
+#include <pybind11/pybind11.h>
 
-#include <Eigen/Dense>
-#include <osg/Group>
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
 
-#include "dart/dynamics/PointCloudShape.hpp"
-#include "dart/gui/osg/render/ShapeNode.hpp"
+namespace py = pybind11;
 
 namespace dart {
+namespace python {
 
-namespace dynamics {
-class PointCloudShape;
-} // namespace dynamics
-
-namespace gui {
-namespace osg {
-namespace render {
-
-class PointCloudShapeGeode;
-class PointCloudShapeBillboardGeode;
-class PointNode;
-class PointNodes;
-
-class PointCloudShapeNode : public ShapeNode, public ::osg::Group
+void ShadowTechnique(py::module& m)
 {
-public:
-  PointCloudShapeNode(
-      std::shared_ptr<dart::dynamics::PointCloudShape> shape,
-      ShapeFrameNode* parent);
+  ::py::class_<
+      ::osgShadow::ShadowTechnique,
+      ::osg::ref_ptr<::osgShadow::ShadowTechnique>>(m, "ShadowTechnique");
 
-  void refresh() override;
-  void extractData(bool firstTime);
+  ::py::class_<
+      ::osgShadow::ShadowMap,
+      ::osgShadow::ShadowTechnique,
+      ::osg::ref_ptr<::osgShadow::ShadowMap>>(m, "ShadowMap")
+      .def(::py::init<>());
+}
 
-  ::osg::ref_ptr<PointNodes> createPointNodes();
-
-protected:
-  virtual ~PointCloudShapeNode() override;
-
-  std::shared_ptr<dart::dynamics::PointCloudShape> mPointCloudShape;
-  ::osg::ref_ptr<PointNodes> mPointNodes;
-  std::size_t mPointCloudVersion;
-
-  dynamics::PointCloudShape::PointShapeType mPointShapeType;
-};
-
-} // namespace render
-} // namespace osg
-} // namespace gui
+} // namespace python
 } // namespace dart
-
-#endif // DART_GUI_OSG_RENDER_POINTCLOUDSHAPENODE_HPP_
