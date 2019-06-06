@@ -149,4 +149,5 @@ add_custom_target(run_memcheck
     --force-new-ctest-process --test-action memcheck
   COMMAND cat "${CMAKE_BINARY_DIR}/Testing/Temporary/MemoryChecker.*.log"
   DEPENDS tests
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
