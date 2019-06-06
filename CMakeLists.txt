@@ -282,7 +282,7 @@ set(DART_IN_SOURCE_BUILD TRUE)
 if(TARGET dart AND NOT DART_BUILD_DARTPY)
 
   # Add a "tests" target to build unit tests.
-  enable_testing()
+  include(CTest)
   if(MSVC)
     # add_subdirectory(unittests)
   else()
