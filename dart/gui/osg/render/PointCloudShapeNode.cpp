@@ -489,6 +489,7 @@ public:
       mGeometry->addPrimitiveSet(mPrimitiveSet);
       mGeometry->getOrCreateStateSet()->setAttribute(
           mPoint, ::osg::StateAttribute::ON);
+      mGeometry->setDataVariance(::osg::Object::DYNAMIC);
 
       mGeode = new ::osg::Geode();
       mGeode->getOrCreateStateSet()->setMode(
