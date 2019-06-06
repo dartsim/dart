@@ -101,7 +101,7 @@ else
   else
     ctest --output-on-failure -j$num_threads
     if [ $MEMCHECK = "ON" ]; then
-      ctest --test-action memcheck --output-on-failure -j4
+      make -j$num_threads run_memcheck
     fi
   fi
 fi
