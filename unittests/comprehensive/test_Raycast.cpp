@@ -41,6 +41,23 @@
 using namespace dart;
 
 //==============================================================================
+TEST(Raycast, RayHitDefaultConstructor)
+{
+  RayHit rayHit;
+  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d::Zero().eval()));
+  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d::Zero().eval()));
+  EXPECT_DOUBLE_EQ(rayHit.mFraction, 0);
+}
+
+//==============================================================================
+TEST(Raycast, RaycastResultDefaultConstructor)
+{
+  RaycastResult result;
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
 void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 {
   if (cd->getType() != collision::BulletCollisionDetector::getStaticType())
@@ -115,7 +132,7 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST(Distance, testBasicInterface)
+TEST(Raycast, testBasicInterface)
 {
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
@@ -199,7 +216,7 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST(Distance, testOptions)
+TEST(Raycast, testOptions)
 {
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
