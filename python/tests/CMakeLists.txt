@@ -31,6 +31,7 @@ add_custom_target(pytest
   COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files} -v
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   SOURCES ${dartpy_test_files} ${dartpy_test_utils}
+  DEPENDS dartpy
 )
 
 #===============================================================================
