@@ -61,6 +61,7 @@ if(TARGET dart-utils)
 endif()
 
 dart_format_add(
+  test_ForwardKinematics.cpp
   test_InverseKinematics.cpp
   test_MultiObjectiveOptimization.cpp
   test_Raycast.cpp

@@ -92,6 +92,7 @@ TEST(Issue1184, Accuracy)
   const auto fallingModes = {true};
   const double dropHeight = 0.1;
   const double tolerance = 1e-3;
+  const double timeStep = 0.002;
 #else
   const auto groundInfoFunctions = {makePlaneGround, makeBoxGround};
   const auto objectShapeFunctions = {makeBoxObject, makeSphereObject};
@@ -99,6 +100,7 @@ TEST(Issue1184, Accuracy)
   const auto fallingModes = {true, false};
   const double dropHeight = 1.0;
   const double tolerance = 1e-3;
+  const double timeStep = 0.001;
 #endif
 
   for(const auto& groundInfoFunction : groundInfoFunctions)
@@ -110,6 +112,7 @@ TEST(Issue1184, Accuracy)
         for(const bool falling : fallingModes)
         {
           auto world = dart::simulation::World::create("test");
+          world->setTimeStep(timeStep);
           world->getConstraintSolver()->setCollisionDetector(
                 dart::collision::BulletCollisionDetector::create());
 

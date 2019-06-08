@@ -142,3 +142,12 @@ add_custom_target(
   tests
   DEPENDS ${comprehensive_tests} ${regression_tests} ${unit_tests}
 )
+
+# Add custom target to run memcheck
+add_custom_target(run_memcheck
+  COMMAND ${CMAKE_CTEST_COMMAND}
+    --force-new-ctest-process --test-action memcheck
+  COMMAND cat "${CMAKE_BINARY_DIR}/Testing/Temporary/MemoryChecker.*.log"
+  DEPENDS tests
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+)

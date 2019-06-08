@@ -27,6 +27,11 @@ if [ -z "$OS_NAME" ]; then
   exit 1
 fi
 
+if [ -z "$MEMCHECK" ]; then
+  echo "Info: Environment variable MEMCHECK is unset. Using OFF by default."
+  MEMCHECK=OFF
+fi
+
 # Set number of threads for parallel build
 # Ref: https://unix.stackexchange.com/a/129401
 num_threads=4
@@ -78,13 +83,13 @@ cmake .. \
   ${install_prefix_option}
 
 if [ "$BUILD_DARTPY" = "ON" ]; then
-  make -j$num_threads dartpy
+  make -j${num_threads} dartpy
   make pytest
 else
   if [ "$CODECOV" = "ON" ]; then
-    make -j$num_threads all tests
+    make -j${num_threads} all tests
   else
-    make -j$num_threads all tutorials examples tests
+    make -j${num_threads} all tests examples tutorials
   fi
 
   if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
@@ -92,14 +97,17 @@ else
   fi
 
   if [ $CODECOV = "ON" ]; then
-    make -j$num_threads codecov
+    make codecov
   else
     ctest --output-on-failure -j$num_threads
+    if [ $MEMCHECK = "ON" ]; then
+      make -j${num_threads} run_memcheck
+    fi
   fi
 fi
 
 # Make sure we can install with no issues
-$SUDO make -j$num_threads install
+$SUDO make install
 
 if [ "$BUILD_DARTPY" = "ON" ]; then
   # Run a python example (experimental)
@@ -112,5 +120,5 @@ else
   cd $BUILD_DIR/examples/hello_world
   mkdir build && cd build
   cmake ..
-  make -j$num_threads
+  make -j${num_threads}
 fi

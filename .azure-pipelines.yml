@@ -21,10 +21,12 @@ jobs:
     OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
+    MEMCHECK: ON
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-bionic
   steps:
   - template: .ci/azure-pipelines/docker.yml
+  timeoutInMinutes: 0
 
 - job: bionic_gcc_dartpy_release
   pool:

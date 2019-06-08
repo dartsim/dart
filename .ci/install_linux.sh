@@ -8,12 +8,27 @@ $SUDO apt-get -qq update
 
 # Build tools
 $SUDO apt-get -y install \
-  sudo \
   build-essential \
   cmake \
-  pkg-config \
   curl \
-  git
+  git \
+  pkg-config \
+  sudo
+
+if [ $MEMCHECK = "ON" ]; then
+  if [ $(lsb_release -sc) = "xenial" ]; then
+    $SUDO apt-get -y install wget
+    wget http://valgrind.org/downloads/valgrind-3.14.0.tar.bz2
+    tar -xjf valgrind-3.14.0.tar.bz2
+    cd valgrind-3.14.0
+    ./configure --prefix=/usr
+    make
+    sudo make install
+  else
+    $SUDO apt-get -y install valgrind
+  fi
+fi
+
 if [ $COMPILER = clang ]; then
   $SUDO apt-get -qq -y install clang
 fi

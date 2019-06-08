@@ -63,7 +63,11 @@ SkeletonPtr createBox(double offset, double angle, std::string name)
 TEST(Issue892, LCPSolverShouldNotRetrunNanValues)
 {
   // Set more than 1100 steps so that the two boxes are in contact.
+#ifndef NDEBUG // Debug mode
+  const auto numSteps = 1200u;
+#else
   const auto numSteps = 2000u;
+#endif
 
   auto box1 = createBox(+0.4, +0.1, "box0");
   auto box2 = createBox(-0.4, -0.1, "box1");

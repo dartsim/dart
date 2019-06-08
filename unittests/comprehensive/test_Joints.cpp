@@ -608,7 +608,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
 
 #ifndef NDEBUG // Debug mode
-  double simTime = 0.2;
+  double simTime = 0.01;
 #else
   double simTime = 2.0;
 #endif // ------- Debug mode
@@ -690,7 +690,9 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
   std::array<double, 3> timeSteps;
   timeSteps[0] = 1e-2;
   timeSteps[1] = 1e-3;
+#ifdef NDEBUG  // Release mode
   timeSteps[2] = 1e-4;
+#endif
 
   for (auto timeStep : timeSteps)
     testJointCoulombFrictionForce(timeStep);
@@ -1251,7 +1253,11 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
 //==============================================================================
 TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 {
+#ifndef NDEBUG  // Debug mode
+  const std::size_t numTests = 10;
+#else
   const std::size_t numTests = 50;
+#endif
 
   // Generate random reference frames
   randomizeRefFrames();

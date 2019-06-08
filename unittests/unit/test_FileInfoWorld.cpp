@@ -52,7 +52,11 @@ using namespace utils;
 //==============================================================================
 TEST(FileInfoWorld, Basic)
 {
+#ifndef NDEBUG  // Debug mode
+  const std::size_t numFrames = 10;
+#else
   const std::size_t numFrames = 100;
+#endif
   const std::string fileName = "testWorld.txt";
   double tol = 1e-6;
   bool result = false;

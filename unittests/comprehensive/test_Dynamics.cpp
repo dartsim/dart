@@ -57,6 +57,9 @@ public:
   // Get Skel file URI to test.
   const std::vector<common::Uri>& getList() const;
 
+  // Get Skel file URI to test.
+  const std::vector<common::Uri>& getListForDebug() const;
+
   // Get reference frames
   const std::vector<SimpleFrame*>& getRefFrames() const;
 
@@ -70,26 +73,6 @@ public:
   // Get augmented mass matrix of _skel using Jacobians and inertias of
   // each body in _skel.
   MatrixXd getAugMassMatrix(dynamics::SkeletonPtr _skel);
-
-  // Compare velocities computed by recursive method, Jacobian, and finite
-  // difference.
-  void testJacobians(const common::Uri& uri);
-
-  // Compare velocities and accelerations with actual vaules and approximates
-  // using finite differece method.
-  void testFiniteDifferenceGeneralizedCoordinates(const common::Uri& uri);
-
-  // Compare spatial velocities computed by forward kinematics and finite
-  // difference.
-  void testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri);
-
-  // Compare accelerations computed by recursive method, Jacobian, and finite
-  // difference.
-  void testFiniteDifferenceBodyNodeAcceleration(const common::Uri& uri);
-
-  // Test if the recursive forward kinematics algorithm computes
-  // transformations, spatial velocities, and spatial accelerations correctly.
-  void testForwardKinematics(const common::Uri& uri);
 
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
@@ -114,6 +97,9 @@ protected:
 
   // Skel file list.
   std::vector<common::Uri> fileList;
+
+  // Skel file list for debug mode
+  std::vector<common::Uri> fileListForDebug;
 
   std::vector<SimpleFrame*> refFrames;
 };
@@ -142,6 +128,12 @@ void DynamicsTest::SetUp()
   fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
   fileList.push_back("dart://sample/skel/fullbody1.skel");
 
+  fileListForDebug.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileListForDebug.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileListForDebug.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  fileListForDebug.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  fileListForDebug.push_back("dart://sample/skel/fullbody1.skel");
+
   // Create a list of reference frames to use during tests
   refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
   refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame2"));
@@ -155,6 +147,12 @@ void DynamicsTest::SetUp()
 const std::vector<common::Uri>& DynamicsTest::getList() const
 {
   return fileList;
+}
+
+//==============================================================================
+const std::vector<common::Uri>& DynamicsTest::getListForDebug() const
+{
+  return fileListForDebug;
 }
 
 //==============================================================================
@@ -579,813 +577,6 @@ void printComparisonError(const std::string& _comparison,
 }
 
 //==============================================================================
-void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
-                                         const JacobianNode* relativeTo,
-                                         const Frame* refFrame,
-                                         double tolerance)
-{
-  using math::Jacobian;
-  using math::LinearJacobian;
-  using math::AngularJacobian;
-
-  assert(bn->getSkeleton() == relativeTo->getSkeleton());
-  auto skel = bn->getSkeleton();
-
-  VectorXd dq  = skel->getVelocities();
-  VectorXd ddq = skel->getAccelerations();
-
-  //-- Spatial Jacobian tests --------------------------------------------------
-
-  Vector6d SpatialVelFk = bn->getSpatialVelocity(relativeTo, refFrame);
-  Vector6d SpatialAccFk = bn->getSpatialAcceleration(relativeTo, refFrame);
-
-  Jacobian SpatialJac
-      = skel->getJacobian(bn, relativeTo, refFrame);
-  Jacobian SpatialJacDeriv
-      = skel->getJacobianSpatialDeriv(bn, relativeTo, refFrame);
-
-  Vector6d SpatialVelJac = SpatialJac * dq;
-  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
-
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
-  EXPECT_TRUE(spatialVelEqual);
-  if (!spatialVelEqual)
-  {
-    printComparisonError("spatial velocity",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         SpatialVelFk,  SpatialVelJac);
-  }
-
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
-  EXPECT_TRUE(spatialAccEqual);
-  if (!spatialAccEqual)
-  {
-    printComparisonError("spatial acceleration",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         SpatialAccFk,  SpatialAccJac);
-  }
-
-  //-- Linear Jacobian tests --------------------------------------------------
-
-  Vector3d LinearVelFk = bn->getLinearVelocity(relativeTo, refFrame);
-
-  LinearJacobian LinearJac
-      = skel->getLinearJacobian(bn, relativeTo, refFrame);
-
-  Vector3d LinearVelJac = LinearJac * dq;
-
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
-  EXPECT_TRUE(linearVelEqual);
-  if (!linearVelEqual)
-  {
-    printComparisonError("linear velocity",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         LinearVelFk,  LinearVelJac);
-  }
-
-  //-- Angular Jacobian tests --------------------------------------------------
-
-  Vector3d AngularVelFk = bn->getAngularVelocity(relativeTo, refFrame);
-
-  AngularJacobian AngularJac
-      = skel->getAngularJacobian(bn, relativeTo, refFrame);
-
-  Vector3d AngularVelJac = AngularJac * dq;
-
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
-  EXPECT_TRUE(angularVelEqual);
-  if (!angularVelEqual)
-  {
-    printComparisonError("angular velocity",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         AngularVelFk,  AngularVelJac);
-  }
-}
-
-//==============================================================================
-void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
-                                         const Eigen::Vector3d& _offset,
-                                         const JacobianNode* relativeTo,
-                                         const Frame* refFrame,
-                                         double tolerance)
-{
-  using math::Jacobian;
-  using math::LinearJacobian;
-  using math::AngularJacobian;
-
-  assert(bn->getSkeleton() == relativeTo->getSkeleton());
-  auto skel = bn->getSkeleton();
-
-  VectorXd dq  = skel->getVelocities();
-  VectorXd ddq = skel->getAccelerations();
-
-  //-- Spatial Jacobian tests --------------------------------------------------
-
-  Vector6d SpatialVelFk
-      = bn->getSpatialVelocity(_offset, relativeTo, refFrame);
-  Vector6d SpatialAccFk
-      = bn->getSpatialAcceleration(_offset, relativeTo, refFrame);
-
-  Jacobian SpatialJac
-      = skel->getJacobian(bn, _offset, relativeTo, refFrame);
-  Jacobian SpatialJacDeriv
-      = skel->getJacobianSpatialDeriv(bn, _offset, relativeTo, refFrame);
-
-  Vector6d SpatialVelJac = SpatialJac * dq;
-  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
-
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
-  EXPECT_TRUE(spatialVelEqual);
-  if (!spatialVelEqual)
-  {
-    printComparisonError("spatial velocity w/ offset",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         SpatialVelFk,  SpatialVelJac);
-  }
-
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
-  EXPECT_TRUE(spatialAccEqual);
-  if (!spatialAccEqual)
-  {
-    printComparisonError("spatial acceleration w/ offset",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         SpatialAccFk,  SpatialAccJac);
-  }
-
-  //-- Linear Jacobian tests --------------------------------------------------
-
-  Vector3d LinearVelFk = bn->getLinearVelocity(_offset, relativeTo, refFrame);
-
-  LinearJacobian LinearJac
-      = skel->getLinearJacobian(bn, _offset, relativeTo, refFrame);
-
-  Vector3d LinearVelJac = LinearJac * dq;
-
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
-  EXPECT_TRUE(linearVelEqual);
-  if (!linearVelEqual)
-  {
-    printComparisonError("linear velocity w/ offset",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         LinearVelFk,  LinearVelJac);
-  }
-}
-
-//==============================================================================
-void DynamicsTest::testJacobians(const common::Uri& uri)
-{
-  using namespace std;
-  using namespace Eigen;
-  using namespace dart;
-  using namespace math;
-  using namespace dynamics;
-  using namespace simulation;
-  using namespace utils;
-
-  //----------------------------- Settings -------------------------------------
-  const double TOLERANCE = 1.0e-6;
-#ifndef NDEBUG  // Debug mode
-  int nTestItr = 2;
-#else
-  int nTestItr = 5;
-#endif
-  double qLB  = -0.5 * constantsd::pi();
-  double qUB  =  0.5 * constantsd::pi();
-  double dqLB = -0.5 * constantsd::pi();
-  double dqUB =  0.5 * constantsd::pi();
-  double ddqLB = -0.5 * constantsd::pi();
-  double ddqUB =  0.5 * constantsd::pi();
-  Vector3d gravity(0.0, -9.81, 0.0);
-
-  // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
-  world->setGravity(gravity);
-
-  //------------------------------ Tests ---------------------------------------
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
-  {
-    SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != nullptr);
-    int dof = skeleton->getNumDofs();
-
-    for (int j = 0; j < nTestItr; ++j)
-    {
-      // For the second half of the tests, scramble up the Skeleton
-      if(j > std::ceil(nTestItr/2))
-      {
-        SkeletonPtr copy = skeleton->cloneSkeleton();
-        std::size_t maxNode = skeleton->getNumBodyNodes()-1;
-        BodyNode* bn1 = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
-        BodyNode* bn2 = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
-
-        if(bn1 != bn2)
-        {
-          BodyNode* child = bn1->descendsFrom(bn2)? bn1 : bn2;
-          BodyNode* parent = child == bn1? bn2 : bn1;
-
-          child->moveTo(parent);
-        }
-
-        EXPECT_TRUE(skeleton->getNumBodyNodes() == copy->getNumBodyNodes());
-        EXPECT_TRUE(skeleton->getNumDofs() == copy->getNumDofs());
-      }
-
-      // Generate a random state
-      VectorXd q   = VectorXd(dof);
-      VectorXd dq  = VectorXd(dof);
-      VectorXd ddq = VectorXd(dof);
-      for (int k = 0; k < dof; ++k)
-      {
-        q[k]   = math::Random::uniform(qLB,   qUB);
-        dq[k]  = math::Random::uniform(dqLB,  dqUB);
-        ddq[k] = math::Random::uniform(ddqLB, ddqUB);
-      }
-      skeleton->setPositions(q);
-      skeleton->setVelocities(dq);
-      skeleton->setAccelerations(ddq);
-
-      randomizeRefFrames();
-
-      // For each body node
-      for (std::size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)
-      {
-        const BodyNode* bn = skeleton->getBodyNode(k);
-
-        // Compare results using the World reference Frame
-        compareBodyNodeFkToJacobian(bn, Frame::World(), TOLERANCE);
-        compareBodyNodeFkToJacobian(
-              bn, Frame::World(), bn->getLocalCOM(), TOLERANCE);
-        compareBodyNodeFkToJacobian(
-              bn, Frame::World(), Random::uniform<Eigen::Vector3d>(-10, 10), TOLERANCE);
-
-        // Compare results using this BodyNode's own reference Frame
-        compareBodyNodeFkToJacobian(bn, bn, TOLERANCE);
-        compareBodyNodeFkToJacobian(bn, bn, bn->getLocalCOM(), TOLERANCE);
-        compareBodyNodeFkToJacobian(bn, bn, Random::uniform<Eigen::Vector3d>(-10, 10), TOLERANCE);
-
-        // Compare results using the randomized reference Frames
-        for(std::size_t r=0; r<refFrames.size(); ++r)
-        {
-          compareBodyNodeFkToJacobian(bn, refFrames[r], TOLERANCE);
-          compareBodyNodeFkToJacobian(
-              bn, refFrames[r], bn->getLocalCOM(), TOLERANCE);
-          compareBodyNodeFkToJacobian(
-              bn, refFrames[r], Random::uniform<Eigen::Vector3d>(-10, 10), TOLERANCE);
-        }
-
-        // -- Relative Jacobian tests
-
-        compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
-
-#ifndef NDEBUG // Debug mode
-        if (skeleton->getNumBodyNodes() == 0u)
-          continue;
-
-        for (std::size_t l = skeleton->getNumBodyNodes() - 1;
-             l < skeleton->getNumBodyNodes(); ++l)
-#else
-        for (std::size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
-#endif
-        {
-          const BodyNode* relativeTo = skeleton->getBodyNode(l);
-
-          compareBodyNodeFkToJacobianRelative(
-                bn, relativeTo, Frame::World(), TOLERANCE);
-          compareBodyNodeFkToJacobianRelative(
-                bn, bn->getLocalCOM(), relativeTo, Frame::World(), TOLERANCE);
-          compareBodyNodeFkToJacobianRelative(
-                bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, Frame::World(), TOLERANCE);
-
-          compareBodyNodeFkToJacobianRelative(
-                bn, relativeTo, bn, TOLERANCE);
-          compareBodyNodeFkToJacobianRelative(
-                bn, bn->getLocalCOM(), relativeTo, bn, TOLERANCE);
-          compareBodyNodeFkToJacobianRelative(
-                bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, bn, TOLERANCE);
-
-          compareBodyNodeFkToJacobianRelative(
-                bn, relativeTo, relativeTo, TOLERANCE);
-          compareBodyNodeFkToJacobianRelative(
-                bn, bn->getLocalCOM(), relativeTo, relativeTo, TOLERANCE);
-          compareBodyNodeFkToJacobianRelative(
-                bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, relativeTo, TOLERANCE);
-
-          for (std::size_t r = 0; r < refFrames.size(); ++r)
-          {
-            compareBodyNodeFkToJacobianRelative(
-                  bn, relativeTo, refFrames[r], TOLERANCE);
-            compareBodyNodeFkToJacobianRelative(
-                  bn, bn->getLocalCOM(), relativeTo, refFrames[r], TOLERANCE);
-            compareBodyNodeFkToJacobianRelative(
-                  bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, refFrames[r], TOLERANCE);
-          }
-        }
-      }
-    }
-  }
-}
-
-//==============================================================================
-void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
-    const common::Uri& uri)
-{
-  using namespace std;
-  using namespace Eigen;
-  using namespace dart;
-  using namespace math;
-  using namespace dynamics;
-  using namespace simulation;
-  using namespace utils;
-
-  //----------------------------- Settings -------------------------------------
-#ifndef NDEBUG  // Debug mode
-  int nRandomItr = 2;
-#else
-  int nRandomItr = 10;
-#endif
-  double qLB   = -0.5 * constantsd::pi();
-  double qUB   =  0.5 * constantsd::pi();
-  double dqLB  = -0.3 * constantsd::pi();
-  double dqUB  =  0.3 * constantsd::pi();
-  double ddqLB = -0.1 * constantsd::pi();
-  double ddqUB =  0.1 * constantsd::pi();
-  Vector3d gravity(0.0, -9.81, 0.0);
-  double timeStep = 1e-3;
-  double TOLERANCE = 5e-4;
-
-  // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
-  world->setGravity(gravity);
-  world->setTimeStep(timeStep);
-
-  //------------------------------ Tests ---------------------------------------
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
-  {
-    SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != nullptr);
-    int dof = skeleton->getNumDofs();
-
-    for (int j = 0; j < nRandomItr; ++j)
-    {
-      // Generate a random state and ddq
-      VectorXd q0   = VectorXd(dof);
-      VectorXd dq0  = VectorXd(dof);
-      VectorXd ddq0 = VectorXd(dof);
-      for (int k = 0; k < dof; ++k)
-      {
-        q0[k]   = math::Random::uniform(qLB,   qUB);
-        dq0[k]  = math::Random::uniform(dqLB,  dqUB);
-        ddq0[k] = math::Random::uniform(ddqLB, ddqUB);
-      }
-
-      skeleton->setPositions(q0);
-      skeleton->setVelocities(dq0);
-      skeleton->setAccelerations(ddq0);
-
-      skeleton->integratePositions(timeStep);
-      VectorXd q1 = skeleton->getPositions();
-      skeleton->integrateVelocities(timeStep);
-      VectorXd dq1 = skeleton->getVelocities();
-
-      skeleton->integratePositions(timeStep);
-      VectorXd q2 = skeleton->getPositions();
-      skeleton->integrateVelocities(timeStep);
-      VectorXd dq2 = skeleton->getVelocities();
-
-      VectorXd dq0FD = skeleton->getPositionDifferences(q1, q0) / timeStep;
-      VectorXd dq1FD = skeleton->getPositionDifferences(q2, q1) / timeStep;
-      VectorXd ddqFD1 = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
-      VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
-
-      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE));
-      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD1, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD2, TOLERANCE));
-
-      if (!equals(dq0FD, dq0, TOLERANCE))
-      {
-        std::cout << "dq0  : " << dq0.transpose() << std::endl;
-        std::cout << "dq0FD: " << dq0FD.transpose() << std::endl;
-      }
-      if (!equals(dq1, dq1FD, TOLERANCE))
-      {
-        std::cout << "dq1  : " << dq1.transpose() << std::endl;
-        std::cout << "dq1FD: " << dq1FD.transpose() << std::endl;
-      }
-      if (!equals(ddq0, ddqFD1, TOLERANCE))
-      {
-        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
-        std::cout << "ddqFD1: " << ddqFD1.transpose() << std::endl;
-      }
-      if (!equals(ddq0, ddqFD2, TOLERANCE))
-      {
-        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
-        std::cout << "ddqFD2: " << ddqFD2.transpose() << std::endl;
-      }
-    }
-  }
-}
-
-//==============================================================================
-void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
-{
-  using namespace std;
-  using namespace Eigen;
-  using namespace dart;
-  using namespace math;
-  using namespace dynamics;
-  using namespace simulation;
-  using namespace utils;
-
-  //----------------------------- Settings -------------------------------------
-#ifndef NDEBUG  // Debug mode
-  int nRandomItr = 2;
-  std::size_t numSteps = 1e+1;
-#else
-  int nRandomItr = 10;
-  std::size_t numSteps = 1e+3;
-#endif
-  double qLB   = -0.5 * constantsd::pi();
-  double qUB   =  0.5 * constantsd::pi();
-  double dqLB  = -0.5 * constantsd::pi();
-  double dqUB  =  0.5 * constantsd::pi();
-  double ddqLB = -0.5 * constantsd::pi();
-  double ddqUB =  0.5 * constantsd::pi();
-  Vector3d gravity(0.0, -9.81, 0.0);
-  double timeStep = 1.0e-6;
-  const double tol = timeStep * 1e+2;
-
-  // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
-  world->setGravity(gravity);
-  world->setTimeStep(timeStep);
-
-  //------------------------------ Tests ---------------------------------------
-  for (int i = 0; i < nRandomItr; ++i)
-  {
-    for (std::size_t j = 0; j < world->getNumSkeletons(); ++j)
-    {
-      SkeletonPtr skeleton = world->getSkeleton(j);
-      EXPECT_NE(skeleton, nullptr);
-
-      std::size_t dof       = skeleton->getNumDofs();
-      std::size_t numBodies = skeleton->getNumBodyNodes();
-
-      // Generate random states
-      VectorXd   q = Random::uniform<Eigen::VectorXd>(dof,   qLB,   qUB);
-      VectorXd  dq = Random::uniform<Eigen::VectorXd>(dof,  dqLB,  dqUB);
-      VectorXd ddq = Random::uniform<Eigen::VectorXd>(dof, ddqLB, ddqUB);
-
-      skeleton->setPositions(q);
-      skeleton->setVelocities(dq);
-      skeleton->setAccelerations(ddq);
-
-      common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
-      for (auto k = 0u; k < numBodies; ++k)
-      {
-        auto body  = skeleton->getBodyNode(k);
-        Tmap[body] = body->getTransform();
-      }
-
-      for (std::size_t k = 0; k < numSteps; ++k)
-      {
-        skeleton->integrateVelocities(skeleton->getTimeStep());
-        skeleton->integratePositions(skeleton->getTimeStep());
-
-        for (std::size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
-        {
-          BodyNodePtr body  = skeleton->getBodyNode(l);
-
-          Isometry3d T1 = Tmap[body];
-          Isometry3d T2 = body->getTransform();
-
-          Vector6d V_diff = math::logMap(T1.inverse() * T2) / timeStep;
-          Vector6d V_actual = body->getSpatialVelocity();
-
-          bool checkSpatialVelocity = equals(V_diff, V_actual, tol);
-          EXPECT_TRUE(checkSpatialVelocity);
-          if (!checkSpatialVelocity)
-          {
-            std::cout << "[" << body->getName() << "]" << std::endl;
-            std::cout << "V_diff  : "
-                      << V_diff.transpose() << std::endl;
-            std::cout << "V_actual  : "
-                      << V_actual.transpose() << std::endl;
-            std::cout << std::endl;
-          }
-
-          Tmap[body] = body->getTransform();
-        }
-      }
-    }
-  }
-}
-
-//==============================================================================
-void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
-    const common::Uri& uri)
-{
-  using namespace std;
-  using namespace Eigen;
-  using namespace dart;
-  using namespace math;
-  using namespace dynamics;
-  using namespace simulation;
-  using namespace utils;
-
-  //----------------------------- Settings -------------------------------------
-  const double TOLERANCE = 1.0e-2;
-#ifndef NDEBUG  // Debug mode
-  int nRandomItr = 2;
-#else
-  int nRandomItr = 10;
-#endif
-  double qLB   = -0.5 * constantsd::pi();
-  double qUB   =  0.5 * constantsd::pi();
-  double dqLB  = -0.5 * constantsd::pi();
-  double dqUB  =  0.5 * constantsd::pi();
-  double ddqLB = -0.5 * constantsd::pi();
-  double ddqUB =  0.5 * constantsd::pi();
-  Vector3d gravity(0.0, -9.81, 0.0);
-  double timeStep = 1.0e-6;
-
-  // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
-  world->setGravity(gravity);
-  world->setTimeStep(timeStep);
-
-  //------------------------------ Tests ---------------------------------------
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
-  {
-    SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != nullptr);
-    int dof = skeleton->getNumDofs();
-
-    for (int j = 0; j < nRandomItr; ++j)
-    {
-      // Generate a random state and ddq
-      VectorXd q   = VectorXd(dof);
-      VectorXd dq  = VectorXd(dof);
-      VectorXd ddq = VectorXd(dof);
-      for (int k = 0; k < dof; ++k)
-      {
-        q[k]   = math::Random::uniform(qLB,   qUB);
-        dq[k]  = math::Random::uniform(dqLB,  dqUB);
-        ddq[k] = math::Random::uniform(ddqLB, ddqUB);
-      }
-
-      // For each body node
-      for (std::size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)
-      {
-        BodyNode* bn = skeleton->getBodyNode(k);
-
-        // Calculation of velocities and Jacobian at k-th time step
-        skeleton->setPositions(q);
-        skeleton->setVelocities(dq);
-        skeleton->setAccelerations(ddq);
-
-        Vector3d BodyLinVel1 = bn->getLinearVelocity(Frame::World(), bn);
-        Vector3d BodyAngVel1 = bn->getAngularVelocity(Frame::World(), bn);
-        Vector3d WorldLinVel1 = bn->getLinearVelocity();
-        Vector3d WorldAngVel1 = bn->getAngularVelocity();
-        // Isometry3d T1    = bn->getTransform();
-
-        // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector3d BodyLinAcc1 = bn->getSpatialAcceleration().tail<3>();
-        Vector3d BodyAngAcc1 = bn->getSpatialAcceleration().head<3>();
-        Vector3d WorldLinAcc1 = bn->getLinearAcceleration();
-        Vector3d WorldAngAcc1 = bn->getAngularAcceleration();
-
-        // Calculation of velocities and Jacobian at (k+1)-th time step
-        skeleton->integrateVelocities(skeleton->getTimeStep());
-        skeleton->integratePositions(skeleton->getTimeStep());
-
-        Vector3d BodyLinVel2 = bn->getLinearVelocity(Frame::World(), bn);
-        Vector3d BodyAngVel2 = bn->getAngularVelocity(Frame::World(), bn);
-        Vector3d WorldLinVel2 = bn->getLinearVelocity();
-        Vector3d WorldAngVel2 = bn->getAngularVelocity();
-        // Isometry3d T2    = bn->getTransform();
-
-        // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector3d BodyLinAcc2 = bn->getSpatialAcceleration().tail<3>();
-        Vector3d BodyAngAcc2 = bn->getSpatialAcceleration().head<3>();
-        Vector3d WorldLinAcc2 = bn->getLinearAcceleration();
-        Vector3d WorldAngAcc2 = bn->getAngularAcceleration();
-
-        // Calculation of approximated accelerations
-        Vector3d BodyLinAccApprox   = (BodyLinVel2  - BodyLinVel1)  / timeStep;
-        Vector3d BodyAngAccApprox   = (BodyAngVel2  - BodyAngVel1)  / timeStep;
-        Vector3d WorldLinAccApprox  = (WorldLinVel2 - WorldLinVel1) / timeStep;
-        Vector3d WorldAngAccApprox  = (WorldAngVel2 - WorldAngVel1) / timeStep;
-
-        // Comparing two velocities
-        EXPECT_TRUE(equals(BodyLinAcc1,   BodyLinAccApprox,   TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngAcc1,   BodyAngAccApprox,   TOLERANCE));
-        EXPECT_TRUE(equals(BodyLinAcc2,   BodyLinAccApprox,   TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngAcc2,   BodyAngAccApprox,   TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinAcc1,  WorldLinAccApprox,  TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngAcc1,  WorldAngAccApprox,  TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinAcc2,  WorldLinAccApprox,  TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngAcc2,  WorldAngAccApprox,  TOLERANCE));
-
-        // Debugging code
-        if (!equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE))
-        {
-          cout << "BodyLinAcc1     :" << BodyLinAcc1.transpose()      << endl;
-          cout << "BodyLinAccApprox:" << BodyLinAccApprox.transpose() << endl;
-        }
-        if (!equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE))
-        {
-          cout << "BodyAngAcc1     :" << BodyAngAcc1.transpose()      << endl;
-          cout << "BodyAngAccApprox:" << BodyAngAccApprox.transpose() << endl;
-        }
-        if (!equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE))
-        {
-          cout << "BodyLinAcc2     :" << BodyLinAcc2.transpose()      << endl;
-          cout << "BodyLinAccApprox:" << BodyLinAccApprox.transpose() << endl;
-        }
-        if (!equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE))
-        {
-          cout << "BodyAngAcc2     :" << BodyAngAcc2.transpose()      << endl;
-          cout << "BodyAngAccApprox:" << BodyAngAccApprox.transpose() << endl;
-        }
-        if (!equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE))
-        {
-          cout << "WorldLinAcc1     :" << WorldLinAcc1.transpose()      << endl;
-          cout << "WorldLinAccApprox:" << WorldLinAccApprox.transpose() << endl;
-        }
-        if (!equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE))
-        {
-          cout << "WorldAngAcc1     :" << WorldAngAcc1.transpose()      << endl;
-          cout << "WorldAngAccApprox:" << WorldAngAccApprox.transpose() << endl;
-        }
-        if (!equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE))
-        {
-          cout << "WorldLinAcc2     :" << WorldLinAcc2.transpose()      << endl;
-          cout << "WorldLinAccApprox:" << WorldLinAccApprox.transpose() << endl;
-        }
-        if (!equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE))
-        {
-          cout << "WorldAngAcc2     :" << WorldAngAcc2.transpose()      << endl;
-          cout << "WorldAngAccApprox:" << WorldAngAccApprox.transpose() << endl;
-        }
-      }
-    }
-  }
-}
-
-//==============================================================================
-void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
-{
-#ifndef NDEBUG  // Debug mode
-  std::size_t nRandomItr = 1e+1;
-  std::size_t numSteps = 1e+1;
-#else
-  std::size_t nRandomItr = 1e+2;
-  std::size_t numSteps = 1e+2;
-#endif
-  double qLB   = -0.5 * constantsd::pi();
-  double qUB   =  0.5 * constantsd::pi();
-  double dqLB  = -0.3 * constantsd::pi();
-  double dqUB  =  0.3 * constantsd::pi();
-  double ddqLB = -0.1 * constantsd::pi();
-  double ddqUB =  0.1 * constantsd::pi();
-  double timeStep = 1e-6;
-
-  EXPECT_NE(skel, nullptr);
-
-  skel->setTimeStep(timeStep);
-
-  auto dof       = skel->getNumDofs();
-  auto numBodies = skel->getNumBodyNodes();
-
-  Eigen::VectorXd q;
-  Eigen::VectorXd dq;
-  Eigen::VectorXd ddq;
-
-  common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
-  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
-  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
-
-  for (auto j = 0u; j < numBodies; ++j)
-  {
-    auto body  = skel->getBodyNode(j);
-
-     Tmap[body] = Eigen::Isometry3d::Identity();
-     Vmap[body] = Eigen::Vector6d::Zero();
-    dVmap[body] = Eigen::Vector6d::Zero();
-  }
-
-  for (auto i = 0u; i < nRandomItr; ++i)
-  {
-    q   = Random::uniform<Eigen::VectorXd>(dof,   qLB,   qUB);
-    dq  = Random::uniform<Eigen::VectorXd>(dof,  dqLB,  dqUB);
-    ddq = Random::uniform<Eigen::VectorXd>(dof, ddqLB, ddqUB);
-
-    skel->setPositions(q);
-    skel->setVelocities(dq);
-    skel->setAccelerations(ddq);
-
-    for (auto j = 0u; j < numSteps; ++j)
-    {
-      for (auto k = 0u; k < numBodies; ++k)
-      {
-        auto body       = skel->getBodyNode(k);
-        auto joint      = skel->getJoint(k);
-        auto parentBody = body->getParentBodyNode();
-        Eigen::MatrixXd S  = joint->getRelativeJacobian();
-        Eigen::MatrixXd dS = joint->getRelativeJacobianTimeDeriv();
-        Eigen::VectorXd jointQ   = joint->getPositions();
-        Eigen::VectorXd jointDQ  = joint->getVelocities();
-        Eigen::VectorXd jointDDQ = joint->getAccelerations();
-
-        Eigen::Isometry3d relT  = body->getRelativeTransform();
-        Eigen::Vector6d   relV  =  S * jointDQ;
-        Eigen::Vector6d   relDV = dS * jointDQ + S * jointDDQ;
-
-        if (parentBody)
-        {
-          Tmap[body] = Tmap[parentBody] * relT;
-          Vmap[body] = math::AdInvT(relT,  Vmap[parentBody]) + relV;
-          dVmap[body] = math::AdInvT(relT, dVmap[parentBody])
-              + math::ad(Vmap[body], S * jointDQ)
-              + relDV;
-        }
-        else
-        {
-          Tmap[body] = relT;
-          Vmap[body] = relV;
-          dVmap[body] = relDV;
-        }
-
-        bool checkT  = equals(body->getTransform().matrix(), Tmap[body].matrix());
-        bool checkV  = equals(body->getSpatialVelocity(), Vmap[body]);
-        bool checkDV = equals(body->getSpatialAcceleration(), dVmap[body]);
-
-        EXPECT_TRUE(checkT);
-        EXPECT_TRUE(checkV);
-        EXPECT_TRUE(checkDV);
-
-        if (!checkT)
-        {
-          std::cout << "[" << body->getName() << "]" << std::endl;
-          std::cout << "actual T  : " << std::endl
-                    << body->getTransform().matrix() << std::endl;
-          std::cout << "expected T: " << std::endl
-                    << Tmap[body].matrix() << std::endl;
-          std::cout << std::endl;
-        }
-
-        if (!checkV)
-        {
-          std::cout << "[" << body->getName() << "]" << std::endl;
-          std::cout << "actual V  : "
-                    << body->getSpatialVelocity().transpose() << std::endl;
-          std::cout << "expected V: "
-                    << Vmap[body].transpose() << std::endl;
-          std::cout << std::endl;
-        }
-
-        if (!checkDV)
-        {
-          std::cout << "[" << body->getName() << "]" << std::endl;
-          std::cout << "actual DV  : "
-                    << body->getSpatialAcceleration().transpose() << std::endl;
-          std::cout << "expected DV: "
-                    << dVmap[body].transpose() << std::endl;
-          std::cout << std::endl;
-        }
-      }
-    }
-  }
-}
-
-//==============================================================================
-void DynamicsTest::testForwardKinematics(const common::Uri& uri)
-{
-  auto world = utils::SkelParser::readWorld(uri);
-  EXPECT_TRUE(world != nullptr);
-
-  auto numSkeletons = world->getNumSkeletons();
-  for (auto i = 0u; i < numSkeletons; ++i)
-  {
-    auto skeleton  = world->getSkeleton(i);
-    testForwardKinematicsSkeleton(skeleton);
-  }
-}
-
-//==============================================================================
 void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 {
   using namespace std;
@@ -1430,11 +621,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 //    int nBodyNodes = skel->getNumBodyNodes();
 
     if (dof == 0)
-    {
-      dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF." << endl;
       continue;
-    }
 
     for (std::size_t j = 0; j < nRandomItr; ++j)
     {
@@ -1705,11 +892,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
     std::size_t dof = skeleton->getNumDofs();
     if (dof == 0)
-    {
-      dtmsg << "Skeleton [" << skeleton->getName() << "] is skipped since it "
-            << "has 0 DOF." << endl;
       continue;
-    }
 
     for (std::size_t j = 0; j < nRandomItr; ++j)
     {
@@ -1784,7 +967,11 @@ void compareCOMAccelerationToGravity(SkeletonPtr skel,
                                      const Eigen::Vector3d& gravity,
                                      double tolerance)
 {
+#ifndef NDEBUG  // Debug mode
+  const std::size_t numFrames = 1e+1;
+#else
   const std::size_t numFrames = 1e+2;
+#endif
   skel->setGravity(gravity);
 
   for (std::size_t i = 0; i < numFrames; ++i)
@@ -1870,11 +1057,6 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
     if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof)
     {
-#if BUILD_TYPE_DEBUG
-      dtmsg << "Skipping COM free fall test for Skeleton [" << skel->getName()
-            << "] since the Skeleton doesn't have FreeJoint at the root body "
-            << " or immobile." << endl;
-#endif
       continue;
     }
     else
@@ -1949,7 +1131,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
 #ifndef NDEBUG  // Debug mode
   std::size_t nRandomItr = 1;
 #else
-  std::size_t nRandomItr = 1;
+  std::size_t nRandomItr = 2;
 #endif
 
   // Lower and upper bound of configuration for system
@@ -1969,14 +1151,9 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
     dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     std::size_t dof            = skel->getNumDofs();
-//    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0 || !skel->isMobile())
-    {
-      dtdbg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF or is immobile." << endl;
       continue;
-    }
 
     for (std::size_t j = 0; j < nRandomItr; ++j)
     {
@@ -2065,14 +1242,9 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
     dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     int dof            = skel->getNumDofs();
-//    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0 || !skel->isMobile())
-    {
-      dtdbg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF or is immobile." << endl;
       continue;
-    }
 
     for (std::size_t j = 0; j < nRandomItr; ++j)
     {
@@ -2126,52 +1298,19 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 }
 
 //==============================================================================
-TEST_F(DynamicsTest, testJacobians)
-{
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
-#ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
-#endif
-    testJacobians(getList()[i]);
-  }
-}
-
-//==============================================================================
-TEST_F(DynamicsTest, testFiniteDifference)
-{
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
-#if BUILD_TYPE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
-#endif
-    testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
-    testFiniteDifferenceBodyNodeVelocity(getList()[i]);
-    testFiniteDifferenceBodyNodeAcceleration(getList()[i]);
-  }
-}
-
-//==============================================================================
-TEST_F(DynamicsTest, testForwardKinematics)
-{
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
-#ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
-#endif
-    testForwardKinematics(getList()[i]);
-  }
-}
-
-//==============================================================================
 TEST_F(DynamicsTest, compareEquationsOfMotion)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
+#ifndef NDEBUG  // Debug mode
+  const auto& list = getListForDebug();
+#else
+  const auto& list = getList();
+#endif
+
+  for (const auto& uri : list)
   {
     ////////////////////////////////////////////////////////////////////////////
     // TODO(JS): Following skel files, which contain euler joints couldn't
     //           pass EQUATIONS_OF_MOTION, are disabled.
-    const auto uri = getList()[i];
     if (uri.toString() == "dart://sample/skel/test/double_pendulum_euler_joint.skel"
         || uri.toString() == "dart://sample/skel/test/chainwhipa.skel"
         || uri.toString() == "dart://sample/skel/test/serial_chain_eulerxyz_joint.skel"
@@ -2183,58 +1322,67 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
     }
     ////////////////////////////////////////////////////////////////////////////
 
-#ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
-#endif
-    compareEquationsOfMotion(getList()[i]);
+    compareEquationsOfMotion(uri);
   }
 }
 
 //==============================================================================
 TEST_F(DynamicsTest, testCenterOfMass)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
-#ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+#ifndef NDEBUG  // Debug mode
+  const auto& list = getListForDebug();
+#else
+  const auto& list = getList();
 #endif
-    testCenterOfMass(getList()[i]);
+
+  for (const auto& uri : list)
+  {
+    testCenterOfMass(uri);
   }
 }
 
 //==============================================================================
 TEST_F(DynamicsTest, testCenterOfMassFreeFall)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
-#ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+#ifndef NDEBUG  // Debug mode
+  const auto& list = getListForDebug();
+#else
+  const auto& list = getList();
 #endif
-    testCenterOfMassFreeFall(getList()[i]);
+
+  for (const auto& uri : list)
+  {
+    testCenterOfMassFreeFall(uri);
   }
 }
 
 //==============================================================================
 TEST_F(DynamicsTest, testConstraintImpulse)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
-#ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+#ifndef NDEBUG  // Debug mode
+  const auto& list = getListForDebug();
+#else
+  const auto& list = getList();
 #endif
-    testConstraintImpulse(getList()[i]);
+
+  for (const auto& uri : list)
+  {
+    testConstraintImpulse(uri);
   }
 }
 
 //==============================================================================
 TEST_F(DynamicsTest, testImpulseBasedDynamics)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
-#ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+#ifndef NDEBUG  // Debug mode
+  const auto& list = getListForDebug();
+#else
+  const auto& list = getList();
 #endif
-    testImpulseBasedDynamics(getList()[i]);
+
+  for (const auto& uri : list)
+  {
+    testImpulseBasedDynamics(uri);
   }
 }
 
@@ -2244,7 +1392,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   const double tol       = 1e-8;
   const double timeStep  = 1e-3;
 #ifndef NDEBUG // Debug mode
-  const std::size_t numFrames = 50;  // 0.05 secs
+  const std::size_t numFrames = 20;  // 0.02 secs
 #else
   const std::size_t numFrames = 5e+3;  // 5 secs
 #endif // ------- Debug mode

@@ -642,7 +642,11 @@ Matrix<double,6,6> Transform_Matrix4d(const Matrix4d& T, const Matrix<double,6,6
 
 TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
 {
+#ifndef NDEBUG  // Debug mode
+    const int iterations = 1000;
+#else
     const int iterations = 100000;
+#endif
 
     Affine3d A1 = Translation3d(0.1, 0.2, 0.3) * AngleAxisd(0.5, Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
     Matrix<double,6,6> a1 = Matrix<double,6,6>::Identity();
