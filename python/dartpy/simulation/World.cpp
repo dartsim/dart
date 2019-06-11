@@ -51,10 +51,12 @@ void World(py::module& m)
       .def(::py::init(+[]() -> dart::simulation::WorldPtr {
         return dart::simulation::World::create();
       }))
-      .def(::py::init(
-          +[](const std::string& name) -> dart::simulation::WorldPtr {
-            return dart::simulation::World::create(name);
-          }))
+      .def(
+          ::py::init(
+              +[](const std::string& name) -> dart::simulation::WorldPtr {
+                return dart::simulation::World::create(name);
+              }),
+          ::py::arg("name"))
       .def(
           "clone",
           +[](const dart::simulation::World* self)
