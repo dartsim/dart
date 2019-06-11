@@ -32,8 +32,8 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <osgShadow/ShadowTechnique>
 #include <osgShadow/ShadowMap>
+#include <osgShadow/ShadowTechnique>
 #include <pybind11/pybind11.h>
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);

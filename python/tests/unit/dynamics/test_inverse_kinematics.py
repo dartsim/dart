@@ -49,5 +49,47 @@ def test_solve_for_free_joint():
     assert np.isclose(tf_actual, tf_expected).all()
 
 
+class FailingSolver(dart.optimizer.Solver):
+    def __init__(self, constant):
+        super(FailingSolver, self).__init__()
+        self.constant = constant
+
+    def solve(self):
+        problem = self.getProblem()
+        if problem is None:
+            print('[FailingSolver::solve] Attempting to solve a nullptr problem! We will return false.')
+            return False
+
+        dim = problem.getDimension()
+        wrong_solution = np.ones(dim) * self.constant
+        problem.setOptimalSolution(wrong_solution)
+
+        return False
+
+    def getType(self):
+        return 'FailingSolver'
+
+    def clone(self):
+        return FailingSolver(self.constant)
+
+
+def test_do_not_apply_solution_on_failure():
+    skel = dart.dynamics.Skeleton()
+    [joint, body] = skel.createFreeJointAndBodyNodePair()
+
+    ik = body.getIK(True)
+    solver = FailingSolver(10)
+    ik.setSolver(solver)
+
+    dofs = skel.getNumDofs()
+    skel.resetPositions()
+
+    assert not ik.solveAndApply(allowIncompleteResult=False)
+    assert np.isclose(skel.getPositions(), np.zeros(dofs)).all()
+
+    assert not ik.solveAndApply(allowIncompleteResult=True)
+    assert not np.isclose(skel.getPositions(), np.zeros(dofs)).all()
+
+
 if __name__ == "__main__":
     pytest.main()

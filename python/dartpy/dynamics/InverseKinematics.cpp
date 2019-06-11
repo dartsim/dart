@@ -243,6 +243,41 @@ void InverseKinematics(py::module& m)
       std::shared_ptr<dart::dynamics::InverseKinematics>>(
       m, "InverseKinematics")
       .def(
+          ::py::init(
+              +[](dart::dynamics::JacobianNode* node)
+                  -> dart::dynamics::InverseKinematicsPtr {
+                return dart::dynamics::InverseKinematics::create(node);
+              }),
+          ::py::arg("node"))
+      .def(
+          "findSolution",
+          +[](dart::dynamics::InverseKinematics* self,
+              Eigen::VectorXd& positions) -> bool {
+            return self->findSolution(positions);
+          },
+          py::arg("positions"))
+      .def(
+          "solveAndApply",
+          +[](dart::dynamics::InverseKinematics* self) -> bool {
+            return self->solveAndApply();
+          })
+      .def(
+          "solveAndApply",
+          +[](dart::dynamics::InverseKinematics* self,
+              bool allowIncompleteResult) -> bool {
+            return self->solveAndApply(allowIncompleteResult);
+          },
+          py::arg("allowIncompleteResult"))
+      .def(
+          "solveAndApply",
+          +[](dart::dynamics::InverseKinematics* self,
+              Eigen::VectorXd& positions,
+              bool allowIncompleteResult) -> bool {
+            return self->solveAndApply(positions, allowIncompleteResult);
+          },
+          py::arg("positions"),
+          py::arg("allowIncompleteResult"))
+      .def(
           "clone",
           +[](const dart::dynamics::InverseKinematics* self,
               dart::dynamics::JacobianNode* _newNode)
@@ -405,16 +440,9 @@ void InverseKinematics(py::module& m)
           +[](dart::dynamics::InverseKinematics* self,
               const Eigen::VectorXd& _q) { self->setPositions(_q); },
           ::py::arg("q"))
-      .def(
-          "clearCaches",
-          +[](dart::dynamics::InverseKinematics* self) { self->clearCaches(); })
-      .def_static(
-          "create",
-          +[](dart::dynamics::JacobianNode* _node)
-              -> dart::dynamics::InverseKinematicsPtr {
-            return dart::dynamics::InverseKinematics::create(_node);
-          },
-          ::py::arg("node"));
+      .def("clearCaches", +[](dart::dynamics::InverseKinematics* self) {
+        self->clearCaches();
+      });
 }
 
 } // namespace python
