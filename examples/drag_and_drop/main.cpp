@@ -50,6 +50,7 @@ int main()
   tf.translation() = Eigen::Vector3d(-4, 4, 0);
   SimpleFramePtr draggable(new SimpleFrame(frame.get(), "draggable", tf));
   draggable->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1)));
+  draggable->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
   world->addSimpleFrame(draggable);
 
   tf.translation() = Eigen::Vector3d(8.0, 0.0, 0.0);

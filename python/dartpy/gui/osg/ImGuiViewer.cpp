@@ -31,26 +31,38 @@
  */
 
 #include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void RaycastOption(py::module& m)
+void ImGuiViewer(py::module& m)
 {
-  ::py::class_<dart::collision::RaycastOption>(m, "RaycastOption")
+  ::py::class_<
+      dart::gui::osg::ImGuiViewer,
+      dart::gui::osg::Viewer,
+      osg::ref_ptr<dart::gui::osg::ImGuiViewer>>(m, "ImGuiViewer")
       .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
+      .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
       .def(
-          ::py::init<bool, bool>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"))
-      .def_readwrite(
-          "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
-      .def_readwrite(
-          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest);
+          "getImGuiHandler",
+          +[](dart::gui::osg::ImGuiViewer* self)
+              -> dart::gui::osg::ImGuiHandler* {
+            return self->getImGuiHandler();
+          },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "showAbout",
+          +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
+      .def("hideAbout", +[](dart::gui::osg::ImGuiViewer* self) {
+        self->hideAbout();
+      });
 }
 
 } // namespace python

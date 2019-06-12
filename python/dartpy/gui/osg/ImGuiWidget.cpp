@@ -31,26 +31,35 @@
  */
 
 #include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void RaycastOption(py::module& m)
+void ImGuiWidget(py::module& m)
 {
-  ::py::class_<dart::collision::RaycastOption>(m, "RaycastOption")
-      .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
+  ::pybind11::class_<dart::gui::osg::ImGuiWidget>(m, "ImGuiWidget")
+      .def("render", +[](dart::gui::osg::ImGuiWidget* self) { self->render(); })
       .def(
-          ::py::init<bool, bool>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"))
-      .def_readwrite(
-          "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
-      .def_readwrite(
-          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest);
+          "setVisible",
+          +[](dart::gui::osg::ImGuiWidget* self, bool visible) {
+            self->setVisible(visible);
+          },
+          ::pybind11::arg("visible"))
+      .def(
+          "toggleVisible",
+          +[](dart::gui::osg::ImGuiWidget* self) { self->toggleVisible(); })
+      .def("show", +[](dart::gui::osg::ImGuiWidget* self) { self->show(); })
+      .def("hide", +[](dart::gui::osg::ImGuiWidget* self) { self->hide(); })
+      .def("isVisible", +[](const dart::gui::osg::ImGuiWidget* self) -> bool {
+        return self->isVisible();
+      });
 }
 
 } // namespace python
