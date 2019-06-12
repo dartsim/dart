@@ -5,13 +5,14 @@
 * GUI
 
   * Fixed memory leaks from dart::gui::osg::Viewer: [#1349](https://github.com/dartsim/dart/pull/1349)
-  * Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351)
+  * Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351), [#1355](https://github.com/dartsim/dart/pull/1355)
 
 * dartpy
 
   * Added raycast option and result: [#1343](https://github.com/dartsim/dart/pull/1343)
   * Added GUI event handler: [#1346](https://github.com/dartsim/dart/pull/1346)
   * Added shadow technique: [#1348](https://github.com/dartsim/dart/pull/1348)
+  * Added findSolution and solveAndApply to InverseKinematics: [#1358](https://github.com/dartsim/dart/pull/1358)
 
 ### [DART 6.9.1 (2019-06-06)](https://github.com/dartsim/dart/milestone/59?closed=1)
 

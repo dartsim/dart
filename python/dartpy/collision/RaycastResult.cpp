@@ -59,7 +59,6 @@ void RaycastResult(py::module& m)
           +[](const dart::collision::RaycastResult* self) -> bool {
             return self->hasHit();
           })
-      .def_readwrite("mHasHit", &dart::collision::RaycastResult::mHasHit)
       .def_readwrite("mRayHits", &dart::collision::RaycastResult::mRayHits);
 }
 

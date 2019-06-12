@@ -127,9 +127,54 @@ void Solver(py::module& m)
       .def_readwrite(
           "mResultFile", &dart::optimizer::Solver::Properties::mResultFile);
 
+  class PySolver : public dart::optimizer::Solver
+  {
+  public:
+    // Inherit the constructors
+    using Solver::Solver;
+
+    // Trampoline for virtual function
+    bool solve() override
+    {
+      PYBIND11_OVERLOAD_PURE(
+          bool,   // Return type
+          Solver, // Parent class
+          solve,  // Name of function in C++ (must match Python name)
+      );
+    }
+
+    // Trampoline for virtual function
+    std::string getType() const override
+    {
+      PYBIND11_OVERLOAD_PURE(
+          std::string, // Return type
+          Solver,      // Parent class
+          getType,     // Name of function in C++ (must match Python name)
+      );
+    }
+
+    // Trampoline for virtual function
+    std::shared_ptr<Solver> clone() const override
+    {
+      PYBIND11_OVERLOAD_PURE(
+          std::shared_ptr<Solver>, // Return type
+          Solver,                  // Parent class
+          clone, // Name of function in C++ (must match Python name)
+      );
+    }
+  };
+
   ::py::class_<
       dart::optimizer::Solver,
+      PySolver,
       std::shared_ptr<dart::optimizer::Solver>>(m, "Solver")
+      .def(py::init<>())
+      .def(
+          py::init<dart::optimizer::Solver::Properties>(),
+          ::py::arg("properties"))
+      .def(
+          py::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          ::py::arg("problem"))
       .def(
           "solve",
           +[](dart::optimizer::Solver* self) -> bool { return self->solve(); })
