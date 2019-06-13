@@ -27,7 +27,3 @@ if(NOT DART_BUILD_DARTPY)
     COMPONENT headers
   )
 endif()
-
-dart_format_add(
-  detail/World-impl.hpp
-)

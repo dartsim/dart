@@ -26,14 +26,3 @@ add_subdirectory(ipopt)
 add_subdirectory(nlopt)
 add_subdirectory(pagmo)
 add_subdirectory(snopt)
-
-dart_format_add(
-  GenericMultiObjectiveProblem.hpp
-  GenericMultiObjectiveProblem.cpp
-  MultiObjectiveSolver.hpp
-  MultiObjectiveSolver.cpp
-  MultiObjectiveProblem.hpp
-  MultiObjectiveProblem.cpp
-  Population.hpp
-  Population.cpp
-)

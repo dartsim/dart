@@ -32,8 +32,8 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;
@@ -46,17 +46,17 @@ TEST(NameManagement, Skeleton)
 
   std::pair<Joint*, BodyNode*> pair;
   pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
-        nullptr, GenericJoint<R1Space>::Properties(std::string("joint")));
+      nullptr, GenericJoint<R1Space>::Properties(std::string("joint")));
   Joint* joint1 = pair.first;
   BodyNode* body1 = pair.second;
 
   pair = skel->createJointAndBodyNodePair<TranslationalJoint>(
-        body1, GenericJoint<R3Space>::Properties(std::string("joint")));
+      body1, GenericJoint<R3Space>::Properties(std::string("joint")));
   Joint* joint2 = pair.first;
   BodyNode* body2 = pair.second;
 
   pair = skel->createJointAndBodyNodePair<FreeJoint>(
-        body2, GenericJoint<SE3Space>::Properties(std::string("joint")));
+      body2, GenericJoint<SE3Space>::Properties(std::string("joint")));
   Joint* joint3 = pair.first;
   BodyNode* body3 = pair.second;
 
@@ -191,7 +191,7 @@ TEST(NameManagement, Skeleton)
 //==============================================================================
 TEST(NameManagement, SetPattern)
 {
-  dart::common::NameManager< std::shared_ptr<Entity> > test_mgr("test", "name");
+  dart::common::NameManager<std::shared_ptr<Entity> > test_mgr("test", "name");
 
   std::shared_ptr<Entity> entity0(new SimpleFrame(Frame::World(), "name"));
   std::shared_ptr<Entity> entity1(new SimpleFrame(Frame::World(), "name"));
@@ -203,9 +203,9 @@ TEST(NameManagement, SetPattern)
   test_mgr.issueNewNameAndAdd(entity1->getName(), entity1);
   test_mgr.issueNewNameAndAdd(entity2->getName(), entity2);
 
-  EXPECT_TRUE( test_mgr.getObject("name") == entity0);
-  EXPECT_TRUE( test_mgr.getObject("name(1)") == entity1);
-  EXPECT_TRUE( test_mgr.getObject("name(2)") == entity2);
+  EXPECT_TRUE(test_mgr.getObject("name") == entity0);
+  EXPECT_TRUE(test_mgr.getObject("name(1)") == entity1);
+  EXPECT_TRUE(test_mgr.getObject("name(2)") == entity2);
 
   test_mgr.clear();
 
@@ -218,15 +218,15 @@ TEST(NameManagement, SetPattern)
   test_mgr.issueNewNameAndAdd(entity1->getName(), entity1);
   test_mgr.issueNewNameAndAdd(entity2->getName(), entity2);
 
-  EXPECT_TRUE( test_mgr.getObject("Entity") == entity0);
-  EXPECT_TRUE( test_mgr.getObject("(1)-Entity") == entity1 );
-  EXPECT_TRUE( test_mgr.getObject("(2)-Entity") == entity2 );
+  EXPECT_TRUE(test_mgr.getObject("Entity") == entity0);
+  EXPECT_TRUE(test_mgr.getObject("(1)-Entity") == entity1);
+  EXPECT_TRUE(test_mgr.getObject("(2)-Entity") == entity2);
 }
 
 //==============================================================================
 TEST(NameManagement, Regression554)
 {
-  dart::common::NameManager< std::shared_ptr<int> > test_mgr("test", "name");
+  dart::common::NameManager<std::shared_ptr<int> > test_mgr("test", "name");
 
   std::shared_ptr<int> int0(new int(0));
   std::shared_ptr<int> int1(new int(1));
@@ -237,20 +237,20 @@ TEST(NameManagement, Regression554)
   test_mgr.issueNewNameAndAdd(std::to_string(*int1), int1);
   test_mgr.issueNewNameAndAdd(std::to_string(*int2), int2);
 
-  EXPECT_TRUE( test_mgr.getObject("0") == int0 );
-  EXPECT_TRUE( test_mgr.getObject("1") == int1 );
-  EXPECT_TRUE( test_mgr.getObject("2") == int2 );
+  EXPECT_TRUE(test_mgr.getObject("0") == int0);
+  EXPECT_TRUE(test_mgr.getObject("1") == int1);
+  EXPECT_TRUE(test_mgr.getObject("2") == int2);
 
   bool res1 = test_mgr.addName(std::to_string(*int_another0), int_another0);
-  EXPECT_FALSE( res1 );
+  EXPECT_FALSE(res1);
 
   test_mgr.removeEntries(std::to_string(*int_another0), int_another0);
   bool res2 = test_mgr.addName(std::to_string(*int_another0), int_another0);
-  EXPECT_TRUE( res2 );
+  EXPECT_TRUE(res2);
 
-  EXPECT_TRUE( test_mgr.getObject("0") == int_another0 );
-  EXPECT_TRUE( test_mgr.getObject("1") == int1 );
-  EXPECT_TRUE( test_mgr.getObject("2") == int2 );
+  EXPECT_TRUE(test_mgr.getObject("0") == int_another0);
+  EXPECT_TRUE(test_mgr.getObject("1") == int1);
+  EXPECT_TRUE(test_mgr.getObject("2") == int2);
 }
 
 //==============================================================================
@@ -281,15 +281,15 @@ TEST(NameManagement, WorldSkeletons)
   skel2->setName("OtherName");
   EXPECT_TRUE(skel2->getName() == "OtherName(1)");
 
-  EXPECT_TRUE( skel0 == world1->getSkeleton(skel0->getName()) );
-  EXPECT_TRUE( skel1 == world1->getSkeleton(skel1->getName()) );
-  EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
+  EXPECT_TRUE(skel0 == world1->getSkeleton(skel0->getName()));
+  EXPECT_TRUE(skel1 == world1->getSkeleton(skel1->getName()));
+  EXPECT_TRUE(skel2 == world1->getSkeleton(skel2->getName()));
 
   dart::simulation::WorldPtr world2(new dart::simulation::World);
   world2->setName("world2");
 
-  dart::dynamics::SkeletonPtr skel3 =
-      dart::dynamics::Skeleton::create("OtherName");
+  dart::dynamics::SkeletonPtr skel3
+      = dart::dynamics::Skeleton::create("OtherName");
   world2->addSkeleton(skel3);
   world2->addSkeleton(skel2);
   world2->addSkeleton(skel1);
@@ -304,13 +304,13 @@ TEST(NameManagement, WorldSkeletons)
   EXPECT_TRUE(skel3->getName() == "Skeleton(1)");
   EXPECT_TRUE(skel1->getName() == "Skeleton(1)(1)");
 
-  EXPECT_TRUE( skel0 == world1->getSkeleton(skel0->getName()) );
-  EXPECT_TRUE( skel1 == world1->getSkeleton(skel1->getName()) );
-  EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
+  EXPECT_TRUE(skel0 == world1->getSkeleton(skel0->getName()));
+  EXPECT_TRUE(skel1 == world1->getSkeleton(skel1->getName()));
+  EXPECT_TRUE(skel2 == world1->getSkeleton(skel2->getName()));
 
-  EXPECT_TRUE( skel3 == world2->getSkeleton(skel3->getName()) );
-  EXPECT_TRUE( skel1 == world2->getSkeleton(skel1->getName()) );
-  EXPECT_TRUE( skel2 == world2->getSkeleton(skel2->getName()) );
+  EXPECT_TRUE(skel3 == world2->getSkeleton(skel3->getName()));
+  EXPECT_TRUE(skel1 == world2->getSkeleton(skel1->getName()));
+  EXPECT_TRUE(skel2 == world2->getSkeleton(skel2->getName()));
 
   world2->removeSkeleton(skel1);
 
@@ -324,11 +324,11 @@ TEST(NameManagement, WorldSimpleFrames)
   dart::simulation::WorldPtr world1(new dart::simulation::World);
 
   dart::dynamics::SimpleFramePtr frame0(
-        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+      new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
   dart::dynamics::SimpleFramePtr frame1(
-        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+      new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
   dart::dynamics::SimpleFramePtr frame2(
-        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+      new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
 
   world1->addSimpleFrame(frame0);
   world1->addSimpleFrame(frame1);
@@ -348,15 +348,15 @@ TEST(NameManagement, WorldSimpleFrames)
   frame2->setName("OtherName");
   EXPECT_TRUE(frame2->getName() == "OtherName(1)");
 
-  EXPECT_TRUE( frame0 == world1->getSimpleFrame(frame0->getName()) );
-  EXPECT_TRUE( frame1 == world1->getSimpleFrame(frame1->getName()) );
-  EXPECT_TRUE( frame2 == world1->getSimpleFrame(frame2->getName()) );
+  EXPECT_TRUE(frame0 == world1->getSimpleFrame(frame0->getName()));
+  EXPECT_TRUE(frame1 == world1->getSimpleFrame(frame1->getName()));
+  EXPECT_TRUE(frame2 == world1->getSimpleFrame(frame2->getName()));
 
   dart::simulation::WorldPtr world2(new dart::simulation::World);
   world2->setName("world2");
 
   dart::dynamics::SimpleFramePtr frame3(
-        new dart::dynamics::SimpleFrame(Frame::World(), "OtherName"));
+      new dart::dynamics::SimpleFrame(Frame::World(), "OtherName"));
   world2->addSimpleFrame(frame3);
   world2->addSimpleFrame(frame2);
   world2->addSimpleFrame(frame1);
@@ -371,13 +371,13 @@ TEST(NameManagement, WorldSimpleFrames)
   EXPECT_TRUE(frame3->getName() == "Frame(1)");
   EXPECT_TRUE(frame1->getName() == "Frame(1)(1)");
 
-  EXPECT_TRUE( frame0 == world1->getSimpleFrame(frame0->getName()) );
-  EXPECT_TRUE( frame1 == world1->getSimpleFrame(frame1->getName()) );
-  EXPECT_TRUE( frame2 == world1->getSimpleFrame(frame2->getName()) );
+  EXPECT_TRUE(frame0 == world1->getSimpleFrame(frame0->getName()));
+  EXPECT_TRUE(frame1 == world1->getSimpleFrame(frame1->getName()));
+  EXPECT_TRUE(frame2 == world1->getSimpleFrame(frame2->getName()));
 
-  EXPECT_TRUE( frame3 == world2->getSimpleFrame(frame3->getName()) );
-  EXPECT_TRUE( frame1 == world2->getSimpleFrame(frame1->getName()) );
-  EXPECT_TRUE( frame2 == world2->getSimpleFrame(frame2->getName()) );
+  EXPECT_TRUE(frame3 == world2->getSimpleFrame(frame3->getName()));
+  EXPECT_TRUE(frame1 == world2->getSimpleFrame(frame1->getName()));
+  EXPECT_TRUE(frame2 == world2->getSimpleFrame(frame2->getName()));
 
   world2->removeSimpleFrame(frame1);
 
@@ -391,30 +391,32 @@ TEST(NameManagement, JointDegreeOfFreedom)
   SkeletonPtr subtree = Skeleton::create("subtree");
   EulerJoint::Properties jointProperties;
   jointProperties.mName = "j_bicep_right";
-  JointPtr joint = subtree->createJointAndBodyNodePair<EulerJoint>(
-        nullptr, jointProperties).first;
+  JointPtr joint
+      = subtree
+            ->createJointAndBodyNodePair<EulerJoint>(nullptr, jointProperties)
+            .first;
   std::string newName = "j_bicep_right_inverse";
 
-  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_right_x" );
-  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_right_y" );
-  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_right_z" );
+  EXPECT_TRUE(joint->getDof(0)->getName() == "j_bicep_right_x");
+  EXPECT_TRUE(joint->getDof(1)->getName() == "j_bicep_right_y");
+  EXPECT_TRUE(joint->getDof(2)->getName() == "j_bicep_right_z");
 
   joint->setName(newName, false);
 
-  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_right_x" );
-  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_right_y" );
-  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_right_z" );
+  EXPECT_TRUE(joint->getDof(0)->getName() == "j_bicep_right_x");
+  EXPECT_TRUE(joint->getDof(1)->getName() == "j_bicep_right_y");
+  EXPECT_TRUE(joint->getDof(2)->getName() == "j_bicep_right_z");
 
   joint->setName(newName, true);
 
-  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_right_inverse_x" );
-  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_right_inverse_y" );
-  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_right_inverse_z" );
+  EXPECT_TRUE(joint->getDof(0)->getName() == "j_bicep_right_inverse_x");
+  EXPECT_TRUE(joint->getDof(1)->getName() == "j_bicep_right_inverse_y");
+  EXPECT_TRUE(joint->getDof(2)->getName() == "j_bicep_right_inverse_z");
 
   newName = "j_bicep_left";
   joint->setName(newName, true);
 
-  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_left_x" );
-  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_left_y" );
-  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_left_z" );
+  EXPECT_TRUE(joint->getDof(0)->getName() == "j_bicep_left_x");
+  EXPECT_TRUE(joint->getDof(1)->getName() == "j_bicep_left_y");
+  EXPECT_TRUE(joint->getDof(2)->getName() == "j_bicep_left_z");
 }

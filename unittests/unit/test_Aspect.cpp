@@ -39,14 +39,14 @@
 
 #include "TestHelpers.hpp"
 
+#include "dart/common/Composite.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/common/SpecializedForAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/sub_ptr.hpp"
-#include "dart/common/Composite.hpp"
-#include "dart/common/SpecializedForAspect.hpp"
-#include "dart/common/EmbeddedAspect.hpp"
 
-#include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
 
 using namespace dart::common;
 
@@ -62,10 +62,10 @@ struct EmbeddedStateData
 
   bool operator==(const EmbeddedStateData& other) const
   {
-    if(other.d != d)
+    if (other.d != d)
       return false;
 
-    if(other.i != i)
+    if (other.i != i)
       return false;
 
     return true;
@@ -77,7 +77,9 @@ struct EmbeddedStateData
   }
 };
 
-struct SecondEmbeddedStateData { };
+struct SecondEmbeddedStateData
+{
+};
 
 struct EmbeddedPropertiesData
 {
@@ -91,10 +93,10 @@ struct EmbeddedPropertiesData
 
   bool operator==(const EmbeddedPropertiesData& other) const
   {
-    if(other.b != b)
+    if (other.b != b)
       return false;
 
-    if(other.f != f)
+    if (other.f != f)
       return false;
 
     return true;
@@ -106,27 +108,29 @@ struct EmbeddedPropertiesData
   }
 };
 
-struct SecondEmbeddedPropertiesData { };
+struct SecondEmbeddedPropertiesData
+{
+};
 
-class EmbeddedStateComposite :
-    public EmbedState<EmbeddedStateComposite, EmbeddedStateData>
+class EmbeddedStateComposite
+  : public EmbedState<EmbeddedStateComposite, EmbeddedStateData>
 {
 public:
-
   EmbeddedStateComposite(const EmbeddedStateData& state = EmbeddedStateData())
   {
     createAspect<Aspect>(static_cast<const Aspect::StateData&>(state));
   }
 
-  void setAspectState(const AspectState& state) { mAspectState = state; }
-
+  void setAspectState(const AspectState& state)
+  {
+    mAspectState = state;
+  }
 };
 
-class EmbeddedPropertiesComposite :
-    public EmbedProperties<EmbeddedPropertiesComposite, EmbeddedPropertiesData>
+class EmbeddedPropertiesComposite
+  : public EmbedProperties<EmbeddedPropertiesComposite, EmbeddedPropertiesData>
 {
 public:
-
   EmbeddedPropertiesComposite(
       const EmbeddedPropertiesData& properties = EmbeddedPropertiesData())
   {
@@ -137,54 +141,55 @@ public:
   {
     mAspectProperties = properties;
   }
-
 };
 
-class EmbeddedStateAndPropertiesComposite :
-    public EmbedStateAndProperties<
+class EmbeddedStateAndPropertiesComposite
+  : public EmbedStateAndProperties<
         EmbeddedStateAndPropertiesComposite,
-        EmbeddedStateData, EmbeddedPropertiesData>
+        EmbeddedStateData,
+        EmbeddedPropertiesData>
 {
 public:
-
   EmbeddedStateAndPropertiesComposite()
   {
     createAspect<Aspect>();
   }
 
-  void setAspectState(const AspectState& state) { mAspectState = state; }
+  void setAspectState(const AspectState& state)
+  {
+    mAspectState = state;
+  }
 
   void setAspectProperties(const AspectProperties& properties)
   {
     mAspectProperties = properties;
   }
-
 };
 
-class InheritAndEmbedStateComposite :
-    public EmbedStateOnTopOf<
-        InheritAndEmbedStateComposite,
-        SecondEmbeddedStateData,
-        EmbeddedStateComposite>
+class InheritAndEmbedStateComposite : public EmbedStateOnTopOf<
+                                          InheritAndEmbedStateComposite,
+                                          SecondEmbeddedStateData,
+                                          EmbeddedStateComposite>
 {
 public:
-
   InheritAndEmbedStateComposite()
   {
     createAspect<Aspect>();
   }
 
-  void setAspectState(const AspectState& state) { mAspectState = state; }
+  void setAspectState(const AspectState& state)
+  {
+    mAspectState = state;
+  }
 };
 
-class InheritAndEmbedPropertiesComposite :
-    public EmbedPropertiesOnTopOf<
+class InheritAndEmbedPropertiesComposite
+  : public EmbedPropertiesOnTopOf<
         InheritAndEmbedPropertiesComposite,
         SecondEmbeddedPropertiesData,
         EmbeddedPropertiesComposite>
 {
 public:
-
   InheritAndEmbedPropertiesComposite()
   {
     createAspect<Aspect>();
@@ -196,21 +201,23 @@ public:
   }
 };
 
-class InheritAndEmbedStateAndPropertiesComposite :
-    public EmbedStateAndPropertiesOnTopOf<
+class InheritAndEmbedStateAndPropertiesComposite
+  : public EmbedStateAndPropertiesOnTopOf<
         InheritAndEmbedStateAndPropertiesComposite,
         SecondEmbeddedStateData,
         SecondEmbeddedPropertiesData,
         EmbeddedStateAndPropertiesComposite>
 {
 public:
-
   InheritAndEmbedStateAndPropertiesComposite()
   {
     createAspect<Aspect>();
   }
 
-  void setAspectState(const AspectState& state) { mAspectState = state; }
+  void setAspectState(const AspectState& state)
+  {
+    mAspectState = state;
+  }
 
   void setAspectProperties(const AspectProperties& properties)
   {
@@ -219,31 +226,27 @@ public:
 };
 
 // Testing the creation of an Aspect using the AspectWithState template class
-class StateAspectTest : public dart::common::AspectWithState<
-    StateAspectTest, dart::common::Empty>
+class StateAspectTest
+  : public dart::common::AspectWithState<StateAspectTest, dart::common::Empty>
 {
 public:
-
   StateAspectTest(const StateData& state = StateData())
     : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(state)
   {
-
   }
-
 };
 
-class StateAndPropertiesAspectTest : public dart::common::AspectWithVersionedProperties<
-    StateAndPropertiesAspectTest, dart::common::Empty>
+class StateAndPropertiesAspectTest
+  : public dart::common::AspectWithVersionedProperties<
+        StateAndPropertiesAspectTest,
+        dart::common::Empty>
 {
-
 };
 
 class GenericAspect : public Aspect, public Subject
 {
 public:
-
-  GenericAspect()
-    : Aspect()
+  GenericAspect() : Aspect()
   {
     // Do nothing
   }
@@ -252,15 +255,12 @@ public:
   {
     return std::make_unique<GenericAspect>();
   }
-
 };
 
 class SpecializedAspect : public Aspect, public Subject
 {
 public:
-
-  SpecializedAspect()
-    : Aspect()
+  SpecializedAspect() : Aspect()
   {
     // Do nothing
   }
@@ -275,13 +275,11 @@ template <typename T>
 class StatefulAspect : public Aspect, public Subject
 {
 public:
-
   struct Data
   {
     T val;
 
-    Data(const T& someVal = 0)
-      : val(someVal)
+    Data(const T& someVal = 0) : val(someVal)
     {
       // Do nothing
     }
@@ -290,28 +288,24 @@ public:
   using State = Aspect::MakeState<Data>;
   using Properties = Aspect::MakeProperties<Data>;
 
-  StatefulAspect()
-    : Aspect()
+  StatefulAspect() : Aspect()
   {
     // Do nothing
   }
 
   StatefulAspect(const StatefulAspect& other)
-    : Aspect(),
-      mState(other.mState), mProperties(other.mProperties)
+    : Aspect(), mState(other.mState), mProperties(other.mProperties)
   {
     // Do nothing
   }
 
-  StatefulAspect(const T& state)
-    : Aspect(), mState(state)
+  StatefulAspect(const T& state) : Aspect(), mState(state)
   {
     // Do nothing
   }
 
   StatefulAspect(const T& state, const T& properties)
-    : Aspect(),
-      mState(state), mProperties(properties)
+    : Aspect(), mState(state), mProperties(properties)
   {
     // Do nothing
   }
@@ -350,39 +344,41 @@ public:
   State mState;
 
   Properties mProperties;
-
 };
 
 typedef StatefulAspect<double> DoubleAspect;
-typedef StatefulAspect<float>  FloatAspect;
-typedef StatefulAspect<char>   CharAspect;
-typedef StatefulAspect<int>    IntAspect;
+typedef StatefulAspect<float> FloatAspect;
+typedef StatefulAspect<char> CharAspect;
+typedef StatefulAspect<int> IntAspect;
 
-class CustomSpecializedComposite : public SpecializedForAspect<SpecializedAspect> { };
+class CustomSpecializedComposite
+  : public SpecializedForAspect<SpecializedAspect>
+{
+};
 
 TEST(Aspect, Generic)
 {
   Composite comp;
 
-  EXPECT_TRUE( comp.get<GenericAspect>() == nullptr );
-  EXPECT_FALSE( comp.has<GenericAspect>() );
+  EXPECT_TRUE(comp.get<GenericAspect>() == nullptr);
+  EXPECT_FALSE(comp.has<GenericAspect>());
 
   comp.set<GenericAspect>(nullptr);
-  EXPECT_TRUE( comp.get<GenericAspect>() == nullptr );
-  EXPECT_FALSE( comp.has<GenericAspect>() );
+  EXPECT_TRUE(comp.get<GenericAspect>() == nullptr);
+  EXPECT_FALSE(comp.has<GenericAspect>());
 
   sub_ptr<GenericAspect> aspect = comp.createAspect<GenericAspect>();
   GenericAspect* rawAspect = aspect;
-  EXPECT_FALSE( nullptr == aspect );
-  EXPECT_FALSE( nullptr == rawAspect );
-  EXPECT_TRUE( comp.get<GenericAspect>() == aspect );
-  EXPECT_TRUE( comp.get<GenericAspect>() == rawAspect);
+  EXPECT_FALSE(nullptr == aspect);
+  EXPECT_FALSE(nullptr == rawAspect);
+  EXPECT_TRUE(comp.get<GenericAspect>() == aspect);
+  EXPECT_TRUE(comp.get<GenericAspect>() == rawAspect);
 
   GenericAspect* newAspect = comp.createAspect<GenericAspect>();
-  EXPECT_FALSE( nullptr == newAspect );
-  EXPECT_FALSE( nullptr == rawAspect );
-  EXPECT_FALSE( rawAspect == newAspect );
-  EXPECT_TRUE( nullptr == aspect );
+  EXPECT_FALSE(nullptr == newAspect);
+  EXPECT_FALSE(nullptr == rawAspect);
+  EXPECT_FALSE(rawAspect == newAspect);
+  EXPECT_TRUE(nullptr == aspect);
 }
 
 TEST(Aspect, Specialized)
@@ -390,50 +386,62 @@ TEST(Aspect, Specialized)
   usedSpecializedAspectAccess = false;
   CustomSpecializedComposite comp;
 
-  EXPECT_TRUE( comp.get<SpecializedAspect>() == nullptr );
-  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_TRUE( comp.getSpecializedAspect() == nullptr );
-  EXPECT_TRUE( comp.get<GenericAspect>() == nullptr );
-  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(comp.get<SpecializedAspect>() == nullptr);
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
+  //  EXPECT_TRUE( comp.getSpecializedAspect() == nullptr );
+  EXPECT_TRUE(comp.get<GenericAspect>() == nullptr);
+  EXPECT_FALSE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
   sub_ptr<SpecializedAspect> spec = comp.createAspect<SpecializedAspect>();
-  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   SpecializedAspect* rawSpec = spec;
 
   sub_ptr<GenericAspect> generic = comp.createAspect<GenericAspect>();
-  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_FALSE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   GenericAspect* rawGeneric = generic;
 
-  EXPECT_TRUE( comp.get<SpecializedAspect>() == spec );
-  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_TRUE( comp.getSpecializedAspect() == spec );
+  EXPECT_TRUE(comp.get<SpecializedAspect>() == spec);
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
+  //  EXPECT_TRUE( comp.getSpecializedAspect() == spec );
 
-  EXPECT_TRUE( comp.get<GenericAspect>() == generic );
-  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(comp.get<GenericAspect>() == generic);
+  EXPECT_FALSE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-//  SpecializedAspect* newSpec = comp.createSpecializedAspect();
+  //  SpecializedAspect* newSpec = comp.createSpecializedAspect();
   SpecializedAspect* newSpec = comp.createAspect<SpecializedAspect>();
-  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
   GenericAspect* newGeneric = comp.createAspect<GenericAspect>();
-  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_FALSE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-  EXPECT_TRUE( nullptr == spec );
-  EXPECT_TRUE( nullptr == generic );
+  EXPECT_TRUE(nullptr == spec);
+  EXPECT_TRUE(nullptr == generic);
 
-  EXPECT_FALSE( comp.get<SpecializedAspect>() == rawSpec );
-  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_FALSE( comp.getSpecializedAspect() == rawSpec );
+  EXPECT_FALSE(comp.get<SpecializedAspect>() == rawSpec);
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
+  //  EXPECT_FALSE( comp.getSpecializedAspect() == rawSpec );
 
-  EXPECT_FALSE( comp.get<GenericAspect>() == rawGeneric );
-  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_FALSE(comp.get<GenericAspect>() == rawGeneric);
+  EXPECT_FALSE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-  EXPECT_TRUE( comp.get<SpecializedAspect>() == newSpec );
-  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_TRUE( comp.getSpecializedAspect() == newSpec );
+  EXPECT_TRUE(comp.get<SpecializedAspect>() == newSpec);
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
+  //  EXPECT_TRUE( comp.getSpecializedAspect() == newSpec );
 
-  EXPECT_TRUE( comp.get<GenericAspect>() == newGeneric );
-  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(comp.get<GenericAspect>() == newGeneric);
+  EXPECT_FALSE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 }
 
 TEST(Aspect, Releasing)
@@ -443,82 +451,81 @@ TEST(Aspect, Releasing)
 
   // ---- Test generic releases ----
   {
-    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE(sender.get<GenericAspect>() == nullptr);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == nullptr);
 
     sub_ptr<GenericAspect> aspect = sender.createAspect<GenericAspect>();
 
-    EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE(sender.get<GenericAspect>() == aspect);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == nullptr);
 
     receiver.set<GenericAspect>(sender.releaseAspect<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == aspect );
+    EXPECT_FALSE(nullptr == aspect);
 
-    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == aspect );
+    EXPECT_TRUE(sender.get<GenericAspect>() == nullptr);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == aspect);
 
     sender.set<GenericAspect>(sender.releaseAspect<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == aspect );
+    EXPECT_FALSE(nullptr == aspect);
 
-    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == aspect );
+    EXPECT_TRUE(sender.get<GenericAspect>() == nullptr);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == aspect);
 
     receiver.set<GenericAspect>(receiver.releaseAspect<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == aspect );
+    EXPECT_FALSE(nullptr == aspect);
 
-    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == aspect );
+    EXPECT_TRUE(sender.get<GenericAspect>() == nullptr);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == aspect);
 
     sender.set<GenericAspect>(receiver.releaseAspect<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == aspect );
+    EXPECT_FALSE(nullptr == aspect);
 
-    EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE(sender.get<GenericAspect>() == aspect);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == nullptr);
 
     sender.releaseAspect<GenericAspect>();
 
-    EXPECT_TRUE( nullptr == aspect );
-    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE(nullptr == aspect);
+    EXPECT_TRUE(sender.get<GenericAspect>() == nullptr);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == nullptr);
   }
 
   // ---- Test specialized releases ----
   {
-    EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
-//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
+    EXPECT_TRUE(sender.get<SpecializedAspect>() == nullptr);
+    //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
     sub_ptr<SpecializedAspect> spec = sender.createAspect<SpecializedAspect>();
 
-    EXPECT_TRUE( sender.get<SpecializedAspect>() == spec );
-//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
+    EXPECT_TRUE(sender.get<SpecializedAspect>() == spec);
+    //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
-//    receiver.setSpecializedAspect(sender.release<SpecializedAspect>());
+    //    receiver.setSpecializedAspect(sender.release<SpecializedAspect>());
     receiver.set<SpecializedAspect>(sender.releaseAspect<SpecializedAspect>());
 
-    EXPECT_FALSE( nullptr == spec );
+    EXPECT_FALSE(nullptr == spec);
 
-    EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
-//    EXPECT_TRUE( receiver.getSpecializedAspect() == spec );
+    EXPECT_TRUE(sender.get<SpecializedAspect>() == nullptr);
+    //    EXPECT_TRUE( receiver.getSpecializedAspect() == spec );
 
-//    sender.set<SpecializedAspect>(receiver.releaseSpecializedAspect());
+    //    sender.set<SpecializedAspect>(receiver.releaseSpecializedAspect());
     sender.set<SpecializedAspect>(receiver.releaseAspect<SpecializedAspect>());
 
-    EXPECT_FALSE( nullptr == spec );
+    EXPECT_FALSE(nullptr == spec);
 
-    EXPECT_TRUE( sender.get<SpecializedAspect>() == spec );
-//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
+    EXPECT_TRUE(sender.get<SpecializedAspect>() == spec);
+    //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
     sender.releaseAspect<SpecializedAspect>();
 
-    EXPECT_TRUE( nullptr == spec );
-    EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
-//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
+    EXPECT_TRUE(nullptr == spec);
+    EXPECT_TRUE(sender.get<SpecializedAspect>() == nullptr);
+    //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
   }
-
 
   // ---- Test non-moving set method ----
   {
@@ -531,29 +538,29 @@ TEST(Aspect, Releasing)
     // away from 'sender'
     receiver.set<GenericAspect>(sender.get<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == aspect );
-    EXPECT_FALSE( receiver.get<GenericAspect>() == aspect );
-    EXPECT_FALSE( receiver.get<GenericAspect>() == nullptr );
-    EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
+    EXPECT_FALSE(nullptr == aspect);
+    EXPECT_FALSE(receiver.get<GenericAspect>() == aspect);
+    EXPECT_FALSE(receiver.get<GenericAspect>() == nullptr);
+    EXPECT_TRUE(sender.get<GenericAspect>() == aspect);
 
     sub_ptr<GenericAspect> rec_aspect = receiver.get<GenericAspect>();
-    EXPECT_FALSE( nullptr == rec_aspect );
+    EXPECT_FALSE(nullptr == rec_aspect);
 
     // This should replace the first GenericAspect that was created in 'sender'
     sender.set<GenericAspect>(receiver.get<GenericAspect>());
 
-    EXPECT_TRUE( nullptr == aspect );
-    EXPECT_FALSE( nullptr == rec_aspect );
-    EXPECT_FALSE( sender.get<GenericAspect>() == receiver.get<GenericAspect>() );
+    EXPECT_TRUE(nullptr == aspect);
+    EXPECT_FALSE(nullptr == rec_aspect);
+    EXPECT_FALSE(sender.get<GenericAspect>() == receiver.get<GenericAspect>());
 
     sub_ptr<GenericAspect> aspect2 = sender.get<GenericAspect>();
-    EXPECT_FALSE( nullptr == aspect2 );
+    EXPECT_FALSE(nullptr == aspect2);
 
     sender.set<GenericAspect>(receiver.releaseAspect<GenericAspect>());
-    EXPECT_TRUE( nullptr == aspect2 );
-    EXPECT_FALSE( nullptr == rec_aspect );
-    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
-    EXPECT_TRUE( sender.get<GenericAspect>() == rec_aspect );
+    EXPECT_TRUE(nullptr == aspect2);
+    EXPECT_FALSE(nullptr == rec_aspect);
+    EXPECT_TRUE(receiver.get<GenericAspect>() == nullptr);
+    EXPECT_TRUE(sender.get<GenericAspect>() == rec_aspect);
   }
 }
 
@@ -561,14 +568,15 @@ template <class AspectT>
 void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
   std::size_t counter = 0;
-  while( aspect->mState.val == differentFrom->mState.val )
+  while (aspect->mState.val == differentFrom->mState.val)
   {
     aspect->randomize();
     ++counter;
-    if(counter > 10)
+    if (counter > 10)
     {
-      dtwarn << "[testAspect::makeStatesDifferent] Randomization failed to make "
-             << "the states different after " << counter << " attempts!\n";
+      dtwarn
+          << "[testAspect::makeStatesDifferent] Randomization failed to make "
+          << "the states different after " << counter << " attempts!\n";
       break;
     }
   }
@@ -578,11 +586,11 @@ template <class AspectT>
 void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
   std::size_t counter = 0;
-  while( aspect->mProperties.val == differentFrom->mProperties.val )
+  while (aspect->mProperties.val == differentFrom->mProperties.val)
   {
     aspect->randomize();
     ++counter;
-    if(counter > 10)
+    if (counter > 10)
     {
       dtwarn << "[testAspect::makePropertiesDifferent] Randomization failed to "
              << "make the states different after " << counter << " attempts!\n";
@@ -609,86 +617,96 @@ TEST(Aspect, StateAndProperties)
 
   comp2.setCompositeState(comp1.getCompositeState());
 
-  EXPECT_EQ( comp1.get<DoubleAspect>()->mState.val,
-             comp2.get<DoubleAspect>()->mState.val );
+  EXPECT_EQ(
+      comp1.get<DoubleAspect>()->mState.val,
+      comp2.get<DoubleAspect>()->mState.val);
 
-  EXPECT_EQ( comp1.get<FloatAspect>()->mState.val,
-             comp2.get<FloatAspect>()->mState.val );
+  EXPECT_EQ(
+      comp1.get<FloatAspect>()->mState.val,
+      comp2.get<FloatAspect>()->mState.val);
 
-  makeStatesDifferent( comp2.get<DoubleAspect>(), comp1.get<DoubleAspect>() );
-  makeStatesDifferent( comp2.get<FloatAspect>(), comp1.get<FloatAspect>() );
+  makeStatesDifferent(comp2.get<DoubleAspect>(), comp1.get<DoubleAspect>());
+  makeStatesDifferent(comp2.get<FloatAspect>(), comp1.get<FloatAspect>());
 
-  EXPECT_NE( comp1.get<DoubleAspect>()->mState.val,
-             comp2.get<DoubleAspect>()->mState.val );
+  EXPECT_NE(
+      comp1.get<DoubleAspect>()->mState.val,
+      comp2.get<DoubleAspect>()->mState.val);
 
-  EXPECT_NE( comp1.get<FloatAspect>()->mState.val,
-             comp2.get<FloatAspect>()->mState.val );
+  EXPECT_NE(
+      comp1.get<FloatAspect>()->mState.val,
+      comp2.get<FloatAspect>()->mState.val);
 
-  comp1.setCompositeState( comp2.getCompositeState() );
+  comp1.setCompositeState(comp2.getCompositeState());
 
-  EXPECT_EQ( comp1.get<DoubleAspect>()->mState.val,
-             comp2.get<DoubleAspect>()->mState.val );
+  EXPECT_EQ(
+      comp1.get<DoubleAspect>()->mState.val,
+      comp2.get<DoubleAspect>()->mState.val);
 
-  EXPECT_EQ( comp1.get<FloatAspect>()->mState.val,
-             comp2.get<FloatAspect>()->mState.val );
+  EXPECT_EQ(
+      comp1.get<FloatAspect>()->mState.val,
+      comp2.get<FloatAspect>()->mState.val);
 
-  EXPECT_TRUE( nullptr == comp2.get<CharAspect>() );
-  EXPECT_TRUE( nullptr == comp2.get<IntAspect>() );
-
+  EXPECT_TRUE(nullptr == comp2.get<CharAspect>());
+  EXPECT_TRUE(nullptr == comp2.get<IntAspect>());
 
   // ---- Test Property Transfer ----
 
   comp2.setCompositeProperties(comp1.getCompositeProperties());
 
-  EXPECT_EQ( comp1.get<DoubleAspect>()->mProperties.val,
-             comp2.get<DoubleAspect>()->mProperties.val );
+  EXPECT_EQ(
+      comp1.get<DoubleAspect>()->mProperties.val,
+      comp2.get<DoubleAspect>()->mProperties.val);
 
-  EXPECT_EQ( comp1.get<FloatAspect>()->mProperties.val,
-             comp2.get<FloatAspect>()->mProperties.val );
+  EXPECT_EQ(
+      comp1.get<FloatAspect>()->mProperties.val,
+      comp2.get<FloatAspect>()->mProperties.val);
 
-  makePropertiesDifferent( comp2.get<DoubleAspect>(), comp1.get<DoubleAspect>() );
-  makePropertiesDifferent( comp2.get<FloatAspect>(), comp1.get<FloatAspect>() );
+  makePropertiesDifferent(comp2.get<DoubleAspect>(), comp1.get<DoubleAspect>());
+  makePropertiesDifferent(comp2.get<FloatAspect>(), comp1.get<FloatAspect>());
 
-  EXPECT_NE( comp1.get<DoubleAspect>()->mProperties.val,
-             comp2.get<DoubleAspect>()->mProperties.val );
+  EXPECT_NE(
+      comp1.get<DoubleAspect>()->mProperties.val,
+      comp2.get<DoubleAspect>()->mProperties.val);
 
-  EXPECT_NE( comp1.get<FloatAspect>()->mProperties.val,
-             comp2.get<FloatAspect>()->mProperties.val );
+  EXPECT_NE(
+      comp1.get<FloatAspect>()->mProperties.val,
+      comp2.get<FloatAspect>()->mProperties.val);
 
-  comp1.setCompositeProperties( comp2.getCompositeProperties() );
+  comp1.setCompositeProperties(comp2.getCompositeProperties());
 
-  EXPECT_EQ( comp1.get<DoubleAspect>()->mProperties.val,
-             comp2.get<DoubleAspect>()->mProperties.val );
+  EXPECT_EQ(
+      comp1.get<DoubleAspect>()->mProperties.val,
+      comp2.get<DoubleAspect>()->mProperties.val);
 
-  EXPECT_EQ( comp1.get<FloatAspect>()->mProperties.val,
-             comp2.get<FloatAspect>()->mProperties.val );
+  EXPECT_EQ(
+      comp1.get<FloatAspect>()->mProperties.val,
+      comp2.get<FloatAspect>()->mProperties.val);
 
-  EXPECT_TRUE( nullptr == comp2.get<CharAspect>() );
-  EXPECT_TRUE( nullptr == comp2.get<IntAspect>() );
-
+  EXPECT_TRUE(nullptr == comp2.get<CharAspect>());
+  EXPECT_TRUE(nullptr == comp2.get<IntAspect>());
 
   // ---- Test Data Containers ----
   Composite::MakeState<DoubleAspect, IntAspect, FloatAspect> state(
-        comp1.getCompositeState());
+      comp1.getCompositeState());
 
-  EXPECT_EQ(comp1.get<DoubleAspect>()->mState.val,
-            state.DoubleAspect::State::val);
-  EXPECT_EQ(comp1.get<FloatAspect>()->mState.val,
-            state.FloatAspect::State::val);
-  EXPECT_EQ(comp1.get<IntAspect>()->mState.val,
-            state.IntAspect::State::val);
-
+  EXPECT_EQ(
+      comp1.get<DoubleAspect>()->mState.val, state.DoubleAspect::State::val);
+  EXPECT_EQ(
+      comp1.get<FloatAspect>()->mState.val, state.FloatAspect::State::val);
+  EXPECT_EQ(comp1.get<IntAspect>()->mState.val, state.IntAspect::State::val);
 
   Composite::MakeProperties<DoubleAspect, CharAspect, FloatAspect> properties(
-        comp2.getCompositeProperties());
+      comp2.getCompositeProperties());
 
-  EXPECT_EQ(comp1.get<DoubleAspect>()->mProperties.val,
-            properties.DoubleAspect::Properties::val);
-  EXPECT_EQ(comp1.get<CharAspect>()->mProperties.val,
-            properties.CharAspect::Properties::val);
-  EXPECT_EQ(comp1.get<FloatAspect>()->mProperties.val,
-            properties.FloatAspect::Properties::val);
-
+  EXPECT_EQ(
+      comp1.get<DoubleAspect>()->mProperties.val,
+      properties.DoubleAspect::Properties::val);
+  EXPECT_EQ(
+      comp1.get<CharAspect>()->mProperties.val,
+      properties.CharAspect::Properties::val);
+  EXPECT_EQ(
+      comp1.get<FloatAspect>()->mProperties.val,
+      properties.FloatAspect::Properties::val);
 
   DoubleAspect::State doubleState(2.5);
   FloatAspect::State floatState(4.7);
@@ -697,7 +715,7 @@ TEST(Aspect, StateAndProperties)
 
   // The constructor arguments should match the type order
   Composite::MakeState<DoubleAspect, IntAspect, CharAspect, FloatAspect>(
-        doubleState, intState, charState, floatState);
+      doubleState, intState, charState, floatState);
 
   // ---- Test copying and merging ----
   Composite::Properties c_properties_1(properties);
@@ -738,47 +756,61 @@ TEST(Aspect, Joints)
 
   dart::dynamics::SkeletonPtr skel = Skeleton::create();
 
-  dart::dynamics::EulerJoint* euler =
-      skel->createJointAndBodyNodePair<dart::dynamics::EulerJoint>().first;
+  dart::dynamics::EulerJoint* euler
+      = skel->createJointAndBodyNodePair<dart::dynamics::EulerJoint>().first;
   euler->getGenericJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   euler->getEulerJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-  dart::dynamics::PlanarJoint* planar =
-      skel->createJointAndBodyNodePair<dart::dynamics::PlanarJoint>().first;
+  dart::dynamics::PlanarJoint* planar
+      = skel->createJointAndBodyNodePair<dart::dynamics::PlanarJoint>().first;
   planar->getGenericJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   planar->getPlanarJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-  dart::dynamics::PrismaticJoint* prismatic =
-      skel->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>().first;
+  dart::dynamics::PrismaticJoint* prismatic
+      = skel->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>()
+            .first;
   prismatic->getGenericJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   prismatic->getPrismaticJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-  dart::dynamics::RevoluteJoint* revolute =
-      skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().first;
+  dart::dynamics::RevoluteJoint* revolute
+      = skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().first;
   revolute->getGenericJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   revolute->getRevoluteJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-  dart::dynamics::ScrewJoint* screw =
-      skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>().first;
+  dart::dynamics::ScrewJoint* screw
+      = skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>().first;
   screw->getGenericJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   screw->getScrewJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
-  dart::dynamics::UniversalJoint* universal =
-      skel->createJointAndBodyNodePair<dart::dynamics::UniversalJoint>().first;
+  dart::dynamics::UniversalJoint* universal
+      = skel->createJointAndBodyNodePair<dart::dynamics::UniversalJoint>()
+            .first;
   universal->getGenericJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
   universal->getUniversalJointAspect();
-  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  EXPECT_TRUE(usedSpecializedAspectAccess);
+  usedSpecializedAspectAccess = false;
 
   // Regression test for issue #645
   universal->getGenericJointAspect(true);
@@ -788,14 +820,15 @@ TEST(Aspect, BodyNodes)
 {
   SkeletonPtr skel = Skeleton::create();
 
-  BodyNode* bn =
-      skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().second;
+  BodyNode* bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>()
+            .second;
 
   bn->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(
-        std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
 
   EXPECT_EQ(bn->getNumShapeNodes(), 1u);
   EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::VisualAspect>(), 1u);
@@ -861,8 +894,8 @@ TEST(Aspect, Embedded)
 
   // --------- Test Embedded State -----------
   EmbeddedStateComposite::AspectState state = s.getAspectState();
-  EmbeddedStateComposite::AspectState a_state =
-      s.get<EmbeddedStateComposite::Aspect>()->getState();
+  EmbeddedStateComposite::AspectState a_state
+      = s.get<EmbeddedStateComposite::Aspect>()->getState();
 
   EXPECT_TRUE(state == a_state);
 
@@ -876,10 +909,12 @@ TEST(Aspect, Embedded)
   EXPECT_EQ(750, state.i);
   EXPECT_TRUE(state == a_state);
 
-  EXPECT_EQ(&s.get<EmbeddedStateComposite::Aspect>()->getState(),
-             s.get<EmbeddedStateComposite::Aspect>()->getAspectState());
-  EXPECT_EQ(&s.getAspectState(),
-             s.get<EmbeddedStateComposite::Aspect>()->getAspectState());
+  EXPECT_EQ(
+      &s.get<EmbeddedStateComposite::Aspect>()->getState(),
+      s.get<EmbeddedStateComposite::Aspect>()->getAspectState());
+  EXPECT_EQ(
+      &s.getAspectState(),
+      s.get<EmbeddedStateComposite::Aspect>()->getAspectState());
 
   state.d = -4e-3;
   state.i = -18;
@@ -888,14 +923,13 @@ TEST(Aspect, Embedded)
   state = s.getAspectState();
   a_state = s.get<EmbeddedStateComposite::Aspect>()->getState();
   EXPECT_EQ(-4e-3, state.d);
-  EXPECT_EQ(-18,   state.i);
+  EXPECT_EQ(-18, state.i);
   EXPECT_TRUE(state == a_state);
-
 
   // --------- Test Embedded Properties -----------
   EmbeddedPropertiesComposite::AspectProperties prop = p.getAspectProperties();
-  EmbeddedPropertiesComposite::AspectProperties a_prop =
-      p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties();
+  EmbeddedPropertiesComposite::AspectProperties a_prop
+      = p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties();
 
   EXPECT_TRUE(prop == a_prop);
 
@@ -905,15 +939,17 @@ TEST(Aspect, Embedded)
 
   prop = p.getAspectProperties();
   a_prop = p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties();
-  EXPECT_EQ(7.5,  prop.f);
+  EXPECT_EQ(7.5, prop.f);
   EXPECT_EQ(true, prop.b);
   EXPECT_TRUE(prop == a_prop);
 
   // Make sure the pointers are consistent
-  EXPECT_EQ(&p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
-             p.get<EmbeddedPropertiesComposite::Aspect>()->getAspectProperties());
-  EXPECT_EQ(&p.getAspectProperties(),
-             p.get<EmbeddedPropertiesComposite::Aspect>()->getAspectProperties());
+  EXPECT_EQ(
+      &p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
+      p.get<EmbeddedPropertiesComposite::Aspect>()->getAspectProperties());
+  EXPECT_EQ(
+      &p.getAspectProperties(),
+      p.get<EmbeddedPropertiesComposite::Aspect>()->getAspectProperties());
 
   prop.f = -7e5;
   prop.b = false;
@@ -921,60 +957,77 @@ TEST(Aspect, Embedded)
 
   prop = p.getAspectProperties();
   a_prop = p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties();
-  EXPECT_EQ(-7e5,  prop.f);
+  EXPECT_EQ(-7e5, prop.f);
   EXPECT_EQ(false, prop.b);
   EXPECT_TRUE(prop == a_prop);
 
-
   // --------- Test Embedded State and Properties Combination -----------
   // Make sure the pointers are consistent
-  EXPECT_EQ(&sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
-             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectState());
-  EXPECT_EQ(&sp.getAspectState(),
-             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectState());
+  EXPECT_EQ(
+      &sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectState());
+  EXPECT_EQ(
+      &sp.getAspectState(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectState());
 
-  EXPECT_EQ(&sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
-             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectProperties());
-  EXPECT_EQ(&sp.getAspectProperties(),
-             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectProperties());
+  EXPECT_EQ(
+      &sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()
+          ->getAspectProperties());
+  EXPECT_EQ(
+      &sp.getAspectProperties(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()
+          ->getAspectProperties());
 
   sp.setAspectState(s.getAspectState());
   sp.setAspectProperties(p.getAspectProperties());
 
-
   // --------- Test Inheritance -----------
   InheritAndEmbedStateComposite s_derived;
-  EXPECT_NE(s_derived.get<EmbeddedStateComposite::Aspect>()->getState(),
-            s.get<EmbeddedStateComposite::Aspect>()->getState());
+  EXPECT_NE(
+      s_derived.get<EmbeddedStateComposite::Aspect>()->getState(),
+      s.get<EmbeddedStateComposite::Aspect>()->getState());
   s_derived.setCompositeState(s.getCompositeState());
-  EXPECT_EQ(s_derived.get<EmbeddedStateComposite::Aspect>()->getState(),
-            s.get<EmbeddedStateComposite::Aspect>()->getState());
+  EXPECT_EQ(
+      s_derived.get<EmbeddedStateComposite::Aspect>()->getState(),
+      s.get<EmbeddedStateComposite::Aspect>()->getState());
 
   InheritAndEmbedPropertiesComposite p_derived;
-  EXPECT_NE(p_derived.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
-            p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties());
+  EXPECT_NE(
+      p_derived.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
+      p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties());
   p_derived.setCompositeProperties(p.getCompositeProperties());
-  EXPECT_EQ(p_derived.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
-            p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties());
+  EXPECT_EQ(
+      p_derived.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
+      p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties());
 
   InheritAndEmbedStateAndPropertiesComposite sp_derived;
-  EXPECT_NE(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
-            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
-  EXPECT_NE(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
-            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
+  EXPECT_NE(
+      sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
+  EXPECT_NE(
+      sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()
+          ->getProperties(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
   sp_derived.setCompositeState(sp.getCompositeState());
-  EXPECT_EQ(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
-            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
-  EXPECT_NE(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
-            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
+  EXPECT_EQ(
+      sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
+  EXPECT_NE(
+      sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()
+          ->getProperties(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
   sp_derived.setCompositeProperties(sp.getCompositeProperties());
-  EXPECT_EQ(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
-            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
-  EXPECT_EQ(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
-            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
-
+  EXPECT_EQ(
+      sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
+  EXPECT_EQ(
+      sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()
+          ->getProperties(),
+      sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
 
   // --------- Test Construction -----------
   EmbeddedStateComposite s_constructed(state);
-  EXPECT_EQ(s_constructed.get<EmbeddedStateComposite::Aspect>()->getState(), state);
+  EXPECT_EQ(
+      s_constructed.get<EmbeddedStateComposite::Aspect>()->getState(), state);
 }

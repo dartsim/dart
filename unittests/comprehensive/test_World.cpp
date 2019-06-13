@@ -34,20 +34,20 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/collision/collision.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/collision/collision.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/utils/SkelParser.hpp"
 #if HAVE_BULLET
-  #include "dart/collision/bullet/bullet.hpp"
+#include "dart/collision/bullet/bullet.hpp"
 #endif
-#include "dart/simulation/World.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/simulation/World.hpp"
 
 using namespace dart;
 using namespace math;
@@ -61,43 +61,51 @@ TEST(World, AddingAndRemovingSkeletons)
   WorldPtr world = World::create();
 
   //-------------------- Test World::removeSkeleton() ------------------------
-  SkeletonPtr skeleton1 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_X,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Y,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z,
-                                               false, false);
+  SkeletonPtr skeleton1 = createThreeLinkRobot(
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_X,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Y,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Z,
+      false,
+      false);
 
-  SkeletonPtr skeleton2 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_X,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Y,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z,
-                                               false, false);
+  SkeletonPtr skeleton2 = createThreeLinkRobot(
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_X,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Y,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Z,
+      false,
+      false);
 
-  SkeletonPtr skeleton3 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_X,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Y,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z,
-                                               false, false);
+  SkeletonPtr skeleton3 = createThreeLinkRobot(
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_X,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Y,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Z,
+      false,
+      false);
 
-  SkeletonPtr skeleton4 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_X,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Y,
-                                               Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z,
-                                               false, false);
+  SkeletonPtr skeleton4 = createThreeLinkRobot(
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_X,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Y,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Z,
+      false,
+      false);
 
   int nSteps = 20;
 
   // Empty world
   for (int i = 0; i < nSteps; ++i)
-      world->step();
+    world->step();
 
   EXPECT_FALSE(world->hasSkeleton(skeleton1));
   EXPECT_FALSE(world->hasSkeleton(skeleton2));
@@ -111,7 +119,7 @@ TEST(World, AddingAndRemovingSkeletons)
   EXPECT_TRUE(world->hasSkeleton(skeleton2));
   EXPECT_TRUE(world->getNumSkeletons() == 2);
   for (int i = 0; i < nSteps; ++i)
-      world->step();
+    world->step();
 
   std::string s1name = skeleton1->getName();
   std::string s2name = skeleton2->getName();
@@ -122,7 +130,7 @@ TEST(World, AddingAndRemovingSkeletons)
   world->removeSkeleton(skeleton2);
   EXPECT_TRUE(world->getNumSkeletons() == 1);
   for (int i = 0; i < nSteps; ++i)
-      world->step();
+    world->step();
 
   EXPECT_TRUE(skeleton1 == world->getSkeleton(s1name));
   EXPECT_FALSE(skeleton2 == world->getSkeleton(s2name));
@@ -135,7 +143,7 @@ TEST(World, AddingAndRemovingSkeletons)
   EXPECT_TRUE(world->hasSkeleton(skeleton4));
   EXPECT_TRUE(world->getNumSkeletons() == 3);
   for (int i = 0; i < nSteps; ++i)
-      world->step();
+    world->step();
 
   std::string s3name = skeleton3->getName();
   std::string s4name = skeleton4->getName();
@@ -151,7 +159,7 @@ TEST(World, AddingAndRemovingSkeletons)
   world->removeSkeleton(skeleton1);
   EXPECT_TRUE(world->getNumSkeletons() == 2);
   for (int i = 0; i < nSteps; ++i)
-      world->step();
+    world->step();
 
   EXPECT_FALSE(skeleton1 == world->getSkeleton(s1name));
   EXPECT_TRUE(world->getSkeleton(s1name) == nullptr);
@@ -160,7 +168,7 @@ TEST(World, AddingAndRemovingSkeletons)
   world->removeAllSkeletons();
   EXPECT_EQ((int)world->getNumSkeletons(), 0);
   for (int i = 0; i < nSteps; ++i)
-      world->step();
+    world->step();
 
   EXPECT_FALSE(skeleton3 == world->getSkeleton(s3name));
   EXPECT_TRUE(world->getSkeleton(s3name) == nullptr);
@@ -179,35 +187,41 @@ TEST(World, Cloning)
   std::vector<common::Uri> fileList;
   fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
   fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
-  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/single_pendulum_euler_joint.skel");
   fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
   fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
-  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/double_pendulum_euler_joint.skel");
   fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
   fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
-  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
   fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
-  for(std::size_t i=0; i<fileList.size(); ++i)
+  for (std::size_t i = 0; i < fileList.size(); ++i)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
-  for(std::size_t i=0; i<worlds.size(); ++i)
+  for (std::size_t i = 0; i < worlds.size(); ++i)
   {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
-    for(std::size_t j=1; j<5; ++j)
-      clones.push_back(clones[j-1]->clone());
+    for (std::size_t j = 1; j < 5; ++j)
+      clones.push_back(clones[j - 1]->clone());
 
 #ifndef NDEBUG // Debug mode
     std::size_t numIterations = 3;
@@ -215,19 +229,19 @@ TEST(World, Cloning)
     std::size_t numIterations = 500;
 #endif
 
-    for(std::size_t j=0; j<numIterations; ++j)
+    for (std::size_t j = 0; j < numIterations; ++j)
     {
-      for(std::size_t k=0; k<original->getNumSkeletons(); ++k)
+      for (std::size_t k = 0; k < original->getNumSkeletons(); ++k)
       {
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
 
         // Generate a random command vector
         Eigen::VectorXd commands = skel->getCommands();
-        for(int q=0; q<commands.size(); ++q)
+        for (int q = 0; q < commands.size(); ++q)
           commands[q] = Random::uniform(-0.1, 0.1);
 
         // Assign the command vector to each clone of the kth skeleton
-        for(std::size_t c=0; c<clones.size(); ++c)
+        for (std::size_t c = 0; c < clones.size(); ++c)
         {
           dart::dynamics::SkeletonPtr skelClone = clones[c]->getSkeleton(k);
           skelClone->setCommands(commands);
@@ -235,21 +249,22 @@ TEST(World, Cloning)
       }
 
       // Step each clone forward
-      for(std::size_t c=0; c<clones.size(); ++c)
+      for (std::size_t c = 0; c < clones.size(); ++c)
         clones[c]->step(false);
     }
 
-    for(std::size_t c=0; c<clones.size(); ++c)
+    for (std::size_t c = 0; c < clones.size(); ++c)
     {
-      for(std::size_t k=0; k<original->getNumSkeletons(); ++k)
+      for (std::size_t k = 0; k < original->getNumSkeletons(); ++k)
       {
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
         dart::dynamics::SkeletonPtr clone = clones[c]->getSkeleton(k);
 
-        EXPECT_TRUE( equals(skel->getPositions(), clone->getPositions(), 0));
-        EXPECT_TRUE( equals(skel->getVelocities(), clone->getVelocities(), 0));
-        EXPECT_TRUE( equals(skel->getAccelerations(), clone->getAccelerations(), 0));
-        EXPECT_TRUE( equals(skel->getForces(), clone->getForces(), 0));
+        EXPECT_TRUE(equals(skel->getPositions(), clone->getPositions(), 0));
+        EXPECT_TRUE(equals(skel->getVelocities(), clone->getVelocities(), 0));
+        EXPECT_TRUE(
+            equals(skel->getAccelerations(), clone->getAccelerations(), 0));
+        EXPECT_TRUE(equals(skel->getForces(), clone->getForces(), 0));
       }
     }
   }
@@ -262,26 +277,32 @@ TEST(World, ValidatingClones)
   std::vector<common::Uri> fileList;
   fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
   fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
-  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/single_pendulum_euler_joint.skel");
   fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
   fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
-  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/double_pendulum_euler_joint.skel");
   fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
   fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
-  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(
+      "dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
   fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
-  for(std::size_t i=0; i<fileList.size(); ++i)
+  for (std::size_t i = 0; i < fileList.size(); ++i)
   {
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
@@ -295,17 +316,16 @@ TEST(World, ValidatingClones)
 #endif
   }
 
-  for(std::size_t i=0; i<worlds.size(); ++i)
+  for (std::size_t i = 0; i < worlds.size(); ++i)
   {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
-    for(std::size_t j=1; j<5; ++j)
+    for (std::size_t j = 1; j < 5; ++j)
     {
-      clones.push_back(clones[j-1]->clone());
+      clones.push_back(clones[j - 1]->clone());
 
-      auto originalCD
-          = original->getConstraintSolver()->getCollisionDetector();
+      auto originalCD = original->getConstraintSolver()->getCollisionDetector();
       auto cloneCD
           = clones.back()->getConstraintSolver()->getCollisionDetector();
 
@@ -322,14 +342,14 @@ simulation::WorldPtr createWorld()
 {
   // Create and initialize the world
   simulation::WorldPtr world
-    = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
   assert(world != nullptr);
 
   // Create and initialize the world
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-  world->setTimeStep(1.0/2000);
+  world->setTimeStep(1.0 / 2000);
 
-  const auto dof =  world->getSkeleton(0)->getNumDofs();
+  const auto dof = world->getSkeleton(0)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
   initPose[20] = 3.14159 * 0.4;
   initPose[23] = 3.14159 * 0.4;
@@ -344,8 +364,8 @@ simulation::WorldPtr createWorld()
   EXPECT_TRUE(bd2 != nullptr);
   const Eigen::Vector3d offset(0.0, 0.025, 0.0);
   const Eigen::Vector3d jointPos = bd1->getTransform() * offset;
-  auto cl = std::make_shared<constraint::BallJointConstraint>(
-      bd1, bd2, jointPos);
+  auto cl
+      = std::make_shared<constraint::BallJointConstraint>(bd1, bd2, jointPos);
   world->getConstraintSolver()->addConstraint(cl);
 
   return world;
@@ -358,9 +378,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
 
-  auto solver1
-      = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-          std::make_shared<constraint::DantzigBoxedLcpSolver>());
+  auto solver1 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>());
   EXPECT_TRUE(solver1->getSkeletons().size() == 0);
   EXPECT_TRUE(solver1->getConstraints().size() == 0);
 
@@ -368,9 +387,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
 
-  auto solver2
-      = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-          std::make_shared<constraint::PgsBoxedLcpSolver>());
+  auto solver2 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
+      std::make_shared<constraint::PgsBoxedLcpSolver>());
   EXPECT_TRUE(solver2->getSkeletons().size() == 0);
   EXPECT_TRUE(solver2->getConstraints().size() == 0);
 

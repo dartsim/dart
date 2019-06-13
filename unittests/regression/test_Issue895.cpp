@@ -30,36 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <TestHelpers.hpp>
 #include <dart/dart.hpp>
 #include <dart/utils/urdf/DartLoader.hpp>
+#include <gtest/gtest.h>
 
 //==============================================================================
 TEST(Issue895, BodyNodeSelfCollision)
 {
   const dart::dynamics::SkeletonPtr skel = dart::dynamics::Skeleton::create();
-  dart::dynamics::BodyNode* bn =
-      skel->createJointAndBodyNodePair<FreeJoint>().second;
+  dart::dynamics::BodyNode* bn
+      = skel->createJointAndBodyNodePair<FreeJoint>().second;
   skel->enableSelfCollisionCheck();
 
-  dart::dynamics::BoxShapePtr box =
-      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  dart::dynamics::BoxShapePtr box
+      = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
 
   // Create two ShapeNodes on one BodyNode where the ShapeNodes will always be
   // in collision
   bn->createShapeNodeWith<CollisionAspect>(box);
   bn->createShapeNodeWith<CollisionAspect>(box)->setRelativeTranslation(
-        Eigen::Vector3d(0.5, 0.5, 0.0));
+      Eigen::Vector3d(0.5, 0.5, 0.0));
 
-  dart::simulation::WorldPtr world =
-      std::make_shared<dart::simulation::World>();
+  dart::simulation::WorldPtr world
+      = std::make_shared<dart::simulation::World>();
 
   world->addSkeleton(skel);
 
   world->step();
-  const dart::collision::CollisionResult result =
-      world->getLastCollisionResult();
+  const dart::collision::CollisionResult result
+      = world->getLastCollisionResult();
 
   EXPECT_EQ(result.getNumContacts(), 0u);
 }

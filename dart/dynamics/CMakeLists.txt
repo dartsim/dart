@@ -29,17 +29,3 @@ if(NOT DART_BUILD_DARTPY)
     COMPONENT headers
   )
 endif()
-
-dart_format_add(
-  HeightmapShape.hpp
-  PointCloudShape.hpp
-  PointCloudShape.cpp
-  VoxelGridShape.hpp
-  VoxelGridShape.cpp
-  SmartPointer.hpp
-  TranslationalJoint2D.hpp
-  TranslationalJoint2D.cpp
-  detail/HeightmapShape-impl.hpp
-  detail/TranslationalJoint2DAspect.hpp
-  detail/TranslationalJoint2DAspect.cpp
-)

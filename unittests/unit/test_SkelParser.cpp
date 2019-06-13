@@ -46,45 +46,45 @@ using namespace utils;
 //==============================================================================
 TEST(SkelParser, DataStructure)
 {
-  bool              valBool       = true;
-  int               valInt        = -3;
-  unsigned int      valUInt       = 1;
-  float             valFloat      = -3.140f;
-  double            valDouble     = 1.4576640;
-  char              valChar       = 'd';
-  Eigen::Vector2d   valVector2d   = Eigen::Vector2d::Random();
-  Eigen::Vector3d   valVector3d   = Eigen::Vector3d::Random();
-  Eigen::Vector3i   valVector3i   = Eigen::Vector3i::Random();
-  Eigen::Vector6d   valVector6d   = Eigen::Vector6d::Random();
-  Eigen::VectorXd   valVectorXd   = Eigen::VectorXd::Random(10);
+  bool valBool = true;
+  int valInt = -3;
+  unsigned int valUInt = 1;
+  float valFloat = -3.140f;
+  double valDouble = 1.4576640;
+  char valChar = 'd';
+  Eigen::Vector2d valVector2d = Eigen::Vector2d::Random();
+  Eigen::Vector3d valVector3d = Eigen::Vector3d::Random();
+  Eigen::Vector3i valVector3i = Eigen::Vector3i::Random();
+  Eigen::Vector6d valVector6d = Eigen::Vector6d::Random();
+  Eigen::VectorXd valVectorXd = Eigen::VectorXd::Random(10);
   Eigen::Isometry3d valIsometry3d = Eigen::Isometry3d::Identity();
 
-  std::string strBool       = toString(valBool);
-  std::string strInt        = toString(valInt);
-  std::string strUInt       = toString(valUInt);
-  std::string strFloat      = toString(valFloat);
-  std::string strDouble     = toString(valDouble);
-  std::string strChar       = toString(valChar);
-  std::string strVector2d   = toString(valVector2d);
-  std::string strVector3d   = toString(valVector3d);
-  std::string strVector3i   = toString(valVector3i);
-  std::string strVector6d   = toString(valVector6d);
-  std::string strVectorXd   = toString(valVectorXd);
+  std::string strBool = toString(valBool);
+  std::string strInt = toString(valInt);
+  std::string strUInt = toString(valUInt);
+  std::string strFloat = toString(valFloat);
+  std::string strDouble = toString(valDouble);
+  std::string strChar = toString(valChar);
+  std::string strVector2d = toString(valVector2d);
+  std::string strVector3d = toString(valVector3d);
+  std::string strVector3i = toString(valVector3i);
+  std::string strVector6d = toString(valVector6d);
+  std::string strVectorXd = toString(valVectorXd);
   std::string strIsometry3d = toString(valIsometry3d);
 
-  EXPECT_EQ(valBool,   toBool(strBool));
-  EXPECT_EQ(valInt,    toInt(strInt));
-  EXPECT_EQ(valUInt,   toUInt(strUInt));
-  EXPECT_EQ(valFloat,  toFloat(strFloat));
+  EXPECT_EQ(valBool, toBool(strBool));
+  EXPECT_EQ(valInt, toInt(strInt));
+  EXPECT_EQ(valUInt, toUInt(strUInt));
+  EXPECT_EQ(valFloat, toFloat(strFloat));
   EXPECT_EQ(valDouble, toDouble(strDouble));
-  EXPECT_EQ(valChar,   toChar(strChar));
+  EXPECT_EQ(valChar, toChar(strChar));
   EXPECT_TRUE(equals(valVector2d, toVector2d(strVector2d)));
   EXPECT_TRUE(equals(valVector3d, toVector3d(strVector3d)));
   EXPECT_EQ(valVector3i, toVector3i(strVector3i));
   EXPECT_TRUE(equals(valVector6d, toVector6d(strVector6d)));
   EXPECT_TRUE(equals(valVectorXd, toVectorXd(strVectorXd)));
-  EXPECT_TRUE(equals(valIsometry3d.matrix(),
-                     toIsometry3d(strIsometry3d).matrix()));
+  EXPECT_TRUE(
+      equals(valIsometry3d.matrix(), toIsometry3d(strIsometry3d).matrix()));
 }
 
 //==============================================================================
@@ -107,8 +107,8 @@ TEST(SkelParser, EmptyWorld)
 //==============================================================================
 TEST(SkelParser, SinglePendulum)
 {
-  WorldPtr world = SkelParser::readWorld(
-        "dart://sample/skel/test/single_pendulum.skel");
+  WorldPtr world
+      = SkelParser::readWorld("dart://sample/skel/test/single_pendulum.skel");
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -150,8 +150,8 @@ TEST(SkelParser, VariousShapes)
   // Check if the parser can load various shapes without any problems and the
   // world can simulate it successfully.
 
-  WorldPtr world = SkelParser::readWorld(
-        "dart://sample/skel/test/test_shapes.skel");
+  WorldPtr world
+      = SkelParser::readWorld("dart://sample/skel/test/test_shapes.skel");
 
   for (auto i = 0u; i < 100; ++i)
     world->step();
@@ -191,8 +191,8 @@ TEST(SkelParser, PlanarJoint)
   using namespace simulation;
   using namespace utils;
 
-  WorldPtr world = SkelParser::readWorld(
-      "dart://sample/skel/test/planar_joint.skel");
+  WorldPtr world
+      = SkelParser::readWorld("dart://sample/skel/test/planar_joint.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton1");
@@ -329,7 +329,8 @@ TEST(SKEL_PARSER, JointActuatorType)
 
   // Test for when actuator type attribute are specified
   Joint* joint4 = skel1->getJoint("joint4");
-  EXPECT_EQ(joint4->getActuatorType(), Joint::VELOCITY);}
+  EXPECT_EQ(joint4->getActuatorType(), Joint::VELOCITY);
+}
 
 //==============================================================================
 TEST(SkelParser, DofAttributes)
@@ -343,11 +344,11 @@ TEST(SkelParser, DofAttributes)
   // Test for no dof elements being specified
   Joint* joint0 = skel1->getJoint("joint0");
   EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -constantsd::inf());
-  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(),  constantsd::inf());
+  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(), constantsd::inf());
   EXPECT_EQ(joint0->getDof(0)->getPosition(), 0);
 
   EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -constantsd::inf());
-  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(),  constantsd::inf());
+  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(), constantsd::inf());
   EXPECT_EQ(joint0->getDof(0)->getVelocity(), 0);
 
   EXPECT_EQ(joint0->getDof(0)->getName(), joint0->getName());
@@ -355,7 +356,7 @@ TEST(SkelParser, DofAttributes)
   // Test for only a dof name being changed
   Joint* joint1 = skel1->getJoint("joint1");
   EXPECT_EQ(joint1->getDof(0)->getPositionLowerLimit(), -1.57);
-  EXPECT_EQ(joint1->getDof(0)->getPositionUpperLimit(),  1.57);
+  EXPECT_EQ(joint1->getDof(0)->getPositionUpperLimit(), 1.57);
   EXPECT_EQ(joint1->getDof(0)->getName(), "customJoint1");
 
   // Test for when dof attributes (but not a name) are specified
@@ -363,19 +364,19 @@ TEST(SkelParser, DofAttributes)
   EXPECT_EQ(joint2->getDof(0)->getName(), joint2->getName());
 
   EXPECT_EQ(joint2->getDof(0)->getPositionLowerLimit(), -1);
-  EXPECT_EQ(joint2->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint2->getDof(0)->getPositionUpperLimit(), 1);
   EXPECT_EQ(joint2->getDof(0)->getPosition(), 0);
 
   EXPECT_EQ(joint2->getDof(0)->getVelocityLowerLimit(), -2);
-  EXPECT_EQ(joint2->getDof(0)->getVelocityUpperLimit(),  2);
+  EXPECT_EQ(joint2->getDof(0)->getVelocityUpperLimit(), 2);
   EXPECT_EQ(joint2->getDof(0)->getVelocity(), 0);
 
   EXPECT_EQ(joint2->getDof(0)->getAccelerationLowerLimit(), -3);
-  EXPECT_EQ(joint2->getDof(0)->getAccelerationUpperLimit(),  3);
+  EXPECT_EQ(joint2->getDof(0)->getAccelerationUpperLimit(), 3);
   EXPECT_EQ(joint2->getDof(0)->getAcceleration(), 0);
 
   EXPECT_EQ(joint2->getDof(0)->getForceLowerLimit(), -4);
-  EXPECT_EQ(joint2->getDof(0)->getForceUpperLimit(),  4);
+  EXPECT_EQ(joint2->getDof(0)->getForceUpperLimit(), 4);
   EXPECT_EQ(joint2->getDof(0)->getForce(), 0);
 
   // Test for mixture of old method and new method
@@ -383,62 +384,61 @@ TEST(SkelParser, DofAttributes)
   Joint* joint3 = skel1->getJoint("joint3");
   EXPECT_EQ(joint3->getDof(0)->getName(), joint3->getName() + "_1");
   EXPECT_EQ(joint3->getDof(0)->getPositionLowerLimit(), -1);
-  EXPECT_EQ(joint3->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint3->getDof(0)->getPositionUpperLimit(), 1);
   EXPECT_EQ(joint3->getDof(0)->getPosition(), 5);
 
   EXPECT_EQ(joint3->getDof(1)->getName(), joint3->getName() + "_2");
   EXPECT_EQ(joint3->getDof(1)->getPositionLowerLimit(), -2);
-  EXPECT_EQ(joint3->getDof(1)->getPositionUpperLimit(),  2);
+  EXPECT_EQ(joint3->getDof(1)->getPositionUpperLimit(), 2);
   EXPECT_EQ(joint3->getDof(1)->getPosition(), -5);
 
   // Test for only some of the DOFs being specified
   Joint* joint4 = skel1->getJoint("joint4");
   EXPECT_EQ(joint4->getDof(0)->getName(), "joint4_1");
   EXPECT_EQ(joint4->getDof(0)->getPositionLowerLimit(), -1);
-  EXPECT_EQ(joint4->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint4->getDof(0)->getPositionUpperLimit(), 1);
   EXPECT_EQ(joint4->getDof(0)->getVelocityLowerLimit(), -10);
-  EXPECT_EQ(joint4->getDof(0)->getVelocityUpperLimit(),  10);
+  EXPECT_EQ(joint4->getDof(0)->getVelocityUpperLimit(), 10);
 
   EXPECT_EQ(joint4->getDof(1)->getName(), joint4->getName() + "_y");
 
   EXPECT_EQ(joint4->getDof(2)->getName(), "joint4_3");
   EXPECT_EQ(joint4->getDof(2)->getPositionLowerLimit(), -2);
-  EXPECT_EQ(joint4->getDof(2)->getPositionUpperLimit(),  2);
+  EXPECT_EQ(joint4->getDof(2)->getPositionUpperLimit(), 2);
   EXPECT_EQ(joint4->getDof(2)->getVelocityLowerLimit(), -20);
-  EXPECT_EQ(joint4->getDof(2)->getVelocityUpperLimit(),  20);
+  EXPECT_EQ(joint4->getDof(2)->getVelocityUpperLimit(), 20);
 }
 
 //==============================================================================
 TEST(SkelParser, JointDynamicsElements)
 {
-  WorldPtr world
-      = SkelParser::readWorld(
-        "dart://sample/skel/test/joint_dynamics_elements_test.skel");
+  WorldPtr world = SkelParser::readWorld(
+      "dart://sample/skel/test/joint_dynamics_elements_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   Joint* joint0 = skel1->getJoint("joint0");
   EXPECT_EQ(joint0->getDampingCoefficient(0), 1.0);
-  EXPECT_EQ(joint0->getCoulombFriction   (0), 5.0);
-  EXPECT_EQ(joint0->getRestPosition      (0), 0.1);
-  EXPECT_EQ(joint0->getSpringStiffness   (0), 3.0);
+  EXPECT_EQ(joint0->getCoulombFriction(0), 5.0);
+  EXPECT_EQ(joint0->getRestPosition(0), 0.1);
+  EXPECT_EQ(joint0->getSpringStiffness(0), 3.0);
 
   Joint* joint1 = skel1->getJoint("joint1");
   EXPECT_EQ(joint1->getDampingCoefficient(0), 1.0);
-  EXPECT_EQ(joint1->getCoulombFriction   (0), 5.0);
-  EXPECT_EQ(joint1->getRestPosition      (0), 0.1);
-  EXPECT_EQ(joint1->getSpringStiffness   (0), 3.0);
+  EXPECT_EQ(joint1->getCoulombFriction(0), 5.0);
+  EXPECT_EQ(joint1->getRestPosition(0), 0.1);
+  EXPECT_EQ(joint1->getSpringStiffness(0), 3.0);
 
   EXPECT_EQ(joint1->getDampingCoefficient(1), 2.0);
-  EXPECT_EQ(joint1->getCoulombFriction   (1), 4.0);
-  EXPECT_EQ(joint1->getRestPosition      (1), 0.2);
-  EXPECT_EQ(joint1->getSpringStiffness   (1), 2.0);
+  EXPECT_EQ(joint1->getCoulombFriction(1), 4.0);
+  EXPECT_EQ(joint1->getRestPosition(1), 0.2);
+  EXPECT_EQ(joint1->getSpringStiffness(1), 2.0);
 
   EXPECT_EQ(joint1->getDampingCoefficient(2), 3.0);
-  EXPECT_EQ(joint1->getCoulombFriction   (2), 3.0);
-  EXPECT_EQ(joint1->getRestPosition      (2), 0.3);
-  EXPECT_EQ(joint1->getSpringStiffness   (2), 1.0);
+  EXPECT_EQ(joint1->getCoulombFriction(2), 3.0);
+  EXPECT_EQ(joint1->getRestPosition(2), 0.3);
+  EXPECT_EQ(joint1->getSpringStiffness(2), 1.0);
 }
 
 //==============================================================================
@@ -514,7 +514,8 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<MultiSphereConvexHullShape>());
-  auto multiSphereShape = std::static_pointer_cast<MultiSphereConvexHullShape>(shape);
+  auto multiSphereShape
+      = std::static_pointer_cast<MultiSphereConvexHullShape>(shape);
   EXPECT_EQ(multiSphereShape->getNumSpheres(), 2u);
   const auto& spheres = multiSphereShape->getSpheres();
   EXPECT_EQ(spheres[0].first, 0.05);

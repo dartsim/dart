@@ -125,6 +125,7 @@ public:                                                                        \
 #define DETAIL_DART_SPECIALIZED_NODE_INLINE(NodeName, PluralName, it)          \
 private:                                                                       \
   dart::dynamics::BodyNode::NodeMap::iterator it;                              \
+                                                                               \
 public:                                                                        \
   inline std::size_t getNum##PluralName() const                                \
   {                                                                            \
@@ -156,6 +157,7 @@ public:                                                                        \
 #define DETAIL_DART_SPECIALIZED_NODE_DECLARE(NodeName, PluralName, it)         \
 private:                                                                       \
   dart::dynamics::BodyNode::NodeMap::iterator it;                              \
+                                                                               \
 public:                                                                        \
   std::size_t getNum##PluralName() const;                                      \
   NodeName* get##NodeName(std::size_t index);                                  \

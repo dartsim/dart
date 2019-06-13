@@ -34,14 +34,14 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "TestHelpers.hpp"
 
-using dart::common::Uri;
-using dart::common::Resource;
 using dart::common::LocalResourceRetriever;
+using dart::common::Resource;
+using dart::common::Uri;
 
 #ifdef _WIN32
-  #define FILE_SCHEME "file:///"
+#define FILE_SCHEME "file:///"
 #else
-  #define FILE_SCHEME "file://"
+#define FILE_SCHEME "file://"
 #endif
 
 TEST(LocalResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
@@ -98,7 +98,7 @@ TEST(LocalResourceRetriever, getFilePath_FileUriDoesExists_ReturnsPath)
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       retriever.getFilePath(FILE_SCHEME DART_DATA_PATH "skel/cube.skel"),
-      DART_DATA_PATH"skel/cube.skel");
+      DART_DATA_PATH "skel/cube.skel");
 }
 
 TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
@@ -106,7 +106,7 @@ TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       retriever.getFilePath(DART_DATA_PATH "skel/cube.skel"),
-      DART_DATA_PATH"skel/cube.skel");
+      DART_DATA_PATH "skel/cube.skel");
 }
 
 TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
@@ -118,7 +118,8 @@ TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
 TEST(LocalResourceRetriever, retrieve_FileUriDoesNotExist_ReturnsNull)
 {
   LocalResourceRetriever retriever;
-  EXPECT_EQ(nullptr, retriever.retrieve(FILE_SCHEME DART_DATA_PATH "does/not/exist"));
+  EXPECT_EQ(
+      nullptr, retriever.retrieve(FILE_SCHEME DART_DATA_PATH "does/not/exist"));
 }
 
 TEST(LocalResourceRetriever, retrieve_PathDoesNotExist_ReturnsNull)
@@ -130,7 +131,8 @@ TEST(LocalResourceRetriever, retrieve_PathDoesNotExist_ReturnsNull)
 TEST(LocalResourceRetriever, retrieve_FileUri)
 {
   LocalResourceRetriever retriever;
-  auto resource = retriever.retrieve(FILE_SCHEME DART_DATA_PATH "test/hello_world.txt");
+  auto resource
+      = retriever.retrieve(FILE_SCHEME DART_DATA_PATH "test/hello_world.txt");
   ASSERT_TRUE(resource != nullptr);
 }
 
@@ -150,8 +152,9 @@ TEST(LocalResourceRetriever, readAll)
   auto content = resource->readAll();
   ASSERT_TRUE(content == std::string("Hello World"));
 
-  ASSERT_TRUE(retriever.readAll(DART_DATA_PATH "test/hello_world.txt")
-              == std::string("Hello World"));
+  ASSERT_TRUE(
+      retriever.readAll(DART_DATA_PATH "test/hello_world.txt")
+      == std::string("Hello World"));
 }
 
 TEST(LocalResourceRetriever, retrieve_ResourceOperations)

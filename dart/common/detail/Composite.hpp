@@ -207,7 +207,7 @@ void createAspects(T* comp)
   /**                                                                          \
     Use move semantics to place AspectName into this Composite. If a(an)       \
     AspectName already exists in this Composite, the existing AspectName will  \
-    be destroyed.                                                                    \
+    be destroyed.                                                              \
    */                                                                          \
   inline void set##AspectName(std::unique_ptr<TypeName>&& aspect)              \
   {                                                                            \

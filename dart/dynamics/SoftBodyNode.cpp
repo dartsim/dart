@@ -1014,7 +1014,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
   ////  {
   ////    mInvM_c.head<3>() +=
   ///(*it)->getLocalPosition().cross((*it)->mBiasForceForInvMeta); /
-  ///mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta; /  }
+  /// mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta; /  }
 
   //  // Verification
   //  assert(!math::isNan(mInvM_c));
