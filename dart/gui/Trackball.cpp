@@ -32,8 +32,8 @@
 
 #include "dart/gui/Trackball.hpp"
 
-#include "dart/math/Constants.hpp"
 #include "dart/gui/LoadOpengl.hpp"
+#include "dart/math/Constants.hpp"
 
 namespace dart {
 namespace gui {
@@ -42,33 +42,39 @@ Trackball::Trackball()
   : mCenter(0.0, 0.0),
     mRadius(1.0),
     mStartPos(0.0, 0.0, 0.0),
-    mCurrQuat(1.0, 0.0, 0.0, 0.0) {
+    mCurrQuat(1.0, 0.0, 0.0, 0.0)
+{
 }
 
 Trackball::Trackball(const Eigen::Vector2d& _center, double _radius)
   : mCenter(_center),
     mRadius(_radius),
     mStartPos(0.0, 0.0, 0.0),
-    mCurrQuat(1.0, 0.0, 0.0, 0.0) {
+    mCurrQuat(1.0, 0.0, 0.0, 0.0)
+{
 }
 
-void Trackball::startBall(double _x, double _y) {
+void Trackball::startBall(double _x, double _y)
+{
   mStartPos = mouseOnSphere(_x, _y);
 }
 
-void Trackball::updateBall(double _x, double _y) {
+void Trackball::updateBall(double _x, double _y)
+{
   Eigen::Vector3d toPos = mouseOnSphere(_x, _y);
   Eigen::Quaterniond newQuat(quatFromVectors(mStartPos, toPos));
   mStartPos = toPos;
-  mCurrQuat = newQuat*mCurrQuat;
+  mCurrQuat = newQuat * mCurrQuat;
 }
 
-void Trackball::applyGLRotation() {
+void Trackball::applyGLRotation()
+{
   Eigen::Transform<double, 3, Eigen::Affine> t(mCurrQuat);
   glMultMatrixd(t.data());
 }
 
-void Trackball::draw(int _winWidth, int _winHeight) {
+void Trackball::draw(int _winWidth, int _winHeight)
+{
   const double pi = math::constantsd::pi();
 
   glDisable(GL_LIGHTING);
@@ -87,66 +93,81 @@ void Trackball::draw(int _winWidth, int _winHeight) {
   glLineWidth(4.0);
   glColor3f(1.0f, 1.0f, 0.0f);
   glBegin(GL_LINE_LOOP);
-  for (int i = 0; i < 360; i += 4) {
+  for (int i = 0; i < 360; i += 4)
+  {
     double theta = i / 180.0 * pi;
     double x = mRadius * cos(theta);
     double y = mRadius * sin(theta);
-    glVertex2d(static_cast<GLdouble>((_winWidth >> 1) + x),
-               static_cast<GLdouble>((_winHeight >> 1) + y));
+    glVertex2d(
+        static_cast<GLdouble>((_winWidth >> 1) + x),
+        static_cast<GLdouble>((_winHeight >> 1) + y));
   }
   glEnd();
 
   glPopMatrix();
 }
 
-void Trackball::setTrackball(const Eigen::Vector2d& _center,
-                             const double _radius) {
+void Trackball::setTrackball(
+    const Eigen::Vector2d& _center, const double _radius)
+{
   mCenter = _center;
   mRadius = _radius;
 }
 
-void Trackball::setCenter(const Eigen::Vector2d& _center) {
+void Trackball::setCenter(const Eigen::Vector2d& _center)
+{
   mCenter = _center;
 }
 
-void Trackball::setRadius(const double _radius) {
+void Trackball::setRadius(const double _radius)
+{
   mRadius = _radius;
 }
 
-void Trackball::setQuaternion(const Eigen::Quaterniond& _q) {
+void Trackball::setQuaternion(const Eigen::Quaterniond& _q)
+{
   mCurrQuat = _q;
 }
 
-Eigen::Quaterniond Trackball::getCurrQuat() const {
+Eigen::Quaterniond Trackball::getCurrQuat() const
+{
   return mCurrQuat;
 }
 
-Eigen::Matrix3d Trackball::getRotationMatrix() const {
+Eigen::Matrix3d Trackball::getRotationMatrix() const
+{
   return mCurrQuat.toRotationMatrix();
 }
 
-Eigen::Vector2d Trackball::getCenter() const {
+Eigen::Vector2d Trackball::getCenter() const
+{
   return mCenter;
 }
 
-double Trackball::getRadius() const {
+double Trackball::getRadius() const
+{
   return mRadius;
 }
 
-Eigen::Vector3d Trackball::mouseOnSphere(double _mouseX, double _mouseY) const {
+Eigen::Vector3d Trackball::mouseOnSphere(double _mouseX, double _mouseY) const
+{
   double mag;
   Eigen::Vector3d pointOnSphere;
 
   pointOnSphere(0) = (_mouseX - mCenter(0)) / mRadius;
   pointOnSphere(1) = (_mouseY - mCenter(1)) / mRadius;
 
-  mag = pointOnSphere(0) * pointOnSphere(0) + pointOnSphere(1)*pointOnSphere(1);
-  if (mag > 1.0) {
-    double scale = 1.0/sqrt(mag);
+  mag = pointOnSphere(0) * pointOnSphere(0)
+        + pointOnSphere(1) * pointOnSphere(1);
+  if (mag > 1.0)
+  {
+    double scale = 1.0 / sqrt(mag);
     pointOnSphere(0) *= scale;
     pointOnSphere(1) *= scale;
     pointOnSphere(2) = 0.0;
-  } else {
+  }
+  else
+  {
     pointOnSphere(2) = sqrt(1 - mag);
   }
 
@@ -154,14 +175,15 @@ Eigen::Vector3d Trackball::mouseOnSphere(double _mouseX, double _mouseY) const {
 }
 
 Eigen::Quaterniond Trackball::quatFromVectors(
-    const Eigen::Vector3d& _from, const Eigen::Vector3d& _to) const {
+    const Eigen::Vector3d& _from, const Eigen::Vector3d& _to) const
+{
   Eigen::Quaterniond quat;
-  quat.x() = _from(1)*_to(2) - _from(2)*_to(1);
-  quat.y() = _from(2)*_to(0) - _from(0)*_to(2);
-  quat.z() = _from(0)*_to(1) - _from(1)*_to(0);
-  quat.w() = _from(0)*_to(0) + _from(1)*_to(1) + _from(2)*_to(2);
+  quat.x() = _from(1) * _to(2) - _from(2) * _to(1);
+  quat.y() = _from(2) * _to(0) - _from(0) * _to(2);
+  quat.z() = _from(0) * _to(1) - _from(1) * _to(0);
+  quat.w() = _from(0) * _to(0) + _from(1) * _to(1) + _from(2) * _to(2);
   return quat;
 }
 
-}  // namespace gui
-}  // namespace dart
+} // namespace gui
+} // namespace dart

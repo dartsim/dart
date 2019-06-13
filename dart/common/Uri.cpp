@@ -45,7 +45,7 @@
 //
 #ifdef __GLIBCXX__
 
-#include <boost/regex.hpp>
+#  include <boost/regex.hpp>
 
 using boost::regex;
 using boost::regex_match;
@@ -56,7 +56,7 @@ using boost::regex_constants::match_continuous;
 
 #else
 
-#include <regex>
+#  include <regex>
 
 using std::regex;
 using std::regex_match;

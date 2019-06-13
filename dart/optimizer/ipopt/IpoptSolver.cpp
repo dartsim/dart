@@ -50,8 +50,7 @@ IpoptSolver::IpoptSolver(const Solver::Properties& _properties)
 }
 
 //==============================================================================
-IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
-  : Solver(_problem)
+IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem) : Solver(_problem)
 {
   assert(_problem);
 
@@ -63,8 +62,8 @@ IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
   // Windows DLL.
   mIpoptApp = IpoptApplicationFactory();
   mIpoptApp->Options()->SetStringValue("mu_strategy", "adaptive");
-  mIpoptApp->Options()->SetStringValue("hessian_approximation",
-                                       "limited-memory");
+  mIpoptApp->Options()->SetStringValue(
+      "hessian_approximation", "limited-memory");
 }
 
 //==============================================================================
@@ -83,14 +82,14 @@ bool IpoptSolver::solve()
   mIpoptApp->Options()->SetStringValue("output_file", getResultFileName());
 
   std::size_t freq = mProperties.mIterationsPerPrint;
-  if(freq > 0)
+  if (freq > 0)
   {
     mIpoptApp->Options()->SetNumericValue("print_frequency_iter", freq);
   }
   else
   {
     mIpoptApp->Options()->SetNumericValue(
-          "print_frequency_iter", std::numeric_limits<int>::infinity());
+        "print_frequency_iter", std::numeric_limits<int>::infinity());
   }
 
   // Intialize the IpoptApplication and process the options
@@ -121,7 +120,7 @@ std::string IpoptSolver::getType() const
 std::shared_ptr<Solver> IpoptSolver::clone() const
 {
   std::shared_ptr<IpoptSolver> newSolver(
-        new IpoptSolver(getSolverProperties(), mIpoptApp->clone()));
+      new IpoptSolver(getSolverProperties(), mIpoptApp->clone()));
 
   return newSolver;
 }
@@ -133,23 +132,23 @@ const Ipopt::SmartPtr<Ipopt::IpoptApplication>& IpoptSolver::getApplication()
 }
 
 //==============================================================================
-Ipopt::SmartPtr<const Ipopt::IpoptApplication> IpoptSolver::getApplication() const
+Ipopt::SmartPtr<const Ipopt::IpoptApplication> IpoptSolver::getApplication()
+    const
 {
   return mIpoptApp;
 }
 
 //==============================================================================
-IpoptSolver::IpoptSolver(const Properties& _properties,
-                         const Ipopt::SmartPtr<Ipopt::IpoptApplication>& _app)
+IpoptSolver::IpoptSolver(
+    const Properties& _properties,
+    const Ipopt::SmartPtr<Ipopt::IpoptApplication>& _app)
   : Solver(_properties)
 {
   mIpoptApp = _app;
 }
 
 //==============================================================================
-DartTNLP::DartTNLP(IpoptSolver* _solver)
-  : Ipopt::TNLP(),
-    mSolver(_solver)
+DartTNLP::DartTNLP(IpoptSolver* _solver) : Ipopt::TNLP(), mSolver(_solver)
 {
   assert(_solver && "Null pointer is not allowed.");
 }
@@ -161,11 +160,12 @@ DartTNLP::~DartTNLP()
 }
 
 //==============================================================================
-bool DartTNLP::get_nlp_info(Ipopt::Index& n,
-                            Ipopt::Index& m,
-                            Ipopt::Index& nnz_jac_g,
-                            Ipopt::Index& nnz_h_lag,
-                            Ipopt::TNLP::IndexStyleEnum& index_style)
+bool DartTNLP::get_nlp_info(
+    Ipopt::Index& n,
+    Ipopt::Index& m,
+    Ipopt::Index& nnz_jac_g,
+    Ipopt::Index& nnz_h_lag,
+    Ipopt::TNLP::IndexStyleEnum& index_style)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
@@ -188,20 +188,22 @@ bool DartTNLP::get_nlp_info(Ipopt::Index& n,
 }
 
 //==============================================================================
-bool DartTNLP::get_bounds_info(Ipopt::Index n,
-                               Ipopt::Number* x_l,
-                               Ipopt::Number* x_u,
-                               Ipopt::Index m,
-                               Ipopt::Number* g_l,
-                               Ipopt::Number* g_u)
+bool DartTNLP::get_bounds_info(
+    Ipopt::Index n,
+    Ipopt::Number* x_l,
+    Ipopt::Number* x_u,
+    Ipopt::Index m,
+    Ipopt::Number* g_l,
+    Ipopt::Number* g_u)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
   // here, the n and m we gave IPOPT in get_nlp_info are passed back to us.
   // If desired, we could assert to make sure they are what we think they are.
   assert(static_cast<std::size_t>(n) == problem->getDimension());
-  assert(static_cast<std::size_t>(m) == problem->getNumEqConstraints()
-         + problem->getNumIneqConstraints());
+  assert(
+      static_cast<std::size_t>(m)
+      == problem->getNumEqConstraints() + problem->getNumIneqConstraints());
   DART_UNUSED(m);
 
   // lower and upper bounds
@@ -225,7 +227,7 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
     // infinity. The default value of nlp_upper_bound_inf and
     // nlp_lower_bound_inf is 1e+19 and can be changed through ipopt options.
     g_l[idx] = -std::numeric_limits<double>::infinity();
-    g_u[idx] =  0;
+    g_u[idx] = 0;
     idx++;
   }
 
@@ -233,15 +235,16 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
 }
 
 //==============================================================================
-bool DartTNLP::get_starting_point(Ipopt::Index n,
-                                  bool init_x,
-                                  Ipopt::Number* x,
-                                  bool init_z,
-                                  Ipopt::Number* /*z_L*/,
-                                  Ipopt::Number* /*z_U*/,
-                                  Ipopt::Index /*m*/,
-                                  bool init_lambda,
-                                  Ipopt::Number* /*lambda*/)
+bool DartTNLP::get_starting_point(
+    Ipopt::Index n,
+    bool init_x,
+    Ipopt::Number* x,
+    bool init_z,
+    Ipopt::Number* /*z_L*/,
+    Ipopt::Number* /*z_U*/,
+    Ipopt::Index /*m*/,
+    bool init_lambda,
+    Ipopt::Number* /*lambda*/)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
@@ -274,10 +277,11 @@ bool DartTNLP::get_starting_point(Ipopt::Index n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_f(Ipopt::Index _n,
-                      const Ipopt::Number* _x,
-                      bool /*_new_x*/,
-                      Ipopt::Number& _obj_value)
+bool DartTNLP::eval_f(
+    Ipopt::Index _n,
+    const Ipopt::Number* _x,
+    bool /*_new_x*/,
+    Ipopt::Number& _obj_value)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
@@ -290,10 +294,11 @@ bool DartTNLP::eval_f(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_grad_f(Ipopt::Index _n,
-                           const Ipopt::Number* _x,
-                           bool /*_new_x*/,
-                           Ipopt::Number* _grad_f)
+bool DartTNLP::eval_grad_f(
+    Ipopt::Index _n,
+    const Ipopt::Number* _x,
+    bool /*_new_x*/,
+    Ipopt::Number* _grad_f)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
@@ -305,16 +310,18 @@ bool DartTNLP::eval_grad_f(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_g(Ipopt::Index _n,
-                      const Ipopt::Number* _x,
-                      bool _new_x,
-                      Ipopt::Index _m,
-                      Ipopt::Number* _g)
+bool DartTNLP::eval_g(
+    Ipopt::Index _n,
+    const Ipopt::Number* _x,
+    bool _new_x,
+    Ipopt::Index _m,
+    Ipopt::Number* _g)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
-  assert(static_cast<std::size_t>(_m) == problem->getNumEqConstraints()
-                                    + problem->getNumIneqConstraints());
+  assert(
+      static_cast<std::size_t>(_m)
+      == problem->getNumEqConstraints() + problem->getNumIneqConstraints());
   DART_UNUSED(_m);
 
   // TODO(JS):
@@ -329,7 +336,7 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
   for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
   {
     _g[idx] = problem->getEqConstraint(i)->eval(
-          static_cast<const Eigen::VectorXd&>(x));
+        static_cast<const Eigen::VectorXd&>(x));
     idx++;
   }
 
@@ -337,7 +344,7 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
   for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
   {
     _g[idx] = problem->getIneqConstraint(i)->eval(
-          static_cast<const Eigen::VectorXd&>(x));
+        static_cast<const Eigen::VectorXd&>(x));
     idx++;
   }
 
@@ -345,20 +352,22 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_jac_g(Ipopt::Index _n,
-                          const Ipopt::Number* _x,
-                          bool /*_new_x*/,
-                          Ipopt::Index _m,
-                          Ipopt::Index /*_nele_jac*/,
-                          Ipopt::Index* _iRow,
-                          Ipopt::Index* _jCol,
-                          Ipopt::Number* _values)
+bool DartTNLP::eval_jac_g(
+    Ipopt::Index _n,
+    const Ipopt::Number* _x,
+    bool /*_new_x*/,
+    Ipopt::Index _m,
+    Ipopt::Index /*_nele_jac*/,
+    Ipopt::Index* _iRow,
+    Ipopt::Index* _jCol,
+    Ipopt::Number* _values)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
-  // If the iRow and jCol arguments are not nullptr, then IPOPT wants you to fill
-  // in the sparsity structure of the Jacobian (the row and column indices
-  // only). At this time, the x argument and the values argument will be nullptr.
+  // If the iRow and jCol arguments are not nullptr, then IPOPT wants you to
+  // fill in the sparsity structure of the Jacobian (the row and column indices
+  // only). At this time, the x argument and the values argument will be
+  // nullptr.
 
   if (nullptr == _values)
   {
@@ -386,7 +395,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     // Evaluate function values for equality constraints
     for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
     {
-      new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
+      new (&grad) Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
       problem->getEqConstraint(i)->evalGradient(x, grad);
       idx += _n;
     }
@@ -394,7 +403,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     // Evaluate function values for inequality constraints
     for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
     {
-      new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
+      new (&grad) Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
       problem->getIneqConstraint(i)->evalGradient(x, grad);
       idx += _n;
     }
@@ -404,37 +413,49 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_h(Ipopt::Index _n,
-                      const Ipopt::Number* _x,
-                      bool _new_x,
-                      Ipopt::Number _obj_factor,
-                      Ipopt::Index _m,
-                      const Ipopt::Number* _lambda,
-                      bool _new_lambda,
-                      Ipopt::Index _nele_hess,
-                      Ipopt::Index* _iRow,
-                      Ipopt::Index* _jCol,
-                      Ipopt::Number* _values)
+bool DartTNLP::eval_h(
+    Ipopt::Index _n,
+    const Ipopt::Number* _x,
+    bool _new_x,
+    Ipopt::Number _obj_factor,
+    Ipopt::Index _m,
+    const Ipopt::Number* _lambda,
+    bool _new_lambda,
+    Ipopt::Index _nele_hess,
+    Ipopt::Index* _iRow,
+    Ipopt::Index* _jCol,
+    Ipopt::Number* _values)
 {
   // TODO(JS): Not implemented yet.
   dterr << "[DartTNLP::eval_h] Not implemented yet.\n";
 
-  return TNLP::eval_h(_n, _x, _new_x, _obj_factor, _m, _lambda, _new_lambda,
-                      _nele_hess, _iRow, _jCol, _values);
+  return TNLP::eval_h(
+      _n,
+      _x,
+      _new_x,
+      _obj_factor,
+      _m,
+      _lambda,
+      _new_lambda,
+      _nele_hess,
+      _iRow,
+      _jCol,
+      _values);
 }
 
 //==============================================================================
-void DartTNLP::finalize_solution(Ipopt::SolverReturn /*_status*/,
-                                 Ipopt::Index _n,
-                                 const Ipopt::Number* _x,
-                                 const Ipopt::Number* /*_z_L*/,
-                                 const Ipopt::Number* /*_z_U*/,
-                                 Ipopt::Index /*_m*/,
-                                 const Ipopt::Number* /*_g*/,
-                                 const Ipopt::Number* /*_lambda*/,
-                                 Ipopt::Number _obj_value,
-                                 const Ipopt::IpoptData* /*_ip_data*/,
-                                 Ipopt::IpoptCalculatedQuantities* /*_ip_cq*/)
+void DartTNLP::finalize_solution(
+    Ipopt::SolverReturn /*_status*/,
+    Ipopt::Index _n,
+    const Ipopt::Number* _x,
+    const Ipopt::Number* /*_z_L*/,
+    const Ipopt::Number* /*_z_U*/,
+    Ipopt::Index /*_m*/,
+    const Ipopt::Number* /*_g*/,
+    const Ipopt::Number* /*_lambda*/,
+    Ipopt::Number _obj_value,
+    const Ipopt::IpoptData* /*_ip_data*/,
+    Ipopt::IpoptCalculatedQuantities* /*_ip_cq*/)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
@@ -446,5 +467,5 @@ void DartTNLP::finalize_solution(Ipopt::SolverReturn /*_status*/,
   problem->setOptimalSolution(x);
 }
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace optimizer
+} // namespace dart

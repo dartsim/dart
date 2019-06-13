@@ -39,18 +39,19 @@
 #ifndef DART_GUI_GRAPHWINDOW_HPP_
 #define DART_GUI_GRAPHWINDOW_HPP_
 
-#pragma message("This header is deprecated as of DART 6.6. "\
+#pragma message(                                                               \
+    "This header is deprecated as of DART 6.6. "                               \
     "Please use dart/gui/glut/GraphWindow.hpp instead.")
 
-#include "dart/gui/glut/GraphWindow.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/gui/glut/GraphWindow.hpp"
 
 namespace dart {
 namespace gui {
 
 using GraphWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::GraphWindow;
- 
-}  // namespace gui
-}  // namespace dart
 
-#endif  // DART_GUI_GRAPHWINDOW_HPP_
+} // namespace gui
+} // namespace dart
+
+#endif // DART_GUI_GRAPHWINDOW_HPP_

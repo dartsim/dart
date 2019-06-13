@@ -32,8 +32,8 @@
 
 #include "dart/gui/osg/ImGuiViewer.hpp"
 
-#include "dart/gui/osg/ImGuiWidget.hpp"
 #include "dart/gui/osg/ImGuiHandler.hpp"
+#include "dart/gui/osg/ImGuiWidget.hpp"
 
 namespace dart {
 namespace gui {

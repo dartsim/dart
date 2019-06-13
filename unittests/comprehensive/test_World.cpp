@@ -41,7 +41,7 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/utils/SkelParser.hpp"
 #if HAVE_BULLET
-#include "dart/collision/bullet/bullet.hpp"
+#  include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"

@@ -73,7 +73,7 @@ protected:
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
+#endif // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_

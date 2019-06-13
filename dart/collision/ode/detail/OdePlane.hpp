@@ -46,9 +46,9 @@ class OdePlane : public OdeGeom
 public:
   /// Constructor
   OdePlane(
-    const OdeCollisionObject* parent,
-    const Eigen::Vector3d& normal,
-    double offset);
+      const OdeCollisionObject* parent,
+      const Eigen::Vector3d& normal,
+      double offset);
 
   /// Destructor
   virtual ~OdePlane();
@@ -64,4 +64,4 @@ public:
 } // namespace collision
 } // namespace dart
 
-#endif  // DART_COLLISION_ODE_DETAIL_ODEPLANE_HPP_
+#endif // DART_COLLISION_ODE_DETAIL_ODEPLANE_HPP_

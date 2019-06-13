@@ -33,7 +33,7 @@
 #include "dart/dynamics/ReferentialSkeleton.hpp"
 
 #ifndef DART_DYNAMICS_GROUP_HPP_
-#define DART_DYNAMICS_GROUP_HPP_
+#  define DART_DYNAMICS_GROUP_HPP_
 
 namespace dart {
 namespace dynamics {

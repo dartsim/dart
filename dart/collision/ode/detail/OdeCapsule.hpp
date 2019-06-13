@@ -45,8 +45,7 @@ class OdeCapsule : public OdeGeom
 {
 public:
   /// Constructor
-  OdeCapsule(
-    const OdeCollisionObject* parent, double radius, double height);
+  OdeCapsule(const OdeCollisionObject* parent, double radius, double height);
 
   /// Destructor
   virtual ~OdeCapsule();
@@ -56,4 +55,4 @@ public:
 } // namespace collision
 } // namespace dart
 
-#endif  // DART_COLLISION_ODE_DETAIL_ODECAPSULE_HPP_
+#endif // DART_COLLISION_ODE_DETAIL_ODECAPSULE_HPP_

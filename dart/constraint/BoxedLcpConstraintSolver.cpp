@@ -34,8 +34,8 @@
 
 #include <cassert>
 #ifndef NDEBUG
-#include <iomanip>
-#include <iostream>
+#  include <iomanip>
+#  include <iostream>
 #endif
 
 #include "dart/external/odelcpsolver/lcp.h"

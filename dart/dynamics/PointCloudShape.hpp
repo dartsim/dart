@@ -36,7 +36,7 @@
 #include "dart/dynamics/Shape.hpp"
 
 #if HAVE_OCTOMAP
-#include <octomap/Pointcloud.h>
+#  include <octomap/Pointcloud.h>
 #endif
 
 namespace dart {

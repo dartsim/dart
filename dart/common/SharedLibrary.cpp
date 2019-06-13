@@ -37,18 +37,18 @@
 
 #if DART_OS_LINUX || DART_OS_MACOS
 
-#include <dlfcn.h>
-#define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
-#define DYNLIB_GETSYM(a, b) dlsym(a, b)
-#define DYNLIB_UNLOAD(a) dlclose(a)
+#  include <dlfcn.h>
+#  define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
+#  define DYNLIB_GETSYM(a, b) dlsym(a, b)
+#  define DYNLIB_UNLOAD(a) dlclose(a)
 
 #elif DART_OS_WINDOWS
 
-#define WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
 // We can not use LOAD_WITH_ALTERED_SEARCH_PATH with relative paths
-#define DYNLIB_LOAD(a) LoadLibraryEx(a, nullptr, 0)
-#define DYNLIB_GETSYM(a, b) GetProcAddress(a, b)
-#define DYNLIB_UNLOAD(a) !FreeLibrary(a)
+#  define DYNLIB_LOAD(a) LoadLibraryEx(a, nullptr, 0)
+#  define DYNLIB_GETSYM(a, b) GetProcAddress(a, b)
+#  define DYNLIB_UNLOAD(a) !FreeLibrary(a)
 
 #endif
 

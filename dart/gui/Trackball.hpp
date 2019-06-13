@@ -40,7 +40,8 @@ namespace dart {
 namespace gui {
 
 /// \brief
-class Trackball {
+class Trackball
+{
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -94,8 +95,8 @@ private:
 
   /// \brief Compute the quaternion that rotates from vector "from" to vector
   ///        "to"
-  Eigen::Quaterniond quatFromVectors(const Eigen::Vector3d& _from,
-                                     const Eigen::Vector3d& _to) const;
+  Eigen::Quaterniond quatFromVectors(
+      const Eigen::Vector3d& _from, const Eigen::Vector3d& _to) const;
 
   /// \brief
   Eigen::Vector2d mCenter;
@@ -110,7 +111,7 @@ private:
   Eigen::Quaterniond mCurrQuat;
 };
 
-}  // namespace gui
-}  // namespace dart
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_TRACKBALL_HPP_
+#endif // DART_GUI_TRACKBALL_HPP_

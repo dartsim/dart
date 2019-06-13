@@ -33,18 +33,19 @@
 #ifndef DART_GUI_WIN3D_HPP_
 #define DART_GUI_WIN3D_HPP_
 
-#pragma message("This header is deprecated as of DART 6.6. "\
-         "Please use dart/gui/glut/Win3D.hpp instead.")
+#pragma message(                                                               \
+    "This header is deprecated as of DART 6.6. "                               \
+    "Please use dart/gui/glut/Win3D.hpp instead.")
 
-#include "dart/gui/glut/Win3D.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/gui/glut/Win3D.hpp"
 
 namespace dart {
 namespace gui {
 
 using Win3D DART_DEPRECATED(6.6) = ::dart::gui::glut::Win3D;
 
-}  // namespace gui
-}  // namespace dart
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_WIN3D_HPP_
+#endif // DART_GUI_WIN3D_HPP_

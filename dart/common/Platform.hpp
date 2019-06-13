@@ -36,57 +36,57 @@
 // Operating systems and architectures
 #if defined(__linux__)
 
-#define DART_OS_LINUX 1
-#if __x86_64__ || __ppc64__
-#define DART_ARCH_64BITS 1
-#else
-#define DART_ARCH_32BITS 1
-#endif
+#  define DART_OS_LINUX 1
+#  if __x86_64__ || __ppc64__
+#    define DART_ARCH_64BITS 1
+#  else
+#    define DART_ARCH_32BITS 1
+#  endif
 
 #elif defined(__APPLE__)
 
-#define DART_OS_MACOS 1
-#if __LP64__
-#define DART_ARCH_64BITS 1
-#else
-#define DART_ARCH_32BITS 1
-#endif
+#  define DART_OS_MACOS 1
+#  if __LP64__
+#    define DART_ARCH_64BITS 1
+#  else
+#    define DART_ARCH_32BITS 1
+#  endif
 
 #elif defined(_WIN32)
 
-#define DART_OS_WINDOWS 1
-#define DART_ARCH_32BITS 1
+#  define DART_OS_WINDOWS 1
+#  define DART_ARCH_32BITS 1
 
 #elif defined(_WIN64)
 
-#define DART_OS_WINDOWS 1
-#define DART_ARCH_64BITS 1
+#  define DART_OS_WINDOWS 1
+#  define DART_ARCH_64BITS 1
 
 #else
 
-#error Unsupported platform.
+#  error Unsupported platform.
 
 #endif // if defined(__linux__)
 
 // Define undefined preprocessors as 0
 #ifndef DART_OS_WINDOWS
-#define DART_OS_WINDOWS 0
+#  define DART_OS_WINDOWS 0
 #endif
 
 #ifndef DART_OS_LINUX
-#define DART_OS_LINUX 0
+#  define DART_OS_LINUX 0
 #endif
 
 #ifndef DART_OS_MACOS
-#define DART_OS_MACOS 0
+#  define DART_OS_MACOS 0
 #endif
 
 #ifndef DART_ARCH_32BITS
-#define DART_ARCH_32BITS 0
+#  define DART_ARCH_32BITS 0
 #endif
 
 #ifndef DART_ARCH_64BITS
-#define DART_ARCH_64BITS 0
+#  define DART_ARCH_64BITS 0
 #endif
 
 #endif // DART_COMMON_PLATFORM_HPP_

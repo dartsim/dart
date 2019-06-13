@@ -47,13 +47,13 @@
 #include "dart/optimizer/Problem.hpp"
 #include "TestHelpers.hpp"
 #if HAVE_NLOPT
-#include "dart/optimizer/nlopt/NloptSolver.hpp"
+#  include "dart/optimizer/nlopt/NloptSolver.hpp"
 #endif
 #if HAVE_IPOPT
-#include "dart/optimizer/ipopt/IpoptSolver.hpp"
+#  include "dart/optimizer/ipopt/IpoptSolver.hpp"
 #endif
 #if HAVE_SNOPT
-#include "dart/optimizer/snopt/SnoptSolver.hpp"
+#  include "dart/optimizer/snopt/SnoptSolver.hpp"
 #endif
 
 using namespace std;

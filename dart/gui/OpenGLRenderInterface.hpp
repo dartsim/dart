@@ -35,8 +35,8 @@
 
 #include <list>
 #include <vector>
-#include "dart/gui/RenderInterface.hpp"
 #include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/RenderInterface.hpp"
 
 namespace dart {
 
@@ -45,74 +45,104 @@ class Skeleton;
 class BodyNode;
 class Shape;
 class ShapeFrame;
-}
+} // namespace dynamics
 
 namespace gui {
-class OpenGLRenderInterface : public RenderInterface {
+class OpenGLRenderInterface : public RenderInterface
+{
 
 public:
-    OpenGLRenderInterface() : mViewportX(0.0), mViewportY(0.0), mViewportWidth(0.0), mViewportHeight(0.0) {}
-    virtual ~OpenGLRenderInterface(){}
+  OpenGLRenderInterface()
+    : mViewportX(0.0),
+      mViewportY(0.0),
+      mViewportWidth(0.0),
+      mViewportHeight(0.0)
+  {
+  }
+  virtual ~OpenGLRenderInterface()
+  {
+  }
 
-    void initialize() override;
-    void destroy() override;
+  void initialize() override;
+  void destroy() override;
 
-    void setViewport(int _x,int _y,int _width,int _height) override;
-    void getViewport(int& _x, int& _y, int& _width, int& _height) const override;
+  void setViewport(int _x, int _y, int _width, int _height) override;
+  void getViewport(int& _x, int& _y, int& _width, int& _height) const override;
 
-    void clear(const Eigen::Vector3d& _color) override;
+  void clear(const Eigen::Vector3d& _color) override;
 
-    void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow) override;
-    void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const override;
-    void setDefaultMaterial() override;
+  void setMaterial(
+      const Eigen::Vector3d& _diffuse,
+      const Eigen::Vector3d& _specular,
+      double _cosinePow) override;
+  void getMaterial(
+      Eigen::Vector3d& _diffuse,
+      Eigen::Vector3d& _specular,
+      double& _cosinePow) const override;
+  void setDefaultMaterial() override;
 
-    void pushMatrix() override;
-    void popMatrix() override;
-    void pushName(int _id) override;
-    void popName() override;
+  void pushMatrix() override;
+  void popMatrix() override;
+  void pushName(int _id) override;
+  void popName() override;
 
-    void translate(const Eigen::Vector3d& _offset) override; //glTranslate
-    void rotate(const Eigen::Vector3d& _axis, double _rad) override; //glRotate
-    void transform(const Eigen::Isometry3d& _transform) override; //glMultMatrix
-    void scale(const Eigen::Vector3d& _scale) override; //glScale
+  void translate(const Eigen::Vector3d& _offset) override; // glTranslate
+  void rotate(const Eigen::Vector3d& _axis, double _rad) override; // glRotate
+  void transform(const Eigen::Isometry3d& _transform) override; // glMultMatrix
+  void scale(const Eigen::Vector3d& _scale) override;           // glScale
 
-    void compileList(dynamics::Skeleton* _skel);
-    void compileList(dynamics::BodyNode* _node);
-    void compileList(dynamics::Shape* _shape);
-    GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
+  void compileList(dynamics::Skeleton* _skel);
+  void compileList(dynamics::BodyNode* _node);
+  void compileList(dynamics::Shape* _shape);
+  GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
-    void drawSphere(double radius, int slices = 16, int stacks = 16) override;
-    void drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& spheres, int slices = 16, int stacks = 16) override;
-    void drawEllipsoid(const Eigen::Vector3d& _diameters) override;
-    void drawCube(const Eigen::Vector3d& _size) override;
-    void drawOpenCylinder(double baseRadius, double topRadius, double height, int slices = 16, int stacks = 16) override;
-    void drawCylinder(double _radius, double _height, int slices = 16, int stacks = 16) override;
-    void drawCapsule(double radius, double height) override;
-    void drawCone(double radius, double height) override;
-    void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
-    void drawSoftMesh(const aiMesh* mesh) override;
-    void drawList(GLuint index) override;
-    void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
-                                  const common::aligned_vector<Eigen::Vector2i>& _connections) override;
+  void drawSphere(double radius, int slices = 16, int stacks = 16) override;
+  void drawMultiSphere(
+      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+      int slices = 16,
+      int stacks = 16) override;
+  void drawEllipsoid(const Eigen::Vector3d& _diameters) override;
+  void drawCube(const Eigen::Vector3d& _size) override;
+  void drawOpenCylinder(
+      double baseRadius,
+      double topRadius,
+      double height,
+      int slices = 16,
+      int stacks = 16) override;
+  void drawCylinder(
+      double _radius,
+      double _height,
+      int slices = 16,
+      int stacks = 16) override;
+  void drawCapsule(double radius, double height) override;
+  void drawCone(double radius, double height) override;
+  void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
+  void drawSoftMesh(const aiMesh* mesh) override;
+  void drawList(GLuint index) override;
+  void drawLineSegments(
+      const std::vector<Eigen::Vector3d>& _vertices,
+      const common::aligned_vector<Eigen::Vector2i>& _connections) override;
 
-    void setPenColor(const Eigen::Vector4d& _col) override;
-    void setPenColor(const Eigen::Vector3d& _col) override;
+  void setPenColor(const Eigen::Vector4d& _col) override;
+  void setPenColor(const Eigen::Vector3d& _col) override;
 
-    void setLineWidth(float _width) override;
+  void setLineWidth(float _width) override;
 
-    void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back) override;
-    void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels) override;
+  void saveToImage(
+      const char* _filename, DecoBufferType _buffType = BT_Back) override;
+  void readFrameBuffer(
+      DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels) override;
 
 private:
-    void color4_to_float4(const aiColor4D *c, float f[4]);
-    void set_float4(float f[4], float a, float b, float c, float d);
-    void applyMaterial(const struct aiMaterial *mtl);
-    void recursiveRender(const struct aiScene *sc, const struct aiNode* nd);
+  void color4_to_float4(const aiColor4D* c, float f[4]);
+  void set_float4(float f[4], float a, float b, float c, float d);
+  void applyMaterial(const struct aiMaterial* mtl);
+  void recursiveRender(const struct aiScene* sc, const struct aiNode* nd);
 
-    int mViewportX, mViewportY, mViewportWidth, mViewportHeight;
+  int mViewportX, mViewportY, mViewportWidth, mViewportHeight;
 
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace gui

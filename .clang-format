@@ -56,6 +56,7 @@ IncludeCategories:
   - Regex:     '^".*'          # headers relative to this project
     Priority:  4
 IndentCaseLabels: true
+IndentPPDirectives: AfterHash  # Change to BeforeHas since clang-format >= 9
 IndentFunctionDeclarationAfterType: false
 IndentWidth:     2
 IndentWrappedFunctionNames: false

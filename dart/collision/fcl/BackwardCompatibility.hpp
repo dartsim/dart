@@ -52,43 +52,43 @@
 
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
 
-#include <fcl/math/geometry.h>
+#  include <fcl/math/geometry.h>
 
-#include <fcl/geometry/bvh/BVH_model.h>
-#include <fcl/geometry/geometric_shape_to_BVH_model.h>
-#include <fcl/math/bv/OBBRSS.h>
-#include <fcl/math/bv/utility.h>
-#include <fcl/narrowphase/collision.h>
-#include <fcl/narrowphase/collision_object.h>
-#include <fcl/narrowphase/distance.h>
+#  include <fcl/geometry/bvh/BVH_model.h>
+#  include <fcl/geometry/geometric_shape_to_BVH_model.h>
+#  include <fcl/math/bv/OBBRSS.h>
+#  include <fcl/math/bv/utility.h>
+#  include <fcl/narrowphase/collision.h>
+#  include <fcl/narrowphase/collision_object.h>
+#  include <fcl/narrowphase/distance.h>
 
 #else
 
-#include <fcl/math/matrix_3f.h>
-#include <fcl/math/transform.h>
-#include <fcl/math/vec_3f.h>
+#  include <fcl/math/matrix_3f.h>
+#  include <fcl/math/transform.h>
+#  include <fcl/math/vec_3f.h>
 
-#include <fcl/BV/OBBRSS.h>
-#include <fcl/BVH/BVH_model.h>
-#include <fcl/collision.h>
-#include <fcl/collision_data.h>
-#include <fcl/collision_object.h>
-#include <fcl/distance.h>
+#  include <fcl/BV/OBBRSS.h>
+#  include <fcl/BVH/BVH_model.h>
+#  include <fcl/collision.h>
+#  include <fcl/collision_data.h>
+#  include <fcl/collision_object.h>
+#  include <fcl/distance.h>
 
 #endif // FCL_VERSION_AT_LEAST(0,6,0)
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-#include <fcl/geometry/octree/octree.h>
-#else
-#include <fcl/octree.h>
-#endif // FCL_VERSION_AT_LEAST(0,6,0)
-#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  if FCL_VERSION_AT_LEAST(0, 6, 0)
+#    include <fcl/geometry/octree/octree.h>
+#  else
+#    include <fcl/octree.h>
+#  endif // FCL_VERSION_AT_LEAST(0,6,0)
+#endif   // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
 #if FCL_VERSION_AT_LEAST(0, 5, 0)
-#include <memory>
+#  include <memory>
 template <class T>
 using fcl_shared_ptr = std::shared_ptr<T>;
 template <class T>
@@ -99,8 +99,8 @@ fcl_shared_ptr<T> fcl_make_shared(Args&&... args)
   return std::make_shared<T>(std::forward<Args>(args)...);
 }
 #else
-#include <boost/make_shared.hpp>
-#include <boost/weak_ptr.hpp>
+#  include <boost/make_shared.hpp>
+#  include <boost/weak_ptr.hpp>
 template <class T>
 using fcl_shared_ptr = boost::shared_ptr<T>;
 template <class T>
@@ -127,9 +127,9 @@ using Cylinder = ::fcl::Cylinder<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
-#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;
@@ -151,9 +151,9 @@ using Box = ::fcl::Box;
 using Cylinder = ::fcl::Cylinder;
 using Halfspace = ::fcl::Halfspace;
 using Sphere = ::fcl::Sphere;
-#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree;
-#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject;
 using CollisionGeometry = ::fcl::CollisionGeometry;

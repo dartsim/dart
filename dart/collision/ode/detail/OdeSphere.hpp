@@ -55,4 +55,4 @@ public:
 } // namespace collision
 } // namespace dart
 
-#endif  // DART_COLLISION_ODE_DETAIL_ODESPHERE_HPP_
+#endif // DART_COLLISION_ODE_DETAIL_ODESPHERE_HPP_

@@ -60,17 +60,16 @@ class WorldNode;
 class ShapeFrameNode : public ::osg::MatrixTransform
 {
 public:
-
   /// Create a ShapeFrameNode. If recursive is set to true, it will also create
   /// nodes for all child Entities and child Frames
-  ShapeFrameNode(dart::dynamics::ShapeFrame* frame,
-                 WorldNode* worldNode);
+  ShapeFrameNode(dart::dynamics::ShapeFrame* frame, WorldNode* worldNode);
 
   /// Pointer to the ShapeFrame associated with this ShapeFrameNode
   dart::dynamics::ShapeFrame* getShapeFrame(bool checkUtilization = false);
 
   /// Pointer to the ShapeFrame associated with this ShapeFrameNode
-  const dart::dynamics::ShapeFrame* getShapeFrame(bool checkUtilization = false) const;
+  const dart::dynamics::ShapeFrame* getShapeFrame(
+      bool checkUtilization = false) const;
 
   WorldNode* getWorldNode();
 
@@ -90,7 +89,6 @@ public:
   void clearUtilization();
 
 protected:
-
   virtual ~ShapeFrameNode();
 
   void refreshShapeNode(const std::shared_ptr<dart::dynamics::Shape>& shape);
@@ -109,7 +107,6 @@ protected:
   /// If it has not, that is an indication that it is no longer being
   /// used and should be deleted.
   bool mUtilized;
-
 };
 
 } // namespace osg

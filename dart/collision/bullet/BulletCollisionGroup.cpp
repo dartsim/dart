@@ -45,12 +45,12 @@ BulletCollisionGroup::BulletCollisionGroup(
   : CollisionGroup(collisionDetector),
     mBulletProadphaseAlg(new btDbvtBroadphase()),
     mBulletCollisionConfiguration(new btDefaultCollisionConfiguration()),
-    mBulletDispatcher(
-      new detail::BulletCollisionDispatcher(mBulletCollisionConfiguration.get())),
-    mBulletCollisionWorld(
-      new btCollisionWorld(mBulletDispatcher.get(),
-                           mBulletProadphaseAlg.get(),
-                           mBulletCollisionConfiguration.get()))
+    mBulletDispatcher(new detail::BulletCollisionDispatcher(
+        mBulletCollisionConfiguration.get())),
+    mBulletCollisionWorld(new btCollisionWorld(
+        mBulletDispatcher.get(),
+        mBulletProadphaseAlg.get(),
+        mBulletCollisionConfiguration.get()))
 {
   // Do nothing
 }
@@ -80,7 +80,7 @@ void BulletCollisionGroup::addCollisionObjectsToEngine(
     auto casted = static_cast<BulletCollisionObject*>(collObj);
 
     mBulletCollisionWorld->addCollisionObject(
-          casted->getBulletCollisionObject());
+        casted->getBulletCollisionObject());
   }
 
   initializeEngineData();
@@ -93,7 +93,7 @@ void BulletCollisionGroup::removeCollisionObjectFromEngine(
   auto casted = static_cast<BulletCollisionObject*>(object);
 
   mBulletCollisionWorld->removeCollisionObject(
-        casted->getBulletCollisionObject());
+      casted->getBulletCollisionObject());
 
   initializeEngineData();
 }
@@ -125,5 +125,5 @@ const btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld() const
   return mBulletCollisionWorld.get();
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

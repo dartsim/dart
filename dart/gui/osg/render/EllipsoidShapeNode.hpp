@@ -33,8 +33,8 @@
 #ifndef DART_GUI_OSG_RENDER_ELLIPSOIDSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_ELLIPSOIDSHAPENODE_HPP_
 
-#include <osg/ShapeDrawable>
 #include <osg/MatrixTransform>
+#include <osg/ShapeDrawable>
 
 #include "dart/gui/osg/render/ShapeNode.hpp"
 
@@ -54,7 +54,6 @@ class EllipsoidShapeDrawable;
 class EllipsoidShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
-
   EllipsoidShapeNode(
       std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
       ShapeFrameNode* parent);
@@ -63,12 +62,10 @@ public:
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~EllipsoidShapeNode();
 
   std::shared_ptr<dart::dynamics::EllipsoidShape> mEllipsoidShape;
   EllipsoidShapeGeode* mGeode;
-
 };
 
 } // namespace render

@@ -39,9 +39,9 @@ using dart::common::Resource;
 using dart::common::Uri;
 
 #ifdef _WIN32
-#define FILE_SCHEME "file:///"
+#  define FILE_SCHEME "file:///"
 #else
-#define FILE_SCHEME "file://"
+#  define FILE_SCHEME "file://"
 #endif
 
 TEST(LocalResourceRetriever, exists_UnsupportedUri_ReturnsFalse)

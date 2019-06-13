@@ -10,7 +10,7 @@
 #include <dart/dart.hpp>
 #include <gtest/gtest.h>
 #if HAVE_FLANN
-#include <flann/flann.hpp>
+#  include <flann/flann.hpp>
 #endif // HAVE_FLANN
 #include "TestHelpers.hpp"
 

@@ -40,23 +40,23 @@
 
 #if DART_OS_LINUX
 
-#define DYNLIB_HANDLE void*
+#  define DYNLIB_HANDLE void*
 
 #elif DART_OS_MACOS
 
-#define DYNLIB_HANDLE void*
+#  define DYNLIB_HANDLE void*
 
 #elif DART_OS_WINDOWS
 
-#ifdef NOMINMAX
-#include <windows.h>
-#else
-#define NOMINMAX
-#include <windows.h>
-#undef NOMINMAX
-#endif
+#  ifdef NOMINMAX
+#    include <windows.h>
+#  else
+#    define NOMINMAX
+#    include <windows.h>
+#    undef NOMINMAX
+#  endif
 using hInstance = HINSTANCE__*;
-#define DYNLIB_HANDLE hInstance
+#  define DYNLIB_HANDLE hInstance
 
 #endif
 

@@ -40,42 +40,46 @@ namespace dart {
 namespace gui {
 namespace glut {
 
-Win2D::Win2D() : glut::Window() {
+Win2D::Win2D() : glut::Window()
+{
   mTransX = 0;
   mTransY = 0;
   mTranslate = false;
 }
 
-void Win2D::resize(int _w, int _h) {
+void Win2D::resize(int _w, int _h)
+{
   mWinWidth = _w;
   mWinHeight = _h;
 
   glViewport(0, 0, _w, _h);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(-_w/2, _w/2-1, -_h/2, _h/2-1, -1, 1);
+  glOrtho(-_w / 2, _w / 2 - 1, -_h / 2, _h / 2 - 1, -1, 1);
 
-  glMatrixMode(GL_MODELVIEW);  // Select The Modelview Matrix
-  glLoadIdentity();  // Reset The Modelview Matrix
+  glMatrixMode(GL_MODELVIEW); // Select The Modelview Matrix
+  glLoadIdentity();           // Reset The Modelview Matrix
 
   glutPostRedisplay();
 }
 
-void Win2D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/) {
-  switch (_key) {
-    case ',':  // slow down
+void Win2D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/)
+{
+  switch (_key)
+  {
+    case ',': // slow down
       mDisplayTimeout += 2;
       break;
-    case '.':  // speed up
+    case '.': // speed up
       mDisplayTimeout -= 2;
       if (mDisplayTimeout < 1)
         mDisplayTimeout = 1;
       break;
     case 'c':
-    case 'C':  // screen capture
+    case 'C': // screen capture
       mCapture = !mCapture;
       break;
-    case 27:  // ESC
+    case 27: // ESC
       exit(0);
   }
 
@@ -83,21 +87,27 @@ void Win2D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/) {
   // printf("ascii key: %lu\n", key);
 }
 
-void Win2D::click(int /*_button*/, int /*_state*/, int _x, int _y) {
+void Win2D::click(int /*_button*/, int /*_state*/, int _x, int _y)
+{
   mMouseDown = !mMouseDown;
-  if (mMouseDown) {
+  if (mMouseDown)
+  {
     mTranslate = true;
 
     mMouseX = _x;
     mMouseY = _y;
-  } else {
+  }
+  else
+  {
     mTranslate = false;
   }
   glutPostRedisplay();
 }
 
-void Win2D::drag(int _x, int _y) {
-  if (mMouseDown) {
+void Win2D::drag(int _x, int _y)
+{
+  if (mMouseDown)
+  {
     mTransX += (_x - mMouseX);
     mTransY += (_y - mMouseY);
 
@@ -107,10 +117,17 @@ void Win2D::drag(int _x, int _y) {
   glutPostRedisplay();
 }
 
-void Win2D::render() {
+void Win2D::render()
+{
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(-mWinWidth/2, mWinWidth/2-1, -mWinHeight/2, mWinHeight/2-1, -1, 1);
+  glOrtho(
+      -mWinWidth / 2,
+      mWinWidth / 2 - 1,
+      -mWinHeight / 2,
+      mWinHeight / 2 - 1,
+      -1,
+      1);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -124,7 +141,8 @@ void Win2D::render() {
   // draw axis
   // translate back to the center
   glTranslatef(-mTransX, mTransY, 0.0);
-  if (mTranslate) {
+  if (mTranslate)
+  {
     glLineWidth(2.0);
 
     glColor3f(1.0f, 0.0f, 0.0f);
@@ -146,7 +164,8 @@ void Win2D::render() {
   glutSwapBuffers();
 }
 
-void Win2D::initGL() {
+void Win2D::initGL()
+{
   glClearColor(mBackground[0], mBackground[1], mBackground[2], mBackground[3]);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_BLEND);
@@ -155,6 +174,6 @@ void Win2D::initGL() {
   glEnable(GL_LINE_SMOOTH);
 }
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart

@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
 
@@ -43,8 +43,8 @@ namespace gui {
 namespace osg {
 
 //==============================================================================
-SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton,
-                             double elevation)
+SupportPolygonVisual::SupportPolygonVisual(
+    const dart::dynamics::SkeletonPtr& skeleton, double elevation)
   : mSkeleton(skeleton),
     mTreeIndex(dart::dynamics::INVALID_INDEX),
     mElevation(elevation)
@@ -53,17 +53,18 @@ SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& sk
 }
 
 //==============================================================================
-SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton,
-                             std::size_t treeIndex, double elevation)
-  : mSkeleton(skeleton),
-    mTreeIndex(treeIndex),
-    mElevation(elevation)
+SupportPolygonVisual::SupportPolygonVisual(
+    const dart::dynamics::SkeletonPtr& skeleton,
+    std::size_t treeIndex,
+    double elevation)
+  : mSkeleton(skeleton), mTreeIndex(treeIndex), mElevation(elevation)
 {
   initialize();
 }
 
 //==============================================================================
-void SupportPolygonVisual::setSkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+void SupportPolygonVisual::setSkeleton(
+    const dart::dynamics::SkeletonPtr& skeleton)
 {
   mSkeleton = skeleton;
 }
@@ -101,12 +102,12 @@ double SupportPolygonVisual::getDisplayElevation() const
 //==============================================================================
 void SupportPolygonVisual::displayPolygon(bool display)
 {
-  if(mDisplayPolygon == display)
+  if (mDisplayPolygon == display)
     return;
 
   mDisplayPolygon = display;
 
-  if(mDisplayPolygon)
+  if (mDisplayPolygon)
     addChild(mPolygonGeode);
   else
     removeChild(mPolygonGeode);
@@ -129,12 +130,12 @@ Eigen::Vector4d SupportPolygonVisual::getPolygonColor() const
 //==============================================================================
 void SupportPolygonVisual::displayCentroid(bool display)
 {
-  if(mDisplayCentroid == display)
+  if (mDisplayCentroid == display)
     return;
 
   mDisplayCentroid = display;
 
-  if(mDisplayCentroid)
+  if (mDisplayCentroid)
     addChild(mCentroidNode);
   else
     removeChild(mCentroidNode);
@@ -149,13 +150,13 @@ bool SupportPolygonVisual::isCentroidDisplayed() const
 //==============================================================================
 void SupportPolygonVisual::setCentroidRadius(double radius)
 {
-  if(mCentroidRadius == radius)
+  if (mCentroidRadius == radius)
     return;
 
   mCentroidRadius = radius;
   const dart::dynamics::ShapePtr& shape = mCentroid->getShape();
   std::static_pointer_cast<dart::dynamics::SphereShape>(shape)->setRadius(
-        mCentroidRadius/4.0);
+      mCentroidRadius / 4.0);
   shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
 }
 
@@ -168,12 +169,12 @@ double SupportPolygonVisual::getCentroidRadius() const
 //==============================================================================
 void SupportPolygonVisual::displayCenterOfMass(bool display)
 {
-  if(mDisplayCOM == display)
+  if (mDisplayCOM == display)
     return;
 
   mDisplayCOM = display;
 
-  if(mDisplayCOM)
+  if (mDisplayCOM)
     addChild(mComNode);
   else
     removeChild(mComNode);
@@ -188,13 +189,13 @@ bool SupportPolygonVisual::isCenterOfMassDisplayed() const
 //==============================================================================
 void SupportPolygonVisual::setCenterOfMassRadius(double radius)
 {
-  if(mComRadius == radius)
+  if (mComRadius == radius)
     return;
 
   mComRadius = radius;
   const dart::dynamics::ShapePtr& shape = mCom->getShape();
   std::static_pointer_cast<dart::dynamics::SphereShape>(shape)->setRadius(
-        mComRadius/4.0);
+      mComRadius / 4.0);
   shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
 }
 
@@ -232,26 +233,28 @@ const Eigen::Vector4d& SupportPolygonVisual::getInvalidCOMColor() const
 void SupportPolygonVisual::refresh()
 {
   const dart::dynamics::SkeletonPtr& skel = mSkeleton.lock();
-  if(nullptr == skel)
+  if (nullptr == skel)
     return;
 
-  const dart::math::SupportPolygon& poly =
-      (dart::dynamics::INVALID_INDEX == mTreeIndex)?
-        skel->getSupportPolygon() : skel->getSupportPolygon(mTreeIndex);
+  const dart::math::SupportPolygon& poly
+      = (dart::dynamics::INVALID_INDEX == mTreeIndex)
+            ? skel->getSupportPolygon()
+            : skel->getSupportPolygon(mTreeIndex);
 
-  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& axes =
-      (dart::dynamics::INVALID_INDEX == mTreeIndex)?
-        skel->getSupportAxes() : skel->getSupportAxes(mTreeIndex);
+  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& axes
+      = (dart::dynamics::INVALID_INDEX == mTreeIndex)
+            ? skel->getSupportAxes()
+            : skel->getSupportAxes(mTreeIndex);
   const Eigen::Vector3d& up = axes.first.cross(axes.second);
 
-  if(mDisplayPolygon)
+  if (mDisplayPolygon)
   {
     mVertices->resize(poly.size());
     mFaces->resize(poly.size());
-    for(std::size_t i=0; i < poly.size(); ++i)
+    for (std::size_t i = 0; i < poly.size(); ++i)
     {
-      const Eigen::Vector3d& v = axes.first*poly[i][0] + axes.second*poly[i][1]
-                                  + up*mElevation;
+      const Eigen::Vector3d& v = axes.first * poly[i][0]
+                                 + axes.second * poly[i][1] + up * mElevation;
       (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
       (*mFaces)[i] = i;
     }
@@ -260,17 +263,18 @@ void SupportPolygonVisual::refresh()
     mPolygonGeom->setPrimitiveSet(0, mFaces);
   }
 
-  if(mDisplayCentroid)
+  if (mDisplayCentroid)
   {
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
-    if(poly.size() > 0)
+    if (poly.size() > 0)
     {
-      const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)?
-            skel->getSupportCentroid() : skel->getSupportCentroid(mTreeIndex);
+      const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)
+                                      ? skel->getSupportCentroid()
+                                      : skel->getSupportCentroid(mTreeIndex);
 
-      const Eigen::Vector3d& C = Cp[0]*axes.first + Cp[1]*axes.second
-                                 + up*mElevation;
+      const Eigen::Vector3d& C
+          = Cp[0] * axes.first + Cp[1] * axes.second + up * mElevation;
 
       tf.translation() = C;
     }
@@ -287,13 +291,13 @@ void SupportPolygonVisual::refresh()
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCentroid->getShape()->removeDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+        dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
   }
 
-  if(mDisplayCOM)
+  if (mDisplayCOM)
   {
     Eigen::Vector3d com(Eigen::Vector3d::Zero());
-    if(dart::dynamics::INVALID_INDEX == mTreeIndex)
+    if (dart::dynamics::INVALID_INDEX == mTreeIndex)
     {
       com = skel->getCOM();
     }
@@ -301,11 +305,11 @@ void SupportPolygonVisual::refresh()
     {
       // We need to calculate tree COM ourselves, because that is not provided
       // by the API (yet)
-      const std::vector<dart::dynamics::BodyNode*>& bns =
-          skel->getTreeBodyNodes(mTreeIndex);
+      const std::vector<dart::dynamics::BodyNode*>& bns
+          = skel->getTreeBodyNodes(mTreeIndex);
 
       double mass = 0.0;
-      for(std::size_t i=0; i < bns.size(); ++i)
+      for (std::size_t i = 0; i < bns.size(); ++i)
       {
         dart::dynamics::BodyNode* bn = bns[i];
         com += bn->getMass() * bn->getCOM();
@@ -313,20 +317,19 @@ void SupportPolygonVisual::refresh()
       }
 
       assert(mass != 0.0);
-      com = com/mass;
+      com = com / mass;
     }
 
-    const Eigen::Vector2d& Cproj = Eigen::Vector2d(com.dot(axes.first),
-                                                   com.dot(axes.second));
-    const Eigen::Vector3d& C = Cproj[0]*axes.first
-                             + Cproj[1]*axes.second
-                             + up*mElevation;
+    const Eigen::Vector2d& Cproj
+        = Eigen::Vector2d(com.dot(axes.first), com.dot(axes.second));
+    const Eigen::Vector3d& C
+        = Cproj[0] * axes.first + Cproj[1] * axes.second + up * mElevation;
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translation() = C;
     mCom->setTransform(tf);
 
-    if(dart::math::isInsideSupportPolygon(Cproj, poly))
+    if (dart::math::isInsideSupportPolygon(Cproj, poly))
       mCom->getVisualAspect(true)->setColor(mValidColor);
     else
       mCom->getVisualAspect(true)->setColor(mInvalidColor);
@@ -335,7 +338,7 @@ void SupportPolygonVisual::refresh()
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCom->getShape()->removeDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+        dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
   }
 }
 
@@ -344,7 +347,8 @@ void SupportPolygonVisual::initialize()
 {
   mDisplayPolygon = true;
   mPolygonGeode = new ::osg::Geode;
-  mPolygonGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, ::osg::StateAttribute::OFF);
+  mPolygonGeode->getOrCreateStateSet()->setMode(
+      GL_LIGHTING, ::osg::StateAttribute::OFF);
   addChild(mPolygonGeode);
 
   mPolygonGeom = new ::osg::Geometry;
@@ -367,14 +371,14 @@ void SupportPolygonVisual::initialize()
 
   mDisplayCentroid = true;
   mCentroid = std::make_shared<dart::dynamics::SimpleFrame>(
-        dart::dynamics::Frame::World(), "centroid");
+      dart::dynamics::Frame::World(), "centroid");
 
   mCentroidRadius = 0.12;
   mCentroid->setShape(
-        std::make_shared<dart::dynamics::SphereShape>(mCentroidRadius/4.0));
+      std::make_shared<dart::dynamics::SphereShape>(mCentroidRadius / 4.0));
 
   mCentroid->getVisualAspect(true)->setColor(
-        Eigen::Vector4d(color[0], color[1], color[2], color[3]));
+      Eigen::Vector4d(color[0], color[1], color[2], color[3]));
 
   mCentroidNode = new ShapeFrameNode(mCentroid.get(), nullptr);
   addChild(mCentroidNode);
@@ -384,10 +388,11 @@ void SupportPolygonVisual::initialize()
 
   mDisplayCOM = true;
   mCom = std::make_shared<dart::dynamics::SimpleFrame>(
-        dart::dynamics::Frame::World(), "com");
+      dart::dynamics::Frame::World(), "com");
 
   mComRadius = mCentroidRadius;
-  mCom->setShape(std::make_shared<dart::dynamics::SphereShape>(mComRadius/4.0));
+  mCom->setShape(
+      std::make_shared<dart::dynamics::SphereShape>(mComRadius / 4.0));
   mCom->getShape()->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
 
   mComNode = new ShapeFrameNode(mCom.get(), nullptr);

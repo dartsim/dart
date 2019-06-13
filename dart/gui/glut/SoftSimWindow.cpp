@@ -45,9 +45,7 @@ namespace gui {
 namespace glut {
 
 SoftSimWindow::SoftSimWindow()
-  : SimWindow(),
-    mShowPointMasses(false),
-    mShowMeshs(true)
+  : SimWindow(), mShowPointMasses(false), mShowMeshs(true)
 {
 }
 
@@ -59,12 +57,12 @@ void SoftSimWindow::keyboard(unsigned char key, int x, int y)
 {
   switch (key)
   {
-    case ' ':  // use space key to play or stop the motion
+    case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
         mPlay = false;
       break;
-    case 'p':  // playBack
+    case 'p': // playBack
       mPlay = !mPlay;
       if (mPlay)
         mSimulating = false;
@@ -87,7 +85,7 @@ void SoftSimWindow::keyboard(unsigned char key, int x, int y)
     //     glutPostRedisplay();
     //   }
     //   break;
-    case 'v':  // show or hide markers
+    case 'v': // show or hide markers
       mShowMarkers = !mShowMarkers;
       break;
     case 'n':
@@ -102,6 +100,6 @@ void SoftSimWindow::keyboard(unsigned char key, int x, int y)
   glutPostRedisplay();
 }
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart

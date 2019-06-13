@@ -83,3 +83,9 @@ foreach(collision_engine
   endif()
 
 endforeach()
+
+dart_format_add(
+  GeneratedWamIkFast.cpp
+  SharedLibraryWamIkFast.hpp
+  SharedLibraryWamIkFast.cpp
+)

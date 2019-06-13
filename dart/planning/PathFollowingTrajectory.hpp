@@ -45,58 +45,87 @@ namespace planning {
 class PathFollowingTrajectory : public Trajectory
 {
 public:
-	PathFollowingTrajectory(const Path &path, const Eigen::VectorXd &maxVelocity, const Eigen::VectorXd &maxAcceleration);
-	~PathFollowingTrajectory(void);
+  PathFollowingTrajectory(
+      const Path& path,
+      const Eigen::VectorXd& maxVelocity,
+      const Eigen::VectorXd& maxAcceleration);
+  ~PathFollowingTrajectory(void);
 
-	bool isValid() const;
-	double getDuration() const;
-	Eigen::VectorXd getPosition(double time) const;
-	Eigen::VectorXd getVelocity(double time) const;
-	double getMaxAccelerationError();
+  bool isValid() const;
+  double getDuration() const;
+  Eigen::VectorXd getPosition(double time) const;
+  Eigen::VectorXd getVelocity(double time) const;
+  double getMaxAccelerationError();
 
 private:
-	struct TrajectoryStep {
-		TrajectoryStep() {}
-		TrajectoryStep(double pathPos, double pathVel) :
-			pathPos(pathPos),
-      pathVel(pathVel),
-      time(0.0)
-		{}
-		double pathPos;
-		double pathVel;
-		double time;
-	};
+  struct TrajectoryStep
+  {
+    TrajectoryStep()
+    {
+    }
+    TrajectoryStep(double pathPos, double pathVel)
+      : pathPos(pathPos), pathVel(pathVel), time(0.0)
+    {
+    }
+    double pathPos;
+    double pathVel;
+    double time;
+  };
 
-	bool getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration);
-	bool getNextAccelerationSwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration);
-	bool getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration);
-	bool integrateForward(std::list<TrajectoryStep> &trajectory, double acceleration);
-	void integrateBackward(std::list<TrajectoryStep> &trajectory, std::list<TrajectoryStep> &startTrajectory, double acceleration);
-	double getMinMaxPathAcceleration(double pathPosition, double pathVelocity, bool max);
-	double getMinMaxPhaseSlope(double pathPosition, double pathVelocity, bool max);
-	double getAccelerationMaxPathVelocity(double pathPos);
-	double getVelocityMaxPathVelocity(double pathPos);
-	double getAccelerationMaxPathVelocityDeriv(double pathPos);
-	double getVelocityMaxPathVelocityDeriv(double pathPos);
-	
-	TrajectoryStep getIntersection(const std::list<TrajectoryStep> &trajectory, std::list<TrajectoryStep>::iterator &it, const TrajectoryStep &linePoint1, const TrajectoryStep &linePoint2);
-	inline double getSlope(const TrajectoryStep &point1, const TrajectoryStep &point2);
-	inline double getSlope(std::list<TrajectoryStep>::const_iterator lineEnd);
-	
-	std::list<TrajectoryStep>::const_iterator getTrajectorySegment(double time) const;
-	
-	Path path;
-	Eigen::VectorXd maxVelocity;
-	Eigen::VectorXd maxAcceleration;
-	unsigned int n;
-	bool valid;
-	std::list<TrajectoryStep> trajectory;
+  bool getNextSwitchingPoint(
+      double pathPos,
+      TrajectoryStep& nextSwitchingPoint,
+      double& beforeAcceleration,
+      double& afterAcceleration);
+  bool getNextAccelerationSwitchingPoint(
+      double pathPos,
+      TrajectoryStep& nextSwitchingPoint,
+      double& beforeAcceleration,
+      double& afterAcceleration);
+  bool getNextVelocitySwitchingPoint(
+      double pathPos,
+      TrajectoryStep& nextSwitchingPoint,
+      double& beforeAcceleration,
+      double& afterAcceleration);
+  bool integrateForward(
+      std::list<TrajectoryStep>& trajectory, double acceleration);
+  void integrateBackward(
+      std::list<TrajectoryStep>& trajectory,
+      std::list<TrajectoryStep>& startTrajectory,
+      double acceleration);
+  double getMinMaxPathAcceleration(
+      double pathPosition, double pathVelocity, bool max);
+  double getMinMaxPhaseSlope(
+      double pathPosition, double pathVelocity, bool max);
+  double getAccelerationMaxPathVelocity(double pathPos);
+  double getVelocityMaxPathVelocity(double pathPos);
+  double getAccelerationMaxPathVelocityDeriv(double pathPos);
+  double getVelocityMaxPathVelocityDeriv(double pathPos);
 
-	static const double eps;
-	static const double timeStep;
+  TrajectoryStep getIntersection(
+      const std::list<TrajectoryStep>& trajectory,
+      std::list<TrajectoryStep>::iterator& it,
+      const TrajectoryStep& linePoint1,
+      const TrajectoryStep& linePoint2);
+  inline double getSlope(
+      const TrajectoryStep& point1, const TrajectoryStep& point2);
+  inline double getSlope(std::list<TrajectoryStep>::const_iterator lineEnd);
 
-	mutable double cachedTime;
-	mutable std::list<TrajectoryStep>::const_iterator cachedTrajectorySegment;
+  std::list<TrajectoryStep>::const_iterator getTrajectorySegment(
+      double time) const;
+
+  Path path;
+  Eigen::VectorXd maxVelocity;
+  Eigen::VectorXd maxAcceleration;
+  unsigned int n;
+  bool valid;
+  std::list<TrajectoryStep> trajectory;
+
+  static const double eps;
+  static const double timeStep;
+
+  mutable double cachedTime;
+  mutable std::list<TrajectoryStep>::const_iterator cachedTrajectorySegment;
 };
 
 } // namespace planning

@@ -40,10 +40,10 @@
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/math/math.hpp"
 #if HAVE_ODE
-#include "dart/collision/ode/ode.hpp"
+#  include "dart/collision/ode/ode.hpp"
 #endif
 #if HAVE_BULLET
-#include "dart/collision/bullet/bullet.hpp"
+#  include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
