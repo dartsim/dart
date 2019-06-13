@@ -33,11 +33,11 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 
+#include <atomic>
 #include <memory>
 #include <mutex>
-#include <atomic>
 
-namespace dart{
+namespace dart {
 namespace dynamics {
 
 class Skeleton;
@@ -53,8 +53,10 @@ struct MutexedWeakSkeletonPtr
 class SkeletonRefCountingBase
 {
 public:
-  template<class> friend class TemplateBodyNodePtr;
-  template<class> friend class TemplateWeakBodyNodePtr;
+  template <class>
+  friend class TemplateBodyNodePtr;
+  template <class>
+  friend class TemplateWeakBodyNodePtr;
 
   /// Return the Skeleton this BodyNode belongs to
   std::shared_ptr<Skeleton> getSkeleton();
@@ -63,7 +65,6 @@ public:
   std::shared_ptr<const Skeleton> getSkeleton() const;
 
 private:
-
   //--------------------------------------------------------------------------
   // Reference counting
   //--------------------------------------------------------------------------
@@ -77,7 +78,6 @@ private:
   void decrementReferenceCount() const;
 
 protected:
-
   /// Default Constructor
   SkeletonRefCountingBase();
 
@@ -99,7 +99,6 @@ protected:
   /// mutex to ensure thread safety. This is used by WeakBodyNodePtrs to know
   /// when this BodyNode has expired.
   std::shared_ptr<MutexedWeakSkeletonPtr> mLockedSkeleton;
-
 };
 
 /// TemplateBodyNodePtr is a templated class that enables users to create a
@@ -111,15 +110,19 @@ class TemplateBodyNodePtr
 {
 public:
   /// Default constructor
-  TemplateBodyNodePtr() : mPtr(nullptr) { }
+  TemplateBodyNodePtr() : mPtr(nullptr)
+  {
+  }
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
-  TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
+  TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr)
+  {
+    set(_ptr);
+  }
 
   /// User defined copy-constructor
-  TemplateBodyNodePtr(const TemplateBodyNodePtr& _bnp)
-    : mPtr(nullptr)
+  TemplateBodyNodePtr(const TemplateBodyNodePtr& _bnp) : mPtr(nullptr)
   {
     set(_bnp.get());
   }
@@ -133,11 +136,14 @@ public:
   }
 
   /// Destructor. Releases the BodyNode reference before being destroyed
-  ~TemplateBodyNodePtr() { set(nullptr); }
+  ~TemplateBodyNodePtr()
+  {
+    set(nullptr);
+  }
 
   /// Change the BodyNode that this BodyNodePtr references
   template <class OtherBodyNodeT>
-  TemplateBodyNodePtr& operator = (
+  TemplateBodyNodePtr& operator=(
       const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp)
   {
     set(_bnp.get());
@@ -145,40 +151,52 @@ public:
   }
 
   /// Assignment operator
-  TemplateBodyNodePtr& operator = (BodyNodeT* _ptr)
+  TemplateBodyNodePtr& operator=(BodyNodeT* _ptr)
   {
     set(_ptr);
     return *this;
   }
 
   /// Implicit conversion
-  operator BodyNodeT*() const { return mPtr; }
+  operator BodyNodeT*() const
+  {
+    return mPtr;
+  }
 
   /// Dereferencing operator
-  BodyNodeT& operator*() const { return *mPtr; }
+  BodyNodeT& operator*() const
+  {
+    return *mPtr;
+  }
 
   /// Dereferencing operation
-  BodyNodeT* operator->() const { return mPtr; }
+  BodyNodeT* operator->() const
+  {
+    return mPtr;
+  }
 
   /// Get the raw BodyNode pointer
-  BodyNodeT* get() const { return mPtr; }
+  BodyNodeT* get() const
+  {
+    return mPtr;
+  }
 
   /// Set the BodyNode for this BodyNodePtr
   void set(BodyNodeT* _ptr)
   {
-    if(mPtr == _ptr)
+    if (mPtr == _ptr)
       return;
 
-    if(nullptr != mPtr)
+    if (nullptr != mPtr)
     {
-      static_cast<const SkeletonRefCountingBase*>(mPtr)->
-          decrementReferenceCount();
+      static_cast<const SkeletonRefCountingBase*>(mPtr)
+          ->decrementReferenceCount();
     }
 
-    if(nullptr != _ptr)
+    if (nullptr != _ptr)
     {
-      static_cast<const SkeletonRefCountingBase*>(_ptr)->
-          incrementReferenceCount();
+      static_cast<const SkeletonRefCountingBase*>(_ptr)
+          ->incrementReferenceCount();
     }
 
     mPtr = _ptr;
@@ -198,24 +216,32 @@ template <class BodyNodeT>
 class TemplateWeakBodyNodePtr
 {
 public:
-
-  template<class> friend class TemplateWeakBodyNodePtr;
+  template <class>
+  friend class TemplateWeakBodyNodePtr;
 
   /// Default constructor
-  TemplateWeakBodyNodePtr() : mPtr(nullptr) { }
+  TemplateWeakBodyNodePtr() : mPtr(nullptr)
+  {
+  }
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
-  TemplateWeakBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
+  TemplateWeakBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr)
+  {
+    set(_ptr);
+  }
 
   /// Constructor that takes in a WeakBodyNodePtr
   template <class OtherBodyNodeT>
   TemplateWeakBodyNodePtr(
       const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
-    : mPtr(nullptr) { set(_weakPtr); }
+    : mPtr(nullptr)
+  {
+    set(_weakPtr);
+  }
 
   /// Assignment operator for raw BodyNode pointers
-  TemplateWeakBodyNodePtr& operator = (BodyNodeT* _ptr)
+  TemplateWeakBodyNodePtr& operator=(BodyNodeT* _ptr)
   {
     set(_ptr);
     return *this;
@@ -223,7 +249,7 @@ public:
 
   /// Assignment operator for WeakBodyNodePtrs
   template <class OtherBodyNodeT>
-  TemplateWeakBodyNodePtr& operator = (
+  TemplateWeakBodyNodePtr& operator=(
       const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
   {
     set(_weakPtr);
@@ -239,7 +265,7 @@ public:
   /// function in a BodyNodePtr.
   TemplateBodyNodePtr<BodyNodeT> lock() const
   {
-    if(nullptr == mLocker)
+    if (nullptr == mLocker)
       return nullptr;
 
     // We do not use the expired() function here, because we want to ensure that
@@ -247,7 +273,7 @@ public:
     // BodyNodePtr that we're going to return.
     std::lock_guard<std::mutex> lock(mLocker->mMutex);
     std::shared_ptr<const Skeleton> skeleton = mLocker->mSkeleton.lock();
-    if(nullptr == skeleton)
+    if (nullptr == skeleton)
       return nullptr;
 
     return TemplateBodyNodePtr<BodyNodeT>(mPtr);
@@ -258,11 +284,11 @@ public:
   {
     mPtr = _ptr;
 
-    if(nullptr == mPtr)
+    if (nullptr == mPtr)
       mLocker = nullptr;
     else
-      mLocker = static_cast<const SkeletonRefCountingBase*>(_ptr)->
-          mLockedSkeleton;
+      mLocker
+          = static_cast<const SkeletonRefCountingBase*>(_ptr)->mLockedSkeleton;
   }
 
   /// Attempt to set the BodyNode for this WeakBodyNodePtr based on another
@@ -270,16 +296,16 @@ public:
   template <class OtherBodyNodeT>
   void set(const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
   {
-    if(nullptr == _weakPtr.mLocker)
+    if (nullptr == _weakPtr.mLocker)
     {
       set(nullptr);
       return;
     }
 
     std::lock_guard<std::mutex> lock(_weakPtr.mLocker->mMutex);
-    std::shared_ptr<const Skeleton> skeleton =
-        _weakPtr.mLocker->mSkeleton.lock();
-    if(nullptr == skeleton)
+    std::shared_ptr<const Skeleton> skeleton
+        = _weakPtr.mLocker->mSkeleton.lock();
+    if (nullptr == skeleton)
     {
       set(nullptr);
       return;
@@ -298,14 +324,14 @@ public:
   /// BodyNodePtr
   bool expired() const
   {
-    if(nullptr == mLocker)
+    if (nullptr == mLocker)
       return true;
 
     // It is okay for 'lock' to go "unused", because it is managed by RAII after
     // it has been initialized
     std::lock_guard<std::mutex> lock(mLocker->mMutex);
     std::shared_ptr<const Skeleton> skeleton = mLocker->mSkeleton.lock();
-    if(nullptr == skeleton)
+    if (nullptr == skeleton)
       return true;
 
     return false;
@@ -319,7 +345,6 @@ private:
   /// into a BodyNodePtr
   std::shared_ptr<MutexedWeakSkeletonPtr> mLocker;
 };
-
 
 } // namespace dynamics
 } // namespace dart

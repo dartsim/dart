@@ -78,5 +78,5 @@ bool DistanceResult::isMinDistanceClamped() const
   return found() && (minDistance == unclampedMinDistance);
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

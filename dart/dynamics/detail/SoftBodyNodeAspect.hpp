@@ -33,16 +33,16 @@
 #ifndef DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_HPP_
 
+#include "dart/common/RequiresAspect.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
-#include "dart/common/RequiresAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
 const double DART_DEFAULT_VERTEX_STIFFNESS = 1.0;
-const double DART_DEFAULT_EDGE_STIFNESS    = 1.0;
-const double DART_DEFAULT_DAMPING_COEFF    = 0.01;
+const double DART_DEFAULT_EDGE_STIFNESS = 1.0;
+const double DART_DEFAULT_DAMPING_COEFF = 0.01;
 
 class SoftBodyNode;
 class SoftMeshShape;
@@ -86,10 +86,10 @@ struct SoftBodyNodeUniqueProperties
       double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
       double _Ke = DART_DEFAULT_EDGE_STIFNESS,
       double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
-      const std::vector<PointMass::Properties>& _points =
-                                        std::vector<PointMass::Properties>(),
-      const std::vector<Eigen::Vector3i>& _faces =
-                                        std::vector<Eigen::Vector3i>());
+      const std::vector<PointMass::Properties>& _points
+      = std::vector<PointMass::Properties>(),
+      const std::vector<Eigen::Vector3i>& _faces
+      = std::vector<Eigen::Vector3i>());
 
   virtual ~SoftBodyNodeUniqueProperties() = default;
 
@@ -104,22 +104,24 @@ struct SoftBodyNodeUniqueProperties
 };
 
 //==============================================================================
-struct SoftBodyNodeProperties
-    : BodyNode::Properties, SoftBodyNodeUniqueProperties
+struct SoftBodyNodeProperties : BodyNode::Properties,
+                                SoftBodyNodeUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SoftBodyNodeProperties)
 
   SoftBodyNodeProperties(
       const BodyNode::Properties& _bodyProperties = BodyNode::Properties(),
-      const SoftBodyNodeUniqueProperties& _softProperties =
-                                          SoftBodyNodeUniqueProperties());
+      const SoftBodyNodeUniqueProperties& _softProperties
+      = SoftBodyNodeUniqueProperties());
 
   virtual ~SoftBodyNodeProperties() = default;
 };
 
 //==============================================================================
 using SoftBodyNodeBase = common::EmbedStateAndPropertiesOnTopOf<
-    SoftBodyNode, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
+    SoftBodyNode,
+    SoftBodyNodeUniqueState,
+    SoftBodyNodeUniqueProperties,
     BodyNode>;
 
 } // namespace detail

@@ -47,7 +47,6 @@ namespace dynamics {
 class PlanarJoint : public detail::PlanarJointBase
 {
 public:
-
   friend class Skeleton;
   using PlaneType = detail::PlaneType;
   using UniqueProperties = detail::PlanarJointUniqueProperties;
@@ -112,9 +111,10 @@ public:
   /// \param[in] _transAxis2 Another orthogonal translation axis
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
-  void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                         const Eigen::Vector3d& _transAxis2,
-                         bool _renameDofs = true);
+  void setArbitraryPlane(
+      const Eigen::Vector3d& _transAxis1,
+      const Eigen::Vector3d& _transAxis2,
+      bool _renameDofs = true);
 
   /// Return plane type
   PlaneType getPlaneType() const;
@@ -133,7 +133,6 @@ public:
       const Eigen::Vector3d& _positions) const override;
 
 protected:
-
   /// Constructor called by Skeleton class
   PlanarJoint(const Properties& properties);
 
@@ -150,14 +149,13 @@ protected:
   void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateRelativeJacobian(bool =true) const override;
+  void updateRelativeJacobian(bool = true) const override;
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_PLANARRJOINT_HPP_
-
+#endif // DART_DYNAMICS_PLANARRJOINT_HPP_

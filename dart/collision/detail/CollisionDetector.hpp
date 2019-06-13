@@ -42,8 +42,8 @@ namespace collision {
 
 //==============================================================================
 template <typename... Args>
-std::unique_ptr<CollisionGroup>
-CollisionDetector::createCollisionGroup(const Args&... args)
+std::unique_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
+    const Args&... args)
 {
   auto group = createCollisionGroup();
 
@@ -58,10 +58,10 @@ std::shared_ptr<CollisionGroup>
 CollisionDetector::createCollisionGroupAsSharedPtr(const Args&... args)
 {
   return std::shared_ptr<CollisionGroup>(
-        createCollisionGroup(args...).release());
+      createCollisionGroup(args...).release());
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
+#endif // DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_

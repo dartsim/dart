@@ -50,7 +50,7 @@ constexpr double Contact::getNormalEpsilonSquared()
   return 1e-12;
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
 #endif // DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_

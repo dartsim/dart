@@ -39,16 +39,17 @@ namespace detail {
 //==============================================================================
 PlanarJointUniqueProperties::PlanarJointUniqueProperties(PlaneType _planeType)
 {
-  switch(_planeType)
+  switch (_planeType)
   {
     case PlaneType::ARBITRARY:
     case PlaneType::XY:
       setXYPlane();
-      mPlaneType = _planeType; // In case the PlaneType was supposed to be arbitrary
+      mPlaneType
+          = _planeType; // In case the PlaneType was supposed to be arbitrary
       break;
     case PlaneType::YZ:
       setYZPlane();
-       break;
+      break;
     case PlaneType::ZX:
       setZXPlane();
       break;
@@ -57,8 +58,7 @@ PlanarJointUniqueProperties::PlanarJointUniqueProperties(PlaneType _planeType)
 
 //==============================================================================
 PlanarJointUniqueProperties::PlanarJointUniqueProperties(
-    const Eigen::Vector3d& _transAxis1,
-    const Eigen::Vector3d& _transAxis2)
+    const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2)
 {
   setArbitraryPlane(_transAxis1, _transAxis2);
 }
@@ -67,7 +67,7 @@ PlanarJointUniqueProperties::PlanarJointUniqueProperties(
 PlanarJointUniqueProperties::PlanarJointUniqueProperties(
     const PlanarJointUniqueProperties& other)
 {
-  switch(other.mPlaneType)
+  switch (other.mPlaneType)
   {
     case PlaneType::ARBITRARY:
       setArbitraryPlane(other.mTransAxis1, other.mTransAxis2);
@@ -87,8 +87,8 @@ PlanarJointUniqueProperties::PlanarJointUniqueProperties(
 //==============================================================================
 void PlanarJointUniqueProperties::setXYPlane()
 {
-  mPlaneType  = PlaneType::XY;
-  mRotAxis    = Eigen::Vector3d::UnitZ();
+  mPlaneType = PlaneType::XY;
+  mRotAxis = Eigen::Vector3d::UnitZ();
   mTransAxis1 = Eigen::Vector3d::UnitX();
   mTransAxis2 = Eigen::Vector3d::UnitY();
 }
@@ -96,8 +96,8 @@ void PlanarJointUniqueProperties::setXYPlane()
 //==============================================================================
 void PlanarJointUniqueProperties::setYZPlane()
 {
-  mPlaneType  = PlaneType::YZ;
-  mRotAxis    = Eigen::Vector3d::UnitX();
+  mPlaneType = PlaneType::YZ;
+  mRotAxis = Eigen::Vector3d::UnitX();
   mTransAxis1 = Eigen::Vector3d::UnitY();
   mTransAxis2 = Eigen::Vector3d::UnitZ();
 }
@@ -105,16 +105,15 @@ void PlanarJointUniqueProperties::setYZPlane()
 //==============================================================================
 void PlanarJointUniqueProperties::setZXPlane()
 {
-  mPlaneType  = PlaneType::ZX;
-  mRotAxis    = Eigen::Vector3d::UnitY();
+  mPlaneType = PlaneType::ZX;
+  mRotAxis = Eigen::Vector3d::UnitY();
   mTransAxis1 = Eigen::Vector3d::UnitZ();
   mTransAxis2 = Eigen::Vector3d::UnitX();
 }
 
 //==============================================================================
 void PlanarJointUniqueProperties::setArbitraryPlane(
-    const Eigen::Vector3d& _transAxis1,
-    const Eigen::Vector3d& _transAxis2)
+    const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2)
 {
   // Set plane type as arbitrary plane
   mPlaneType = PlaneType::ARBITRARY;

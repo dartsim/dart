@@ -37,8 +37,8 @@
 #include <typeindex>
 #include <unordered_set>
 
-#include "dart/common/NameManager.hpp"
 #include "dart/common/Empty.hpp"
+#include "dart/common/NameManager.hpp"
 #include "dart/dynamics/Node.hpp"
 
 namespace dart {
@@ -48,18 +48,19 @@ namespace detail {
 class BasicNodeManagerForBodyNode
 {
 public:
-
-  using NodeMap = std::map< std::type_index, std::vector<Node*> >;
+  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
   using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
-  using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
-  using SpecializedTreeNodes = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
+  using NodeNameMgrMap = std::map<std::type_index, common::NameManager<Node*> >;
+  using SpecializedTreeNodes
+      = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
 
   /// Default constructor
   BasicNodeManagerForBodyNode() = default;
 
   /// Delete copy constructors and assignment operators
   BasicNodeManagerForBodyNode(const BasicNodeManagerForBodyNode&) = delete;
-  BasicNodeManagerForBodyNode& operator=(const BasicNodeManagerForBodyNode&) = delete;
+  BasicNodeManagerForBodyNode& operator=(const BasicNodeManagerForBodyNode&)
+      = delete;
 
   /// Get the number of Nodes corresponding to the specified type
   template <class NodeType>
@@ -78,23 +79,23 @@ public:
   static constexpr bool isSpecializedForNode();
 
 protected:
-
-  template <class T> struct type { };
+  template <class T>
+  struct type
+  {
+  };
 
   /// Map that retrieves the Nodes of a specified type
   NodeMap mNodeMap;
 
   /// A set for storing the Node destructors
   NodeDestructorSet mNodeDestructors;
-
 };
 
 class BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
 {
 public:
-
-  using BasicNodeManagerForBodyNode::getNumNodes;
   using BasicNodeManagerForBodyNode::getNode;
+  using BasicNodeManagerForBodyNode::getNumNodes;
 
   /// Get the number of Nodes of the specified type that are in the treeIndexth
   /// tree of this Skeleton
@@ -120,7 +121,6 @@ public:
   const NodeType* getNode(const std::string& name) const;
 
 protected:
-
   /// NameManager for tracking Nodes
   NodeNameMgrMap mNodeNameMgrMap;
 
@@ -134,7 +134,6 @@ protected:
   /// Node specialization to be extensible, enabling custom derived Skeleton
   /// types that are specialized for more than the default specialized Nodes.
   SpecializedTreeNodes mSpecializedTreeNodes;
-
 };
 
 //==============================================================================
@@ -142,7 +141,7 @@ template <class NodeType>
 std::size_t BasicNodeManagerForBodyNode::getNumNodes() const
 {
   NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-  if(mNodeMap.end() == it)
+  if (mNodeMap.end() == it)
     return 0;
 
   return it->second.size();
@@ -153,18 +152,18 @@ template <class NodeType>
 NodeType* BasicNodeManagerForBodyNode::getNode(std::size_t index)
 {
   NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-  if(mNodeMap.end() == it)
+  if (mNodeMap.end() == it)
     return nullptr;
 
-  return static_cast<NodeType*>(
-        getVectorObjectIfAvailable(index, it->second));
+  return static_cast<NodeType*>(getVectorObjectIfAvailable(index, it->second));
 }
 
 //==============================================================================
 template <class NodeType>
 const NodeType* BasicNodeManagerForBodyNode::getNode(std::size_t index) const
 {
-  return const_cast<BasicNodeManagerForBodyNode*>(this)->getNode<NodeType>(index);
+  return const_cast<BasicNodeManagerForBodyNode*>(this)->getNode<NodeType>(
+      index);
 }
 
 //==============================================================================
@@ -177,9 +176,10 @@ constexpr bool BasicNodeManagerForBodyNode::isSpecializedForNode()
 
 //==============================================================================
 template <class NodeType>
-std::size_t BasicNodeManagerForSkeleton::getNumNodes(std::size_t treeIndex) const
+std::size_t BasicNodeManagerForSkeleton::getNumNodes(
+    std::size_t treeIndex) const
 {
-  if(treeIndex >= mTreeNodeMaps.size())
+  if (treeIndex >= mTreeNodeMaps.size())
   {
     dterr << "[Skeleton::getNumNodes<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
@@ -190,7 +190,7 @@ std::size_t BasicNodeManagerForSkeleton::getNumNodes(std::size_t treeIndex) cons
 
   const NodeMap& nodeMap = mTreeNodeMaps[treeIndex];
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
-  if(nodeMap.end() == it)
+  if (nodeMap.end() == it)
     return 0;
 
   return it->second.size();
@@ -201,7 +201,7 @@ template <class NodeType>
 NodeType* BasicNodeManagerForSkeleton::getNode(
     std::size_t treeIndex, std::size_t nodeIndex)
 {
-  if(treeIndex >= mTreeNodeMaps.size())
+  if (treeIndex >= mTreeNodeMaps.size())
   {
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
@@ -212,7 +212,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
 
   const NodeMap& nodeMap = mTreeNodeMaps[treeIndex];
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
-  if(nodeMap.end() == it)
+  if (nodeMap.end() == it)
   {
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
@@ -221,7 +221,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
     return nullptr;
   }
 
-  if(nodeIndex >= it->second.size())
+  if (nodeIndex >= it->second.size())
   {
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
@@ -240,7 +240,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
     std::size_t treeIndex, std::size_t nodeIndex) const
 {
   return const_cast<BasicNodeManagerForSkeleton*>(this)->getNode<NodeType>(
-        treeIndex, nodeIndex);
+      treeIndex, nodeIndex);
 }
 
 //==============================================================================
@@ -249,7 +249,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(const std::string& name)
 {
   NodeNameMgrMap::const_iterator it = mNodeNameMgrMap.find(typeid(NodeType));
 
-  if(mNodeNameMgrMap.end() == it)
+  if (mNodeNameMgrMap.end() == it)
     return nullptr;
 
   return static_cast<NodeType*>(it->second.getObject(name));
@@ -260,97 +260,148 @@ template <class NodeType>
 const NodeType* BasicNodeManagerForSkeleton::getNode(
     const std::string& name) const
 {
-  return const_cast<BasicNodeManagerForSkeleton*>(
-        this)->getNode<NodeType>(name);
+  return const_cast<BasicNodeManagerForSkeleton*>(this)->getNode<NodeType>(
+      name);
 }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AspectName, PluralAspectName )\
-  inline std::size_t getNum ## PluralAspectName () const\
-  { return getNumNodes< TypeName >(); }\
-  inline TypeName * get ## AspectName (std::size_t index)\
-  { return getNode< TypeName >(index); }\
-  inline const TypeName * get ## AspectName (std::size_t index) const\
-  { return getNode< TypeName >(index); }
+#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR(                                  \
+    TypeName, AspectName, PluralAspectName)                                    \
+  inline std::size_t getNum##PluralAspectName() const                          \
+  {                                                                            \
+    return getNumNodes<TypeName>();                                            \
+  }                                                                            \
+  inline TypeName* get##AspectName(std::size_t index)                          \
+  {                                                                            \
+    return getNode<TypeName>(index);                                           \
+  }                                                                            \
+  inline const TypeName* get##AspectName(std::size_t index) const              \
+  {                                                                            \
+    return getNode<TypeName>(index);                                           \
+  }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE( AspectName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR( AspectName, AspectName, AspectName ## s )
+#define DART_BAKE_SPECIALIZED_NODE(AspectName)                                 \
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR(AspectName, AspectName, AspectName##s)
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( TypeName, AspectName, PluralAspectName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AspectName, PluralAspectName )\
-  inline std::size_t getNum ## PluralAspectName (std::size_t treeIndex) const\
-  { return getNumNodes< TypeName >(treeIndex); }\
-  inline TypeName * get ## AspectName (std::size_t treeIndex, std::size_t nodeIndex)\
-  { return getNode< TypeName >(treeIndex, nodeIndex); }\
-  inline const TypeName * get ## AspectName (std::size_t treeIndex, std::size_t nodeIndex) const\
-  { return getNode< TypeName >(treeIndex, nodeIndex); }\
-  \
-  inline TypeName * get ## AspectName (const std::string& name)\
-  { return getNode< TypeName >(name); }\
-  inline const TypeName * get ## AspectName (const std::string& name) const\
-  { return getNode< TypeName >(name); }
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR(                             \
+    TypeName, AspectName, PluralAspectName)                                    \
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR(TypeName, AspectName, PluralAspectName) \
+  inline std::size_t getNum##PluralAspectName(std::size_t treeIndex) const     \
+  {                                                                            \
+    return getNumNodes<TypeName>(treeIndex);                                   \
+  }                                                                            \
+  inline TypeName* get##AspectName(                                            \
+      std::size_t treeIndex, std::size_t nodeIndex)                            \
+  {                                                                            \
+    return getNode<TypeName>(treeIndex, nodeIndex);                            \
+  }                                                                            \
+  inline const TypeName* get##AspectName(                                      \
+      std::size_t treeIndex, std::size_t nodeIndex) const                      \
+  {                                                                            \
+    return getNode<TypeName>(treeIndex, nodeIndex);                            \
+  }                                                                            \
+                                                                               \
+  inline TypeName* get##AspectName(const std::string& name)                    \
+  {                                                                            \
+    return getNode<TypeName>(name);                                            \
+  }                                                                            \
+  inline const TypeName* get##AspectName(const std::string& name) const        \
+  {                                                                            \
+    return getNode<TypeName>(name);                                            \
+  }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL( AspectName )\
-  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( AspectName, AspectName, AspectName ## s)
+#define DART_BAKE_SPECIALIZED_NODE_SKEL(AspectName)                            \
+  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR(                                   \
+      AspectName, AspectName, AspectName##s)
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AspectName, PluralAspectName )\
-  std::size_t getNum ## PluralAspectName () const;\
-  TypeName * get ## AspectName (std::size_t index);\
-  const TypeName * get ## AspectName (std::size_t index) const;
+#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS(                     \
+    TypeName, AspectName, PluralAspectName)                                    \
+  std::size_t getNum##PluralAspectName() const;                                \
+  TypeName* get##AspectName(std::size_t index);                                \
+  const TypeName* get##AspectName(std::size_t index) const;
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( AspectName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( AspectName, AspectName, AspectName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_DECLARATIONS(AspectName)                    \
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS(                           \
+      AspectName, AspectName, AspectName##s)
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( TypeName, AspectName, PluralAspectName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AspectName, PluralAspectName )\
-  std::size_t getNum ## PluralAspectName (std::size_t treeIndex) const;\
-  TypeName * get ## AspectName (std::size_t treeIndex, std::size_t nodeIndex);\
-  const TypeName * get ## AspectName (std::size_t treeIndex, std::size_t nodeIndex) const;\
-  \
-  TypeName * get ## AspectName (const std::string& name);\
-  const TypeName * get ## AspectName (const std::string& name) const;
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS(                \
+    TypeName, AspectName, PluralAspectName)                                    \
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS(                           \
+      TypeName, AspectName, PluralAspectName)                                  \
+  std::size_t getNum##PluralAspectName(std::size_t treeIndex) const;           \
+  TypeName* get##AspectName(std::size_t treeIndex, std::size_t nodeIndex);     \
+  const TypeName* get##AspectName(                                             \
+      std::size_t treeIndex, std::size_t nodeIndex) const;                     \
+                                                                               \
+  TypeName* get##AspectName(const std::string& name);                          \
+  const TypeName* get##AspectName(const std::string& name) const;
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( AspectName )\
-  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( AspectName, AspectName, AspectName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(AspectName)               \
+  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS(                      \
+      AspectName, AspectName, AspectName##s)
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AspectName, PluralAspectName )\
-  std::size_t ClassName :: getNum ## PluralAspectName () const\
-  { return getNumNodes< TypeName >(); }\
-  TypeName * ClassName :: get ## AspectName (std::size_t index)\
-  { return getNode< TypeName >(index); }\
-  const TypeName * ClassName :: get ## AspectName (std::size_t index) const\
-  { return getNode< TypeName >(index); }
+#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS(                      \
+    ClassName, TypeName, AspectName, PluralAspectName)                         \
+  std::size_t ClassName ::getNum##PluralAspectName() const                     \
+  {                                                                            \
+    return getNumNodes<TypeName>();                                            \
+  }                                                                            \
+  TypeName* ClassName ::get##AspectName(std::size_t index)                     \
+  {                                                                            \
+    return getNode<TypeName>(index);                                           \
+  }                                                                            \
+  const TypeName* ClassName ::get##AspectName(std::size_t index) const         \
+  {                                                                            \
+    return getNode<TypeName>(index);                                           \
+  }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( ClassName, AspectName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, AspectName, AspectName, AspectName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_DEFINITIONS(ClassName, AspectName)          \
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS(                            \
+      ClassName, AspectName, AspectName, AspectName##s)
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, TypeName, AspectName, PluralAspectName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AspectName, PluralAspectName )\
-  std::size_t ClassName :: getNum ## PluralAspectName (std::size_t treeIndex) const\
-  { return getNumNodes< TypeName >(treeIndex); }\
-  TypeName * ClassName :: get ## AspectName (std::size_t treeIndex, std::size_t nodeIndex)\
-  { return getNode< TypeName >(treeIndex, nodeIndex); }\
-  const TypeName * ClassName :: get ## AspectName (std::size_t treeIndex, std::size_t nodeIndex) const\
-  { return getNode< TypeName >(treeIndex, nodeIndex); }\
-  \
-  TypeName * ClassName :: get ## AspectName (const std::string& name)\
-  { return getNode< TypeName >(name); }\
-  const TypeName * ClassName :: get ## AspectName (const std::string& name) const\
-  { return getNode< TypeName >(name); }
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS(                 \
+    ClassName, TypeName, AspectName, PluralAspectName)                         \
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS(                            \
+      ClassName, TypeName, AspectName, PluralAspectName)                       \
+  std::size_t ClassName ::getNum##PluralAspectName(std::size_t treeIndex)      \
+      const                                                                    \
+  {                                                                            \
+    return getNumNodes<TypeName>(treeIndex);                                   \
+  }                                                                            \
+  TypeName* ClassName ::get##AspectName(                                       \
+      std::size_t treeIndex, std::size_t nodeIndex)                            \
+  {                                                                            \
+    return getNode<TypeName>(treeIndex, nodeIndex);                            \
+  }                                                                            \
+  const TypeName* ClassName ::get##AspectName(                                 \
+      std::size_t treeIndex, std::size_t nodeIndex) const                      \
+  {                                                                            \
+    return getNode<TypeName>(treeIndex, nodeIndex);                            \
+  }                                                                            \
+                                                                               \
+  TypeName* ClassName ::get##AspectName(const std::string& name)               \
+  {                                                                            \
+    return getNode<TypeName>(name);                                            \
+  }                                                                            \
+  const TypeName* ClassName ::get##AspectName(const std::string& name) const   \
+  {                                                                            \
+    return getNode<TypeName>(name);                                            \
+  }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( ClassName, AspectName )\
-  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, AspectName, AspectName, AspectName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS(ClassName, AspectName)     \
+  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS(                       \
+      ClassName, AspectName, AspectName, AspectName##s)
 
 } // namespace detail
 } // namespace dynamics

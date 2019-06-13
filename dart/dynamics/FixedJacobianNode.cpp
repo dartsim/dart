@@ -40,8 +40,8 @@ namespace dynamics {
 void FixedJacobianNode::setRelativeTransform(
     const Eigen::Isometry3d& newRelativeTf)
 {
-  if(newRelativeTf.matrix() ==
-     FixedFrame::mAspectProperties.mRelativeTf.matrix())
+  if (newRelativeTf.matrix()
+      == FixedFrame::mAspectProperties.mRelativeTf.matrix())
     return;
 
   FixedFrame::setRelativeTransform(newRelativeTf);
@@ -62,13 +62,15 @@ std::size_t FixedJacobianNode::getNumDependentGenCoords() const
 }
 
 //==============================================================================
-std::size_t FixedJacobianNode::getDependentGenCoordIndex(std::size_t _arrayIndex) const
+std::size_t FixedJacobianNode::getDependentGenCoordIndex(
+    std::size_t _arrayIndex) const
 {
   return mBodyNode->getDependentGenCoordIndex(_arrayIndex);
 }
 
 //==============================================================================
-const std::vector<std::size_t>& FixedJacobianNode::getDependentGenCoordIndices() const
+const std::vector<std::size_t>& FixedJacobianNode::getDependentGenCoordIndices()
+    const
 {
   return mBodyNode->getDependentGenCoordIndices();
 }
@@ -86,7 +88,8 @@ DegreeOfFreedom* FixedJacobianNode::getDependentDof(std::size_t _index)
 }
 
 //==============================================================================
-const DegreeOfFreedom* FixedJacobianNode::getDependentDof(std::size_t _index) const
+const DegreeOfFreedom* FixedJacobianNode::getDependentDof(
+    std::size_t _index) const
 {
   return mBodyNode->getDependentDof(_index);
 }
@@ -98,13 +101,15 @@ const std::vector<DegreeOfFreedom*>& FixedJacobianNode::getDependentDofs()
 }
 
 //==============================================================================
-const std::vector<const DegreeOfFreedom*>& FixedJacobianNode::getDependentDofs() const
+const std::vector<const DegreeOfFreedom*>& FixedJacobianNode::getDependentDofs()
+    const
 {
   return static_cast<const BodyNode*>(mBodyNode)->getDependentDofs();
 }
 
 //==============================================================================
-const std::vector<const DegreeOfFreedom*> FixedJacobianNode::getChainDofs() const
+const std::vector<const DegreeOfFreedom*> FixedJacobianNode::getChainDofs()
+    const
 {
   return mBodyNode->getChainDofs();
 }
@@ -121,7 +126,7 @@ const math::Jacobian& FixedJacobianNode::getJacobian() const
 //==============================================================================
 const math::Jacobian& FixedJacobianNode::getWorldJacobian() const
 {
-  if(mIsWorldJacobianDirty)
+  if (mIsWorldJacobianDirty)
     updateWorldJacobian();
 
   return mCache.mWorldJacobian;
@@ -130,7 +135,7 @@ const math::Jacobian& FixedJacobianNode::getWorldJacobian() const
 //==============================================================================
 const math::Jacobian& FixedJacobianNode::getJacobianSpatialDeriv() const
 {
-  if(mIsBodyJacobianSpatialDerivDirty)
+  if (mIsBodyJacobianSpatialDerivDirty)
     updateBodyJacobianSpatialDeriv();
 
   return mCache.mBodyJacobianSpatialDeriv;
@@ -139,7 +144,7 @@ const math::Jacobian& FixedJacobianNode::getJacobianSpatialDeriv() const
 //==============================================================================
 const math::Jacobian& FixedJacobianNode::getJacobianClassicDeriv() const
 {
-  if(mIsWorldJacobianClassicDerivDirty)
+  if (mIsWorldJacobianClassicDerivDirty)
     updateWorldJacobianClassicDeriv();
 
   return mCache.mWorldJacobianClassicDeriv;
@@ -156,7 +161,7 @@ FixedJacobianNode::FixedJacobianNode(
 
 //==============================================================================
 FixedJacobianNode::FixedJacobianNode(
-    const std::tuple<BodyNode *, Eigen::Isometry3d>& args)
+    const std::tuple<BodyNode*, Eigen::Isometry3d>& args)
   : FixedJacobianNode(std::get<0>(args), std::get<1>(args))
 {
   // Delegating constructor
@@ -165,8 +170,8 @@ FixedJacobianNode::FixedJacobianNode(
 //==============================================================================
 void FixedJacobianNode::updateBodyJacobian() const
 {
-  mCache.mBodyJacobian = math::AdInvTJac(getRelativeTransform(),
-                                         mBodyNode->getJacobian());
+  mCache.mBodyJacobian
+      = math::AdInvTJac(getRelativeTransform(), mBodyNode->getJacobian());
   mIsBodyJacobianDirty = false;
 }
 
@@ -181,9 +186,8 @@ void FixedJacobianNode::updateWorldJacobian() const
 //==============================================================================
 void FixedJacobianNode::updateBodyJacobianSpatialDeriv() const
 {
-  mCache.mBodyJacobianSpatialDeriv =
-      math::AdInvTJac(getRelativeTransform(),
-                      mBodyNode->getJacobianSpatialDeriv());
+  mCache.mBodyJacobianSpatialDeriv = math::AdInvTJac(
+      getRelativeTransform(), mBodyNode->getJacobianSpatialDeriv());
 
   mIsBodyJacobianSpatialDerivDirty = false;
 }
@@ -194,17 +198,17 @@ void FixedJacobianNode::updateWorldJacobianClassicDeriv() const
   const math::Jacobian& dJ_parent = mBodyNode->getJacobianClassicDeriv();
   const math::Jacobian& J_parent = mBodyNode->getWorldJacobian();
 
-  const Eigen::Vector3d& v_local =
-      getLinearVelocity(mBodyNode, Frame::World());
+  const Eigen::Vector3d& v_local = getLinearVelocity(mBodyNode, Frame::World());
 
   const Eigen::Vector3d& w_parent = mBodyNode->getAngularVelocity();
   const Eigen::Vector3d& p = (getWorldTransform().translation()
-                  - mBodyNode->getWorldTransform().translation()).eval();
+                              - mBodyNode->getWorldTransform().translation())
+                                 .eval();
 
   mCache.mWorldJacobianClassicDeriv = dJ_parent;
-  mCache.mWorldJacobianClassicDeriv.bottomRows<3>().noalias() +=
-      J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
-      + dJ_parent.topRows<3>().colwise().cross(p);
+  mCache.mWorldJacobianClassicDeriv.bottomRows<3>().noalias()
+      += J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
+         + dJ_parent.topRows<3>().colwise().cross(p);
 
   mIsWorldJacobianClassicDerivDirty = false;
 }

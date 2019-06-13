@@ -43,7 +43,6 @@ namespace dynamics {
 class CapsuleShape : public Shape
 {
 public:
-
   /// Constructor.
   /// \param[in] radius Radius of the capsule.
   /// \param[in] height Height of the cylindrical part.
@@ -95,10 +94,9 @@ private:
 
   /// Height of the cylindrical part.
   double mHeight;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_CAPSULESHAPE_HPP_
+#endif // DART_DYNAMICS_CAPSULESHAPE_HPP_

@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_MULTISPHERESHAPE_HPP_
 #define DART_DYNAMICS_MULTISPHERESHAPE_HPP_
 
-#pragma message("This header has been deprecated in DART 6.2. "\
-  "Please include MultiSphereConvexHullShape.hpp intead.")
+#pragma message(                                                               \
+    "This header has been deprecated in DART 6.2. "                            \
+    "Please include MultiSphereConvexHullShape.hpp intead.")
 
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 
-#endif  // DART_DYNAMICS_MULTISPHERESHAPE_HPP_
+#endif // DART_DYNAMICS_MULTISPHERESHAPE_HPP_

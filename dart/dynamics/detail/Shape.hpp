@@ -44,7 +44,7 @@ bool Shape::is() const
   return getType() == ShapeT::getStaticType();
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_DETAIL_SHAPE_HPP_
+#endif // DART_DYNAMICS_DETAIL_SHAPE_HPP_

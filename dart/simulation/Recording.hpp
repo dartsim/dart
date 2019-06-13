@@ -49,7 +49,7 @@ namespace dart {
 
 namespace dynamics {
 class Skeleton;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace simulation {
 
@@ -96,7 +96,7 @@ public:
   Eigen::Vector3d getContactForce(int _frameIdx, int _contactIdx) const;
 
   /// \brief Clear the saved histories
-  void clear();  
+  void clear();
 
   /// \brief Add state
   void addState(const Eigen::VectorXd& _state);
@@ -112,7 +112,7 @@ private:
   std::vector<int> mNumGenCoordsForSkeletons;
 };
 
-}  // namespace simulation
-}  // namespace dart
+} // namespace simulation
+} // namespace dart
 
-#endif  // DART_SIMULATION_RECORDING_HPP_
+#endif // DART_SIMULATION_RECORDING_HPP_

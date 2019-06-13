@@ -36,20 +36,20 @@
 #include <string>
 
 #ifdef _WIN32
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
-  typedef struct
-  {
-    LARGE_INTEGER  start;
-    LARGE_INTEGER  stop;
-  } stopWatch;
+#ifdef NOMINMAX
+#include <windows.h>
 #else
-  #include <sys/time.h>
+#define NOMINMAX
+#include <windows.h>
+#undef NOMINMAX
+#endif
+typedef struct
+{
+  LARGE_INTEGER start;
+  LARGE_INTEGER stop;
+} stopWatch;
+#else
+#include <sys/time.h>
 #endif
 
 namespace dart {
@@ -110,12 +110,12 @@ private:
   bool mIsStarted;
 
 #ifdef _WIN32
-  LARGE_INTEGER  mFrequency;
+  LARGE_INTEGER mFrequency;
   double _convLIToSecs(const LARGE_INTEGER& _L);
 #endif
 };
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart
 
-#endif  // DART_COMMON_TIMER_HPP_
+#endif // DART_COMMON_TIMER_HPP_

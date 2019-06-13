@@ -43,7 +43,6 @@ class DARTCollisionObject;
 class DARTCollisionGroup : public CollisionGroup
 {
 public:
-
   friend class DARTCollisionDetector;
 
   /// Constructor
@@ -53,7 +52,6 @@ public:
   virtual ~DARTCollisionGroup() = default;
 
 protected:
-
   // Documentation inherited
   void initializeEngineData() override;
 
@@ -74,13 +72,11 @@ protected:
   void updateCollisionGroupEngineData() override;
 
 protected:
-
   /// CollisionObjects added to this DARTCollisionGroup
   std::vector<CollisionObject*> mCollisionObjects;
-
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
+#endif // DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_

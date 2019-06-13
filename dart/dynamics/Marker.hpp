@@ -35,30 +35,27 @@
 
 #include <Eigen/Dense>
 #include "dart/common/Deprecated.hpp"
-#include "dart/dynamics/detail/MarkerAspect.hpp"
 #include "dart/dynamics/FixedJacobianNode.hpp"
+#include "dart/dynamics/detail/MarkerAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
 class BodyNode;
 
-class Marker final :
-    public common::EmbedPropertiesOnTopOf<
-      Marker, detail::MarkerProperties,
-      FixedJacobianNode>
+class Marker final : public common::EmbedPropertiesOnTopOf<
+                         Marker,
+                         detail::MarkerProperties,
+                         FixedJacobianNode>
 {
 public:
-
   using ConstraintType = detail::MarkerProperties::ConstraintType;
   static constexpr ConstraintType NO = detail::MarkerProperties::NO;
   static constexpr ConstraintType HARD = detail::MarkerProperties::HARD;
   static constexpr ConstraintType SOFT = detail::MarkerProperties::SOFT;
 
-  using BasicProperties = common::Composite::MakeProperties<
-      NameAspect,
-      FixedFrame,
-      Marker>;
+  using BasicProperties
+      = common::Composite::MakeProperties<NameAspect, FixedFrame, Marker>;
 
   using Properties = common::Composite::Properties;
 
@@ -107,7 +104,6 @@ public:
   friend class BodyNode;
 
 protected:
-
   /// Constructor used by BodyNode
   Marker(BodyNode* parent, const BasicProperties& properties);
 
@@ -120,10 +116,9 @@ private:
 
   /// Counts the number of markers globally.
   static int msMarkerCount;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_MARKER_HPP_
+#endif // DART_DYNAMICS_MARKER_HPP_

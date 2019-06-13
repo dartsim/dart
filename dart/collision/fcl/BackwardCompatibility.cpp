@@ -39,7 +39,7 @@ namespace fcl {
 //==============================================================================
 double length(const dart::collision::fcl::Vector3& t)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t.norm();
 #else
   return t.length();
@@ -49,7 +49,7 @@ double length(const dart::collision::fcl::Vector3& t)
 //==============================================================================
 double length2(const dart::collision::fcl::Vector3& t)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t.squaredNorm();
 #else
   return t.sqrLength();
@@ -60,7 +60,7 @@ double length2(const dart::collision::fcl::Vector3& t)
 dart::collision::fcl::Vector3 getTranslation(
     const dart::collision::fcl::Transform3& T)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T.translation();
 #else
   return T.getTranslation();
@@ -71,7 +71,7 @@ dart::collision::fcl::Vector3 getTranslation(
 void setTranslation(
     dart::collision::fcl::Transform3& T, const dart::collision::fcl::Vector3& t)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   T.translation() = t;
 #else
   T.setTranslation(t);
@@ -82,7 +82,7 @@ void setTranslation(
 dart::collision::fcl::Matrix3 getRotation(
     const dart::collision::fcl::Transform3& T)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T.linear();
 #else
   return T.getRotation();
@@ -93,7 +93,7 @@ dart::collision::fcl::Matrix3 getRotation(
 void setRotation(
     dart::collision::fcl::Transform3& T, const dart::collision::fcl::Matrix3& R)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   T.linear() = R;
 #else
   T.setRotation(R);
@@ -107,7 +107,7 @@ void setEulerZYX(
     double eulerY,
     double eulerZ)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   double ci(cos(eulerX));
   double cj(cos(eulerY));
   double ch(cos(eulerZ));
@@ -119,9 +119,11 @@ void setEulerZYX(
   double sc = si * ch;
   double ss = si * sh;
 
+  // clang-format off
   rot << cj * ch, sj * sc - cs, sj * cc + ss,
          cj * sh, sj * ss + cc, sj * cs - sc,
          -sj,     cj * si,      cj * ci;
+  // clang-format on
 #else
   rot.setEulerZYX(eulerX, eulerY, eulerZ);
 #endif
@@ -129,10 +131,10 @@ void setEulerZYX(
 
 //==============================================================================
 dart::collision::fcl::Vector3 transform(
-      const dart::collision::fcl::Transform3 &t,
-    const dart::collision::fcl::Vector3 &v)
+    const dart::collision::fcl::Transform3& t,
+    const dart::collision::fcl::Vector3& v)
 {
-#if FCL_VERSION_AT_LEAST(0,6,0)
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t * v;
 #else
   return t.transform(v);

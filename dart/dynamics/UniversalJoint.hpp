@@ -42,7 +42,6 @@ namespace dynamics {
 class UniversalJoint : public detail::UniversalJointBase
 {
 public:
-
   friend class Skeleton;
   using UniqueProperties = detail::UniversalJointUniqueProperties;
   using Properties = detail::UniversalJointProperties;
@@ -102,7 +101,6 @@ public:
       const Eigen::Vector2d& _positions) const override;
 
 protected:
-
   /// Constructor called by Skeleton class
   UniversalJoint(const Properties& properties);
 
@@ -118,13 +116,13 @@ protected:
   void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateRelativeJacobian(bool =true) const override;
+  void updateRelativeJacobian(bool = true) const override;
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_UNIVERSALJOINT_HPP_
+#endif // DART_DYNAMICS_UNIVERSALJOINT_HPP_

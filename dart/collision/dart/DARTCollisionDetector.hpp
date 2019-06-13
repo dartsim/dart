@@ -49,8 +49,8 @@ public:
   static std::shared_ptr<DARTCollisionDetector> create();
 
   // Documentation inherited
-  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() const
-  override;
+  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
+      const override;
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -88,7 +88,6 @@ public:
       DistanceResult* result = nullptr) override;
 
 protected:
-
   /// Constructor
   DARTCollisionDetector();
 
@@ -103,7 +102,7 @@ private:
   static Registrar<DARTCollisionDetector> mRegistrar;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
+#endif // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_

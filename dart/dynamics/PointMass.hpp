@@ -35,8 +35,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/math/Helpers.hpp"
 #include "dart/dynamics/Entity.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -68,10 +68,11 @@ public:
     Eigen::Vector3d mForces;
 
     /// Default constructor
-    State(const Eigen::Vector3d& positions = Eigen::Vector3d::Zero(),
-          const Eigen::Vector3d& velocities = Eigen::Vector3d::Zero(),
-          const Eigen::Vector3d& accelerations = Eigen::Vector3d::Zero(),
-          const Eigen::Vector3d& forces = Eigen::Vector3d::Zero());
+    State(
+        const Eigen::Vector3d& positions = Eigen::Vector3d::Zero(),
+        const Eigen::Vector3d& velocities = Eigen::Vector3d::Zero(),
+        const Eigen::Vector3d& accelerations = Eigen::Vector3d::Zero(),
+        const Eigen::Vector3d& forces = Eigen::Vector3d::Zero());
 
     bool operator==(const State& other) const;
 
@@ -114,25 +115,27 @@ public:
     /// Max value allowed.
     Eigen::Vector3d mForceUpperLimits; // Currently unused
 
-    Properties(const Eigen::Vector3d& _X0 = Eigen::Vector3d::Zero(),
-               double _mass = 0.0005,
-               const std::vector<std::size_t>& _connections = std::vector<std::size_t>(),
-               const Eigen::Vector3d& _positionLowerLimits =
-                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
-               const Eigen::Vector3d& _positionUpperLimits =
-                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
-               const Eigen::Vector3d& _velocityLowerLimits =
-                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
-               const Eigen::Vector3d& _velocityUpperLimits =
-                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
-               const Eigen::Vector3d& _accelerationLowerLimits =
-                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
-               const Eigen::Vector3d& _accelerationUpperLimits =
-                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
-               const Eigen::Vector3d& _forceLowerLimits =
-                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
-               const Eigen::Vector3d& _forceUpperLimits =
-                                      Eigen::Vector3d::Constant( math::constantsd::inf()));
+    Properties(
+        const Eigen::Vector3d& _X0 = Eigen::Vector3d::Zero(),
+        double _mass = 0.0005,
+        const std::vector<std::size_t>& _connections
+        = std::vector<std::size_t>(),
+        const Eigen::Vector3d& _positionLowerLimits
+        = Eigen::Vector3d::Constant(-math::constantsd::inf()),
+        const Eigen::Vector3d& _positionUpperLimits
+        = Eigen::Vector3d::Constant(math::constantsd::inf()),
+        const Eigen::Vector3d& _velocityLowerLimits
+        = Eigen::Vector3d::Constant(-math::constantsd::inf()),
+        const Eigen::Vector3d& _velocityUpperLimits
+        = Eigen::Vector3d::Constant(math::constantsd::inf()),
+        const Eigen::Vector3d& _accelerationLowerLimits
+        = Eigen::Vector3d::Constant(-math::constantsd::inf()),
+        const Eigen::Vector3d& _accelerationUpperLimits
+        = Eigen::Vector3d::Constant(math::constantsd::inf()),
+        const Eigen::Vector3d& _forceLowerLimits
+        = Eigen::Vector3d::Constant(-math::constantsd::inf()),
+        const Eigen::Vector3d& _forceUpperLimits
+        = Eigen::Vector3d::Constant(math::constantsd::inf()));
 
     void setRestingPosition(const Eigen::Vector3d& _x);
 
@@ -191,7 +194,6 @@ public:
   ///
   const PointMass* getConnectedPointMass(std::size_t _idx) const;
 
-
   /// Set whether this point mass is colliding with other objects. Note that
   /// this status is set by the constraint solver during dynamics simulation but
   /// not by collision detector.
@@ -207,11 +209,11 @@ public:
   // Documentation inherited
   std::size_t getNumDofs() const;
 
-//  // Documentation inherited
-//  void setIndexInSkeleton(std::size_t _index, std::size_t _indexInSkeleton);
+  //  // Documentation inherited
+  //  void setIndexInSkeleton(std::size_t _index, std::size_t _indexInSkeleton);
 
-//  // Documentation inherited
-//  std::size_t getIndexInSkeleton(std::size_t _index) const;
+  //  // Documentation inherited
+  //  std::size_t getIndexInSkeleton(std::size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Position
@@ -345,12 +347,12 @@ public:
   //   - Following functions are managed by constraint solver.
   //----------------------------------------------------------------------------
   /// Set constraint impulse
-  void setConstraintImpulse(const Eigen::Vector3d& _constImp,
-                            bool _isLocal = false);
+  void setConstraintImpulse(
+      const Eigen::Vector3d& _constImp, bool _isLocal = false);
 
   /// Add constraint impulse
-  void addConstraintImpulse(const Eigen::Vector3d& _constImp,
-                            bool _isLocal = false);
+  void addConstraintImpulse(
+      const Eigen::Vector3d& _constImp, bool _isLocal = false);
 
   /// Clear constraint impulse
   void clearConstraintImpulse();
@@ -386,11 +388,11 @@ public:
 
   /// The number of the generalized coordinates by which this node is
   ///        affected.
-//  int getNumDependentGenCoords() const;
+  //  int getNumDependentGenCoords() const;
 
   /// Return a generalized coordinate index from the array index
   ///        (< getNumDependentDofs).
-//  int getDependentGenCoord(int _arrayIndex) const;
+  //  int getDependentGenCoord(int _arrayIndex) const;
 
   /// Get the generalized velocity at the position of this point mass
   ///        where the velocity is expressed in the parent soft body node frame.
@@ -454,8 +456,8 @@ protected:
   void updateVelocityChangeFD();
 
   /// \brief Update body force. Inverse dynamics routine.
-  void updateTransmittedForceID(const Eigen::Vector3d& _gravity,
-                                bool _withExternalForces = false);
+  void updateTransmittedForceID(
+      const Eigen::Vector3d& _gravity, bool _withExternalForces = false);
 
   /// \brief Update body force. Forward dynamics routine.
   void updateTransmittedForce();
@@ -464,9 +466,8 @@ protected:
   void updateTransmittedImpulse();
 
   /// \brief Update the joint force. Inverse dynamics routine.
-  void updateJointForceID(double _timeStep,
-                          double _withDampingForces,
-                          double _withSpringForces);
+  void updateJointForceID(
+      double _timeStep, double _withDampingForces, double _withSpringForces);
 
   /// \brief Update constrained terms due to the constraint impulses. Foward
   /// dynamics routine.
@@ -485,8 +486,8 @@ protected:
   void aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col);
 
   ///
-  void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
-                              double _timeStep);
+  void aggregateAugMassMatrix(
+      Eigen::MatrixXd& _MCol, int _col, double _timeStep);
 
   ///
   void updateInvMassMatrix();
@@ -498,19 +499,19 @@ protected:
   void aggregateInvMassMatrix(Eigen::MatrixXd& _MInvCol, int _col);
 
   ///
-  void aggregateInvAugMassMatrix(Eigen::MatrixXd& _MInvCol, int _col,
-                                 double _timeStep);
+  void aggregateInvAugMassMatrix(
+      Eigen::MatrixXd& _MInvCol, int _col, double _timeStep);
 
   ///
-  void aggregateGravityForceVector(Eigen::VectorXd& _g,
-                                   const Eigen::Vector3d& _gravity);
+  void aggregateGravityForceVector(
+      Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity);
 
   ///
   void updateCombinedVector();
 
   ///
-  void aggregateCombinedVector(Eigen::VectorXd& _Cg,
-                               const Eigen::Vector3d& _gravity);
+  void aggregateCombinedVector(
+      Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized
   ///        coordinates recursively.
@@ -543,7 +544,7 @@ protected:
 protected:
   // TODO(JS): Need?
   ///
-//  Eigen::Matrix<std::size_t, 3, 1> mIndexInSkeleton;
+  //  Eigen::Matrix<std::size_t, 3, 1> mIndexInSkeleton;
 
   /// SoftBodyNode that this PointMass belongs to
   SoftBodyNode* mParentSoftBodyNode;
@@ -576,7 +577,6 @@ protected:
   // Force
   //----------------------------------------------------------------------------
 
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mForcesDeriv;
 
@@ -587,8 +587,8 @@ protected:
   /// Change of generalized velocity
   Eigen::Vector3d mVelocityChanges;
 
-//  /// Generalized impulse
-//  Eigen::Vector3d mImpulse;
+  //  /// Generalized impulse
+  //  Eigen::Vector3d mImpulse;
 
   /// Generalized constraint impulse
   Eigen::Vector3d mConstraintImpulses;
@@ -663,7 +663,7 @@ protected:
   PointMassNotifier* mNotifier;
 };
 
-//struct PointMassPair
+// struct PointMassPair
 //{
 //  PointMass* pm1;
 //  PointMass* pm2;
@@ -672,7 +672,6 @@ protected:
 class PointMassNotifier : public Entity
 {
 public:
-
   PointMassNotifier(SoftBodyNode* _parentSoftBody, const std::string& _name);
 
   bool needsPartialAccelerationUpdate() const;
@@ -693,17 +692,15 @@ public:
   const std::string& getName() const override;
 
 protected:
-
   std::string mName;
 
   bool mNeedPartialAccelerationUpdate;
   // TODO(JS): Rename this to mIsPartialAccelerationDirty in DART 7
 
   SoftBodyNode* mParentSoftBodyNode;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_POINTMASS_HPP_
+#endif // DART_DYNAMICS_POINTMASS_HPP_

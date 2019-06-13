@@ -63,10 +63,9 @@ struct CollisionOption
       bool enableContact = true,
       std::size_t maxNumContacts = 1000u,
       const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
-
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONOPTION_HPP_
+#endif // DART_COLLISION_COLLISIONOPTION_HPP_

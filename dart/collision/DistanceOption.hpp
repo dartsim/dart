@@ -73,7 +73,7 @@ struct DistanceOption
       const std::shared_ptr<DistanceFilter>& distanceFilter = nullptr);
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DISTANCE_OPTION_HPP_
+#endif // DART_COLLISION_DISTANCE_OPTION_HPP_

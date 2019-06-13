@@ -38,19 +38,15 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-VisualAspectProperties::VisualAspectProperties(const Eigen::Vector4d& color,
-                                             const bool hidden,
-                                             const bool shadowed)
-  : mRGBA(color),
-    mHidden(hidden),
-    mShadowed(shadowed)
+VisualAspectProperties::VisualAspectProperties(
+    const Eigen::Vector4d& color, const bool hidden, const bool shadowed)
+  : mRGBA(color), mHidden(hidden), mShadowed(shadowed)
 {
   // Do nothing
 }
 
 //==============================================================================
-CollisionAspectProperties::CollisionAspectProperties(
-    const bool collidable)
+CollisionAspectProperties::CollisionAspectProperties(const bool collidable)
   : mCollidable(collidable)
 {
   // Do nothing
@@ -58,11 +54,8 @@ CollisionAspectProperties::CollisionAspectProperties(
 
 //==============================================================================
 DynamicsAspectProperties::DynamicsAspectProperties(
-    const double frictionCoeff,
-    const double restitutionCoeff)
-  :
-    mFrictionCoeff(frictionCoeff),
-    mRestitutionCoeff(restitutionCoeff)
+    const double frictionCoeff, const double restitutionCoeff)
+  : mFrictionCoeff(frictionCoeff), mRestitutionCoeff(restitutionCoeff)
 {
   // Do nothing
 }
@@ -161,8 +154,7 @@ bool VisualAspect::isHidden() const
 }
 
 //==============================================================================
-CollisionAspect::CollisionAspect(
-    const PropertiesData& properties)
+CollisionAspect::CollisionAspect(const PropertiesData& properties)
   : AspectImplementation(properties)
 {
   // Do nothing
@@ -175,8 +167,7 @@ bool CollisionAspect::isCollidable() const
 }
 
 //==============================================================================
-DynamicsAspect::DynamicsAspect(
-    const PropertiesData& properties)
+DynamicsAspect::DynamicsAspect(const PropertiesData& properties)
   : Base(properties)
 {
   // Do nothing
@@ -222,18 +213,18 @@ void ShapeFrame::setShape(const ShapePtr& shape)
 
   mConnectionForShapeVersionChange.disconnect();
 
-  if(shape)
+  if (shape)
   {
-    mConnectionForShapeVersionChange = shape->onVersionChanged.connect(
-          [this](Shape* shape, std::size_t)
-          {
+    mConnectionForShapeVersionChange
+        = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
             assert(shape == this->ShapeFrame::mAspectProperties.mShape.get());
             DART_UNUSED(shape);
             this->incrementVersion();
           });
   }
 
-  mShapeUpdatedSignal.raise(this, oldShape, ShapeFrame::mAspectProperties.mShape);
+  mShapeUpdatedSignal.raise(
+      this, oldShape, ShapeFrame::mAspectProperties.mShape);
 }
 
 //==============================================================================
@@ -319,4 +310,3 @@ ShapeFrame::ShapeFrame(const std::tuple<Frame*, Properties>& args)
 
 } // namespace dynamics
 } // namespace dart
-

@@ -39,8 +39,7 @@ namespace signal {
 namespace detail {
 
 //==============================================================================
-ConnectionBodyBase::ConnectionBodyBase()
-  : mIsConnected(true)
+ConnectionBodyBase::ConnectionBodyBase() : mIsConnected(true)
 {
   // Do nothing
 }
@@ -63,10 +62,8 @@ bool ConnectionBodyBase::isConnected() const
   return mIsConnected;
 }
 
-}  // namespace detail
-}  // namespace signal
+} // namespace detail
+} // namespace signal
 
-}  // namespace common
-}  // namespace dart
-
-
+} // namespace common
+} // namespace dart

@@ -33,9 +33,10 @@
 #ifndef DART_COLLISION_OPTION_HPP_
 #define DART_COLLISION_OPTION_HPP_
 
-#pragma message("This header has been deprecated in DART 6.1. "\
-  "Please include CollisionOption.hpp intead.")
+#pragma message(                                                               \
+    "This header has been deprecated in DART 6.1. "                            \
+    "Please include CollisionOption.hpp intead.")
 
 #include "dart/collision/CollisionOption.hpp"
 
-#endif  // DART_COLLISION_OPTION_HPP_
+#endif // DART_COLLISION_OPTION_HPP_

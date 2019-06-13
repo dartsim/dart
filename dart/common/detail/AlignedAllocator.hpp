@@ -40,7 +40,7 @@
 namespace dart {
 namespace common {
 
-#if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
+#if EIGEN_VERSION_AT_LEAST(3, 2, 1) && EIGEN_VERSION_AT_MOST(3, 2, 8)
 
 namespace detail {
 
@@ -52,13 +52,13 @@ template <class T>
 class aligned_allocator_cpp11 : public std::allocator<T>
 {
 public:
-  typedef std::size_t     size_type;
-  typedef std::ptrdiff_t  difference_type;
-  typedef T*              pointer;
-  typedef const T*        const_pointer;
-  typedef T&              reference;
-  typedef const T&        const_reference;
-  typedef T               value_type;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef T value_type;
 
   template <class U>
   struct rebind
@@ -66,22 +66,30 @@ public:
     typedef aligned_allocator_cpp11<U> other;
   };
 
-  aligned_allocator_cpp11()
-    : std::allocator<T>() {}
+  aligned_allocator_cpp11() : std::allocator<T>()
+  {
+  }
 
   aligned_allocator_cpp11(const aligned_allocator_cpp11& other)
-    : std::allocator<T>(other) {}
+    : std::allocator<T>(other)
+  {
+  }
 
   template <class U>
   aligned_allocator_cpp11(const aligned_allocator_cpp11<U>& other)
-    : std::allocator<T>(other) {}
+    : std::allocator<T>(other)
+  {
+  }
 
-  ~aligned_allocator_cpp11() {}
+  ~aligned_allocator_cpp11()
+  {
+  }
 
   pointer allocate(size_type num, const void* /*hint*/ = 0)
   {
     Eigen::internal::check_size_for_overflow<T>(num);
-    return static_cast<pointer>( Eigen::internal::aligned_malloc(num * sizeof(T)) );
+    return static_cast<pointer>(
+        Eigen::internal::aligned_malloc(num * sizeof(T)));
   }
 
   void deallocate(pointer p, size_type /*num*/)

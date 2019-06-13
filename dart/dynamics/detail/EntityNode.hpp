@@ -54,7 +54,7 @@ const std::string& EntityNode<Base>::setName(const std::string& newName)
 {
   using NameImpl = detail::EntityNodeAspectBase<Base>;
 
-  if(NameImpl::mAspectProperties.mName == newName && !newName.empty())
+  if (NameImpl::mAspectProperties.mName == newName && !newName.empty())
     return NameImpl::mAspectProperties.mName;
 
   const std::string oldName = NameImpl::mAspectProperties.mName;
@@ -63,7 +63,7 @@ const std::string& EntityNode<Base>::setName(const std::string& newName)
 
   Node::incrementVersion();
   Entity::mNameChangedSignal.raise(
-        this, oldName, NameImpl::mAspectProperties.mName);
+      this, oldName, NameImpl::mAspectProperties.mName);
 
   return NameImpl::mAspectProperties.mName;
 }
@@ -78,6 +78,5 @@ const std::string& EntityNode<Base>::getName() const
 
 } // namespace dynamics
 } // namespace dart
-
 
 #endif // DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_

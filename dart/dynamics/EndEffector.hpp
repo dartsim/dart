@@ -34,10 +34,10 @@
 #define DART_DYNAMICS_ENDEFFECTOR_HPP_
 
 #include "dart/common/Aspect.hpp"
-#include "dart/common/SpecializedForAspect.hpp"
 #include "dart/common/AspectWithVersion.hpp"
-#include "dart/dynamics/FixedJacobianNode.hpp"
+#include "dart/common/SpecializedForAspect.hpp"
 #include "dart/dynamics/CompositeNode.hpp"
+#include "dart/dynamics/FixedJacobianNode.hpp"
 #include "dart/dynamics/detail/EndEffectorAspect.hpp"
 
 namespace dart {
@@ -48,16 +48,14 @@ class Skeleton;
 class EndEffector;
 
 //==============================================================================
-class Support final :
-    public common::AspectWithStateAndVersionedProperties<
-        Support,
-        detail::SupportStateData,
-        detail::SupportPropertiesData,
-        EndEffector,
-        &detail::SupportUpdate>
+class Support final : public common::AspectWithStateAndVersionedProperties<
+                          Support,
+                          detail::SupportStateData,
+                          detail::SupportPropertiesData,
+                          EndEffector,
+                          &detail::SupportUpdate>
 {
 public:
-
   DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(Support)
 
   /// Set/Get the support geometry for this EndEffector. The SupportGeometry
@@ -73,26 +71,22 @@ public:
 
   /// Get whether this EndEffector is currently being used for support
   bool isActive() const;
-
 };
 
 //==============================================================================
-class EndEffector final :
-    public common::EmbedPropertiesOnTopOf<
-        EndEffector, detail::EndEffectorProperties,
-        detail::EndEffectorCompositeBase>
+class EndEffector final : public common::EmbedPropertiesOnTopOf<
+                              EndEffector,
+                              detail::EndEffectorProperties,
+                              detail::EndEffectorCompositeBase>
 {
 public:
-
   friend class Skeleton;
   friend class BodyNode;
 
   using UniqueProperties = detail::EndEffectorProperties;
 
-  using BasicProperties = common::Composite::MakeProperties<
-      NameAspect,
-      FixedFrame,
-      EndEffector>;
+  using BasicProperties
+      = common::Composite::MakeProperties<NameAspect, FixedFrame, EndEffector>;
 
   using Properties = common::Composite::Properties;
 
@@ -109,7 +103,7 @@ public:
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
-  void setProperties(const UniqueProperties& properties, bool useNow=false);
+  void setProperties(const UniqueProperties& properties, bool useNow = false);
 
   /// Set the AspectProperties of this EndEffector
   void setAspectProperties(const AspectProperties& properties);
@@ -130,8 +124,8 @@ public:
   /// transform of this EndEffector will be set to _newDefaultTf the next time
   /// resetRelativeTransform() is called. If _useNow is set to true, then
   /// resetRelativeTransform() will be called at the end of this function.
-  void setDefaultRelativeTransform(const Eigen::Isometry3d& _newDefaultTf,
-                                   bool _useNow = false);
+  void setDefaultRelativeTransform(
+      const Eigen::Isometry3d& _newDefaultTf, bool _useNow = false);
 
   /// Set the current relative transform of this EndEffector to the default
   /// relative transform of this EndEffector. The default relative transform can
@@ -150,17 +144,14 @@ public:
   /// \}
 
 protected:
-
   /// Constructor used by the Skeleton class
   explicit EndEffector(BodyNode* parent, const BasicProperties& properties);
 
   // Documentation inherited
   Node* cloneNode(BodyNode* _parent) const override;
-
 };
 
 } // namespace dynamics
 } // namespace dart
-
 
 #endif // DART_DYNAMICS_ENDEFFECTOR_HPP_

@@ -117,8 +117,8 @@ const Eigen::Vector3d EllipsoidShape::getRadii() const
 double EllipsoidShape::computeVolume(const Eigen::Vector3d& diameters)
 {
   // 4/3* Pi* a/2* b/2* c/2
-  return math::constantsd::pi()
-      * diameters[0] * diameters[1] * diameters[2] / 6.0;
+  return math::constantsd::pi() * diameters[0] * diameters[1] * diameters[2]
+         / 6.0;
 }
 
 //==============================================================================
@@ -132,9 +132,9 @@ Eigen::Matrix3d EllipsoidShape::computeInertia(
   const auto BB = std::pow(diameters[1], 2);
   const auto CC = std::pow(diameters[2], 2);
 
-  inertia(0, 0) = coeff*(BB + CC);
-  inertia(1, 1) = coeff*(AA + CC);
-  inertia(2, 2) = coeff*(AA + BB);
+  inertia(0, 0) = coeff * (BB + CC);
+  inertia(1, 1) = coeff * (AA + CC);
+  inertia(2, 2) = coeff * (AA + BB);
 
   return inertia;
 }
@@ -169,5 +169,5 @@ void EllipsoidShape::updateVolume() const
   mIsVolumeDirty = false;
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

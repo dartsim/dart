@@ -39,36 +39,36 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 
 #include <Eigen/Dense>
 
-#include "dart/common/Timer.hpp"
+#include "dart/collision/CollisionOption.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
+#include "dart/common/Timer.hpp"
+#include "dart/constraint/SmartPointer.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/collision/CollisionOption.hpp"
 #include "dart/simulation/Recording.hpp"
 #include "dart/simulation/SmartPointer.hpp"
-#include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
 
 namespace integration {
 class Integrator;
-}  // namespace integration
+} // namespace integration
 
 namespace dynamics {
 class Skeleton;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 class ConstraintSolver;
-}  // namespace constraint
+} // namespace constraint
 
 namespace collision {
 class CollisionResult;
@@ -82,10 +82,8 @@ DART_COMMON_DECLARE_SHARED_WEAK(World)
 class World : public virtual common::Subject
 {
 public:
-
-  using NameChangedSignal
-      = common::Signal<void(const std::string& _oldName,
-                            const std::string& _newName)>;
+  using NameChangedSignal = common::Signal<void(
+      const std::string& _oldName, const std::string& _newName)>;
 
   /// Creates World as shared_ptr
   template <typename... Args>
@@ -195,7 +193,7 @@ public:
   /// penetration depth.
   bool checkCollision(
       const collision::CollisionOption& option
-          = collision::CollisionOption(false, 1u, nullptr),
+      = collision::CollisionOption(false, 1u, nullptr),
       collision::CollisionResult* result = nullptr);
 
   /// Return the collision checking result of the last simulation step. If this
@@ -251,7 +249,6 @@ public:
   Recording* getRecording();
 
 protected:
-
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
       const dynamics::ConstMetaSkeletonPtr& _skeleton);
@@ -265,8 +262,8 @@ protected:
   /// Skeletons in this world
   std::vector<dynamics::SkeletonPtr> mSkeletons;
 
-  std::map<dynamics::ConstMetaSkeletonPtr,
-           dynamics::SkeletonPtr> mMapForSkeletons;
+  std::map<dynamics::ConstMetaSkeletonPtr, dynamics::SkeletonPtr>
+      mMapForSkeletons;
 
   /// Connections for noticing changes in Skeleton names
   /// TODO(MXG): Consider putting this functionality into NameManager
@@ -283,7 +280,8 @@ protected:
   std::vector<common::Connection> mNameConnectionsForSimpleFrames;
 
   /// Map from raw SimpleFrame pointers to their shared_ptrs
-  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr> mSimpleFrameToShared;
+  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr>
+      mSimpleFrameToShared;
 
   /// NameManager for keeping track of Entities
   dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;
@@ -322,12 +320,11 @@ public:
   // Slot registers
   //--------------------------------------------------------------------------
   common::SlotRegister<NameChangedSignal> onNameChanged;
-
 };
 
-}  // namespace simulation
-}  // namespace dart
+} // namespace simulation
+} // namespace dart
 
 #include "dart/simulation/detail/World-impl.hpp"
 
-#endif  // DART_SIMULATION_WORLD_HPP_
+#endif // DART_SIMULATION_WORLD_HPP_

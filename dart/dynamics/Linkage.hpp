@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_LINKAGE_HPP_
 #define DART_DYNAMICS_LINKAGE_HPP_
 
-#include "dart/dynamics/ReferentialSkeleton.hpp"
 #include <unordered_set>
+#include "dart/dynamics/ReferentialSkeleton.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -53,7 +53,6 @@ namespace dynamics {
 class Linkage : public ReferentialSkeleton
 {
 public:
-
   /// The Criteria class is used to specify how a Linkage should be constructed
   struct Criteria
   {
@@ -61,10 +60,14 @@ public:
     /// expand from the starting BodyNode (mStart)
     enum ExpansionPolicy
     {
-      INCLUDE = 0,  ///< Do not expand from the target. Include everything up to the target and then stop.
-      EXCLUDE,      ///< Do not expand from the target. Include everything up to the target, but NOT the target, and then stop.
-      DOWNSTREAM,   ///< Include the target, and then expand downstream, toward the leaves of the tree.
-      UPSTREAM      ///< Include the target, and then expand upstream, toward the root of the tree.
+      INCLUDE = 0, ///< Do not expand from the target. Include everything up to
+                   ///< the target and then stop.
+      EXCLUDE, ///< Do not expand from the target. Include everything up to the
+               ///< target, but NOT the target, and then stop.
+      DOWNSTREAM, ///< Include the target, and then expand downstream, toward
+                  ///< the leaves of the tree.
+      UPSTREAM    ///< Include the target, and then expand upstream, toward the
+                  ///< root of the tree.
     };
 
     /// Return a vector of BodyNodes that satisfy the parameters of the Criteria
@@ -75,9 +78,10 @@ public:
     struct Target
     {
       /// Default constructor for Target
-      Target(BodyNode* _target = nullptr,
-             ExpansionPolicy _policy = INCLUDE,
-             bool _chain = false);
+      Target(
+          BodyNode* _target = nullptr,
+          ExpansionPolicy _policy = INCLUDE,
+          bool _chain = false);
 
       /// The Linkage will expand from the starting BodyNode up to this node
       WeakBodyNodePtr mNode;
@@ -148,28 +152,36 @@ public:
         bool includeUpstreamParentJoint = false);
 
   protected:
-
     /// Refresh the content of mMapOfTerminals
     void refreshTerminalMap() const;
 
     /// Satisfy the expansion policy of a target
-    void expansionPolicy(BodyNode* _start, ExpansionPolicy _policy,
-                         std::vector<BodyNode*>& _bns) const;
+    void expansionPolicy(
+        BodyNode* _start,
+        ExpansionPolicy _policy,
+        std::vector<BodyNode*>& _bns) const;
 
     /// Expand downstream
-    void expandDownstream(BodyNode* _start, std::vector<BodyNode*>& _bns,
-                          bool _includeStart) const;
+    void expandDownstream(
+        BodyNode* _start,
+        std::vector<BodyNode*>& _bns,
+        bool _includeStart) const;
 
     /// Expand upstream
-    void expandUpstream(BodyNode* _start, std::vector<BodyNode*>& _bns,
-                        bool _includeStart) const;
+    void expandUpstream(
+        BodyNode* _start,
+        std::vector<BodyNode*>& _bns,
+        bool _includeStart) const;
 
     /// Construct a path from start to target
-    void expandToTarget(const Target& _start, const Target& _target,
-                        std::vector<BodyNode*>& _bns) const;
+    void expandToTarget(
+        const Target& _start,
+        const Target& _target,
+        std::vector<BodyNode*>& _bns) const;
 
     /// Expand upwards from the _start BodyNode to the _target BodyNode
-    std::vector<BodyNode*> climbToTarget(BodyNode* _start, BodyNode* _target) const;
+    std::vector<BodyNode*> climbToTarget(
+        BodyNode* _start, BodyNode* _target) const;
 
     /// Expand upwards from both BodyNodes to a common root
     std::vector<BodyNode*> climbToCommonRoot(
@@ -177,16 +189,16 @@ public:
 
     /// Crawl through the list and cut it off anywhere that the criteria is
     /// violated
-    void trimBodyNodes(std::vector<BodyNode*>& _bns, bool _chain,
-                       bool _movingUpstream) const;
+    void trimBodyNodes(
+        std::vector<BodyNode*>& _bns, bool _chain, bool _movingUpstream) const;
 
     /// Hashed set for terminals to allow quick lookup
     mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;
   };
 
   /// Create a Linkage with the given Criteria
-  static LinkagePtr create(const Criteria& _criteria,
-                           const std::string& _name = "Linkage");
+  static LinkagePtr create(
+      const Criteria& _criteria, const std::string& _name = "Linkage");
 
   /// Creates and returns a clone of this Linkage.
   LinkagePtr cloneLinkage() const;
@@ -198,7 +210,8 @@ public:
   using MetaSkeleton::cloneMetaSkeleton;
 
   // Documentation inherited
-  MetaSkeletonPtr cloneMetaSkeleton(const std::string& cloneName) const override;
+  MetaSkeletonPtr cloneMetaSkeleton(
+      const std::string& cloneName) const override;
 
   /// Returns false if the original assembly of this Linkage has been broken in
   /// some way
@@ -211,7 +224,6 @@ public:
   void satisfyCriteria();
 
 protected:
-
   /// Constructor for the Linkage class. satisfyCriteria() will be called during
   /// construction.
   Linkage(const Criteria& _criteria, const std::string& _name = "Linkage");

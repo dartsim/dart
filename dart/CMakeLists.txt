@@ -186,3 +186,5 @@ endif()
 if(NOT DART_BUILD_DARTPY)
   install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 endif()
+
+dart_format_add(${dart_core_headers} ${dart_core_sources})

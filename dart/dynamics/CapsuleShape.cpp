@@ -33,18 +33,16 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 
 #include <cmath>
-#include "dart/math/Helpers.hpp"
-#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
 CapsuleShape::CapsuleShape(double radius, double height)
-  : Shape(CAPSULE),
-    mRadius(radius),
-    mHeight(height)
+  : Shape(CAPSULE), mRadius(radius), mHeight(height)
 {
   assert(0.0 < radius);
   assert(0.0 < height);
@@ -101,7 +99,7 @@ void CapsuleShape::setHeight(double height)
 double CapsuleShape::computeVolume(double radius, double height)
 {
   return CylinderShape::computeVolume(radius, height)
-      + SphereShape::computeVolume(radius);
+         + SphereShape::computeVolume(radius);
 }
 
 //==============================================================================
@@ -111,8 +109,8 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
   // Reference: http://www.gamedev.net/page/resources/_/technical/
   // math-and-physics/capsule-inertia-tensor-r3856
 
-  const auto radius2 = radius*radius;
-  const auto height2 = height*height;
+  const auto radius2 = radius * radius;
+  const auto height2 = height * height;
 
   const auto volumeCylinder = CylinderShape::computeVolume(radius, height);
   const auto volumeSphere = SphereShape::computeVolume(radius);
@@ -122,10 +120,12 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
   const auto massCylinder = density * volumeCylinder;
   const auto massSphere = density * volumeSphere;
 
-  const auto Ixx
-      = massCylinder*(height2/12.0 + radius2/4.0)
-      + massSphere*(height2 + (3.0/8.0)*height*radius + (2.0/5.0)*radius2);
-  const auto Izz = massCylinder*(radius2/2.0) + massSphere*((2.0/5.0)*radius2);
+  const auto Ixx = massCylinder * (height2 / 12.0 + radius2 / 4.0)
+                   + massSphere
+                         * (height2 + (3.0 / 8.0) * height * radius
+                            + (2.0 / 5.0) * radius2);
+  const auto Izz
+      = massCylinder * (radius2 / 2.0) + massSphere * ((2.0 / 5.0) * radius2);
 
   return Eigen::Vector3d(Ixx, Ixx, Izz).asDiagonal();
 }
@@ -133,7 +133,7 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
 //==============================================================================
 void CapsuleShape::updateBoundingBox() const
 {
-  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
+  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5 * mHeight);
 
   mBoundingBox.setMin(-corner);
   mBoundingBox.setMax(corner);
@@ -154,5 +154,5 @@ Eigen::Matrix3d CapsuleShape::computeInertia(double mass) const
   return computeInertia(mRadius, mHeight, mass);
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

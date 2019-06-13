@@ -58,19 +58,17 @@ struct EntityNodeProperties
 
 //==============================================================================
 template <class Base>
-using EntityNodeAspectBase =
-    common::EmbedProperties<EntityNode<Base>, EntityNodeProperties>;
+using EntityNodeAspectBase
+    = common::EmbedProperties<EntityNode<Base>, EntityNodeProperties>;
 
 //==============================================================================
 template <class Base, bool isCompositeBase>
 class EntityNodeBase : public Base, public EntityNodeAspectBase<Base>
 {
 public:
-
   /// Forwarding constructor
   template <typename... Args>
-  EntityNodeBase(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+  EntityNodeBase(Args&&... args) : Base(std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -80,16 +78,15 @@ public:
 
 //==============================================================================
 template <class Base>
-class EntityNodeBase<Base, true> : public common::CompositeJoiner<
-    EntityNodeAspectBase<Base>, Base >
+class EntityNodeBase<Base, true>
+  : public common::CompositeJoiner<EntityNodeAspectBase<Base>, Base>
 {
 public:
-
   /// Forwarding constructor
   template <typename... Args>
   EntityNodeBase(Args&&... args)
     : common::CompositeJoiner<Base, EntityNodeAspectBase<Base>>(
-        common::NoArg, std::forward<Args>(args)...)
+          common::NoArg, std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -98,7 +95,7 @@ public:
 };
 
 } // namespace detail
-} // namespace dart
 } // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_

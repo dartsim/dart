@@ -49,28 +49,32 @@ template <class NodeT, class BodyNodeT>
 class TemplateNodePtr
 {
 public:
-
-  template<class, class> friend class TemplateNodePtr;
+  template <class, class>
+  friend class TemplateNodePtr;
 
   using element_type = NodeT;
 
   /// Default constructor
-  TemplateNodePtr() : mNode(nullptr) { }
+  TemplateNodePtr() : mNode(nullptr)
+  {
+  }
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
-  TemplateNodePtr(NodeT* _ptr) { set(_ptr); }
+  TemplateNodePtr(NodeT* _ptr)
+  {
+    set(_ptr);
+  }
 
   /// Constructor that takes in a strong NodePtr
   template <class OtherNodeT, class OtherBodyNodeT>
-  TemplateNodePtr(
-      const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _ptr)
+  TemplateNodePtr(const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _ptr)
   {
     set(_ptr.get());
   }
 
   /// Assignment operator
-  TemplateNodePtr& operator = (NodeT* _ptr)
+  TemplateNodePtr& operator=(NodeT* _ptr)
   {
     set(_ptr);
     return *this;
@@ -78,7 +82,7 @@ public:
 
   /// Assignment operator for NodePtrs
   template <class OtherNodeT, class OtherBodyNodeT>
-  TemplateNodePtr& operator = (
+  TemplateNodePtr& operator=(
       const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _ptr)
   {
     set(_ptr.get());
@@ -86,13 +90,22 @@ public:
   }
 
   /// Implicit conversion
-  operator NodeT*() const { return get(); }
+  operator NodeT*() const
+  {
+    return get();
+  }
 
   /// Dereferencing operator
-  NodeT& operator*() const { return *get(); }
+  NodeT& operator*() const
+  {
+    return *get();
+  }
 
   /// Dereferencing operation
-  NodeT* operator->() const { return get(); }
+  NodeT* operator->() const
+  {
+    return get();
+  }
 
   /// Get the raw Node pointer
   NodeT* get() const
@@ -103,7 +116,7 @@ public:
   /// Set the Node for this NodePtr
   void set(NodeT* _ptr)
   {
-    if(nullptr == _ptr)
+    if (nullptr == _ptr)
     {
       mBodyNodePtr = nullptr;
       mDestructor = nullptr;
@@ -117,12 +130,11 @@ public:
   }
 
 protected:
-
   /// Node that this NodePtr refers to
   NodeT* mNode;
 
-  /// Hold onto a shared_ptr to the Node's Destructor to make sure the Node stays
-  /// alive.
+  /// Hold onto a shared_ptr to the Node's Destructor to make sure the Node
+  /// stays alive.
   std::shared_ptr<NodeDestructor> mDestructor;
 
   /// Hold onto a BodyNodePtr to the Node's associated BodyNode to make sure
@@ -139,15 +151,20 @@ template <class NodeT, class BodyNodeT>
 class TemplateWeakNodePtr
 {
 public:
-
-  template <class, class> friend class TemplateWeakNodePtr;
+  template <class, class>
+  friend class TemplateWeakNodePtr;
 
   /// Default constructor
-  TemplateWeakNodePtr() : mNode(nullptr) { }
+  TemplateWeakNodePtr() : mNode(nullptr)
+  {
+  }
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
-  TemplateWeakNodePtr(NodeT* _ptr) { set(_ptr); }
+  TemplateWeakNodePtr(NodeT* _ptr)
+  {
+    set(_ptr);
+  }
 
   /// Constructor that takes in a WeakNodePtr
   template <class OtherNodeT, class OtherBodyNodeT>
@@ -166,7 +183,7 @@ public:
   }
 
   /// Assignment operator for raw Node pointers
-  TemplateWeakNodePtr& operator = (NodeT* _ptr)
+  TemplateWeakNodePtr& operator=(NodeT* _ptr)
   {
     set(_ptr);
     return *this;
@@ -174,7 +191,7 @@ public:
 
   /// Assignment operator for WeakNodePtrs
   template <class OtherNodeT, class OtherBodyNodeT>
-  TemplateWeakNodePtr& operator = (
+  TemplateWeakNodePtr& operator=(
       const TemplateWeakNodePtr<OtherNodeT, OtherBodyNodeT>& _weakPtr)
   {
     set(_weakPtr);
@@ -183,7 +200,7 @@ public:
 
   /// Assignment operator for strong NodePtrs
   template <class OtherNodeT, class OtherBodyNodeT>
-  TemplateWeakNodePtr& operator = (
+  TemplateWeakNodePtr& operator=(
       const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _strongPtr)
   {
     set(_strongPtr.get());
@@ -196,11 +213,11 @@ public:
   TemplateNodePtr<NodeT, BodyNodeT> lock() const
   {
     TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNodePtr.lock();
-    if(nullptr == bodyNode)
+    if (nullptr == bodyNode)
       return nullptr;
 
     std::shared_ptr<NodeDestructor> destructor = mWeakDestructor.lock();
-    if(nullptr == destructor)
+    if (nullptr == destructor)
       return nullptr;
 
     return TemplateNodePtr<NodeT, BodyNodeT>(mNode);
@@ -209,7 +226,7 @@ public:
   /// Set the Node for this WeakNodePtr
   void set(NodeT* _ptr)
   {
-    if(nullptr == _ptr)
+    if (nullptr == _ptr)
     {
       mNode = nullptr;
       mWeakDestructor.reset();
@@ -232,7 +249,6 @@ public:
   }
 
 protected:
-
   /// Node that this pointer references
   NodeT* mNode;
 
@@ -242,8 +258,6 @@ protected:
   /// Pointer to the BodyNode that the Node is attached to
   TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNodePtr;
 };
-
-
 
 } // namespace dynamics
 } // namespace dart

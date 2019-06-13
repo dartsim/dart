@@ -41,7 +41,8 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-template <typename T> T* Singleton<T>::mInstance = nullptr;
+template <typename T>
+T* Singleton<T>::mInstance = nullptr;
 
 //==============================================================================
 template <typename T>
@@ -62,7 +63,7 @@ T& Singleton<T>::getSingleton(Args... _args)
 
 //==============================================================================
 template <typename T>
-template <typename ... Args>
+template <typename... Args>
 T* Singleton<T>::getSingletonPtr(Args... _args)
 {
   return &getSingleton(std::forward<Args>(_args)...);

@@ -32,8 +32,8 @@
 
 #include "dart/common/detail/SharedLibraryManager.hpp"
 
-#include "dart/common/SharedLibrary.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/SharedLibrary.hpp"
 
 namespace dart {
 namespace common {

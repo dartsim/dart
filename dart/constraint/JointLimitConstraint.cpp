@@ -42,17 +42,17 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 #define DART_ERROR_ALLOWANCE 0.0
-#define DART_ERP     0.01
+#define DART_ERP 0.01
 #define DART_MAX_ERV 1e+1
-#define DART_CFM     1e-9
+#define DART_CFM 1e-9
 
 namespace dart {
 namespace constraint {
 
-double JointLimitConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
-double JointLimitConstraint::mErrorReductionParameter   = DART_ERP;
+double JointLimitConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
+double JointLimitConstraint::mErrorReductionParameter = DART_ERP;
 double JointLimitConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
-double JointLimitConstraint::mConstraintForceMixing     = DART_CFM;
+double JointLimitConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
 JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
@@ -159,13 +159,15 @@ void JointLimitConstraint::setConstraintForceMixing(double _cfm)
   if (_cfm < 1e-9)
   {
     dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+           << "] is lower than 1e-9. "
+           << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
   }
   if (_cfm > 1.0)
   {
     dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
+           << "] is greater than 1.0. "
+           << "It is set to 1.0." << std::endl;
     mConstraintForceMixing = 1.0;
   }
 
@@ -322,7 +324,7 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof ; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -339,8 +341,8 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
   // varaible in ODE
   if (_withCfm)
   {
-    _delVel[mAppliedImpulseIndex] += _delVel[mAppliedImpulseIndex]
-                                     * mConstraintForceMixing;
+    _delVel[mAppliedImpulseIndex]
+        += _delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
   assert(localIndex == mDim);
@@ -363,13 +365,13 @@ void JointLimitConstraint::applyImpulse(double* _lambda)
 {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof ; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
 
     mJoint->setConstraintImpulse(
-          i, mJoint->getConstraintImpulse(i) + _lambda[localIndex]);
+        i, mJoint->getConstraintImpulse(i) + _lambda[localIndex]);
 
     mOldX[i] = _lambda[localIndex];
 

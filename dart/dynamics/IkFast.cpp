@@ -32,9 +32,9 @@
 
 #include "dart/dynamics/IkFast.hpp"
 
-#include "dart/external/ikfast/ikfast.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/external/ikfast/ikfast.h"
 
 namespace dart {
 namespace dynamics {
@@ -47,15 +47,15 @@ void convertTransform(
     std::array<IkReal, 3>& eetrans,
     std::array<IkReal, 9>& eerot)
 {
-  eerot[0*3+0] = tf.linear()(0, 0);
-  eerot[0*3+1] = tf.linear()(0, 1);
-  eerot[0*3+2] = tf.linear()(0, 2);
-  eerot[1*3+0] = tf.linear()(1, 0);
-  eerot[1*3+1] = tf.linear()(1, 1);
-  eerot[1*3+2] = tf.linear()(1, 2);
-  eerot[2*3+0] = tf.linear()(2, 0);
-  eerot[2*3+1] = tf.linear()(2, 1);
-  eerot[2*3+2] = tf.linear()(2, 2);
+  eerot[0 * 3 + 0] = tf.linear()(0, 0);
+  eerot[0 * 3 + 1] = tf.linear()(0, 1);
+  eerot[0 * 3 + 2] = tf.linear()(0, 2);
+  eerot[1 * 3 + 0] = tf.linear()(1, 0);
+  eerot[1 * 3 + 1] = tf.linear()(1, 1);
+  eerot[1 * 3 + 2] = tf.linear()(1, 2);
+  eerot[2 * 3 + 0] = tf.linear()(2, 0);
+  eerot[2 * 3 + 1] = tf.linear()(2, 1);
+  eerot[2 * 3 + 2] = tf.linear()(2, 2);
 
   eetrans[0] = tf.translation()[0];
   eetrans[1] = tf.translation()[1];
@@ -128,9 +128,9 @@ void convertIkSolution(
     index++;
   }
 
-  solution.mValidity
-      = limitViolated ? InverseKinematics::Analytical::LIMIT_VIOLATED
-                      : InverseKinematics::Analytical::VALID;
+  solution.mValidity = limitViolated
+                           ? InverseKinematics::Analytical::LIMIT_VIOLATED
+                           : InverseKinematics::Analytical::VALID;
 }
 
 //==============================================================================
@@ -196,7 +196,7 @@ bool checkDofMapValidity(
   return true;
 }
 
-} // namespace (anonymous)
+} // namespace
 
 //==============================================================================
 IkFast::IkFast(
@@ -310,11 +310,12 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
   if (success)
   {
     convertIkSolutions(
-          this,
-          getNumJoints(),
-          getNumFreeParameters(),
-          getFreeParameters(),
-          solutions, mSolutions);
+        this,
+        getNumJoints(),
+        getNumFreeParameters(),
+        getFreeParameters(),
+        solutions,
+        mSolutions);
   }
 
   return mSolutions;

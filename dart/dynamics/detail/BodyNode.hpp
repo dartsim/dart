@@ -42,31 +42,33 @@ namespace dynamics {
 
 //==============================================================================
 template <class JointType>
-JointType* BodyNode::moveTo(BodyNode* _newParent,
-    const typename JointType::Properties& _joint)
+JointType* BodyNode::moveTo(
+    BodyNode* _newParent, const typename JointType::Properties& _joint)
 {
-  if(nullptr == _newParent)
+  if (nullptr == _newParent)
     return getSkeleton()->moveBodyNodeTree<JointType>(
-          this, getSkeleton(), nullptr, _joint);
+        this, getSkeleton(), nullptr, _joint);
   else
     return getSkeleton()->moveBodyNodeTree<JointType>(
-          this, _newParent->getSkeleton(), _newParent, _joint);
+        this, _newParent->getSkeleton(), _newParent, _joint);
 }
 
 //==============================================================================
 template <class JointType>
 JointType* BodyNode::moveTo(
-    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
+    const SkeletonPtr& _newSkeleton,
+    BodyNode* _newParent,
     const typename JointType::Properties& _joint)
 {
   return getSkeleton()->moveBodyNodeTree<JointType>(
-        this, _newSkeleton, _newParent, _joint);
+      this, _newSkeleton, _newParent, _joint);
 }
 
 //==============================================================================
 template <class JointType>
-SkeletonPtr BodyNode::split(const std::string& _skeletonName,
-      const typename JointType::Properties& _joint)
+SkeletonPtr BodyNode::split(
+    const std::string& _skeletonName,
+    const typename JointType::Properties& _joint)
 {
   SkeletonPtr skel = Skeleton::create(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
@@ -89,29 +91,32 @@ std::pair<JointType*, BodyNode*> BodyNode::copyTo(
     const typename JointType::Properties& _joint,
     bool _recursive)
 {
-  if(nullptr == _newParent)
+  if (nullptr == _newParent)
     return getSkeleton()->cloneBodyNodeTree<JointType>(
-          this, getSkeleton(), nullptr, _joint, _recursive);
+        this, getSkeleton(), nullptr, _joint, _recursive);
   else
     return getSkeleton()->cloneBodyNodeTree<JointType>(
-          this, _newParent->getSkeleton(), _newParent, _joint, _recursive);
+        this, _newParent->getSkeleton(), _newParent, _joint, _recursive);
 }
 
 //==============================================================================
 template <class JointType>
 std::pair<JointType*, BodyNode*> BodyNode::copyTo(
-    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
+    const SkeletonPtr& _newSkeleton,
+    BodyNode* _newParent,
     const typename JointType::Properties& _joint,
     bool _recursive) const
 {
   return getSkeleton()->cloneBodyNodeTree<JointType>(
-        this, _newSkeleton, _newParent, _joint, _recursive);
+      this, _newSkeleton, _newParent, _joint, _recursive);
 }
 
 //==============================================================================
 template <class JointType>
-SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
-    const typename JointType::Properties& _joint, bool _recursive) const
+SkeletonPtr BodyNode::copyAs(
+    const std::string& _skeletonName,
+    const typename JointType::Properties& _joint,
+    bool _recursive) const
 {
   SkeletonPtr skel = Skeleton::create(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
@@ -126,11 +131,11 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
     const typename NodeType::Properties& _bodyProperties)
 {
   return getSkeleton()->createJointAndBodyNodePair<JointType, NodeType>(
-        this, _jointProperties, _bodyProperties);
+      this, _jointProperties, _bodyProperties);
 }
 
 //==============================================================================
-template <class NodeType, typename ...Args>
+template <class NodeType, typename... Args>
 NodeType* BodyNode::createNode(Args&&... args)
 {
   NodeType* node = new NodeType(this, std::forward<Args>(args)...);
@@ -141,13 +146,13 @@ NodeType* BodyNode::createNode(Args&&... args)
 
 //==============================================================================
 template <class ShapeNodeProperties>
-ShapeNode* BodyNode::createShapeNode(ShapeNodeProperties properties,
-                                     bool automaticName)
+ShapeNode* BodyNode::createShapeNode(
+    ShapeNodeProperties properties, bool automaticName)
 {
-  if(automaticName)
+  if (automaticName)
   {
-    properties.mName = getName()+"_ShapeNode_"
-        +std::to_string(getNumShapeNodes());
+    properties.mName
+        = getName() + "_ShapeNode_" + std::to_string(getNumShapeNodes());
   }
 
   return createNode<ShapeNode>(properties);
@@ -166,8 +171,7 @@ ShapeNode* BodyNode::createShapeNode(const std::shared_ptr<ShapeType>& shape)
 //==============================================================================
 template <class ShapeType, class StringType>
 ShapeNode* BodyNode::createShapeNode(
-    const std::shared_ptr<ShapeType>& shape,
-    StringType&& name)
+    const std::shared_ptr<ShapeType>& shape, StringType&& name)
 {
   ShapeNode::BasicProperties properties;
   properties.mShape = shape;
@@ -180,8 +184,8 @@ ShapeNode* BodyNode::createShapeNode(
 template <class... Aspects>
 ShapeNode* BodyNode::createShapeNodeWith(const ShapePtr& shape)
 {
-  return createShapeNodeWith<Aspects...>(shape, getName()+"_ShapeNode_"
-                                        +std::to_string(getNumShapeNodes()));
+  return createShapeNodeWith<Aspects...>(
+      shape, getName() + "_ShapeNode_" + std::to_string(getNumShapeNodes()));
 }
 
 //==============================================================================

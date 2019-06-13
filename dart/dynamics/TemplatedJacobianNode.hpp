@@ -50,7 +50,6 @@ template <class NodeType>
 class TemplatedJacobianNode : public JacobianNode
 {
 public:
-
   // Documentation inherited
   math::Jacobian getJacobian(
       const Frame* _inCoordinatesOf) const override final;
@@ -117,10 +116,8 @@ public:
       const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
 protected:
-
   /// Constructor
   TemplatedJacobianNode(BodyNode* bn);
-
 };
 
 } // namespace dynamics

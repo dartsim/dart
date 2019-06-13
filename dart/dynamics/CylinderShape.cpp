@@ -40,9 +40,7 @@ namespace dynamics {
 
 //==============================================================================
 CylinderShape::CylinderShape(double _radius, double _height)
-  : Shape(CYLINDER),
-    mRadius(_radius),
-    mHeight(_height)
+  : Shape(CYLINDER), mRadius(_radius), mHeight(_height)
 {
   assert(0.0 < _radius);
   assert(0.0 < _height);
@@ -107,8 +105,8 @@ Eigen::Matrix3d CylinderShape::computeInertia(
 {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
 
-  inertia(0, 0) = mass * (3.0 * std::pow(radius, 2) + std::pow(height, 2))
-      / 12.0;
+  inertia(0, 0)
+      = mass * (3.0 * std::pow(radius, 2) + std::pow(height, 2)) / 12.0;
   inertia(1, 1) = inertia(0, 0);
   inertia(2, 2) = 0.5 * mass * radius * radius;
 
@@ -136,5 +134,5 @@ Eigen::Matrix3d CylinderShape::computeInertia(double mass) const
   return computeInertia(mRadius, mHeight, mass);
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

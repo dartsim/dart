@@ -128,19 +128,17 @@ std::string SharedLibrary::getLastError() const
 #elif DART_OS_WINDOWS
   LPTSTR lpMsgBuf;
   FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        nullptr,
-        GetLastError(),
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)&lpMsgBuf,
-        0,
-        nullptr
-        );
+      FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+          | FORMAT_MESSAGE_IGNORE_INSERTS,
+      nullptr,
+      GetLastError(),
+      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      (LPTSTR)&lpMsgBuf,
+      0,
+      nullptr);
   std::string ret = lpMsgBuf;
   // Free the buffer.
-  LocalFree( lpMsgBuf );
+  LocalFree(lpMsgBuf);
   return ret;
 #else
   return std::string("");

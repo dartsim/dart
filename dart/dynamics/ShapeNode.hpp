@@ -48,26 +48,22 @@ class DynamicsAspect;
 class ShapeNode : public detail::ShapeNodeCompositeBase
 {
 public:
-
   friend class BodyNode;
 
-  using ShapeUpdatedSignal
-      = common::Signal<void(const ShapeNode* thisShapeNode,
-                            const ShapePtr& oldShape,
-                            const ShapePtr& newShape)>;
+  using ShapeUpdatedSignal = common::Signal<void(
+      const ShapeNode* thisShapeNode,
+      const ShapePtr& oldShape,
+      const ShapePtr& newShape)>;
 
-  using RelativeTransformUpdatedSignal
-      = common::Signal<void(const ShapeNode* thisShapeNode,
-                            const Eigen::Isometry3d& oldTransform,
-                            const Eigen::Isometry3d& newTransform)>;
+  using RelativeTransformUpdatedSignal = common::Signal<void(
+      const ShapeNode* thisShapeNode,
+      const Eigen::Isometry3d& oldTransform,
+      const Eigen::Isometry3d& newTransform)>;
 
-  using BasicProperties = common::Composite::MakeProperties<
-      NameAspect,
-      FixedFrame,
-      ShapeFrame>;
+  using BasicProperties
+      = common::Composite::MakeProperties<NameAspect, FixedFrame, ShapeFrame>;
 
   using Properties = common::Composite::Properties;
-
 
   /// Destructor
   virtual ~ShapeNode() = default;
@@ -117,18 +113,18 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 protected:
-
   /// Constructor used by the Skeleton class
   ShapeNode(BodyNode* bodyNode, const BasicProperties& properties);
 
   /// Constructor used by the Skeleton class
-  ShapeNode(BodyNode* bodyNode, const ShapePtr& shape,
-            const std::string& name = "ShapeNode");
+  ShapeNode(
+      BodyNode* bodyNode,
+      const ShapePtr& shape,
+      const std::string& name = "ShapeNode");
 
   /// Create a clone of this ShapeNode. This may only be called by the Skeleton
   /// class.
   Node* cloneNode(BodyNode* parent) const override;
-
 };
 
 } // namespace dynamics

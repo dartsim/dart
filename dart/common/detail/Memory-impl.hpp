@@ -37,10 +37,10 @@
 #include <Eigen/Core>
 #include "dart/config.hpp"
 
-#if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
+#if EIGEN_VERSION_AT_LEAST(3, 2, 1) && EIGEN_VERSION_AT_MOST(3, 2, 8)
 #include "dart/common/detail/AlignedAllocator.hpp"
 #else
-#include<Eigen/StdVector>
+#include <Eigen/StdVector>
 #endif
 
 namespace dart {
@@ -52,17 +52,18 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 {
   using _Tp_nc = typename std::remove_const<_Tp>::type;
 
-#if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
-  return std::allocate_shared<_Tp>(detail::aligned_allocator_cpp11<_Tp_nc>(),
-                                   std::forward<_Args>(__args)...);
+#if EIGEN_VERSION_AT_LEAST(3, 2, 1) && EIGEN_VERSION_AT_MOST(3, 2, 8)
+  return std::allocate_shared<_Tp>(
+      detail::aligned_allocator_cpp11<_Tp_nc>(),
+      std::forward<_Args>(__args)...);
 #else
-  return std::allocate_shared<_Tp>(Eigen::aligned_allocator<_Tp_nc>(),
-                                   std::forward<_Args>(__args)...);
+  return std::allocate_shared<_Tp>(
+      Eigen::aligned_allocator<_Tp_nc>(), std::forward<_Args>(__args)...);
 #endif // EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
 }
 
 //==============================================================================
-template<typename T, typename... Args>
+template <typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)
 {
   return std::make_unique<T>(std::forward<Args>(args)...);

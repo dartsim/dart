@@ -40,7 +40,7 @@ namespace dynamics {
 
 constexpr std::size_t INVALID_INDEX = static_cast<std::size_t>(-1);
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_INVALIDINDEX_HPP_

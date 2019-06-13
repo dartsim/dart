@@ -33,13 +33,13 @@
 #ifndef DART_DYNAMICS_ENTITY_HPP_
 #define DART_DYNAMICS_ENTITY_HPP_
 
-#include <Eigen/Core>
 #include <string>
 #include <vector>
+#include <Eigen/Core>
 
-#include "dart/common/Subject.hpp"
-#include "dart/common/Signal.hpp"
 #include "dart/common/Composite.hpp"
+#include "dart/common/Signal.hpp"
+#include "dart/common/Subject.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -62,14 +62,10 @@ public:
   friend class Frame;
 
   using EntitySignal = common::Signal<void(const Entity*)>;
-  using FrameChangedSignal
-      = common::Signal<void(const Entity*,
-                            const Frame* _oldFrame,
-                            const Frame* _newFrame)>;
-  using NameChangedSignal
-      = common::Signal<void(const Entity*,
-                            const std::string& _oldName,
-                            const std::string& _newName)>;
+  using FrameChangedSignal = common::Signal<void(
+      const Entity*, const Frame* _oldFrame, const Frame* _newFrame)>;
+  using NameChangedSignal = common::Signal<void(
+      const Entity*, const std::string& _oldName, const std::string& _newName)>;
 
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, bool _quiet);
@@ -153,16 +149,21 @@ public:
   bool needsAccelerationUpdate() const;
 
 protected:
-
   /// Used when constructing a Frame class, because the Frame constructor will
   /// take care of setting up the parameters you pass into it
-  enum ConstructFrameTag { ConstructFrame };
+  enum ConstructFrameTag
+  {
+    ConstructFrame
+  };
 
   explicit Entity(ConstructFrameTag);
 
   /// Used when constructing a pure abstract class, because calling the Entity
   /// constructor is just a formality
-  enum ConstructAbstractTag { ConstructAbstract };
+  enum ConstructAbstractTag
+  {
+    ConstructAbstract
+  };
 
   explicit Entity(ConstructAbstractTag);
 
@@ -170,7 +171,6 @@ protected:
   virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
-
   /// Parent frame of this Entity
   Frame* mParentFrame;
 
@@ -244,7 +244,6 @@ protected:
   /// Constructor for inheriting classes, so they do not need to fill in the
   /// arguments
   Detachable();
-
 };
 
 } // namespace dynamics

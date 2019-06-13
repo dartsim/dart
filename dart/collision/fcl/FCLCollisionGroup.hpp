@@ -45,10 +45,10 @@ class FCLCollisionObjectUserData;
 class FCLCollisionGroup : public CollisionGroup
 {
 public:
-
   friend class FCLCollisionDetector;
 
-  using FCLCollisionManager = dart::collision::fcl::DynamicAABBTreeCollisionManager;
+  using FCLCollisionManager
+      = dart::collision::fcl::DynamicAABBTreeCollisionManager;
 
   /// Constructor
   FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);
@@ -57,7 +57,6 @@ public:
   virtual ~FCLCollisionGroup() = default;
 
 protected:
-
   using CollisionGroup::updateEngineData;
 
   // Documentation inherited
@@ -86,13 +85,11 @@ protected:
   const FCLCollisionManager* getFCLCollisionManager() const;
 
 protected:
-
   /// FCL broad-phase algorithm
   std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
-
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
+#endif // DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_

@@ -34,8 +34,8 @@
 #define DART_MATH_CONFIGURATIONSPACE_HPP_
 
 #include <Eigen/Dense>
-#include "dart/math/MathTypes.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace math {
@@ -49,10 +49,10 @@ struct RealVectorSpace
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
-  using Point          = Eigen::Matrix<double, NumDofs, 1>;
+  using Point = Eigen::Matrix<double, NumDofs, 1>;
   using EuclideanPoint = Eigen::Matrix<double, NumDofs, 1>;
-  using Vector         = Eigen::Matrix<double, NumDofs, 1>;
-  using Matrix         = Eigen::Matrix<double, NumDofs, NumDofs>;
+  using Vector = Eigen::Matrix<double, NumDofs, 1>;
+  using Matrix = Eigen::Matrix<double, NumDofs, NumDofs>;
   using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
 };
 
@@ -81,10 +81,10 @@ struct SO3Space
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
-  using Point          = Eigen::Matrix3d;
+  using Point = Eigen::Matrix3d;
   using EuclideanPoint = Eigen::Vector3d;
-  using Vector         = Eigen::Vector3d;
-  using Matrix         = Eigen::Matrix3d;
+  using Vector = Eigen::Vector3d;
+  using Matrix = Eigen::Matrix3d;
   using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
 };
 
@@ -96,14 +96,16 @@ struct SE3Space
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
-  using Point          = Eigen::Isometry3d;
+  using Point = Eigen::Isometry3d;
   using EuclideanPoint = Eigen::Vector6d;
-  using Vector         = Eigen::Vector6d;
-  using Matrix         = Eigen::Matrix6d;
+  using Vector = Eigen::Vector6d;
+  using Matrix = Eigen::Matrix6d;
   using JacobianMatrix = Eigen::Matrix6d;
 };
 
-struct MapsToManifoldPoint {};
+struct MapsToManifoldPoint
+{
+};
 
 //==============================================================================
 template <typename SpaceT>
@@ -111,13 +113,13 @@ typename SpaceT::Matrix inverse(const typename SpaceT::Matrix& mat);
 
 //==============================================================================
 template <typename SpaceT>
-typename SpaceT::EuclideanPoint
-toEuclideanPoint(const typename SpaceT::Point& point);
+typename SpaceT::EuclideanPoint toEuclideanPoint(
+    const typename SpaceT::Point& point);
 
 //==============================================================================
 template <typename SpaceT>
-typename SpaceT::Point
-toManifoldPoint(const typename SpaceT::EuclideanPoint& point);
+typename SpaceT::Point toManifoldPoint(
+    const typename SpaceT::EuclideanPoint& point);
 
 //==============================================================================
 template <typename SpaceT>

@@ -33,8 +33,8 @@
 #ifndef DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 #define DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 
-#include <vector>
 #include <memory>
+#include <vector>
 #include <Eigen/Dense>
 
 #include "dart/constraint/SmartPointer.hpp"
@@ -43,7 +43,7 @@ namespace dart {
 
 namespace dynamics {
 class Skeleton;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -111,8 +111,7 @@ private:
   std::shared_ptr<dynamics::Skeleton> mRootSkeleton;
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
-
+#endif // DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_

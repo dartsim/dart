@@ -63,7 +63,6 @@ template <class Base1, class Base2>
 class CompositeJoiner<Base1, Base2> : public Base1, public Base2
 {
 public:
-
   /// Default constructor
   CompositeJoiner() = default;
 
@@ -111,7 +110,7 @@ public:
   void set(std::unique_ptr<T>&& aspect);
 
   // Documentation inherited
-  template <class T, typename ...Args>
+  template <class T, typename... Args>
   T* createAspect(Args&&... args);
 
   // Documentation inherited
@@ -125,17 +124,15 @@ public:
   // Documentation inherited
   template <class T>
   static constexpr bool isSpecializedFor();
-
 };
 
 /// This is the variadic version of the CompositeJoiner class which allows
 /// you to include arbitrarily many base classes in the joining.
 template <class Base1, class Base2, class... OtherBases>
-class CompositeJoiner<Base1, Base2, OtherBases...> :
-    public CompositeJoiner< Base1, CompositeJoiner<Base2, OtherBases...> >
+class CompositeJoiner<Base1, Base2, OtherBases...>
+  : public CompositeJoiner<Base1, CompositeJoiner<Base2, OtherBases...> >
 {
 public:
-
   /// Default constructor
   CompositeJoiner() = default;
 
@@ -161,4 +158,3 @@ public:
 #include "dart/common/detail/CompositeJoiner.hpp"
 
 #endif // DART_COMMON_COMPOSITEJOINER_HPP_
-

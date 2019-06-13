@@ -34,9 +34,9 @@
 
 #include <algorithm>
 
-#include "dart/common/Console.hpp"
-#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -74,7 +74,8 @@ std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
   if (!mCollisionObjectManager)
-    mCollisionObjectManager.reset(new ManagerForUnsharableCollisionObjects(this));
+    mCollisionObjectManager.reset(
+        new ManagerForUnsharableCollisionObjects(this));
 
   return mCollisionObjectManager->claimCollisionObject(shapeFrame);
 }
@@ -102,11 +103,9 @@ CollisionDetector::CollisionObjectManager::getCollisionDetector()
 }
 
 //==============================================================================
-CollisionDetector::
-ManagerForUnsharableCollisionObjects::ManagerForUnsharableCollisionObjects(
-    CollisionDetector* cd)
-  : CollisionDetector::CollisionObjectManager(cd),
-    mCollisionObjectDeleter(this)
+CollisionDetector::ManagerForUnsharableCollisionObjects::
+    ManagerForUnsharableCollisionObjects(CollisionDetector* cd)
+  : CollisionDetector::CollisionObjectManager(cd), mCollisionObjectDeleter(this)
 {
   // Do nothing
 }
@@ -118,44 +117,41 @@ CollisionDetector::ManagerForUnsharableCollisionObjects::claimCollisionObject(
 {
   auto uniqueObject = mCollisionDetector->createCollisionObject(shapeFrame);
   auto sharedObject = std::shared_ptr<CollisionObject>(
-        uniqueObject.release(), mCollisionObjectDeleter);
+      uniqueObject.release(), mCollisionObjectDeleter);
 
   return sharedObject;
 }
 
 //==============================================================================
 CollisionDetector::ManagerForUnsharableCollisionObjects::
-CollisionObjectDeleter::CollisionObjectDeleter(
-    ManagerForUnsharableCollisionObjects* mgr)
+    CollisionObjectDeleter::CollisionObjectDeleter(
+        ManagerForUnsharableCollisionObjects* mgr)
   : mCollisionObjectManager(mgr)
 {
   assert(mgr);
 }
 
 //==============================================================================
-void
-CollisionDetector::ManagerForUnsharableCollisionObjects
-::CollisionObjectDeleter::operator()(CollisionObject* object) const
+void CollisionDetector::ManagerForUnsharableCollisionObjects ::
+    CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
-  mCollisionObjectManager->getCollisionDetector()->notifyCollisionObjectDestroying(
-        object);
+  mCollisionObjectManager->getCollisionDetector()
+      ->notifyCollisionObjectDestroying(object);
 
   delete object;
 }
 
 //==============================================================================
-CollisionDetector::
-ManagerForSharableCollisionObjects::ManagerForSharableCollisionObjects(
-    CollisionDetector* cd)
-  : CollisionDetector::CollisionObjectManager(cd),
-    mCollisionObjectDeleter(this)
+CollisionDetector::ManagerForSharableCollisionObjects::
+    ManagerForSharableCollisionObjects(CollisionDetector* cd)
+  : CollisionDetector::CollisionObjectManager(cd), mCollisionObjectDeleter(this)
 {
   // Do nothing
 }
 
 //==============================================================================
-CollisionDetector::
-ManagerForSharableCollisionObjects::~ManagerForSharableCollisionObjects()
+CollisionDetector::ManagerForSharableCollisionObjects::
+    ~ManagerForSharableCollisionObjects()
 {
   assert(mCollisionObjectMap.empty());
 }
@@ -179,7 +175,7 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
 
   auto uniqueObject = mCollisionDetector->createCollisionObject(shapeFrame);
   auto sharedObject = std::shared_ptr<CollisionObject>(
-        uniqueObject.release(), mCollisionObjectDeleter);
+      uniqueObject.release(), mCollisionObjectDeleter);
 
   mCollisionObjectMap[shapeFrame] = sharedObject;
 
@@ -187,18 +183,16 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
 }
 
 //==============================================================================
-CollisionDetector::ManagerForSharableCollisionObjects::
-CollisionObjectDeleter::CollisionObjectDeleter(
-    ManagerForSharableCollisionObjects* mgr)
+CollisionDetector::ManagerForSharableCollisionObjects::CollisionObjectDeleter::
+    CollisionObjectDeleter(ManagerForSharableCollisionObjects* mgr)
   : mCollisionObjectManager(mgr)
 {
   assert(mgr);
 }
 
 //==============================================================================
-void
-CollisionDetector::ManagerForSharableCollisionObjects
-::CollisionObjectDeleter::operator()(CollisionObject* object) const
+void CollisionDetector::ManagerForSharableCollisionObjects ::
+    CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
   mCollisionObjectManager->getCollisionDetector()
       ->notifyCollisionObjectDestroying(object);
@@ -207,5 +201,5 @@ CollisionDetector::ManagerForSharableCollisionObjects
   delete object;
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

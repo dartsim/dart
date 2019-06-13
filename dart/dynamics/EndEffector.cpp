@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.hpp"
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
@@ -49,7 +49,7 @@ EndEffectorProperties::EndEffectorProperties(const Eigen::Isometry3d& defaultTf)
 //==============================================================================
 void SupportUpdate(Support* support)
 {
-  if(EndEffector* ee = support->getComposite())
+  if (EndEffector* ee = support->getComposite())
     ee->getSkeleton()->dirtySupportPolygon(ee->getTreeIndex());
 }
 
@@ -58,7 +58,7 @@ void SupportUpdate(Support* support)
 //==============================================================================
 void Support::setActive(bool _supporting)
 {
-  if(mState.mActive == _supporting)
+  if (mState.mActive == _supporting)
     return;
 
   mState.mActive = _supporting;
@@ -78,8 +78,7 @@ void EndEffector::setProperties(const BasicProperties& properties)
 }
 
 //==============================================================================
-void EndEffector::setProperties(const UniqueProperties& properties,
-                                bool useNow)
+void EndEffector::setProperties(const UniqueProperties& properties, bool useNow)
 {
   setDefaultRelativeTransform(properties.mDefaultTransform, useNow);
 }
@@ -99,7 +98,7 @@ EndEffector::Properties EndEffector::getEndEffectorProperties() const
 //==============================================================================
 void EndEffector::copy(const EndEffector& otherEndEffector)
 {
-  if(this == &otherEndEffector)
+  if (this == &otherEndEffector)
     return;
 
   setCompositeState(otherEndEffector.getCompositeState());
@@ -109,7 +108,7 @@ void EndEffector::copy(const EndEffector& otherEndEffector)
 //==============================================================================
 void EndEffector::copy(const EndEffector* _otherEndEffector)
 {
-  if(nullptr == _otherEndEffector)
+  if (nullptr == _otherEndEffector)
     return;
 
   copy(*_otherEndEffector);
@@ -128,7 +127,7 @@ void EndEffector::setDefaultRelativeTransform(
 {
   mAspectProperties.mDefaultTransform = _newDefaultTf;
 
-  if(_useNow)
+  if (_useNow)
     resetRelativeTransform();
 }
 
@@ -141,10 +140,10 @@ void EndEffector::resetRelativeTransform()
 //==============================================================================
 void EndEffector::dirtyTransform()
 {
-  if(!mNeedTransformUpdate)
+  if (!mNeedTransformUpdate)
   {
     const SkeletonPtr& skel = getSkeleton();
-    if(skel)
+    if (skel)
       skel->dirtySupportPolygon(getTreeIndex());
   }
 
@@ -157,9 +156,10 @@ EndEffector::EndEffector(BodyNode* parent, const BasicProperties& properties)
     Frame(parent),
     FixedFrame(parent, properties.mDefaultTransform),
     common::EmbedPropertiesOnTopOf<
-        EndEffector, detail::EndEffectorProperties,
+        EndEffector,
+        detail::EndEffectorProperties,
         detail::EndEffectorCompositeBase>(
-      std::make_tuple(parent, properties.mDefaultTransform), common::NoArg)
+        std::make_tuple(parent, properties.mDefaultTransform), common::NoArg)
 {
   setProperties(properties);
 }
@@ -172,7 +172,7 @@ Node* EndEffector::cloneNode(BodyNode* _parent) const
 
   ee->copy(this);
 
-  if(mIK)
+  if (mIK)
     ee->mIK = mIK->clone(ee);
 
   return ee;

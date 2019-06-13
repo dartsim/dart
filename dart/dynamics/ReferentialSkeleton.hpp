@@ -47,7 +47,6 @@ namespace dynamics {
 class ReferentialSkeleton : public MetaSkeleton
 {
 public:
-
   /// Remove copy operator
   /// TODO(MXG): Consider allowing this
   ReferentialSkeleton& operator=(const ReferentialSkeleton& _other) = delete;
@@ -56,7 +55,8 @@ public:
   virtual ~ReferentialSkeleton() = default;
 
   // Documentation inherited
-  std::unique_ptr<common::LockableReference> getLockableReference() const override;
+  std::unique_ptr<common::LockableReference> getLockableReference()
+      const override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Name
@@ -129,7 +129,8 @@ public:
   bool hasBodyNode(const BodyNode* bodyNode) const override;
 
   // Documentation inherited
-  std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
+  std::size_t getIndexOf(
+      const BodyNode* _bn, bool _warning = true) const override;
 
   // Documentation inherited
   std::size_t getNumJoints() const override;
@@ -178,7 +179,8 @@ public:
   bool hasJoint(const Joint* joint) const override;
 
   // Documentation inherited
-  std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
+  std::size_t getIndexOf(
+      const Joint* _joint, bool _warning = true) const override;
 
   // Documentation inherited
   std::size_t getNumDofs() const override;
@@ -196,8 +198,8 @@ public:
   std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
-  std::size_t getIndexOf(const DegreeOfFreedom* _dof,
-                    bool _warning=true) const override;
+  std::size_t getIndexOf(
+      const DegreeOfFreedom* _dof, bool _warning = true) const override;
 
   /// \}
 
@@ -210,8 +212,7 @@ public:
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const JacobianNode* _node,
-      const Frame* _inCoordinatesOf) const override;
+      const JacobianNode* _node, const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
@@ -228,7 +229,8 @@ public:
   math::Jacobian getWorldJacobian(const JacobianNode* _node) const override;
 
   // Documentation inherited
-  math::Jacobian getWorldJacobian(const JacobianNode* _node,
+  math::Jacobian getWorldJacobian(
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
@@ -253,8 +255,7 @@ public:
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const JacobianNode* _node,
-      const Frame* _inCoordinatesOf) const override;
+      const JacobianNode* _node, const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
@@ -273,8 +274,7 @@ public:
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
-      const JacobianNode* _node,
-      const Frame* _inCoordinatesOf) const override;
+      const JacobianNode* _node, const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
@@ -402,7 +402,6 @@ public:
   /// \}
 
 protected:
-
   /// Default constructor. Protected to avoid blank and useless instantiations
   /// of ReferentialSkeleton.
   ReferentialSkeleton() = default;

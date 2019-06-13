@@ -36,8 +36,7 @@ namespace dart {
 namespace integration {
 
 //==============================================================================
-SemiImplicitEulerIntegrator::SemiImplicitEulerIntegrator()
-  : Integrator()
+SemiImplicitEulerIntegrator::SemiImplicitEulerIntegrator() : Integrator()
 {
 }
 
@@ -47,26 +46,26 @@ SemiImplicitEulerIntegrator::~SemiImplicitEulerIntegrator()
 }
 
 //==============================================================================
-void SemiImplicitEulerIntegrator::integrate(IntegrableSystem* _system,
-                                            double _dt)
+void SemiImplicitEulerIntegrator::integrate(
+    IntegrableSystem* _system, double _dt)
 {
   _system->integrateGenVels(_system->evalGenAccs(), _dt);
   _system->integrateConfigs(_system->getGenVels(), _dt);
 }
 
 //==============================================================================
-void SemiImplicitEulerIntegrator::integratePos(IntegrableSystem* _system,
-                                               double _dt)
+void SemiImplicitEulerIntegrator::integratePos(
+    IntegrableSystem* _system, double _dt)
 {
   _system->integrateConfigs(_system->getGenVels(), _dt);
 }
 
 //==============================================================================
-void SemiImplicitEulerIntegrator::integrateVel(IntegrableSystem* _system,
-                                               double _dt)
+void SemiImplicitEulerIntegrator::integrateVel(
+    IntegrableSystem* _system, double _dt)
 {
   _system->integrateGenVels(_system->evalGenAccs(), _dt);
 }
 
-}  // namespace integration
-}  // namespace dart
+} // namespace integration
+} // namespace dart

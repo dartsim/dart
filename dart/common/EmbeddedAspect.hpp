@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_EMBEDDEDASPECT_HPP_
 #define DART_COMMON_EMBEDDEDASPECT_HPP_
 
-#include "dart/common/detail/EmbeddedAspect.hpp"
-#include "dart/common/RequiresAspect.hpp"
 #include "dart/common/CompositeJoiner.hpp"
+#include "dart/common/RequiresAspect.hpp"
+#include "dart/common/detail/EmbeddedAspect.hpp"
 
 namespace dart {
 namespace common {
@@ -49,11 +49,11 @@ namespace common {
 /// use the detail::EmbeddedStateAspect class.
 template <class CompositeT, typename StateDataT>
 class EmbeddedStateAspect : public detail::EmbeddedStateAspect<
-    CompositeTrackingAspect<CompositeT>,
-    EmbeddedStateAspect<CompositeT, StateDataT>, StateDataT>
+                                CompositeTrackingAspect<CompositeT>,
+                                EmbeddedStateAspect<CompositeT, StateDataT>,
+                                StateDataT>
 {
 public:
-
   using Base = CompositeTrackingAspect<CompositeT>;
   using Derived = EmbeddedStateAspect<CompositeT, StateDataT>;
   using Impl = detail::EmbeddedStateAspect<Base, Derived, StateDataT>;
@@ -61,14 +61,12 @@ public:
   using StateData = typename Impl::StateData;
 
   template <typename... Args>
-  EmbeddedStateAspect(Args&&... args)
-    : Impl(std::forward<Args>(args)...)
+  EmbeddedStateAspect(Args&&... args) : Impl(std::forward<Args>(args)...)
   {
     // Do nothing
   }
 
   virtual ~EmbeddedStateAspect() = default;
-
 };
 
 //==============================================================================
@@ -89,10 +87,9 @@ public:
 /// directly instead of inheriting this class.
 template <class DerivedT, typename StateDataT>
 class EmbedState : public virtual common::RequiresAspect<
-    common::EmbeddedStateAspect<DerivedT, StateDataT> >
+                       common::EmbeddedStateAspect<DerivedT, StateDataT> >
 {
 public:
-
   using Derived = DerivedT;
   using Aspect = common::EmbeddedStateAspect<Derived, StateDataT>;
   using AspectState = typename Aspect::State;
@@ -101,8 +98,7 @@ public:
 
   // Forwarding constructor
   template <typename... Args>
-  EmbedState(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+  EmbedState(Args&&... args) : Base(std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -115,10 +111,8 @@ public:
   }
 
 protected:
-
   /// Aspect::State data, directly accessible to your derived class
   AspectState mAspectState;
-
 };
 
 //==============================================================================
@@ -126,11 +120,10 @@ protected:
 /// other Composite objects by listing them as the third (and later) template
 /// arguments.
 template <class DerivedT, typename StateDataT, typename... BaseComposites>
-class EmbedStateOnTopOf : public CompositeJoiner<
-    EmbedState<DerivedT, StateDataT>, BaseComposites...>
+class EmbedStateOnTopOf
+  : public CompositeJoiner<EmbedState<DerivedT, StateDataT>, BaseComposites...>
 {
 public:
-
   using Impl = EmbedState<DerivedT, StateDataT>;
   using Derived = typename Impl::Derived;
   using AspectStateData = typename Impl::AspectStateData;
@@ -141,8 +134,7 @@ public:
 
   // Forwarding constructor
   template <typename... Args>
-  EmbedStateOnTopOf(Args&&... args)
-    : Base(NoArg, std::forward<Args>(args)...)
+  EmbedStateOnTopOf(Args&&... args) : Base(NoArg, std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -150,9 +142,7 @@ public:
   virtual ~EmbedStateOnTopOf() = default;
 
 protected:
-
   using Impl::mAspectState;
-
 };
 
 //==============================================================================
@@ -163,12 +153,13 @@ protected:
 /// For more control over how your embedded-properties Aspect is implemented,
 /// you can use the detail::EmbeddedPropertiesAspect class.
 template <class CompositeT, typename PropertiesDataT>
-class EmbeddedPropertiesAspect : public detail::EmbeddedPropertiesAspect<
-    CompositeTrackingAspect<CompositeT>,
-    EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>, PropertiesDataT>
+class EmbeddedPropertiesAspect
+  : public detail::EmbeddedPropertiesAspect<
+        CompositeTrackingAspect<CompositeT>,
+        EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>,
+        PropertiesDataT>
 {
 public:
-
   using Base = CompositeTrackingAspect<CompositeT>;
   using Derived = EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>;
   using Impl = detail::EmbeddedPropertiesAspect<Base, Derived, PropertiesDataT>;
@@ -177,14 +168,12 @@ public:
 
   // Forwarding constructor
   template <typename... Args>
-  EmbeddedPropertiesAspect(Args&&... args)
-    : Impl(std::forward<Args>(args)...)
+  EmbeddedPropertiesAspect(Args&&... args) : Impl(std::forward<Args>(args)...)
   {
     // Do nothing
   }
 
   virtual ~EmbeddedPropertiesAspect() = default;
-
 };
 
 //==============================================================================
@@ -205,11 +194,11 @@ public:
 /// dart::common::detail::EmbeddedPropertiesAspect class directly instead of
 /// inheriting this class.
 template <class DerivedT, typename PropertiesDataT>
-class EmbedProperties : public virtual common::RequiresAspect<
-    common::EmbeddedPropertiesAspect<DerivedT, PropertiesDataT> >
+class EmbedProperties
+  : public virtual common::RequiresAspect<
+        common::EmbeddedPropertiesAspect<DerivedT, PropertiesDataT> >
 {
 public:
-
   using Derived = DerivedT;
   using Aspect = common::EmbeddedPropertiesAspect<Derived, PropertiesDataT>;
   using AspectProperties = typename Aspect::Properties;
@@ -218,8 +207,7 @@ public:
 
   // Forwarding constructor
   template <typename... Args>
-  EmbedProperties(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+  EmbedProperties(Args&&... args) : Base(std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -232,10 +220,8 @@ public:
   }
 
 protected:
-
   /// Aspect::Properties data, directly accessible to your derived class
   AspectProperties mAspectProperties;
-
 };
 
 //==============================================================================
@@ -244,10 +230,10 @@ protected:
 /// template arguments.
 template <class DerivedT, typename PropertiesDataT, typename... CompositeBases>
 class EmbedPropertiesOnTopOf : public CompositeJoiner<
-    EmbedProperties<DerivedT, PropertiesDataT>, CompositeBases...>
+                                   EmbedProperties<DerivedT, PropertiesDataT>,
+                                   CompositeBases...>
 {
 public:
-
   using Impl = EmbedProperties<DerivedT, PropertiesDataT>;
   using Derived = typename Impl::Derived;
   using AspectPropertiesData = typename Impl::AspectPropertiesData;
@@ -267,9 +253,7 @@ public:
   virtual ~EmbedPropertiesOnTopOf() = default;
 
 protected:
-
   using Impl::mAspectProperties;
-
 };
 
 //==============================================================================
@@ -283,24 +267,34 @@ protected:
 // on top of each other without the conflict that would arise from both of them
 // inheriting from common::Aspect.
 template <class CompositeT, typename StateDataT, typename PropertiesDataT>
-class EmbeddedStateAndPropertiesAspect :
-    public detail::EmbeddedPropertiesAspect<
+class EmbeddedStateAndPropertiesAspect
+  : public detail::EmbeddedPropertiesAspect<
         detail::EmbeddedStateAspect<
             CompositeTrackingAspect<CompositeT>,
-            EmbeddedStateAndPropertiesAspect<CompositeT, StateDataT, PropertiesDataT>,
+            EmbeddedStateAndPropertiesAspect<
+                CompositeT,
+                StateDataT,
+                PropertiesDataT>,
             StateDataT>,
-        EmbeddedStateAndPropertiesAspect<CompositeT, StateDataT, PropertiesDataT>,
+        EmbeddedStateAndPropertiesAspect<
+            CompositeT,
+            StateDataT,
+            PropertiesDataT>,
         PropertiesDataT>
 {
 public:
-
-  using Derived = EmbeddedStateAndPropertiesAspect<CompositeT, StateDataT, PropertiesDataT>;
+  using Derived = EmbeddedStateAndPropertiesAspect<
+      CompositeT,
+      StateDataT,
+      PropertiesDataT>;
 
   using AspectStateImpl = detail::EmbeddedStateAspect<
-      CompositeTrackingAspect<CompositeT>, Derived, StateDataT>;
+      CompositeTrackingAspect<CompositeT>,
+      Derived,
+      StateDataT>;
 
-  using AspectPropertiesImpl = detail::EmbeddedPropertiesAspect<
-      AspectStateImpl, Derived, PropertiesDataT>;
+  using AspectPropertiesImpl = detail::
+      EmbeddedPropertiesAspect<AspectStateImpl, Derived, PropertiesDataT>;
 
   using AspectImpl = Derived;
 
@@ -312,29 +306,26 @@ public:
 
   using CompositeType = CompositeT;
 
-  EmbeddedStateAndPropertiesAspect(
-      const EmbeddedStateAndPropertiesAspect&) = delete;
+  EmbeddedStateAndPropertiesAspect(const EmbeddedStateAndPropertiesAspect&)
+      = delete;
 
   virtual ~EmbeddedStateAndPropertiesAspect() = default;
 
   /// Construct using nothing. The object will remain unaffected.
-  EmbeddedStateAndPropertiesAspect()
-    : AspectPropertiesImpl()
+  EmbeddedStateAndPropertiesAspect() : AspectPropertiesImpl()
   {
     // Do nothing
   }
 
   /// Construct using a State. The object's Properties will remain unaffected.
-  EmbeddedStateAndPropertiesAspect(
-      const StateData& state)
+  EmbeddedStateAndPropertiesAspect(const StateData& state)
     : AspectPropertiesImpl(state)
   {
     // Do nothing
   }
 
   /// Construct using Properties. The object's State will remain unaffected.
-  EmbeddedStateAndPropertiesAspect(
-      const PropertiesData& properties)
+  EmbeddedStateAndPropertiesAspect(const PropertiesData& properties)
     : AspectPropertiesImpl(properties)
   {
     // Do nothing
@@ -342,8 +333,7 @@ public:
 
   /// Construct using a State and Properties instance
   EmbeddedStateAndPropertiesAspect(
-      const StateData& state,
-      const PropertiesData& properties)
+      const StateData& state, const PropertiesData& properties)
     : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
@@ -351,8 +341,7 @@ public:
 
   /// Construct using a Properties and State instance
   EmbeddedStateAndPropertiesAspect(
-      const PropertiesData& properties,
-      const StateData& state)
+      const PropertiesData& properties, const StateData& state)
     : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
@@ -363,7 +352,6 @@ public:
   {
     return std::make_unique<Derived>(this->getState(), this->getProperties());
   }
-
 };
 
 //==============================================================================
@@ -380,14 +368,15 @@ public:
 /// \endcode
 template <class DerivedT, typename StateDataT, typename PropertiesDataT>
 class EmbedStateAndProperties : public virtual common::RequiresAspect<
-    common::EmbeddedStateAndPropertiesAspect<
-        DerivedT, StateDataT, PropertiesDataT> >
+                                    common::EmbeddedStateAndPropertiesAspect<
+                                        DerivedT,
+                                        StateDataT,
+                                        PropertiesDataT> >
 {
 public:
-
   using Derived = DerivedT;
-  using Aspect = common::EmbeddedStateAndPropertiesAspect<
-      DerivedT, StateDataT, PropertiesDataT>;
+  using Aspect = common::
+      EmbeddedStateAndPropertiesAspect<DerivedT, StateDataT, PropertiesDataT>;
 
   using AspectState = typename Aspect::State;
   using AspectStateData = typename Aspect::StateData;
@@ -398,8 +387,7 @@ public:
 
   // Forwarding constructor
   template <typename... Args>
-  EmbedStateAndProperties(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+  EmbedStateAndProperties(Args&&... args) : Base(std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -417,27 +405,28 @@ public:
   }
 
 protected:
-
   /// Aspect::State data, directly accessible to your derived class
   AspectState mAspectState;
 
   /// Aspect::Properties data, directly accessible to your derived class
   AspectProperties mAspectProperties;
-
 };
 
 //==============================================================================
 /// This is an alternative to EmbedStateAndProperties which allows your class to
 /// also inherit other Composite objects by listing them as the fourth (and
 /// later) template arguments.
-template <class DerivedT, typename StateDataT, typename PropertiesDataT,
-          typename... CompositeBases>
-class EmbedStateAndPropertiesOnTopOf : public CompositeJoiner<
-    EmbedStateAndProperties<DerivedT, StateDataT, PropertiesDataT>,
-    CompositeBases...>
+template <
+    class DerivedT,
+    typename StateDataT,
+    typename PropertiesDataT,
+    typename... CompositeBases>
+class EmbedStateAndPropertiesOnTopOf
+  : public CompositeJoiner<
+        EmbedStateAndProperties<DerivedT, StateDataT, PropertiesDataT>,
+        CompositeBases...>
 {
 public:
-
   using Impl = EmbedStateAndProperties<DerivedT, StateDataT, PropertiesDataT>;
   using Derived = typename Impl::Derived;
   using AspectStateData = typename Impl::AspectStateData;
@@ -445,8 +434,8 @@ public:
   using AspectPropertiesData = typename Impl::AspectPropertiesData;
   using AspectProperties = typename Impl::AspectProperties;
   using Aspect = typename Impl::Aspect;
-  using Impl::getAspectState;
   using Impl::getAspectProperties;
+  using Impl::getAspectState;
   using Base = CompositeJoiner<Impl, CompositeBases...>;
 
   // Forwarding constructor
@@ -460,10 +449,8 @@ public:
   virtual ~EmbedStateAndPropertiesOnTopOf() = default;
 
 protected:
-
-  using Impl::mAspectState;
   using Impl::mAspectProperties;
-
+  using Impl::mAspectState;
 };
 
 } // namespace common

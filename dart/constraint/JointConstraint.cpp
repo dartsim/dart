@@ -38,33 +38,29 @@
 #include "dart/common/Console.hpp"
 
 #define DART_ERROR_ALLOWANCE 0.0
-#define DART_ERP     0.01
+#define DART_ERP 0.01
 #define DART_MAX_ERV 1e+1
-#define DART_CFM     1e-9
+#define DART_CFM 1e-9
 
 namespace dart {
 namespace constraint {
 
-double JointConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
-double JointConstraint::mErrorReductionParameter   = DART_ERP;
+double JointConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
+double JointConstraint::mErrorReductionParameter = DART_ERP;
 double JointConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
-double JointConstraint::mConstraintForceMixing     = DART_CFM;
+double JointConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
 JointConstraint::JointConstraint(dynamics::BodyNode* _body)
-  : ConstraintBase(),
-    mBodyNode1(_body),
-    mBodyNode2(nullptr)
+  : ConstraintBase(), mBodyNode1(_body), mBodyNode2(nullptr)
 {
   assert(_body);
 }
 
 //==============================================================================
-JointConstraint::JointConstraint(dynamics::BodyNode* _body1,
-                                 dynamics::BodyNode* _body2)
-  : ConstraintBase(),
-    mBodyNode1(_body1),
-    mBodyNode2(_body2)
+JointConstraint::JointConstraint(
+    dynamics::BodyNode* _body1, dynamics::BodyNode* _body2)
+  : ConstraintBase(), mBodyNode1(_body1), mBodyNode2(_body2)
 {
   assert(_body1);
   assert(_body2);
@@ -150,13 +146,15 @@ void JointConstraint::setConstraintForceMixing(double _cfm)
   if (_cfm < 1e-9)
   {
     dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+           << "] is lower than 1e-9. "
+           << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
   }
   if (_cfm > 1.0)
   {
     dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
+           << "] is greater than 1.0. "
+           << "It is set to 1.0." << std::endl;
     mConstraintForceMixing = 1.0;
   }
 
@@ -181,5 +179,5 @@ dynamics::BodyNode* JointConstraint::getBodyNode2() const
   return mBodyNode2;
 }
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
