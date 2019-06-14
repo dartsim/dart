@@ -47,5 +47,5 @@ DistanceOption::DistanceOption(
   // Do nothing
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

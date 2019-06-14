@@ -33,14 +33,14 @@
 #ifndef DART_COLLISION_COLLISIONFILTER_HPP_
 #define DART_COLLISION_COLLISIONFILTER_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/collision/detail/UnorderedPairs.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 
 namespace dynamics {
 class BodyNode;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace collision {
 
@@ -91,13 +91,11 @@ class BodyNodeCollisionFilter : public CollisionFilter
 public:
   /// Add a BodyNode pair to the blacklist.
   void addBodyNodePairToBlackList(
-      const dynamics::BodyNode* bodyNode1,
-      const dynamics::BodyNode* bodyNode2);
+      const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2);
 
   /// Remove a BodyNode pair from the blacklist.
   void removeBodyNodePairFromBlackList(
-      const dynamics::BodyNode* bodyNode1,
-      const dynamics::BodyNode* bodyNode2);
+      const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2);
 
   /// Remove all the BodyNode pairs from the blacklist.
   void removeAllBodyNodePairsFromBlackList();
@@ -110,8 +108,9 @@ public:
 private:
   /// Returns true if the two BodyNodes are adjacent BodyNodes (i.e., the two
   /// BodyNodes are connected by a Joint).
-  bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
-                         const dynamics::BodyNode* bodyNode2) const;
+  bool areAdjacentBodies(
+      const dynamics::BodyNode* bodyNode1,
+      const dynamics::BodyNode* bodyNode2) const;
 
   /// List of pairs to be ignored in the collision detection.
   detail::UnorderedPairs<dynamics::BodyNode> mBodyNodeBlackList;
@@ -120,4 +119,4 @@ private:
 } // namespace collision
 } // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONFILTER_HPP_
+#endif // DART_COLLISION_COLLISIONFILTER_HPP_

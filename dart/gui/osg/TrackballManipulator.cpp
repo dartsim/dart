@@ -47,10 +47,10 @@ TrackballManipulator::TrackballManipulator(int flags)
 }
 
 //==============================================================================
-TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
-                                           const ::osg::CopyOp& copyOp)
+TrackballManipulator::TrackballManipulator(
+    const TrackballManipulator& tm, const ::osg::CopyOp& copyOp)
   : ::osg::Object(tm, copyOp),
-#if OSG_VERSION_GREATER_OR_EQUAL(3,3,2)
+#if OSG_VERSION_GREATER_OR_EQUAL(3, 3, 2)
     ::osg::Callback(),
 #endif
     ::osgGA::OrbitManipulator(tm, copyOp)
@@ -77,7 +77,7 @@ bool TrackballManipulator::performMovementRightMouseButton(
     const double eventTimeDelta, const double dx, const double dy)
 {
   return OrbitManipulator::performMovementLeftMouseButton(
-        eventTimeDelta, dx, dy);
+      eventTimeDelta, dx, dy);
 }
 
 } // namespace osg

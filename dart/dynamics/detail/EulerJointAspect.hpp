@@ -65,29 +65,29 @@ struct EulerJointUniqueProperties
 };
 
 //==============================================================================
-struct EulerJointProperties :
-    GenericJoint<math::R3Space>::Properties,
-    EulerJointUniqueProperties
+struct EulerJointProperties : GenericJoint<math::R3Space>::Properties,
+                              EulerJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(EulerJointProperties)
 
   /// Composed constructor
   EulerJointProperties(
-      const GenericJoint<math::R3Space>::Properties& genericJointProperties =
-          GenericJoint<math::R3Space>::Properties(),
-      const EulerJointUniqueProperties& eulerJointProperties =
-          EulerJointUniqueProperties());
+      const GenericJoint<math::R3Space>::Properties& genericJointProperties
+      = GenericJoint<math::R3Space>::Properties(),
+      const EulerJointUniqueProperties& eulerJointProperties
+      = EulerJointUniqueProperties());
 
   virtual ~EulerJointProperties() = default;
 };
 
 //==============================================================================
 using EulerJointBase = common::EmbedPropertiesOnTopOf<
-    EulerJoint, EulerJointUniqueProperties, GenericJoint<math::R3Space> >;
+    EulerJoint,
+    EulerJointUniqueProperties,
+    GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
 
 #endif // DART_DYNAMICS_DETAIL_EULERJOINTASPECT_HPP_

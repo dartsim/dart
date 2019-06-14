@@ -45,7 +45,8 @@ namespace dynamics {
 /// their gradients added. Precedence of the modules decreases as the index of
 /// the outer vector increases. Modules with lower precedence will be projected
 /// through the null spaces of modules with higher precedence.
-typedef std::vector< std::vector< std::shared_ptr<InverseKinematics> > > IKHierarchy;
+typedef std::vector<std::vector<std::shared_ptr<InverseKinematics> > >
+    IKHierarchy;
 
 /// The HierarchicalIK class provides a convenient way of setting up a
 /// hierarchical inverse kinematics optimization problem which combines several
@@ -62,13 +63,12 @@ typedef std::vector< std::vector< std::shared_ptr<InverseKinematics> > > IKHiera
 class HierarchicalIK : public common::Subject
 {
 public:
-
   /// Virtual destructor
   virtual ~HierarchicalIK() = default;
 
   /// Solve the IK Problem. By default, the Skeleton itself will retain the
-  /// solved joint positions. If you pass in false for \c applySolution, then the
-  /// joint positions will be return to their original positions after the
+  /// solved joint positions. If you pass in false for \c applySolution, then
+  /// the joint positions will be return to their original positions after the
   /// problem is solved.
   ///
   /// \deprecated Deprecated in DART 6.8. Please use solveAndApply() instead.
@@ -135,7 +135,6 @@ public:
   class Function
   {
   public:
-
     /// Enable this function to be cloned to a new IK module.
     virtual optimizer::FunctionPtr clone(
         const std::shared_ptr<HierarchicalIK>& _newIK) const = 0;
@@ -178,7 +177,7 @@ public:
   ///
   /// Setting _clearSeeds to true will clear out any seeds that have been loaded
   /// into the Problem.
-  void resetProblem(bool _clearSeeds=false);
+  void resetProblem(bool _clearSeeds = false);
 
   /// Set the Solver that should be used by this IK module, and set it up with
   /// the Problem that is configured by this IK module
@@ -226,7 +225,6 @@ public:
   void clearCaches();
 
 protected:
-
   /// The HierarchicalIK::Objective Function is simply used to merge the
   /// objective and null space objective functions that are being held by this
   /// HierarchicalIK module. This class is not meant to be extended or
@@ -235,7 +233,6 @@ protected:
   class Objective final : public Function, public optimizer::Function
   {
   public:
-
     /// Constructor
     Objective(const std::shared_ptr<HierarchicalIK>& _ik);
 
@@ -247,14 +244,13 @@ protected:
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd &_x) override;
+    double eval(const Eigen::VectorXd& _x) override;
 
     // Documentation inherited
-    void evalGradient(const Eigen::VectorXd& _x,
-                      Eigen::Map<Eigen::VectorXd> _grad) override;
+    void evalGradient(
+        const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
 
   protected:
-
     /// Pointer to this Objective's HierarchicalIK module
     std::weak_ptr<HierarchicalIK> mIK;
 
@@ -270,7 +266,6 @@ protected:
   class Constraint final : public Function, public optimizer::Function
   {
   public:
-
     /// Constructor
     Constraint(const std::shared_ptr<HierarchicalIK>& _ik);
 
@@ -285,11 +280,10 @@ protected:
     double eval(const Eigen::VectorXd& _x) override;
 
     // Documentation inherited
-    void evalGradient(const Eigen::VectorXd& _x,
-                      Eigen::Map<Eigen::VectorXd> _grad) override;
+    void evalGradient(
+        const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
 
   protected:
-
     /// Pointer to this Constraint's HierarchicalIK module
     std::weak_ptr<HierarchicalIK> mIK;
 
@@ -357,16 +351,16 @@ public:
 class CompositeIK : public HierarchicalIK
 {
 public:
-
-  typedef std::unordered_set< std::shared_ptr<InverseKinematics> > ModuleSet;
-  typedef std::unordered_set< std::shared_ptr<const InverseKinematics> > ConstModuleSet;
+  typedef std::unordered_set<std::shared_ptr<InverseKinematics> > ModuleSet;
+  typedef std::unordered_set<std::shared_ptr<const InverseKinematics> >
+      ConstModuleSet;
 
   /// Create a CompositeIK module
   static std::shared_ptr<CompositeIK> create(const SkeletonPtr& _skel);
 
   // Documentation inherited
   std::shared_ptr<HierarchicalIK> clone(
-      const SkeletonPtr &_newSkel) const override;
+      const SkeletonPtr& _newSkel) const override;
 
   /// Same as clone(), but passes back a more complete type
   virtual std::shared_ptr<CompositeIK> cloneCompositeIK(
@@ -387,12 +381,11 @@ public:
   void refreshIKHierarchy() override;
 
 protected:
-
   /// Constructor
   CompositeIK(const SkeletonPtr& _skel);
 
   /// The set of modules being used by this CompositeIK
-  std::unordered_set< std::shared_ptr<InverseKinematics> > mModuleSet;
+  std::unordered_set<std::shared_ptr<InverseKinematics> > mModuleSet;
 };
 
 /// The WholeBodyIK class provides an interface for simultaneously solving all
@@ -401,13 +394,12 @@ protected:
 class WholeBodyIK : public HierarchicalIK
 {
 public:
-
   /// Create a WholeBodyIK
   static std::shared_ptr<WholeBodyIK> create(const SkeletonPtr& _skel);
 
   // Documentation inherited
   std::shared_ptr<HierarchicalIK> clone(
-      const SkeletonPtr &_newSkel) const override;
+      const SkeletonPtr& _newSkel) const override;
 
   /// Same as clone(), but produces a more complete type
   virtual std::shared_ptr<WholeBodyIK> cloneWholeBodyIK(
@@ -417,7 +409,6 @@ public:
   void refreshIKHierarchy() override;
 
 protected:
-
   /// Constructor
   WholeBodyIK(const SkeletonPtr& _skel);
 };

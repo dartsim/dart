@@ -49,7 +49,8 @@ class Resource
 {
 public:
   /// \brief Position to seek relative to.
-  enum SeekType {
+  enum SeekType
+  {
     SEEKTYPE_CUR, ///< Current position.
     SEEKTYPE_END, ///< End of file.
     SEEKTYPE_SET  ///< Begining of file.
@@ -76,7 +77,8 @@ public:
   /// \param[in] _size Size, in bytes, of each element.
   /// \param[in] _count Number of elements, each of _size bytes.
   /// \note This method has the same API as the standard fread function.
-  virtual std::size_t read(void *_buffer, std::size_t _size, std::size_t _count) = 0;
+  virtual std::size_t read(void* _buffer, std::size_t _size, std::size_t _count)
+      = 0;
 
   /// Reads all data from this resource, and returns it as a string.
   ///

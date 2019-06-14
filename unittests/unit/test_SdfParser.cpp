@@ -34,10 +34,10 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
@@ -51,9 +51,8 @@ using namespace utils;
 TEST(SdfParser, SDFSingleBodyWithoutJoint)
 {
   // Regression test for #444
-  WorldPtr world
-      = SdfParser::readWorld(
-            "dart://sample/sdf/test/single_bodynode_skeleton.world");
+  WorldPtr world = SdfParser::readWorld(
+      "dart://sample/sdf/test/single_bodynode_skeleton.world");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel = world->getSkeleton(0);
@@ -101,7 +100,8 @@ TEST(SdfParser, ParsingSDFFiles)
   // Skeleton
   std::vector<common::Uri> skeletonFiles;
   skeletonFiles.push_back("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
-  skeletonFiles.push_back("dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+  skeletonFiles.push_back(
+      "dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
 
   auto world = std::make_shared<World>();
   std::vector<SkeletonPtr> skeletons;
@@ -125,15 +125,17 @@ TEST(SdfParser, ReadMaterial)
 {
   std::string sdf_filename = "dart://sample/sdf/quad.sdf";
   SkeletonPtr skeleton = SdfParser::readSkeleton(sdf_filename);
-  EXPECT_TRUE(nullptr != skeleton);  auto bodynode = skeleton->getBodyNode(0);
+  EXPECT_TRUE(nullptr != skeleton);
+  auto bodynode = skeleton->getBodyNode(0);
 
-  for (auto shapenode : bodynode->getShapeNodes()) {
-    if (shapenode->has<dart::dynamics::VisualAspect>()) {
+  for (auto shapenode : bodynode->getShapeNodes())
+  {
+    if (shapenode->has<dart::dynamics::VisualAspect>())
+    {
       Eigen::Vector4d color = shapenode->getVisualAspect()->getRGBA();
       Eigen::Vector4d expected_color(0.5, 0.6, 0.8, 1.0);
       double diff = (color - expected_color).norm();
       EXPECT_LT(diff, 1e-4);
     }
   }
-
 }

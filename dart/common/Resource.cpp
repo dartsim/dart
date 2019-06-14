@@ -32,8 +32,8 @@
 
 #include "dart/common/Resource.hpp"
 
-#include <string>
 #include <exception>
+#include <string>
 #include "dart/common/Console.hpp"
 
 namespace dart {

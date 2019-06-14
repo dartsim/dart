@@ -39,18 +39,19 @@
 #ifndef DART_GUI_SOFTSIMWINDOW_HPP_
 #define DART_GUI_SOFTSIMWINDOW_HPP_
 
-#pragma message("This header is deprecated as of DART 6.6. "\
-         "Please use dart/gui/glut/SoftSimWindow.hpp instead.")
+#pragma message(                                                               \
+    "This header is deprecated as of DART 6.6. "                               \
+    "Please use dart/gui/glut/SoftSimWindow.hpp instead.")
 
-#include "dart/gui/glut/SoftSimWindow.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/gui/glut/SoftSimWindow.hpp"
 
 namespace dart {
 namespace gui {
 
 using SoftSimWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::SoftSimWindow;
 
-}  // namespace gui
-}  // namespace dart
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_SOFTSIMWINDOW_HPP_
+#endif // DART_GUI_SOFTSIMWINDOW_HPP_

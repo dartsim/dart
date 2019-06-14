@@ -42,34 +42,34 @@
 #include <iostream>
 #include <string>
 
-#include "dart/simulation/World.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
 #include "dart/dynamics/Marker.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/gui/glut/GLUTFuncs.hpp"
 #include "dart/gui/glut/GraphWindow.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
+#include "dart/simulation/World.hpp"
 #include "dart/utils/FileInfoWorld.hpp"
 
 namespace dart {
 namespace gui {
 namespace glut {
 
-SimWindow::SimWindow()
-  : Win3D() {
+SimWindow::SimWindow() : Win3D()
+{
   mWorld = std::make_shared<simulation::World>();
 
   mBackground[0] = 1.0;
@@ -86,12 +86,14 @@ SimWindow::SimWindow()
   mTrans[1] = 300.f;
 }
 
-SimWindow::~SimWindow() {
+SimWindow::~SimWindow()
+{
   for (const auto& graphWindow : mGraphWindows)
     delete graphWindow;
 }
 
-void SimWindow::timeStepping() {
+void SimWindow::timeStepping()
+{
   mWorld->step();
 }
 
@@ -124,14 +126,19 @@ void SimWindow::drawEntities()
     drawShapeFrame(mWorld->getSimpleFrame(i).get());
 }
 
-void SimWindow::displayTimer(int _val) {
+void SimWindow::displayTimer(int _val)
+{
   int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
-  if (mPlay) {
+  if (mPlay)
+  {
     mPlayFrame += 16;
     if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
       mPlayFrame = 0;
-  } else if (mSimulating) {
-    for (int i = 0; i < numIter; i++) {
+  }
+  else if (mSimulating)
+  {
+    for (int i = 0; i < numIter; i++)
+    {
       timeStepping();
       mWorld->bake();
     }
@@ -140,23 +147,32 @@ void SimWindow::displayTimer(int _val) {
   glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
-void SimWindow::draw() {
+void SimWindow::draw()
+{
   glDisable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  if (!mSimulating) {
-      if (mPlayFrame < mWorld->getRecording()->getNumFrames()) {
+  if (!mSimulating)
+  {
+    if (mPlayFrame < mWorld->getRecording()->getNumFrames())
+    {
       std::size_t nSkels = mWorld->getNumSkeletons();
-      for (std::size_t i = 0; i < nSkels; i++) {
+      for (std::size_t i = 0; i < nSkels; i++)
+      {
         // std::size_t start = mWorld->getIndex(i);
         // std::size_t size = mWorld->getSkeleton(i)->getNumDofs();
-        mWorld->getSkeleton(i)->setPositions(mWorld->getRecording()->getConfig(mPlayFrame, i));
+        mWorld->getSkeleton(i)->setPositions(
+            mWorld->getRecording()->getConfig(mPlayFrame, i));
       }
-      if (mShowMarkers) {
+      if (mShowMarkers)
+      {
         // std::size_t sumDofs = mWorld->getIndex(nSkels);
         int nContact = mWorld->getRecording()->getNumContacts(mPlayFrame);
-        for (int i = 0; i < nContact; i++) {
-            Eigen::Vector3d v = mWorld->getRecording()->getContactPoint(mPlayFrame, i);
-            Eigen::Vector3d f = mWorld->getRecording()->getContactForce(mPlayFrame, i);
+        for (int i = 0; i < nContact; i++)
+        {
+          Eigen::Vector3d v
+              = mWorld->getRecording()->getContactPoint(mPlayFrame, i);
+          Eigen::Vector3d f
+              = mWorld->getRecording()->getContactForce(mPlayFrame, i);
 
           glBegin(GL_LINES);
           glVertex3f(v[0], v[1], v[2]);
@@ -170,11 +186,15 @@ void SimWindow::draw() {
         }
       }
     }
-  } else {
-    if (mShowMarkers) {
-      const auto result =
-          mWorld->getConstraintSolver()->getLastCollisionResult();
-      for (const auto& contact : result.getContacts()) {
+  }
+  else
+  {
+    if (mShowMarkers)
+    {
+      const auto result
+          = mWorld->getConstraintSolver()->getLastCollisionResult();
+      for (const auto& contact : result.getContacts())
+      {
         Eigen::Vector3d v = contact.point;
         Eigen::Vector3d f = contact.force / 10.0;
         glBegin(GL_LINES);
@@ -212,38 +232,42 @@ void SimWindow::draw() {
   glEnable(GL_LIGHTING);
 }
 
-void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
-  switch (_key) {
-    case ' ':  // use space key to play or stop the motion
+void SimWindow::keyboard(unsigned char _key, int _x, int _y)
+{
+  switch (_key)
+  {
+    case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
         mPlay = false;
       break;
-    case 'p':  // playBack
+    case 'p': // playBack
       mPlay = !mPlay;
       if (mPlay)
         mSimulating = false;
       break;
-    case '[':  // step backward
-      if (!mSimulating) {
+    case '[': // step backward
+      if (!mSimulating)
+      {
         mPlayFrame--;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
         glutPostRedisplay();
       }
       break;
-    case ']':  // step forwardward
-      if (!mSimulating) {
+    case ']': // step forwardward
+      if (!mSimulating)
+      {
         mPlayFrame++;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
         glutPostRedisplay();
       }
       break;
-    case 'v':  // show or hide markers
+    case 'v': // show or hide markers
       mShowMarkers = !mShowMarkers;
       break;
-  case 's':
+    case 's':
       saveWorld();
       std::cout << "World Saved in 'tempWorld.txt'" << std::endl;
       break;
@@ -253,18 +277,21 @@ void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
   glutPostRedisplay();
 }
 
-void SimWindow::setWorld(simulation::WorldPtr _world) {
+void SimWindow::setWorld(simulation::WorldPtr _world)
+{
   mWorld = _world;
 }
 
-void SimWindow::saveWorld() {
+void SimWindow::saveWorld()
+{
   if (!mWorld)
     return;
   dart::utils::FileInfoWorld worldFile;
   worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
 }
 
-void SimWindow::plot(Eigen::VectorXd& _data) {
+void SimWindow::plot(Eigen::VectorXd& _data)
+{
   GraphWindow* figure = new GraphWindow();
   figure->setData(_data);
   figure->initWindow(480, 240, "figure");
@@ -272,9 +299,10 @@ void SimWindow::plot(Eigen::VectorXd& _data) {
 }
 
 //==============================================================================
-void SimWindow::drawSkeleton(const dynamics::Skeleton* skeleton,
-                             const Eigen::Vector4d& color,
-                             bool useDefaultColor) const
+void SimWindow::drawSkeleton(
+    const dynamics::Skeleton* skeleton,
+    const Eigen::Vector4d& color,
+    bool useDefaultColor) const
 {
   if (!skeleton)
     return;
@@ -284,9 +312,10 @@ void SimWindow::drawSkeleton(const dynamics::Skeleton* skeleton,
 }
 
 //==============================================================================
-void SimWindow::drawEntity(const dynamics::Entity* entity,
-                           const Eigen::Vector4d& color,
-                           bool useDefaultColor) const
+void SimWindow::drawEntity(
+    const dynamics::Entity* entity,
+    const Eigen::Vector4d& color,
+    bool useDefaultColor) const
 {
   if (!entity)
     return;
@@ -307,10 +336,11 @@ void SimWindow::drawEntity(const dynamics::Entity* entity,
 }
 
 //==============================================================================
-void SimWindow::drawBodyNode(const dynamics::BodyNode* bodyNode,
-                             const Eigen::Vector4d& color,
-                             bool useDefaultColor,
-                             bool recursive) const
+void SimWindow::drawBodyNode(
+    const dynamics::BodyNode* bodyNode,
+    const Eigen::Vector4d& color,
+    bool useDefaultColor,
+    bool recursive) const
 {
   if (!bodyNode)
     return;
@@ -357,9 +387,10 @@ void SimWindow::drawBodyNode(const dynamics::BodyNode* bodyNode,
 }
 
 //==============================================================================
-void SimWindow::drawShapeFrame(const dynamics::ShapeFrame* shapeFrame,
-                               const Eigen::Vector4d& color,
-                               bool useDefaultColor) const
+void SimWindow::drawShapeFrame(
+    const dynamics::ShapeFrame* shapeFrame,
+    const Eigen::Vector4d& color,
+    bool useDefaultColor) const
 {
   if (!shapeFrame)
     return;
@@ -384,8 +415,8 @@ void SimWindow::drawShapeFrame(const dynamics::ShapeFrame* shapeFrame,
 }
 
 //==============================================================================
-void SimWindow::drawShape(const dynamics::Shape* shape,
-                          const Eigen::Vector4d& color) const
+void SimWindow::drawShape(
+    const dynamics::Shape* shape, const Eigen::Vector4d& color) const
 {
   if (!shape)
     return;
@@ -398,18 +429,18 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
 
   mRI->setPenColor(color);
 
-  using dynamics::Shape;
-  using dynamics::SphereShape;
   using dynamics::BoxShape;
-  using dynamics::EllipsoidShape;
-  using dynamics::CylinderShape;
   using dynamics::CapsuleShape;
   using dynamics::ConeShape;
-  using dynamics::PlaneShape;
-  using dynamics::MultiSphereConvexHullShape;
-  using dynamics::MeshShape;
-  using dynamics::SoftMeshShape;
+  using dynamics::CylinderShape;
+  using dynamics::EllipsoidShape;
   using dynamics::LineSegmentShape;
+  using dynamics::MeshShape;
+  using dynamics::MultiSphereConvexHullShape;
+  using dynamics::PlaneShape;
+  using dynamics::Shape;
+  using dynamics::SoftMeshShape;
+  using dynamics::SphereShape;
 
   if (shape->is<SphereShape>())
   {
@@ -443,7 +474,8 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   }
   else if (shape->is<MultiSphereConvexHullShape>())
   {
-    const auto* multiSphere = static_cast<const MultiSphereConvexHullShape*>(shape);
+    const auto* multiSphere
+        = static_cast<const MultiSphereConvexHullShape*>(shape);
     mRI->drawMultiSphere(multiSphere->getSpheres());
   }
   else if (shape->is<MeshShape>())
@@ -464,10 +496,9 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   }
   else if (shape->is<LineSegmentShape>())
   {
-    const auto& lineSegmentShape
-        = static_cast<const LineSegmentShape*>(shape);
-    mRI->drawLineSegments(lineSegmentShape->getVertices(),
-                          lineSegmentShape->getConnections());
+    const auto& lineSegmentShape = static_cast<const LineSegmentShape*>(shape);
+    mRI->drawLineSegments(
+        lineSegmentShape->getVertices(), lineSegmentShape->getConnections());
   }
   else
   {
@@ -516,9 +547,10 @@ void SimWindow::drawPointMasses(
 }
 
 //==============================================================================
-void SimWindow::drawMarker(const dynamics::Marker* marker,
-                           const Eigen::Vector4d& color,
-                           bool useDefaultColor) const
+void SimWindow::drawMarker(
+    const dynamics::Marker* marker,
+    const Eigen::Vector4d& color,
+    bool useDefaultColor) const
 {
   if (!marker)
     return;
@@ -552,6 +584,6 @@ void SimWindow::drawMarker(const dynamics::Marker* marker,
   mRI->popName();
 }
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart

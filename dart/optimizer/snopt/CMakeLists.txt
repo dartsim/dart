@@ -29,3 +29,5 @@ if(NOT DART_BUILD_DARTPY)
     DESTINATION lib
   )
 endif()
+
+dart_format_add(${hdrs} ${srcs})

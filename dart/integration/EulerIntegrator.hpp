@@ -58,7 +58,7 @@ public:
   void integrateVel(IntegrableSystem* _system, double _dt) override;
 };
 
-}  // namespace integration
-}  // namespace dart
+} // namespace integration
+} // namespace dart
 
-#endif  // DART_INTEGRATION_EULERINTEGRATOR_HPP_
+#endif // DART_INTEGRATION_EULERINTEGRATOR_HPP_

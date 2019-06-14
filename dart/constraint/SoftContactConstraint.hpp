@@ -35,21 +35,21 @@
 
 #include "dart/constraint/ConstraintBase.hpp"
 
-#include "dart/math/MathTypes.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 
-namespace collision{
+namespace collision {
 class SoftCollisionInfo;
-}  // namespace collision
+} // namespace collision
 
 namespace dynamics {
 class BodyNode;
 class SoftBodyNode;
 class PointMass;
 class Skeleton;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -247,5 +247,4 @@ private:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_

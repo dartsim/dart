@@ -34,9 +34,9 @@
 
 #include <string>
 
-#include "dart/math/Helpers.hpp"
-#include "dart/math/Geometry.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -70,8 +70,8 @@ const std::string& BallJoint::getStaticType()
 //==============================================================================
 bool BallJoint::isCyclic(std::size_t _index) const
 {
-  return _index < 3
-      && !hasPositionLimit(0) && !hasPositionLimit(1) && !hasPositionLimit(2);
+  return _index < 3 && !hasPositionLimit(0) && !hasPositionLimit(1)
+         && !hasPositionLimit(2);
 }
 
 //==============================================================================
@@ -95,8 +95,7 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 
 //==============================================================================
 BallJoint::BallJoint(const Properties& properties)
-  : Base(properties),
-    mR(Eigen::Isometry3d::Identity())
+  : Base(properties), mR(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix<double, 6, 3>::Zero();
 
@@ -141,11 +140,11 @@ void BallJoint::integratePositions(double _dt)
 //==============================================================================
 void BallJoint::updateDegreeOfFreedomNames()
 {
-  if(!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_x", false);
-  if(!mDofs[1]->isNamePreserved())
+  if (!mDofs[1]->isNamePreserved())
     mDofs[1]->setName(Joint::mAspectProperties.mName + "_y", false);
-  if(!mDofs[2]->isNamePreserved())
+  if (!mDofs[2]->isNamePreserved())
     mDofs[2]->setName(Joint::mAspectProperties.mName + "_z", false);
 }
 
@@ -155,7 +154,7 @@ void BallJoint::updateRelativeTransform() const
   mR.linear() = convertToRotation(getPositionsStatic());
 
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mR
-      * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -165,8 +164,8 @@ void BallJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
-    mJacobian = math::getAdTMatrix(
-          Joint::mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
+    mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint)
+                    .leftCols<3>();
   }
 }
 
@@ -179,7 +178,7 @@ void BallJoint::updateRelativeJacobianTimeDeriv() const
 //==============================================================================
 const Eigen::Isometry3d& BallJoint::getR() const
 {
-  if(mNeedTransformUpdate)
+  if (mNeedTransformUpdate)
   {
     updateRelativeTransform();
     mNeedTransformUpdate = false;
@@ -188,6 +187,5 @@ const Eigen::Isometry3d& BallJoint::getR() const
   return mR;
 }
 
-}  // namespace dynamics
-}  // namespace dart
-
+} // namespace dynamics
+} // namespace dart

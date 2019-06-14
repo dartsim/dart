@@ -47,7 +47,6 @@ namespace optimizer {
 class Problem
 {
 public:
-
   /// \brief Constructor
   explicit Problem(std::size_t _dim = 0);
 
@@ -189,4 +188,3 @@ protected:
 } // namespace dart
 
 #endif // #ifndef DART_OPTIMIZER_PROBLEM_HPP_
-

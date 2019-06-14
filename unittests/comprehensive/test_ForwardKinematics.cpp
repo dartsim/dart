@@ -49,18 +49,19 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
 
   // Create the world
   const double l1 = 1.5, l2 = 1.0;
-  SkeletonPtr robot = createTwoLinkRobot(Vector3d(0.3, 0.3, l1), DOF_YAW,
-                                         Vector3d(0.3, 0.3, l2), DOF_ROLL);
+  SkeletonPtr robot = createTwoLinkRobot(
+      Vector3d(0.3, 0.3, l1), DOF_YAW, Vector3d(0.3, 0.3, l2), DOF_ROLL);
 
   // Set the test cases with the joint values and the expected end-effector
   // positions
   const std::size_t numTests = 2;
-  double temp = sqrt(0.5*l2*l2);
-  Vector2d joints [numTests] = { Vector2d( constantsd::pi()/4.0,  constantsd::pi()/2.0),
-                                 Vector2d(-constantsd::pi()/4.0, -constantsd::pi()/4.0) };
-  Vector3d expectedPos [numTests] = { Vector3d(temp, -temp, l1),
-                                      Vector3d(temp / sqrt(2.0),
-                                      temp / sqrt(2.0), l1+temp) };
+  double temp = sqrt(0.5 * l2 * l2);
+  Vector2d joints[numTests]
+      = {Vector2d(constantsd::pi() / 4.0, constantsd::pi() / 2.0),
+         Vector2d(-constantsd::pi() / 4.0, -constantsd::pi() / 4.0)};
+  Vector3d expectedPos[numTests]
+      = {Vector3d(temp, -temp, l1),
+         Vector3d(temp / sqrt(2.0), temp / sqrt(2.0), l1 + temp)};
 
   // Check each case by setting the joint values and obtaining the end-effector
   // position
@@ -71,11 +72,11 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
     Vector3d actual = bn->getTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
-    if(!equality)
+    if (!equality)
     {
       std::cout << "Joint values: " << joints[i].transpose() << std::endl;
       std::cout << "Actual pos: " << actual.transpose() << std::endl;
-      std::cout << "Expected pos: " <<  expectedPos[i].transpose() << std::endl;
+      std::cout << "Expected pos: " << expectedPos[i].transpose() << std::endl;
     }
   }
 }
@@ -92,32 +93,31 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 
   // Create the world
   const double link1 = 1.5, link2 = 1.0;
-  SkeletonPtr robot = createTwoLinkRobot(Vector3d(0.3, 0.3, link1), DOF_ROLL,
-                                         Vector3d(0.3, 0.3, link2), DOF_ROLL);
+  SkeletonPtr robot = createTwoLinkRobot(
+      Vector3d(0.3, 0.3, link1), DOF_ROLL, Vector3d(0.3, 0.3, link2), DOF_ROLL);
 
   // Set the test cases with the joint values and the expected end-effector
   // positions
   const std::size_t numTests = 2;
-  Vector2d joints [numTests] = { Vector2d(0.0, constantsd::pi()/2.0),
-                                 Vector2d(3*constantsd::pi()/4.0,
-                                 -constantsd::pi()/4.0)};
-  Vector3d expectedPos [numTests] = { Vector3d(0.0, -1.0, 1.5),
-                                      Vector3d(0.0, -2.06, -1.06) };
+  Vector2d joints[numTests]
+      = {Vector2d(0.0, constantsd::pi() / 2.0),
+         Vector2d(3 * constantsd::pi() / 4.0, -constantsd::pi() / 4.0)};
+  Vector3d expectedPos[numTests]
+      = {Vector3d(0.0, -1.0, 1.5), Vector3d(0.0, -2.06, -1.06)};
 
   // Check each case by setting the joint values and obtaining the end-effector
   // position
   for (std::size_t i = 0; i < numTests; i++)
   {
     robot->setPositions(joints[i]);
-    Vector3d actual
-        = robot->getBodyNode("ee")->getTransform().translation();
+    Vector3d actual = robot->getBodyNode("ee")->getTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
-    if(!equality)
+    if (!equality)
     {
       std::cout << "Joint values: " << joints[i].transpose() << std::endl;
       std::cout << "Actual pos: " << actual.transpose() << std::endl;
-      std::cout << "Expected pos: " <<  expectedPos[i].transpose() << std::endl;
+      std::cout << "Expected pos: " << expectedPos[i].transpose() << std::endl;
     }
   }
 }
@@ -130,15 +130,15 @@ Eigen::MatrixXd finiteDifferenceJacobian(
     JacobianNode* node)
 {
   Eigen::MatrixXd J(3, q.size());
-  for(int i=0; i < q.size(); ++i)
+  for (int i = 0; i < q.size(); ++i)
   {
     const double dq = 1e-4;
 
     Eigen::VectorXd q_up = q;
     Eigen::VectorXd q_down = q;
 
-    q_up[i] += 0.5*dq;
-    q_down[i] -= 0.5*dq;
+    q_up[i] += 0.5 * dq;
+    q_down[i] -= 0.5 * dq;
 
     skeleton->setPositions(active_indices, q_up);
     Eigen::Vector3d x_up = node->getTransform().translation();
@@ -147,7 +147,8 @@ Eigen::MatrixXd finiteDifferenceJacobian(
     Eigen::Vector3d x_down = node->getTransform().translation();
 
     skeleton->setPositions(active_indices, q);
-    J.col(i) = node->getWorldTransform().linear().transpose() * (x_up - x_down) / dq;
+    J.col(i)
+        = node->getWorldTransform().linear().transpose() * (x_up - x_down) / dq;
   }
 
   return J;
@@ -165,7 +166,7 @@ Eigen::MatrixXd standardJacobian(
   Eigen::MatrixXd J = skeleton->getJacobian(node).bottomRows<3>();
 
   Eigen::MatrixXd reduced_J(3, q.size());
-  for(int i=0; i < q.size(); ++i)
+  for (int i = 0; i < q.size(); ++i)
     reduced_J.col(i) = J.col(active_indices[i]);
 
   return reduced_J;
@@ -178,36 +179,44 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
   const double tolerance = 1e-8;
 
   dart::utils::DartLoader loader;
-  SkeletonPtr skeleton1 =
-      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  SkeletonPtr skeleton1
+      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   SkeletonPtr skeleton2 = skeleton1->cloneSkeleton();
 
   std::vector<std::size_t> active_indices;
-  for(std::size_t i=0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i)
     active_indices.push_back(i);
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
 
   Eigen::MatrixXd fd_J = finiteDifferenceJacobian(
-        skeleton1, q, active_indices,
-        skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1));
+      skeleton1,
+      q,
+      active_indices,
+      skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1));
 
   Eigen::MatrixXd J = standardJacobian(
-        skeleton2, q, active_indices,
-        skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1));
+      skeleton2,
+      q,
+      active_indices,
+      skeleton2->getBodyNode(skeleton2->getNumBodyNodes() - 1));
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 
   q = Eigen::VectorXd::Random(active_indices.size());
 
   fd_J = finiteDifferenceJacobian(
-        skeleton1, q, active_indices,
-        skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1));
+      skeleton1,
+      q,
+      active_indices,
+      skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1));
 
   J = standardJacobian(
-        skeleton2, q, active_indices,
-        skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1));
+      skeleton2,
+      q,
+      active_indices,
+      skeleton2->getBodyNode(skeleton2->getNumBodyNodes() - 1));
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 }
@@ -219,24 +228,24 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
   const double tolerance = 1e-8;
 
   dart::utils::DartLoader loader;
-  SkeletonPtr skeleton1 =
-      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  SkeletonPtr skeleton1
+      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
-  BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1);
+  BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1);
   EndEffector* ee1 = last_bn1->createEndEffector();
 
   SkeletonPtr skeleton2 = skeleton1->cloneSkeleton();
-  BodyNode* last_bn2 = skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1);
+  BodyNode* last_bn2 = skeleton2->getBodyNode(skeleton2->getNumBodyNodes() - 1);
   EndEffector* ee2 = last_bn2->createEndEffector();
 
   std::vector<std::size_t> active_indices;
-  for(std::size_t i=0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i)
     active_indices.push_back(i);
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
 
-  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(
-        skeleton1, q, active_indices, ee1);
+  Eigen::MatrixXd fd_J
+      = finiteDifferenceJacobian(skeleton1, q, active_indices, ee1);
 
   Eigen::MatrixXd J = standardJacobian(skeleton2, q, active_indices, ee2);
 

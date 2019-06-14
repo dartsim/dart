@@ -31,10 +31,10 @@
  */
 
 #ifndef EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
-#define EXAMPLES_HUMANJOINTLIMITS_HUMANARMJOINTLIMITCONSTRAINT_HPP_
+#  define EXAMPLES_HUMANJOINTLIMITS_HUMANARMJOINTLIMITCONSTRAINT_HPP_
 
-#include <dart/dart.hpp>
-#include <tiny_dnn/tiny_dnn.h>
+#  include <dart/dart.hpp>
+#  include <tiny_dnn/tiny_dnn.h>
 
 DART_COMMON_MAKE_SHARED_WEAK(HumanArmJointLimitConstraint)
 

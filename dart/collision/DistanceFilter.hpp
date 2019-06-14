@@ -37,7 +37,7 @@ namespace dart {
 
 namespace dynamics {
 class BodyNode;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace collision {
 
@@ -45,20 +45,22 @@ class CollisionObject;
 
 struct DistanceFilter
 {
-  virtual bool needDistance(const CollisionObject* object1,
-                             const CollisionObject* object2) const = 0;
+  virtual bool needDistance(
+      const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
 struct BodyNodeDistanceFilter : DistanceFilter
 {
-  bool needDistance(const CollisionObject* object1,
-                    const CollisionObject* object2) const override;
+  bool needDistance(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override;
 
-  bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
-                         const dynamics::BodyNode* bodyNode2) const;
+  bool areAdjacentBodies(
+      const dynamics::BodyNode* bodyNode1,
+      const dynamics::BodyNode* bodyNode2) const;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DISTANCEFILTER_HPP_
+#endif // DART_COLLISION_DISTANCEFILTER_HPP_

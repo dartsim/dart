@@ -65,8 +65,8 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
   std::shared_ptr<CollisionFilter> filter;
 };
 
-}  // namespace detail
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
+#endif // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_

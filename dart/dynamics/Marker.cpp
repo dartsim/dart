@@ -48,10 +48,9 @@ constexpr Marker::ConstraintType Marker::SOFT;
 namespace detail {
 
 //==============================================================================
-MarkerProperties::MarkerProperties(const Eigen::Vector4d& color,
-                                   ConstraintType type)
-  : mColor(color),
-    mType(type)
+MarkerProperties::MarkerProperties(
+    const Eigen::Vector4d& color, ConstraintType type)
+  : mColor(color), mType(type)
 {
   // Do nothing
 }
@@ -106,7 +105,7 @@ int Marker::getID() const
 //==============================================================================
 void Marker::setConstraintType(Marker::ConstraintType type)
 {
-  if(type == mAspectProperties.mType)
+  if (type == mAspectProperties.mType)
     return;
 
   mAspectProperties.mType = type;
@@ -122,7 +121,7 @@ Marker::ConstraintType Marker::getConstraintType() const
 //==============================================================================
 void Marker::setColor(const Eigen::Vector4d& color)
 {
-  if(color == mAspectProperties.mColor)
+  if (color == mAspectProperties.mColor)
     return;
 
   mAspectProperties.mColor = color;
@@ -141,8 +140,9 @@ Marker::Marker(BodyNode* parent, const BasicProperties& properties)
     Frame(parent),
     FixedFrame(parent, properties.mRelativeTf),
     common::EmbedPropertiesOnTopOf<
-        Marker, detail::MarkerProperties, FixedJacobianNode>(
-      parent, properties.mRelativeTf),
+        Marker,
+        detail::MarkerProperties,
+        FixedJacobianNode>(parent, properties.mRelativeTf),
     mID(Marker::msMarkerCount++)
 {
   createAspect<Aspect>();
@@ -155,11 +155,11 @@ Node* Marker::cloneNode(BodyNode* parent) const
   Marker* marker = new Marker(parent, BasicProperties());
   marker->duplicateAspects(this);
 
-  if(mIK)
+  if (mIK)
     marker->mIK = mIK->clone(marker);
 
   return marker;
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

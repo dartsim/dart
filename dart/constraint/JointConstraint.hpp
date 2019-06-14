@@ -39,7 +39,7 @@ namespace dart {
 
 namespace dynamics {
 class BodyNode;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -116,5 +116,4 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_CONSTRAINT_HPP_

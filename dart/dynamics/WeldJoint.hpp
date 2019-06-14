@@ -46,7 +46,6 @@ namespace dynamics {
 class WeldJoint : public ZeroDofJoint
 {
 public:
-
   friend class Skeleton;
 
   struct Properties : ZeroDofJoint::Properties
@@ -82,7 +81,6 @@ public:
   void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) override;
 
 protected:
-
   /// Constructor called by Skeleton class
   WeldJoint(const Properties& properties);
 
@@ -106,14 +104,13 @@ protected:
   void updateRelativePrimaryAcceleration() const override;
 
   // Documentation inherited
-  void updateRelativeJacobian(bool =true) const override;
+  void updateRelativeJacobian(bool = true) const override;
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_WELDJOINT_HPP_
-
+#endif // DART_DYNAMICS_WELDJOINT_HPP_

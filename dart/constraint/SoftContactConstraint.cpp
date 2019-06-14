@@ -36,43 +36,51 @@
 
 #include "dart/external/odelcpsolver/lcp.h"
 
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/collision/CollisionObject.hpp"
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
-#define DART_ERP     0.01
+#define DART_ERP 0.01
 #define DART_MAX_ERV 1e+1
-#define DART_CFM     1e-5
+#define DART_CFM 1e-5
 // #define DART_MAX_NUMBER_OF_CONTACTS 32
 
 #define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
-#define DART_FRICTION_COEFF_THRESHOLD    1e-3
+#define DART_FRICTION_COEFF_THRESHOLD 1e-3
 #define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
-#define DART_MAX_BOUNCING_VELOCITY       1e+2
-#define DART_CONTACT_CONSTRAINT_EPSILON  1e-6
+#define DART_MAX_BOUNCING_VELOCITY 1e+2
+#define DART_CONTACT_CONSTRAINT_EPSILON 1e-6
 
 namespace dart {
 namespace constraint {
 
-double SoftContactConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
-double SoftContactConstraint::mErrorReductionParameter   = DART_ERP;
+double SoftContactConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
+double SoftContactConstraint::mErrorReductionParameter = DART_ERP;
 double SoftContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
-double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
+double SoftContactConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
     collision::Contact& contact, double timeStep)
   : ConstraintBase(),
     mTimeStep(timeStep),
-    mBodyNode1(const_cast<dynamics::ShapeFrame*>(contact.collisionObject1->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
-    mBodyNode2(const_cast<dynamics::ShapeFrame*>(contact.collisionObject2->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
+    mBodyNode1(const_cast<dynamics::ShapeFrame*>(
+                   contact.collisionObject1->getShapeFrame())
+                   ->asShapeNode()
+                   ->getBodyNodePtr()
+                   .get()),
+    mBodyNode2(const_cast<dynamics::ShapeFrame*>(
+                   contact.collisionObject2->getShapeFrame())
+                   ->asShapeNode()
+                   ->getBodyNodePtr()
+                   .get()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(nullptr),
@@ -105,8 +113,8 @@ SoftContactConstraint::SoftContactConstraint(
     if (contact.collisionObject1->getShape()->getType()
         == dynamics::SoftMeshShape::getStaticType())
     {
-      mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, contact.point,
-                                             contact.triID1);
+      mPointMass1 = selectCollidingPointMass(
+          mSoftBodyNode1, contact.point, contact.triID1);
       mPointMass1->setColliding(true);
     }
   }
@@ -115,8 +123,8 @@ SoftContactConstraint::SoftContactConstraint(
     if (contact.collisionObject2->getShape()->getType()
         == dynamics::SoftMeshShape::getStaticType())
     {
-      mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, contact.point,
-                                             contact.triID2);
+      mPointMass2 = selectCollidingPointMass(
+          mSoftBodyNode2, contact.point, contact.triID2);
       mPointMass2->setColliding(true);
     }
   }
@@ -124,8 +132,8 @@ SoftContactConstraint::SoftContactConstraint(
   //----------------------------------------------------------------------------
   // Bounce
   //----------------------------------------------------------------------------
-  mRestitutionCoeff = mBodyNode1->getRestitutionCoeff()
-                      * mBodyNode2->getRestitutionCoeff();
+  mRestitutionCoeff
+      = mBodyNode1->getRestitutionCoeff() * mBodyNode2->getRestitutionCoeff();
   if (mRestitutionCoeff > DART_RESTITUTION_COEFF_THRESHOLD)
     mIsBounceOn = true;
   else
@@ -137,8 +145,8 @@ SoftContactConstraint::SoftContactConstraint(
   // TODO(JS): Assume the frictional coefficient can be changed during
   //           simulation steps.
   // Update mFrictionalCoff
-  mFrictionCoeff = std::min(mBodyNode1->getFrictionCoeff(),
-                            mBodyNode2->getFrictionCoeff());
+  mFrictionCoeff = std::min(
+      mBodyNode1->getFrictionCoeff(), mBodyNode2->getFrictionCoeff());
   if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
@@ -154,7 +162,8 @@ SoftContactConstraint::SoftContactConstraint(
   // Compute local contact Jacobians expressed in body frame
   if (mIsFrictionOn)
   {
-    // Set the dimension of this constraint. 1 is for Normal direction constraint.
+    // Set the dimension of this constraint. 1 is for Normal direction
+    // constraint.
     // TODO(JS): Assumed that the number of contact is not static.
     // TODO(JS): Adjust following code once use of mNumFrictionConeBases is
     //           implemented.
@@ -182,11 +191,12 @@ SoftContactConstraint::SoftContactConstraint(
 
       assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
       assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
-//      if (D.col(0).dot(D.col(1)) > 0.0)
-//        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1)) << std::endl;
+      //      if (D.col(0).dot(D.col(1)) > 0.0)
+      //        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1))
+      //        << std::endl;
       assert(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
 
-//      std::cout << "D: " << std::endl << D << std::endl;
+      //      std::cout << "D: " << std::endl << D << std::endl;
 
       // Jacobian for normal contact
       bodyDirection1.noalias()
@@ -194,10 +204,8 @@ SoftContactConstraint::SoftContactConstraint(
       bodyDirection2.noalias()
           = mBodyNode2->getTransform().linear().transpose() * -ct->normal;
 
-      bodyPoint1.noalias()
-          = mBodyNode1->getTransform().inverse() * ct->point;
-      bodyPoint2.noalias()
-          = mBodyNode2->getTransform().inverse() * ct->point;
+      bodyPoint1.noalias() = mBodyNode1->getTransform().inverse() * ct->point;
+      bodyPoint2.noalias() = mBodyNode2->getTransform().inverse() * ct->point;
 
       mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
@@ -213,12 +221,13 @@ SoftContactConstraint::SoftContactConstraint(
       bodyDirection2.noalias()
           = mBodyNode2->getTransform().linear().transpose() * -D.col(0);
 
-//      bodyPoint1.noalias()
-//          = mBodyNode1->getWorldTransform().inverse() * ct->point;
-//      bodyPoint2.noalias()
-//          = mBodyNode2->getWorldTransform().inverse() * ct->point;
+      //      bodyPoint1.noalias()
+      //          = mBodyNode1->getWorldTransform().inverse() * ct->point;
+      //      bodyPoint2.noalias()
+      //          = mBodyNode2->getWorldTransform().inverse() * ct->point;
 
-//      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 << std::endl;
+      //      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 <<
+      //      std::endl;
 
       mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
@@ -234,12 +243,13 @@ SoftContactConstraint::SoftContactConstraint(
       bodyDirection2.noalias()
           = mBodyNode2->getTransform().linear().transpose() * -D.col(1);
 
-//      bodyPoint1.noalias()
-//          = mBodyNode1->getWorldTransform().inverse() * ct->point;
-//      bodyPoint2.noalias()
-//          = mBodyNode2->getWorldTransform().inverse() * ct->point;
+      //      bodyPoint1.noalias()
+      //          = mBodyNode1->getWorldTransform().inverse() * ct->point;
+      //      bodyPoint2.noalias()
+      //          = mBodyNode2->getWorldTransform().inverse() * ct->point;
 
-//      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 << std::endl;
+      //      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 <<
+      //      std::endl;
 
       mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
@@ -273,10 +283,8 @@ SoftContactConstraint::SoftContactConstraint(
       bodyDirection2.noalias()
           = mBodyNode2->getTransform().linear().transpose() * -ct->normal;
 
-      bodyPoint1.noalias()
-          = mBodyNode1->getTransform().inverse() * ct->point;
-      bodyPoint2.noalias()
-          = mBodyNode2->getTransform().inverse() * ct->point;
+      bodyPoint1.noalias() = mBodyNode1->getTransform().inverse() * ct->point;
+      bodyPoint2.noalias() = mBodyNode2->getTransform().inverse() * ct->point;
 
       mJacobians1[i].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[i].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);
@@ -289,7 +297,7 @@ SoftContactConstraint::SoftContactConstraint(
   //----------------------------------------------------------------------------
   // Union finding
   //----------------------------------------------------------------------------
-//  uniteSkeletons();
+  //  uniteSkeletons();
 }
 
 //==============================================================================
@@ -372,13 +380,15 @@ void SoftContactConstraint::setConstraintForceMixing(double _cfm)
   if (_cfm < 1e-9)
   {
     dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+           << "] is lower than 1e-9. "
+           << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
   }
   if (_cfm > 1.0)
   {
     dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
+           << "] is greater than 1.0. "
+           << "It is set to 1.0." << std::endl;
     mConstraintForceMixing = 1.0;
   }
 
@@ -392,8 +402,7 @@ double SoftContactConstraint::getConstraintForceMixing()
 }
 
 //==============================================================================
-void SoftContactConstraint::setFrictionDirection(
-    const Eigen::Vector3d& _dir)
+void SoftContactConstraint::setFrictionDirection(const Eigen::Vector3d& _dir)
 {
   mFirstFrictionalDirection = _dir.normalized();
 }
@@ -439,25 +448,26 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 
       // Upper and lower bounds of tangential direction-1 impulsive force
       _info->lo[index + 1] = -mFrictionCoeff;
-      _info->hi[index + 1] =  mFrictionCoeff;
+      _info->hi[index + 1] = mFrictionCoeff;
       _info->findex[index + 1] = index;
 
       // Upper and lower bounds of tangential direction-2 impulsive force
       _info->lo[index + 2] = -mFrictionCoeff;
-      _info->hi[index + 2] =  mFrictionCoeff;
+      _info->hi[index + 2] = mFrictionCoeff;
       _info->findex[index + 2] = index;
 
-//      std::cout << "_frictionalCoff: " << _frictionalCoff << std::endl;
+      //      std::cout << "_frictionalCoff: " << _frictionalCoff << std::endl;
 
-//      std::cout << "_lcp->ub[_idx + 1]: " << _lcp->ub[_idx + 1] << std::endl;
-//      std::cout << "_lcp->ub[_idx + 2]: " << _lcp->ub[_idx + 2] << std::endl;
+      //      std::cout << "_lcp->ub[_idx + 1]: " << _lcp->ub[_idx + 1] <<
+      //      std::endl; std::cout << "_lcp->ub[_idx + 2]: " << _lcp->ub[_idx +
+      //      2] << std::endl;
 
       //------------------------------------------------------------------------
       // Bouncing
       //------------------------------------------------------------------------
       // A. Penetration correction
-      double bouncingVelocity = mContacts[i]->penetrationDepth
-                                - mErrorAllowance;
+      double bouncingVelocity
+          = mContacts[i]->penetrationDepth - mErrorAllowance;
       if (bouncingVelocity < 0.0)
       {
         bouncingVelocity = 0.0;
@@ -490,10 +500,10 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       }
 
       //
-//      _lcp->b[_idx] = _lcp->b[_idx] * 1.1;
-//      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
+      //      _lcp->b[_idx] = _lcp->b[_idx] * 1.1;
+      //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
       _info->b[index] += bouncingVelocity;
-//      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
+      //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
 
       // TODO(JS): Initial guess
       // x
@@ -524,8 +534,8 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       // Bouncing
       //------------------------------------------------------------------------
       // A. Penetration correction
-      double bouncingVelocity = mContacts[i]->penetrationDepth
-                                - DART_ERROR_ALLOWANCE;
+      double bouncingVelocity
+          = mContacts[i]->penetrationDepth - DART_ERROR_ALLOWANCE;
       if (bouncingVelocity < 0.0)
       {
         bouncingVelocity = 0.0;
@@ -558,10 +568,10 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       }
 
       //
-//      _lcp->b[_idx] = _lcp->b[_idx] * 1.1;
-//      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
+      //      _lcp->b[_idx] = _lcp->b[_idx] * 1.1;
+      //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
       _info->b[i] += bouncingVelocity;
-//      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
+      //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
 
       // TODO(JS): Initial guess
       // x
@@ -587,28 +597,28 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
     if (mPointMass1)
     {
       mBodyNode1->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
+          mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
     }
     else
     {
       if (mBodyNode1->isReactive())
       {
-        mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
-                                                     mJacobians1[_idx]);
+        mBodyNode1->getSkeleton()->updateBiasImpulse(
+            mBodyNode1, mJacobians1[_idx]);
       }
     }
 
     if (mPointMass2)
     {
       mBodyNode2->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
+          mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
     }
     else
     {
       if (mBodyNode2->isReactive())
       {
-        mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                       mJacobians2[_idx]);
+        mBodyNode2->getSkeleton()->updateBiasImpulse(
+            mBodyNode2, mJacobians2[_idx]);
       }
     }
 
@@ -621,7 +631,7 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
       mBodyNode1->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
+          mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
     else
@@ -629,8 +639,8 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
       if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->clearConstraintImpulses();
-        mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
-                                                     mJacobians1[_idx]);
+        mBodyNode1->getSkeleton()->updateBiasImpulse(
+            mBodyNode1, mJacobians1[_idx]);
         mBodyNode1->getSkeleton()->updateVelocityChange();
       }
     }
@@ -639,7 +649,7 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
     {
       mBodyNode2->getSkeleton()->clearConstraintImpulses();
       mBodyNode2->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
+          mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
       mBodyNode2->getSkeleton()->updateVelocityChange();
     }
     else
@@ -647,8 +657,8 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
       if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
-        mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                     mJacobians2[_idx]);
+        mBodyNode2->getSkeleton()->updateBiasImpulse(
+            mBodyNode2, mJacobians2[_idx]);
         mBodyNode2->getSkeleton()->updateVelocityChange();
       }
     }
@@ -671,7 +681,7 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
       if (mPointMass1)
       {
         _vel[i] += mJacobians1[i].tail<3>().dot(
-                     mPointMass1->getBodyVelocityChange());
+            mPointMass1->getBodyVelocityChange());
       }
       else
       {
@@ -685,7 +695,7 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
       if (mPointMass2)
       {
         _vel[i] += mJacobians2[i].tail<3>().dot(
-                     mPointMass2->getBodyVelocityChange());
+            mPointMass2->getBodyVelocityChange());
       }
       else
       {
@@ -699,8 +709,8 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
   // varaible in ODE
   if (_withCfm)
   {
-    _vel[mAppliedImpulseIndex] += _vel[mAppliedImpulseIndex]
-                                     * mConstraintForceMixing;
+    _vel[mAppliedImpulseIndex]
+        += _vel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 }
 
@@ -738,13 +748,14 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
     for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
-//      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
-//      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
-//      std::cout << "_lambda3: " << _lambda[_idx + 2] << std::endl;
+      //      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
+      //      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
+      //      std::cout << "_lambda3: " << _lambda[_idx + 2] << std::endl;
 
-//      std::cout << "imp1: " << mJacobians2[i * 3 + 0] * _lambda[_idx] << std::endl;
-//      std::cout << "imp2: " << mJacobians2[i * 3 + 1] * _lambda[_idx + 1] << std::endl;
-//      std::cout << "imp3: " << mJacobians2[i * 3 + 2] * _lambda[_idx + 2] << std::endl;
+      //      std::cout << "imp1: " << mJacobians2[i * 3 + 0] * _lambda[_idx] <<
+      //      std::endl; std::cout << "imp2: " << mJacobians2[i * 3 + 1] *
+      //      _lambda[_idx + 1] << std::endl; std::cout << "imp3: " <<
+      //      mJacobians2[i * 3 + 2] * _lambda[_idx + 2] << std::endl;
 
       assert(!math::isNan(_lambda[index]));
 
@@ -752,11 +763,11 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       mContacts[i]->force = mContacts[i]->normal * _lambda[index] / mTimeStep;
 
       // Normal impulsive force
-//      mContacts[i]->lambda[0] = _lambda[_idx];
+      //      mContacts[i]->lambda[0] = _lambda[_idx];
       if (mPointMass1)
       {
-        mPointMass1->addConstraintImpulse(mJacobians1[index].tail<3>()
-                                          * _lambda[index], true);
+        mPointMass1->addConstraintImpulse(
+            mJacobians1[index].tail<3>() * _lambda[index], true);
       }
       else
       {
@@ -766,15 +777,15 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       if (mPointMass2)
       {
-        mPointMass2->addConstraintImpulse(mJacobians2[index].tail<3>()
-                                          * _lambda[index], true);
+        mPointMass2->addConstraintImpulse(
+            mJacobians2[index].tail<3>() * _lambda[index], true);
       }
       else
       {
         if (mBodyNode2->isReactive())
           mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
       }
-//      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
+      //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
 
       assert(!math::isNan(_lambda[index]));
@@ -784,11 +795,11 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       mContacts[i]->force += D.col(0) * _lambda[index] / mTimeStep;
 
       // Tangential direction-1 impulsive force
-//      mContacts[i]->lambda[1] = _lambda[_idx];
+      //      mContacts[i]->lambda[1] = _lambda[_idx];
       if (mPointMass1)
       {
-        mPointMass1->addConstraintImpulse(mJacobians1[index].tail<3>()
-                                          * _lambda[index], true);
+        mPointMass1->addConstraintImpulse(
+            mJacobians1[index].tail<3>() * _lambda[index], true);
       }
       else
       {
@@ -798,15 +809,15 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       if (mPointMass2)
       {
-        mPointMass2->addConstraintImpulse(mJacobians2[index].tail<3>()
-                                          * _lambda[index], true);
+        mPointMass2->addConstraintImpulse(
+            mJacobians2[index].tail<3>() * _lambda[index], true);
       }
       else
       {
         if (mBodyNode2->isReactive())
           mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
       }
-//      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
+      //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
 
       assert(!math::isNan(_lambda[index]));
@@ -815,11 +826,11 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       mContacts[i]->force += D.col(1) * _lambda[index] / mTimeStep;
 
       // Tangential direction-2 impulsive force
-//      mContacts[i]->lambda[2] = _lambda[_idx];
+      //      mContacts[i]->lambda[2] = _lambda[_idx];
       if (mPointMass1)
       {
-        mPointMass1->addConstraintImpulse(mJacobians1[index].tail<3>()
-                                          * _lambda[index], true);
+        mPointMass1->addConstraintImpulse(
+            mJacobians1[index].tail<3>() * _lambda[index], true);
       }
       else
       {
@@ -829,15 +840,15 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       if (mPointMass2)
       {
-        mPointMass2->addConstraintImpulse(mJacobians2[index].tail<3>()
-                                          * _lambda[index], true);
+        mPointMass2->addConstraintImpulse(
+            mJacobians2[index].tail<3>() * _lambda[index], true);
       }
       else
       {
         if (mBodyNode2->isReactive())
           mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
       }
-//      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
+      //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
     }
   }
@@ -849,12 +860,12 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
     for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       // Normal impulsive force
-//			pContactPts[i]->lambda[0] = _lambda[i];
+      //			pContactPts[i]->lambda[0] = _lambda[i];
 
       if (mPointMass1)
       {
-        mPointMass1->addConstraintImpulse(mJacobians1[i].tail<3>()
-                                          * _lambda[i], true);
+        mPointMass1->addConstraintImpulse(
+            mJacobians1[i].tail<3>() * _lambda[i], true);
       }
       else
       {
@@ -864,8 +875,8 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       if (mPointMass2)
       {
-        mPointMass2->addConstraintImpulse(mJacobians2[i].tail<3>()
-                                          * _lambda[i], true);
+        mPointMass2->addConstraintImpulse(
+            mJacobians2[i].tail<3>() * _lambda[i], true);
       }
       else
       {
@@ -898,7 +909,7 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
     else
       _vel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
 
-//    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
+    //    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
   }
 }
 
@@ -951,14 +962,15 @@ void SoftContactConstraint::uniteSkeletons()
 //==============================================================================
 void SoftContactConstraint::updateFirstFrictionalDirection()
 {
-//  std::cout << "SoftContactConstraintTEST::_updateFirstFrictionalDirection(): "
-//            << "Not finished implementation."
-//            << std::endl;
+  //  std::cout <<
+  //  "SoftContactConstraintTEST::_updateFirstFrictionalDirection(): "
+  //            << "Not finished implementation."
+  //            << std::endl;
 
   // TODO(JS): Not implemented
   // Refer to:
   // https://github.com/erwincoumans/bullet3/blob/master/src/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.cpp#L910
-//  mFirstFrictionalDirection;
+  //  mFirstFrictionalDirection;
 }
 
 //==============================================================================
@@ -969,7 +981,7 @@ Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
 
   // TODO(JS): Use mNumFrictionConeBases
   // Check if the number of bases is even number.
-//  bool isEvenNumBases = mNumFrictionConeBases % 2 ? true : false;
+  //  bool isEvenNumBases = mNumFrictionConeBases % 2 ? true : false;
 
   Eigen::MatrixXd T(Eigen::MatrixXd::Zero(3, 2));
 
@@ -997,9 +1009,7 @@ Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
 //==============================================================================
 template <typename PointMassT, typename SoftBodyNodeT>
 static PointMassT selectCollidingPointMassT(
-    SoftBodyNodeT _softBodyNode,
-    const Eigen::Vector3d& _point,
-    int _faceId)
+    SoftBodyNodeT _softBodyNode, const Eigen::Vector3d& _point, int _faceId)
 {
   PointMassT pointMass = nullptr;
 
@@ -1041,9 +1051,9 @@ const dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
     const Eigen::Vector3d& _point,
     int _faceId) const
 {
-  return selectCollidingPointMassT<const dynamics::PointMass*,
-                                   const dynamics::SoftBodyNode*>(
-        _softBodyNode, _point, _faceId);
+  return selectCollidingPointMassT<
+      const dynamics::PointMass*,
+      const dynamics::SoftBodyNode*>(_softBodyNode, _point, _faceId);
 }
 
 //==============================================================================
@@ -1052,10 +1062,10 @@ dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
     const Eigen::Vector3d& _point,
     int _faceId) const
 {
-  return selectCollidingPointMassT<dynamics::PointMass*,
-                                   dynamics::SoftBodyNode*>(
-        _softBodyNode, _point, _faceId);
+  return selectCollidingPointMassT<
+      dynamics::PointMass*,
+      dynamics::SoftBodyNode*>(_softBodyNode, _point, _faceId);
 }
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart

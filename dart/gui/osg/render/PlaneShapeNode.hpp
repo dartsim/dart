@@ -53,20 +53,18 @@ class PlaneShapeDrawable;
 class PlaneShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
-
-  PlaneShapeNode(std::shared_ptr<dart::dynamics::PlaneShape> shape,
-                 ShapeFrameNode* parent);
+  PlaneShapeNode(
+      std::shared_ptr<dart::dynamics::PlaneShape> shape,
+      ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~PlaneShapeNode();
 
   std::shared_ptr<dart::dynamics::PlaneShape> mPlaneShape;
   PlaneShapeGeode* mGeode;
-
 };
 
 } // namespace render

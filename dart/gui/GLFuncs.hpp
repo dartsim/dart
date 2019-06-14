@@ -44,17 +44,20 @@ namespace gui {
 /// dart::gui::glut::drawStringOnScreen() instead in
 /// dart/gui/glut/GLUTFuncs.hpp file.
 DART_DEPRECATED(6.6)
-void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                        bool _bigFont = true);
+void drawStringOnScreen(
+    float _x, float _y, const std::string& _s, bool _bigFont = true);
 
 /// \brief
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness = -1);
+void drawArrow3D(
+    const Eigen::Vector3d& _pt,
+    const Eigen::Vector3d& _dir,
+    const double _length,
+    const double _thickness,
+    const double _arrowThickness = -1);
 
 /// \brief
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness);
+void drawArrow2D(
+    const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec, double _thickness);
 
 /// \brief
 void drawProgressBar(int _currFrame, int _totalFrame);
@@ -67,7 +70,7 @@ void drawProgressBar(int _currFrame, int _totalFrame);
 
 // TODO(Unknown): freeimage
 
-}  // namespace gui
-}  // namespace dart
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_GLFUNCS_HPP_
+#endif // DART_GUI_GLFUNCS_HPP_

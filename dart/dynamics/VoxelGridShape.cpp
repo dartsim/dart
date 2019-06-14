@@ -34,8 +34,8 @@
 
 #if HAVE_OCTOMAP
 
-#include "dart/common/Console.hpp"
-#include "dart/math/Helpers.hpp"
+#  include "dart/common/Console.hpp"
+#  include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {

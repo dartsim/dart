@@ -42,7 +42,8 @@
 
 namespace std {
 
-template<> struct hash<boost::filesystem::path>
+template <>
+struct hash<boost::filesystem::path>
 {
   size_t operator()(const boost::filesystem::path& p) const
   {
@@ -77,8 +78,8 @@ protected:
 
 protected:
   /// Map from library path to the library instances.
-  std::unordered_map<
-      boost::filesystem::path, std::weak_ptr<SharedLibrary>> mLibraries;
+  std::unordered_map<boost::filesystem::path, std::weak_ptr<SharedLibrary>>
+      mLibraries;
 };
 
 } // namespace detail

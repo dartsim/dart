@@ -40,19 +40,19 @@ namespace dynamics {
 
 //==============================================================================
 template <class Base>
-class EntityNode : public detail::EntityNodeBase<
-    Base, std::is_base_of<common::Composite, Base>::value >
+class EntityNode
+  : public detail::
+        EntityNodeBase<Base, std::is_base_of<common::Composite, Base>::value>
 {
 public:
-
   using NameAspect = typename detail::EntityNodeAspectBase<Base>::Aspect;
 
   /// Forwarding constructor
   template <typename... Args>
   EntityNode(Args&&... args)
-    : detail::EntityNodeBase<
-          Base, std::is_base_of<common::Composite, Base>::value>(
-        std::forward<Args>(args)...)
+    : detail::
+          EntityNodeBase<Base, std::is_base_of<common::Composite, Base>::value>(
+              std::forward<Args>(args)...)
   {
     this->template createAspect<NameAspect>();
   }
@@ -67,7 +67,6 @@ public:
 
   // Documentation inherited from Node
   const std::string& getName() const override;
-
 };
 
 } // namespace dynamics

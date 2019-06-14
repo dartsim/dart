@@ -41,7 +41,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
-#define DART_CFM     1e-9
+#define DART_CFM 1e-9
 
 namespace dart {
 namespace constraint {
@@ -86,14 +86,16 @@ void ServoMotorConstraint::setConstraintForceMixing(double cfm)
   {
     dtwarn << "[ServoMotorConstraint::setConstraintForceMixing] "
            << "Constraint force mixing parameter[" << cfm
-           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+           << "] is lower than 1e-9. "
+           << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
   }
   if (cfm > 1.0)
   {
     dtwarn << "[ServoMotorConstraint::setConstraintForceMixing] "
            << "Constraint force mixing parameter[" << cfm
-           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
+           << "] is greater than 1.0. "
+           << "It is set to 1.0." << std::endl;
     mConstraintForceMixing = 1.0;
   }
 
@@ -214,7 +216,7 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof ; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -231,8 +233,8 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
   // varaible in ODE
   if (withCfm)
   {
-    delVel[mAppliedImpulseIndex] += delVel[mAppliedImpulseIndex]
-                                     * mConstraintForceMixing;
+    delVel[mAppliedImpulseIndex]
+        += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
   assert(localIndex == mDim);
@@ -255,13 +257,13 @@ void ServoMotorConstraint::applyImpulse(double* lambda)
 {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof ; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
 
     mJoint->setConstraintImpulse(
-          i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
+        i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
     // TODO(JS): consider to add Joint::addConstraintImpulse()
 
     mOldX[i] = lambda[localIndex];

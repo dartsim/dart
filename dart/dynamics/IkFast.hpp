@@ -91,7 +91,8 @@ protected:
       const IkReal* mTargetTranspose,
       const IkReal* mTargetRotation,
       const IkReal* pfree,
-      ikfast::IkSolutionListBase<IkReal>& solutions) = 0;
+      ikfast::IkSolutionListBase<IkReal>& solutions)
+      = 0;
 
   virtual const char* getKinematicsHash() = 0;
 

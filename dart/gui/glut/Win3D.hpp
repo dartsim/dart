@@ -42,7 +42,8 @@ namespace dart {
 namespace gui {
 namespace glut {
 
-class Win3D : public glut::Window {
+class Win3D : public glut::Window
+{
 public:
   Win3D();
 
@@ -57,7 +58,7 @@ public:
   virtual void initGL();
   virtual void initLights();
 
-  virtual void draw()=0;
+  virtual void draw() = 0;
 
 protected:
   Trackball mTrackBall;
@@ -72,8 +73,8 @@ protected:
   bool mZooming;
 };
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_GLUT_WIN3D_HPP_
+#endif // DART_GUI_GLUT_WIN3D_HPP_

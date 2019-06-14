@@ -94,8 +94,8 @@ Connection::~Connection()
 //==============================================================================
 bool Connection::isConnected() const
 {
-  std::shared_ptr<signal::detail::ConnectionBodyBase>
-      connectionBody(mWeakConnectionBody.lock());
+  std::shared_ptr<signal::detail::ConnectionBodyBase> connectionBody(
+      mWeakConnectionBody.lock());
 
   if (nullptr == connectionBody)
     return false;
@@ -106,8 +106,8 @@ bool Connection::isConnected() const
 //==============================================================================
 void Connection::disconnect() const
 {
-  std::shared_ptr<signal::detail::ConnectionBodyBase>
-      connectionBody(mWeakConnectionBody.lock());
+  std::shared_ptr<signal::detail::ConnectionBodyBase> connectionBody(
+      mWeakConnectionBody.lock());
 
   if (nullptr == connectionBody)
     return;
@@ -135,6 +135,5 @@ ScopedConnection::~ScopedConnection()
   disconnect();
 }
 
-}  // namespace common
-}  // namespace dart
-
+} // namespace common
+} // namespace dart

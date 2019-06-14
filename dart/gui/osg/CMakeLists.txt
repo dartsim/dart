@@ -101,12 +101,4 @@ if(NOT DART_BUILD_DARTPY)
   )
 endif()
 
-dart_format_add(
-  GridVisual.hpp
-  GridVisual.cpp
-  ImGuiHandler.hpp
-  ImGuiHandler.cpp
-  RealTimeWorldNode.hpp
-  RealTimeWorldNode.cpp
-  Utils.hpp
-)
+dart_format_add(${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})

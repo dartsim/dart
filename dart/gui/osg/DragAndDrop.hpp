@@ -56,12 +56,11 @@ class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an dart::gui::osg environment
-class DragAndDrop : public dart::common::Subject,
-                    public dart::common::Observer
+class DragAndDrop : public dart::common::Subject, public dart::common::Observer
 {
 public:
-
-  enum class RotationOption : int {
+  enum class RotationOption : int
+  {
 
     HOLD_MODKEY = 0, // Default setting, hold ctrl key to rotate
     ALWAYS_ON,
@@ -136,7 +135,6 @@ public:
   ::osgGA::GUIEventAdapter::ModKeyMask getRotationModKey() const;
 
 protected:
-
   /// Perform cleanup when the subject is destroyed
   void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
@@ -171,7 +169,6 @@ protected:
 
   /// Modkey for rotation
   ::osgGA::GUIEventAdapter::ModKeyMask mRotationModKey;
-
 };
 
 //==============================================================================
@@ -179,7 +176,6 @@ protected:
 class SimpleFrameDnD : public DragAndDrop
 {
 public:
-
   /// Constructor
   SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame);
 
@@ -196,7 +192,6 @@ public:
   void saveState() override;
 
 protected:
-
   /// SimpleFrame pointer
   dart::dynamics::SimpleFrame* mFrame;
 
@@ -211,10 +206,11 @@ protected:
 class SimpleFrameShapeDnD : public SimpleFrameDnD
 {
 public:
-
   /// Constructor
-  SimpleFrameShapeDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame,
-                      dart::dynamics::Shape* shape);
+  SimpleFrameShapeDnD(
+      Viewer* viewer,
+      dart::dynamics::SimpleFrame* frame,
+      dart::dynamics::Shape* shape);
 
   /// Virtual destructor
   virtual ~SimpleFrameShapeDnD() = default;
@@ -226,7 +222,6 @@ public:
   void update() override;
 
 protected:
-
   // Documentation inherited
   void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
@@ -239,7 +234,6 @@ protected:
 class InteractiveFrameDnD : public DragAndDrop
 {
 public:
-
   /// Constructor
   InteractiveFrameDnD(Viewer* viewer, dart::gui::osg::InteractiveFrame* frame);
 
@@ -259,7 +253,6 @@ public:
   void saveState() override;
 
 protected:
-
   /// Vector of DnD components that are united under this DnD
   std::vector<DragAndDrop*> mDnDs;
 
@@ -271,10 +264,12 @@ protected:
 class BodyNodeDnD : public DragAndDrop
 {
 public:
-
   /// Constructor
-  BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
-              bool useExternalIK = true, bool useWholeBody = false);
+  BodyNodeDnD(
+      Viewer* viewer,
+      dart::dynamics::BodyNode* bn,
+      bool useExternalIK = true,
+      bool useWholeBody = false);
 
   /// Virtual destructor
   virtual ~BodyNodeDnD() = default;
@@ -310,7 +305,8 @@ public:
   bool isUsingWholeBody() const;
 
   /// Set the key that will preserve the orientation of the body
-  void setPreserveOrientationModKey(::osgGA::GUIEventAdapter::ModKeyMask modkey);
+  void setPreserveOrientationModKey(
+      ::osgGA::GUIEventAdapter::ModKeyMask modkey);
 
   /// Get the key that will preserve the orientation of the body
   ::osgGA::GUIEventAdapter::ModKeyMask getPreserveOrientationModKey() const;
@@ -322,7 +318,6 @@ public:
   ::osgGA::GUIEventAdapter::ModKeyMask getJointRestrictionModKey() const;
 
 protected:
-
   /// The BodyNode associated with this DnD
   dart::dynamics::WeakBodyNodePtr mBodyNode;
 

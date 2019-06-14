@@ -33,9 +33,9 @@
 #ifndef DART_OPTIMIZER_FUNCTION_HPP_
 #define DART_OPTIMIZER_FUNCTION_HPP_
 
-#include <vector>
-#include <memory>
 #include <functional>
+#include <memory>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -61,8 +61,8 @@ public:
   virtual double eval(const Eigen::VectorXd& x) = 0;
 
   /// Evaluates and returns the objective function at the point x
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad);
+  virtual void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad);
 
   /// Evaluates and return the objective function at the point x.
   ///
@@ -86,12 +86,12 @@ typedef std::unique_ptr<Function> UniqueFunctionPtr;
 
 typedef std::function<double(const Eigen::VectorXd&)> CostFunction;
 
-typedef std::function<void(const Eigen::VectorXd&,
-                           Eigen::Map<Eigen::VectorXd>)> GradientFunction;
+typedef std::function<void(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)>
+    GradientFunction;
 
 typedef std::function<void(
-    const Eigen::VectorXd&,
-    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor>)> HessianFunction;
+    const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd, Eigen::RowMajor>)>
+    HessianFunction;
 
 /// ModularFunction uses C++11 std::function to allow you to easily swap
 /// out the cost function, gradient function, and Hessian function during
@@ -111,8 +111,8 @@ public:
 
   /// evalGradient() will now call whatever GradientFunction you set
   /// using setGradientFunction()
-  void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override;
+  void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
 
   /// evalHessian() will now call whatever HessianFunction you set using
   /// setHessianFunction()
@@ -169,8 +169,8 @@ public:
 
   /// evalGradient will always set _grad to a zero vector that
   /// matches the dimensionality of _x
-  void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override;
+  void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
 
   /// evalHessian() will always set _Hess to a zero matrix that matches
   /// the dimensionality of _x
@@ -190,13 +190,14 @@ public:
   virtual ~MultiFunction();
 
   /// Operator ()
-  virtual void operator()(const Eigen::VectorXd& _x,
-                          Eigen::Map<Eigen::VectorXd>& _f,
-                          Eigen::Map<Eigen::MatrixXd>& _grad) = 0;
+  virtual void operator()(
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd>& _f,
+      Eigen::Map<Eigen::MatrixXd>& _grad)
+      = 0;
 };
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace optimizer
+} // namespace dart
 
-#endif  // DART_OPTIMIZER_FUNCTION_HPP_
-
+#endif // DART_OPTIMIZER_FUNCTION_HPP_

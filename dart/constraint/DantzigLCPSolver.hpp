@@ -64,16 +64,23 @@ private:
   bool isSymmetric(std::size_t _n, double* _A);
 
   /// Return true if the diagonla block of matrix is symmetric
-  bool isSymmetric(std::size_t _n, double* _A, std::size_t _begin, std::size_t _end);
+  bool isSymmetric(
+      std::size_t _n, double* _A, std::size_t _begin, std::size_t _end);
 
   /// Print debug information
-  void print(std::size_t _n, double* _A, double* _x, double* _lo, double* _hi,
-             double* _b, double* w, int* _findex);
+  void print(
+      std::size_t _n,
+      double* _A,
+      double* _x,
+      double* _lo,
+      double* _hi,
+      double* _b,
+      double* w,
+      int* _findex);
 #endif
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_DANTZIGLCPSOLVER_HPP_
-
+#endif // DART_CONSTRAINT_DANTZIGLCPSOLVER_HPP_

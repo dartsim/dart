@@ -43,8 +43,7 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
-ConstraintBase::ConstraintBase()
-  : mDim(0)
+ConstraintBase::ConstraintBase() : mDim(0)
 {
 }
 
@@ -89,5 +88,5 @@ dynamics::SkeletonPtr ConstraintBase::getRootSkeleton(
   return _skeleton;
 }
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart

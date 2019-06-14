@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <dart/dart.hpp>
 #include <dart/utils/urdf/urdf.hpp>
+#include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -48,11 +48,8 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 
   auto ee = bodyNode->createEndEffector("ee");
   auto ik = ee->createIK();
-  auto ikfast
-      = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
-        "doesn't exist",
-        std::vector<std::size_t>(),
-        std::vector<std::size_t>());
+  auto ikfast = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
+      "doesn't exist", std::vector<std::size_t>(), std::vector<std::size_t>());
   EXPECT_EQ(ikfast.isConfigured(), false);
 }
 
@@ -60,8 +57,9 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 TEST(IkFast, LoadWamArmIk)
 {
   utils::DartLoader urdfParser;
-  urdfParser.addPackageDirectory("herb_description", DART_DATA_PATH"/urdf/wam");
-  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH"/urdf/wam/wam.urdf");
+  urdfParser.addPackageDirectory(
+      "herb_description", DART_DATA_PATH "/urdf/wam");
+  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
   EXPECT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");
@@ -87,7 +85,7 @@ TEST(IkFast, LoadWamArmIk)
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
-        libName, ikFastDofs, ikFastFreeDofs);
+      libName, ikFastDofs, ikFastFreeDofs);
   auto analytical = ik->getAnalytical();
   EXPECT_NE(analytical, nullptr);
   EXPECT_EQ(analytical->getDofs().size(), 6);

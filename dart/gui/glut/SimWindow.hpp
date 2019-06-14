@@ -48,7 +48,8 @@ namespace glut {
 class GraphWindow;
 
 /// \brief
-class SimWindow : public Win3D {
+class SimWindow : public Win3D
+{
 public:
   /// \brief
   SimWindow();
@@ -86,12 +87,11 @@ public:
 
   /// \brief Plot _data in a 2D window
   void plot(Eigen::VectorXd& _data);
-//  bool isSimulating() const { return mSimulating; }
+  //  bool isSimulating() const { return mSimulating; }
 
-//  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
+  //  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
 
 protected:
-
   virtual void drawSkeleton(
       const dynamics::Skeleton* skeleton,
       const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
@@ -149,8 +149,8 @@ protected:
   std::vector<GraphWindow*> mGraphWindows;
 };
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_GLUT_SIMWINDOW_HPP_
+#endif // DART_GUI_GLUT_SIMWINDOW_HPP_

@@ -41,9 +41,7 @@ namespace detail {
 //==============================================================================
 BulletCollisionDispatcher::BulletCollisionDispatcher(
     btCollisionConfiguration* config)
-  : btCollisionDispatcher(config),
-    mDone(false),
-    mFilter(nullptr)
+  : btCollisionDispatcher(config), mDone(false), mFilter(nullptr)
 {
   // Do nothing
 }
@@ -63,7 +61,7 @@ void BulletCollisionDispatcher::setFilter(
 
 //==============================================================================
 auto BulletCollisionDispatcher::getFilter() const
--> std::shared_ptr<CollisionFilter>
+    -> std::shared_ptr<CollisionFilter>
 {
   return mFilter;
 }
@@ -86,6 +84,6 @@ bool BulletCollisionDispatcher::needsCollision(
   return btCollisionDispatcher::needsCollision(body0, body1);
 }
 
-}  // namespace detail
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart

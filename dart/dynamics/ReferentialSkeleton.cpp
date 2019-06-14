@@ -34,9 +34,9 @@
 
 #include "dart/common/Deprecated.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -45,9 +45,8 @@ namespace dynamics {
 std::unique_ptr<common::LockableReference>
 ReferentialSkeleton::getLockableReference() const
 {
-  return std::make_unique<
-      common::MultiLockableReference<std::mutex>>(
-          mPtr, mSkeletonMutexes.begin(), mSkeletonMutexes.end());
+  return std::make_unique<common::MultiLockableReference<std::mutex>>(
+      mPtr, mSkeletonMutexes.begin(), mSkeletonMutexes.end());
 }
 
 //==============================================================================
@@ -133,11 +132,11 @@ const BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name) const
 
 //==============================================================================
 template <class T1, class T2>
-static std::vector<T2>& convertVector(const std::vector<T1>& t1_vec,
-                                      std::vector<T2>& t2_vec)
+static std::vector<T2>& convertVector(
+    const std::vector<T1>& t1_vec, std::vector<T2>& t2_vec)
 {
   t2_vec.resize(t1_vec.size());
-  for(std::size_t i = 0; i < t1_vec.size(); ++i)
+  for (std::size_t i = 0; i < t1_vec.size(); ++i)
     t2_vec[i] = t1_vec[i];
   return t2_vec;
 }
@@ -147,15 +146,14 @@ const std::vector<BodyNode*>& ReferentialSkeleton::getBodyNodes()
 {
   // TODO(MXG): This might not be necessary, since there should never be a
   // discrepancy between the raw BodyNodes and the BodyNodePtrs
-  return convertVector<BodyNodePtr, BodyNode*>(
-        mBodyNodes, mRawBodyNodes);
+  return convertVector<BodyNodePtr, BodyNode*>(mBodyNodes, mRawBodyNodes);
 }
 
 //==============================================================================
 const std::vector<const BodyNode*>& ReferentialSkeleton::getBodyNodes() const
 {
   return convertVector<BodyNodePtr, const BodyNode*>(
-        mBodyNodes, mRawConstBodyNodes);
+      mBodyNodes, mRawConstBodyNodes);
 }
 
 //==============================================================================
@@ -192,15 +190,16 @@ std::vector<const BodyNode*> ReferentialSkeleton::getBodyNodes(
 bool ReferentialSkeleton::hasBodyNode(const BodyNode* bodyNode) const
 {
   return std::find(mBodyNodes.begin(), mBodyNodes.end(), bodyNode)
-    != mBodyNodes.end();
+         != mBodyNodes.end();
 }
 
 //==============================================================================
-std::size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
+std::size_t ReferentialSkeleton::getIndexOf(
+    const BodyNode* _bn, bool _warning) const
 {
-  if(nullptr == _bn)
+  if (nullptr == _bn)
   {
-    if(_warning)
+    if (_warning)
     {
       dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
             << "nullptr BodyNode!\n";
@@ -209,16 +208,16 @@ std::size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) 
     return INVALID_INDEX;
   }
 
-  std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
-      mIndexMap.find(_bn);
-  if( it == mIndexMap.end() )
+  std::unordered_map<const BodyNode*, IndexMap>::const_iterator it
+      = mIndexMap.find(_bn);
+  if (it == mIndexMap.end())
   {
-    if(_warning)
+    if (_warning)
     {
       dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
             << "BodyNode [" << _bn->getName() << "] (" << _bn << ") that is "
-            << "not in this ReferentialSkeleton [" << getName() << "] ("
-            << this << ").\n";
+            << "not in this ReferentialSkeleton [" << getName() << "] (" << this
+            << ").\n";
       assert(false);
     }
     return INVALID_INDEX;
@@ -336,24 +335,26 @@ bool ReferentialSkeleton::hasJoint(const Joint* joint) const
 }
 
 //==============================================================================
-std::size_t ReferentialSkeleton::getIndexOf(const Joint* _joint, bool _warning) const
+std::size_t ReferentialSkeleton::getIndexOf(
+    const Joint* _joint, bool _warning) const
 {
-  if(nullptr == _joint)
+  if (nullptr == _joint)
   {
-    if(_warning)
+    if (_warning)
     {
-      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
-            << "Joint!\n";
+      dterr
+          << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
+          << "Joint!\n";
       assert(false);
     }
     return INVALID_INDEX;
   }
 
-  std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
-      mIndexMap.find(_joint->getChildBodyNode());
-  if( it == mIndexMap.end() )
+  std::unordered_map<const BodyNode*, IndexMap>::const_iterator it
+      = mIndexMap.find(_joint->getChildBodyNode());
+  if (it == mIndexMap.end())
   {
-    if(_warning)
+    if (_warning)
     {
       dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a Joint ["
             << _joint->getName() << "] (" << _joint << ") that is not in this "
@@ -390,8 +391,7 @@ const std::vector<DegreeOfFreedom*>& ReferentialSkeleton::getDofs()
   // We want to refill the raw DegreeOfFreedom vector, because the pointers will
   // change any time a BodyNode's parent Joint gets changed, and we have no way
   // of knowing when that might happen.
-  return convertVector<DegreeOfFreedomPtr, DegreeOfFreedom*>(
-        mDofs, mRawDofs);
+  return convertVector<DegreeOfFreedomPtr, DegreeOfFreedom*>(mDofs, mRawDofs);
 }
 
 //==============================================================================
@@ -401,16 +401,16 @@ std::vector<const DegreeOfFreedom*> ReferentialSkeleton::getDofs() const
   // change any time a BodyNode's parent Joint gets changed, and we have no way
   // of knowing when that might happen.
   return convertVector<DegreeOfFreedomPtr, const DegreeOfFreedom*>(
-        mDofs, mRawConstDofs);
+      mDofs, mRawConstDofs);
 }
 
 //==============================================================================
 std::size_t ReferentialSkeleton::getIndexOf(
     const DegreeOfFreedom* _dof, bool _warning) const
 {
-  if(nullptr == _dof)
+  if (nullptr == _dof)
   {
-    if(_warning)
+    if (_warning)
     {
       dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
             << "nullptr DegreeOfFreedom!\n";
@@ -420,11 +420,11 @@ std::size_t ReferentialSkeleton::getIndexOf(
   }
 
   const BodyNode* bn = _dof->getChildBodyNode();
-  std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
-      mIndexMap.find(bn);
-  if( it == mIndexMap.end() )
+  std::unordered_map<const BodyNode*, IndexMap>::const_iterator it
+      = mIndexMap.find(bn);
+  if (it == mIndexMap.end())
   {
-    if(_warning)
+    if (_warning)
     {
       dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
             << "DegreeOfFreedom [" << _dof->getName() << "] (" << _dof
@@ -436,16 +436,16 @@ std::size_t ReferentialSkeleton::getIndexOf(
   }
 
   std::size_t localIndex = _dof->getIndexInJoint();
-  if(it->second.mDofIndices.size() <= localIndex ||
-     it->second.mDofIndices[localIndex] == INVALID_INDEX )
+  if (it->second.mDofIndices.size() <= localIndex
+      || it->second.mDofIndices[localIndex] == INVALID_INDEX)
   {
-    if(_warning)
+    if (_warning)
     {
       dterr << "[ReferentialSkeleton::getIndexOf] BodyNode named ["
             << bn->getName() << "] (" << bn << ") is referenced by the "
             << "ReferentialSkeleton named [" << getName() << "] (" << this
-            << "), but it does not include the DegreeOfFreedom #"
-            << localIndex << " of its parent Joint!\n";
+            << "), but it does not include the DegreeOfFreedom #" << localIndex
+            << " of its parent Joint!\n";
       assert(false);
     }
     return INVALID_INDEX;
@@ -455,11 +455,12 @@ std::size_t ReferentialSkeleton::getIndexOf(
 }
 
 //==============================================================================
-static bool isValidBodyNode(const ReferentialSkeleton* /*_refSkel*/,
-                            const JacobianNode* _node,
-                            const std::string& _fname)
+static bool isValidBodyNode(
+    const ReferentialSkeleton* /*_refSkel*/,
+    const JacobianNode* _node,
+    const std::string& _fname)
 {
-  if(nullptr == _node)
+  if (nullptr == _node)
   {
     dtwarn << "[ReferentialSkeleton::" << _fname << "] Invalid BodyNode "
            << "pointer: nullptr. Returning zero Jacobian.\n";
@@ -476,18 +477,19 @@ static bool isValidBodyNode(const ReferentialSkeleton* /*_refSkel*/,
 
 //==============================================================================
 template <typename JacobianType>
-void assignJacobian(JacobianType& _J,
-                    const ReferentialSkeleton* _refSkel,
-                    const JacobianNode* _node,
-                    const JacobianType& _JBodyNode)
+void assignJacobian(
+    JacobianType& _J,
+    const ReferentialSkeleton* _refSkel,
+    const JacobianNode* _node,
+    const JacobianType& _JBodyNode)
 {
-  const std::vector<const DegreeOfFreedom*>& bn_dofs =
-      _node->getDependentDofs();
+  const std::vector<const DegreeOfFreedom*>& bn_dofs
+      = _node->getDependentDofs();
   std::size_t nDofs = bn_dofs.size();
-  for(std::size_t i=0; i<nDofs; ++i)
+  for (std::size_t i = 0; i < nDofs; ++i)
   {
     std::size_t refIndex = _refSkel->getIndexOf(bn_dofs[i], false);
-    if(INVALID_INDEX == refIndex)
+    if (INVALID_INDEX == refIndex)
       continue;
 
     _J.col(refIndex) = _JBodyNode.col(i);
@@ -495,7 +497,7 @@ void assignJacobian(JacobianType& _J,
 }
 
 //==============================================================================
-template <typename ...Args>
+template <typename... Args>
 math::Jacobian variadicGetJacobian(
     const ReferentialSkeleton* _refSkel,
     const JacobianNode* _node,
@@ -503,7 +505,7 @@ math::Jacobian variadicGetJacobian(
 {
   math::Jacobian J = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getJacobian") )
+  if (!isValidBodyNode(_refSkel, _node, "getJacobian"))
     return J;
 
   const math::Jacobian JBodyNode = _node->getJacobian(args...);
@@ -514,8 +516,7 @@ math::Jacobian variadicGetJacobian(
 }
 
 //==============================================================================
-math::Jacobian ReferentialSkeleton::getJacobian(
-    const JacobianNode* _node) const
+math::Jacobian ReferentialSkeleton::getJacobian(const JacobianNode* _node) const
 {
   return variadicGetJacobian(this, _node);
 }
@@ -535,7 +536,8 @@ math::Jacobian ReferentialSkeleton::getJacobian(
 }
 
 //==============================================================================
-math::Jacobian ReferentialSkeleton::getJacobian(const JacobianNode* _node,
+math::Jacobian ReferentialSkeleton::getJacobian(
+    const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
@@ -543,13 +545,15 @@ math::Jacobian ReferentialSkeleton::getJacobian(const JacobianNode* _node,
 }
 
 //==============================================================================
-template <typename ...Args>
-math::Jacobian variadicGetWorldJacobian(const ReferentialSkeleton* _refSkel,
-                                        const JacobianNode* _node, Args... args)
+template <typename... Args>
+math::Jacobian variadicGetWorldJacobian(
+    const ReferentialSkeleton* _refSkel,
+    const JacobianNode* _node,
+    Args... args)
 {
   math::Jacobian J = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getWorldJacobian") )
+  if (!isValidBodyNode(_refSkel, _node, "getWorldJacobian"))
     return J;
 
   const math::Jacobian JBodyNode = _node->getWorldJacobian(args...);
@@ -574,15 +578,16 @@ math::Jacobian ReferentialSkeleton::getWorldJacobian(
 }
 
 //==============================================================================
-template <typename ...Args>
+template <typename... Args>
 math::LinearJacobian variadicGetLinearJacobian(
     const ReferentialSkeleton* _refSkel,
-    const JacobianNode* _node, Args... args)
+    const JacobianNode* _node,
+    Args... args)
 {
-  math::LinearJacobian J =
-      math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
+  math::LinearJacobian J
+      = math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getLinearJacobian") )
+  if (!isValidBodyNode(_refSkel, _node, "getLinearJacobian"))
     return J;
 
   const math::LinearJacobian JBodyNode = _node->getLinearJacobian(args...);
@@ -601,27 +606,27 @@ math::LinearJacobian ReferentialSkeleton::getLinearJacobian(
 
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobian(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node,
+    const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobian(this, _node, _localOffset,
-                                   _inCoordinatesOf);
+  return variadicGetLinearJacobian(this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
-template <typename ...Args>
+template <typename... Args>
 math::AngularJacobian variadicGetAngularJacobian(
     const ReferentialSkeleton* _refSkel,
-    const JacobianNode* _node, Args... args)
+    const JacobianNode* _node,
+    Args... args)
 {
-  math::AngularJacobian J =
-      math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
+  math::AngularJacobian J
+      = math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getAngularJacobian") )
+  if (!isValidBodyNode(_refSkel, _node, "getAngularJacobian"))
     return J;
 
-  const math::AngularJacobian JBodyNode =
-      _node->getAngularJacobian(args...);
+  const math::AngularJacobian JBodyNode = _node->getAngularJacobian(args...);
 
   assignJacobian(J, _refSkel, _node, JBodyNode);
 
@@ -636,14 +641,15 @@ math::AngularJacobian ReferentialSkeleton::getAngularJacobian(
 }
 
 //==============================================================================
-template <typename ...Args>
+template <typename... Args>
 math::Jacobian variadicGetJacobianSpatialDeriv(
     const ReferentialSkeleton* _refSkel,
-    const JacobianNode* _node, Args... args)
+    const JacobianNode* _node,
+    Args... args)
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getJacobianSpatialDeriv") )
+  if (!isValidBodyNode(_refSkel, _node, "getJacobianSpatialDeriv"))
     return dJ;
 
   const math::Jacobian dJBodyNode = _node->getJacobianSpatialDeriv(args...);
@@ -676,22 +682,24 @@ math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node,
+    const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _node, _localOffset,
-                                         _inCoordinatesOf);
+  return variadicGetJacobianSpatialDeriv(
+      this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
-template <typename ...Args>
+template <typename... Args>
 math::Jacobian variadicGetJacobianClassicDeriv(
     const ReferentialSkeleton* _refSkel,
-    const JacobianNode* _node, Args... args)
+    const JacobianNode* _node,
+    Args... args)
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getJacobianClassicDeriv") )
+  if (!isValidBodyNode(_refSkel, _node, "getJacobianClassicDeriv"))
     return dJ;
 
   const math::Jacobian dJBodyNode = _node->getJacobianClassicDeriv(args...);
@@ -717,27 +725,29 @@ math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node,
+    const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianClassicDeriv(this, _node, _localOffset,
-                                         _inCoordinatesOf);
+  return variadicGetJacobianClassicDeriv(
+      this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
-template <typename ...Args>
+template <typename... Args>
 math::LinearJacobian variadicGetLinearJacobianDeriv(
     const ReferentialSkeleton* _refSkel,
-    const JacobianNode* _node, Args... args)
+    const JacobianNode* _node,
+    Args... args)
 {
-  math::LinearJacobian dJv =
-      math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
+  math::LinearJacobian dJv
+      = math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getLinearJacobianDeriv") )
+  if (!isValidBodyNode(_refSkel, _node, "getLinearJacobianDeriv"))
     return dJv;
 
-  const math::LinearJacobian dJvBodyNode =
-      _node->getLinearJacobianDeriv(args...);
+  const math::LinearJacobian dJvBodyNode
+      = _node->getLinearJacobianDeriv(args...);
 
   assignJacobian(dJv, _refSkel, _node, dJvBodyNode);
 
@@ -753,27 +763,29 @@ math::LinearJacobian ReferentialSkeleton::getLinearJacobianDeriv(
 
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobianDeriv(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node,
+    const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobianDeriv(this, _node, _localOffset,
-                                        _inCoordinatesOf);
+  return variadicGetLinearJacobianDeriv(
+      this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
-template <typename ...Args>
+template <typename... Args>
 math::AngularJacobian variadicGetAngularJacobianDeriv(
     const ReferentialSkeleton* _refSkel,
-    const JacobianNode* _node, Args... args)
+    const JacobianNode* _node,
+    Args... args)
 {
-  math::AngularJacobian dJw =
-      math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
+  math::AngularJacobian dJw
+      = math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _node, "getAngularJacobianDeriv") )
+  if (!isValidBodyNode(_refSkel, _node, "getAngularJacobianDeriv"))
     return dJw;
 
-  const math::AngularJacobian dJwBodyNode =
-      _node->getAngularJacobianDeriv(args...);
+  const math::AngularJacobian dJwBodyNode
+      = _node->getAngularJacobianDeriv(args...);
 
   assignJacobian(dJw, _refSkel, _node, dJwBodyNode);
 
@@ -791,7 +803,7 @@ math::AngularJacobian ReferentialSkeleton::getAngularJacobianDeriv(
 double ReferentialSkeleton::getMass() const
 {
   double mass = 0;
-  for(const BodyNode* bn : mRawBodyNodes)
+  for (const BodyNode* bn : mRawBodyNodes)
     mass += bn->getMass();
 
   return mass;
@@ -806,7 +818,7 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
 
   M.setZero();
 
-  for(std::size_t i=0; i<nDofs; ++i)
+  for (std::size_t i = 0; i < nDofs; ++i)
   {
     const DegreeOfFreedom* dof_i = dofs[i];
     const std::size_t tree_i = dof_i->getTreeIndex();
@@ -815,9 +827,9 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
     const std::size_t index_i = dof_i->getIndexInTree();
     const Eigen::MatrixXd& treeMatrix = (skel_i.get()->*getMatrix)(tree_i);
 
-    M(i,i) = treeMatrix(index_i, index_i);
+    M(i, i) = treeMatrix(index_i, index_i);
 
-    for(std::size_t j=i+1; j<nDofs; ++j)
+    for (std::size_t j = i + 1; j < nDofs; ++j)
     {
       const DegreeOfFreedom* dof_j = dofs[j];
       const std::size_t tree_j = dof_j->getTreeIndex();
@@ -826,12 +838,12 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
       // If the DegreesOfFreedom are in the same tree within the same
       // Skeleton, then set their entries in the referential matrix.
       // Otherwise, leave the entry as zero.
-      if(skel_i == skel_j && tree_i == tree_j)
+      if (skel_i == skel_j && tree_i == tree_j)
       {
         const std::size_t index_j = dof_j->getIndexInTree();
 
-        M(i,j) = treeMatrix(index_i, index_j);
-        M(j,i) = M(i,j);
+        M(i, j) = treeMatrix(index_i, index_j);
+        M(j, i) = M(i, j);
       }
     }
   }
@@ -849,21 +861,21 @@ const Eigen::MatrixXd& ReferentialSkeleton::getMassMatrix() const
 const Eigen::MatrixXd& ReferentialSkeleton::getAugMassMatrix() const
 {
   return setMatrixFromSkeletonData<&Skeleton::getAugMassMatrix>(
-        mAugM, mRawConstDofs);
+      mAugM, mRawConstDofs);
 }
 
 //==============================================================================
 const Eigen::MatrixXd& ReferentialSkeleton::getInvMassMatrix() const
 {
   return setMatrixFromSkeletonData<&Skeleton::getInvMassMatrix>(
-        mInvM, mRawConstDofs);
+      mInvM, mRawConstDofs);
 }
 
 //==============================================================================
 const Eigen::MatrixXd& ReferentialSkeleton::getInvAugMassMatrix() const
 {
   return setMatrixFromSkeletonData<&Skeleton::getInvAugMassMatrix>(
-        mInvAugM, mRawConstDofs);
+      mInvAugM, mRawConstDofs);
 }
 
 //==============================================================================
@@ -875,7 +887,7 @@ const Eigen::VectorXd& setVectorFromSkeletonData(
 
   V.setZero();
 
-  for(std::size_t i=0; i<nDofs; ++i)
+  for (std::size_t i = 0; i < nDofs; ++i)
   {
     const DegreeOfFreedom* dof_i = dofs[i];
     const std::size_t tree_i = dof_i->getTreeIndex();
@@ -894,48 +906,48 @@ const Eigen::VectorXd& setVectorFromSkeletonData(
 const Eigen::VectorXd& ReferentialSkeleton::getCoriolisForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getCoriolisForces>(
-        mCvec, mRawConstDofs);
+      mCvec, mRawConstDofs);
 }
 
 //==============================================================================
 const Eigen::VectorXd& ReferentialSkeleton::getGravityForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getGravityForces>(
-        mG, mRawConstDofs);
+      mG, mRawConstDofs);
 }
 
 //==============================================================================
 const Eigen::VectorXd& ReferentialSkeleton::getCoriolisAndGravityForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getCoriolisAndGravityForces>(
-        mCg, mRawConstDofs);
+      mCg, mRawConstDofs);
 }
 
 //==============================================================================
 const Eigen::VectorXd& ReferentialSkeleton::getExternalForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getExternalForces>(
-        mFext, mRawConstDofs);
+      mFext, mRawConstDofs);
 }
 
 //==============================================================================
 const Eigen::VectorXd& ReferentialSkeleton::getConstraintForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getConstraintForces>(
-        mFc, mRawConstDofs);
+      mFc, mRawConstDofs);
 }
 
 //==============================================================================
 void ReferentialSkeleton::clearExternalForces()
 {
-  for(BodyNode* bn : mRawBodyNodes)
+  for (BodyNode* bn : mRawBodyNodes)
     bn->clearExternalForces();
 }
 
 //==============================================================================
 void ReferentialSkeleton::clearInternalForces()
 {
-  for(BodyNode* bn : mRawBodyNodes)
+  for (BodyNode* bn : mRawBodyNodes)
     bn->clearInternalForces();
 }
 
@@ -944,10 +956,10 @@ double ReferentialSkeleton::computeKineticEnergy() const
 {
   double KE = 0.0;
 
-  for(const BodyNode* bn : mRawBodyNodes)
+  for (const BodyNode* bn : mRawBodyNodes)
     KE += bn->computeKineticEnergy();
 
-  assert( KE >= 0.0 && "Kinetic Energy should always be zero or greater");
+  assert(KE >= 0.0 && "Kinetic Energy should always be zero or greater");
   return KE;
 }
 
@@ -956,7 +968,7 @@ double ReferentialSkeleton::computePotentialEnergy() const
 {
   double PE = 0.0;
 
-  for(const BodyNode* bn : mRawBodyNodes)
+  for (const BodyNode* bn : mRawBodyNodes)
   {
     PE += bn->computePotentialEnergy(bn->getSkeleton()->getGravity());
     PE += bn->getParentJoint()->computePotentialEnergy();
@@ -971,9 +983,9 @@ void ReferentialSkeleton::clearCollidingBodies()
   for (auto i = 0u; i < getNumBodyNodes(); ++i)
   {
     auto bodyNode = getBodyNode(i);
-DART_SUPPRESS_DEPRECATED_BEGIN
+    DART_SUPPRESS_DEPRECATED_BEGIN
     bodyNode->setColliding(false);
-DART_SUPPRESS_DEPRECATED_END
+    DART_SUPPRESS_DEPRECATED_END
 
     auto softBodyNode = bodyNode->asSoftBodyNode();
     if (softBodyNode)
@@ -992,7 +1004,7 @@ Eigen::Vector3d ReferentialSkeleton::getCOM(const Frame* _withRespectTo) const
   Eigen::Vector3d com = Eigen::Vector3d::Zero();
   double totalMass = 0.0;
 
-  for(const BodyNode* bn : mRawConstBodyNodes)
+  for (const BodyNode* bn : mRawConstBodyNodes)
   {
     com += bn->getMass() * bn->getCOM(_withRespectTo);
     totalMass += bn->getMass();
@@ -1008,15 +1020,16 @@ Eigen::Vector3d ReferentialSkeleton::getCOM(const Frame* _withRespectTo) const
 template <
     typename PropertyType,
     PropertyType (BodyNode::*getProperty)(const Frame*, const Frame*) const>
-PropertyType getCOMPropertyTemplate(const ReferentialSkeleton* _refSkel,
-                                    const Frame* _relativeTo,
-                                    const Frame* _inCoordinatesOf)
+PropertyType getCOMPropertyTemplate(
+    const ReferentialSkeleton* _refSkel,
+    const Frame* _relativeTo,
+    const Frame* _inCoordinatesOf)
 {
   PropertyType result = PropertyType::Zero();
   double totalMass = 0.0;
 
   const std::vector<const BodyNode*>& bodyNodes = _refSkel->getBodyNodes();
-  for(const BodyNode* bn : bodyNodes)
+  for (const BodyNode* bn : bodyNodes)
   {
     result += bn->getMass() * (bn->*getProperty)(_relativeTo, _inCoordinatesOf);
     totalMass += bn->getMass();
@@ -1030,7 +1043,8 @@ PropertyType getCOMPropertyTemplate(const ReferentialSkeleton* _refSkel,
 Eigen::Vector6d ReferentialSkeleton::getCOMSpatialVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  return getCOMPropertyTemplate<Eigen::Vector6d,
+  return getCOMPropertyTemplate<
+      Eigen::Vector6d,
       &BodyNode::getCOMSpatialVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -1038,7 +1052,8 @@ Eigen::Vector6d ReferentialSkeleton::getCOMSpatialVelocity(
 Eigen::Vector3d ReferentialSkeleton::getCOMLinearVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  return getCOMPropertyTemplate<Eigen::Vector3d,
+  return getCOMPropertyTemplate<
+      Eigen::Vector3d,
       &BodyNode::getCOMLinearVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -1046,16 +1061,18 @@ Eigen::Vector3d ReferentialSkeleton::getCOMLinearVelocity(
 Eigen::Vector6d ReferentialSkeleton::getCOMSpatialAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  return getCOMPropertyTemplate<Eigen::Vector6d,
+  return getCOMPropertyTemplate<
+      Eigen::Vector6d,
       &BodyNode::getCOMSpatialAcceleration>(
-        this, _relativeTo, _inCoordinatesOf);
+      this, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector3d ReferentialSkeleton::getCOMLinearAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  return getCOMPropertyTemplate<Eigen::Vector3d,
+  return getCOMPropertyTemplate<
+      Eigen::Vector3d,
       &BodyNode::getCOMLinearAcceleration>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -1066,8 +1083,8 @@ template <
     typename JacType, // JacType is the type of Jacobian we're computing
     JacType (TemplatedJacobianNode<BodyNode>::*getJacFn)(
         const Eigen::Vector3d&, const Frame*) const>
-JacType getCOMJacobianTemplate(const ReferentialSkeleton* _refSkel,
-                               const Frame* _inCoordinatesOf)
+JacType getCOMJacobianTemplate(
+    const ReferentialSkeleton* _refSkel, const Frame* _inCoordinatesOf)
 {
   // Initialize the Jacobian to zero
   JacType J = JacType::Zero(JacType::RowsAtCompileTime, _refSkel->getNumDofs());
@@ -1075,19 +1092,19 @@ JacType getCOMJacobianTemplate(const ReferentialSkeleton* _refSkel,
 
   // Iterate through each of the BodyNodes
   const std::vector<const BodyNode*>& bodyNodes = _refSkel->getBodyNodes();
-  for(const BodyNode* bn : bodyNodes)
+  for (const BodyNode* bn : bodyNodes)
   {
-    JacType bnJ = bn->getMass() * (bn->*getJacFn)(bn->getLocalCOM(),
-                                                  _inCoordinatesOf);
+    JacType bnJ
+        = bn->getMass() * (bn->*getJacFn)(bn->getLocalCOM(), _inCoordinatesOf);
     totalMass += bn->getMass();
 
     const std::vector<const DegreeOfFreedom*>& dofs = bn->getDependentDofs();
     std::size_t nDofs = dofs.size();
-    for(std::size_t i=0; i<nDofs; ++i)
+    for (std::size_t i = 0; i < nDofs; ++i)
     {
       const DegreeOfFreedom* dof = dofs[i];
       std::size_t index = _refSkel->getIndexOf(dof, false);
-      if(INVALID_INDEX == index)
+      if (INVALID_INDEX == index)
         continue;
 
       J.col(index) += bnJ.col(i);
@@ -1103,8 +1120,8 @@ math::Jacobian ReferentialSkeleton::getCOMJacobian(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<
-      math::Jacobian, &TemplatedJacobianNode<BodyNode>::getJacobian>(
-        this, _inCoordinatesOf);
+      math::Jacobian,
+      &TemplatedJacobianNode<BodyNode>::getJacobian>(this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1112,8 +1129,9 @@ math::LinearJacobian ReferentialSkeleton::getCOMLinearJacobian(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<
-      math::LinearJacobian, &TemplatedJacobianNode<BodyNode>::getLinearJacobian>(
-        this, _inCoordinatesOf);
+      math::LinearJacobian,
+      &TemplatedJacobianNode<BodyNode>::getLinearJacobian>(
+      this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1122,8 +1140,8 @@ math::Jacobian ReferentialSkeleton::getCOMJacobianSpatialDeriv(
 {
   return getCOMJacobianTemplate<
       math::Jacobian,
-          &TemplatedJacobianNode<BodyNode>::getJacobianSpatialDeriv>(
-        this, _inCoordinatesOf);
+      &TemplatedJacobianNode<BodyNode>::getJacobianSpatialDeriv>(
+      this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1132,8 +1150,8 @@ math::LinearJacobian ReferentialSkeleton::getCOMLinearJacobianDeriv(
 {
   return getCOMJacobianTemplate<
       math::LinearJacobian,
-          &TemplatedJacobianNode<BodyNode>::getLinearJacobianDeriv>(
-        this, _inCoordinatesOf);
+      &TemplatedJacobianNode<BodyNode>::getLinearJacobianDeriv>(
+      this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1143,24 +1161,24 @@ void ReferentialSkeleton::registerComponent(BodyNode* _bn)
   registerJoint(_bn->getParentJoint());
 
   std::size_t nDofs = _bn->getParentJoint()->getNumDofs();
-  for(std::size_t i=0; i < nDofs; ++i)
+  for (std::size_t i = 0; i < nDofs; ++i)
     registerDegreeOfFreedom(_bn->getParentJoint()->getDof(i));
 }
 
 //==============================================================================
 void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)
 {
-  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
-      mIndexMap.find(_bn);
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it
+      = mIndexMap.find(_bn);
 
-  if( it == mIndexMap.end() )
+  if (it == mIndexMap.end())
   {
     // Create an index map entry for this BodyNode, and only add the BodyNode's
     // index to it.
     IndexMap indexing;
 
     mBodyNodes.push_back(_bn);
-    indexing.mBodyNodeIndex = mBodyNodes.size()-1;
+    indexing.mBodyNodeIndex = mBodyNodes.size() - 1;
 
     mIndexMap[_bn] = indexing;
   }
@@ -1168,10 +1186,10 @@ void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)
   {
     IndexMap& indexing = it->second;
 
-    if(INVALID_INDEX == indexing.mBodyNodeIndex)
+    if (INVALID_INDEX == indexing.mBodyNodeIndex)
     {
       mBodyNodes.push_back(_bn);
-      indexing.mBodyNodeIndex = mBodyNodes.size()-1;
+      indexing.mBodyNodeIndex = mBodyNodes.size() - 1;
     }
   }
 
@@ -1184,17 +1202,17 @@ void ReferentialSkeleton::registerJoint(Joint* _joint)
 {
   BodyNode* bn = _joint->getChildBodyNode();
 
-  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
-      mIndexMap.find(bn);
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it
+      = mIndexMap.find(bn);
 
-  if( it == mIndexMap.end() )
+  if (it == mIndexMap.end())
   {
     // Create an index map entry for this Joint, and only add the Joint's index
     // to it
     IndexMap indexing;
 
     mJoints.push_back(_joint);
-    indexing.mJointIndex = mJoints.size()-1;
+    indexing.mJointIndex = mJoints.size() - 1;
 
     mIndexMap[bn] = indexing;
   }
@@ -1202,10 +1220,10 @@ void ReferentialSkeleton::registerJoint(Joint* _joint)
   {
     IndexMap& indexing = it->second;
 
-    if(INVALID_INDEX == indexing.mJointIndex)
+    if (INVALID_INDEX == indexing.mJointIndex)
     {
       mJoints.push_back(_joint);
-      indexing.mJointIndex = mJoints.size()-1;
+      indexing.mJointIndex = mJoints.size() - 1;
     }
   }
 
@@ -1223,18 +1241,18 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
   BodyNode* bn = _dof->getChildBodyNode();
   std::size_t localIndex = _dof->getIndexInJoint();
 
-  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
-      mIndexMap.find(bn);
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it
+      = mIndexMap.find(bn);
 
-  if( it == mIndexMap.end() )
+  if (it == mIndexMap.end())
   {
     // Create an index map entry for this DegreeOfFreedom, and only add the
     // DegreeOfFreedom's index to it
     IndexMap indexing;
 
-    indexing.mDofIndices.resize(localIndex+1, INVALID_INDEX);
+    indexing.mDofIndices.resize(localIndex + 1, INVALID_INDEX);
     mDofs.push_back(_dof);
-    indexing.mDofIndices[localIndex] = mDofs.size()-1;
+    indexing.mDofIndices[localIndex] = mDofs.size() - 1;
 
     mIndexMap[bn] = indexing;
   }
@@ -1242,13 +1260,13 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
   {
     IndexMap& indexing = it->second;
 
-    if(indexing.mDofIndices.size() < localIndex+1)
-      indexing.mDofIndices.resize(localIndex+1, INVALID_INDEX);
+    if (indexing.mDofIndices.size() < localIndex + 1)
+      indexing.mDofIndices.resize(localIndex + 1, INVALID_INDEX);
 
-    if(INVALID_INDEX == indexing.mDofIndices[localIndex])
+    if (INVALID_INDEX == indexing.mDofIndices[localIndex])
     {
       mDofs.push_back(_dof);
-      indexing.mDofIndices[localIndex] = mDofs.size()-1;
+      indexing.mDofIndices[localIndex] = mDofs.size() - 1;
     }
   }
 
@@ -1267,7 +1285,7 @@ void ReferentialSkeleton::unregisterComponent(BodyNode* _bn)
 void ReferentialSkeleton::unregisterBodyNode(
     BodyNode* _bn, bool _unregisterDofs)
 {
-  if(nullptr == _bn)
+  if (nullptr == _bn)
   {
     dterr << "[ReferentialSkeleton::unregisterBodyNode] Attempting to "
           << "unregister a nullptr BodyNode. This is most likely a bug. Please "
@@ -1276,10 +1294,10 @@ void ReferentialSkeleton::unregisterBodyNode(
     return;
   }
 
-  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
-      mIndexMap.find(_bn);
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it
+      = mIndexMap.find(_bn);
 
-  if( it == mIndexMap.end() )
+  if (it == mIndexMap.end())
   {
     dterr << "[ReferentialSkeleton::unregisterBodyNode] Attempting to "
           << "unregister a BodyNode that is not referred to by this "
@@ -1294,7 +1312,7 @@ void ReferentialSkeleton::unregisterBodyNode(
   mBodyNodes.erase(mBodyNodes.begin() + bnIndex);
   indexing.mBodyNodeIndex = INVALID_INDEX;
 
-  for(std::size_t i=bnIndex; i < mBodyNodes.size(); ++i)
+  for (std::size_t i = bnIndex; i < mBodyNodes.size(); ++i)
   {
     // Re-index all the BodyNodes in this ReferentialSkeleton which came after
     // the one that was removed.
@@ -1302,16 +1320,16 @@ void ReferentialSkeleton::unregisterBodyNode(
     alteredIndexing.mBodyNodeIndex = i;
   }
 
-  if(_unregisterDofs)
+  if (_unregisterDofs)
   {
-    for(std::size_t i=0; i < indexing.mDofIndices.size(); ++i)
+    for (std::size_t i = 0; i < indexing.mDofIndices.size(); ++i)
     {
-      if(indexing.mDofIndices[i] != INVALID_INDEX)
+      if (indexing.mDofIndices[i] != INVALID_INDEX)
         unregisterDegreeOfFreedom(_bn, i);
     }
   }
 
-  if(indexing.isExpired())
+  if (indexing.isExpired())
     mIndexMap.erase(it);
 
   unregisterSkeleton(_bn->getSkeleton().get());
@@ -1321,7 +1339,7 @@ void ReferentialSkeleton::unregisterBodyNode(
 //==============================================================================
 void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
 {
-  if(nullptr == _child)
+  if (nullptr == _child)
   {
     dterr << "[ReferentialSkeleton::unregisterJoint] Attempting to unregister "
           << "a Joint from a nullptr BodyNode. This is most likely a bug. "
@@ -1332,10 +1350,10 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
 
   Joint* joint = _child->getParentJoint();
 
-  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
-      mIndexMap.find(_child);
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it
+      = mIndexMap.find(_child);
 
-  if( it == mIndexMap.end() || INVALID_INDEX == it->second.mJointIndex)
+  if (it == mIndexMap.end() || INVALID_INDEX == it->second.mJointIndex)
   {
     dterr << "[ReferentialSkeleton::unregisterJoint] Attempting to unregister "
           << "a Joint named [" << joint->getName() << "] (" << joint << "), "
@@ -1351,7 +1369,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
   mJoints.erase(mJoints.begin() + jointIndex);
   it->second.mJointIndex = INVALID_INDEX;
 
-  for(std::size_t i = jointIndex; i < mJoints.size(); ++i)
+  for (std::size_t i = jointIndex; i < mJoints.size(); ++i)
   {
     // Re-index all of the Joints in this ReferentialSkeleton which came after
     // the Joint that was removed.
@@ -1360,7 +1378,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
     indexing.mJointIndex = i;
   }
 
-  if(it->second.isExpired())
+  if (it->second.isExpired())
     mIndexMap.erase(it);
 
   unregisterSkeleton(_child->getSkeleton().get());
@@ -1375,7 +1393,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
 void ReferentialSkeleton::unregisterDegreeOfFreedom(
     BodyNode* _bn, std::size_t _localIndex)
 {
-  if(nullptr == _bn)
+  if (nullptr == _bn)
   {
     dterr << "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
           << "unregister a DegreeOfFreedom from a nullptr BodyNode. This is "
@@ -1384,12 +1402,11 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     return;
   }
 
-  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
-      mIndexMap.find(_bn);
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it
+      = mIndexMap.find(_bn);
 
-  if( it == mIndexMap.end() ||
-      it->second.mDofIndices.size() <= _localIndex ||
-      it->second.mDofIndices[_localIndex] == INVALID_INDEX)
+  if (it == mIndexMap.end() || it->second.mDofIndices.size() <= _localIndex
+      || it->second.mDofIndices[_localIndex] == INVALID_INDEX)
   {
     dterr << "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
           << "unregister DegreeOfFreedom #" << _localIndex << " of a BodyNode "
@@ -1404,7 +1421,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
   mDofs.erase(mDofs.begin() + dofIndex);
   it->second.mDofIndices[_localIndex] = INVALID_INDEX;
 
-  for(std::size_t i = dofIndex; i < mDofs.size(); ++i)
+  for (std::size_t i = dofIndex; i < mDofs.size(); ++i)
   {
     // Re-index all the DOFs in this ReferentialSkeleton which came after the
     // DOF that was removed.
@@ -1413,7 +1430,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     indexing.mDofIndices[dof.getLocalIndex()] = i;
   }
 
-  if(it->second.isExpired())
+  if (it->second.isExpired())
     mIndexMap.erase(it);
 
   updateCaches();
@@ -1422,14 +1439,14 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
 //==============================================================================
 void ReferentialSkeleton::updateCaches()
 {
-  if(mBodyNodes.size() != mRawBodyNodes.size())
+  if (mBodyNodes.size() != mRawBodyNodes.size())
   {
     mRawBodyNodes.clear();
     mRawBodyNodes.reserve(mBodyNodes.size());
     mRawConstBodyNodes.clear();
     mRawConstBodyNodes.reserve(mBodyNodes.size());
 
-    for(const BodyNodePtr& bn : mBodyNodes)
+    for (const BodyNodePtr& bn : mBodyNodes)
     {
       mRawBodyNodes.push_back(bn);
       mRawConstBodyNodes.push_back(bn);
@@ -1443,22 +1460,22 @@ void ReferentialSkeleton::updateCaches()
 
   // TODO(MXG): This shouldn't actually be necessary, because this always gets
   // refilled whenever getDofs() is called.
-  for(const DegreeOfFreedomPtr& dof : mDofs)
+  for (const DegreeOfFreedomPtr& dof : mDofs)
   {
     mRawDofs.push_back(dof);
     mRawConstDofs.push_back(dof);
   }
 
   std::size_t nDofs = mDofs.size();
-  mM        = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mAugM     = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mInvM     = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mInvAugM  = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mCvec     = Eigen::VectorXd::Zero(nDofs);
-  mG        = Eigen::VectorXd::Zero(nDofs);
-  mCg       = Eigen::VectorXd::Zero(nDofs);
-  mFext     = Eigen::VectorXd::Zero(nDofs);
-  mFc       = Eigen::VectorXd::Zero(nDofs);
+  mM = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mAugM = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mInvM = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mInvAugM = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mCvec = Eigen::VectorXd::Zero(nDofs);
+  mG = Eigen::VectorXd::Zero(nDofs);
+  mCg = Eigen::VectorXd::Zero(nDofs);
+  mFext = Eigen::VectorXd::Zero(nDofs);
+  mFc = Eigen::VectorXd::Zero(nDofs);
 }
 
 //==============================================================================
@@ -1493,8 +1510,7 @@ void ReferentialSkeleton::unregisterSkeleton(const Skeleton* skel)
 
 //==============================================================================
 ReferentialSkeleton::IndexMap::IndexMap()
-  : mBodyNodeIndex(INVALID_INDEX),
-    mJointIndex(INVALID_INDEX)
+  : mBodyNodeIndex(INVALID_INDEX), mJointIndex(INVALID_INDEX)
 {
   // Do nothing
 }
@@ -1502,15 +1518,15 @@ ReferentialSkeleton::IndexMap::IndexMap()
 //==============================================================================
 bool ReferentialSkeleton::IndexMap::isExpired() const
 {
-  if(INVALID_INDEX != mBodyNodeIndex)
+  if (INVALID_INDEX != mBodyNodeIndex)
     return false;
 
-  if(INVALID_INDEX != mJointIndex)
+  if (INVALID_INDEX != mJointIndex)
     return false;
 
-  for(std::size_t i=0; i < mDofIndices.size(); ++i)
+  for (std::size_t i = 0; i < mDofIndices.size(); ++i)
   {
-    if(mDofIndices[i] != INVALID_INDEX)
+    if (mDofIndices[i] != INVALID_INDEX)
       return false;
   }
 

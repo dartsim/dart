@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <dart/common/Factory.hpp>
+#include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -64,11 +64,17 @@ public:
   using SingletonFactoryString = common::Singleton<FactoryString>;
 
   template <typename Derived>
-  using RegistrarEnum = common::FactoryRegistrar<ObjectTypeEnum, Fruit, Derived, std::shared_ptr<Fruit>>;
+  using RegistrarEnum = common::
+      FactoryRegistrar<ObjectTypeEnum, Fruit, Derived, std::shared_ptr<Fruit>>;
   template <typename Derived>
-  using RegistrarEnumClass = common::FactoryRegistrar<ObjectTypeEnumClass, Fruit, Derived, std::shared_ptr<Fruit>>;
+  using RegistrarEnumClass = common::FactoryRegistrar<
+      ObjectTypeEnumClass,
+      Fruit,
+      Derived,
+      std::shared_ptr<Fruit>>;
   template <typename Derived>
-  using RegistrarString = common::FactoryRegistrar<std::string, Fruit, Derived, std::shared_ptr<Fruit>>;
+  using RegistrarString = common::
+      FactoryRegistrar<std::string, Fruit, Derived, std::shared_ptr<Fruit>>;
 
   static FactoryEnum* getFactoryEnum()
   {
@@ -102,7 +108,8 @@ public:
 };
 
 Apple::RegistrarEnum<Apple> Apple::mRegistrarEnum{OT_Apple};
-Apple::RegistrarEnumClass<Apple> Apple::mRegistrarEnumClass{ObjectTypeEnumClass::Apple};
+Apple::RegistrarEnumClass<Apple> Apple::mRegistrarEnumClass{
+    ObjectTypeEnumClass::Apple};
 Apple::RegistrarString<Apple> Apple::mRegistrarString{"apple"};
 
 class Banana : public Fruit
@@ -119,7 +126,8 @@ public:
 };
 
 Banana::RegistrarEnum<Banana> Banana::mRegistrarEnum{OT_Banana};
-Banana::RegistrarEnumClass<Banana> Banana::mRegistrarEnumClass{ObjectTypeEnumClass::Banana};
+Banana::RegistrarEnumClass<Banana> Banana::mRegistrarEnumClass{
+    ObjectTypeEnumClass::Banana};
 Banana::RegistrarString<Banana> Banana::mRegistrarString{"banana"};
 
 class Orange : public Fruit
@@ -136,28 +144,36 @@ public:
 };
 
 Orange::RegistrarEnum<Orange> Orange::mRegistrarEnum{OT_Orange};
-Orange::RegistrarEnumClass<Orange> Orange::mRegistrarEnumClass{ObjectTypeEnumClass::Orange};
+Orange::RegistrarEnumClass<Orange> Orange::mRegistrarEnumClass{
+    ObjectTypeEnumClass::Orange};
 Orange::RegistrarString<Orange> Orange::mRegistrarString{"orange"};
 
 class City
 {
 public:
-  using Factory = common::Factory<std::string, City, std::shared_ptr<City>, int>;
+  using Factory
+      = common::Factory<std::string, City, std::shared_ptr<City>, int>;
   using SingletonFactory = common::Singleton<Factory>;
 
   template <typename Derived>
-  using Registrar = common::FactoryRegistrar<std::string, City, Derived, std::shared_ptr<City>, int>;
+  using Registrar = common::
+      FactoryRegistrar<std::string, City, Derived, std::shared_ptr<City>, int>;
 
   static Factory* getFactory()
   {
     return SingletonFactory::getSingletonPtr();
   }
 
-  City(int year) : mYear(year) {}
+  City(int year) : mYear(year)
+  {
+  }
 
   virtual std::string getName() const = 0;
 
-  int getYear() const { return mYear; }
+  int getYear() const
+  {
+    return mYear;
+  }
 
 protected:
   int mYear;
@@ -166,7 +182,9 @@ protected:
 class Atlanta : public City
 {
 public:
-  Atlanta(int year) : City(year) {}
+  Atlanta(int year) : City(year)
+  {
+  }
 
   std::string getName() const override
   {
@@ -181,7 +199,9 @@ City::Registrar<Atlanta> Atlanta::mRegistrar("Atlanta");
 class Pittsburgh : public City
 {
 public:
-  Pittsburgh(int year) : City(year) {}
+  Pittsburgh(int year) : City(year)
+  {
+  }
 
   std::string getName() const override
   {
@@ -196,7 +216,9 @@ City::Registrar<Pittsburgh> Pittsburgh::mRegistrar("Pittsburgh");
 class Seattle : public City
 {
 public:
-  Seattle(int year) : City(year) {}
+  Seattle(int year) : City(year)
+  {
+  }
 
   std::string getName() const override
   {
@@ -236,22 +258,33 @@ TEST(Factory, Create)
   //----------------------------------------------------------------------------
   EXPECT_TRUE(!Fruit::getFactoryEnumClass()->create(ObjectTypeEnumClass::None));
 
-  EXPECT_TRUE(Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Apple));
-  EXPECT_EQ(Fruit::getFactoryEnumClass()->create(
-      ObjectTypeEnumClass::Apple)->getName(), "apple");
+  EXPECT_TRUE(
+      Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Apple));
+  EXPECT_EQ(
+      Fruit::getFactoryEnumClass()
+          ->create(ObjectTypeEnumClass::Apple)
+          ->getName(),
+      "apple");
 
   // Can't create an orange since it's unregistered.
   Fruit::getFactoryEnumClass()->unregisterCreator(ObjectTypeEnumClass::Orange);
-  EXPECT_TRUE(!Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Orange));
+  EXPECT_TRUE(
+      !Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Orange));
 
   // Once it's registered back we can create an orange.
-  Fruit::getFactoryEnumClass()->registerCreator<Orange>(ObjectTypeEnumClass::Orange);
-  EXPECT_TRUE(Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Orange));
-  EXPECT_EQ(Fruit::getFactoryEnumClass()->create(
-      ObjectTypeEnumClass::Orange)->getName(), "orange");
+  Fruit::getFactoryEnumClass()->registerCreator<Orange>(
+      ObjectTypeEnumClass::Orange);
+  EXPECT_TRUE(
+      Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Orange));
+  EXPECT_EQ(
+      Fruit::getFactoryEnumClass()
+          ->create(ObjectTypeEnumClass::Orange)
+          ->getName(),
+      "orange");
 
   Fruit::getFactoryEnumClass()->unregisterCreator(ObjectTypeEnumClass::Orange);
-  EXPECT_TRUE(!Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Orange));
+  EXPECT_TRUE(
+      !Fruit::getFactoryEnumClass()->canCreate(ObjectTypeEnumClass::Orange));
 
   //----------------------------------------------------------------------------
   // std::string key type
@@ -296,11 +329,13 @@ TEST(Factory, VariousCreatorFunctions)
 
   // Lambda function
   FruitFactory::getSingleton().registerCreator(
-      std::string("banana"), []() -> std::shared_ptr<Banana>
-      { return std::shared_ptr<Banana>(new Banana()); });
+      std::string("banana"), []() -> std::shared_ptr<Banana> {
+        return std::shared_ptr<Banana>(new Banana());
+      });
 
   // Global static function
-  FruitFactory::getSingleton().registerCreator(std::string("orange"), createOrange);
+  FruitFactory::getSingleton().registerCreator(
+      std::string("orange"), createOrange);
 }
 
 //==============================================================================

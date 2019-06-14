@@ -59,7 +59,7 @@ public:
   auto getFilter() const -> std::shared_ptr<CollisionFilter>;
 
   bool needsCollision(
-      const btCollisionObject* body0,const btCollisionObject* body1) override;
+      const btCollisionObject* body0, const btCollisionObject* body1) override;
 
 protected:
   bool mDone;
@@ -67,8 +67,8 @@ protected:
   std::shared_ptr<CollisionFilter> mFilter;
 };
 
-}  // namespace detail
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_
+#endif // DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_

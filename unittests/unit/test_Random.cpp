@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <dart/math/Random.hpp>
+#include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
 using namespace dart;

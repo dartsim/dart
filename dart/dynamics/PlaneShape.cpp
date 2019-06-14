@@ -37,18 +37,14 @@ namespace dynamics {
 
 //==============================================================================
 PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
-  : Shape(PLANE),
-    mNormal(_normal.normalized()),
-    mOffset(_offset)
+  : Shape(PLANE), mNormal(_normal.normalized()), mOffset(_offset)
 {
 }
 
 //==============================================================================
-PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
-                       const Eigen::Vector3d& _point)
-  : Shape(),
-    mNormal(_normal.normalized()),
-    mOffset(mNormal.dot(_point))
+PlaneShape::PlaneShape(
+    const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point)
+  : Shape(), mNormal(_normal.normalized()), mOffset(mNormal.dot(_point))
 {
 }
 
@@ -100,16 +96,16 @@ double PlaneShape::getOffset() const
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndOffset(const Eigen::Vector3d& _normal,
-                                    double _offset)
+void PlaneShape::setNormalAndOffset(
+    const Eigen::Vector3d& _normal, double _offset)
 {
   setNormal(_normal);
   setOffset(_offset);
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndPoint(const Eigen::Vector3d& _normal,
-                                   const Eigen::Vector3d& _point)
+void PlaneShape::setNormalAndPoint(
+    const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point)
 {
   setNormal(_normal);
   setOffset(mNormal.dot(_point));
@@ -145,5 +141,5 @@ void PlaneShape::updateVolume() const
   mIsVolumeDirty = false;
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

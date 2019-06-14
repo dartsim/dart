@@ -80,7 +80,7 @@ private:
   double mRadius;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_SPHERESHAPE_HPP_
+#endif // DART_DYNAMICS_SPHERESHAPE_HPP_

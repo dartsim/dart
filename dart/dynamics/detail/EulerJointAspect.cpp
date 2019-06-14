@@ -56,4 +56,3 @@ EulerJointProperties::EulerJointProperties(
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-

@@ -72,12 +72,11 @@ const Eigen::Isometry3d& CollisionObject::getTransform() const
 CollisionObject::CollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
+  : mCollisionDetector(collisionDetector), mShapeFrame(shapeFrame)
 {
   assert(mCollisionDetector);
   assert(mShapeFrame);
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

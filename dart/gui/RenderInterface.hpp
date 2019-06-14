@@ -34,86 +34,113 @@
 #define DART_GUI_RENDERINTERFACE_HPP_
 
 #include <vector>
-#include <assimp/scene.h>
 #include <Eigen/Dense>
+#include <assimp/scene.h>
 
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace gui {
 
-enum DecoBufferType {
-    BT_Front,
-    BT_Back
+enum DecoBufferType
+{
+  BT_Front,
+  BT_Back
 };
 
-enum DecoColorChannel {
-    CC_R,
-    CC_G,
-    CC_B,
-    CC_A,
-    CC_RGB,
-    CC_RGBA
+enum DecoColorChannel
+{
+  CC_R,
+  CC_G,
+  CC_B,
+  CC_A,
+  CC_RGB,
+  CC_RGBA
 };
 
-enum DecoDrawType {
-    DT_WireFrame,
-    DT_SolidPolygon,
-    DT_FrontPolygon,
-    DT_BackPolygon,
-    DT_Max
+enum DecoDrawType
+{
+  DT_WireFrame,
+  DT_SolidPolygon,
+  DT_FrontPolygon,
+  DT_BackPolygon,
+  DT_Max
 };
 
-class RenderInterface {
+class RenderInterface
+{
 public:
-    RenderInterface(){}
-    virtual ~RenderInterface(){}
+  RenderInterface()
+  {
+  }
+  virtual ~RenderInterface()
+  {
+  }
 
-    virtual void initialize();
-    virtual void destroy();
+  virtual void initialize();
+  virtual void destroy();
 
-    virtual void setViewport(int _x,int _y,int _width,int _height);
-    virtual void getViewport(int& _x, int& _y,int& _width,int& _height) const;
+  virtual void setViewport(int _x, int _y, int _width, int _height);
+  virtual void getViewport(int& _x, int& _y, int& _width, int& _height) const;
 
-    virtual void clear(const Eigen::Vector3d& _color);
+  virtual void clear(const Eigen::Vector3d& _color);
 
-    virtual void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow);
-    virtual void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const;
-    virtual void setDefaultMaterial();
+  virtual void setMaterial(
+      const Eigen::Vector3d& _diffuse,
+      const Eigen::Vector3d& _specular,
+      double _cosinePow);
+  virtual void getMaterial(
+      Eigen::Vector3d& _diffuse,
+      Eigen::Vector3d& _specular,
+      double& _cosinePow) const;
+  virtual void setDefaultMaterial();
 
-    virtual void pushMatrix();
-    virtual void popMatrix();
-    virtual void pushName(int _id);
-    virtual void popName();
+  virtual void pushMatrix();
+  virtual void popMatrix();
+  virtual void pushName(int _id);
+  virtual void popName();
 
-    virtual void translate(const Eigen::Vector3d& _offset); //glTranslate
-    virtual void rotate(const Eigen::Vector3d& _axis, double _rad); //glRotate
-    virtual void transform(const Eigen::Isometry3d& _transform); //glMultMatrix
-    virtual void scale(const Eigen::Vector3d& _scale); //glScale
+  virtual void translate(const Eigen::Vector3d& _offset);         // glTranslate
+  virtual void rotate(const Eigen::Vector3d& _axis, double _rad); // glRotate
+  virtual void transform(const Eigen::Isometry3d& _transform); // glMultMatrix
+  virtual void scale(const Eigen::Vector3d& _scale);           // glScale
 
-    virtual void drawSphere(double radius, int slices = 16, int stacks = 16);
-    virtual void drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& spheres, int slices = 16, int stacks = 16);
-    virtual void drawEllipsoid(const Eigen::Vector3d& _size);
-    virtual void drawCube(const Eigen::Vector3d& _size);
-    virtual void drawOpenCylinder(double baseRadius, double topRadius, double height, int slices = 16, int stacks = 16);
-    virtual void drawCylinder(double _radius, double _height, int slices = 16, int stacks = 16);
-    virtual void drawCapsule(double _radius, double _height);
-    virtual void drawCone(double _radius, double _height);
-    virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
-    virtual void drawSoftMesh(const aiMesh* mesh);
-    virtual void drawList(unsigned int index);
-    virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
-                                  const common::aligned_vector<Eigen::Vector2i>& _connections);
+  virtual void drawSphere(double radius, int slices = 16, int stacks = 16);
+  virtual void drawMultiSphere(
+      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+      int slices = 16,
+      int stacks = 16);
+  virtual void drawEllipsoid(const Eigen::Vector3d& _size);
+  virtual void drawCube(const Eigen::Vector3d& _size);
+  virtual void drawOpenCylinder(
+      double baseRadius,
+      double topRadius,
+      double height,
+      int slices = 16,
+      int stacks = 16);
+  virtual void drawCylinder(
+      double _radius, double _height, int slices = 16, int stacks = 16);
+  virtual void drawCapsule(double _radius, double _height);
+  virtual void drawCone(double _radius, double _height);
+  virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
+  virtual void drawSoftMesh(const aiMesh* mesh);
+  virtual void drawList(unsigned int index);
+  virtual void drawLineSegments(
+      const std::vector<Eigen::Vector3d>& _vertices,
+      const common::aligned_vector<Eigen::Vector2i>& _connections);
 
-    virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh);
+  virtual unsigned int compileDisplayList(
+      const Eigen::Vector3d& _size, const aiScene* _mesh);
 
-    virtual void setPenColor(const Eigen::Vector4d& _col);
-    virtual void setPenColor(const Eigen::Vector3d& _col);
+  virtual void setPenColor(const Eigen::Vector4d& _col);
+  virtual void setPenColor(const Eigen::Vector3d& _col);
 
-    virtual void setLineWidth(float _width);
+  virtual void setLineWidth(float _width);
 
-    virtual void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back);
-    virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels);
+  virtual void saveToImage(
+      const char* _filename, DecoBufferType _buffType = BT_Back);
+  virtual void readFrameBuffer(
+      DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels);
 };
 
 } // namespace gui

@@ -53,20 +53,17 @@ class ConeShapeDrawable;
 class ConeShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
-
-  ConeShapeNode(std::shared_ptr<dart::dynamics::ConeShape> shape,
-                    ShapeFrameNode* parent);
+  ConeShapeNode(
+      std::shared_ptr<dart::dynamics::ConeShape> shape, ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~ConeShapeNode();
 
   std::shared_ptr<dart::dynamics::ConeShape> mConeShape;
   ConeShapeGeode* mGeode;
-
 };
 
 } // namespace render

@@ -63,8 +63,8 @@ public:
   static double computeVolume(const Eigen::Vector3d& size);
 
   /// \brief Compute moments of inertia of a box
-  static Eigen::Matrix3d computeInertia(const Eigen::Vector3d& size,
-                                        double mass);
+  static Eigen::Matrix3d computeInertia(
+      const Eigen::Vector3d& size, double mass);
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
@@ -81,7 +81,7 @@ private:
   Eigen::Vector3d mSize;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_BOXSHAPE_HPP_
+#endif // DART_DYNAMICS_BOXSHAPE_HPP_

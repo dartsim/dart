@@ -58,10 +58,10 @@ namespace render {
 class ShapeNode
 {
 public:
-
-  ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
-            ShapeFrameNode* parentNode,
-            ::osg::Node* node);
+  ShapeNode(
+      std::shared_ptr<dart::dynamics::Shape> shape,
+      ShapeFrameNode* parentNode,
+      ::osg::Node* node);
 
   virtual ~ShapeNode();
 
@@ -115,7 +115,6 @@ protected:
   /// not, that is an indication that it is no longer being used and should be
   /// deleted.
   bool mUtilized;
-
 };
 
 } // namespace render

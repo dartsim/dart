@@ -52,15 +52,15 @@ public:
 
   operator bool() const;
 
-  bool operator !() const;
+  bool operator!() const;
 
-  UriComponent& operator =(reference_const_type _value);
+  UriComponent& operator=(reference_const_type _value);
 
-  reference_type operator *();
-  reference_const_type operator *() const;
+  reference_type operator*();
+  reference_const_type operator*() const;
 
-  pointer_type operator ->();
-  pointer_const_type operator ->() const;
+  pointer_type operator->();
+  pointer_const_type operator->() const;
 
   void assign(reference_const_type _value);
   void reset();
@@ -134,28 +134,30 @@ struct Uri final
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
-  bool fromRelativeUri(const std::string& _base, const std::string& _relative,
-                       bool _strict = false);
+  bool fromRelativeUri(
+      const std::string& _base,
+      const std::string& _relative,
+      bool _strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
-  bool fromRelativeUri(const char* _base, const char* _relative,
-                       bool _strict = false);
+  bool fromRelativeUri(
+      const char* _base, const char* _relative, bool _strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
-  bool fromRelativeUri(const Uri& _base, const std::string& _relative,
-                       bool _strict = false);
+  bool fromRelativeUri(
+      const Uri& _base, const std::string& _relative, bool _strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
-  bool fromRelativeUri(const Uri& _base, const char* _relative,
-                       bool _strict = false);
+  bool fromRelativeUri(
+      const Uri& _base, const char* _relative, bool _strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
-  bool fromRelativeUri(const Uri& _base, const Uri& _relative,
-                       bool _strict = false);
+  bool fromRelativeUri(
+      const Uri& _base, const Uri& _relative, bool _strict = false);
 
   /// Combine the parts of the URI into a string.
   std::string toString() const;
@@ -172,39 +174,37 @@ struct Uri final
 
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
-  static Uri createFromRelativeUri(const std::string& _base,
-                                   const std::string& _relative,
-                                   bool _strict = false);
+  static Uri createFromRelativeUri(
+      const std::string& _base,
+      const std::string& _relative,
+      bool _strict = false);
 
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
-  static Uri createFromRelativeUri(const Uri& _base,
-                                   const std::string& _relative,
-                                   bool _strict = false);
+  static Uri createFromRelativeUri(
+      const Uri& _base, const std::string& _relative, bool _strict = false);
 
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
-  static Uri createFromRelativeUri(const Uri& _base,
-                                   const Uri& _relative,
-                                   bool _strict = false);
+  static Uri createFromRelativeUri(
+      const Uri& _base, const Uri& _relative, bool _strict = false);
 
   /// Parse a URI from a string; return an empty string on failure.
   static std::string getUri(const std::string& _input);
 
   /// Resolve a relative path reference; return an empty string on failure.
-  static std::string getRelativeUri(const std::string& _base,
-                                    const std::string& _relative,
-                                    bool _strict = false);
+  static std::string getRelativeUri(
+      const std::string& _base,
+      const std::string& _relative,
+      bool _strict = false);
 
   /// Resolve a relative path reference; return an empty string on failure.
-  static std::string getRelativeUri(const Uri& _base,
-                                    const std::string& _relative,
-                                    bool _strict = false);
+  static std::string getRelativeUri(
+      const Uri& _base, const std::string& _relative, bool _strict = false);
 
   /// Resolve a relative path reference; return an empty string on failure.
-  static std::string getRelativeUri(const Uri& _base,
-                                    const Uri& _relative,
-                                    bool _strict = false);
+  static std::string getRelativeUri(
+      const Uri& _base, const Uri& _relative, bool _strict = false);
 
   /// Get the path component of the URI as a string.
   std::string getPath() const;

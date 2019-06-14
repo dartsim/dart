@@ -41,23 +41,22 @@
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
-#include "dart/math/Geometry.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class Shape
-    : public virtual common::Subject,
-      public virtual common::VersionCounter
+class Shape : public virtual common::Subject,
+              public virtual common::VersionCounter
 {
 public:
-
   using VersionChangedSignal
       = common::Signal<void(Shape* shape, std::size_t version)>;
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  enum ShapeType {
+  enum ShapeType
+  {
     SPHERE,
     BOX,
     ELLIPSOID,
@@ -75,14 +74,24 @@ public:
 
   /// DataVariance can be used by renderers to determine whether it should
   /// expect data for this shape to change during each update.
-  enum DataVariance {
-    STATIC=0,                   /// No data will ever change
-    DYNAMIC_TRANSFORM = 1 << 1, /// The relative transform of the Shape might change
-    DYNAMIC_PRIMITIVE = 1 << 2, /// The primitive properties (such as x/y/z scaling) of the shape might change
-    DYNAMIC_COLOR     = 1 << 3, /// The coloring or textures of the shape might change
-    DYNAMIC_VERTICES  = 1 << 4, /// Vertex positions of a mesh might change (this does not include adding or removing vertices) (this enum is not relevant for primitive shapes)
-    DYNAMIC_ELEMENTS  = 1 << 5, /// The number of elements and/or arrangement of elements might change (this includes adding and removing vertices)  (this enum is not relevant for primitive shapes)
-    DYNAMIC           = 0xFF    /// All data is subject to changing
+  enum DataVariance
+  {
+    STATIC = 0, /// No data will ever change
+    DYNAMIC_TRANSFORM
+    = 1 << 1, /// The relative transform of the Shape might change
+    DYNAMIC_PRIMITIVE = 1 << 2, /// The primitive properties (such as x/y/z
+                                /// scaling) of the shape might change
+    DYNAMIC_COLOR
+    = 1 << 3, /// The coloring or textures of the shape might change
+    DYNAMIC_VERTICES
+    = 1 << 4, /// Vertex positions of a mesh might change (this does not include
+              /// adding or removing vertices) (this enum is not relevant for
+              /// primitive shapes)
+    DYNAMIC_ELEMENTS
+    = 1 << 5, /// The number of elements and/or arrangement of elements might
+              /// change (this includes adding and removing vertices)  (this
+              /// enum is not relevant for primitive shapes)
+    DYNAMIC = 0xFF /// All data is subject to changing
   };
 
   /// \brief Constructor
@@ -217,12 +226,11 @@ private:
 public:
   /// Use this to subscribe to version change signals
   common::SlotRegister<VersionChangedSignal> onVersionChanged;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
 #include "dart/dynamics/detail/Shape.hpp"
 
-#endif  // DART_DYNAMICS_SHAPE_HPP_
+#endif // DART_DYNAMICS_SHAPE_HPP_

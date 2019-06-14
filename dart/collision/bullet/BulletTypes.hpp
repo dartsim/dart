@@ -54,7 +54,7 @@ btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R);
 /// @brief Convert Bullet transformation type to Eigen transformation type
 btTransform convertTransform(const Eigen::Isometry3d& _T);
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETTYPES_HPP_
+#endif // DART_COLLISION_BULLET_BULLETTYPES_HPP_

@@ -44,7 +44,6 @@ namespace dynamics {
 class BallJoint : public GenericJoint<math::SO3Space>
 {
 public:
-
   friend class Skeleton;
 
   using Base = GenericJoint<math::SO3Space>;
@@ -76,9 +75,9 @@ public:
   /// Convert a rotation into a 3D vector that can be used to set the positions
   /// of a BallJoint. The positions returned by this function will result in a
   /// relative transform of
-  /// getTransformFromParentBodyNode() * _rotation * getTransformFromChildBodyNode().inverse()
-  /// between the parent BodyNode and the child BodyNode frames when applied to
-  /// a BallJoint.
+  /// getTransformFromParentBodyNode() * _rotation *
+  /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
+  /// the child BodyNode frames when applied to a BallJoint.
   template <typename RotationType>
   static Eigen::Vector3d convertToPositions(const RotationType& _rotation)
   {
@@ -86,7 +85,8 @@ public:
   }
 
   /// Convert a BallJoint-style position vector into a transform
-  static Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions);
+  static Eigen::Isometry3d convertToTransform(
+      const Eigen::Vector3d& _positions);
 
   /// Convert a BallJoint-style position vector into a rotation matrix
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
@@ -100,7 +100,6 @@ public:
       const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const override;
 
 protected:
-
   /// Constructor called by Skeleton class
   BallJoint(const Properties& properties);
 
@@ -125,7 +124,6 @@ protected:
   void updateRelativeJacobianTimeDeriv() const override;
 
 protected:
-
   /// Access mR, which is an auto-updating variable
   const Eigen::Isometry3d& getR() const;
 
@@ -139,8 +137,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_BALLJOINT_HPP_
-
+#endif // DART_DYNAMICS_BALLJOINT_HPP_

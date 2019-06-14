@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_GENERICJOINT_HPP_
 #define DART_DYNAMICS_GENERICJOINT_HPP_
 
-#include <string>
 #include <array>
+#include <string>
 #include "dart/dynamics/detail/GenericJointAspect.hpp"
 
 namespace dart {
@@ -43,22 +43,20 @@ namespace dynamics {
 class DegreeOfFreedom;
 
 template <class ConfigSpaceT>
-class GenericJoint :
-    public detail::GenericJointBase< GenericJoint<ConfigSpaceT>,
-                                       ConfigSpaceT >
+class GenericJoint
+  : public detail::GenericJointBase<GenericJoint<ConfigSpaceT>, ConfigSpaceT>
 {
 public:
-
   static constexpr std::size_t NumDofs = ConfigSpaceT::NumDofs;
 
   using ThisClass = GenericJoint<ConfigSpaceT>;
   using Base = detail::GenericJointBase<ThisClass, ConfigSpaceT>;
 
-  using Point          = typename ConfigSpaceT::Point;
+  using Point = typename ConfigSpaceT::Point;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
-  using Vector         = typename ConfigSpaceT::Vector;
+  using Vector = typename ConfigSpaceT::Vector;
   using JacobianMatrix = typename ConfigSpaceT::JacobianMatrix;
-  using Matrix         = typename ConfigSpaceT::Matrix;
+  using Matrix = typename ConfigSpaceT::Matrix;
 
   using UniqueProperties = detail::GenericJointUniqueProperties<ConfigSpaceT>;
   using Properties = detail::GenericJointProperties<ConfigSpaceT>;
@@ -66,7 +64,7 @@ public:
   using AspectProperties = typename Base::AspectProperties;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(
-      typename ThisClass::Aspect, GenericJointAspect )
+      typename ThisClass::Aspect, GenericJointAspect)
 
   GenericJoint(const ThisClass&) = delete;
 
@@ -111,9 +109,10 @@ public:
   std::size_t getNumDofs() const override;
 
   // Documentation inherited
-  const std::string& setDofName(std::size_t index,
-                                const std::string& name,
-                                bool preserveName = true) override;
+  const std::string& setDofName(
+      std::size_t index,
+      const std::string& name,
+      bool preserveName = true) override;
 
   // Documentation inherited
   void preserveDofName(size_t index, bool preserve) override;
@@ -335,7 +334,8 @@ public:
   Eigen::VectorXd getAccelerationLowerLimits() const override;
 
   // Documentation inherited
-  void setAccelerationUpperLimit(std::size_t index, double acceleration) override;
+  void setAccelerationUpperLimit(
+      std::size_t index, double acceleration) override;
 
   // Documentation inherited
   double getAccelerationUpperLimit(std::size_t index) const override;
@@ -516,7 +516,6 @@ public:
   /// \}
 
 protected:
-
   GenericJoint(const Properties& properties);
 
   // Documentation inherited
@@ -587,8 +586,8 @@ protected:
       const Eigen::Vector6d& childBiasImpulse) override;
 
   // Documentation inherited
-  void updateTotalForce(const Eigen::Vector6d& bodyForce,
-                        double timeStep) override;
+  void updateTotalForce(
+      const Eigen::Vector6d& bodyForce, double timeStep) override;
 
   // Documentation inherited
   void updateTotalImpulse(const Eigen::Vector6d& bodyImpulse) override;
@@ -597,8 +596,9 @@ protected:
   void resetTotalImpulses() override;
 
   // Documentation inherited
-  void updateAcceleration(const Eigen::Matrix6d& artInertia,
-                          const Eigen::Vector6d& spatialAcc) override;
+  void updateAcceleration(
+      const Eigen::Matrix6d& artInertia,
+      const Eigen::Vector6d& spatialAcc) override;
 
   // Documentation inherited
   void updateVelocityChange(
@@ -606,16 +606,18 @@ protected:
       const Eigen::Vector6d& velocityChange) override;
 
   // Documentation inherited
-  void updateForceID(const Eigen::Vector6d& bodyForce,
-                     double timeStep,
-                     bool withDampingForces,
-                     bool withSpringForces) override;
+  void updateForceID(
+      const Eigen::Vector6d& bodyForce,
+      double timeStep,
+      bool withDampingForces,
+      bool withSpringForces) override;
 
   // Documentation inherited
-  void updateForceFD(const Eigen::Vector6d& bodyForce,
-                     double timeStep,
-                     bool withDampingForcese,
-                     bool withSpringForces) override;
+  void updateForceFD(
+      const Eigen::Vector6d& bodyForce,
+      double timeStep,
+      bool withDampingForcese,
+      bool withSpringForces) override;
 
   // Documentation inherited
   void updateImpulseID(const Eigen::Vector6d& bodyImpulse) override;
@@ -649,16 +651,18 @@ protected:
       const Eigen::Vector6d& bodyForce) override;
 
   // Documentation inherited
-  void getInvMassMatrixSegment(Eigen::MatrixXd& invMassMat,
-                               const size_t col,
-                               const Eigen::Matrix6d& artInertia,
-                               const Eigen::Vector6d& spatialAcc) override;
+  void getInvMassMatrixSegment(
+      Eigen::MatrixXd& invMassMat,
+      const size_t col,
+      const Eigen::Matrix6d& artInertia,
+      const Eigen::Vector6d& spatialAcc) override;
 
   // Documentation inherited
-  void getInvAugMassMatrixSegment(Eigen::MatrixXd& invMassMat,
-                                  const size_t col,
-                                  const Eigen::Matrix6d& artInertia,
-                                  const Eigen::Vector6d& spatialAcc) override;
+  void getInvAugMassMatrixSegment(
+      Eigen::MatrixXd& invMassMat,
+      const size_t col,
+      const Eigen::Matrix6d& artInertia,
+      const Eigen::Vector6d& spatialAcc) override;
 
   // Documentation inherited
   void addInvMassMatrixSegmentTo(Eigen::Vector6d& acc) override;
@@ -670,7 +674,6 @@ protected:
   /// \}
 
 protected:
-
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, NumDofs> mDofs;
 
@@ -693,13 +696,14 @@ protected:
 
   /// Spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getRelativeJacobianStatic() to access this quantity
+  /// Do not use directly! Use getRelativeJacobianStatic() to access this
+  /// quantity
   mutable JacobianMatrix mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getRelativeJacobianTimeDerivStatic() to access this
-  /// quantity
+  /// Do not use directly! Use getRelativeJacobianTimeDerivStatic() to access
+  /// this quantity
   mutable JacobianMatrix mJacobianDeriv;
 
   /// Inverse of projected articulated inertia
@@ -751,11 +755,9 @@ private:
       Eigen::Matrix6d& parentArtInertia,
       const Eigen::Matrix6d& childArtInertia);
 
-  void updateInvProjArtInertiaDynamic(
-      const Eigen::Matrix6d& artInertia);
+  void updateInvProjArtInertiaDynamic(const Eigen::Matrix6d& artInertia);
 
-  void updateInvProjArtInertiaKinematic(
-      const Eigen::Matrix6d& artInertia);
+  void updateInvProjArtInertiaKinematic(const Eigen::Matrix6d& artInertia);
 
   void updateInvProjArtInertiaImplicitDynamic(
       const Eigen::Matrix6d& artInertia, double timeStep);
@@ -785,33 +787,27 @@ private:
       const Eigen::Matrix6d& childArtInertia,
       const Eigen::Vector6d& childBiasImpulse);
 
-  void updateTotalForceDynamic(const Eigen::Vector6d& bodyForce,
-                               double timeStep);
+  void updateTotalForceDynamic(
+      const Eigen::Vector6d& bodyForce, double timeStep);
 
-  void updateTotalForceKinematic(const Eigen::Vector6d& bodyForce,
-                                 double timeStep);
+  void updateTotalForceKinematic(
+      const Eigen::Vector6d& bodyForce, double timeStep);
 
-  void updateTotalImpulseDynamic(
-      const Eigen::Vector6d& bodyImpulse);
+  void updateTotalImpulseDynamic(const Eigen::Vector6d& bodyImpulse);
 
-  void updateTotalImpulseKinematic(
-      const Eigen::Vector6d& bodyImpulse);
+  void updateTotalImpulseKinematic(const Eigen::Vector6d& bodyImpulse);
 
   void updateAccelerationDynamic(
-      const Eigen::Matrix6d& artInertia,
-        const Eigen::Vector6d& spatialAcc);
+      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc);
 
   void updateAccelerationKinematic(
-        const Eigen::Matrix6d& artInertia,
-        const Eigen::Vector6d& spatialAcc);
+      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc);
 
   void updateVelocityChangeDynamic(
-        const Eigen::Matrix6d& artInertia,
-        const Eigen::Vector6d& velocityChange);
+      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange);
 
   void updateVelocityChangeKinematic(
-        const Eigen::Matrix6d& artInertia,
-        const Eigen::Vector6d& velocityChange);
+      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange);
 
   void updateConstrainedTermsDynamic(double timeStep);
 

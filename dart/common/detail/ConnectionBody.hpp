@@ -132,11 +132,10 @@ struct DefaultCombiner
   }
 };
 
-}  // namespace detail
-}  // namespace signal
+} // namespace detail
+} // namespace signal
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart
 
-#endif  // DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
-
+#endif // DART_COMMON_DETAIL_CONNECTIONBODY_HPP_

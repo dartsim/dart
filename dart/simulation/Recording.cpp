@@ -128,7 +128,8 @@ Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
 }
 
 //==============================================================================
-void Recording::clear() {
+void Recording::clear()
+{
   mBakedStates.clear();
 }
 
@@ -147,6 +148,5 @@ void Recording::updateNumGenCoords(
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
 }
 
-}  // namespace simulation
-}  // namespace dart
-
+} // namespace simulation
+} // namespace dart

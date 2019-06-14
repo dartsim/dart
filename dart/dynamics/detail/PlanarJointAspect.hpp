@@ -82,8 +82,8 @@ struct PlanarJointUniqueProperties
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
-  PlanarJointUniqueProperties(const Eigen::Vector3d& _transAxis1,
-                   const Eigen::Vector3d& _transAxis2);
+  PlanarJointUniqueProperties(
+      const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2);
 
   /// Copy-constructor, customized for robustness
   PlanarJointUniqueProperties(const PlanarJointUniqueProperties& other);
@@ -100,29 +100,30 @@ struct PlanarJointUniqueProperties
   void setZXPlane();
 
   /// Set plane type as arbitrary plane with two orthogonal translational axes
-  void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                         const Eigen::Vector3d& _transAxis2);
+  void setArbitraryPlane(
+      const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2);
 };
 
 //==============================================================================
-struct PlanarJointProperties :
-    GenericJoint<math::R3Space>::Properties,
-    PlanarJointUniqueProperties
+struct PlanarJointProperties : GenericJoint<math::R3Space>::Properties,
+                               PlanarJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(PlanarJointProperties)
 
   PlanarJointProperties(
-      const GenericJoint<math::R3Space>::Properties& genericJointProperties =
-          GenericJoint<math::R3Space>::Properties(),
-      const PlanarJointUniqueProperties& planarProperties =
-          PlanarJointUniqueProperties());
+      const GenericJoint<math::R3Space>::Properties& genericJointProperties
+      = GenericJoint<math::R3Space>::Properties(),
+      const PlanarJointUniqueProperties& planarProperties
+      = PlanarJointUniqueProperties());
 
   virtual ~PlanarJointProperties() = default;
 };
 
 //==============================================================================
 using PlanarJointBase = common::EmbedPropertiesOnTopOf<
-    PlanarJoint, PlanarJointUniqueProperties, GenericJoint<math::R3Space> >;
+    PlanarJoint,
+    PlanarJointUniqueProperties,
+    GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

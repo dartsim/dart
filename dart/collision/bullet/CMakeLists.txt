@@ -79,7 +79,4 @@ if(NOT DART_BUILD_DARTPY)
   )
 endif()
 
-dart_format_add(
-  BulletCollisionShape.hpp
-  BulletCollisionShape.cpp
-)
+dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

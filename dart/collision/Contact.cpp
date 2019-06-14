@@ -66,5 +66,5 @@ bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
   return !isZeroNormal(normal);
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
