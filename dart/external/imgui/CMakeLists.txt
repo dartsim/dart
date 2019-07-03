@@ -14,6 +14,9 @@ target_include_directories(${target_name}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 target_link_libraries(${target_name} PUBLIC OpenGL::GL)
+if(APPLE)
+  target_link_libraries(${target_name} PUBLIC "-framework CoreFoundation")
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${target_name} PRIVATE -w)
