@@ -42,7 +42,8 @@ namespace math {
 
 namespace detail {
 
-template<bool> struct Range;
+template <bool>
+struct Range;
 
 //==============================================================================
 template <typename MatrixType, int Size, typename Enable = Range<true>>
@@ -181,8 +182,6 @@ struct integratePositionImpl<SE3Space>
 
 } // namespace detail
 
-
-
 //==============================================================================
 template <typename SpaceT>
 typename SpaceT::Matrix inverse(const typename SpaceT::Matrix& mat)
@@ -197,16 +196,16 @@ typename SpaceT::Matrix inverse(const typename SpaceT::Matrix& mat)
 
 //==============================================================================
 template <typename SpaceT>
-typename SpaceT::EuclideanPoint
-toEuclideanPoint(const typename SpaceT::Point& point)
+typename SpaceT::EuclideanPoint toEuclideanPoint(
+    const typename SpaceT::Point& point)
 {
   return detail::toEuclideanPointImpl<SpaceT>::run(point);
 }
 
 //==============================================================================
 template <typename SpaceT>
-typename SpaceT::Point
-toManifoldPoint(const typename SpaceT::EuclideanPoint& point)
+typename SpaceT::Point toManifoldPoint(
+    const typename SpaceT::EuclideanPoint& point)
 {
   return detail::toManifoldPointImpl<SpaceT>::run(point);
 }

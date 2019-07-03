@@ -34,8 +34,8 @@
 
 #include <algorithm>
 
-#include "dart/math/Constants.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
+#include "dart/math/Constants.hpp"
 
 namespace dart {
 namespace gui {
@@ -62,7 +62,7 @@ void Win3D::initWindow(int _w, int _h, const char* _name)
   Window::initWindow(_w, _h, _name);
 
   int smaller = _w < _h ? _w : _h;
-  mTrackBall.setTrackball(Eigen::Vector2d(_w*0.5, _h*0.5), smaller/2.5);
+  mTrackBall.setTrackball(Eigen::Vector2d(_w * 0.5, _h * 0.5), smaller / 2.5);
 }
 
 //==============================================================================
@@ -74,15 +74,17 @@ void Win3D::resize(int _w, int _h)
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glViewport(0, 0, mWinWidth, mWinHeight);
-  gluPerspective(mPersp,
-                 static_cast<double>(mWinWidth)/static_cast<double>(mWinHeight),
-                 0.1, 10.0);
+  gluPerspective(
+      mPersp,
+      static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
+      0.1,
+      10.0);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  mTrackBall.setCenter(Eigen::Vector2d(_w*0.5, _h*0.5));
-  mTrackBall.setRadius(std::min(_w, _h)/2.5);
+  mTrackBall.setCenter(Eigen::Vector2d(_w * 0.5, _h * 0.5));
+  mTrackBall.setRadius(std::min(_w, _h) / 2.5);
 
   glutPostRedisplay();
 }
@@ -90,17 +92,18 @@ void Win3D::resize(int _w, int _h)
 //==============================================================================
 void Win3D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/)
 {
-  switch (_key) {
-    case ',':  // slow down
-      mDisplayTimeout +=2;
+  switch (_key)
+  {
+    case ',': // slow down
+      mDisplayTimeout += 2;
       break;
-    case '.':  // speed up
+    case '.': // speed up
       mDisplayTimeout -= 2;
       if (mDisplayTimeout < 1)
         mDisplayTimeout = 1;
       break;
     case 'c':
-    case 'C':  // screen capture
+    case 'C': // screen capture
       mCapture = !mCapture;
 #ifndef _WIN32
       if (mCapture)
@@ -111,7 +114,7 @@ void Win3D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/)
       // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for
       // the detail.
       break;
-    case 27:  // ESC
+    case 27: // ESC
       exit(0);
   }
 
@@ -124,28 +127,41 @@ void Win3D::click(int _button, int _state, int _x, int _y)
 {
   mMouseDown = !mMouseDown;
   int mask = glutGetModifiers();
-  if (mMouseDown) {
-    if (_button == GLUT_LEFT_BUTTON) {
-      if (mask == GLUT_ACTIVE_SHIFT) {
+  if (mMouseDown)
+  {
+    if (_button == GLUT_LEFT_BUTTON)
+    {
+      if (mask == GLUT_ACTIVE_SHIFT)
+      {
         mZooming = true;
-      } else {
+      }
+      else
+      {
         mRotate = true;
         mTrackBall.startBall(_x, mWinHeight - _y);
       }
-    } else if (_button == GLUT_RIGHT_BUTTON || _button == GLUT_MIDDLE_BUTTON) {
+    }
+    else if (_button == GLUT_RIGHT_BUTTON || _button == GLUT_MIDDLE_BUTTON)
+    {
       mTranslate = true;
-    } else if (_button == 3 && _state == GLUT_DOWN) {  // mouse wheel up
+    }
+    else if (_button == 3 && _state == GLUT_DOWN)
+    { // mouse wheel up
       // each scroll generates a down and an immediate up,
       // so ignore ups
       mZoom += mZoom * 0.1;
-    } else if (_button == 4 && _state == GLUT_DOWN) {  // mouse wheel down?
+    }
+    else if (_button == 4 && _state == GLUT_DOWN)
+    { // mouse wheel down?
       // each scroll generates a down and an immediate up,
       // so ignore ups
       mZoom -= mZoom * 0.1;
     }
     mMouseX = _x;
     mMouseY = _y;
-  } else {
+  }
+  else
+  {
     mTranslate = false;
     mRotate = false;
     mZooming = false;
@@ -162,16 +178,20 @@ void Win3D::drag(int _x, int _y)
   mMouseX = _x;
   mMouseY = _y;
 
-  if (mRotate) {
+  if (mRotate)
+  {
     if (deltaX != 0 || deltaY != 0)
       mTrackBall.updateBall(_x, mWinHeight - _y);
   }
-  if (mTranslate) {
+  if (mTranslate)
+  {
     Eigen::Matrix3d rot = mTrackBall.getRotationMatrix();
-    mTrans += (1 / mZoom) * rot.transpose()*Eigen::Vector3d(deltaX, -deltaY, 0.0);
+    mTrans += (1 / mZoom) * rot.transpose()
+              * Eigen::Vector3d(deltaX, -deltaY, 0.0);
   }
-  if (mZooming) {
-    mZoom += deltaY*0.01;
+  if (mZooming)
+  {
+    mZoom += deltaY * 0.01;
   }
   glutPostRedisplay();
 }
@@ -181,9 +201,11 @@ void Win3D::render()
 {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(mPersp,
-                 static_cast<double>(mWinWidth)/static_cast<double>(mWinHeight),
-                 0.1, 10.0);
+  gluPerspective(
+      mPersp,
+      static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
+      0.1,
+      10.0);
   gluLookAt(mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, mUp[0], mUp[1], mUp[2]);
 
   glMatrixMode(GL_MODELVIEW);
@@ -199,7 +221,8 @@ void Win3D::render()
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
     glLineWidth(2.0);
-    if (mRotate || mTranslate || mZooming) {
+    if (mRotate || mTranslate || mZooming)
+    {
       glColor3f(1.0f, 0.0f, 0.0f);
       glBegin(GL_LINES);
       glVertex3f(-0.1f, 0.0f, -0.0f);
@@ -221,7 +244,7 @@ void Win3D::render()
   }
 
   glScalef(mZoom, mZoom, mZoom);
-  glTranslatef(mTrans[0]*0.001, mTrans[1]*0.001, mTrans[2]*0.001);
+  glTranslatef(mTrans[0] * 0.001, mTrans[1] * 0.001, mTrans[2] * 0.001);
 
   initLights();
   draw();
@@ -251,23 +274,23 @@ void Win3D::initGL()
 //==============================================================================
 void Win3D::initLights()
 {
-  static float ambient[]             = {0.2, 0.2, 0.2, 1.0};
-  static float diffuse[]             = {0.6, 0.6, 0.6, 1.0};
+  static float ambient[] = {0.2, 0.2, 0.2, 1.0};
+  static float diffuse[] = {0.6, 0.6, 0.6, 1.0};
   static float front_mat_shininess[] = {60.0};
-  static float front_mat_specular[]  = {0.2, 0.2,  0.2,  1.0};
-  static float front_mat_diffuse[]   = {0.5, 0.28, 0.38, 1.0};
-  static float lmodel_ambient[]      = {0.2, 0.2,  0.2,  1.0};
-  static float lmodel_twoside[]      = {GL_FALSE};
+  static float front_mat_specular[] = {0.2, 0.2, 0.2, 1.0};
+  static float front_mat_diffuse[] = {0.5, 0.28, 0.38, 1.0};
+  static float lmodel_ambient[] = {0.2, 0.2, 0.2, 1.0};
+  static float lmodel_twoside[] = {GL_FALSE};
 
   GLfloat position[] = {1.0, 0.0, 0.0, 0.0};
   GLfloat position1[] = {-1.0, 0.0, 0.0, 0.0};
 
   glEnable(GL_LIGHT0);
-  glLightfv(GL_LIGHT0, GL_AMBIENT,  ambient);
-  glLightfv(GL_LIGHT0, GL_DIFFUSE,  diffuse);
+  glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
   glLightfv(GL_LIGHT0, GL_POSITION, position);
 
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT,  lmodel_ambient);
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
   glLightModelfv(GL_LIGHT_MODEL_TWO_SIDE, lmodel_twoside);
 
   glEnable(GL_LIGHT1);
@@ -277,8 +300,8 @@ void Win3D::initLights()
   glEnable(GL_COLOR_MATERIAL);
 
   glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, front_mat_shininess);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  front_mat_specular);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   front_mat_diffuse);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, front_mat_specular);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, front_mat_diffuse);
 
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
@@ -287,10 +310,19 @@ void Win3D::initLights()
 }
 
 // Remove once deprecated function, capturing(), is removed
-void accFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top,
-                GLdouble nearPlane, GLdouble farPlane,
-                GLdouble pixdx, GLdouble pixdy, GLdouble eyedx, GLdouble eyedy,
-                GLdouble focus) {
+void accFrustum(
+    GLdouble left,
+    GLdouble right,
+    GLdouble bottom,
+    GLdouble top,
+    GLdouble nearPlane,
+    GLdouble farPlane,
+    GLdouble pixdx,
+    GLdouble pixdy,
+    GLdouble eyedx,
+    GLdouble eyedy,
+    GLdouble focus)
+{
   GLdouble xwsize, ywsize;
   GLdouble dx, dy;
   GLint viewport[4];
@@ -299,10 +331,12 @@ void accFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top,
 
   xwsize = right - left;
   ywsize = top - bottom;
-  dx = -(pixdx * xwsize / static_cast<GLdouble>(viewport[2])
-       + eyedx * nearPlane / focus);
-  dy = -(pixdy * ywsize / static_cast<GLdouble>(viewport[3])
-       + eyedy * nearPlane / focus);
+  dx
+      = -(pixdx * xwsize / static_cast<GLdouble>(viewport[2])
+          + eyedx * nearPlane / focus);
+  dy
+      = -(pixdy * ywsize / static_cast<GLdouble>(viewport[3])
+          + eyedy * nearPlane / focus);
 
   glFrustum(left + dx, right + dx, bottom + dy, top + dy, nearPlane, farPlane);
 
@@ -312,22 +346,39 @@ void accFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top,
 }
 
 // Remove once deprecated function, capturing(), is removed
-void accPerspective(GLdouble fovy, GLdouble aspect,
-                    GLdouble nearPlane, GLdouble farPlane,
-                    GLdouble pixdx, GLdouble pixdy,
-                    GLdouble eyedx, GLdouble eyedy, GLdouble focus) {
+void accPerspective(
+    GLdouble fovy,
+    GLdouble aspect,
+    GLdouble nearPlane,
+    GLdouble farPlane,
+    GLdouble pixdx,
+    GLdouble pixdy,
+    GLdouble eyedx,
+    GLdouble eyedy,
+    GLdouble focus)
+{
   const double pi = math::constantsd::pi();
 
-  GLdouble fov2 = ((fovy*pi) / 180.0) / 2.0;
+  GLdouble fov2 = ((fovy * pi) / 180.0) / 2.0;
   GLdouble top = nearPlane / (cosf(fov2) / sinf(fov2));
   GLdouble bottom = -top;
   GLdouble right = top * aspect;
   GLdouble left = -right;
 
-  accFrustum(left, right, bottom, top, nearPlane, farPlane,
-             pixdx, pixdy, eyedx, eyedy, focus);
+  accFrustum(
+      left,
+      right,
+      bottom,
+      top,
+      nearPlane,
+      farPlane,
+      pixdx,
+      pixdy,
+      eyedx,
+      eyedy,
+      focus);
 }
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart

@@ -132,16 +132,17 @@ struct JointProperties
   double mMimicMultiplier, mMimicOffset;
 
   /// Constructor
-  JointProperties(const std::string& _name = "Joint",
-             const Eigen::Isometry3d& _T_ParentBodyToJoint =
-                                 Eigen::Isometry3d::Identity(),
-             const Eigen::Isometry3d& _T_ChildBodyToJoint =
-                                 Eigen::Isometry3d::Identity(),
-             bool _isPositionLimitEnforced = false,
-             ActuatorType _actuatorType = DefaultActuatorType,
-             const Joint* _mimicJoint = nullptr,
-             double _mimicMultiplier = 1.0,
-             double _mimicOffset = 0.0);
+  JointProperties(
+      const std::string& _name = "Joint",
+      const Eigen::Isometry3d& _T_ParentBodyToJoint
+      = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& _T_ChildBodyToJoint
+      = Eigen::Isometry3d::Identity(),
+      bool _isPositionLimitEnforced = false,
+      ActuatorType _actuatorType = DefaultActuatorType,
+      const Joint* _mimicJoint = nullptr,
+      double _mimicMultiplier = 1.0,
+      double _mimicOffset = 0.0);
 
   virtual ~JointProperties() = default;
 

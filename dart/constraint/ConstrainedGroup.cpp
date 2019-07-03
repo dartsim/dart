@@ -57,8 +57,9 @@ ConstrainedGroup::~ConstrainedGroup()
 void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint != nullptr && "Attempted to add nullptr.");
-  assert(!containConstraint(_constraint)
-         && "Attempted to add a duplicate constraint.");
+  assert(
+      !containConstraint(_constraint)
+      && "Attempted to add a duplicate constraint.");
   assert(_constraint->isActive());
 
   mConstraints.push_back(_constraint);
@@ -88,12 +89,13 @@ ConstConstraintBasePtr ConstrainedGroup::getConstraint(std::size_t _index) const
 void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint != nullptr && "Attempted to add nullptr.");
-  assert(containConstraint(_constraint)
-         && "Attempted to remove not existing constraint.");
+  assert(
+      containConstraint(_constraint)
+      && "Attempted to remove not existing constraint.");
 
   mConstraints.erase(
-        remove(mConstraints.begin(), mConstraints.end(), _constraint),
-        mConstraints.end());
+      remove(mConstraints.begin(), mConstraints.end(), _constraint),
+      mConstraints.end());
 }
 
 //==============================================================================
@@ -108,7 +110,7 @@ bool ConstrainedGroup::containConstraint(
     const ConstConstraintBasePtr& _constraint) const
 {
   return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
-      != mConstraints.end();
+         != mConstraints.end();
 }
 #endif
 
@@ -123,5 +125,5 @@ std::size_t ConstrainedGroup::getTotalDimension() const
   return totalDim;
 }
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart

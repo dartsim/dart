@@ -46,8 +46,8 @@ Subject::~Subject()
 void Subject::sendDestructionNotification() const
 {
   std::set<Observer*>::iterator sub = mObservers.begin(),
-                                  end = mObservers.end();
-  while( sub != end )
+                                end = mObservers.end();
+  while (sub != end)
     (*(sub++))->receiveDestructionNotification(this);
   // We do this tricky iterator method to deal with the fact that mObservers
   // will be changing as we go through the loop
@@ -56,10 +56,10 @@ void Subject::sendDestructionNotification() const
 //==============================================================================
 void Subject::addObserver(Observer* _observer) const
 {
-  if(nullptr == _observer)
+  if (nullptr == _observer)
     return;
 
-  if(mObservers.find(_observer) != mObservers.end())
+  if (mObservers.find(_observer) != mObservers.end())
     return;
 
   mObservers.insert(_observer);
@@ -69,10 +69,10 @@ void Subject::addObserver(Observer* _observer) const
 //==============================================================================
 void Subject::removeObserver(Observer* _observer) const
 {
-  if(nullptr == _observer)
+  if (nullptr == _observer)
     return;
 
-  if(mObservers.find(_observer) == mObservers.end())
+  if (mObservers.find(_observer) == mObservers.end())
     return;
 
   mObservers.erase(_observer);

@@ -31,17 +31,18 @@
  */
 
 #include "dart/gui/osg/render/ShapeNode.hpp"
-#include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 
 namespace dart {
 namespace gui {
 namespace osg {
 namespace render {
 
-ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
-                     ShapeFrameNode* parentNode,
-                     ::osg::Node* node)
+ShapeNode::ShapeNode(
+    std::shared_ptr<dart::dynamics::Shape> shape,
+    ShapeFrameNode* parentNode,
+    ::osg::Node* node)
   : mShape(std::move(shape)),
     mParentShapeFrameNode(parentNode),
     mNode(node),

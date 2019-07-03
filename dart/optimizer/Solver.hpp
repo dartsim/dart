@@ -52,7 +52,6 @@ class Problem;
 class Solver
 {
 public:
-
   /// The Solver::Properties class contains Solver parameters that are common
   /// to all Solver types. Most (but not necessarily all) Solvers will make use
   /// of these parameters, and these parameters can be directly copied or
@@ -85,13 +84,14 @@ public:
     /// empty to avoid publishing anything.
     std::string mResultFile;
 
-    Properties(std::shared_ptr<Problem> _problem = nullptr,
-               double _tolerance = 1e-9,
-               std::size_t _numMaxIterations = 500,
-               std::size_t _iterationsPerPrint = 0,
-               std::ostream* _ostream = &std::cout,
-               bool _printFinalResult = false,
-               const std::string& _resultFile = "");
+    Properties(
+        std::shared_ptr<Problem> _problem = nullptr,
+        double _tolerance = 1e-9,
+        std::size_t _numMaxIterations = 500,
+        std::size_t _iterationsPerPrint = 0,
+        std::ostream* _ostream = &std::cout,
+        bool _printFinalResult = false,
+        const std::string& _resultFile = "");
   };
 
   /// Default Constructor
@@ -173,12 +173,10 @@ public:
   const std::string& getResultFileName() const;
 
 protected:
-
   Properties mProperties;
-
 };
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace optimizer
+} // namespace dart
 
-#endif  // DART_OPTIMIZER_SOLVER_HPP_
+#endif // DART_OPTIMIZER_SOLVER_HPP_

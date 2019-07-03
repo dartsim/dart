@@ -31,8 +31,8 @@
  */
 
 #include <cassert>
-#include <string>
 #include <iostream>
+#include <string>
 
 #include "dart/common/Aspect.hpp"
 #include "dart/common/Console.hpp"

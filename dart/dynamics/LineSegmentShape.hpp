@@ -49,8 +49,10 @@ public:
   LineSegmentShape(float _thickness = 1.0f);
 
   /// Constructor for creating a simple line segment that connects two vertices
-  LineSegmentShape(const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2,
-                   float _thickness = 1.0f);
+  LineSegmentShape(
+      const Eigen::Vector3d& _v1,
+      const Eigen::Vector3d& _v2,
+      float _thickness = 1.0f);
 
   // Documentation inherited.
   const std::string& getType() const override;

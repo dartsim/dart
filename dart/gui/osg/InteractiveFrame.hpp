@@ -49,8 +49,8 @@ class InteractiveFrame;
 class InteractiveTool : public dart::dynamics::SimpleFrame
 {
 public:
-
-  enum Type {
+  enum Type
+  {
 
     LINEAR = 0, /// Tool for linearly constrained translations
     ANGULAR,    /// Tool for rotations
@@ -59,8 +59,8 @@ public:
     NUM_TYPES
   };
 
-  InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
-                  const std::string& name);
+  InteractiveTool(
+      InteractiveFrame* frame, double defaultAlpha, const std::string& name);
 
   /// Set this tool to be enabled or disabled
   void setEnabled(bool enabled);
@@ -76,7 +76,7 @@ public:
 
   /// Set the default alpha for this tool. This alpha value will be
   /// applied immediately if reset is true.
-  void setDefaultAlpha(double alpha, bool reset=true);
+  void setDefaultAlpha(double alpha, bool reset = true);
 
   /// Get the default alpha setting for this tool
   double getDefaultAlpha() const;
@@ -97,7 +97,6 @@ public:
   void removeAllShapeFrames();
 
 protected:
-
   std::vector<std::unique_ptr<dart::dynamics::SimpleFrame>> mSimpleFrames;
 
   double mDefaultAlpha;
@@ -105,7 +104,6 @@ protected:
   bool mEnabled;
 
   InteractiveFrame* mInteractiveFrame;
-
 };
 
 class InteractiveFrame : public dart::dynamics::SimpleFrame
@@ -115,25 +113,27 @@ public:
 
   /// Constructor
   InteractiveFrame(
-    dart::dynamics::Frame* referenceFrame,
-    const std::string& name = "interactive_frame",
-    const Eigen::Isometry3d& relativeTransform = Eigen::Isometry3d::Identity(),
-    double size_scale=0.2, double thickness_scale=2.0);
+      dart::dynamics::Frame* referenceFrame,
+      const std::string& name = "interactive_frame",
+      const Eigen::Isometry3d& relativeTransform
+      = Eigen::Isometry3d::Identity(),
+      double size_scale = 0.2,
+      double thickness_scale = 2.0);
 
   /// Destructor
   virtual ~InteractiveFrame();
 
   /// Recreate the visuals for this InteractiveFrame according to the specified
   /// scales.
-  virtual void resizeStandardVisuals(double size_scale=0.2,
-                                     double thickness_scale=2.0);
+  virtual void resizeStandardVisuals(
+      double size_scale = 0.2, double thickness_scale = 2.0);
 
   /// Get the specified tool
   InteractiveTool* getTool(InteractiveTool::Type tool, std::size_t coordinate);
 
   /// Get the specified tool
-  const InteractiveTool* getTool(InteractiveTool::Type tool,
-                                 std::size_t coordinate) const;
+  const InteractiveTool* getTool(
+      InteractiveTool::Type tool, std::size_t coordinate) const;
 
   dart::dynamics::SimpleFrame* addShapeFrame(
       const dart::dynamics::ShapePtr& shape);
@@ -159,7 +159,6 @@ protected:
   InteractiveTool* mTools[InteractiveTool::NUM_TYPES][3];
 
   std::vector<std::unique_ptr<dart::dynamics::SimpleFrame>> mSimpleFrames;
-
 };
 
 typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;

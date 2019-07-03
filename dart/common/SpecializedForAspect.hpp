@@ -55,7 +55,6 @@ template <class SpecAspect>
 class SpecializedForAspect<SpecAspect> : public virtual Composite
 {
 public:
-
   /// Default Constructor
   SpecializedForAspect();
 
@@ -86,7 +85,7 @@ public:
   void set(std::unique_ptr<T>&& aspect);
 
   /// Construct an Aspect inside of this Composite
-  template <class T, typename ...Args>
+  template <class T, typename... Args>
   T* createAspect(Args&&... args);
 
   /// Remove an Aspect from this Composite
@@ -104,8 +103,10 @@ public:
   static constexpr bool isSpecializedFor();
 
 protected:
-
-  template <class T> struct type { };
+  template <class T>
+  struct type
+  {
+  };
 
   /// Redirect to Composite::has()
   template <class T>
@@ -149,11 +150,11 @@ protected:
   void _set(type<SpecAspect>, std::unique_ptr<SpecAspect>&& aspect);
 
   /// Redirect to Composite::create()
-  template <class T, typename ...Args>
+  template <class T, typename... Args>
   T* _createAspect(type<T>, Args&&... args);
 
   /// Specialized implementation of create()
-  template <typename ...Args>
+  template <typename... Args>
   SpecAspect* _createAspect(type<SpecAspect>, Args&&... args);
 
   /// Redirect to Composite::erase()
@@ -179,7 +180,6 @@ protected:
 
   /// Iterator that points to the Aspect of this SpecializedForAspect
   Composite::AspectMap::iterator mSpecAspectIterator;
-
 };
 
 //==============================================================================
@@ -187,9 +187,10 @@ protected:
 /// allows you to include arbitrarily many specialized types in the
 /// specialization.
 template <class SpecAspect1, class... OtherSpecAspects>
-class SpecializedForAspect<SpecAspect1, OtherSpecAspects...> :
-    public CompositeJoiner< Virtual< SpecializedForAspect<SpecAspect1> >,
-                               Virtual< SpecializedForAspect<OtherSpecAspects...> > >
+class SpecializedForAspect<SpecAspect1, OtherSpecAspects...>
+  : public CompositeJoiner<
+        Virtual<SpecializedForAspect<SpecAspect1> >,
+        Virtual<SpecializedForAspect<OtherSpecAspects...> > >
 {
 public:
   virtual ~SpecializedForAspect() = default;

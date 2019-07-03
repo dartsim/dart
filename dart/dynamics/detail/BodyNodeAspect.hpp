@@ -33,11 +33,11 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/common/ProxyAspect.hpp"
 #include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Inertia.hpp"
 #include "dart/dynamics/Node.hpp"
-#include "dart/common/ProxyAspect.hpp"
-#include "dart/common/EmbeddedAspect.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -97,13 +97,17 @@ struct BodyNodeAspectProperties
 };
 
 //==============================================================================
-using NodeTypeStateVector = common::CloneableVector< std::unique_ptr<Node::State> >;
-using NodeStateMap = std::map< std::type_index, std::unique_ptr<NodeTypeStateVector> >;
+using NodeTypeStateVector
+    = common::CloneableVector<std::unique_ptr<Node::State> >;
+using NodeStateMap
+    = std::map<std::type_index, std::unique_ptr<NodeTypeStateVector> >;
 using AllNodeStates = common::CloneableMap<NodeStateMap>;
 
 //==============================================================================
-using NodeTypePropertiesVector = common::CloneableVector< std::unique_ptr<Node::Properties> >;
-using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodeTypePropertiesVector> >;
+using NodeTypePropertiesVector
+    = common::CloneableVector<std::unique_ptr<Node::Properties> >;
+using NodePropertiesMap
+    = std::map<std::type_index, std::unique_ptr<NodeTypePropertiesVector> >;
 using AllNodeProperties = common::CloneableMap<NodePropertiesMap>;
 
 //==============================================================================
@@ -121,21 +125,31 @@ AllNodeProperties getAllNodeProperties(const BodyNode* bodyNode);
 
 //==============================================================================
 using NodeVectorProxyAspectState = common::ProxyCloneable<
-    common::Aspect::State, BodyNode, AllNodeStates,
-    &setAllNodeStates, &getAllNodeStates>;
+    common::Aspect::State,
+    BodyNode,
+    AllNodeStates,
+    &setAllNodeStates,
+    &getAllNodeStates>;
 
 //==============================================================================
 using NodeVectorProxyAspectProperties = common::ProxyCloneable<
-    common::Aspect::Properties, BodyNode, AllNodeProperties,
-    &setAllNodeProperties, &getAllNodeProperties>;
+    common::Aspect::Properties,
+    BodyNode,
+    AllNodeProperties,
+    &setAllNodeProperties,
+    &getAllNodeProperties>;
 
 //==============================================================================
-using NodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<BodyNode,
-    NodeVectorProxyAspectState, NodeVectorProxyAspectProperties>;
+using NodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<
+    BodyNode,
+    NodeVectorProxyAspectState,
+    NodeVectorProxyAspectProperties>;
 
 //==============================================================================
 using BodyNodeCompositeBase = common::EmbedStateAndPropertiesOnTopOf<
-    BodyNode, BodyNodeState, BodyNodeAspectProperties,
+    BodyNode,
+    BodyNodeState,
+    BodyNodeAspectProperties,
     common::RequiresAspect<NodeVectorProxyAspect> >;
 
 } // namespace detail

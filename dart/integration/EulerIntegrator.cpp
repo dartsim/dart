@@ -36,8 +36,7 @@ namespace dart {
 namespace integration {
 
 //==============================================================================
-EulerIntegrator::EulerIntegrator()
-  : Integrator()
+EulerIntegrator::EulerIntegrator() : Integrator()
 {
 }
 
@@ -65,5 +64,5 @@ void EulerIntegrator::integrateVel(IntegrableSystem* _system, double _dt)
   _system->integrateGenVels(_system->evalGenAccs(), _dt);
 }
 
-}  // namespace integration
-}  // namespace dart
+} // namespace integration
+} // namespace dart

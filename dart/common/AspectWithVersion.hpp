@@ -39,35 +39,48 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-template <class DerivedT,
-          typename StateDataT,
-          class CompositeT = Composite,
-          void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
-using AspectWithState =
-    detail::AspectWithState<CompositeTrackingAspect<CompositeT>, DerivedT, StateDataT, CompositeT, updateState>;
+template <
+    class DerivedT,
+    typename StateDataT,
+    class CompositeT = Composite,
+    void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
+using AspectWithState = detail::AspectWithState<
+    CompositeTrackingAspect<CompositeT>,
+    DerivedT,
+    StateDataT,
+    CompositeT,
+    updateState>;
 
 //==============================================================================
-template <class DerivedT,
-          typename PropertiesDataT,
-          class CompositeT = Composite,
-          void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
-using AspectWithVersionedProperties =
-    detail::AspectWithVersionedProperties<CompositeTrackingAspect<CompositeT>, DerivedT, PropertiesDataT, CompositeT, updateProperties>;
+template <
+    class DerivedT,
+    typename PropertiesDataT,
+    class CompositeT = Composite,
+    void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
+using AspectWithVersionedProperties = detail::AspectWithVersionedProperties<
+    CompositeTrackingAspect<CompositeT>,
+    DerivedT,
+    PropertiesDataT,
+    CompositeT,
+    updateProperties>;
 
 //==============================================================================
-template <class DerivedT,
-          typename StateDataT,
-          typename PropertiesDataT,
-          class CompositeT = Composite,
-          void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*>,
-          void (*updateProperties)(DerivedT*) = updateState>
-class AspectWithStateAndVersionedProperties :
-    public detail::AspectWithVersionedProperties<
+template <
+    class DerivedT,
+    typename StateDataT,
+    typename PropertiesDataT,
+    class CompositeT = Composite,
+    void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*>,
+    void (*updateProperties)(DerivedT*) = updateState>
+class AspectWithStateAndVersionedProperties
+  : public detail::AspectWithVersionedProperties<
         AspectWithState<DerivedT, StateDataT, CompositeT, updateState>,
-        DerivedT, PropertiesDataT, CompositeT, updateProperties>
+        DerivedT,
+        PropertiesDataT,
+        CompositeT,
+        updateProperties>
 {
 public:
-
   using Derived = DerivedT;
   using StateData = StateDataT;
   using PropertiesData = PropertiesDataT;
@@ -77,19 +90,27 @@ public:
   constexpr static void (*UpdateState)(Derived*) = updateState;
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
-  using AspectStateImpl = AspectWithState<
-      Derived, StateData, CompositeType, updateState>;
+  using AspectStateImpl
+      = AspectWithState<Derived, StateData, CompositeType, updateState>;
 
   using AspectPropertiesImpl = detail::AspectWithVersionedProperties<
       AspectStateImpl,
-      Derived, PropertiesData, CompositeType, updateProperties>;
+      Derived,
+      PropertiesData,
+      CompositeType,
+      updateProperties>;
 
   using AspectImpl = AspectWithStateAndVersionedProperties<
-      DerivedT, StateDataT, PropertiesDataT, CompositeT,
-      updateState, updateProperties>;
+      DerivedT,
+      StateDataT,
+      PropertiesDataT,
+      CompositeT,
+      updateState,
+      updateProperties>;
 
   AspectWithStateAndVersionedProperties(
-      const AspectWithStateAndVersionedProperties&) = delete;
+      const AspectWithStateAndVersionedProperties&)
+      = delete;
 
   /// Construct using a StateData and a PropertiesData instance
   AspectWithStateAndVersionedProperties(
@@ -102,8 +123,7 @@ public:
 
   /// Construct using a PropertiesData and a StateData instance
   AspectWithStateAndVersionedProperties(
-      const PropertiesData& properties,
-      const StateData& state = StateData())
+      const PropertiesData& properties, const StateData& state = StateData())
     : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
@@ -114,7 +134,6 @@ public:
   {
     return std::make_unique<Derived>(this->getState(), this->getProperties());
   }
-
 };
 
 //==============================================================================
@@ -124,26 +143,36 @@ public:
 //
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
-template <class DerivedT,
-          typename StateDataT,
-          typename PropertiesDataT,
-          class CompositeT,
-          void (*updateState)(DerivedT*),
-          void (*updateProperties)(DerivedT*)>
-constexpr void (*AspectWithStateAndVersionedProperties<DerivedT, StateDataT,
-    PropertiesDataT, CompositeT, updateState, updateProperties>::UpdateState)
-    (DerivedT*);
+template <
+    class DerivedT,
+    typename StateDataT,
+    typename PropertiesDataT,
+    class CompositeT,
+    void (*updateState)(DerivedT*),
+    void (*updateProperties)(DerivedT*)>
+constexpr void (*AspectWithStateAndVersionedProperties<
+                DerivedT,
+                StateDataT,
+                PropertiesDataT,
+                CompositeT,
+                updateState,
+                updateProperties>::UpdateState)(DerivedT*);
 
 //==============================================================================
-template <class DerivedT,
-          typename StateDataT,
-          typename PropertiesDataT,
-          class CompositeT,
-          void (*updateState)(DerivedT*),
-          void (*updateProperties)(DerivedT*)>
-constexpr void (*AspectWithStateAndVersionedProperties<DerivedT, StateDataT,
-    PropertiesDataT, CompositeT, updateState, updateProperties>::UpdateProperties)
-    (DerivedT*);
+template <
+    class DerivedT,
+    typename StateDataT,
+    typename PropertiesDataT,
+    class CompositeT,
+    void (*updateState)(DerivedT*),
+    void (*updateProperties)(DerivedT*)>
+constexpr void (*AspectWithStateAndVersionedProperties<
+                DerivedT,
+                StateDataT,
+                PropertiesDataT,
+                CompositeT,
+                updateState,
+                updateProperties>::UpdateProperties)(DerivedT*);
 
 } // namespace common
 } // namespace dart

@@ -140,7 +140,7 @@ unsigned int Shape::getDataVariance() const
 //==============================================================================
 bool Shape::checkDataVariance(DataVariance type) const
 {
-  if(STATIC == type)
+  if (STATIC == type)
     return STATIC == mVariance;
 
   return (type & mVariance) != 0x00;
@@ -188,5 +188,5 @@ std::size_t Shape::incrementVersion()
 //==============================================================================
 std::atomic_int Shape::mCounter{PRIMITIVE_MAGIC_NUMBER};
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

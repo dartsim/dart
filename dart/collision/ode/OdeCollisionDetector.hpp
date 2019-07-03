@@ -62,8 +62,8 @@ public:
   virtual ~OdeCollisionDetector();
 
   // Documentation inherited
-  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() const
-  override;
+  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
+      const override;
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -125,7 +125,7 @@ private:
   static Registrar<OdeCollisionDetector> mRegistrar;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
+#endif // DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_

@@ -40,11 +40,11 @@
 namespace dart {
 namespace dynamics {
 
-/// MultiSphereConvexHullShape represents the convex hull of a collection of spheres.
+/// MultiSphereConvexHullShape represents the convex hull of a collection of
+/// spheres.
 class MultiSphereConvexHullShape : public Shape
 {
 public:
-
   using Sphere = std::pair<double, Eigen::Vector3d>;
   using Spheres = std::vector<Sphere>;
 
@@ -102,7 +102,7 @@ private:
 DART_DEPRECATED(6.2)
 typedef MultiSphereConvexHullShape MultiSphereShape;
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_MULTISPHERECONVEXHULLSHAPE_HPP_
+#endif // DART_DYNAMICS_MULTISPHERECONVEXHULLSHAPE_HPP_

@@ -33,9 +33,9 @@
 #include "dart/collision/CollisionResult.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace collision {
@@ -125,7 +125,7 @@ void CollisionResult::clear()
 //==============================================================================
 void CollisionResult::addObject(CollisionObject* object)
 {
-  if(!object)
+  if (!object)
   {
     dterr << "[CollisionResult::addObject] Attempting to add a collision with "
           << "a nullptr object to a CollisionResult instance. This is not "
@@ -137,12 +137,12 @@ void CollisionResult::addObject(CollisionObject* object)
   const dynamics::ShapeFrame* frame = object->getShapeFrame();
   mCollidingShapeFrames.insert(frame);
 
-  if(frame->isShapeNode())
+  if (frame->isShapeNode())
   {
     const dynamics::ShapeNode* node = frame->asShapeNode();
     mCollidingBodyNodes.insert(node->getBodyNodePtr());
   }
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

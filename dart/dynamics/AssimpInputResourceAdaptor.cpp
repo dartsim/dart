@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include <cassert>
 #include <iostream>
 #include <assimp/IOStream.hpp>
 #include "dart/common/Console.hpp"
-#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -45,7 +45,7 @@ namespace dynamics {
 
 //==============================================================================
 AssimpInputResourceRetrieverAdaptor::AssimpInputResourceRetrieverAdaptor(
-      const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::ResourceRetrieverPtr& _resourceRetriever)
   : mResourceRetriever(_resourceRetriever)
 {
   // do nothing
@@ -72,18 +72,18 @@ char AssimpInputResourceRetrieverAdaptor::getOsSeparator() const
 
 //==============================================================================
 Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
-  const char* pFile, const char* pMode)
+    const char* pFile, const char* pMode)
 {
   // TODO: How do we support text mode?
-  if(pMode != std::string("r") && pMode != std::string("rb")
-                               && pMode != std::string("rt"))
+  if (pMode != std::string("r") && pMode != std::string("rb")
+      && pMode != std::string("rt"))
   {
     dtwarn << "[AssimpInputResourceRetrieverAdaptor::Open] Unsupported mode '"
            << pMode << "'. Only 'r', 'rb', and 'rt' are supported.\n";
     return nullptr;
   }
 
-  if(const common::ResourcePtr resource = mResourceRetriever->retrieve(pFile))
+  if (const common::ResourcePtr resource = mResourceRetriever->retrieve(pFile))
     return new AssimpInputResourceAdaptor(resource);
   else
     return nullptr;
@@ -92,10 +92,9 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
 //==============================================================================
 void AssimpInputResourceRetrieverAdaptor::Close(Assimp::IOStream* pFile)
 {
-  if(pFile)
+  if (pFile)
     delete pFile;
 }
-
 
 /*
  * AssimpInputResourceAdaptor
@@ -103,7 +102,7 @@ void AssimpInputResourceRetrieverAdaptor::Close(Assimp::IOStream* pFile)
 
 //==============================================================================
 AssimpInputResourceAdaptor::AssimpInputResourceAdaptor(
-      const common::ResourcePtr& _resource)
+    const common::ResourcePtr& _resource)
   : mResource(_resource)
 {
   assert(_resource);
@@ -117,14 +116,14 @@ AssimpInputResourceAdaptor::~AssimpInputResourceAdaptor()
 
 //==============================================================================
 std::size_t AssimpInputResourceAdaptor::Read(
-  void* pvBuffer, std::size_t psize, std::size_t pCount)
+    void* pvBuffer, std::size_t psize, std::size_t pCount)
 {
   return mResource->read(pvBuffer, psize, pCount);
 }
 
 //==============================================================================
 std::size_t AssimpInputResourceAdaptor::Write(
-  const void* /*pvBuffer*/, std::size_t /*pSize*/, std::size_t /*pCount*/)
+    const void* /*pvBuffer*/, std::size_t /*pSize*/, std::size_t /*pCount*/)
 {
   dtwarn << "[AssimpInputResourceAdaptor::Write] Write is not implemented."
             " This is a read-only stream.\n";
@@ -137,27 +136,27 @@ aiReturn AssimpInputResourceAdaptor::Seek(std::size_t pOffset, aiOrigin pOrigin)
   using common::Resource;
 
   Resource::SeekType origin;
-  switch(pOrigin)
+  switch (pOrigin)
   {
-  case aiOrigin_CUR:
-    origin = Resource::SEEKTYPE_CUR;
-    break;
+    case aiOrigin_CUR:
+      origin = Resource::SEEKTYPE_CUR;
+      break;
 
-  case aiOrigin_END:
-    origin = Resource::SEEKTYPE_END;
-    break;
+    case aiOrigin_END:
+      origin = Resource::SEEKTYPE_END;
+      break;
 
-  case aiOrigin_SET:
-    origin = Resource::SEEKTYPE_SET;
-    break;
+    case aiOrigin_SET:
+      origin = Resource::SEEKTYPE_SET;
+      break;
 
-  default:
-    dtwarn << "[AssimpInputResourceAdaptor::Seek] Invalid origin. Expected"
-              " aiOrigin_CUR, aiOrigin_END, or aiOrigin_SET.\n";
-    return aiReturn_FAILURE;
+    default:
+      dtwarn << "[AssimpInputResourceAdaptor::Seek] Invalid origin. Expected"
+                " aiOrigin_CUR, aiOrigin_END, or aiOrigin_SET.\n";
+      return aiReturn_FAILURE;
   }
 
-  if(mResource->seek(pOffset, origin))
+  if (mResource->seek(pOffset, origin))
     return aiReturn_SUCCESS;
   else
     return aiReturn_FAILURE;
@@ -182,57 +181,57 @@ void AssimpInputResourceAdaptor::Flush()
             " This is a read-only stream.\n";
 }
 
-
 /*
  * C API
  */
 namespace {
 
 //==============================================================================
-inline Assimp::IOSystem *getIOSystem(aiFileIO *_io)
+inline Assimp::IOSystem* getIOSystem(aiFileIO* _io)
 {
-  return reinterpret_cast<Assimp::IOSystem *>(_io->UserData);
+  return reinterpret_cast<Assimp::IOSystem*>(_io->UserData);
 }
 
 //==============================================================================
-inline Assimp::IOStream *getIOStream(aiFile *_file)
+inline Assimp::IOStream* getIOStream(aiFile* _file)
 {
-  return reinterpret_cast<Assimp::IOStream *>(_file->UserData);
+  return reinterpret_cast<Assimp::IOStream*>(_file->UserData);
 }
 
 //==============================================================================
-void fileFlushProc(aiFile *_file)
+void fileFlushProc(aiFile* _file)
 {
   getIOStream(_file)->Flush();
 }
 
 //==============================================================================
-std::size_t fileReadProc(aiFile *_file, char *_buffer, std::size_t _size, std::size_t _count)
+std::size_t fileReadProc(
+    aiFile* _file, char* _buffer, std::size_t _size, std::size_t _count)
 {
   return getIOStream(_file)->Read(_buffer, _size, _count);
 }
 
 //==============================================================================
-aiReturn fileSeekProc(aiFile *_file, std::size_t _offset, aiOrigin _origin)
+aiReturn fileSeekProc(aiFile* _file, std::size_t _offset, aiOrigin _origin)
 {
   return getIOStream(_file)->Seek(_offset, _origin);
 }
 
 //==============================================================================
-std::size_t fileSizeProc(aiFile *_file)
+std::size_t fileSizeProc(aiFile* _file)
 {
   return getIOStream(_file)->FileSize();
 }
 
 //==============================================================================
-std::size_t fileTellProc(aiFile *_file)
+std::size_t fileTellProc(aiFile* _file)
 {
   return getIOStream(_file)->Tell();
 }
 
 //==============================================================================
 std::size_t fileWriteProc(
-  aiFile *_file, const char *_buffer, std::size_t _size, std::size_t _count)
+    aiFile* _file, const char* _buffer, std::size_t _size, std::size_t _count)
 {
   return getIOStream(_file)->Write(_buffer, _size, _count);
 }
@@ -241,7 +240,7 @@ std::size_t fileWriteProc(
 aiFile* fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
 {
   Assimp::IOStream* stream = getIOSystem(_io)->Open(_path, _mode);
-  if(!stream)
+  if (!stream)
     return nullptr;
 
   aiFile* out = new aiFile;
@@ -256,13 +255,13 @@ aiFile* fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
 }
 
 //==============================================================================
-void fileCloseProc(aiFileIO *_io, aiFile *_file)
+void fileCloseProc(aiFileIO* _io, aiFile* _file)
 {
   getIOSystem(_io)->Close(getIOStream(_file));
   delete _file;
 }
 
-} // (anonymous) namespace
+} // namespace
 
 //==============================================================================
 aiFileIO createFileIO(Assimp::IOSystem* _system)

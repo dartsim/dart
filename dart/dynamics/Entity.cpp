@@ -66,8 +66,7 @@ Entity::Entity(Frame* _refFrame, bool _quiet)
 }
 
 //==============================================================================
-Entity::Entity()
-  : Entity(ConstructAbstract)
+Entity::Entity() : Entity(ConstructAbstract)
 {
   // Delegated to Entity(ConstructAbstract_t)
 }
@@ -91,24 +90,24 @@ const Frame* Entity::getParentFrame() const
 }
 
 //==============================================================================
-bool Entity::descendsFrom(const Frame *_someFrame) const
+bool Entity::descendsFrom(const Frame* _someFrame) const
 {
-  if(nullptr == _someFrame)
+  if (nullptr == _someFrame)
     return true;
 
-  if(this == _someFrame)
+  if (this == _someFrame)
     return true;
 
-  if(_someFrame->isWorld())
+  if (_someFrame->isWorld())
     return true;
 
   const Frame* descentCheck = getParentFrame();
-  while(descentCheck)
+  while (descentCheck)
   {
-    if(descentCheck->isWorld())
+    if (descentCheck->isWorld())
       break;
 
-    if(descentCheck == _someFrame)
+    if (descentCheck == _someFrame)
       return true;
     descentCheck = descentCheck->getParentFrame();
   }
@@ -250,11 +249,11 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     }
   }
 
-  mParentFrame =_newParentFrame;
+  mParentFrame = _newParentFrame;
 
   if (!mAmQuiet && nullptr != mParentFrame)
   {
-    if(!mParentFrame->isWorld())
+    if (!mParentFrame->isWorld())
     {
       // The WorldFrame should not keep track of its children, or else we get
       // concurrency issues (race conditions).
@@ -264,7 +263,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     dirtyTransform();
   }
 
-  if(mParentFrame)
+  if (mParentFrame)
     mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
 }
 
@@ -282,12 +281,10 @@ void Detachable::setParentFrame(Frame* _newParentFrame)
 }
 
 //==============================================================================
-Detachable::Detachable()
-  : Entity(ConstructAbstract)
+Detachable::Detachable() : Entity(ConstructAbstract)
 {
   // Do nothing
 }
 
 } // namespace dynamics
 } // namespace dart
-

@@ -44,7 +44,6 @@ namespace dynamics {
 class Branch : public Linkage
 {
 public:
-
   struct Criteria
   {
     /// Constructor. Requires a starting BodyNode.
@@ -68,8 +67,8 @@ public:
   };
 
   /// Create a Branch
-  static BranchPtr create(const Branch::Criteria& _criteria,
-                          const std::string& _name = "Branch");
+  static BranchPtr create(
+      const Branch::Criteria& _criteria, const std::string& _name = "Branch");
 
   /// Creates and returns a clone of this Branch.
   BranchPtr cloneBranch() const;
@@ -81,19 +80,19 @@ public:
   using MetaSkeleton::cloneMetaSkeleton;
 
   // Documentation inherited
-  MetaSkeletonPtr cloneMetaSkeleton(const std::string& cloneName) const override;
+  MetaSkeletonPtr cloneMetaSkeleton(
+      const std::string& cloneName) const override;
 
   /// Returns false if a new BodyNode has been attached to any BodyNode of this
   /// Branch, or if a BodyNode of this Branch has been detached.
   bool isStillBranch() const;
 
 protected:
-
   /// Constructor for the Branch class. Note that you can simply pass a BodyNode
   /// pointer into this constructor, and it will be implicitly converted into a
   /// Branch::Criteria.
-  Branch(const Branch::Criteria& _criteria,
-         const std::string& _name = "Branch");
+  Branch(
+      const Branch::Criteria& _criteria, const std::string& _name = "Branch");
 
   // Documentation inherited
   void update() override;

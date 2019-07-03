@@ -70,8 +70,9 @@ Timer::~Timer()
 #ifdef _WIN32
 double Timer::_convLIToSecs(const LARGE_INTEGER& _L)
 {
-  return (static_cast<double>(_L.QuadPart)
-          / static_cast<double>(mFrequency.QuadPart));
+  return (
+      static_cast<double>(_L.QuadPart)
+      / static_cast<double>(mFrequency.QuadPart));
 }
 #endif
 
@@ -116,8 +117,8 @@ double Timer::getElapsedTime()
   mLastElapsedTime = _convLIToSecs(time);
 #else
   gettimeofday(&mTimeVal, nullptr);
-  mLastElapsedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6)
-                     - mStartedTime;
+  mLastElapsedTime
+      = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6) - mStartedTime;
 #endif
   return mLastElapsedTime;
 }
@@ -147,15 +148,16 @@ void Timer::print()
   {
     std::cout << "Timer [" << mName << "] : " << std::endl
               << "Last elapsed : " << mLastElapsedTime << "; "
-              << "Total time : " << " "
-              << mTotalElapsedTime << "; "
+              << "Total time : "
+              << " " << mTotalElapsedTime << "; "
               << "Total count : " << mCount << "; "
               << "Average time : " << mTotalElapsedTime / mCount << " "
               << "FPS : " << mCount / mTotalElapsedTime << " hz " << std::endl;
   }
   else
   {
-    std::cout << "Timer [" << mName << "] doesn't have any record." << std::endl;
+    std::cout << "Timer [" << mName << "] doesn't have any record."
+              << std::endl;
   }
 }
 
@@ -168,7 +170,7 @@ double Timer::getWallTime()
   QueryPerformanceFrequency(&ticksPerSecond);
   QueryPerformanceCounter(&ticks);
   return static_cast<double>(ticks.QuadPart)
-      / static_cast<double>(ticksPerSecond.QuadPart);
+         / static_cast<double>(ticksPerSecond.QuadPart);
 #else
   // Initialize the lastUpdateTime with the current time in seconds
   timeval timeVal;
@@ -177,5 +179,5 @@ double Timer::getWallTime()
 #endif
 }
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart

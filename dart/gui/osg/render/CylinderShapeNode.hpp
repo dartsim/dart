@@ -53,20 +53,18 @@ class CylinderShapeDrawable;
 class CylinderShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
-
-  CylinderShapeNode(std::shared_ptr<dart::dynamics::CylinderShape> shape,
-                    ShapeFrameNode* parent);
+  CylinderShapeNode(
+      std::shared_ptr<dart::dynamics::CylinderShape> shape,
+      ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~CylinderShapeNode();
 
   std::shared_ptr<dart::dynamics::CylinderShape> mCylinderShape;
   CylinderShapeGeode* mGeode;
-
 };
 
 } // namespace render

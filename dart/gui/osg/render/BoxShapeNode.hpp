@@ -53,20 +53,17 @@ class BoxShapeDrawable;
 class BoxShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
-
-  BoxShapeNode(std::shared_ptr<dart::dynamics::BoxShape> shape,
-               ShapeFrameNode* parent);
+  BoxShapeNode(
+      std::shared_ptr<dart::dynamics::BoxShape> shape, ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~BoxShapeNode();
 
   std::shared_ptr<dart::dynamics::BoxShape> mBoxShape;
   BoxShapeGeode* mGeode;
-
 };
 
 } // namespace render

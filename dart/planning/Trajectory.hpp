@@ -43,9 +43,9 @@ namespace planning {
 class Trajectory
 {
 public:
-	virtual double getDuration() const = 0;
-	virtual Eigen::VectorXd getPosition(double time) const = 0;
-	virtual Eigen::VectorXd getVelocity(double time) const = 0;
+  virtual double getDuration() const = 0;
+  virtual Eigen::VectorXd getPosition(double time) const = 0;
+  virtual Eigen::VectorXd getVelocity(double time) const = 0;
 };
 
 } // namespace planning

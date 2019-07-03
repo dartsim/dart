@@ -33,15 +33,16 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 
-#include "dart/math/Helpers.hpp"
-#include "dart/dynamics/Joint.hpp"
 #include "dart/common/AspectWithVersion.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
 
 // Forward declare the GenericJoint class
-template <class ConfigSpaceT> class GenericJoint;
+template <class ConfigSpaceT>
+class GenericJoint;
 
 namespace detail {
 
@@ -142,16 +143,24 @@ struct GenericJointUniqueProperties
 
   /// Default constructor
   GenericJointUniqueProperties(
-      const EuclideanPoint& positionLowerLimits = EuclideanPoint::Constant(-math::constantsd::inf()),
-      const EuclideanPoint& positionUpperLimits = EuclideanPoint::Constant( math::constantsd::inf()),
+      const EuclideanPoint& positionLowerLimits
+      = EuclideanPoint::Constant(-math::constantsd::inf()),
+      const EuclideanPoint& positionUpperLimits
+      = EuclideanPoint::Constant(math::constantsd::inf()),
       const EuclideanPoint& initialPositions = EuclideanPoint::Zero(),
-      const Vector& velocityLowerLimits = Vector::Constant(-math::constantsd::inf()),
-      const Vector& velocityUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& velocityLowerLimits
+      = Vector::Constant(-math::constantsd::inf()),
+      const Vector& velocityUpperLimits
+      = Vector::Constant(math::constantsd::inf()),
       const Vector& initialVelocities = Vector::Zero(),
-      const Vector& accelerationLowerLimits = Vector::Constant(-math::constantsd::inf()),
-      const Vector& accelerationUpperLimits = Vector::Constant( math::constantsd::inf()),
-      const Vector& forceLowerLimits = Vector::Constant(-math::constantsd::inf()),
-      const Vector& forceUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& accelerationLowerLimits
+      = Vector::Constant(-math::constantsd::inf()),
+      const Vector& accelerationUpperLimits
+      = Vector::Constant(math::constantsd::inf()),
+      const Vector& forceLowerLimits
+      = Vector::Constant(-math::constantsd::inf()),
+      const Vector& forceUpperLimits
+      = Vector::Constant(math::constantsd::inf()),
       const Vector& springStiffness = Vector::Zero(),
       const EuclideanPoint& restPosition = EuclideanPoint::Zero(),
       const Vector& dampingCoefficient = Vector::Zero(),
@@ -167,19 +176,17 @@ struct GenericJointUniqueProperties
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 
 //==============================================================================
 template <class ConfigSpaceT>
-struct GenericJointProperties :
-    Joint::Properties,
-    GenericJointUniqueProperties<ConfigSpaceT>
+struct GenericJointProperties : Joint::Properties,
+                                GenericJointUniqueProperties<ConfigSpaceT>
 {
   GenericJointProperties(
       const Joint::Properties& jointProperties = Joint::Properties(),
-      const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties =
-          GenericJointUniqueProperties<ConfigSpaceT>());
+      const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties
+      = GenericJointUniqueProperties<ConfigSpaceT>());
 
   virtual ~GenericJointProperties() = default;
 

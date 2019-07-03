@@ -34,25 +34,25 @@
 
 #include <ode/ode.h>
 
-#include "dart/dynamics/SphereShape.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/ConeShape.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/collision/ode/detail/OdeBox.hpp"
 #include "dart/collision/ode/detail/OdeCapsule.hpp"
 #include "dart/collision/ode/detail/OdeCylinder.hpp"
+#include "dart/collision/ode/detail/OdeHeightmap.hpp"
 #include "dart/collision/ode/detail/OdeMesh.hpp"
 #include "dart/collision/ode/detail/OdePlane.hpp"
 #include "dart/collision/ode/detail/OdeSphere.hpp"
-#include "dart/collision/ode/detail/OdeHeightmap.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/HeightmapShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -91,9 +91,9 @@ OdeCollisionObject::OdeCollisionObject(
     // Get the geometry pose to ensure this offset is set correctly.
     // Assigning a body to the geometry will overwrite the geometry
     // pose, so back it up first.
-    dQuaternion geomRelRot; 
+    dQuaternion geomRelRot;
     dGeomGetQuaternion(geomId, geomRelRot);
-    const dReal * geomRelPos = dGeomGetPosition(geomId);
+    const dReal* geomRelPos = dGeomGetPosition(geomId);
     assert(geomRelPos);
 
     // create the body
@@ -108,8 +108,7 @@ OdeCollisionObject::OdeCollisionObject(
 }
 
 //==============================================================================
-OdeCollisionObject& OdeCollisionObject::operator=(
-    OdeCollisionObject&& other)
+OdeCollisionObject& OdeCollisionObject::operator=(OdeCollisionObject&& other)
 {
   // This should only be used for refreshing the collision objects, so the
   // detector and the shape frame should never need to change
@@ -171,17 +170,17 @@ dGeomID OdeCollisionObject::getOdeGeomId() const
 detail::OdeGeom* createOdeGeom(
     OdeCollisionObject* collObj, const dynamics::ShapeFrame* shapeFrame)
 {
-  using dynamics::Shape;
-  using dynamics::SphereShape;
   using dynamics::BoxShape;
-  using dynamics::EllipsoidShape;
   using dynamics::CapsuleShape;
   using dynamics::CylinderShape;
-  using dynamics::PlaneShape;
-  using dynamics::MeshShape;
-  using dynamics::SoftMeshShape;
-  using dynamics::HeightmapShapef;
+  using dynamics::EllipsoidShape;
   using dynamics::HeightmapShaped;
+  using dynamics::HeightmapShapef;
+  using dynamics::MeshShape;
+  using dynamics::PlaneShape;
+  using dynamics::Shape;
+  using dynamics::SoftMeshShape;
+  using dynamics::SphereShape;
 
   detail::OdeGeom* geom = nullptr;
   const auto shape = shapeFrame->getShape().get();
@@ -260,5 +259,5 @@ detail::OdeGeom* createOdeGeom(
   return geom;
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

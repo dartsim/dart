@@ -44,7 +44,8 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class GraphWindow : public Win2D {
+class GraphWindow : public Win2D
+{
 public:
   /// \brief
   GraphWindow();
@@ -64,8 +65,8 @@ protected:
   Eigen::VectorXd mData;
 };
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_GLUT_GRAPHWINDOW_HPP_
+#endif // DART_GUI_GLUT_GRAPHWINDOW_HPP_

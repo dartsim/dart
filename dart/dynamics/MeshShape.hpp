@@ -37,8 +37,8 @@
 
 #include <assimp/scene.h>
 
-#include "dart/dynamics/Shape.hpp"
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -77,10 +77,11 @@ public:
   };
 
   /// Constructor.
-  MeshShape(const Eigen::Vector3d& scale,
-    const aiScene* mesh,
-    const common::Uri& uri = "",
-    common::ResourceRetrieverPtr resourceRetriever = nullptr);
+  MeshShape(
+      const Eigen::Vector3d& scale,
+      const aiScene* mesh,
+      const common::Uri& uri = "",
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Destructor.
   ~MeshShape() override;
@@ -100,14 +101,14 @@ public:
   virtual void update();
 
   void setMesh(
-    const aiScene* mesh,
-    const std::string& path = "",
-    common::ResourceRetrieverPtr resourceRetriever = nullptr);
+      const aiScene* mesh,
+      const std::string& path = "",
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   void setMesh(
-    const aiScene* mesh,
-    const common::Uri& path,
-    common::ResourceRetrieverPtr resourceRetriever = nullptr);
+      const aiScene* mesh,
+      const common::Uri& path,
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Returns URI to the mesh as std::string; an empty string if unavailable.
   std::string getMeshUri() const;
@@ -154,10 +155,10 @@ public:
   static const aiScene* loadMesh(const std::string& filePath);
 
   static const aiScene* loadMesh(
-    const std::string& _uri, const common::ResourceRetrieverPtr& retriever);
+      const std::string& _uri, const common::ResourceRetrieverPtr& retriever);
 
   static const aiScene* loadMesh(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
+      const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
@@ -196,7 +197,7 @@ protected:
   int mColorIndex;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_MESHSHAPE_HPP_
+#endif // DART_DYNAMICS_MESHSHAPE_HPP_

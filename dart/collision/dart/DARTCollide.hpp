@@ -40,44 +40,65 @@
 namespace dart {
 namespace collision {
 
-int collide(CollisionObject* o1, CollisionObject* o2,
-            CollisionResult& result);
+int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
 
-int collideBoxBox(CollisionObject* o1, CollisionObject* o2,
-                  const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
-                  const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                  CollisionResult& result);
+int collideBoxBox(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& size0,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& size1,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result);
 
-int collideBoxSphere(CollisionObject* o1, CollisionObject* o2,
-                     const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
-                     const double& r1, const Eigen::Isometry3d& T1,
-                     CollisionResult& result);
+int collideBoxSphere(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& size0,
+    const Eigen::Isometry3d& T0,
+    const double& r1,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result);
 
-int collideSphereBox(CollisionObject* o1, CollisionObject* o2,
-                     const double& r0, const Eigen::Isometry3d& T0,
-                     const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                     CollisionResult& result);
+int collideSphereBox(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& r0,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& size1,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result);
 
-int collideSphereSphere(CollisionObject* o1, CollisionObject* o2,
-                        const double& r0, const Eigen::Isometry3d& c0,
-                        const double& r1, const Eigen::Isometry3d& c1,
-                        CollisionResult& result);
+int collideSphereSphere(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& r0,
+    const Eigen::Isometry3d& c0,
+    const double& r1,
+    const Eigen::Isometry3d& c1,
+    CollisionResult& result);
 
 int collideCylinderSphere(
-    CollisionObject* o1, CollisionObject* o2,
-    const double& cyl_rad, const double& half_height,
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad,
+    const double& half_height,
     const Eigen::Isometry3d& T0,
-    const double& sphere_rad, const Eigen::Isometry3d& T1,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T1,
     CollisionResult& result);
 
 int collideCylinderPlane(
-    CollisionObject* o1, CollisionObject* o2,
-    const double& cyl_rad, const double& half_height,
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad,
+    const double& half_height,
     const Eigen::Isometry3d& T0,
-    const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
+    const Eigen::Vector3d& plane_normal,
+    const Eigen::Isometry3d& T1,
     CollisionResult& result);
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DART_DARTCOLLIDE_HPP_
+#endif // DART_COLLISION_DART_DARTCOLLIDE_HPP_

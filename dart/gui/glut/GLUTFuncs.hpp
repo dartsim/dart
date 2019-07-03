@@ -42,8 +42,8 @@ namespace glut {
 void drawStringOnScreen(
     float x, float y, const std::string& s, bool bigFont = true);
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_GLUT_GLFUNCS_HPP_
+#endif // DART_GUI_GLUT_GLFUNCS_HPP_

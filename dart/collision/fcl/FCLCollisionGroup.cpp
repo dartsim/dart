@@ -114,5 +114,5 @@ FCLCollisionGroup::getFCLCollisionManager() const
   return mBroadPhaseAlg.get();
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

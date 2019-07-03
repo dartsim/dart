@@ -42,18 +42,22 @@ namespace collision {
 class FCLTypes
 {
 public:
-#if !FCL_VERSION_AT_LEAST(0,6,0)
+#if !FCL_VERSION_AT_LEAST(0, 6, 0)
   /// Convert Eigen vector3 type to FCL vector3 type
-  static dart::collision::fcl::Vector3 convertVector3(const Eigen::Vector3d& _vec);
+  static dart::collision::fcl::Vector3 convertVector3(
+      const Eigen::Vector3d& _vec);
 #endif
   /// Convert FCL vector3 type to Eigen vector3 type
-  static Eigen::Vector3d convertVector3(const dart::collision::fcl::Vector3& _vec);
+  static Eigen::Vector3d convertVector3(
+      const dart::collision::fcl::Vector3& _vec);
 
   /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static dart::collision::fcl::Matrix3 convertMatrix3x3(const Eigen::Matrix3d& _R);
+  static dart::collision::fcl::Matrix3 convertMatrix3x3(
+      const Eigen::Matrix3d& _R);
 
   /// Convert FCL transformation type to Eigen transformation type
-  static dart::collision::fcl::Transform3 convertTransform(const Eigen::Isometry3d& _T);
+  static dart::collision::fcl::Transform3 convertTransform(
+      const Eigen::Isometry3d& _T);
 };
 
 } // namespace collision

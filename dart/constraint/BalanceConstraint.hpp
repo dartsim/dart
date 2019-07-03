@@ -46,7 +46,6 @@ class BalanceConstraint : public optimizer::Function,
                           public dynamics::HierarchicalIK::Function
 {
 public:
-
   /// The ErrorMethod_t determines whether the error should be computed based on
   /// the center of mass's distance from the centroid of the support polygon
   /// (FROM_CENTROID) or the COM's distance from the edge of the support polygon
@@ -85,9 +84,10 @@ public:
   };
 
   /// Constructor
-  BalanceConstraint(const std::shared_ptr<dynamics::HierarchicalIK>& _ik,
-                    BalanceMethod_t _balanceMethod = SHIFT_SUPPORT,
-                    ErrorMethod_t _errorMethod = FROM_CENTROID);
+  BalanceConstraint(
+      const std::shared_ptr<dynamics::HierarchicalIK>& _ik,
+      BalanceMethod_t _balanceMethod = SHIFT_SUPPORT,
+      ErrorMethod_t _errorMethod = FROM_CENTROID);
 
   /// Virtual destructor
   virtual ~BalanceConstraint() = default;
@@ -100,8 +100,8 @@ public:
   double eval(const Eigen::VectorXd& _x) override;
 
   // Documentation inherited
-  void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override;
+  void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
 
   /// Set the method that this constraint function will use to compute the
   /// error. See the ErrorMethod_t docs for more information.
@@ -140,11 +140,9 @@ public:
   void clearCaches();
 
 protected:
-
   /// Convert the gradient that gets generated via Jacobian methods into a
   /// gradient that can be used by a GradientDescentSolver.
-  void convertJacobianMethodOutputToGradient(
-      Eigen::Map<Eigen::VectorXd>& grad);
+  void convertJacobianMethodOutputToGradient(Eigen::Map<Eigen::VectorXd>& grad);
 
   /// Pointer to the hierarchical IK that owns this Function. Note that this
   /// Function does not work correctly without a HierarchicalIK.

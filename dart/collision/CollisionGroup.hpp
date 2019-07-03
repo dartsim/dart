@@ -33,16 +33,16 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_HPP_
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
-#include "dart/collision/SmartPointer.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/DistanceOption.hpp"
 #include "dart/collision/DistanceResult.hpp"
 #include "dart/collision/RaycastOption.hpp"
 #include "dart/collision/RaycastResult.hpp"
+#include "dart/collision/SmartPointer.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -52,7 +52,6 @@ namespace collision {
 class CollisionGroup
 {
 public:
-
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
   // CollisionGroup also can be created from CollisionDetector::create()
@@ -83,8 +82,8 @@ public:
   /// moment of this function is called. The aftwerward changes of the objects
   /// does not affect on this CollisionGroup.
   template <typename... Others>
-  void addShapeFramesOf(const dynamics::ShapeFrame* shapeFrame,
-                        const Others*... others);
+  void addShapeFramesOf(
+      const dynamics::ShapeFrame* shapeFrame, const Others*... others);
 
   /// Add ShapeFrames, and also add ShapeFrames of other various objects.
   template <typename... Others>
@@ -95,20 +94,20 @@ public:
   /// Add ShapeFrames of other CollisionGroup, and also add another ShapeFrames
   /// of other various objects.
   template <typename... Others>
-  void addShapeFramesOf(const CollisionGroup* otherGroup,
-                        const Others*... others);
+  void addShapeFramesOf(
+      const CollisionGroup* otherGroup, const Others*... others);
 
   /// Add ShapeFrames of BodyNode, and also add another ShapeFrames of other
   /// various objects.
   template <typename... Others>
-  void addShapeFramesOf(const dynamics::BodyNode* bodyNode,
-                        const Others*... others);
+  void addShapeFramesOf(
+      const dynamics::BodyNode* bodyNode, const Others*... others);
 
   /// Add ShapeFrames of MetaSkeleton, and also add another ShapeFrames of other
   /// various objects.
   template <typename... Others>
-  void addShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
-                        const Others*... others);
+  void addShapeFramesOf(
+      const dynamics::MetaSkeleton* skeleton, const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
   /// template function template<typename...> addShapeFramesOf().
@@ -121,8 +120,7 @@ public:
   /// This does likewise for the objects in ...others.
   template <typename... Others>
   void subscribeTo(
-      const dynamics::ConstBodyNodePtr& bodyNode,
-      const Others&... others);
+      const dynamics::ConstBodyNodePtr& bodyNode, const Others&... others);
 
   /// Add ShapeFrames of skeleton, and also subscribe to the Skeleton so that
   /// the results from this CollisionGroup automatically reflect any changes
@@ -135,8 +133,7 @@ public:
   // ConstSkeletonPtr.
   template <typename... Others>
   void subscribeTo(
-      const dynamics::ConstSkeletonPtr& skeleton,
-      const Others&... others);
+      const dynamics::ConstSkeletonPtr& skeleton, const Others&... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
   /// template.
@@ -161,8 +158,8 @@ public:
   /// moment of this function is called. The aftwerward changes of the objects
   /// does not affect on this CollisionGroup.
   template <typename... Others>
-  void removeShapeFramesOf(const dynamics::ShapeFrame* shapeFrame,
-                           const Others*... others);
+  void removeShapeFramesOf(
+      const dynamics::ShapeFrame* shapeFrame, const Others*... others);
 
   /// Remove ShapeFrames, and also remove ShapeFrames of other various objects.
   template <typename... Others>
@@ -176,8 +173,8 @@ public:
   /// If this CollisionGroup is subscribed to otherGroup, then this function
   /// will also unsubscribe from it.
   template <typename... Others>
-  void removeShapeFramesOf(const CollisionGroup* otherGroup,
-                           const Others*... others);
+  void removeShapeFramesOf(
+      const CollisionGroup* otherGroup, const Others*... others);
 
   /// Remove ShapeFrames of BodyNode, and also remove another ShapeFrames of
   /// other various objects.
@@ -185,8 +182,8 @@ public:
   /// If this CollisionGroup is subscribed to bodyNode, then this function will
   /// also unsubscribe from it.
   template <typename... Others>
-  void removeShapeFramesOf(const dynamics::BodyNode* bodyNode,
-                           const Others*... others);
+  void removeShapeFramesOf(
+      const dynamics::BodyNode* bodyNode, const Others*... others);
 
   /// Remove ShapeFrames of MetaSkeleton, and also remove another ShapeFrames of
   /// other various objects.
@@ -194,8 +191,8 @@ public:
   /// If this CollisionGroup is subscribed to skeleton, then this function will
   /// also unsubscribe from it.
   template <typename... Others>
-  void removeShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
-                           const Others*... others);
+  void removeShapeFramesOf(
+      const dynamics::MetaSkeleton* skeleton, const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
   /// template function template<typename...> removeShapeFramesOf().
@@ -208,15 +205,13 @@ public:
   /// removed if no other source is requesting them for this group.
   template <typename... Others>
   void unsubscribeFrom(
-      const dynamics::BodyNode* bodyNode,
-      const Others*... others);
+      const dynamics::BodyNode* bodyNode, const Others*... others);
 
   /// Unsubscribe from skeleton. The ShapeFrames of the skeleton will also be
   /// removed if no other source is requesting them for this group.
   template <typename... Others>
   void unsubscribeFrom(
-      const dynamics::Skeleton* skeleton,
-      const Others*... others);
+      const dynamics::Skeleton* skeleton, const Others*... others);
 
   /// Return true if this CollisionGroup contains shapeFrame
   bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
@@ -308,7 +303,6 @@ public:
   void removeDeletedShapeFrames();
 
 protected:
-
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
   void updateEngineData();
@@ -323,7 +317,8 @@ protected:
 
   /// Add CollisionObjects to the collision detection engine
   virtual void addCollisionObjectsToEngine(
-      const std::vector<CollisionObject*>& collObjects) = 0;
+      const std::vector<CollisionObject*>& collObjects)
+      = 0;
 
   /// Remove CollisionObject from the collision detection engine
   virtual void removeCollisionObjectFromEngine(CollisionObject* object) = 0;
@@ -336,7 +331,6 @@ protected:
   virtual void updateCollisionGroupEngineData() = 0;
 
 protected:
-
   /// Collision detector
   CollisionDetectorPtr mCollisionDetector;
   // CollisionGroup shares the ownership of CollisionDetector with other
@@ -390,9 +384,7 @@ protected:
   // original and copy are not guranteed to be the same as we copy std::map
   // (e.g., by world cloning).
 
-
 private:
-
   /// This class watches when ShapeFrames get deleted so that they can be safely
   /// removes from the CollisionGroup. We cannot have a weak_ptr to a ShapeFrame
   /// because some are managed by std::shared_ptr while others are managed by
@@ -406,7 +398,6 @@ private:
   class ShapeFrameObserver final : public common::Observer
   {
   public:
-
     /// Add a shape frame to this observer
     void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
@@ -417,37 +408,32 @@ private:
     void removeAllShapeFrames();
 
     /// Whenever an observed shape frame gets deleted, its pointer will be added
-    /// to this set. The next time the collision group updates, it will check this
-    /// set and wipe away any references to the pointers in this set.
+    /// to this set. The next time the collision group updates, it will check
+    /// this set and wipe away any references to the pointers in this set.
     std::unordered_set<const dynamics::ShapeFrame*> mDeletedFrames;
 
   protected:
-
     /// This will be called each time an observed shape frame is deleted.
     void handleDestructionNotification(const common::Subject* subject) override;
 
   private:
-
     /// A map from a subject pointer to its corresponding ShapeFrame pointer.
     /// This needs to be stored because by the time a Subject is being
     /// destructed, it can no longer be cast back to its ShapeFrame.
-    std::unordered_map<const common::Subject*,
-                       const dynamics::ShapeFrame*> mMap;
-
+    std::unordered_map<const common::Subject*, const dynamics::ShapeFrame*>
+        mMap;
   };
 
   /// Implementation of addShapeFrame. The source argument tells us whether this
   /// ShapeFrame is being requested explicitly by the user or implicitly through
   /// a BodyNode, Skeleton, or other CollisionGroup.
   ObjectInfo* addShapeFrameImpl(
-      const dynamics::ShapeFrame* shapeFrame,
-      const void* source);
+      const dynamics::ShapeFrame* shapeFrame, const void* source);
 
   /// Internal version of removeShapeFrame. This will only remove the ShapeFrame
   /// if it is unsubscribed from all sources.
   void removeShapeFrameInternal(
-      const dynamics::ShapeFrame* shapeFrame,
-      const void* source);
+      const dynamics::ShapeFrame* shapeFrame, const void* source);
 
   /// Set this to true to have this CollisionGroup check for updates
   /// automatically. Default is true.
@@ -480,8 +466,7 @@ private:
 
       /// A constructor that simply accepts a last known version number. Shape
       /// frames can be added later.
-      explicit ChildInfo(const std::size_t version)
-        : mLastKnownVersion(version)
+      explicit ChildInfo(const std::size_t version) : mLastKnownVersion(version)
       {
         // Do nothing
       }
@@ -493,23 +478,22 @@ private:
 
     /// Constructor
     CollisionSource(const Source& source, std::size_t lastKnownVersion)
-      : mSource(source),
-        mLastKnownVersion(lastKnownVersion)
+      : mSource(source), mLastKnownVersion(lastKnownVersion)
     {
       // Do nothing
     }
   };
 
   // Convenient typedefs for Skeleton sources
-  using SkeletonSource =
-      CollisionSource<dynamics::WeakConstMetaSkeletonPtr, dynamics::BodyNode>;
-  using SkeletonSources = std::unordered_map<
-      const dynamics::MetaSkeleton*, SkeletonSource>;
+  using SkeletonSource
+      = CollisionSource<dynamics::WeakConstMetaSkeletonPtr, dynamics::BodyNode>;
+  using SkeletonSources
+      = std::unordered_map<const dynamics::MetaSkeleton*, SkeletonSource>;
 
   // Convenient typedefs for BodyNode sources
   using BodyNodeSource = CollisionSource<dynamics::WeakConstBodyNodePtr>;
-  using BodyNodeSources = std::unordered_map<
-      const dynamics::BodyNode*, BodyNodeSource>;
+  using BodyNodeSources
+      = std::unordered_map<const dynamics::BodyNode*, BodyNodeSource>;
 
   /// Internal function called to update a Skeleton source
   /// \returns true if an update was performed
@@ -531,12 +515,11 @@ private:
 
   /// The object that observes the Shape Frames that this group cares about
   ShapeFrameObserver mObserver;
-
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
 #include "dart/collision/detail/CollisionGroup.hpp"
 
-#endif  // DART_COLLISION_COLLISIONGROUP_HPP_
+#endif // DART_COLLISION_COLLISIONGROUP_HPP_

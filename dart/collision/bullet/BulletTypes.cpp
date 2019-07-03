@@ -53,9 +53,11 @@ btVector3 convertVector3(const Eigen::Vector3d& _vec)
 //==============================================================================
 btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R)
 {
+  // clang-format off
   return btMatrix3x3(_R(0, 0), _R(0, 1), _R(0, 2),
                      _R(1, 0), _R(1, 1), _R(1, 2),
                      _R(2, 0), _R(2, 1), _R(2, 2));
+  // clang-format on
 }
 
 //==============================================================================
@@ -67,5 +69,5 @@ btTransform convertTransform(const Eigen::Isometry3d& _T)
   return trans;
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

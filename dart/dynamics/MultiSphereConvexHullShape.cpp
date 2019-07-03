@@ -33,8 +33,8 @@
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/math/Helpers.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -66,7 +66,8 @@ const std::string& MultiSphereConvexHullShape::getStaticType()
 }
 
 //==============================================================================
-void MultiSphereConvexHullShape::addSpheres(const MultiSphereConvexHullShape::Spheres& spheres)
+void MultiSphereConvexHullShape::addSpheres(
+    const MultiSphereConvexHullShape::Spheres& spheres)
 {
   mSpheres.insert(mSpheres.end(), spheres.begin(), spheres.end());
 
@@ -77,7 +78,8 @@ void MultiSphereConvexHullShape::addSpheres(const MultiSphereConvexHullShape::Sp
 }
 
 //==============================================================================
-void MultiSphereConvexHullShape::addSphere(const MultiSphereConvexHullShape::Sphere& sphere)
+void MultiSphereConvexHullShape::addSphere(
+    const MultiSphereConvexHullShape::Sphere& sphere)
 {
   mSpheres.push_back(sphere);
 
@@ -88,7 +90,8 @@ void MultiSphereConvexHullShape::addSphere(const MultiSphereConvexHullShape::Sph
 }
 
 //==============================================================================
-void MultiSphereConvexHullShape::addSphere(double radius, const Eigen::Vector3d& position)
+void MultiSphereConvexHullShape::addSphere(
+    double radius, const Eigen::Vector3d& position)
 {
   addSphere(std::make_pair(radius, position));
 }
@@ -111,7 +114,8 @@ std::size_t MultiSphereConvexHullShape::getNumSpheres() const
 }
 
 //==============================================================================
-const MultiSphereConvexHullShape::Spheres& MultiSphereConvexHullShape::getSpheres() const
+const MultiSphereConvexHullShape::Spheres&
+MultiSphereConvexHullShape::getSpheres() const
 {
   return mSpheres;
 }
@@ -153,5 +157,5 @@ void MultiSphereConvexHullShape::updateVolume() const
   mIsVolumeDirty = false;
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

@@ -60,8 +60,8 @@ protected:
   bool mShowMeshs;
 };
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_SOFTSIMWINDOW_HPP_
+#endif // DART_GUI_SOFTSIMWINDOW_HPP_

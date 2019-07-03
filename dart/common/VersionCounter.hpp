@@ -42,7 +42,6 @@ namespace common {
 class VersionCounter
 {
 public:
-
   /// Default constructor
   VersionCounter();
 
@@ -55,7 +54,6 @@ public:
   virtual ~VersionCounter() = default;
 
 protected:
-
   void setVersionDependentObject(VersionCounter* dependent);
 
   std::size_t mVersion;

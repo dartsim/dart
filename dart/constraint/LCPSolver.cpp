@@ -60,5 +60,5 @@ LCPSolver::~LCPSolver()
 {
 }
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart

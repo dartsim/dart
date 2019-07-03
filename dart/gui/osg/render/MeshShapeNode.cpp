@@ -34,18 +34,18 @@
 
 #include <boost/filesystem.hpp>
 
+#include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
-#include <osg/CullFace>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 
-#include "dart/gui/osg/render/MeshShapeNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
+#include "dart/gui/osg/render/MeshShapeNode.hpp"
 
+#include "dart/common/Console.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace gui {
@@ -85,24 +85,26 @@ std::pair<aiTextureType, std::size_t> getTextureTypeAndCount(
   return std::make_pair(aiTextureType_UNKNOWN, 0u);
 }
 
-} // (anonymous) namespace
+} // namespace
 
 class osgAiNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
-
-  osgAiNode(dart::dynamics::MeshShape* shape,
-            ShapeFrameNode* parentEntity,
-            MeshShapeNode* parentNode,
-            const aiNode* node);
+  osgAiNode(
+      dart::dynamics::MeshShape* shape,
+      ShapeFrameNode* parentEntity,
+      MeshShapeNode* parentNode,
+      const aiNode* node);
 
   void refresh();
   void extractData(bool firstTime);
 
-  const aiNode* getAiNodePtr() const { return mAiNode; }
+  const aiNode* getAiNodePtr() const
+  {
+    return mAiNode;
+  }
 
 protected:
-
   virtual ~osgAiNode();
 
   void clearChildUtilizationFlags();
@@ -112,25 +114,23 @@ protected:
   dart::dynamics::MeshShape* mMeshShape;
   const aiNode* mAiNode;
   MeshShapeGeode* mGeode;
-  std::map<const aiNode*,osgAiNode*> mChildNodes;
-
+  std::map<const aiNode*, osgAiNode*> mChildNodes;
 };
 
 //==============================================================================
 class MeshShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
-
-  MeshShapeGeode(dart::dynamics::MeshShape* shape,
-                 ShapeFrameNode* parentShapeFrame,
-                 MeshShapeNode* parentNode,
-                 const aiNode* node);
+  MeshShapeGeode(
+      dart::dynamics::MeshShape* shape,
+      ShapeFrameNode* parentShapeFrame,
+      MeshShapeNode* parentNode,
+      const aiNode* node);
 
   void refresh();
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~MeshShapeGeode();
 
   void clearChildUtilizationFlags();
@@ -139,27 +139,25 @@ protected:
   dart::dynamics::MeshShape* mMeshShape;
   const aiNode* mAiNode;
   MeshShapeNode* mMainNode;
-  std::map<const aiMesh*,MeshShapeGeometry*> mMeshes;
-
+  std::map<const aiMesh*, MeshShapeGeometry*> mMeshes;
 };
 
 //==============================================================================
 class MeshShapeGeometry : public ShapeNode, public ::osg::Geometry
 {
 public:
-
-  MeshShapeGeometry(dart::dynamics::MeshShape* shape,
-                    ShapeFrameNode* parentShapeFrame,
-                    MeshShapeNode* parentNode,
-                    MeshShapeGeode* parentGeode,
-                    aiMesh* mesh);
+  MeshShapeGeometry(
+      dart::dynamics::MeshShape* shape,
+      ShapeFrameNode* parentShapeFrame,
+      MeshShapeNode* parentNode,
+      MeshShapeGeode* parentGeode,
+      aiMesh* mesh);
 
   void refresh();
 
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~MeshShapeGeometry();
 
   ::osg::ref_ptr<::osg::Vec3Array> mVertices;
@@ -169,18 +167,16 @@ protected:
   dart::dynamics::MeshShape* mMeshShape;
   const aiMesh* mAiMesh;
   MeshShapeNode* mMainNode;
-
 };
 
 //==============================================================================
-MeshShapeNode::MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
-                             ShapeFrameNode* parentNode)
-  : ShapeNode(shape, parentNode, this),
-    mMeshShape(shape),
-    mRootAiNode(nullptr)
+MeshShapeNode::MeshShapeNode(
+    std::shared_ptr<dart::dynamics::MeshShape> shape,
+    ShapeFrameNode* parentNode)
+  : ShapeNode(shape, parentNode, this), mMeshShape(shape), mRootAiNode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -188,9 +184,9 @@ void MeshShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -205,7 +201,7 @@ std::ostream& operator<<(std::ostream& str, const aiColor4D& c)
 //==============================================================================
 bool checkSpecularSanity(const aiColor4D& c)
 {
-  if(c.r >= 1.0 && c.g >= 1.0 && c.b >= 1.0 && c.a >= 1.0)
+  if (c.r >= 1.0 && c.g >= 1.0 && c.b >= 1.0 && c.a >= 1.0)
     return false;
 
   return true;
@@ -219,12 +215,12 @@ void MeshShapeNode::extractData(bool firstTime)
   const aiScene* scene = mMeshShape->getMesh();
   const aiNode* root = scene->mRootNode;
 
-  if(firstTime) // extract material properties
+  if (firstTime) // extract material properties
   {
     mMaterials.reserve(scene->mNumMaterials);
     mTextureImageArrays.reserve(scene->mNumMaterials);
 
-    for(std::size_t i=0; i<scene->mNumMaterials; ++i)
+    for (std::size_t i = 0; i < scene->mNumMaterials; ++i)
     {
       aiMaterial* aiMat = scene->mMaterials[i];
       assert(aiMat);
@@ -232,41 +228,43 @@ void MeshShapeNode::extractData(bool firstTime)
       ::osg::ref_ptr<::osg::Material> material = new ::osg::Material;
 
       aiColor4D c;
-      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c)==AI_SUCCESS)
+      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c) == AI_SUCCESS)
       {
-        material->setAmbient(::osg::Material::FRONT_AND_BACK,
-                             ::osg::Vec4(c.r, c.g, c.b, c.a));
+        material->setAmbient(
+            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
-      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c)==AI_SUCCESS)
+      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c) == AI_SUCCESS)
       {
-        material->setDiffuse(::osg::Material::FRONT_AND_BACK,
-                             ::osg::Vec4(c.r, c.g, c.b, c.a));
+        material->setDiffuse(
+            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
-      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c)==AI_SUCCESS)
+      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c) == AI_SUCCESS)
       {
         // Some files have insane specular vectors like [1.0, 1.0, 1.0, 1.0], so
         // we weed those out here
-        if(checkSpecularSanity(c))
-          material->setSpecular(::osg::Material::FRONT_AND_BACK,
-                                ::osg::Vec4(c.r, c.g, c.b, c.a));
+        if (checkSpecularSanity(c))
+          material->setSpecular(
+              ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
-      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c)==AI_SUCCESS)
+      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c) == AI_SUCCESS)
       {
-        material->setEmission(::osg::Material::FRONT_AND_BACK,
-                              ::osg::Vec4(c.r, c.g, c.b, c.a));
+        material->setEmission(
+            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
       unsigned int maxValue = 1;
       float shininess = 0.0f, strength = 1.0f;
-      if(aiGetMaterialFloatArray(aiMat, AI_MATKEY_SHININESS,
-                                 &shininess, &maxValue)==AI_SUCCESS)
+      if (aiGetMaterialFloatArray(
+              aiMat, AI_MATKEY_SHININESS, &shininess, &maxValue)
+          == AI_SUCCESS)
       {
         maxValue = 1;
-        if(aiGetMaterialFloatArray(aiMat, AI_MATKEY_SHININESS_STRENGTH,
-                                   &strength, &maxValue)==AI_SUCCESS)
+        if (aiGetMaterialFloatArray(
+                aiMat, AI_MATKEY_SHININESS_STRENGTH, &strength, &maxValue)
+            == AI_SUCCESS)
           shininess *= strength;
         material->setShininess(::osg::Material::FRONT_AND_BACK, shininess);
       }
@@ -320,30 +318,34 @@ void MeshShapeNode::extractData(bool firstTime)
     }
   }
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-     || firstTime)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+      || firstTime)
   {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
     const Eigen::Vector3d& s = mMeshShape->getScale();
-    S(0,0) = s[0]; S(1,1) = s[1]; S(2,2) = s[2]; S(3,3) = 1.0;
+    S(0, 0) = s[0];
+    S(1, 1) = s[1];
+    S(2, 2) = s[2];
+    S(3, 3) = 1.0;
     setMatrix(eigToOsgMatrix(S));
   }
 
-  if(mRootAiNode)
+  if (mRootAiNode)
   {
     // If the root node pointer has changed, delete our current mRootNode and
     // then recreate it
-    if(mRootAiNode->getAiNodePtr() != root)
+    if (mRootAiNode->getAiNodePtr() != root)
     {
       removeChild(mRootAiNode);
       mRootAiNode = nullptr;
     }
   }
 
-  if( (nullptr == mRootAiNode) && root)
+  if ((nullptr == mRootAiNode) && root)
   {
-    mRootAiNode = new osgAiNode(mMeshShape.get(), mParentShapeFrameNode, this, root);
+    mRootAiNode
+        = new osgAiNode(mMeshShape.get(), mParentShapeFrameNode, this, root);
     addChild(mRootAiNode);
     return;
   }
@@ -354,13 +356,13 @@ void MeshShapeNode::extractData(bool firstTime)
 //==============================================================================
 ::osg::Material* MeshShapeNode::getMaterial(std::size_t index) const
 {
-  if(index < mMaterials.size())
+  if (index < mMaterials.size())
     return mMaterials[index];
 
-  if(!mMaterials.empty())
+  if (!mMaterials.empty())
   {
     dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
-           << index << ", but materials only go up to " << index-1 << "\n";
+           << index << ", but materials only go up to " << index - 1 << "\n";
   }
   else
   {
@@ -388,7 +390,7 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
   {
     dtwarn << "[MeshShapeNode::getTextureImageSet] Attempting to access "
            << "texture image set #" << index << ", but materials only go up to "
-           << index-1 << "\n";
+           << index - 1 << "\n";
   }
   else
   {
@@ -407,10 +409,11 @@ MeshShapeNode::~MeshShapeNode()
 }
 
 //==============================================================================
-osgAiNode::osgAiNode(dart::dynamics::MeshShape* shape,
-                     ShapeFrameNode* parentEntity,
-                     MeshShapeNode* parentNode,
-                     const aiNode* node)
+osgAiNode::osgAiNode(
+    dart::dynamics::MeshShape* shape,
+    ShapeFrameNode* parentEntity,
+    MeshShapeNode* parentNode,
+    const aiNode* node)
   : ShapeNode(parentNode->getShape(), parentEntity, this),
     mMainNode(parentNode),
     mMeshShape(shape),
@@ -425,7 +428,7 @@ void osgAiNode::refresh()
 {
   mUtilized = true;
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -436,32 +439,33 @@ void osgAiNode::extractData(bool firstTime)
 {
   clearChildUtilizationFlags();
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || firstTime)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+      || firstTime)
   {
     aiMatrix4x4 M = mAiNode->mTransformation;
     M.Transpose();
     setMatrix(::osg::Matrixf((float*)(&M)));
   }
 
-  for(std::size_t i=0; i<mAiNode->mNumChildren; ++i)
+  for (std::size_t i = 0; i < mAiNode->mNumChildren; ++i)
   {
     aiNode* child = mAiNode->mChildren[i];
-    std::map<const aiNode*,osgAiNode*>::iterator it = mChildNodes.find(child);
+    std::map<const aiNode*, osgAiNode*>::iterator it = mChildNodes.find(child);
 
-    if(it == mChildNodes.end())
+    if (it == mChildNodes.end())
     {
-      osgAiNode* newChild =
-          new osgAiNode(mMeshShape, mParentShapeFrameNode, mMainNode, child);
+      osgAiNode* newChild
+          = new osgAiNode(mMeshShape, mParentShapeFrameNode, mMainNode, child);
       addChild(newChild);
     }
     else
       it->second->refresh();
   }
 
-  if(nullptr == mGeode)
+  if (nullptr == mGeode)
   {
-    mGeode = new MeshShapeGeode(mMeshShape, mParentShapeFrameNode, mMainNode, mAiNode);
+    mGeode = new MeshShapeGeode(
+        mMeshShape, mParentShapeFrameNode, mMainNode, mAiNode);
     addChild(mGeode);
   }
   else
@@ -479,17 +483,17 @@ osgAiNode::~osgAiNode()
 //==============================================================================
 void osgAiNode::clearChildUtilizationFlags()
 {
-  for(auto& node_pair : mChildNodes)
+  for (auto& node_pair : mChildNodes)
     node_pair.second->clearUtilization();
 }
 
 //==============================================================================
 void osgAiNode::clearUnusedNodes()
 {
-  for(auto& node_pair : mChildNodes)
+  for (auto& node_pair : mChildNodes)
   {
     osgAiNode* node = node_pair.second;
-    if(!node->wasUtilized())
+    if (!node->wasUtilized())
     {
       mChildNodes.erase(node_pair.first);
       removeChild(node);
@@ -498,17 +502,19 @@ void osgAiNode::clearUnusedNodes()
 }
 
 //==============================================================================
-MeshShapeGeode::MeshShapeGeode(dart::dynamics::MeshShape* shape,
-                               ShapeFrameNode* parentShapeFrame,
-                               MeshShapeNode* parentNode,
-                               const aiNode* node)
+MeshShapeGeode::MeshShapeGeode(
+    dart::dynamics::MeshShape* shape,
+    ShapeFrameNode* parentShapeFrame,
+    MeshShapeNode* parentNode,
+    const aiNode* node)
   : ShapeNode(parentNode->getShape(), parentShapeFrame, parentNode),
     mMeshShape(shape),
     mAiNode(node),
     mMainNode(parentNode)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setAttributeAndModes(new ::osg::CullFace(::osg::CullFace::BACK));
+  getOrCreateStateSet()->setAttributeAndModes(
+      new ::osg::CullFace(::osg::CullFace::BACK));
   extractData(true);
 }
 
@@ -517,7 +523,7 @@ void MeshShapeGeode::refresh()
 {
   mUtilized = true;
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -529,17 +535,17 @@ void MeshShapeGeode::extractData(bool)
   clearChildUtilizationFlags();
 
   const aiScene* scene = mMeshShape->getMesh();
-  for(std::size_t i=0; i<mAiNode->mNumMeshes; ++i)
+  for (std::size_t i = 0; i < mAiNode->mNumMeshes; ++i)
   {
     aiMesh* mesh = scene->mMeshes[mAiNode->mMeshes[i]];
 
-    std::map<const aiMesh*,MeshShapeGeometry*>::iterator it =
-        mMeshes.find(mesh);
+    std::map<const aiMesh*, MeshShapeGeometry*>::iterator it
+        = mMeshes.find(mesh);
 
-    if(it == mMeshes.end())
+    if (it == mMeshes.end())
     {
       MeshShapeGeometry* newMesh = new MeshShapeGeometry(
-            mMeshShape, mParentShapeFrameNode, mMainNode, this, mesh);
+          mMeshShape, mParentShapeFrameNode, mMainNode, this, mesh);
       addDrawable(newMesh);
       mMeshes[mesh] = newMesh;
     }
@@ -559,7 +565,7 @@ MeshShapeGeode::~MeshShapeGeode()
 //==============================================================================
 void MeshShapeGeode::clearChildUtilizationFlags()
 {
-  for(auto& node_pair : mMeshes)
+  for (auto& node_pair : mMeshes)
   {
     MeshShapeGeometry* geom = node_pair.second;
     geom->clearUtilization();
@@ -569,10 +575,10 @@ void MeshShapeGeode::clearChildUtilizationFlags()
 //==============================================================================
 void MeshShapeGeode::clearUnusedMeshes()
 {
-  for(auto& node_pair : mMeshes)
+  for (auto& node_pair : mMeshes)
   {
     MeshShapeGeometry* geom = node_pair.second;
-    if(!geom->wasUtilized())
+    if (!geom->wasUtilized())
     {
       mMeshes.erase(node_pair.first);
       removeDrawable(geom);
@@ -581,11 +587,12 @@ void MeshShapeGeode::clearUnusedMeshes()
 }
 
 //==============================================================================
-MeshShapeGeometry::MeshShapeGeometry(dart::dynamics::MeshShape* shape,
-                                     ShapeFrameNode* parentShapeFrame,
-                                     MeshShapeNode* parentNode,
-                                     MeshShapeGeode* parentGeode,
-                                     aiMesh* mesh)
+MeshShapeGeometry::MeshShapeGeometry(
+    dart::dynamics::MeshShape* shape,
+    ShapeFrameNode* parentShapeFrame,
+    MeshShapeNode* parentNode,
+    MeshShapeGeode* parentGeode,
+    aiMesh* mesh)
   : ShapeNode(parentNode->getShape(), parentShapeFrame, parentGeode),
     mVertices(new ::osg::Vec3Array),
     mNormals(new ::osg::Vec3Array),
@@ -602,7 +609,7 @@ void MeshShapeGeometry::refresh()
 {
   mUtilized = true;
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -635,13 +642,13 @@ void blendMaterialAlpha(::osg::Material* material, const float alpha)
 //==============================================================================
 void MeshShapeGeometry::extractData(bool firstTime)
 {
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
-     || firstTime)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+      || firstTime)
   {
     ::osg::ref_ptr<::osg::DrawElementsUInt> elements[4];
     elements[0] = new ::osg::DrawElementsUInt(GL_POINTS);
@@ -649,97 +656,102 @@ void MeshShapeGeometry::extractData(bool firstTime)
     elements[2] = new ::osg::DrawElementsUInt(GL_TRIANGLES);
     elements[3] = new ::osg::DrawElementsUInt(GL_QUADS);
 
-    for(std::size_t i=0; i<mAiMesh->mNumFaces; ++i)
+    for (std::size_t i = 0; i < mAiMesh->mNumFaces; ++i)
     {
       const aiFace& face = mAiMesh->mFaces[i];
 
-      if(face.mNumIndices > 4) // We have some arbitrary polygon
+      if (face.mNumIndices > 4) // We have some arbitrary polygon
       {
-        ::osg::ref_ptr<::osg::DrawElementsUInt> polygon =
-            new ::osg::DrawElementsUInt(GL_POLYGON);
-        for(std::size_t j=0; j<face.mNumIndices; ++j)
+        ::osg::ref_ptr<::osg::DrawElementsUInt> polygon
+            = new ::osg::DrawElementsUInt(GL_POLYGON);
+        for (std::size_t j = 0; j < face.mNumIndices; ++j)
           polygon->push_back(face.mIndices[j]);
         addPrimitiveSet(polygon);
       }
-      else if(face.mNumIndices > 0)
+      else if (face.mNumIndices > 0)
       {
-        ::osg::DrawElementsUInt* elem = elements[face.mNumIndices-1];
-        for(std::size_t j=0; j<face.mNumIndices; ++j)
+        ::osg::DrawElementsUInt* elem = elements[face.mNumIndices - 1];
+        for (std::size_t j = 0; j < face.mNumIndices; ++j)
           elem->push_back(face.mIndices[j]);
       }
     }
 
-    for(std::size_t i=0; i<4; ++i)
-      if(elements[i]->size() > 0)
+    for (std::size_t i = 0; i < 4; ++i)
+      if (elements[i]->size() > 0)
         addPrimitiveSet(elements[i]);
   }
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
-     || firstTime)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
+      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+      || firstTime)
   {
-    if(mVertices->size() != mAiMesh->mNumVertices)
+    if (mVertices->size() != mAiMesh->mNumVertices)
       mVertices->resize(mAiMesh->mNumVertices);
 
-    if(mNormals->size() != mAiMesh->mNumVertices)
+    if (mNormals->size() != mAiMesh->mNumVertices)
       mNormals->resize(mAiMesh->mNumVertices);
 
     const Eigen::Vector3f s = mMeshShape->getScale().cast<float>();
 
-    for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
+    for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
     {
       const aiVector3D& v = mAiMesh->mVertices[i];
       (*mVertices)[i] = ::osg::Vec3(v.x, v.y, v.z);
 
-      if(mAiMesh->mNormals)
+      if (mAiMesh->mNormals)
       {
         const aiVector3D& n = mAiMesh->mNormals[i];
-        (*mNormals)[i] = ::osg::Vec3(n.x*s[0], n.y*s[1], n.z*s[2]);
+        (*mNormals)[i] = ::osg::Vec3(n.x * s[0], n.y * s[1], n.z * s[2]);
       }
       // TODO(MXG): Consider computing normals for meshes that don't come with
       // normal data per vertex
     }
 
     setVertexArray(mVertices);
-    if(mAiMesh->mNormals)
+    if (mAiMesh->mNormals)
       setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
   }
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-     || firstTime)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+      || firstTime)
   {
     bool isColored = false;
 
-    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::COLOR_INDEX)
+    if (mMeshShape->getColorMode() == dart::dynamics::MeshShape::COLOR_INDEX)
     {
       int index = mMeshShape->getColorIndex();
-      if(index >= AI_MAX_NUMBER_OF_COLOR_SETS)
+      if (index >= AI_MAX_NUMBER_OF_COLOR_SETS)
         index = AI_MAX_NUMBER_OF_COLOR_SETS - 1;
 
       aiColor4D* colors = nullptr;
-      while(nullptr == colors && index >= 0)
+      while (nullptr == colors && index >= 0)
       {
         colors = mAiMesh->mColors[index];
         --index;
       }
 
-      if(colors)
+      if (colors)
       {
         isColored = true;
 
-        if(mColors->size() != mVertices->size())
+        if (mColors->size() != mVertices->size())
           mColors->resize(mVertices->size());
 
-        for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
+        for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
         {
           const aiColor4D& c = colors[i];
           if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA)
           {
-            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, static_cast<float>(mVisualAspect->getAlpha()));
+            (*mColors)[i] = ::osg::Vec4(
+                c.r, c.g, c.b, static_cast<float>(mVisualAspect->getAlpha()));
           }
           else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND)
           {
-            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a * static_cast<float>(mVisualAspect->getAlpha()));
+            (*mColors)[i] = ::osg::Vec4(
+                c.r,
+                c.g,
+                c.b,
+                c.a * static_cast<float>(mVisualAspect->getAlpha()));
           }
           else
           {
@@ -752,25 +764,29 @@ void MeshShapeGeometry::extractData(bool firstTime)
       }
     }
 
-    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
+    if (mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
     {
       const unsigned int matIndex = mAiMesh->mMaterialIndex;
-      if(matIndex != static_cast<unsigned int>(-1)) // -1 is being used by us to indicate no material
+      if (matIndex
+          != static_cast<unsigned int>(
+                 -1)) // -1 is being used by us to indicate no material
       {
         isColored = true;
         auto material = mMainNode->getMaterial(matIndex);
         if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA)
         {
-          ::osg::ref_ptr<::osg::Material> newMaterial = new ::osg::Material(*material);
+          ::osg::ref_ptr<::osg::Material> newMaterial
+              = new ::osg::Material(*material);
           newMaterial->setAlpha(
-                ::osg::Material::Face::FRONT_AND_BACK,
-                static_cast<float>(mVisualAspect->getAlpha()));
+              ::osg::Material::Face::FRONT_AND_BACK,
+              static_cast<float>(mVisualAspect->getAlpha()));
           getOrCreateStateSet()->setAttributeAndModes(newMaterial);
         }
         else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND)
         {
           const auto shapeAlpha = static_cast<float>(mVisualAspect->getAlpha());
-          ::osg::ref_ptr<::osg::Material> newMaterial = new ::osg::Material(*material);
+          ::osg::ref_ptr<::osg::Material> newMaterial
+              = new ::osg::Material(*material);
           blendMaterialAlpha(newMaterial, shapeAlpha);
           getOrCreateStateSet()->setAttributeAndModes(newMaterial);
         }
@@ -790,15 +806,15 @@ void MeshShapeGeometry::extractData(bool firstTime)
     }
 
     const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[0];
-    if(aiTexCoords)
+    if (aiTexCoords)
       isColored = true;
 
-    if(!isColored
-       || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
+    if (!isColored
+        || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
     {
       const Eigen::Vector4f& c = mVisualAspect->getRGBA().cast<float>();
 
-      if(mColors->size() != 1)
+      if (mColors->size() != 1)
         mColors->resize(1);
 
       (*mColors)[0] = ::osg::Vec4(c[0], c[1], c[2], c[3]);
@@ -809,29 +825,29 @@ void MeshShapeGeometry::extractData(bool firstTime)
   }
 
   // Load textures on the first pass through
-  if(firstTime)
+  if (firstTime)
   {
     uint unit = 0;
     const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[unit];
 
-    while(nullptr != aiTexCoords)
+    while (nullptr != aiTexCoords)
     {
-      switch(mAiMesh->mNumUVComponents[unit])
+      switch (mAiMesh->mNumUVComponents[unit])
       {
         case 1:
         {
-          ::osg::ref_ptr<::osg::FloatArray> texture =
-              new ::osg::FloatArray(mAiMesh->mNumVertices);
-          for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
+          ::osg::ref_ptr<::osg::FloatArray> texture
+              = new ::osg::FloatArray(mAiMesh->mNumVertices);
+          for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
             (*texture)[i] = aiTexCoords[i].x;
           setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
           break;
         }
         case 2:
         {
-          ::osg::ref_ptr<::osg::Vec2Array> texture =
-              new ::osg::Vec2Array(mAiMesh->mNumVertices);
-          for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
+          ::osg::ref_ptr<::osg::Vec2Array> texture
+              = new ::osg::Vec2Array(mAiMesh->mNumVertices);
+          for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
           {
             const aiVector3D& t = aiTexCoords[i];
             (*texture)[i] = ::osg::Vec2(t.x, t.y);
@@ -841,9 +857,9 @@ void MeshShapeGeometry::extractData(bool firstTime)
         }
         case 3:
         {
-          ::osg::ref_ptr<::osg::Vec3Array> texture =
-              new ::osg::Vec3Array(mAiMesh->mNumVertices);
-          for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
+          ::osg::ref_ptr<::osg::Vec3Array> texture
+              = new ::osg::Vec3Array(mAiMesh->mNumVertices);
+          for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
           {
             const aiVector3D& t = aiTexCoords[i];
             (*texture)[i] = ::osg::Vec3(t.x, t.y, t.z);
@@ -867,7 +883,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       if (!image)
       {
         dtwarn << "[MeshShapeNode] Failed to load texture image '"
-               << imagePaths[i] << "'\n" ;
+               << imagePaths[i] << "'\n";
         continue;
       }
       ::osg::ref_ptr<::osg::Texture2D> texture

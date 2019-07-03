@@ -64,22 +64,24 @@ struct ScrewJointUniqueProperties
 
 //==============================================================================
 struct ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
-                    ScrewJointUniqueProperties
+                              ScrewJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(ScrewJointProperties)
 
   ScrewJointProperties(
-      const GenericJoint<math::R1Space>::Properties& genericJointProperties =
-          GenericJoint<math::R1Space>::Properties(),
-      const ScrewJointUniqueProperties& screwProperties =
-          ScrewJointUniqueProperties());
+      const GenericJoint<math::R1Space>::Properties& genericJointProperties
+      = GenericJoint<math::R1Space>::Properties(),
+      const ScrewJointUniqueProperties& screwProperties
+      = ScrewJointUniqueProperties());
 
   virtual ~ScrewJointProperties() = default;
 };
 
 //==============================================================================
 using ScrewJointBase = common::EmbedPropertiesOnTopOf<
-    ScrewJoint, ScrewJointUniqueProperties, GenericJoint<math::R1Space> >;
+    ScrewJoint,
+    ScrewJointUniqueProperties,
+    GenericJoint<math::R1Space> >;
 
 } // namespace detail
 } // namespace dynamics

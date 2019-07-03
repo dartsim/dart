@@ -49,7 +49,7 @@ namespace detail {
 //==============================================================================
 struct UniversalJointUniqueProperties
 {
-  std::array<Eigen::Vector3d,2> mAxis;
+  std::array<Eigen::Vector3d, 2> mAxis;
 
   UniversalJointUniqueProperties(
       const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
@@ -59,24 +59,25 @@ struct UniversalJointUniqueProperties
 };
 
 //==============================================================================
-struct UniversalJointProperties :
-    GenericJoint<math::R2Space>::Properties,
-    UniversalJointUniqueProperties
+struct UniversalJointProperties : GenericJoint<math::R2Space>::Properties,
+                                  UniversalJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(UniversalJointProperties)
 
   UniversalJointProperties(
-      const GenericJoint<math::R2Space>::Properties& genericJointProperties =
-          GenericJoint<math::R2Space>::Properties(),
-      const UniversalJointUniqueProperties& universalProperties =
-          UniversalJointUniqueProperties());
+      const GenericJoint<math::R2Space>::Properties& genericJointProperties
+      = GenericJoint<math::R2Space>::Properties(),
+      const UniversalJointUniqueProperties& universalProperties
+      = UniversalJointUniqueProperties());
 
   virtual ~UniversalJointProperties() = default;
 };
 
 //==============================================================================
 using UniversalJointBase = common::EmbedPropertiesOnTopOf<
-    UniversalJoint, UniversalJointUniqueProperties,  GenericJoint<math::R2Space> >;
+    UniversalJoint,
+    UniversalJointUniqueProperties,
+    GenericJoint<math::R2Space> >;
 
 } // namespace detail
 } // namespace dynamics

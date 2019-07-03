@@ -76,7 +76,7 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 //==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  if(transform.matrix() == FixedFrame::mAspectProperties.mRelativeTf.matrix())
+  if (transform.matrix() == FixedFrame::mAspectProperties.mRelativeTf.matrix())
     return;
 
   const Eigen::Isometry3d oldTransform = getRelativeTransform();
@@ -86,7 +86,7 @@ void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
   dirtyJacobianDeriv();
 
   mRelativeTransformUpdatedSignal.raise(
-        this, oldTransform, getRelativeTransform());
+      this, oldTransform, getRelativeTransform());
 }
 
 //==============================================================================
@@ -149,23 +149,21 @@ ShapeNode::ShapeNode(BodyNode* bodyNode, const BasicProperties& properties)
     Frame(bodyNode),
     FixedFrame(bodyNode),
     detail::ShapeNodeCompositeBase(
-      std::make_tuple(bodyNode, properties.mRelativeTf),
-      bodyNode, properties)
+        std::make_tuple(bodyNode, properties.mRelativeTf), bodyNode, properties)
 {
   setProperties(properties);
   mAmShapeNode = true;
 }
 
 //==============================================================================
-ShapeNode::ShapeNode(BodyNode* bodyNode,
-                     const ShapePtr& shape,
-                     const std::string& name)
+ShapeNode::ShapeNode(
+    BodyNode* bodyNode, const ShapePtr& shape, const std::string& name)
   : Entity(ConstructFrame),
     Frame(bodyNode),
     FixedFrame(bodyNode),
     detail::ShapeNodeCompositeBase(
-      std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()),
-      std::make_tuple(bodyNode, ShapeFrame::Properties(shape)))
+        std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()),
+        std::make_tuple(bodyNode, ShapeFrame::Properties(shape)))
 {
   // TODO(MXG): Consider changing this to a delegating constructor instead
   setName(name);
@@ -180,7 +178,7 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
 
   shapeNode->copy(this);
 
-  if(mIK)
+  if (mIK)
     shapeNode->mIK = mIK->clone(shapeNode);
 
   return shapeNode;
@@ -188,4 +186,3 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
 
 } // namespace dynamics
 } // namespace dart
-

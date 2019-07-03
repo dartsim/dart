@@ -53,7 +53,6 @@ class SoftMeshShapeDrawable;
 class SoftMeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
-
   SoftMeshShapeNode(
       std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
       ShapeFrameNode* parent);
@@ -62,12 +61,10 @@ public:
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~SoftMeshShapeNode();
 
   std::shared_ptr<dart::dynamics::SoftMeshShape> mSoftMeshShape;
   SoftMeshShapeGeode* mGeode;
-
 };
 
 } // namespace render

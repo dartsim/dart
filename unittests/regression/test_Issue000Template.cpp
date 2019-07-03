@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <TestHelpers.hpp>
 #include <dart/dart.hpp>
+#include <gtest/gtest.h>
 
 using namespace dart;
 

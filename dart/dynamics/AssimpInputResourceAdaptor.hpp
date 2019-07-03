@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 #define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 
-#include <assimp/cfileio.h>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
+#include <assimp/cfileio.h>
 #include "dart/common/Resource.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 
@@ -46,11 +46,11 @@ class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
 {
 public:
   explicit AssimpInputResourceRetrieverAdaptor(
-    const common::ResourceRetrieverPtr& _resourceRetriever);
+      const common::ResourceRetrieverPtr& _resourceRetriever);
   virtual ~AssimpInputResourceRetrieverAdaptor();
 
-  /// \brief Tests for the existence of a file at the given path. 
-  /// 
+  /// \brief Tests for the existence of a file at the given path.
+  ///
   /// \param pFile Path to the file
   /// \return true if there is a file with this path, else false.
   bool Exists(const char* pFile) const override;
@@ -69,10 +69,10 @@ public:
   /// \param pMode Desired file I/O mode. Required are: "wb", "w", "wt",
   ///        "rb", "r", "rt".
   /// \return New IOStream interface allowing the lib to access
-  ///        the underlying file. 
+  ///        the underlying file.
   Assimp::IOStream* Open(const char* pFile, const char* pMode = "rb") override;
 
-  /// \brief Closes the given file and releases all resources 
+  /// \brief Closes the given file and releases all resources
   ///   associated with it.
   /// \param pFile The file instance previously created by Open().
   void Close(Assimp::IOStream* pFile) override;
@@ -90,10 +90,12 @@ public:
   /// \brief Read from the file
   ///
   /// See fread() for more details
-  std::size_t Read(void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+  std::size_t Read(
+      void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
 
   /// \brief Not implemented. This is a read-only stream.
-  std::size_t Write(const void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+  std::size_t Write(
+      const void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
 
   /// \brief Set the read/write cursor of the file
   ///

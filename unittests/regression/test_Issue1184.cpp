@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
 #include <TestHelpers.hpp>
+#include <gtest/gtest.h>
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
-#include <dart/dynamics/SphereShape.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SphereShape.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 #include <dart/simulation/World.hpp>
 
@@ -52,38 +52,29 @@ TEST(Issue1184, Accuracy)
     double offset;
   };
 
-  std::function<ShapeInfo()> makePlaneGround =
-      []()
-  {
-    return ShapeInfo{
-      std::make_shared<dart::dynamics::PlaneShape>(
-            Eigen::Vector3d::UnitZ(), 0.0),
-      0.0};
+  std::function<ShapeInfo()> makePlaneGround = []() {
+    return ShapeInfo{std::make_shared<dart::dynamics::PlaneShape>(
+                         Eigen::Vector3d::UnitZ(), 0.0),
+                     0.0};
   };
 
-  std::function<ShapeInfo()> makeBoxGround =
-      []()
-  {
+  std::function<ShapeInfo()> makeBoxGround = []() {
     const double thickness = 0.1;
-    return ShapeInfo{
-      std::make_shared<dart::dynamics::BoxShape>(
-            Eigen::Vector3d(100.0, 100.0, thickness)),
-      -thickness/2.0};
+    return ShapeInfo{std::make_shared<dart::dynamics::BoxShape>(
+                         Eigen::Vector3d(100.0, 100.0, thickness)),
+                     -thickness / 2.0};
   };
 
-  std::function<dart::dynamics::ShapePtr(double)> makeBoxObject =
-      [](const double s) -> dart::dynamics::ShapePtr
-  {
+  std::function<dart::dynamics::ShapePtr(double)> makeBoxObject
+      = [](const double s) -> dart::dynamics::ShapePtr {
     return std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d::Constant(2*s));
+        Eigen::Vector3d::Constant(2 * s));
   };
 
-  std::function<dart::dynamics::ShapePtr(double)> makeSphereObject =
-      [](const double s) -> dart::dynamics::ShapePtr
-  {
+  std::function<dart::dynamics::ShapePtr(double)> makeSphereObject
+      = [](const double s) -> dart::dynamics::ShapePtr {
     return std::make_shared<dart::dynamics::SphereShape>(s);
   };
-
 
 #ifndef NDEBUG
   const auto groundInfoFunctions = {makePlaneGround};
@@ -101,31 +92,32 @@ TEST(Issue1184, Accuracy)
   const double tolerance = 1e-3;
 #endif
 
-  for(const auto& groundInfoFunction : groundInfoFunctions)
+  for (const auto& groundInfoFunction : groundInfoFunctions)
   {
-    for(const auto& objectShapeFunction : objectShapeFunctions)
+    for (const auto& objectShapeFunction : objectShapeFunctions)
     {
-      for(const double halfsize : halfsizes)
+      for (const double halfsize : halfsizes)
       {
-        for(const bool falling : fallingModes)
+        for (const bool falling : fallingModes)
         {
           auto world = dart::simulation::World::create("test");
           world->getConstraintSolver()->setCollisionDetector(
-                dart::collision::BulletCollisionDetector::create());
+              dart::collision::BulletCollisionDetector::create());
 
           Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();
-          const double initialHeight = falling? dropHeight+halfsize : halfsize;
-          tf_object.translate(initialHeight*Eigen::Vector3d::UnitZ());
+          const double initialHeight
+              = falling ? dropHeight + halfsize : halfsize;
+          tf_object.translate(initialHeight * Eigen::Vector3d::UnitZ());
 
           auto object = dart::dynamics::Skeleton::create("ball");
           object->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
               .first->setTransform(tf_object);
 
           const auto objectShape = objectShapeFunction(halfsize);
-          object->getBodyNode(0)->createShapeNodeWith<
-              dart::dynamics::VisualAspect,
-              dart::dynamics::CollisionAspect>(objectShape);
-
+          object->getBodyNode(0)
+              ->createShapeNodeWith<
+                  dart::dynamics::VisualAspect,
+                  dart::dynamics::CollisionAspect>(objectShape);
 
           world->addSkeleton(object);
 
@@ -133,32 +125,33 @@ TEST(Issue1184, Accuracy)
           auto ground = dart::dynamics::Skeleton::create("ground");
           ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>()
               .second->createShapeNodeWith<
-                dart::dynamics::VisualAspect,
-                dart::dynamics::CollisionAspect>(groundInfo.shape);
+                  dart::dynamics::VisualAspect,
+                  dart::dynamics::CollisionAspect>(groundInfo.shape);
 
           Eigen::Isometry3d tf_ground = Eigen::Isometry3d::Identity();
-          tf_ground.translate(groundInfo.offset*Eigen::Vector3d::UnitZ());
+          tf_ground.translate(groundInfo.offset * Eigen::Vector3d::UnitZ());
           ground->getJoint(0)->setTransformFromParentBodyNode(tf_ground);
 
           world->addSkeleton(ground);
 
           // time until the object will strike
-          const double t_strike = falling?
-              sqrt(-2.0*dropHeight/world->getGravity()[2]) : 0.0;
+          const double t_strike
+              = falling ? sqrt(-2.0 * dropHeight / world->getGravity()[2])
+                        : 0.0;
 
           // give the object some time to settle
           const double min_time = 0.5;
-          const double t_limit = 30.0*t_strike + min_time;
+          const double t_limit = 30.0 * t_strike + min_time;
 
           double lowestHeight = std::numeric_limits<double>::infinity();
           double time = 0.0;
-          while(time < t_limit)
+          while (time < t_limit)
           {
             world->step();
-            const double currentHeight =
-                object->getBodyNode(0)->getTransform().translation()[2];
+            const double currentHeight
+                = object->getBodyNode(0)->getTransform().translation()[2];
 
-            if(currentHeight < lowestHeight)
+            if (currentHeight < lowestHeight)
               lowestHeight = currentHeight;
 
             time = world->getTime();
@@ -167,13 +160,13 @@ TEST(Issue1184, Accuracy)
           // The simulation should have run for at least two seconds
           ASSERT_LE(min_time, time);
 
-          EXPECT_GE(halfsize+tolerance, lowestHeight)
+          EXPECT_GE(halfsize + tolerance, lowestHeight)
               << "object type: " << objectShape->getType()
               << "\nground type: " << groundInfo.shape->getType()
               << "\nfalling: " << falling << "\n";
 
-          const double finalHeight =
-              object->getBodyNode(0)->getTransform().translation()[2];
+          const double finalHeight
+              = object->getBodyNode(0)->getTransform().translation()[2];
 
           EXPECT_NEAR(halfsize, finalHeight, tolerance)
               << "object type: " << objectShape->getType()
@@ -183,5 +176,4 @@ TEST(Issue1184, Accuracy)
       }
     }
   }
-
 }

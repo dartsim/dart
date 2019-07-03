@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
 
-#include <ode/ode.h>
 #include <assimp/scene.h>
+#include <ode/ode.h>
 
 #include "dart/collision/ode/detail/OdeGeom.hpp"
 
@@ -47,9 +47,9 @@ class OdeMesh : public OdeGeom
 public:
   /// Constructor
   OdeMesh(
-    const OdeCollisionObject* parent,
-    const aiScene* scene,
-    const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+      const OdeCollisionObject* parent,
+      const aiScene* scene,
+      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
 
   /// Destructor
   virtual ~OdeMesh();
@@ -80,4 +80,4 @@ private:
 } // namespace collision
 } // namespace dart
 
-#endif  // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#endif // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_

@@ -35,21 +35,21 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
 #include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
 #include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
-#include "dart/dynamics/EulerJoint.hpp"
-#include "dart/dynamics/ScrewJoint.hpp"
-#include "dart/dynamics/PlanarJoint.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
@@ -82,10 +82,10 @@ public:
   void kinematicsTest(
 #ifdef _WIN32
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>());
+      = BodyNode::createJointProperties<JointType>());
 #else
       const typename JointType::Properties& _joint
-          = typename JointType::Properties());
+      = typename JointType::Properties());
 #endif
 
 protected:
@@ -116,12 +116,13 @@ const std::vector<SimpleFrame*>& JOINTS::getFrames() const
 //==============================================================================
 void JOINTS::randomizeRefFrames()
 {
-  for(std::size_t i=0; i<frames.size(); ++i)
+  for (std::size_t i = 0; i < frames.size(); ++i)
   {
     SimpleFrame* F = frames[i];
 
     Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
-    Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(-2*M_PI, 2*M_PI);
+    Eigen::Vector3d theta
+        = Random::uniform<Eigen::Vector3d>(-2 * M_PI, 2 * M_PI);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);
@@ -129,7 +130,8 @@ void JOINTS::randomizeRefFrames()
 
     F->setRelativeTransform(tf);
     F->setRelativeSpatialVelocity(Random::uniform<Eigen::Vector6d>(-100, 100));
-    F->setRelativeSpatialAcceleration(Random::uniform<Eigen::Vector6d>(-100, 100));
+    F->setRelativeSpatialAcceleration(
+        Random::uniform<Eigen::Vector6d>(-100, 100));
   }
 }
 
@@ -140,10 +142,12 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
   int numTests = 1;
 
   SkeletonPtr skeleton = Skeleton::create();
-  Joint* joint = skeleton->createJointAndBodyNodePair<JointType>(
-        nullptr, _properties).first;
+  Joint* joint
+      = skeleton->createJointAndBodyNodePair<JointType>(nullptr, _properties)
+            .first;
   joint->setTransformFromChildBodyNode(math::expMap(Eigen::Vector6d::Random()));
-  joint->setTransformFromParentBodyNode(math::expMap(Eigen::Vector6d::Random()));
+  joint->setTransformFromParentBodyNode(
+      math::expMap(Eigen::Vector6d::Random()));
 
   int dof = joint->getNumDofs();
 
@@ -159,8 +163,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 
     for (int i = 0; i < dof; ++i)
     {
-      q(i) = Random::uniform(-constantsd::pi()*1.0, constantsd::pi()*1.0);
-      dq(i) = Random::uniform(-constantsd::pi()*1.0, constantsd::pi()*1.0);
+      q(i) = Random::uniform(-constantsd::pi() * 1.0, constantsd::pi() * 1.0);
+      dq(i) = Random::uniform(-constantsd::pi() * 1.0, constantsd::pi() * 1.0);
     }
 
     joint->setPositions(q);
@@ -182,7 +186,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     // Test analytic Jacobian and numerical Jacobian
     // J == numericalJ
     //--------------------------------------------------------------------------
-    Jacobian numericJ = Jacobian::Zero(6,dof);
+    Jacobian numericJ = Jacobian::Zero(6, dof);
     for (int i = 0; i < dof; ++i)
     {
       // a
@@ -204,17 +208,17 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       Eigen::Matrix4d T_a_eigen = T_a.matrix();
       Eigen::Matrix4d T_b_eigen = T_b.matrix();
       Eigen::Matrix4d dTdq_eigen = (T_b_eigen - T_a_eigen) / q_delta;
-      //Matrix4d dTdq_eigen = (T_b_eigen * T_a_eigen.inverse()) / dt;
+      // Matrix4d dTdq_eigen = (T_b_eigen * T_a_eigen.inverse()) / dt;
 
       // J(i)
       Eigen::Matrix4d Ji_4x4matrix_eigen = Tinv_a_eigen * dTdq_eigen;
       Eigen::Vector6d Ji;
-      Ji[0] = Ji_4x4matrix_eigen(2,1);
-      Ji[1] = Ji_4x4matrix_eigen(0,2);
-      Ji[2] = Ji_4x4matrix_eigen(1,0);
-      Ji[3] = Ji_4x4matrix_eigen(0,3);
-      Ji[4] = Ji_4x4matrix_eigen(1,3);
-      Ji[5] = Ji_4x4matrix_eigen(2,3);
+      Ji[0] = Ji_4x4matrix_eigen(2, 1);
+      Ji[1] = Ji_4x4matrix_eigen(0, 2);
+      Ji[2] = Ji_4x4matrix_eigen(1, 0);
+      Ji[3] = Ji_4x4matrix_eigen(0, 3);
+      Ji[4] = Ji_4x4matrix_eigen(1, 3);
+      Ji[5] = Ji_4x4matrix_eigen(2, 3);
       numericJ.col(i) = Ji;
     }
 
@@ -228,7 +232,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     // Test first time derivative of analytic Jacobian and numerical Jacobian
     // dJ == numerical_dJ
     //--------------------------------------------------------------------------
-    Jacobian numeric_dJ = Jacobian::Zero(6,dof);
+    Jacobian numeric_dJ = Jacobian::Zero(6, dof);
     for (int i = 0; i < dof; ++i)
     {
       // a
@@ -312,7 +316,7 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT_2D)
 }
 
 // 3-dof joint
-//TEST_F(JOINTS, BALL_JOINT)
+// TEST_F(JOINTS, BALL_JOINT)
 //{
 //  kinematicsTest<BallJoint>();
 //}
@@ -346,7 +350,7 @@ TEST_F(JOINTS, PLANAR_JOINT)
 }
 
 // 6-dof joint
-//TEST_F(JOINTS, FREE_JOINT)
+// TEST_F(JOINTS, FREE_JOINT)
 //{
 //  kinematicsTest<FreeJoint>();
 //}
@@ -356,15 +360,16 @@ TEST_F(JOINTS, PLANAR_JOINT)
 // velocities and accelerations, repectively.
 
 //==============================================================================
-template <void (Joint::*setX)(std::size_t, double),
-          void (Joint::*setXLowerLimit)(std::size_t, double),
-          void (Joint::*setXUpperLimit)(std::size_t, double)>
+template <
+    void (Joint::*setX)(std::size_t, double),
+    void (Joint::*setXLowerLimit)(std::size_t, double),
+    void (Joint::*setXUpperLimit)(std::size_t, double)>
 void testCommandLimits(dynamics::Joint* joint)
 {
   const double lower = -5.0;
   const double upper = +5.0;
   const double mid = 0.5 * (lower + upper);
-  const double lessThanLower    = -10.0;
+  const double lessThanLower = -10.0;
   const double greaterThanUpper = +10.0;
 
   for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
@@ -392,9 +397,8 @@ void testCommandLimits(dynamics::Joint* joint)
 //==============================================================================
 TEST_F(JOINTS, COMMAND_LIMIT)
 {
-  simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
-        "dart://sample/skel/test/joint_limit_test.skel");
+  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -434,9 +438,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
 {
   double tol = 1e-3;
 
-  simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
-        "dart://sample/skel/test/joint_limit_test.skel");
+  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -507,9 +510,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
 //==============================================================================
 TEST_F(JOINTS, JOINT_LIMITS)
 {
-  simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
-        "dart://sample/skel/test/joint_limit_test.skel");
+  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -551,9 +553,11 @@ TEST_F(JOINTS, JOINT_LIMITS)
   joint0->setAccelerationLowerLimit(0, -limit);
   joint0->setAccelerationUpperLimit(0, limit);
   EXPECT_EQ(
-      joint0->getAccelerationLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
+      joint0->getAccelerationLowerLimits(),
+      Eigen::VectorXd::Constant(1, -limit));
   EXPECT_EQ(
-      joint0->getAccelerationUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+      joint0->getAccelerationUpperLimits(),
+      Eigen::VectorXd::Constant(1, limit));
 
   joint0->setAccelerationLowerLimits(-limits);
   joint0->setAccelerationUpperLimits(limits);
@@ -564,8 +568,7 @@ TEST_F(JOINTS, JOINT_LIMITS)
   joint0->setForceUpperLimit(0, limit);
   EXPECT_EQ(
       joint0->getForceLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
-  EXPECT_EQ(
-      joint0->getForceUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+  EXPECT_EQ(joint0->getForceUpperLimits(), Eigen::VectorXd::Constant(1, limit));
 
   joint0->setForceLowerLimits(-limits);
   joint0->setForceUpperLimits(limits);
@@ -578,9 +581,8 @@ void testJointCoulombFrictionForce(double _timeStep)
 {
   double tol = 1e-9;
 
-  simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
-        "dart://sample/skel/test/joint_friction_test.skel");
+  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -596,7 +598,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   EXPECT_TRUE(joint0 != nullptr);
   EXPECT_TRUE(joint1 != nullptr);
 
-  double frictionForce  = 5.0;
+  double frictionForce = 5.0;
 
   joint0->setPositionLimitEnforced(false);
   joint1->setPositionLimitEnforced(false);
@@ -739,7 +741,7 @@ void testServoMotor()
   double tol = 1e-9;
   double posUpperLimit = 90.0_deg;
   double posLowerLimit = 45.0_deg;
-  double sufficient_force   = 1e+5;
+  double sufficient_force = 1e+5;
   double insufficient_force = 1e-1;
 
   // World
@@ -853,15 +855,19 @@ void testServoMotor()
     EXPECT_NEAR(jointVels[0], 0.0, tol);
     EXPECT_NEAR(jointVels[1], expected_vel, tol);
     bool result2 = std::abs(jointVels[2] - expected_vel) < tol
-        || std::abs(joints[2]->getConstraintImpulse(0) / timeStep
-           - insufficient_force) < tol
-        || std::abs(joints[2]->getConstraintImpulse(0) / timeStep
-           + insufficient_force) < tol;
+                   || std::abs(
+                          joints[2]->getConstraintImpulse(0) / timeStep
+                          - insufficient_force)
+                          < tol
+                   || std::abs(
+                          joints[2]->getConstraintImpulse(0) / timeStep
+                          + insufficient_force)
+                          < tol;
     EXPECT_TRUE(result2);
-    EXPECT_LE(joints[3]->getPosition(0),
-        posUpperLimit + expected_vel * timeStep);
-    EXPECT_GE(joints[3]->getPosition(0),
-        posLowerLimit - expected_vel * timeStep);
+    EXPECT_LE(
+        joints[3]->getPosition(0), posUpperLimit + expected_vel * timeStep);
+    EXPECT_GE(
+        joints[3]->getPosition(0), posLowerLimit - expected_vel * timeStep);
     // EXPECT_LE(joints[4]->getPosition(0),
     //     posUpperLimit + expected_vel * timeStep);
     // EXPECT_GE(joints[4]->getPosition(0),
@@ -893,7 +899,7 @@ void testMimicJoint()
   double timestep = 1e-3;
   double tol = 1e-9;
   double tolPos = 1e-3;
-  double sufficient_force   = 1e+5;
+  double sufficient_force = 1e+5;
 
   // World
   simulation::WorldPtr world = simulation::World::create();
@@ -985,9 +991,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   const double timeStep = 1e-3;
   const double tol = 1e-2;
 
-  simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
-        "dart://sample/skel/test/joint_friction_test.skel");
+  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -1003,13 +1008,13 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   EXPECT_TRUE(joint0 != nullptr);
   EXPECT_TRUE(joint1 != nullptr);
 
-  double frictionForce  = 5.0;
+  double frictionForce = 5.0;
 
   joint0->setPositionLimitEnforced(true);
   joint1->setPositionLimitEnforced(true);
 
-  const double ll = -constantsd::pi()/12.0; // -15 degree
-  const double ul = +constantsd::pi()/12.0; // +15 degree
+  const double ll = -constantsd::pi() / 12.0; // -15 degree
+  const double ul = +constantsd::pi() / 12.0; // +15 degree
 
   std::size_t dof0 = joint0->getNumDofs();
   for (std::size_t i = 0; i < dof0; ++i)
@@ -1092,18 +1097,18 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 }
 
 //==============================================================================
-template<int N>
-Eigen::Matrix<double,N,1> random_vec(double limit=100)
+template <int N>
+Eigen::Matrix<double, N, 1> random_vec(double limit = 100)
 {
-  Eigen::Matrix<double,N,1> v;
-  for(std::size_t i=0; i<N; ++i)
+  Eigen::Matrix<double, N, 1> v;
+  for (std::size_t i = 0; i < N; ++i)
     v[i] = math::Random::uniform(-std::abs(limit), std::abs(limit));
   return v;
 }
 
 //==============================================================================
-Eigen::Isometry3d random_transform(double translation_limit=100,
-                                   double rotation_limit=2*M_PI)
+Eigen::Isometry3d random_transform(
+    double translation_limit = 100, double rotation_limit = 2 * M_PI)
 {
   Eigen::Vector3d r = random_vec<3>(translation_limit);
   Eigen::Vector3d theta = random_vec<3>(rotation_limit);
@@ -1112,18 +1117,18 @@ Eigen::Isometry3d random_transform(double translation_limit=100,
   tf.setIdentity();
   tf.translate(r);
 
-  if(theta.norm()>0)
+  if (theta.norm() > 0)
     tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
 
   return tf;
 }
 
 //==============================================================================
-Eigen::Isometry3d predict_joint_transform(Joint* joint,
-                                          const Eigen::Isometry3d& joint_tf)
+Eigen::Isometry3d predict_joint_transform(
+    Joint* joint, const Eigen::Isometry3d& joint_tf)
 {
   return joint->getTransformFromParentBodyNode() * joint_tf
-          * joint->getTransformFromChildBodyNode().inverse();
+         * joint->getTransformFromChildBodyNode().inverse();
 }
 
 //==============================================================================
@@ -1143,8 +1148,8 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   BodyNode* root = pair.second;
 
   // -- set up the FreeJoint
-  std::pair<FreeJoint*, BodyNode*> freepair =
-      root->createChildJointAndBodyNodePair<FreeJoint>();
+  std::pair<FreeJoint*, BodyNode*> freepair
+      = root->createChildJointAndBodyNodePair<FreeJoint>();
   FreeJoint* freejoint = freepair.first;
   BodyNode* freejoint_bn = freepair.second;
 
@@ -1152,8 +1157,8 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   freejoint->setTransformFromChildBodyNode(random_transform());
 
   // -- set up the EulerJoint
-  std::pair<EulerJoint*, BodyNode*> eulerpair =
-      root->createChildJointAndBodyNodePair<EulerJoint>();
+  std::pair<EulerJoint*, BodyNode*> eulerpair
+      = root->createChildJointAndBodyNodePair<EulerJoint>();
   EulerJoint* eulerjoint = eulerpair.first;
   BodyNode* eulerjoint_bn = eulerpair.second;
 
@@ -1161,8 +1166,8 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   eulerjoint->setTransformFromChildBodyNode(random_transform());
 
   // -- set up the BallJoint
-  std::pair<BallJoint*, BodyNode*> ballpair =
-      root->createChildJointAndBodyNodePair<BallJoint>();
+  std::pair<BallJoint*, BodyNode*> ballpair
+      = root->createChildJointAndBodyNodePair<BallJoint>();
   BallJoint* balljoint = ballpair.first;
   BodyNode* balljoint_bn = ballpair.second;
 
@@ -1170,27 +1175,28 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   balljoint->setTransformFromChildBodyNode(random_transform());
 
   // Test a hundred times
-  for(std::size_t n=0; n<100; ++n)
+  for (std::size_t n = 0; n < 100; ++n)
   {
     // -- convert transforms to positions and then positions back to transforms
     Eigen::Isometry3d desired_freejoint_tf = random_transform();
-    freejoint->setPositions(FreeJoint::convertToPositions(desired_freejoint_tf));
-    Eigen::Isometry3d actual_freejoint_tf = FreeJoint::convertToTransform(
-          freejoint->getPositions());
+    freejoint->setPositions(
+        FreeJoint::convertToPositions(desired_freejoint_tf));
+    Eigen::Isometry3d actual_freejoint_tf
+        = FreeJoint::convertToTransform(freejoint->getPositions());
 
     Eigen::Isometry3d desired_eulerjoint_tf = random_transform();
     desired_eulerjoint_tf.translation() = Eigen::Vector3d::Zero();
     eulerjoint->setPositions(
-          eulerjoint->convertToPositions(desired_eulerjoint_tf.linear()));
-    Eigen::Isometry3d actual_eulerjoint_tf = eulerjoint->convertToTransform(
-          eulerjoint->getPositions());
+        eulerjoint->convertToPositions(desired_eulerjoint_tf.linear()));
+    Eigen::Isometry3d actual_eulerjoint_tf
+        = eulerjoint->convertToTransform(eulerjoint->getPositions());
 
     Eigen::Isometry3d desired_balljoint_tf = random_transform();
     desired_balljoint_tf.translation() = Eigen::Vector3d::Zero();
     balljoint->setPositions(
-          BallJoint::convertToPositions(desired_balljoint_tf.linear()));
-    Eigen::Isometry3d actual_balljoint_tf = BallJoint::convertToTransform(
-          balljoint->getPositions());
+        BallJoint::convertToPositions(desired_balljoint_tf.linear()));
+    Eigen::Isometry3d actual_balljoint_tf
+        = BallJoint::convertToTransform(balljoint->getPositions());
 
     // -- collect everything so we can cycle through the tests
     std::vector<Joint*> joints;
@@ -1213,36 +1219,37 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     desired_tfs.push_back(desired_balljoint_tf);
     actual_tfs.push_back(actual_balljoint_tf);
 
-    for(std::size_t i=0; i<joints.size(); ++i)
+    for (std::size_t i = 0; i < joints.size(); ++i)
     {
       Joint* joint = joints[i];
       BodyNode* bn = bns[i];
       Eigen::Isometry3d tf = desired_tfs[i];
 
-      bool check_transform_conversion =
-          equals(predict_joint_transform(joint, tf).matrix(),
-                 get_relative_transform(bn, bn->getParentBodyNode()).matrix());
+      bool check_transform_conversion = equals(
+          predict_joint_transform(joint, tf).matrix(),
+          get_relative_transform(bn, bn->getParentBodyNode()).matrix());
       EXPECT_TRUE(check_transform_conversion);
 
-      if(!check_transform_conversion)
+      if (!check_transform_conversion)
       {
         std::cout << "[" << joint->getName() << " Failed]\n";
-        std::cout << "Predicted:\n" << predict_joint_transform(joint, tf).matrix()
-                  << "\n\nActual:\n"
-                  << get_relative_transform(bn, bn->getParentBodyNode()).matrix()
-                  << "\n\n";
+        std::cout
+            << "Predicted:\n"
+            << predict_joint_transform(joint, tf).matrix() << "\n\nActual:\n"
+            << get_relative_transform(bn, bn->getParentBodyNode()).matrix()
+            << "\n\n";
       }
 
-      bool check_full_cycle = equals(desired_tfs[i].matrix(),
-                                     actual_tfs[i].matrix());
+      bool check_full_cycle
+          = equals(desired_tfs[i].matrix(), actual_tfs[i].matrix());
       EXPECT_TRUE(check_full_cycle);
 
-      if(!check_full_cycle)
+      if (!check_full_cycle)
       {
         std::cout << "[" << joint->getName() << " Failed]\n";
-        std::cout << "Desired:\n" << desired_tfs[i].matrix()
-                  << "\n\nActual:\n" << actual_tfs[i].matrix()
-                  << "\n\n";
+        std::cout << "Desired:\n"
+                  << desired_tfs[i].matrix() << "\n\nActual:\n"
+                  << actual_tfs[i].matrix() << "\n\n";
       }
     }
   }
@@ -1265,8 +1272,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
   SkeletonPtr skel = Skeleton::create();
 
   auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
-  FreeJoint* rootJoint    = pair.first;
-  BodyNode*  rootBodyNode = pair.second;
+  FreeJoint* rootJoint = pair.first;
+  BodyNode* rootBodyNode = pair.second;
   rootJoint->setRelativeTransform(random_transform());
   rootJoint->setRelativeSpatialVelocity(random_vec<6>());
   rootJoint->setRelativeSpatialAcceleration(random_vec<6>());
@@ -1274,36 +1281,36 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
   rootJoint->setTransformFromChildBodyNode(random_transform());
 
   pair = rootBodyNode->createChildJointAndBodyNodePair<FreeJoint>();
-  FreeJoint* joint1    = pair.first;
-  BodyNode*  bodyNode1 = pair.second;
+  FreeJoint* joint1 = pair.first;
+  BodyNode* bodyNode1 = pair.second;
   joint1->setTransformFromParentBodyNode(random_transform());
   joint1->setTransformFromChildBodyNode(random_transform());
 
   //-- Actual terms
   Eigen::Isometry3d actualTf;
-  Eigen::Vector6d   actualVel;
-  Eigen::Vector6d   actualAcc;
+  Eigen::Vector6d actualVel;
+  Eigen::Vector6d actualAcc;
 
-  Eigen::Vector3d   actualLinVel;
-  Eigen::Vector3d   actualAngVel;
-  Eigen::Vector3d   actualLinAcc;
-  Eigen::Vector3d   actualAngAcc;
+  Eigen::Vector3d actualLinVel;
+  Eigen::Vector3d actualAngVel;
+  Eigen::Vector3d actualLinAcc;
+  Eigen::Vector3d actualAngAcc;
 
-  Eigen::Vector3d   oldLinVel;
-  Eigen::Vector3d   oldAngVel;
-  Eigen::Vector3d   oldLinAcc;
-  Eigen::Vector3d   oldAngAcc;
+  Eigen::Vector3d oldLinVel;
+  Eigen::Vector3d oldAngVel;
+  Eigen::Vector3d oldLinAcc;
+  Eigen::Vector3d oldAngAcc;
 
   //-- Test
   for (std::size_t i = 0; i < numTests; ++i)
   {
-    const Eigen::Isometry3d desiredTf     = random_transform();
-    const Eigen::Vector6d   desiredVel    = random_vec<6>();
-    const Eigen::Vector6d   desiredAcc    = random_vec<6>();
-    const Eigen::Vector3d   desiredLinVel = random_vec<3>();
-    const Eigen::Vector3d   desiredAngVel = random_vec<3>();
-    const Eigen::Vector3d   desiredLinAcc = random_vec<3>();
-    const Eigen::Vector3d   desiredAngAcc = random_vec<3>();
+    const Eigen::Isometry3d desiredTf = random_transform();
+    const Eigen::Vector6d desiredVel = random_vec<6>();
+    const Eigen::Vector6d desiredAcc = random_vec<6>();
+    const Eigen::Vector3d desiredLinVel = random_vec<3>();
+    const Eigen::Vector3d desiredAngVel = random_vec<3>();
+    const Eigen::Vector3d desiredLinAcc = random_vec<3>();
+    const Eigen::Vector3d desiredAngAcc = random_vec<3>();
 
     //-- Relative transformation
 
@@ -1322,7 +1329,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     joint1->setRelativeSpatialVelocity(desiredVel);
     actualVel = bodyNode1->getSpatialVelocity(
-                  bodyNode1->getParentBodyNode(), bodyNode1);
+        bodyNode1->getParentBodyNode(), bodyNode1);
 
     EXPECT_TRUE(equals(desiredVel, actualVel));
 
@@ -1331,8 +1338,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
       for (auto inCoordinatesOf : refFrames)
       {
         joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
-        actualVel = bodyNode1->getSpatialVelocity(
-                      relativeTo, inCoordinatesOf);
+        actualVel = bodyNode1->getSpatialVelocity(relativeTo, inCoordinatesOf);
 
         EXPECT_TRUE(equals(desiredVel, actualVel));
       }
@@ -1345,8 +1351,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
       for (auto inCoordinatesOf : refFrames)
       {
         joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
-        oldAngVel
-            = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+        oldAngVel = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
         joint1->setLinearVelocity(desiredLinVel, relativeTo, inCoordinatesOf);
 
         actualLinVel
@@ -1366,14 +1371,13 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
       for (auto inCoordinatesOf : refFrames)
       {
         joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
-        oldLinVel
-            = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        oldLinVel = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
         joint1->setAngularVelocity(desiredAngVel, relativeTo, inCoordinatesOf);
 
-        actualLinVel =
-            bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
-        actualAngVel =
-            bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+        actualLinVel
+            = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        actualAngVel
+            = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
 
         EXPECT_TRUE(equals(oldLinVel, actualLinVel));
         EXPECT_TRUE(equals(desiredAngVel, actualAngVel));
@@ -1384,7 +1388,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     joint1->setRelativeSpatialAcceleration(desiredAcc);
     actualAcc = bodyNode1->getSpatialAcceleration(
-                  bodyNode1->getParentBodyNode(), bodyNode1);
+        bodyNode1->getParentBodyNode(), bodyNode1);
 
     EXPECT_TRUE(equals(desiredAcc, actualAcc));
 
@@ -1392,10 +1396,9 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setSpatialAcceleration(
-              desiredAcc, relativeTo, inCoordinatesOf);
-        actualAcc = bodyNode1->getSpatialAcceleration(
-                      relativeTo, inCoordinatesOf);
+        joint1->setSpatialAcceleration(desiredAcc, relativeTo, inCoordinatesOf);
+        actualAcc
+            = bodyNode1->getSpatialAcceleration(relativeTo, inCoordinatesOf);
 
         EXPECT_TRUE(equals(desiredAcc, actualAcc));
       }
@@ -1407,14 +1410,18 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
       for (auto inCoordinatesOf : refFrames)
       {
         joint1->setSpatialMotion(
-              &desiredTf, relativeTo,
-              &desiredVel, relativeTo, inCoordinatesOf,
-              &desiredAcc, relativeTo, inCoordinatesOf);
+            &desiredTf,
+            relativeTo,
+            &desiredVel,
+            relativeTo,
+            inCoordinatesOf,
+            &desiredAcc,
+            relativeTo,
+            inCoordinatesOf);
         actualTf = bodyNode1->getTransform(relativeTo);
-        actualVel = bodyNode1->getSpatialVelocity(
-                      relativeTo, inCoordinatesOf);
-        actualAcc = bodyNode1->getSpatialAcceleration(
-                      relativeTo, inCoordinatesOf);
+        actualVel = bodyNode1->getSpatialVelocity(relativeTo, inCoordinatesOf);
+        actualAcc
+            = bodyNode1->getSpatialAcceleration(relativeTo, inCoordinatesOf);
 
         EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
         EXPECT_TRUE(equals(desiredVel, actualVel));
@@ -1422,19 +1429,17 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
       }
     }
 
-
     //-- Relative classic linear acceleration
 
     for (auto relativeTo : relFrames)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setSpatialAcceleration(
-              desiredAcc, relativeTo, inCoordinatesOf);
+        joint1->setSpatialAcceleration(desiredAcc, relativeTo, inCoordinatesOf);
         oldAngAcc
             = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
         joint1->setLinearAcceleration(
-              desiredLinAcc, relativeTo, inCoordinatesOf);
+            desiredLinAcc, relativeTo, inCoordinatesOf);
 
         actualLinAcc
             = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
@@ -1452,17 +1457,16 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setSpatialAcceleration(
-              desiredAcc, relativeTo, inCoordinatesOf);
+        joint1->setSpatialAcceleration(desiredAcc, relativeTo, inCoordinatesOf);
         oldLinAcc
             = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
         joint1->setAngularAcceleration(
-              desiredAngAcc, relativeTo, inCoordinatesOf);
+            desiredAngAcc, relativeTo, inCoordinatesOf);
 
-        actualLinAcc =
-            bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
-        actualAngAcc =
-            bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
+        actualLinAcc
+            = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
+        actualAngAcc
+            = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
 
         EXPECT_TRUE(equals(oldLinAcc, actualLinAcc));
         EXPECT_TRUE(equals(desiredAngAcc, actualAngAcc));

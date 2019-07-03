@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 #define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 
+#include <Eigen/Dense>
 #include <assimp/scene.h>
 #include "dart/dynamics/Shape.hpp"
-#include <Eigen/Dense>
 
 namespace dart {
 namespace dynamics {
@@ -46,7 +46,6 @@ class SoftBodyNode;
 class SoftMeshShape : public Shape
 {
 public:
-
   friend class SoftBodyNode;
 
   /// \brief Constructor.
@@ -91,7 +90,7 @@ private:
   std::unique_ptr<aiMesh> mAssimpMesh;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_SOFTMESHSHAPE_HPP_
+#endif // DART_DYNAMICS_SOFTMESHSHAPE_HPP_

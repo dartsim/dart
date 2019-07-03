@@ -50,10 +50,9 @@ FixedFrameProperties::FixedFrameProperties(const Eigen::Isometry3d& relativeTf)
 const Eigen::Vector6d FixedFrame::mZero = Eigen::Vector6d::Zero();
 
 //==============================================================================
-FixedFrame::FixedFrame(Frame* refFrame,
-                       const Eigen::Isometry3d& relativeTransform)
-  : Entity(refFrame, false),
-    Frame(refFrame)
+FixedFrame::FixedFrame(
+    Frame* refFrame, const Eigen::Isometry3d& relativeTransform)
+  : Entity(refFrame, false), Frame(refFrame)
 {
   createAspect<Aspect>(AspectProperties(relativeTransform));
 }
@@ -73,7 +72,7 @@ void FixedFrame::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  if(transform.matrix() == mAspectProperties.mRelativeTf.matrix())
+  if (transform.matrix() == mAspectProperties.mRelativeTf.matrix())
     return;
 
   mAspectProperties.mRelativeTf = transform;
@@ -112,8 +111,7 @@ const Eigen::Vector6d& FixedFrame::getPartialAcceleration() const
 }
 
 //==============================================================================
-FixedFrame::FixedFrame()
-  : FixedFrame(ConstructAbstract)
+FixedFrame::FixedFrame() : FixedFrame(ConstructAbstract)
 {
   // Delegates to the abstract constructor
 }

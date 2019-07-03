@@ -44,13 +44,15 @@ namespace detail {
 //==============================================================================
 /// AspectWithProtectedState generates implementations of the State managing
 /// functions for an Aspect class.
-template <class BaseT, class DerivedT, typename StateDataT,
-          class CompositeT = Composite,
-          void (*updateState)(DerivedT*) = &NoOp<DerivedT*> >
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateDataT,
+    class CompositeT = Composite,
+    void (*updateState)(DerivedT*) = &NoOp<DerivedT*> >
 class AspectWithState : public BaseT
 {
 public:
-
   using Base = BaseT;
   using Derived = DerivedT;
   using StateData = StateDataT;
@@ -58,8 +60,8 @@ public:
   using State = Aspect::MakeState<StateData>;
   constexpr static void (*UpdateState)(Derived*) = updateState;
 
-  using AspectImplementation = AspectWithState<
-      Base, Derived, StateData, CompositeT, updateState>;
+  using AspectImplementation
+      = AspectWithState<Base, Derived, StateData, CompositeT, updateState>;
 
   AspectWithState(const AspectWithState&) = delete;
 
@@ -68,10 +70,8 @@ public:
 
   /// Construct this Aspect and pass args into the constructor of the Base class
   template <typename... BaseArgs>
-  AspectWithState(const StateData& state,
-                 BaseArgs&&... args)
-    : Base(std::forward<BaseArgs>(args)...),
-      mState(state)
+  AspectWithState(const StateData& state, BaseArgs&&... args)
+    : Base(std::forward<BaseArgs>(args)...), mState(state)
   {
     // Do nothing
   }
@@ -92,7 +92,6 @@ public:
   std::unique_ptr<Aspect> cloneAspect() const override;
 
 protected:
-
   /// State of this Aspect
   State mState;
 };
@@ -100,13 +99,15 @@ protected:
 //==============================================================================
 /// AspectWithProtectedProperties generates implementations of the Property
 /// managing functions for an Aspect class.
-template <class BaseT, class DerivedT, typename PropertiesDataT,
-          class CompositeT = Composite,
-          void (*updateProperties)(DerivedT*) = &NoOp<DerivedT*> >
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesDataT,
+    class CompositeT = Composite,
+    void (*updateProperties)(DerivedT*) = &NoOp<DerivedT*> >
 class AspectWithVersionedProperties : public BaseT
 {
 public:
-
   using Base = BaseT;
   using Derived = DerivedT;
   using PropertiesData = PropertiesDataT;
@@ -115,7 +116,11 @@ public:
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
   using AspectImplementation = AspectWithVersionedProperties<
-      Base, Derived, PropertiesData, CompositeT, updateProperties>;
+      Base,
+      Derived,
+      PropertiesData,
+      CompositeT,
+      updateProperties>;
 
   AspectWithVersionedProperties(const AspectWithVersionedProperties&) = delete;
 
@@ -127,14 +132,14 @@ public:
   template <typename... BaseArgs>
   AspectWithVersionedProperties(
       const PropertiesData& properties, BaseArgs&&... args)
-    : Base(std::forward<BaseArgs>(args)...),
-      mProperties(properties)
+    : Base(std::forward<BaseArgs>(args)...), mProperties(properties)
   {
     // Do nothing
   }
 
   // Documentation inherited
-  void setAspectProperties(const Aspect::Properties& someProperties) override final;
+  void setAspectProperties(
+      const Aspect::Properties& someProperties) override final;
 
   // Documentation inherited
   const Aspect::Properties* getAspectProperties() const override final;
@@ -159,10 +164,8 @@ public:
   void notifyPropertiesUpdated();
 
 protected:
-
   /// Properties of this Aspect
   Properties mProperties;
-
 };
 
 //==============================================================================
@@ -172,64 +175,91 @@ protected:
 //
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
-template <class BaseT, class DerivedT, typename StateDataT,
-          class CompositeT, void (*updateState)(DerivedT*)>
-constexpr void (*AspectWithState<
-    BaseT, DerivedT, StateDataT, CompositeT, updateState>::UpdateState)(
-    DerivedT*);
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateDataT,
+    class CompositeT,
+    void (*updateState)(DerivedT*)>
+constexpr void (
+    *AspectWithState<BaseT, DerivedT, StateDataT, CompositeT, updateState>::
+        UpdateState)(DerivedT*);
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateDataT,
-          class CompositeT, void (*updateState)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateDataT,
+    class CompositeT,
+    void (*updateState)(DerivedT*)>
 AspectWithState<BaseT, DerivedT, StateDataT, CompositeT, updateState>::
-AspectWithState(const StateDataT& state)
-  : BaseT(),
-    mState(state)
+    AspectWithState(const StateDataT& state)
+  : BaseT(), mState(state)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class CompositeT, void (*updateState)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateData,
+    class CompositeT,
+    void (*updateState)(DerivedT*)>
 void AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
-setAspectState(const Aspect::State& otherState)
+    setAspectState(const Aspect::State& otherState)
 {
   setState(static_cast<const State&>(otherState));
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class CompositeT, void (*updateState)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateData,
+    class CompositeT,
+    void (*updateState)(DerivedT*)>
 const Aspect::State*
 AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
-getAspectState() const
+    getAspectState() const
 {
   return &mState;
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class CompositeT, void (*updateState)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateData,
+    class CompositeT,
+    void (*updateState)(DerivedT*)>
 void AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
-setState(const StateData& state)
+    setState(const StateData& state)
 {
   static_cast<StateData&>(mState) = state;
   UpdateState(static_cast<Derived*>(this));
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateDataT,
-          class CompositeT, void (*updateState)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateDataT,
+    class CompositeT,
+    void (*updateState)(DerivedT*)>
 auto AspectWithState<BaseT, DerivedT, StateDataT, CompositeT, updateState>::
-getState() const -> const State&
+    getState() const -> const State&
 {
   return mState;
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class CompositeT, void (*updateState)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename StateData,
+    class CompositeT,
+    void (*updateState)(DerivedT*)>
 std::unique_ptr<Aspect>
 AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
     cloneAspect() const
@@ -244,105 +274,175 @@ AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
 //
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
-template <class BaseT, class DerivedT, typename PropertiesDataT,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-constexpr void (*AspectWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
-                                              CompositeT, updateProperties>::
-UpdateProperties)(DerivedT*);
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesDataT,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+constexpr void (*AspectWithVersionedProperties<
+                BaseT,
+                DerivedT,
+                PropertiesDataT,
+                CompositeT,
+                updateProperties>::UpdateProperties)(DerivedT*);
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesDataT,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-AspectWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
-                             CompositeT, updateProperties>::
-AspectWithVersionedProperties(const PropertiesData& properties)
-  : BaseT(),
-    mProperties(properties)
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesDataT,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+AspectWithVersionedProperties<
+    BaseT,
+    DerivedT,
+    PropertiesDataT,
+    CompositeT,
+    updateProperties>::AspectWithVersionedProperties(const PropertiesData&
+                                                         properties)
+  : BaseT(), mProperties(properties)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-void AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                                  CompositeT, updateProperties>::
-setAspectProperties(const Aspect::Properties& someProperties)
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+void AspectWithVersionedProperties<
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::setAspectProperties(const Aspect::Properties&
+                                               someProperties)
 {
   setProperties(static_cast<const Properties&>(someProperties));
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-const Aspect::Properties*
-AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                             CompositeT, updateProperties>::
-getAspectProperties() const
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+const Aspect::Properties* AspectWithVersionedProperties<
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::getAspectProperties() const
 {
   return &mProperties;
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-void AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                                  CompositeT, updateProperties>::
-setProperties(const PropertiesData& properties)
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+void AspectWithVersionedProperties<
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
   this->notifyPropertiesUpdated();
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-auto AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                                  CompositeT, updateProperties>::
-getProperties() const -> const Properties&
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+auto AspectWithVersionedProperties<
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::getProperties() const -> const Properties&
 {
   return mProperties;
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-std::unique_ptr<Aspect>
-AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                             CompositeT, updateProperties>::
-cloneAspect() const
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+std::unique_ptr<Aspect> AspectWithVersionedProperties<
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::cloneAspect() const
 {
   return std::make_unique<Derived>(mProperties);
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
-std::size_t AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                             CompositeT, updateProperties>::incrementVersion()
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
+std::size_t AspectWithVersionedProperties<
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::incrementVersion()
 {
-  if(CompositeType* comp = this->getComposite())
+  if (CompositeType* comp = this->getComposite())
     return comp->incrementVersion();
 
   return 0;
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
 void AspectWithVersionedProperties<
-    BaseT, DerivedT, PropertiesData,
-    CompositeT, updateProperties>::notifyPropertiesUpdate()
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::notifyPropertiesUpdate()
 {
   notifyPropertiesUpdated();
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class CompositeT, void (*updateProperties)(DerivedT*)>
+template <
+    class BaseT,
+    class DerivedT,
+    typename PropertiesData,
+    class CompositeT,
+    void (*updateProperties)(DerivedT*)>
 void AspectWithVersionedProperties<
-    BaseT, DerivedT, PropertiesData,
-    CompositeT, updateProperties>::notifyPropertiesUpdated()
+    BaseT,
+    DerivedT,
+    PropertiesData,
+    CompositeT,
+    updateProperties>::notifyPropertiesUpdated()
 {
   UpdateProperties(static_cast<Derived*>(this));
   this->incrementVersion();

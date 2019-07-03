@@ -33,11 +33,11 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
-#include "dart/common/Composite.hpp"
-#include "dart/common/ProxyAspect.hpp"
-#include "dart/common/EmbeddedAspect.hpp"
-#include "dart/common/RequiresAspect.hpp"
 #include <Eigen/Core>
+#include "dart/common/Composite.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/common/ProxyAspect.hpp"
+#include "dart/common/RequiresAspect.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -108,17 +108,25 @@ BodyNodePropertiesVector getAllBodyNodeProperties(const Skeleton* skel);
 
 //==============================================================================
 using BodyNodeVectorProxyAspectState = common::ProxyCloneable<
-    common::Aspect::State, Skeleton, BodyNodeStateVector,
-    &setAllBodyNodeStates, &getAllBodyNodeStates>;
+    common::Aspect::State,
+    Skeleton,
+    BodyNodeStateVector,
+    &setAllBodyNodeStates,
+    &getAllBodyNodeStates>;
 
 //==============================================================================
 using BodyNodeVectorProxyAspectProperties = common::ProxyCloneable<
-    common::Aspect::Properties, Skeleton, BodyNodePropertiesVector,
-    &setAllBodyNodeProperties, &getAllBodyNodeProperties>;
+    common::Aspect::Properties,
+    Skeleton,
+    BodyNodePropertiesVector,
+    &setAllBodyNodeProperties,
+    &getAllBodyNodeProperties>;
 
 //==============================================================================
-using BodyNodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<Skeleton,
-    BodyNodeVectorProxyAspectState, BodyNodeVectorProxyAspectProperties>;
+using BodyNodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<
+    Skeleton,
+    BodyNodeVectorProxyAspectState,
+    BodyNodeVectorProxyAspectProperties>;
 
 //==============================================================================
 void setAllJointStates(Skeleton* skel, const JointStateVector& states);
@@ -135,25 +143,35 @@ JointPropertiesVector getAllJointProperties(const Skeleton* skel);
 
 //==============================================================================
 using JointVectorProxyAspectState = common::ProxyCloneable<
-    common::Aspect::State, Skeleton, JointStateVector,
-    &setAllJointStates, &getAllJointStates>;
+    common::Aspect::State,
+    Skeleton,
+    JointStateVector,
+    &setAllJointStates,
+    &getAllJointStates>;
 
 //==============================================================================
 using JointVectorProxyAspectProperties = common::ProxyCloneable<
-    common::Aspect::Properties, Skeleton, JointPropertiesVector,
-    &setAllJointProperties, &getAllJointProperties>;
+    common::Aspect::Properties,
+    Skeleton,
+    JointPropertiesVector,
+    &setAllJointProperties,
+    &getAllJointProperties>;
 
 //==============================================================================
-using JointVectorProxyAspect = common::ProxyStateAndPropertiesAspect<Skeleton,
-    JointVectorProxyAspectState, JointVectorProxyAspectProperties>;
+using JointVectorProxyAspect = common::ProxyStateAndPropertiesAspect<
+    Skeleton,
+    JointVectorProxyAspectState,
+    JointVectorProxyAspectProperties>;
 
 //==============================================================================
-using SkeletonProxyAspects = common::RequiresAspect<
-    BodyNodeVectorProxyAspect, JointVectorProxyAspect>;
+using SkeletonProxyAspects
+    = common::RequiresAspect<BodyNodeVectorProxyAspect, JointVectorProxyAspect>;
 
 //==============================================================================
 using SkeletonAspectBase = common::EmbedPropertiesOnTopOf<
-    Skeleton, SkeletonAspectProperties, SkeletonProxyAspects>;
+    Skeleton,
+    SkeletonAspectProperties,
+    SkeletonProxyAspects>;
 
 } // namespace detail
 } // namespace dynamics

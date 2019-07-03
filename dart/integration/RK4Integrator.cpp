@@ -50,8 +50,8 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
 {
   //----------------------------------------------------------------------------
   // compute ddq1
-  q1   = _system->getConfigs();
-  dq1  = _system->getGenVels();
+  q1 = _system->getConfigs();
+  dq1 = _system->getGenVels();
   ddq1 = _system->evalGenAccs();
 
   //----------------------------------------------------------------------------
@@ -62,7 +62,7 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
   _system->integrateGenVels(ddq1, 0.5 * _dt);
 
   // compute ddq2
-  dq2  = _system->getGenVels();
+  dq2 = _system->getGenVels();
   ddq2 = _system->evalGenAccs();
 
   //----------------------------------------------------------------------------
@@ -75,7 +75,7 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
   _system->integrateGenVels(ddq2, 0.5 * _dt);
 
   // compute ddq3
-  dq3  = _system->getGenVels();
+  dq3 = _system->getGenVels();
   ddq3 = _system->evalGenAccs();
 
   //----------------------------------------------------------------------------
@@ -87,7 +87,7 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
   _system->integrateGenVels(ddq3, _dt);
 
   // compute ddq4
-  dq4  = _system->getGenVels();
+  dq4 = _system->getGenVels();
   ddq4 = _system->evalGenAccs();
 
   //----------------------------------------------------------------------------
@@ -95,14 +95,14 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
   //   where dq5 = (1/6) * (dq1 + (2.0 * dq2) + (2.0 * dq3) + dq4)
   _system->setConfigs(q1);
   _system->integrateConfigs(
-        1.0 / 6.0 * (dq1 + (2.0 * dq2) + (2.0 * dq3) + dq4), _dt);
+      1.0 / 6.0 * (dq1 + (2.0 * dq2) + (2.0 * dq3) + dq4), _dt);
 
   // dq = dq1 + ddq5 * _dt
   //   where dq5 = (1/6) * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4)
   _system->setGenVels(dq1);
   _system->integrateGenVels(
-        1.0 / 6.0 * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4), _dt);
+      1.0 / 6.0 * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4), _dt);
 }
 
-}  // namespace integration
-}  // namespace dart
+} // namespace integration
+} // namespace dart

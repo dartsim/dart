@@ -90,17 +90,18 @@ bool ImGuiWidget::isVisible() const
 void AboutWidget::render()
 {
   ImGui::Begin("About DART", &mIsVisible, ImGuiWindowFlags_AlwaysAutoResize);
-  //ImGui::Text("HIT %s", Version::asString().c_str());
+  // ImGui::Text("HIT %s", Version::asString().c_str());
   ImGui::Separator();
   ImGui::Text("Copyright (c) 2011-2019, The DART development contributors");
   ImGui::Text("DART is licensed under the BSD 2 Clause License.");
   ImGui::Separator();
-  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-              1000.0f / ImGui::GetIO().Framerate,
-              ImGui::GetIO().Framerate);
+  ImGui::Text(
+      "Application average %.3f ms/frame (%.1f FPS)",
+      1000.0f / ImGui::GetIO().Framerate,
+      ImGui::GetIO().Framerate);
   ImGui::End();
 }
 
-} // namespace gui
+} // namespace osg
 } // namespace gui
 } // namespace dart

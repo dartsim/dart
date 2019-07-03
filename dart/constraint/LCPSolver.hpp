@@ -68,5 +68,4 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
-
+#endif // DART_CONSTRAINT_LCPSOLVER_HPP_

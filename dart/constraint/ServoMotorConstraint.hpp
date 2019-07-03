@@ -40,7 +40,7 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Joint;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -139,8 +139,7 @@ private:
   static double mConstraintForceMixing;
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_SERVOMOTORCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_SERVOMOTORCONSTRAINT_HPP_

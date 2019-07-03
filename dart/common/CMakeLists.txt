@@ -27,9 +27,3 @@ if(NOT DART_BUILD_DARTPY)
     COMPONENT headers
   )
 endif()
-
-dart_format_add(
-  LockableReference.hpp
-  SmartPointer.hpp
-  detail/LockableReference-impl.hpp
-)

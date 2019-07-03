@@ -58,7 +58,7 @@ public:
 
   /// \brief
   virtual ~MotionBlurSimWindow();
-    
+
   // Set the Quality of Motion Blur
   // Default is 5 (record position of every frame)
   // int from 0 (No motion blur) - 5 (Highest)
@@ -74,7 +74,7 @@ public:
   // Override the display timer,
   // Move the part of "step" in world function to the render function
   void displayTimer(int _val) override;
-    
+
 protected:
   // Determines the frequency of the motion blur
   // Default is 1, which means motion blur effect has the highest quality

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// clang-format off
 #include "dart/config.hpp"
 #include "dart/common/common.hpp"
 #include "dart/math/math.hpp"
@@ -40,3 +41,4 @@
 #include "dart/optimizer/optimizer.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/simulation.hpp"
+// clang-format on

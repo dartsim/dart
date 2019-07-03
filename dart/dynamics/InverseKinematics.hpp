@@ -33,20 +33,20 @@
 #ifndef DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 #define DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 
-#include <memory>
 #include <functional>
+#include <memory>
 
 #include <Eigen/SVD>
 
-#include "dart/common/sub_ptr.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/optimizer/Solver.hpp"
-#include "dart/optimizer/Problem.hpp"
-#include "dart/optimizer/Function.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/optimizer/Function.hpp"
+#include "dart/optimizer/Problem.hpp"
+#include "dart/optimizer/Solver.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -75,7 +75,6 @@ const double DefaultIKLinearWeight = 1.0;
 class InverseKinematics : public common::Subject
 {
 public:
-
   /// Create an InverseKinematics module for a specified node
   static InverseKinematicsPtr create(JacobianNode* _node);
 
@@ -83,7 +82,7 @@ public:
   InverseKinematics(const InverseKinematics&) = delete;
 
   /// Assignment is not allowed
-  InverseKinematics& operator = (const InverseKinematics&) = delete;
+  InverseKinematics& operator=(const InverseKinematics&) = delete;
 
   /// Virtual destructor
   virtual ~InverseKinematics();
@@ -241,7 +240,7 @@ public:
   /// HierarchicalIK that has it in its list. If it is set to inactive, then it
   /// will be ignored by any HierarchicalIK holding onto it, but you can still
   /// use the solve() function with this.
-  void setActive(bool _active=true);
+  void setActive(bool _active = true);
 
   /// Equivalent to setActive(false)
   void setInactive();
@@ -371,7 +370,7 @@ public:
   ///
   /// Setting _clearSeeds to true will clear out any seeds that have been loaded
   /// into the Problem.
-  void resetProblem(bool _clearSeeds=false);
+  void resetProblem(bool _clearSeeds = false);
 
   /// Set the Solver that should be used by this IK module, and set it up with
   /// the Problem that is configured by this IK module
@@ -453,7 +452,6 @@ public:
   void clearCaches();
 
 protected:
-
   // For the definitions of these functions, see the bottom of this header
   class Objective;
   friend class Objective;
@@ -545,7 +543,6 @@ typedef InverseKinematics IK;
 class InverseKinematics::Function
 {
 public:
-
   /// Enable this function to be cloned to a new IK module.
   virtual optimizer::FunctionPtr clone(InverseKinematics* _newIK) const = 0;
 
@@ -559,7 +556,6 @@ public:
 class InverseKinematics::ErrorMethod : public common::Subject
 {
 public:
-
   typedef std::pair<Eigen::Vector6d, Eigen::Vector6d> Bounds;
 
   /// The Properties struct contains settings that are commonly used by
@@ -567,15 +563,16 @@ public:
   struct Properties
   {
     /// Default constructor
-    Properties(const Bounds& _bounds =
-          Bounds(Eigen::Vector6d::Constant(-DefaultIKTolerance),
-                 Eigen::Vector6d::Constant( DefaultIKTolerance)),
+    Properties(
+        const Bounds& _bounds = Bounds(
+            Eigen::Vector6d::Constant(-DefaultIKTolerance),
+            Eigen::Vector6d::Constant(DefaultIKTolerance)),
 
         double _errorClamp = DefaultIKErrorClamp,
 
         const Eigen::Vector6d& _errorWeights = Eigen::compose(
-          Eigen::Vector3d::Constant(DefaultIKAngularWeight),
-          Eigen::Vector3d::Constant(DefaultIKLinearWeight)));
+            Eigen::Vector3d::Constant(DefaultIKAngularWeight),
+            Eigen::Vector3d::Constant(DefaultIKLinearWeight)));
 
     /// Bounds that define the acceptable range of the Node's transform
     /// relative to its target frame.
@@ -598,9 +595,10 @@ public:
   };
 
   /// Constructor
-  ErrorMethod(InverseKinematics* _ik,
-              const std::string& _methodName,
-              const Properties& _properties = Properties());
+  ErrorMethod(
+      InverseKinematics* _ik,
+      const std::string& _methodName,
+      const Properties& _properties = Properties());
 
   /// Virtual destructor
   virtual ~ErrorMethod() = default;
@@ -625,7 +623,8 @@ public:
   /// transform to always be equal to the Target's transform, you can simply
   /// call ErrorMethod::computeDesiredTransform to implement this function.
   virtual Eigen::Isometry3d computeDesiredTransform(
-      const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error) = 0;
+      const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error)
+      = 0;
 
   /// This function is used to handle caching the error vector.
   const Eigen::Vector6d& evalError(const Eigen::VectorXd& _q);
@@ -635,10 +634,10 @@ public:
 
   /// Set all the error bounds.
   void setBounds(
-      const Eigen::Vector6d& _lower =
-          Eigen::Vector6d::Constant(-DefaultIKTolerance),
-      const Eigen::Vector6d& _upper =
-          Eigen::Vector6d::Constant( DefaultIKTolerance));
+      const Eigen::Vector6d& _lower
+      = Eigen::Vector6d::Constant(-DefaultIKTolerance),
+      const Eigen::Vector6d& _upper
+      = Eigen::Vector6d::Constant(DefaultIKTolerance));
 
   /// Set all the error bounds.
   void setBounds(const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds);
@@ -648,10 +647,10 @@ public:
 
   /// Set the error bounds for orientation.
   void setAngularBounds(
-      const Eigen::Vector3d& _lower =
-          Eigen::Vector3d::Constant(-DefaultIKTolerance),
-      const Eigen::Vector3d& _upper =
-          Eigen::Vector3d::Constant( DefaultIKTolerance));
+      const Eigen::Vector3d& _lower
+      = Eigen::Vector3d::Constant(-DefaultIKTolerance),
+      const Eigen::Vector3d& _upper
+      = Eigen::Vector3d::Constant(DefaultIKTolerance));
 
   /// Set the error bounds for orientation.
   void setAngularBounds(
@@ -662,10 +661,10 @@ public:
 
   /// Set the error bounds for translation.
   void setLinearBounds(
-      const Eigen::Vector3d& _lower =
-          Eigen::Vector3d::Constant(-DefaultIKTolerance),
-      const Eigen::Vector3d& _upper =
-          Eigen::Vector3d::Constant( DefaultIKTolerance));
+      const Eigen::Vector3d& _lower
+      = Eigen::Vector3d::Constant(-DefaultIKTolerance),
+      const Eigen::Vector3d& _upper
+      = Eigen::Vector3d::Constant(DefaultIKTolerance));
 
   /// Set the error bounds for translation.
   void setLinearBounds(
@@ -693,8 +692,8 @@ public:
   /// Set the weights that will be applied to each angular component of the
   /// error vector.
   void setAngularErrorWeights(
-      const Eigen::Vector3d& _weights =
-        Eigen::Vector3d::Constant(DefaultIKAngularWeight));
+      const Eigen::Vector3d& _weights
+      = Eigen::Vector3d::Constant(DefaultIKAngularWeight));
 
   /// Get the weights that will be applied to each angular component of the
   /// error vector.
@@ -703,8 +702,8 @@ public:
   /// Set the weights that will be applied to each linear component of the
   /// error vector.
   void setLinearErrorWeights(
-      const Eigen::Vector3d& _weights =
-        Eigen::Vector3d::Constant(DefaultIKLinearWeight));
+      const Eigen::Vector3d& _weights
+      = Eigen::Vector3d::Constant(DefaultIKLinearWeight));
 
   /// Get the weights that will be applied to each linear component of the
   /// error vector.
@@ -718,7 +717,6 @@ public:
   void clearCache();
 
 protected:
-
   /// Pointer to the IK module of this ErrorMethod
   common::sub_ptr<InverseKinematics> mIK;
 
@@ -737,7 +735,6 @@ protected:
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 
 //==============================================================================
@@ -746,7 +743,6 @@ public:
 class InverseKinematics::TaskSpaceRegion : public ErrorMethod
 {
 public:
-
   struct UniqueProperties
   {
     /// Setting this to true (which is default) will tell it to compute the
@@ -766,14 +762,14 @@ public:
   {
     /// Default constructor
     Properties(
-        const ErrorMethod::Properties& errorProperties =
-            ErrorMethod::Properties(),
+        const ErrorMethod::Properties& errorProperties
+        = ErrorMethod::Properties(),
         const UniqueProperties& taskSpaceProperties = UniqueProperties());
   };
 
   /// Default Constructor
-  explicit TaskSpaceRegion(InverseKinematics* _ik,
-                           const Properties& _properties = Properties());
+  explicit TaskSpaceRegion(
+      InverseKinematics* _ik, const Properties& _properties = Properties());
 
   /// Virtual destructor
   virtual ~TaskSpaceRegion() = default;
@@ -801,10 +797,8 @@ public:
   Properties getTaskSpaceRegionProperties() const;
 
 protected:
-
   /// Properties of this TaskSpaceRegion
   UniqueProperties mTaskSpaceP;
-
 };
 
 //==============================================================================
@@ -813,7 +807,6 @@ protected:
 class InverseKinematics::GradientMethod : public common::Subject
 {
 public:
-
   struct Properties
   {
     /// The component-wise clamp for this GradientMethod
@@ -823,14 +816,16 @@ public:
     Eigen::VectorXd mComponentWeights;
 
     /// Default constructor
-    Properties(double clamp = DefaultIKGradientComponentClamp,
-               const Eigen::VectorXd& weights = Eigen::VectorXd());
+    Properties(
+        double clamp = DefaultIKGradientComponentClamp,
+        const Eigen::VectorXd& weights = Eigen::VectorXd());
   };
 
   /// Constructor
-  GradientMethod(InverseKinematics* _ik,
-                 const std::string& _methodName,
-                 const Properties& _properties);
+  GradientMethod(
+      InverseKinematics* _ik,
+      const std::string& _methodName,
+      const Properties& _properties);
 
   /// Virtual destructor
   virtual ~GradientMethod() = default;
@@ -854,13 +849,14 @@ public:
   /// current joint positions corresponds to the positions that you
   /// must use to compute the error. This function will only get called when
   /// an update is needed.
-  virtual void computeGradient(const Eigen::Vector6d& _error,
-                               Eigen::VectorXd& _grad) = 0;
+  virtual void computeGradient(
+      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
+      = 0;
 
   /// This function is used to handle caching the gradient vector and
   /// interfacing with the solver.
-  void evalGradient(const Eigen::VectorXd& _q,
-                    Eigen::Map<Eigen::VectorXd> _grad);
+  void evalGradient(
+      const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad);
 
   /// Get the name of this GradientMethod.
   const std::string& getMethodName() const;
@@ -916,7 +912,6 @@ public:
   const InverseKinematics* getIK() const;
 
 protected:
-
   /// The IK module that this GradientMethod belongs to.
   common::sub_ptr<InverseKinematics> mIK;
 
@@ -933,7 +928,6 @@ protected:
   Properties mGradientP;
 
 private:
-
   /// Cache used by convertJacobianMethodOutputToGradient to avoid
   /// reallocating this vector on each iteration.
   Eigen::VectorXd mInitialPositionsCache;
@@ -951,7 +945,6 @@ private:
 class InverseKinematics::JacobianDLS : public GradientMethod
 {
 public:
-
   struct UniqueProperties
   {
     /// Damping coefficient
@@ -965,14 +958,14 @@ public:
   {
     /// Default constructor
     Properties(
-        const GradientMethod::Properties& gradientProperties =
-            GradientMethod::Properties(),
+        const GradientMethod::Properties& gradientProperties
+        = GradientMethod::Properties(),
         const UniqueProperties& dlsProperties = UniqueProperties());
   };
 
   /// Constructor
-  explicit JacobianDLS(InverseKinematics* _ik,
-                       const Properties& properties = Properties());
+  explicit JacobianDLS(
+      InverseKinematics* _ik, const Properties& properties = Properties());
 
   /// Virtual destructor
   virtual ~JacobianDLS() = default;
@@ -982,8 +975,8 @@ public:
       InverseKinematics* _newIK) const override;
 
   // Documentation inherited
-  void computeGradient(const Eigen::Vector6d& _error,
-                       Eigen::VectorXd& _grad) override;
+  void computeGradient(
+      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) override;
 
   /// Set the damping coefficient. A higher damping coefficient will smooth
   /// out behavior around singularities but will also result in less precision
@@ -997,10 +990,8 @@ public:
   Properties getJacobianDLSProperties() const;
 
 protected:
-
   /// Properties of this Damped Least Squares method
   UniqueProperties mDLSProperties;
-
 };
 
 //==============================================================================
@@ -1012,10 +1003,9 @@ protected:
 class InverseKinematics::JacobianTranspose : public GradientMethod
 {
 public:
-
   /// Constructor
-  explicit JacobianTranspose(InverseKinematics* _ik,
-                             const Properties& properties = Properties());
+  explicit JacobianTranspose(
+      InverseKinematics* _ik, const Properties& properties = Properties());
 
   /// Virtual destructor
   virtual ~JacobianTranspose() = default;
@@ -1025,8 +1015,8 @@ public:
       InverseKinematics* _newIK) const override;
 
   // Documentation inherited
-  void computeGradient(const Eigen::Vector6d& _error,
-                       Eigen::VectorXd& _grad) override;
+  void computeGradient(
+      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) override;
 };
 
 //==============================================================================
@@ -1046,14 +1036,14 @@ public:
 class InverseKinematics::Analytical : public GradientMethod
 {
 public:
-
   /// Bitwise enumerations that are used to describe some properties of each
   /// solution produced by the analytical IK.
   enum Validity_t
   {
-    VALID = 0,                ///< The solution is completely valid and reaches the target
-    OUT_OF_REACH   = 1 << 0,  ///< The solution does not reach the target
-    LIMIT_VIOLATED = 1 << 1   ///< The solution has one or more joint positions that violate the joint limits
+    VALID = 0, ///< The solution is completely valid and reaches the target
+    OUT_OF_REACH = 1 << 0,  ///< The solution does not reach the target
+    LIMIT_VIOLATED = 1 << 1 ///< The solution has one or more joint positions
+                            ///< that violate the joint limits
   };
   // TODO(JS): Change to enum class?
 
@@ -1087,8 +1077,9 @@ public:
   struct Solution
   {
     /// Default constructor
-    Solution(const Eigen::VectorXd& _config = Eigen::VectorXd(),
-             int _validity = VALID);
+    Solution(
+        const Eigen::VectorXd& _config = Eigen::VectorXd(),
+        int _validity = VALID);
 
     /// Configuration computed by the Analytical solver
     Eigen::VectorXd mConfig;
@@ -1102,7 +1093,8 @@ public:
   typedef std::function<bool(
       const Eigen::VectorXd& _better,
       const Eigen::VectorXd& _worse,
-      const InverseKinematics* _ik)> QualityComparison;
+      const InverseKinematics* _ik)>
+      QualityComparison;
 
   struct UniqueProperties
   {
@@ -1116,13 +1108,15 @@ public:
     QualityComparison mQualityComparator;
 
     /// Default constructor. Uses a default quality comparison function.
-    UniqueProperties(ExtraDofUtilization extraDofUtilization = UNUSED,
-               double extraErrorLengthClamp = DefaultIKErrorClamp);
+    UniqueProperties(
+        ExtraDofUtilization extraDofUtilization = UNUSED,
+        double extraErrorLengthClamp = DefaultIKErrorClamp);
 
     /// Constructor that allows you to set the quality comparison function.
-    UniqueProperties(ExtraDofUtilization extraDofUtilization,
-               double extraErrorLengthClamp,
-               QualityComparison qualityComparator);
+    UniqueProperties(
+        ExtraDofUtilization extraDofUtilization,
+        double extraErrorLengthClamp,
+        QualityComparison qualityComparator);
 
     /// Reset the quality comparison function to its default behavior.
     void resetQualityComparisonFunction();
@@ -1132,8 +1126,8 @@ public:
   {
     // Default constructor
     Properties(
-        const GradientMethod::Properties& gradientProperties =
-            GradientMethod::Properties(),
+        const GradientMethod::Properties& gradientProperties
+        = GradientMethod::Properties(),
         const UniqueProperties& analyticalProperties = UniqueProperties());
 
     // Construct Properties by specifying the UniqueProperties. The
@@ -1142,8 +1136,10 @@ public:
   };
 
   /// Constructor
-  Analytical(InverseKinematics* _ik, const std::string& _methodName,
-             const Properties& _properties);
+  Analytical(
+      InverseKinematics* _ik,
+      const std::string& _methodName,
+      const Properties& _properties);
 
   /// Virtual destructor
   virtual ~Analytical() = default;
@@ -1163,8 +1159,8 @@ public:
 
   /// You should not need to override this function. Instead, you should
   /// override computeSolutions.
-  void computeGradient(const Eigen::Vector6d& _error,
-                       Eigen::VectorXd& _grad) override;
+  void computeGradient(
+      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) override;
 
   /// Use this function to fill the entries of the mSolutions variable. Be
   /// sure to clear the mSolutions vector at the start, and to also return the
@@ -1176,7 +1172,8 @@ public:
   /// the LIMIT_VIOLATED flags of any configurations that are outside of the
   /// position limits.
   virtual const std::vector<Solution>& computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf) = 0;
+      const Eigen::Isometry3d& _desiredBodyTf)
+      = 0;
 
   /// Get a list of the DOFs that will be included in the entries of the
   /// solutions returned by getSolutions(). Ideally, this should match up with
@@ -1237,7 +1234,6 @@ public:
   void constructDofMap();
 
 protected:
-
   /// This function will compute a gradient which utilizes the extra DOFs
   /// that go unused by the Analytical solution and then it will add the
   /// components of that gradient to the output parameter: grad.
@@ -1268,7 +1264,6 @@ protected:
   UniqueProperties mAnalyticalP;
 
 private:
-
   /// This maps the DOFs provided by getDofs() to their index in the Node's
   /// list of dependent DOFs. This map is constructed by constructDofMap().
   std::vector<int> mDofMap;
@@ -1308,11 +1303,10 @@ private:
 /// InverseKinematics module. This class is not meant to be extended or
 /// instantiated by a user. Call InverseKinematics::resetProblem() to set
 /// the objective of the module's Problem to an InverseKinematics::Objective.
-class InverseKinematics::Objective final :
-    public Function, public optimizer::Function
+class InverseKinematics::Objective final : public Function,
+                                           public optimizer::Function
 {
 public:
-
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InverseKinematics::Objective)
 
   /// Constructor
@@ -1328,11 +1322,10 @@ public:
   double eval(const Eigen::VectorXd& _x) override;
 
   // Documentation inherited
-  void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override;
+  void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
 
 protected:
-
   /// Pointer to this Objective's IK module
   sub_ptr<InverseKinematics> mIK;
 
@@ -1358,11 +1351,10 @@ public:
 /// instantiated by a user. Call InverseKinematics::resetProblem() to set the
 /// first equality constraint of the module's Problem to an
 /// InverseKinematics::Constraint.
-class InverseKinematics::Constraint final :
-    public Function, public optimizer::Function
+class InverseKinematics::Constraint final : public Function,
+                                            public optimizer::Function
 {
 public:
-
   /// Constructor
   Constraint(InverseKinematics* _ik);
 
@@ -1376,11 +1368,10 @@ public:
   double eval(const Eigen::VectorXd& _x) override;
 
   // Documentation inherited
-  void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override;
+  void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
 
 protected:
-
   /// Pointer to this Constraint's IK module
   sub_ptr<InverseKinematics> mIK;
 };

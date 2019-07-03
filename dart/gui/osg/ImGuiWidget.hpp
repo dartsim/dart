@@ -48,7 +48,6 @@ namespace osg {
 class ImGuiWidget
 {
 public:
-
   /// Constructor
   ImGuiWidget();
 
@@ -74,10 +73,8 @@ public:
   bool isVisible() const;
 
 protected:
-
   /// Whether this widget is visible.
   bool mIsVisible;
-
 };
 
 class AboutWidget : public ImGuiWidget

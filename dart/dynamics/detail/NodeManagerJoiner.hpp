@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
 #define DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
 
-#include "dart/dynamics/NodeManagerJoiner.hpp"
 #include "dart/common/detail/TemplateJoinerDispatchMacro.hpp"
+#include "dart/dynamics/NodeManagerJoiner.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -55,8 +55,7 @@ template <class Base1, class Base2>
 template <typename Base1Arg>
 NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
     Base1Arg&& arg1, common::NoArgTag)
-  : Base1(std::forward<Base1Arg>(arg1)),
-    Base2()
+  : Base1(std::forward<Base1Arg>(arg1)), Base2()
 {
   // Do nothing
 }
@@ -66,33 +65,54 @@ template <class Base1, class Base2>
 template <typename... Base2Args>
 NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
     common::NoArgTag, Base2Args&&... args2)
-  : Base1(),
-    Base2(std::forward<Base2Args>(args2)...)
+  : Base1(), Base2(std::forward<Base2Args>(args2)...)
 {
   // Do nothing
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(std::size_t, NodeManagerJoinerForBodyNode, getNumNodes, () const, isSpecializedForNode, ())
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForBodyNode, getNode, (std::size_t index), isSpecializedForNode, (index))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForBodyNode, getNode, (std::size_t index) const, isSpecializedForNode, (index))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    std::size_t,
+    NodeManagerJoinerForBodyNode,
+    getNumNodes,
+    () const,
+    isSpecializedForNode,
+    ())
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    T*,
+    NodeManagerJoinerForBodyNode,
+    getNode,
+    (std::size_t index),
+    isSpecializedForNode,
+    (index))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    const T*,
+    NodeManagerJoinerForBodyNode,
+    getNode,
+    (std::size_t index) const,
+    isSpecializedForNode,
+    (index))
 
 //==============================================================================
 template <class Base1, class Base2>
 template <class T>
-constexpr bool NodeManagerJoinerForBodyNode<Base1, Base2>::isSpecializedForNode()
+constexpr bool
+NodeManagerJoinerForBodyNode<Base1, Base2>::isSpecializedForNode()
 {
-  return (Base1::template isSpecializedForNode<T>()
-          || Base2::template isSpecializedForNode<T>());
+  return (
+      Base1::template isSpecializedForNode<T>()
+      || Base2::template isSpecializedForNode<T>());
 }
 
 //==============================================================================
 template <class Base1, class Base2, class... OtherBases>
 template <typename... Args>
-NodeManagerJoinerForBodyNode<Base1, Base2, OtherBases...>::NodeManagerJoinerForBodyNode(
-    Args&&... args)
-  : NodeManagerJoinerForBodyNode<Base1, NodeManagerJoinerForBodyNode<Base2, OtherBases...>>(
-      std::forward<Args>(args)...)
+NodeManagerJoinerForBodyNode<Base1, Base2, OtherBases...>::
+    NodeManagerJoinerForBodyNode(Args&&... args)
+  : NodeManagerJoinerForBodyNode<
+        Base1,
+        NodeManagerJoinerForBodyNode<Base2, OtherBases...>>(
+        std::forward<Args>(args)...)
 {
   // Do nothing
 }
@@ -108,19 +128,51 @@ NodeManagerJoinerForSkeleton<Base1, Base2>::NodeManagerJoinerForSkeleton(
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(std::size_t, NodeManagerJoinerForSkeleton, getNumNodes, (std::size_t treeIndex) const, isSpecializedForNode, (treeIndex))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (std::size_t treeIndex, std::size_t nodeIndex), isSpecializedForNode, (treeIndex, nodeIndex))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (std::size_t treeIndex, std::size_t nodeIndex) const, isSpecializedForNode, (treeIndex, nodeIndex))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name), isSpecializedForNode, (name))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name) const, isSpecializedForNode, (name))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    std::size_t,
+    NodeManagerJoinerForSkeleton,
+    getNumNodes,
+    (std::size_t treeIndex) const,
+    isSpecializedForNode,
+    (treeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    T*,
+    NodeManagerJoinerForSkeleton,
+    getNode,
+    (std::size_t treeIndex, std::size_t nodeIndex),
+    isSpecializedForNode,
+    (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    const T*,
+    NodeManagerJoinerForSkeleton,
+    getNode,
+    (std::size_t treeIndex, std::size_t nodeIndex) const,
+    isSpecializedForNode,
+    (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    T*,
+    NodeManagerJoinerForSkeleton,
+    getNode,
+    (const std::string& name),
+    isSpecializedForNode,
+    (name))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
+    const T*,
+    NodeManagerJoinerForSkeleton,
+    getNode,
+    (const std::string& name) const,
+    isSpecializedForNode,
+    (name))
 
 //==============================================================================
 template <class Base1, class Base2, class... OtherBases>
 template <typename... Args>
-NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>::NodeManagerJoinerForSkeleton(
-    Args&&... args)
-  : NodeManagerJoinerForSkeleton<Base1, NodeManagerJoinerForSkeleton<Base2, OtherBases...>>(
-      std::forward<Args>(args)...)
+NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>::
+    NodeManagerJoinerForSkeleton(Args&&... args)
+  : NodeManagerJoinerForSkeleton<
+        Base1,
+        NodeManagerJoinerForSkeleton<Base2, OtherBases...>>(
+        std::forward<Args>(args)...)
 {
   // Do nothing
 }

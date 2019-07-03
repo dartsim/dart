@@ -41,7 +41,6 @@ namespace dynamics {
 class ArrowShape : public MeshShape
 {
 public:
-
   struct Properties
   {
     /// _radius affects the thickness of the arrow. _headRadiusScale can be
@@ -52,10 +51,13 @@ public:
     /// given value; _maxHeadLength will prevent it from being longer than the
     /// given value. Set _minHeadLength and _maxHeadLength to the same value to
     /// fix the size of the arrow head.
-    Properties(double _radius=0.01, double _headRadiusScale=2.0,
-               double _headLengthScale=0.15,
-               double _minHeadLength=0,  double _maxHeadLength=INFINITY,
-               bool _doubleArrow=false);
+    Properties(
+        double _radius = 0.01,
+        double _headRadiusScale = 2.0,
+        double _headLengthScale = 0.15,
+        double _minHeadLength = 0,
+        double _maxHeadLength = INFINITY,
+        bool _doubleArrow = false);
 
     double mRadius;
     double mHeadRadiusScale;
@@ -67,10 +69,12 @@ public:
 
   /// This will produce an arrow that reaches from _tail to _head with the given
   /// properties.
-  ArrowShape(const Eigen::Vector3d& _tail, const Eigen::Vector3d& _head,
-             const Properties& _properties = Properties(),
-             const Eigen::Vector4d& _color=Eigen::Vector4d(0.5,0.5,1.0,1.0),
-             std::size_t _resolution=10);
+  ArrowShape(
+      const Eigen::Vector3d& _tail,
+      const Eigen::Vector3d& _head,
+      const Properties& _properties = Properties(),
+      const Eigen::Vector4d& _color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
+      std::size_t _resolution = 10);
 
   /// Set the positions of the tail and head of the arrow without changing any
   /// settings
@@ -91,12 +95,12 @@ public:
   /// Get the properties of this arrow
   const Properties& getProperties() const;
 
-  void configureArrow(const Eigen::Vector3d& _tail,
-                      const Eigen::Vector3d& _head,
-                      const Properties& _properties);
+  void configureArrow(
+      const Eigen::Vector3d& _tail,
+      const Eigen::Vector3d& _head,
+      const Properties& _properties);
 
 protected:
-
   void instantiate(std::size_t resolution);
 
   Eigen::Vector3d mTail;

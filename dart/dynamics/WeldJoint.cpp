@@ -34,8 +34,8 @@
 
 #include <string>
 
-#include "dart/math/Helpers.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -83,7 +83,8 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromParentBodyNode(_T);
 
-  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
@@ -91,7 +92,8 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromChildBodyNode(_T);
 
-  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
@@ -146,5 +148,5 @@ void WeldJoint::updateRelativeJacobianTimeDeriv() const
   // Do nothing
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

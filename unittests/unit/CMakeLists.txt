@@ -84,5 +84,8 @@ foreach(collision_engine
 
 endforeach()
 
-dart_format_add(test_Inertia.cpp)
-dart_format_add(test_VskParser.cpp)
+dart_format_add(
+  GeneratedWamIkFast.cpp
+  SharedLibraryWamIkFast.hpp
+  SharedLibraryWamIkFast.cpp
+)

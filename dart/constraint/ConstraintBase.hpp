@@ -41,7 +41,7 @@ namespace dart {
 
 namespace dynamics {
 class Skeleton;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -135,5 +135,4 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINTBASE_HPP_
-
+#endif // DART_CONSTRAINT_CONSTRAINTBASE_HPP_

@@ -34,11 +34,11 @@
 #define DART_GUI_OSG_VIEWER_HPP_
 
 #include <map>
-#include <unordered_set>
 #include <memory>
+#include <unordered_set>
 
-#include <osgViewer/Viewer>
 #include <osgShadow/ShadowTechnique>
+#include <osgViewer/Viewer>
 
 #include <Eigen/Core>
 
@@ -74,7 +74,6 @@ class SaveScreen;
 class ViewerAttachment : public virtual ::osg::Group
 {
 public:
-
   friend class Viewer;
 
   /// Default constructor
@@ -92,7 +91,6 @@ public:
   const Viewer* getViewer() const;
 
 protected:
-
   /// This function will be called by attach(Viewer*) so you can do customized
   /// setup when the Viewer changes. By default this function does nothing, so
   /// overriding it is completely safe.
@@ -104,12 +102,8 @@ protected:
   /// customAttach(Viewer*) so you can do customized setup.
   virtual void attach(Viewer* newViewer);
 
-
-
 private:
-
   Viewer* mViewer;
-
 };
 
 class Viewer : public osgViewer::Viewer, public dart::common::Subject
@@ -117,7 +111,7 @@ class Viewer : public osgViewer::Viewer, public dart::common::Subject
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.
-  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0));
+  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9, 0.9, 0.9, 1.0));
 
   /// Destructor
   virtual ~Viewer();
@@ -142,8 +136,11 @@ public:
   ///
   /// Set the restart argument to true if you want the sequence counter to
   /// restart from 0.
-  void record(const std::string& directory, const std::string& prefix = "image",
-              bool restart = false, std::size_t digits=6);
+  void record(
+      const std::string& directory,
+      const std::string& prefix = "image",
+      bool restart = false,
+      std::size_t digits = 6);
 
   /// If the Viewer is recording, then pause the recording. The next time
   /// record() is called, the numbering of the images will resume from where it
@@ -168,7 +165,7 @@ public:
   /// Add a WorldNode to this Viewer. If active is true, the WorldNode will
   /// respond to user input (but it will not begin simulating unless its
   /// simulation is currently turned on).
-  void addWorldNode(WorldNode* _newWorldNode, bool _active=true);
+  void addWorldNode(WorldNode* _newWorldNode, bool _active = true);
 
   /// Remove a WorldNode from this Viewer
   void removeWorldNode(WorldNode* _oldWorldNode);
@@ -200,7 +197,8 @@ public:
   /// Get one of the LightSources of this Viewer
   /// index either 0 or 1
   /// Useful for shadowing techniques
-  const ::osg::ref_ptr<::osg::LightSource>& getLightSource(std::size_t index = 0) const;
+  const ::osg::ref_ptr<::osg::LightSource>& getLightSource(
+      std::size_t index = 0) const;
 
   /// Set up the default lighting scheme
   void setupDefaultLights();
@@ -214,11 +212,11 @@ public:
   void setUpwardsDirection(const Eigen::Vector3d& _up);
 
   /// Set the given WorldNode to active
-  void setWorldNodeActive(WorldNode* _node, bool _active=true);
+  void setWorldNodeActive(WorldNode* _node, bool _active = true);
 
   /// Set the given World to active
-  void setWorldNodeActive(std::shared_ptr<dart::simulation::World> _world,
-                          bool _active=true);
+  void setWorldNodeActive(
+      std::shared_ptr<dart::simulation::World> _world, bool _active = true);
 
   /// Set all currently active WorldNodes to simulate _on
   void simulate(bool _on);
@@ -245,16 +243,17 @@ public:
   /// A version of enableDragAndDrop specifically for a single shape within a
   /// SimpleFrame object. Dragging and Dropping the shape will also drag and
   /// drop the entire Frame
-  SimpleFrameShapeDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
-                                         dart::dynamics::Shape* _shape);
+  SimpleFrameShapeDnD* enableDragAndDrop(
+      dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape);
 
   /// A version of enableDragAndDrop specifically for InteractiveFrames
   InteractiveFrameDnD* enableDragAndDrop(InteractiveFrame* _frame);
 
   /// A version of enableDragAndDrop specifically for BodyNodes
-  BodyNodeDnD* enableDragAndDrop(dart::dynamics::BodyNode* _bn,
-                                 bool _useExternalIK = true,
-                                 bool _useWholeBody = false);
+  BodyNodeDnD* enableDragAndDrop(
+      dart::dynamics::BodyNode* _bn,
+      bool _useExternalIK = true,
+      bool _useWholeBody = false);
 
   /// Delete a DragAndDrop object. Returns true if the DnD was active and has
   /// now been deleted
@@ -303,7 +302,6 @@ public:
   double getVerticalFieldOfView() const;
 
 protected:
-
   friend class SaveScreen;
 
   /// Current number of the image sequence for screen recording
@@ -365,7 +363,7 @@ protected:
 
   /// Map of WorldNodes in this dart::gui::osg::Viewer. A WorldNode will map to
   /// true iff it is currently active
-  std::map<::osg::ref_ptr<WorldNode>,bool> mWorldNodes;
+  std::map<::osg::ref_ptr<WorldNode>, bool> mWorldNodes;
 
   std::unordered_set<ViewerAttachment*> mAttachments;
 
@@ -376,18 +374,19 @@ protected:
   // typeid as a key
 
   /// Map from SimpleFrame ptrs to SimpleFrameDnD ptrs
-  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*> mSimpleFrameDnDMap;
+  std::map<dart::dynamics::SimpleFrame*, SimpleFrameDnD*> mSimpleFrameDnDMap;
 
   /// Multimap from Shape ptrs to SimpleFrameShapeDnD ptrs. We use a multimap
   /// in order to support the possibility of a single Shape being used by
   /// multiple objects
-  std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*> mSimpleFrameShapeDnDMap;
+  std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>
+      mSimpleFrameShapeDnDMap;
 
   /// Map from InteractiveFrame ptrs to InteractiveFrameDnD ptrs
-  std::map<InteractiveFrame*,InteractiveFrameDnD*> mInteractiveFrameDnDMap;
+  std::map<InteractiveFrame*, InteractiveFrameDnD*> mInteractiveFrameDnDMap;
 
   /// Map from BodyNode ptrs to BodyNodeDnD ptrs
-  std::map<dart::dynamics::BodyNode*,BodyNodeDnD*> mBodyNodeDnDMap;
+  std::map<dart::dynamics::BodyNode*, BodyNodeDnD*> mBodyNodeDnDMap;
 };
 
 } // namespace osg

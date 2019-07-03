@@ -49,7 +49,8 @@ OdeCollisionGroup::OdeCollisionGroup(
   // objects is O(n) (as long as those objects are not clustered together too
   // closely), as each object can be quickly paired with the objects around it.
   //
-  // Source: https://www.ode-wiki.org/wiki/index.php?title=Manual:_Collision_Detection#Space_functions
+  // Source:
+  // https://www.ode-wiki.org/wiki/index.php?title=Manual:_Collision_Detection#Space_functions
   mSpaceId = dHashSpaceCreate(0);
   assert(mSpaceId);
   dHashSpaceSetLevels(mSpaceId, -2, 8);
@@ -124,5 +125,5 @@ dSpaceID OdeCollisionGroup::getOdeSpaceId() const
   return mSpaceId;
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

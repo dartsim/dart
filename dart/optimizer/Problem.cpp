@@ -43,8 +43,9 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
-template<typename T>
-static T getVectorObjectIfAvailable(std::size_t _idx, const std::vector<T>& _vec)
+template <typename T>
+static T getVectorObjectIfAvailable(
+    std::size_t _idx, const std::vector<T>& _vec)
 {
   // TODO: Should we have an out-of-bounds assertion or throw here?
   if (_idx < _vec.size())
@@ -54,9 +55,7 @@ static T getVectorObjectIfAvailable(std::size_t _idx, const std::vector<T>& _vec
 }
 
 //==============================================================================
-Problem::Problem(std::size_t _dim)
-  : mDimension(0),
-    mOptimumValue(0.0)
+Problem::Problem(std::size_t _dim) : mDimension(0), mOptimumValue(0.0)
 {
   setDimension(_dim);
 }
@@ -64,17 +63,17 @@ Problem::Problem(std::size_t _dim)
 //==============================================================================
 void Problem::setDimension(std::size_t _dim)
 {
-  if(_dim != mDimension)
+  if (_dim != mDimension)
   {
     mDimension = _dim;
 
     mInitialGuess = Eigen::VectorXd::Zero(mDimension);
 
     mLowerBounds = Eigen::VectorXd::Constant(
-          mDimension, -std::numeric_limits<double>::infinity());
+        mDimension, -std::numeric_limits<double>::infinity());
 
     mUpperBounds = Eigen::VectorXd::Constant(
-          mDimension,  std::numeric_limits<double>::infinity());
+        mDimension, std::numeric_limits<double>::infinity());
 
     mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
     clearAllSeeds();
@@ -90,15 +89,16 @@ std::size_t Problem::getDimension() const
 //==============================================================================
 void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 {
-  assert(static_cast<std::size_t>(_initGuess.size()) == mDimension
-         && "Invalid size.");
+  assert(
+      static_cast<std::size_t>(_initGuess.size()) == mDimension
+      && "Invalid size.");
 
-  if(_initGuess.size() != static_cast<int>(mDimension))
+  if (_initGuess.size() != static_cast<int>(mDimension))
   {
-    dterr  << "[Problem::setInitialGuess] Attempting to set the initial guess "
-           << "of a Problem of dimension [" << mDimension << "] to a vector of "
-           << "dimension [" << _initGuess.size() << "]. This initial guess "
-           << "will not be used!\n";
+    dterr << "[Problem::setInitialGuess] Attempting to set the initial guess "
+          << "of a Problem of dimension [" << mDimension << "] to a vector of "
+          << "dimension [" << _initGuess.size() << "]. This initial guess "
+          << "will not be used!\n";
     return;
   }
 
@@ -114,7 +114,7 @@ const Eigen::VectorXd& Problem::getInitialGuess() const
 //==============================================================================
 void Problem::addSeed(const Eigen::VectorXd& _seed)
 {
-  if(_seed.size() == static_cast<int>(mDimension))
+  if (_seed.size() == static_cast<int>(mDimension))
   {
     mSeeds.push_back(_seed);
   }
@@ -129,16 +129,16 @@ void Problem::addSeed(const Eigen::VectorXd& _seed)
 //==============================================================================
 Eigen::VectorXd& Problem::getSeed(std::size_t _index)
 {
-  if(_index < mSeeds.size())
+  if (_index < mSeeds.size())
     return mSeeds[_index];
 
-  if(mSeeds.size() == 0)
+  if (mSeeds.size() == 0)
     dtwarn << "[Problem::getSeed] Requested seed at index [" << _index << "], "
            << "but there are currently no seeds. Returning the problem's "
            << "initial guess instead.\n";
   else
     dtwarn << "[Problem::getSeed] Requested seed at index [" << _index << "], "
-           << "but the current max index is [" << mSeeds.size()-1 << "]. "
+           << "but the current max index is [" << mSeeds.size() - 1 << "]. "
            << "Returning the Problem's initial guess instead.\n";
 
   return mInitialGuess;
@@ -252,9 +252,8 @@ void Problem::removeEqConstraint(FunctionPtr _eqConst)
 {
   // TODO(JS): Need to delete?
   mEqConstraints.erase(
-        std::remove(mEqConstraints.begin(), mEqConstraints.end(),
-                    _eqConst),
-        mEqConstraints.end());
+      std::remove(mEqConstraints.begin(), mEqConstraints.end(), _eqConst),
+      mEqConstraints.end());
 }
 
 //==============================================================================
@@ -262,9 +261,8 @@ void Problem::removeIneqConstraint(FunctionPtr _ineqConst)
 {
   // TODO(JS): Need to delete?
   mIneqConstraints.erase(
-        std::remove(mIneqConstraints.begin(), mIneqConstraints.end(),
-                    _ineqConst),
-        mIneqConstraints.end());
+      std::remove(mIneqConstraints.begin(), mIneqConstraints.end(), _ineqConst),
+      mIneqConstraints.end());
 }
 
 //==============================================================================
@@ -296,8 +294,9 @@ double Problem::getOptimumValue() const
 //==============================================================================
 void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 {
-  assert(static_cast<std::size_t>(_optParam.size()) == mDimension
-         && "Invalid size.");
+  assert(
+      static_cast<std::size_t>(_optParam.size()) == mDimension
+      && "Invalid size.");
   mOptimalSolution = _optParam;
 }
 
@@ -307,5 +306,5 @@ const Eigen::VectorXd& Problem::getOptimalSolution()
   return mOptimalSolution;
 }
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace optimizer
+} // namespace dart
