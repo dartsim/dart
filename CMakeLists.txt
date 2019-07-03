@@ -58,11 +58,14 @@ endif()
 # Project settings
 #===============================================================================
 
-# If you change the version, please update the <version> tag in package.xml.
-set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "10")
-set(DART_PATCH_VERSION "0")
+# Extract version numbers from package.xml
+file(READ package.xml PACKAGE_XML)
+string(REGEX MATCH "<version>[0-9]+\\.[0-9]+\\.[0-9]+</version>" DIRTY_VERSION_STRING ${PACKAGE_XML})
+string(REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\1" DART_MAJOR_VERSION "${DIRTY_VERSION_STRING}")
+string(REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\2" DART_MINOR_VERSION "${DIRTY_VERSION_STRING}")
+string(REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\3" DART_PATCH_VERSION "${DIRTY_VERSION_STRING}")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
+
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
 
