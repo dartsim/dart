@@ -68,7 +68,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   $SUDO pip3 install pytest -U
 
   if [ $(lsb_release -sc) = "xenial" ]; then
-    git clone https://github.com/pybind/pybind11 -b 'v2.2.4' --single-branch --depth 1
+    git clone https://github.com/pybind/pybind11 -b 'v2.3.0' --single-branch --depth 1
     cd pybind11
     mkdir build
     cd build
@@ -77,7 +77,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
     $SUDO make install
     cd ../..
   elif [ $(lsb_release -sc) = "bionic" ]; then
-    git clone https://github.com/pybind/pybind11 -b 'v2.2.4' --single-branch --depth 1
+    git clone https://github.com/pybind/pybind11 -b 'v2.3.0' --single-branch --depth 1
     cd pybind11
     mkdir build
     cd build
