@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
   Eigen::Isometry3d tf3(Eigen::Isometry3d::Identity());
   tf3.translate(Eigen::Vector3d(0, 0, 0.1));
   tf3.rotate(
-      Eigen::AngleAxisd(dart::math::toRadian(60), Eigen::Vector3d(0, 1, 0)));
+      Eigen::AngleAxisd(dart::math::toRadian(60.0), Eigen::Vector3d(0, 1, 0)));
 
   SimpleFramePtr F1(new SimpleFrame(Frame::World(), "F1", tf1));
   F1->setShape(
