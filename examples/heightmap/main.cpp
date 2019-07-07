@@ -68,7 +68,7 @@ dynamics::ShapePtr createHeightmapShape(
   terrainShape->setScale(scale);
   terrainShape->setHeightField(data);
 
-  return std::move(terrainShape);
+  return terrainShape;
 }
 
 template <typename S>

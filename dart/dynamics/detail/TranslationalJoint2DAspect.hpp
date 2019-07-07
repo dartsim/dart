@@ -72,6 +72,10 @@ public:
 
   virtual ~TranslationalJoint2DUniqueProperties() = default;
 
+  /// Assignment operator
+  TranslationalJoint2DUniqueProperties& operator=(
+      const TranslationalJoint2DUniqueProperties& other);
+
   /// Sets plane type as XY-plane
   void setXYPlane();
 

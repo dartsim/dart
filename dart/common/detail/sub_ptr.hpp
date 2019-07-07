@@ -54,6 +54,13 @@ sub_ptr<T>::sub_ptr(T* _ptr) : mT(nullptr), mSubjectBase(nullptr)
 
 //==============================================================================
 template <class T>
+sub_ptr<T>::sub_ptr(const sub_ptr& other)
+{
+  set(other.get());
+}
+
+//==============================================================================
+template <class T>
 sub_ptr<T>& sub_ptr<T>::operator=(const sub_ptr<T>& _sp)
 {
   set(_sp.get());

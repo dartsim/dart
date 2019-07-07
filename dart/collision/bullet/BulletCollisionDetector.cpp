@@ -948,7 +948,7 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
   auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
-  return std::move(gimpactMeshShape);
+  return gimpactMeshShape;
 }
 
 //==============================================================================
@@ -978,7 +978,7 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
   gimpactMeshShape->updateBound();
   gimpactMeshShape->setUserPointer(triMesh);
 
-  return std::move(gimpactMeshShape);
+  return gimpactMeshShape;
 }
 
 //==============================================================================
@@ -1001,7 +1001,7 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
   auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
-  return std::move(gimpactMeshShape);
+  return gimpactMeshShape;
 }
 
 //==============================================================================

@@ -53,6 +53,9 @@ public:
   /// constructor.
   sub_ptr(T* _ptr);
 
+  /// User defined copy constructor
+  sub_ptr(const sub_ptr& other);
+
   /// Change the Subject of this sub_ptr
   sub_ptr& operator=(const sub_ptr& _sp);
 

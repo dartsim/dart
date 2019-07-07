@@ -90,6 +90,10 @@ struct PlanarJointUniqueProperties
 
   virtual ~PlanarJointUniqueProperties() = default;
 
+  /// Assignment operator
+  PlanarJointUniqueProperties& operator=(
+      const PlanarJointUniqueProperties& other);
+
   /// Set plane type as XY-plane
   void setXYPlane();
 
