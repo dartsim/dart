@@ -503,7 +503,7 @@ void randomize_target_values(
     SimpleFrame* T = targets[i];
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    randomize_transform(tf, 1, 2 * M_PI);
+    randomize_transform(tf, 1, 2 * dart::math::constantsd::pi());
 
     if (spatial)
     {
@@ -803,7 +803,7 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
       SimpleFrame* F = followers[i];
       SimpleFrame* T = followers[j];
       Eigen::Isometry3d tf;
-      randomize_transform(tf, 1, 2 * M_PI);
+      randomize_transform(tf, 1, 2 * dart::math::constantsd::pi());
       T->setTransform(tf, F);
       if (i != j)
       {

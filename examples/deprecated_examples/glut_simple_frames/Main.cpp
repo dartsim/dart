@@ -44,11 +44,13 @@ int main(int argc, char* argv[])
 
   Eigen::Isometry3d tf2(Eigen::Isometry3d::Identity());
   tf2.translate(Eigen::Vector3d(0, 0.1, 0));
-  tf2.rotate(Eigen::AngleAxisd(45.0 * M_PI / 180.0, Eigen::Vector3d(1, 0, 0)));
+  tf2.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(45.0), Eigen::Vector3d(1, 0, 0)));
 
   Eigen::Isometry3d tf3(Eigen::Isometry3d::Identity());
   tf3.translate(Eigen::Vector3d(0, 0, 0.1));
-  tf3.rotate(Eigen::AngleAxisd(60 * M_PI / 180.0, Eigen::Vector3d(0, 1, 0)));
+  tf3.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(60), Eigen::Vector3d(0, 1, 0)));
 
   SimpleFramePtr F1(new SimpleFrame(Frame::World(), "F1", tf1));
   F1->setShape(

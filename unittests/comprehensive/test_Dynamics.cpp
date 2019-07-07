@@ -177,8 +177,8 @@ void DynamicsTest::randomizeRefFrames()
     SimpleFrame* F = refFrames[i];
 
     Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
-    Eigen::Vector3d theta
-        = Random::uniform<Eigen::Vector3d>(-2 * M_PI, 2 * M_PI);
+    Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(
+        -2 * dart::math::constantsd::pi(), 2 * dart::math::constantsd::pi());
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);

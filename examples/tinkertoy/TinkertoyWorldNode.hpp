@@ -352,46 +352,50 @@ public:
   void createInitialToy1()
   {
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.rotate(Eigen::AngleAxisd(45.0 * M_PI / 180.0, Eigen::Vector3d::UnitY()));
+    tf.rotate(Eigen::AngleAxisd(
+        dart::math::toRadian(45.0), Eigen::Vector3d::UnitY()));
     dart::dynamics::BodyNode* bn = addBallJointBlock(nullptr, tf);
 
     tf = Eigen::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength;
     tf.linear() = Eigen::Matrix3d::Identity();
-    tf.prerotate(
-        Eigen::AngleAxisd(90.0 * M_PI / 180.0, Eigen::Vector3d::UnitX()));
+    tf.prerotate(Eigen::AngleAxisd(
+        dart::math::toRadian(90.0), Eigen::Vector3d::UnitX()));
     bn = addRevoluteJointBlock(bn, tf);
 
     tf = Eigen::Isometry3d::Identity();
-    tf.rotate(Eigen::AngleAxisd(90.0 * M_PI / 180.0, Eigen::Vector3d::UnitZ()));
+    tf.rotate(Eigen::AngleAxisd(
+        dart::math::toRadian(90.0), Eigen::Vector3d::UnitZ()));
     bn = addWeldJointBlock(bn, tf);
 
     tf = Eigen::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength / 2.0;
     tf.translation()[2] = DefaultBlockWidth;
-    tf.rotate(
-        Eigen::AngleAxisd(-30.0 * M_PI / 180.0, Eigen::Vector3d::UnitZ()));
+    tf.rotate(Eigen::AngleAxisd(
+        dart::math::toRadian(-30.0), Eigen::Vector3d::UnitZ()));
     bn = addBallJointBlock(bn, tf);
   }
 
   void createInitialToy2()
   {
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.rotate(Eigen::AngleAxisd(90.0 * M_PI / 180.0, Eigen::Vector3d::UnitY()));
+    tf.rotate(Eigen::AngleAxisd(
+        dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
     tf.pretranslate(-1.0 * Eigen::Vector3d::UnitX());
     dart::dynamics::BodyNode* bn = addBallJointBlock(nullptr, tf);
 
     tf = Eigen::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength;
     tf.translation()[2] = DefaultBlockLength / 2.0;
-    tf.rotate(Eigen::AngleAxisd(90.0 * M_PI / 180.0, Eigen::Vector3d::UnitY()));
+    tf.rotate(Eigen::AngleAxisd(
+        dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
     bn = addWeldJointBlock(bn, tf);
 
     tf = Eigen::Isometry3d::Identity();
-    tf.rotate(
-        Eigen::AngleAxisd(-90.0 * M_PI / 180.0, Eigen::Vector3d::UnitX()));
-    tf.rotate(
-        Eigen::AngleAxisd(-90.0 * M_PI / 180.0, Eigen::Vector3d::UnitZ()));
+    tf.rotate(Eigen::AngleAxisd(
+        dart::math::toRadian(-90.0), Eigen::Vector3d::UnitX()));
+    tf.rotate(Eigen::AngleAxisd(
+        dart::math::toRadian(-90.0), Eigen::Vector3d::UnitZ()));
     tf.translation()[2] = DefaultBlockWidth / 2.0;
     addRevoluteJointBlock(bn, tf);
 

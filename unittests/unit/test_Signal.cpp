@@ -341,11 +341,11 @@ TEST(Signal, FrameSignals)
 
   Isometry3d tf2(Isometry3d::Identity());
   tf2.translate(Vector3d(0, 0.1, 0));
-  tf2.rotate(AngleAxisd(45.0 * M_PI / 180.0, Vector3d(1, 0, 0)));
+  tf2.rotate(AngleAxisd(dart::math::toRadian(45.0), Vector3d(1, 0, 0)));
 
   Isometry3d tf3(Isometry3d::Identity());
   tf3.translate(Vector3d(0, 0, 0.1));
-  tf3.rotate(AngleAxisd(60 * M_PI / 180.0, Vector3d(0, 1, 0)));
+  tf3.rotate(AngleAxisd(dart::math::toRadian(60.0), Vector3d(0, 1, 0)));
 
   SimpleFrame F1(Frame::World(), "F1", tf1);
   SimpleFrame F2(&F1, "F2", tf2);
