@@ -85,6 +85,32 @@ PlanarJointUniqueProperties::PlanarJointUniqueProperties(
 }
 
 //==============================================================================
+PlanarJointUniqueProperties& PlanarJointUniqueProperties::operator=(
+    const PlanarJointUniqueProperties& other)
+{
+  if (this != &other)
+  {
+    switch (other.mPlaneType)
+    {
+      case PlaneType::ARBITRARY:
+        setArbitraryPlane(other.mTransAxis1, other.mTransAxis2);
+        break;
+      case PlaneType::XY:
+        setXYPlane();
+        break;
+      case PlaneType::YZ:
+        setYZPlane();
+        break;
+      case PlaneType::ZX:
+        setZXPlane();
+        break;
+    }
+  }
+
+  return *this;
+}
+
+//==============================================================================
 void PlanarJointUniqueProperties::setXYPlane()
 {
   mPlaneType = PlaneType::XY;

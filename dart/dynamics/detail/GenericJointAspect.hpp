@@ -173,6 +173,12 @@ struct GenericJointUniqueProperties
 
   virtual ~GenericJointUniqueProperties() = default;
 
+  /// Copy assignment operator
+  // Note: we only need this because VS2013 lacks full support for std::array
+  // Once std::array is properly supported, this should be removed.
+  GenericJointUniqueProperties& operator=(
+      const GenericJointUniqueProperties& other);
+
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -288,6 +294,38 @@ GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
     mPreserveDofNames[i] = _other.mPreserveDofNames[i];
     mDofNames[i] = _other.mDofNames[i];
   }
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+GenericJointUniqueProperties<ConfigSpaceT>&
+GenericJointUniqueProperties<ConfigSpaceT>::operator=(
+    const GenericJointUniqueProperties& other)
+{
+  if (this != &other)
+  {
+    mPositionLowerLimits = other.mPositionLowerLimits;
+    mPositionUpperLimits = other.mPositionUpperLimits;
+    mInitialPositions = other.mInitialPositions;
+    mVelocityLowerLimits = other.mVelocityLowerLimits;
+    mVelocityUpperLimits = other.mVelocityUpperLimits;
+    mInitialVelocities = other.mInitialVelocities;
+    mAccelerationLowerLimits = other.mAccelerationLowerLimits;
+    mAccelerationUpperLimits = other.mAccelerationUpperLimits;
+    mForceLowerLimits = other.mForceLowerLimits;
+    mForceUpperLimits = other.mForceUpperLimits;
+    mSpringStiffnesses = other.mSpringStiffnesses;
+    mRestPositions = other.mRestPositions;
+    mDampingCoefficients = other.mDampingCoefficients;
+    mFrictions = other.mFrictions;
+
+    for (auto i = 0u; i < NumDofs; ++i)
+    {
+      mPreserveDofNames[i] = other.mPreserveDofNames[i];
+      mDofNames[i] = other.mDofNames[i];
+    }
+  }
+  return *this;
 }
 
 //==============================================================================
