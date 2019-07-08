@@ -141,6 +141,13 @@ public:
     set(nullptr);
   }
 
+  /// User defined assignment operator
+  TemplateBodyNodePtr& operator=(const TemplateBodyNodePtr& bnp)
+  {
+    set(bnp.get());
+    return *this;
+  }
+
   /// Change the BodyNode that this BodyNodePtr references
   template <class OtherBodyNodeT>
   TemplateBodyNodePtr& operator=(
