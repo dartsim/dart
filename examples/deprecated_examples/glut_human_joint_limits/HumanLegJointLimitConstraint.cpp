@@ -194,6 +194,8 @@ double HumanLegJointLimitConstraint::getConstraintForceMixing()
 //==============================================================================
 void HumanLegJointLimitConstraint::update()
 {
+  const auto pi2 = math::constantsd::two_pi();
+
   double qz = mHipJoint->getPosition(0);
   double qx = mHipJoint->getPosition(1);
   double qy = mHipJoint->getPosition(2);
@@ -220,10 +222,10 @@ void HumanLegJointLimitConstraint::update()
                     sin(qz),
                     cos(qx),
                     sin(qx),
-                    cos(qy + M_PI_2),
+                    cos(qy + pi2),
                     cos(qe),
-                    cos(hx + M_PI_2),
-                    cos(hy + M_PI_2)};
+                    cos(hx + pi2),
+                    cos(hy + pi2)};
   vec_t input;
   input.assign(qsin, qsin + 8);
   vec_t pred_vec = mNet.predict(input);
@@ -286,10 +288,10 @@ void HumanLegJointLimitConstraint::update()
 
     mJacobian[0] = out_grad[0] * (-sin(qz)) + out_grad[1] * (cos(qz));
     mJacobian[1] = out_grad[2] * (-sin(qx)) + out_grad[3] * (cos(qx));
-    mJacobian[2] = out_grad[4] * (-sin(qy + M_PI_2));
+    mJacobian[2] = out_grad[4] * (-sin(qy + pi2));
     mJacobian[3] = out_grad[5] * (-sin(qe));
-    mJacobian[4] = out_grad[6] * (-sin(hx + M_PI_2));
-    mJacobian[5] = out_grad[7] * (-sin(hy + M_PI_2));
+    mJacobian[4] = out_grad[6] * (-sin(hx + pi2));
+    mJacobian[5] = out_grad[7] * (-sin(hy + pi2));
 
     // note that we also need to take the mirror of the NN gradient for
     // right-leg

@@ -42,7 +42,7 @@ const double default_force = 15.0;  // N
 const int default_countdown = 200;  // Number of timesteps for applying force
 
 const double default_rest_position = 0.0;
-const double delta_rest_position = 10.0 * M_PI / 180.0;
+const double delta_rest_position = dart::math::toRadian(10.0);
 
 const double default_stiffness = 0.0;
 const double delta_stiffness = 10;
@@ -111,8 +111,9 @@ public:
 
       // The system becomes numerically unstable when the rest position exceeds
       // 90 degrees
-      if (std::abs(q0) > 90.0 * M_PI / 180.0)
-        q0 = (q0 > 0) ? (90.0 * M_PI / 180.0) : -(90.0 * M_PI / 180.0);
+      if (std::abs(q0) > dart::math::toRadian(90.0))
+        q0 = (q0 > 0) ? dart::math::toRadian(90.0)
+                      : dart::math::toRadian(-90.0);
 
       dof->setRestPosition(q0);
     }
@@ -413,7 +414,7 @@ BodyNode* addBody(
   // Line up the cylinder with the Joint axis
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.linear() = dart::math::eulerXYZToMatrix(
-      Eigen::Vector3d(90.0 * M_PI / 180.0, 0, 0));
+      Eigen::Vector3d(dart::math::toRadian(90.0), 0, 0));
 
   auto shapeNode = bn->createShapeNodeWith<VisualAspect>(cyl);
   shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
@@ -439,7 +440,7 @@ int main(int argc, char* argv[])
 
   // Set the initial position of the first DegreeOfFreedom so that the pendulum
   // starts to swing right away
-  pendulum->getDof(1)->setPosition(120 * M_PI / 180.0);
+  pendulum->getDof(1)->setPosition(dart::math::toRadian(120.0));
 
   // Create a world and add the pendulum to the world
   WorldPtr world = World::create();

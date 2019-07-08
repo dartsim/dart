@@ -77,7 +77,8 @@ bool runIssue1234Subtest(
   EXPECT_TRUE(collision) << "\nFailed config:"
                          << "\nNormal:  " << (R * normal).transpose()
                          << "\nOffset:  " << offset
-                         << "\nTilt:    " << angle * 180.0 / M_PI << " degrees"
+                         << "\nTilt:    " << dart::math::toDegree(angle)
+                         << " degrees"
                          << "\nAgainst: " << against->getType() << std::endl;
 
   return collision;
@@ -124,7 +125,7 @@ void runIssue1234Test(
       {
         if (offset < 0.0)
         {
-          for (const auto& angle : {0.0, 10.0 * M_PI / 180.0})
+          for (const auto& angle : {0.0, dart::math::toRadian(10.0)})
           {
             const Eigen::Vector3d axis = std::abs(normal[1]) > 1e-3
                                              ? Eigen::Vector3d::UnitY()

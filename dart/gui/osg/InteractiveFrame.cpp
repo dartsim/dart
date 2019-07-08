@@ -271,6 +271,8 @@ void InteractiveFrame::removeAllShapeFrames()
 void InteractiveFrame::createStandardVisualizationShapes(
     double size, double thickness)
 {
+  const auto pi = math::constantsd::pi();
+
   thickness = std::min(10.0, std::max(0.0, thickness));
   std::size_t resolution = 72;
   double ring_outer_scale = 0.7 * size;
@@ -326,7 +328,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     {
       for (std::size_t i = 0; i < resolution; ++i)
       {
-        double theta = (double)(i) / (double)(resolution)*2 * M_PI;
+        double theta = (double)(i) / (double)(resolution)*2 * pi;
 
         double x = 0;
         double y = ring_inner_scale * cos(theta);
@@ -455,9 +457,9 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if (r == 1)
-      tf.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d(0, 0, 1)));
+      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 0, 1)));
     else if (r == 2)
-      tf.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d(0, 1, 0)));
+      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
 
     auto shapeFrame = mTools[InteractiveTool::ANGULAR][r]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
@@ -543,9 +545,9 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if (p == 1)
-      tf.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d(0, 0, 1)));
+      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 0, 1)));
     else if (p == 2)
-      tf.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d(0, 1, 0)));
+      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
 
     auto shapeFrame = mTools[InteractiveTool::PLANAR][p]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);

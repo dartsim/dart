@@ -54,7 +54,8 @@ TEST(InverseKinematics, SolveForFreeJoint)
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);
-  tf.rotate(Eigen::AngleAxisd(M_PI / 8, Eigen::Vector3d(0, 1, 0)));
+  tf.rotate(
+      Eigen::AngleAxisd(math::constantsd::pi() / 8, Eigen::Vector3d(0, 1, 0)));
   ik->getTarget()->setTransform(tf);
 
   ik->getErrorMethod().setBounds(
