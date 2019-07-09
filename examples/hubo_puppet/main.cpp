@@ -35,6 +35,7 @@
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
 
+using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
@@ -165,9 +166,9 @@ static inline void clamp_sincos(double& sincos, bool& valid)
 static inline Eigen::Vector3d flipEuler3Axis(const Eigen::Vector3d& u)
 {
   Eigen::Vector3d v;
-  v[0] = u[0] - M_PI;
-  v[1] = M_PI - u[1];
-  v[2] = u[2] - M_PI;
+  v[0] = u[0] - constantsd::pi();
+  v[1] = constantsd::pi() - u[1];
+  v[2] = u[2] - constantsd::pi();
   return v;
 }
 
@@ -274,7 +275,7 @@ public:
       clamp_sincos(cosGamma, isValid);
 
       double gamma = flipEP * acos(cosGamma);
-      double theta3 = alpha + beta + gamma - 2 * M_PI;
+      double theta3 = alpha + beta + gamma - 2 * constantsd::pi();
 
       testQ(EP) = theta3;
 
@@ -290,14 +291,14 @@ public:
       {
         isValid = false;
         const double& prevWY = skel->getPosition(mDofs[WY]);
-        theta2 = incWY ? prevWY : M_PI - prevWY;
+        theta2 = incWY ? prevWY : constantsd::pi() - prevWY;
         s2 = sin(theta2);
       }
       else
       {
         s2 = numer / denom;
         clamp_sincos(s2, isValid);
-        theta2 = incWY ? M_PI - asin(s2) : asin(s2);
+        theta2 = incWY ? constantsd::pi() - asin(s2) : asin(s2);
       }
 
       testQ(WY) = theta2;
@@ -566,7 +567,7 @@ public:
       C45 = cos(q4 + q5);
       C5 = cos(q5);
       if (C45 * L4 + C5 * L5 < 0)
-        q6 = dart::math::wrapToPi(q6 + M_PI);
+        q6 = dart::math::wrapToPi(q6 + constantsd::pi());
 
       S6 = sin(q6);
       C6 = cos(q6);
@@ -581,7 +582,7 @@ public:
       q1 = atan2(C6 * sy + S6 * sx, C6 * ny + S6 * nx);
       C2 = cos(q2);
       if (C2 < 0)
-        q1 = dart::math::wrapToPi(q1 + M_PI);
+        q1 = dart::math::wrapToPi(q1 + constantsd::pi());
 
       q345 = atan2(-az / C2, -(C6 * ax - S6 * ay) / C2);
       q3 = dart::math::wrapToPi(q345 - q4 - q5);
@@ -675,16 +676,16 @@ protected:
     L6 = 0.0;
 
     hipRotation = Eigen::Isometry3d::Identity();
-    hipRotation.rotate(
-        Eigen::AngleAxisd(90 * M_PI / 180.0, Eigen::Vector3d::UnitZ()));
+    hipRotation.rotate(Eigen::AngleAxisd(
+        90 * constantsd::pi() / 180.0, Eigen::Vector3d::UnitZ()));
 
     waist = dofs[2]->getChildBodyNode()->getTransform(
                 dofs[0]->getParentBodyNode())
             * hipRotation;
 
     footTfInv = Eigen::Isometry3d::Identity();
-    footTfInv.rotate(
-        Eigen::AngleAxisd(-90 * M_PI / 180.0, Eigen::Vector3d::UnitY()));
+    footTfInv.rotate(Eigen::AngleAxisd(
+        -90 * constantsd::pi() / 180.0, Eigen::Vector3d::UnitY()));
     footTfInv
         = footTfInv * mIK->getNode()->getTransform(dofs[5]->getChildBodyNode());
     footTfInv = footTfInv.inverse();
@@ -787,7 +788,7 @@ public:
 
       double linearStep = 0.01;
       double elevationStep = 0.2 * linearStep;
-      double rotationalStep = 2.0 * M_PI / 180.0;
+      double rotationalStep = 2.0 * constantsd::pi() / 180.0;
 
       if (mAmplifyMovement)
       {
@@ -1194,29 +1195,29 @@ SkeletonPtr createHubo()
 
 void setStartupConfiguration(const SkeletonPtr& hubo)
 {
-  hubo->getDof("LHP")->setPosition(-45.0 * M_PI / 180.0);
-  hubo->getDof("LKP")->setPosition(90.0 * M_PI / 180.0);
-  hubo->getDof("LAP")->setPosition(-45.0 * M_PI / 180.0);
+  hubo->getDof("LHP")->setPosition(toRadian(-45.0));
+  hubo->getDof("LKP")->setPosition(toRadian(90.0));
+  hubo->getDof("LAP")->setPosition(toRadian(-45.0));
 
-  hubo->getDof("RHP")->setPosition(-45.0 * M_PI / 180.0);
-  hubo->getDof("RKP")->setPosition(90.0 * M_PI / 180.0);
-  hubo->getDof("RAP")->setPosition(-45.0 * M_PI / 180.0);
+  hubo->getDof("RHP")->setPosition(toRadian(-45.0));
+  hubo->getDof("RKP")->setPosition(toRadian(90.0));
+  hubo->getDof("RAP")->setPosition(toRadian(-45.0));
 
-  hubo->getDof("LSP")->setPosition(30.0 * M_PI / 180.0);
-  hubo->getDof("LEP")->setPosition(-120.0 * M_PI / 180.0);
+  hubo->getDof("LSP")->setPosition(toRadian(30.0));
+  hubo->getDof("LEP")->setPosition(toRadian(-120.0));
 
-  hubo->getDof("RSP")->setPosition(30.0 * M_PI / 180.0);
-  hubo->getDof("REP")->setPosition(-120.0 * M_PI / 180.0);
+  hubo->getDof("RSP")->setPosition(toRadian(30.0));
+  hubo->getDof("REP")->setPosition(toRadian(-120.0));
 
-  hubo->getDof("LSY")->setPositionLowerLimit(-90.0 * M_PI / 180.0);
-  hubo->getDof("LSY")->setPositionUpperLimit(90.0 * M_PI / 180.0);
-  hubo->getDof("LWY")->setPositionLowerLimit(-90.0 * M_PI / 180.0);
-  hubo->getDof("LWY")->setPositionUpperLimit(90.0 * M_PI / 180.0);
+  hubo->getDof("LSY")->setPositionLowerLimit(toRadian(-90.0));
+  hubo->getDof("LSY")->setPositionUpperLimit(toRadian(90.0));
+  hubo->getDof("LWY")->setPositionLowerLimit(toRadian(-90.0));
+  hubo->getDof("LWY")->setPositionUpperLimit(toRadian(90.0));
 
-  hubo->getDof("RSY")->setPositionLowerLimit(-90.0 * M_PI / 180.0);
-  hubo->getDof("RSY")->setPositionUpperLimit(90.0 * M_PI / 180.0);
-  hubo->getDof("RWY")->setPositionLowerLimit(-90.0 * M_PI / 180.0);
-  hubo->getDof("RWY")->setPositionUpperLimit(90.0 * M_PI / 180.0);
+  hubo->getDof("RSY")->setPositionLowerLimit(toRadian(-90.0));
+  hubo->getDof("RSY")->setPositionUpperLimit(toRadian(90.0));
+  hubo->getDof("RWY")->setPositionLowerLimit(toRadian(-90.0));
+  hubo->getDof("RWY")->setPositionUpperLimit(toRadian(90.0));
 }
 
 void setupEndEffectors(const SkeletonPtr& hubo)

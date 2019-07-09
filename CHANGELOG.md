@@ -16,6 +16,11 @@
   * Added findSolution and solveAndApply to InverseKinematics: [#1358](https://github.com/dartsim/dart/pull/1358)
   * Added InteractiveFrame and ImGui APIs: [#1359](https://github.com/dartsim/dart/pull/1359)
 
+* Build
+
+  * Fixed compiler warnings from GCC 9.1: [#1366](https://github.com/dartsim/dart/pull/1366)
+  * Replace M_PI with dart::math::constantsd::pi(): [#1367](https://github.com/dartsim/dart/pull/1367)
+
 ### [DART 6.9.1 (2019-06-06)](https://github.com/dartsim/dart/milestone/59?closed=1)
 
 * Collision

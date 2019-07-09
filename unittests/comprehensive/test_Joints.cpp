@@ -121,8 +121,8 @@ void JOINTS::randomizeRefFrames()
     SimpleFrame* F = frames[i];
 
     Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
-    Eigen::Vector3d theta
-        = Random::uniform<Eigen::Vector3d>(-2 * M_PI, 2 * M_PI);
+    Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(
+        -2 * dart::math::constantsd::pi(), 2 * dart::math::constantsd::pi());
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);
@@ -1108,7 +1108,8 @@ Eigen::Matrix<double, N, 1> random_vec(double limit = 100)
 
 //==============================================================================
 Eigen::Isometry3d random_transform(
-    double translation_limit = 100, double rotation_limit = 2 * M_PI)
+    double translation_limit = 100,
+    double rotation_limit = 2 * dart::math::constantsd::pi())
 {
   Eigen::Vector3d r = random_vec<3>(translation_limit);
   Eigen::Vector3d theta = random_vec<3>(rotation_limit);
