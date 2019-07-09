@@ -15,7 +15,8 @@ target_include_directories(${target_name}
 )
 target_link_libraries(${target_name} PUBLIC OpenGL::GL)
 if(APPLE)
-  target_link_libraries(${target_name} PUBLIC "-framework CoreFoundation")
+    target_link_libraries(${target_name} PUBLIC "-framework CoreFoundation")
+    target_link_libraries(${target_name} PUBLIC "-framework Cocoa")
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
