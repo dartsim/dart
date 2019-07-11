@@ -97,6 +97,12 @@ struct DynamicsAspectProperties
   /// Secondary coefficient of friction
   double mSecondaryFrictionCoeff;
 
+  /// First friction direction unit vector
+  Eigen::Vector3d mFirstFrictionDirection;
+
+  /// First friction direction frame
+  const Frame* mFirstFrictionDirectionFrame;
+
   /// Constructors
   /// The frictionCoeff argument will be used for both primary and secondary friction
   DynamicsAspectProperties(
@@ -105,7 +111,9 @@ struct DynamicsAspectProperties
   DynamicsAspectProperties(
       const double primaryFrictionCoeff,
       const double secondaryFrictionCoeff,
-      const double restitutionCoeff);
+      const double restitutionCoeff,
+      const Eigen::Vector3d& firstFrictionDirection = Eigen::Vector3d::Zero(),
+      const Frame* firstFrictionDirectionFrame = nullptr);
 
   /// Destructor
   virtual ~DynamicsAspectProperties() = default;
