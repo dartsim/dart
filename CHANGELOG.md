@@ -2,6 +2,10 @@
 
 ### [DART 6.10.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
+* Dynamics
+
+  * Fix friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
+
 * GUI
 
   * Fixed memory leaks from dart::gui::osg::Viewer: [#1349](https://github.com/dartsim/dart/pull/1349)
