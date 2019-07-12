@@ -458,7 +458,7 @@ SkeletonPtr createWall()
       (default_wall_height - default_wall_thickness) / 2.0);
   bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-  bn->setRestitutionCoeff(0.2);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.2);
 
   return wall;
 }

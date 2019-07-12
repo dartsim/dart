@@ -670,7 +670,8 @@ void BodyNode::setFrictionCoeff(double _coeff)
   // dynamics aspects of this BodyNode as a stopgap solution. However, this
   // won't help for new ShapeNodes that get added later.
   auto shapeNodes = getShapeNodesWith<DynamicsAspect>();
-  for (auto& shapeNode : shapeNodes) {
+  for (auto& shapeNode : shapeNodes)
+  {
     auto* dynamicsAspect = shapeNode->getDynamicsAspect();
     dynamicsAspect->setFrictionCoeff(_coeff);
   }
@@ -698,7 +699,8 @@ void BodyNode::setRestitutionCoeff(double _coeff)
   // dynamics aspects of this BodyNode as a stopgap solution. However, this
   // won't help for new ShapeNodes that get added later.
   auto shapeNodes = getShapeNodesWith<DynamicsAspect>();
-  for (auto& shapeNode : shapeNodes) {
+  for (auto& shapeNode : shapeNodes)
+  {
     auto* dynamicsAspect = shapeNode->getDynamicsAspect();
     dynamicsAspect->setFrictionCoeff(_coeff);
   }

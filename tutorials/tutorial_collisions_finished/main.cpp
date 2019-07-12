@@ -392,7 +392,9 @@ BodyNode* addRigidBody(
         default_shape_height * Eigen::Vector3d::Ones());
   }
 
-  bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+  auto shapeNode
+      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          shape);
 
   // Setup the inertia for the body
   Inertia inertia;
@@ -402,7 +404,7 @@ BodyNode* addRigidBody(
   bn->setInertia(inertia);
 
   // Set the coefficient of restitution to make the body more bouncy
-  bn->setRestitutionCoeff(default_restitution);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(default_restitution);
 
   // Set damping to make the simulation more stable
   if (parent)
@@ -657,7 +659,7 @@ SkeletonPtr createWall()
       (default_wall_height - default_wall_thickness) / 2.0);
   bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-  bn->setRestitutionCoeff(0.2);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.2);
 
   return wall;
 }
