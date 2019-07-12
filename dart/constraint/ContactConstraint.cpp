@@ -114,14 +114,21 @@ ContactConstraint::ContactConstraint(
   //----------------------------------------------
   // TODO(JS): Assume the frictional coefficient can be changed during
   //           simulation steps.
-  // Update mFrictionalCoff
+  // Update mFrictionCoeff
   const double frictionCoeffA = computeFrictionCoefficient(shapeNodeA);
   const double frictionCoeffB = computeFrictionCoefficient(shapeNodeB);
+  const double secondaryFrictionCoeffA =
+                       computeSecondaryFrictionCoefficient(shapeNodeA);
+  const double secondaryFrictionCoeffB =
+                       computeSecondaryFrictionCoefficient(shapeNodeB);
 
   // TODO(JS): Consider providing various ways of the combined friction or
   // allowing to override this method by a custom method
   mFrictionCoeff = std::min(frictionCoeffA, frictionCoeffB);
-  if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
+  mSecondaryFrictionCoeff =
+      std::min(secondaryFrictionCoeffA, secondaryFrictionCoeffB);
+  if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD ||
+      mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
 
@@ -392,8 +399,8 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     info->findex[1] = 0;
 
     // Upper and lower bounds of tangential direction-2 impulsive force
-    info->lo[2] = -mFrictionCoeff;
-    info->hi[2] = mFrictionCoeff;
+    info->lo[2] = -mSecondaryFrictionCoeff;
+    info->hi[2] = mSecondaryFrictionCoeff;
     info->findex[2] = 0;
 
     //------------------------------------------------------------------------
@@ -700,6 +707,26 @@ double ContactConstraint::computeFrictionCoefficient(
   }
 
   return dynamicAspect->getFrictionCoeff();
+}
+
+//==============================================================================
+double ContactConstraint::computeSecondaryFrictionCoefficient(
+    const dynamics::ShapeNode* shapeNode)
+{
+  assert(shapeNode);
+
+  auto dynamicAspect = shapeNode->getDynamicsAspect();
+
+  if (dynamicAspect == nullptr)
+  {
+    dtwarn << "[ContactConstraint] Attempt to extract friction coefficient "
+           << "from a ShapeNode that doesn't have DynamicAspect. The default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
+           << "instead.\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return dynamicAspect->getSecondaryFrictionCoeff();
 }
 
 //==============================================================================
