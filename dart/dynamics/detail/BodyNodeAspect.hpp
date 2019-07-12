@@ -82,12 +82,18 @@ struct BodyNodeAspectProperties
   double mFrictionCoeff;
 
   /// Coefficient of restitution
+  /// \deprecated Deprecated since DART 6.10. Please set the restitution
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
   double mRestitutionCoeff;
 
   /// Gravity will be applied if true
   bool mGravityMode;
 
   /// Constructor
+  /// \deprecated Deprecated since DART 6.10 because the friction and
+  /// restitution properties shouldn't be included in this constructor since
+  /// they are deprecated.
   DART_DEPRECATED(6.10)
   BodyNodeAspectProperties(
       const std::string& name,
