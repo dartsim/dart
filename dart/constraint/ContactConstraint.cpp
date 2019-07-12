@@ -65,6 +65,8 @@ double ContactConstraint::mConstraintForceMixing = DART_CFM;
 
 constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
 constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
+const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR =
+    Eigen::Vector3d::UnitZ();
 
 //==============================================================================
 ContactConstraint::ContactConstraint(
@@ -82,7 +84,7 @@ ContactConstraint::ContactConstraint(
                    ->getBodyNodePtr()
                    .get()),
     mContact(contact),
-    mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
+    mFirstFrictionalDirection(DART_DEFAULT_FRICTION_DIR),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(dynamics::INVALID_INDEX),
     mIsBounceOn(false),
@@ -134,6 +136,40 @@ ContactConstraint::ContactConstraint(
       mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
+
+    // Check shapeNodes for valid friction direction unit vectors
+    auto frictionDirA = computeWorldFirstFrictionDir(shapeNodeA);
+    auto frictionDirB = computeWorldFirstFrictionDir(shapeNodeB);
+
+    // resulting friction direction unit vector
+    bool nonzeroDirA = frictionDirA.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+    bool nonzeroDirB = frictionDirB.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+
+    // only consider custom friction direction if one has nonzero length
+    if (nonzeroDirA || nonzeroDirB)
+    {
+      // if A and B are both set, choose one with smaller friction coefficient
+      // since it's friction properties will dominate
+      if (nonzeroDirA && nonzeroDirB)
+      {
+        if (primaryFrictionCoeffA <= primaryFrictionCoeffB)
+        {
+          mFirstFrictionalDirection = frictionDirA.normalized();
+        }
+        else
+        {
+          mFirstFrictionalDirection = frictionDirB.normalized();
+        }
+      }
+      else if (nonzeroDirA)
+      {
+        mFirstFrictionalDirection = frictionDirA.normalized();
+      }
+      else
+      {
+        mFirstFrictionalDirection = frictionDirB.normalized();
+      }
+    }
 
     // Update frictional direction
     updateFirstFrictionalDirection();
@@ -752,6 +788,35 @@ double ContactConstraint::computeSecondaryFrictionCoefficient(
   }
 
   return dynamicAspect->getSecondaryFrictionCoeff();
+}
+
+//==============================================================================
+Eigen::Vector3d ContactConstraint::computeWorldFirstFrictionDir(
+    const dynamics::ShapeNode* shapeNode)
+{
+  assert(shapeNode);
+
+  auto dynamicAspect = shapeNode->getDynamicsAspect();
+
+  if (dynamicAspect == nullptr)
+  {
+    dtwarn << "[ContactConstraint] Attempt to extract friction direction "
+           << "from a ShapeNode that doesn't have DynamicAspect. The default "
+           << "value (" << DART_DEFAULT_FRICTION_DIR << ") will be used "
+           << "instead.\n";
+    return DART_DEFAULT_FRICTION_DIR;
+  }
+
+  auto frame = dynamicAspect->getFirstFrictionDirectionFrame();
+  Eigen::Vector3d frictionDir = dynamicAspect->getFirstFrictionDirection();
+
+  // rotate using custom frame if it is specified
+  if (frame)
+  {
+    return frame->getWorldTransform().linear() * frictionDir;
+  }
+  // otherwise rotate using shapeNode
+  return shapeNode->getWorldTransform().linear() * frictionDir;
 }
 
 //==============================================================================
