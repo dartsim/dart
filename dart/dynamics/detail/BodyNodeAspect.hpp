@@ -76,6 +76,9 @@ struct BodyNodeAspectProperties
   bool mIsCollidable;
 
   /// Coefficient of friction
+  /// \deprecated Deprecated since DART 6.10. Please set the friction
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
   double mFrictionCoeff;
 
   /// Coefficient of restitution
@@ -85,13 +88,21 @@ struct BodyNodeAspectProperties
   bool mGravityMode;
 
   /// Constructor
+  DART_DEPRECATED(6.10)
+  BodyNodeAspectProperties(
+      const std::string& name,
+      const Inertia& _inertia,
+      bool _isCollidable,
+      double _frictionCoeff,
+      double _restitutionCoeff,
+      bool _gravityMode);
+
+  /// Constructor
   BodyNodeAspectProperties(
       const std::string& name = "BodyNode",
-      const Inertia& _inertia = Inertia(),
-      bool _isCollidable = true,
-      double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
-      double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
-      bool _gravityMode = true);
+      const Inertia& inertia = Inertia(),
+      bool isCollidable = true,
+      bool gravityMode = true);
 
   virtual ~BodyNodeAspectProperties() = default;
 };

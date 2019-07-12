@@ -240,6 +240,22 @@ BodyNodeAspectProperties::BodyNodeAspectProperties(
   // Do nothing
 }
 
+//==============================================================================
+BodyNodeAspectProperties::BodyNodeAspectProperties(
+    const std::string& name,
+    const Inertia& inertia,
+    bool isCollidable,
+    bool gravityMode)
+  : mName(name),
+    mInertia(inertia),
+    mIsCollidable(isCollidable),
+    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
+    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
+    mGravityMode(gravityMode)
+{
+  // Do nothing
+}
+
 } // namespace detail
 
 //==============================================================================
@@ -326,8 +342,10 @@ void BodyNode::setAspectProperties(const AspectProperties& properties)
   setName(properties.mName);
   setInertia(properties.mInertia);
   setGravityMode(properties.mGravityMode);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setFrictionCoeff(properties.mFrictionCoeff);
   setRestitutionCoeff(properties.mRestitutionCoeff);
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -648,6 +666,15 @@ Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(
 //==============================================================================
 void BodyNode::setFrictionCoeff(double _coeff)
 {
+  // Below code block is to set the friction coefficients of all the current
+  // dynamics aspects of this BodyNode as a stopgap solution. However, this
+  // won't help for new ShapeNodes that get added later.
+  auto shapeNodes = getShapeNodesWith<DynamicsAspect>();
+  for (auto& shapeNode : shapeNodes) {
+    auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+    dynamicsAspect->setFrictionCoeff(_coeff);
+  }
+
   if (mAspectProperties.mFrictionCoeff == _coeff)
     return;
 
@@ -667,6 +694,15 @@ double BodyNode::getFrictionCoeff() const
 //==============================================================================
 void BodyNode::setRestitutionCoeff(double _coeff)
 {
+  // Below code block is to set the restitution coefficients of all the current
+  // dynamics aspects of this BodyNode as a stopgap solution. However, this
+  // won't help for new ShapeNodes that get added later.
+  auto shapeNodes = getShapeNodesWith<DynamicsAspect>();
+  for (auto& shapeNode : shapeNodes) {
+    auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+    dynamicsAspect->setFrictionCoeff(_coeff);
+  }
+
   if (_coeff == mAspectProperties.mRestitutionCoeff)
     return;
 

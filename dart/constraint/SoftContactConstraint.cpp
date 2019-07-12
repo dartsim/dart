@@ -66,6 +66,9 @@ double SoftContactConstraint::mErrorReductionParameter = DART_ERP;
 double SoftContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
 double SoftContactConstraint::mConstraintForceMixing = DART_CFM;
 
+constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
+constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
+
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
     collision::Contact& contact, double timeStep)
@@ -129,11 +132,19 @@ SoftContactConstraint::SoftContactConstraint(
     }
   }
 
+  const auto* shapeNodeA = const_cast<dynamics::ShapeFrame*>(
+                               contact.collisionObject1->getShapeFrame())
+                               ->asShapeNode();
+  const auto* shapeNodeB = const_cast<dynamics::ShapeFrame*>(
+                               contact.collisionObject2->getShapeFrame())
+                               ->asShapeNode();
+
   //----------------------------------------------------------------------------
   // Bounce
   //----------------------------------------------------------------------------
-  mRestitutionCoeff
-      = mBodyNode1->getRestitutionCoeff() * mBodyNode2->getRestitutionCoeff();
+  const double restitutionCoeffA = computeRestitutionCoefficient(shapeNodeA);
+  const double restitutionCoeffB = computeRestitutionCoefficient(shapeNodeB);
+  mRestitutionCoeff = restitutionCoeffA * restitutionCoeffB;
   if (mRestitutionCoeff > DART_RESTITUTION_COEFF_THRESHOLD)
     mIsBounceOn = true;
   else
@@ -145,8 +156,12 @@ SoftContactConstraint::SoftContactConstraint(
   // TODO(JS): Assume the frictional coefficient can be changed during
   //           simulation steps.
   // Update mFrictionalCoff
-  mFrictionCoeff = std::min(
-      mBodyNode1->getFrictionCoeff(), mBodyNode2->getFrictionCoeff());
+  const double frictionCoeffA = computeFrictionCoefficient(shapeNodeA);
+  const double frictionCoeffB = computeFrictionCoefficient(shapeNodeB);
+
+  // TODO(JS): Consider providing various ways of the combined friction or
+  // allowing to override this method by a custom method
+  mFrictionCoeff = std::min(frictionCoeffA, frictionCoeffB);
   if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
@@ -917,6 +932,46 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
 bool SoftContactConstraint::isActive() const
 {
   return mActive;
+}
+
+//==============================================================================
+double SoftContactConstraint::computeFrictionCoefficient(
+    const dynamics::ShapeNode* shapeNode)
+{
+  assert(shapeNode);
+
+  auto dynamicAspect = shapeNode->getDynamicsAspect();
+
+  if (dynamicAspect == nullptr)
+  {
+    dtwarn << "[ContactConstraint] Attempt to extract friction coefficient "
+           << "from a ShapeNode that doesn't have DynamicAspect. The default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
+           << "instead.\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return dynamicAspect->getFrictionCoeff();
+}
+
+//==============================================================================
+double SoftContactConstraint::computeRestitutionCoefficient(
+    const dynamics::ShapeNode* shapeNode)
+{
+  assert(shapeNode);
+
+  auto dynamicAspect = shapeNode->getDynamicsAspect();
+
+  if (dynamicAspect == nullptr)
+  {
+    dtwarn << "[ContactConstraint] Attempt to extract restitution coefficient "
+           << "from a ShapeNode that doesn't have DynamicAspect. The default "
+           << "value (" << DART_DEFAULT_RESTITUTION_COEFF << ") will be used "
+           << "instead.\n";
+    return DART_DEFAULT_RESTITUTION_COEFF;
+  }
+
+  return dynamicAspect->getRestitutionCoeff();
 }
 
 //==============================================================================

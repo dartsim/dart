@@ -254,15 +254,31 @@ public:
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Set coefficient of friction in range of [0, ~]
+  /// \deprecated Deprecated since DART 6.10. Please set the friction
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   void setFrictionCoeff(double _coeff);
 
   /// Return frictional coefficient.
+  /// \deprecated Deprecated since DART 6.10. Please set the friction
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   double getFrictionCoeff() const;
 
   /// Set coefficient of restitution in range of [0, 1]
+  /// \deprecated Deprecated since DART 6.10. Please set the restitution
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   void setRestitutionCoeff(double _coeff);
 
   /// Return coefficient of restitution
+  /// \deprecated Deprecated since DART 6.10. Please set the restitution
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   double getRestitutionCoeff() const;
 
   //--------------------------------------------------------------------------

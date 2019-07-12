@@ -139,6 +139,11 @@ protected:
   // Documentation inherited
   bool isActive() const override;
 
+  static double computeFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+  static double computeRestitutionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+
 private:
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] _vel Change in relative velocity at contact point of the two
