@@ -717,8 +717,8 @@ void SoftBodyNode::updateBiasForce(
   {
     // Reset internal forces of point masses before used.
     //
-    // Once control force for point massis introduced, assign it instead of
-    // always reseting the internal forces to zero.
+    // Once control force for point mass is introduced, assign it to the
+    // internal force instead of always resetting the internal forces to zero.
     pointMass->resetForces();
 
     pointMass->updateBiasForceFD(_timeStep, _gravity);
