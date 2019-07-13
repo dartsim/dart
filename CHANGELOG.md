@@ -1,5 +1,9 @@
 ## DART 6
 
+### [DART 6.9.2 (2019-07-XX)](https://github.com/dartsim/dart/milestone/60?closed=1)
+
+
+
 ### [DART 6.9.1 (2019-06-06)](https://github.com/dartsim/dart/milestone/59?closed=1)
 
 * Collision
