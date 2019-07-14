@@ -33,18 +33,18 @@
 #include <dart/config.hpp>
 #if HAVE_NLOPT
 
-#include <dart/dart.hpp>
-#include <dart/optimizer/nlopt/nlopt.hpp>
-#include <pybind11/pybind11.h>
-#include "eigen_pybind.h"
+#  include <dart/dart.hpp>
+#  include <dart/optimizer/nlopt/nlopt.hpp>
+#  include <pybind11/pybind11.h>
+#  include "eigen_pybind.h"
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-#define DARTPY_DEFINE_ALGORITHM(alg_name)                                      \
-  .value(#alg_name, dart::optimizer::NloptSolver::Algorithm::alg_name)
+#  define DARTPY_DEFINE_ALGORITHM(alg_name)                                    \
+    .value(#alg_name, dart::optimizer::NloptSolver::Algorithm::alg_name)
 
 void NloptSolver(py::module& m)
 {

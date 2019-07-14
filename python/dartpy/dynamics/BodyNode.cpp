@@ -104,36 +104,10 @@ void BodyNode(py::module& m)
               const std::string&,
               const dart::dynamics::Inertia&,
               bool,
-              double>(),
-          ::py::arg("name"),
-          ::py::arg("inertia"),
-          ::py::arg("isCollidable"),
-          ::py::arg("frictionCoeff"))
-      .def(
-          ::py::init<
-              const std::string&,
-              const dart::dynamics::Inertia&,
-              bool,
-              double,
-              double>(),
-          ::py::arg("name"),
-          ::py::arg("inertia"),
-          ::py::arg("isCollidable"),
-          ::py::arg("frictionCoeff"),
-          ::py::arg("restitutionCoeff"))
-      .def(
-          ::py::init<
-              const std::string&,
-              const dart::dynamics::Inertia&,
-              bool,
-              double,
-              double,
               bool>(),
           ::py::arg("name"),
           ::py::arg("inertia"),
           ::py::arg("isCollidable"),
-          ::py::arg("frictionCoeff"),
-          ::py::arg("restitutionCoeff"),
           ::py::arg("gravityMode"))
       .def_readwrite(
           "mName", &dart::dynamics::detail::BodyNodeAspectProperties::mName)
@@ -143,12 +117,6 @@ void BodyNode(py::module& m)
       .def_readwrite(
           "mIsCollidable",
           &dart::dynamics::detail::BodyNodeAspectProperties::mIsCollidable)
-      .def_readwrite(
-          "mFrictionCoeff",
-          &dart::dynamics::detail::BodyNodeAspectProperties::mFrictionCoeff)
-      .def_readwrite(
-          "mRestitutionCoeff",
-          &dart::dynamics::detail::BodyNodeAspectProperties::mRestitutionCoeff)
       .def_readwrite(
           "mGravityMode",
           &dart::dynamics::detail::BodyNodeAspectProperties::mGravityMode);
@@ -753,28 +721,6 @@ void BodyNode(py::module& m)
           },
           ::py::arg("relativeTo"),
           ::py::arg("inCoordinatesOf"))
-      .def(
-          "setFrictionCoeff",
-          +[](dart::dynamics::BodyNode* self, double _coeff) {
-            self->setFrictionCoeff(_coeff);
-          },
-          ::py::arg("coeff"))
-      .def(
-          "getFrictionCoeff",
-          +[](const dart::dynamics::BodyNode* self) -> double {
-            return self->getFrictionCoeff();
-          })
-      .def(
-          "setRestitutionCoeff",
-          +[](dart::dynamics::BodyNode* self, double _coeff) {
-            self->setRestitutionCoeff(_coeff);
-          },
-          ::py::arg("coeff"))
-      .def(
-          "getRestitutionCoeff",
-          +[](const dart::dynamics::BodyNode* self) -> double {
-            return self->getRestitutionCoeff();
-          })
       .def(
           "getIndexInSkeleton",
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {

@@ -3,6 +3,7 @@ dart_add_test("comprehensive" test_Common)
 dart_add_test("comprehensive" test_Concurrency)
 dart_add_test("comprehensive" test_Constraint)
 dart_add_test("comprehensive" test_Frames)
+dart_add_test("comprehensive" test_Friction)
 dart_add_test("comprehensive" test_InverseKinematics)
 dart_add_test("comprehensive" test_NameManagement)
 

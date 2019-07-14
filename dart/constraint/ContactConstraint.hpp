@@ -132,6 +132,11 @@ protected:
   // Documentation inherited
   bool isActive() const override;
 
+  static double computeFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+  static double computeRestitutionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+
 private:
   using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
 

@@ -34,8 +34,8 @@
 
 #if HAVE_ODE
 
-#include <dart/collision/ode/ode.hpp>
-#include <pybind11/pybind11.h>
+#  include <dart/collision/ode/ode.hpp>
+#  include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
