@@ -713,8 +713,16 @@ void SoftBodyNode::updateBiasForce(
 {
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  for (auto& pointMass : mPointMasses)
+  for (PointMass* pointMass : mPointMasses)
+  {
+    // Reset internal forces of point masses before used.
+    //
+    // Once control force for point mass is introduced, assign it to the
+    // internal force instead of always resetting the internal forces to zero.
+    pointMass->resetForces();
+
     pointMass->updateBiasForceFD(_timeStep, _gravity);
+  }
 
   // Gravity force
   if (BodyNode::mAspectProperties.mGravityMode == true)

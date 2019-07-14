@@ -842,7 +842,7 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
   double kv = mParentSoftBodyNode->getVertexSpringStiffness();
   double ke = mParentSoftBodyNode->getEdgeSpringStiffness();
   double kd = mParentSoftBodyNode->getDampingCoefficient();
-  int nN = getNumConnectedPointMasses();
+  std::size_t nN = getNumConnectedPointMasses();
   mAlpha = state.mForces - (kv + nN * ke) * getPositions()
            - (_dt * (kv + nN * ke) + kd) * getVelocities()
            - getMass() * getPartialAccelerations() - mB;
