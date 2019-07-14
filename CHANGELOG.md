@@ -4,7 +4,8 @@
 
 * Dynamics
 
-  * Fix friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
+  * Fixex friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
+  * Fixed soft body simulation when command input is not resetted: [#1372](https://github.com/dartsim/dart/pull/1372)
 
 * GUI
 
