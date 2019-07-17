@@ -183,11 +183,6 @@ ContactConstraint::ContactConstraint(
   assert(mBodyNodeB->getSkeleton());
   mIsSelfCollision = (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton());
 
-  const math::Jacobian jacA
-      = mBodyNodeA->getSkeleton()->getJacobian(mBodyNodeA);
-  const math::Jacobian jacB
-      = mBodyNodeB->getSkeleton()->getJacobian(mBodyNodeB);
-
   // Compute local contact Jacobians expressed in body frame
   if (mIsFrictionOn)
   {
@@ -915,8 +910,10 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
   // Note: a possible speedup is in place for mNumDir % 2 = 0
   // Each basis and its opposite belong in the matrix, so we iterate half as
   // many times
-  T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, n)) * tangent;
+  // The first column is the same as mFirstFrictionalDirection unless
+  // mFirstFrictionalDirection is parallel to the normal
+  T.col(0) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, n)) * tangent;
+  T.col(1) = tangent;
   return T;
 }
 
