@@ -1470,12 +1470,6 @@ void GenericJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
   if (Base::mAspectProperties.mPositionLowerLimits[index] > q0
       || Base::mAspectProperties.mPositionUpperLimits[index] < q0)
   {
-    dtwarn << "[GenericJoint::setRestPosition] Value of _q0 [" << q0
-           << "], is out of the limit range ["
-           << Base::mAspectProperties.mPositionLowerLimits[index] << ", "
-           << Base::mAspectProperties.mPositionUpperLimits[index]
-           << "] for index [" << index << "] of Joint [" << this->getName()
-           << "].\n";
     return;
   }
 
