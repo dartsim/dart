@@ -1320,6 +1320,8 @@ public:
   ///
   std::weak_ptr<Skeleton> mUnionRootSkeleton;
 
+  Skeleton* mRawUnionRootSkeleton;
+
   ///
   std::size_t mUnionSize;
 

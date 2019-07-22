@@ -59,9 +59,9 @@ bool BodyNodeDistanceFilter::needDistance(
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
     return false;
 
-  if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton())
+  if (bodyNode1->getRawSkeleton() == bodyNode2->getRawSkeleton())
   {
-    auto skeleton = bodyNode1->getSkeleton();
+    auto skeleton = bodyNode1->getRawSkeleton();
 
     if (!skeleton->isEnabledSelfCollisionCheck())
       return false;
@@ -84,7 +84,7 @@ bool BodyNodeDistanceFilter::areAdjacentBodies(
   if ((bodyNode1->getParentBodyNode() == bodyNode2)
       || (bodyNode2->getParentBodyNode() == bodyNode1))
   {
-    assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
+    assert(bodyNode1->getRawSkeleton() == bodyNode2->getRawSkeleton());
     return true;
   }
 

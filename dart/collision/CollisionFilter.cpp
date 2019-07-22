@@ -129,8 +129,8 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
     return true;
 
-  const auto& skel1 = bodyNode1->getSkeleton();
-  const auto& skel2 = bodyNode2->getSkeleton();
+  const auto& skel1 = bodyNode1->getRawSkeleton();
+  const auto& skel2 = bodyNode2->getRawSkeleton();
 
   if ( !skel1->isMobile() && !skel2->isMobile() )
     return true;
@@ -161,7 +161,7 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
   if ((bodyNode1->getParentBodyNode() == bodyNode2)
       || (bodyNode2->getParentBodyNode() == bodyNode1))
   {
-    assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
+    assert(bodyNode1->getRawSkeleton() == bodyNode2->getRawSkeleton());
     return true;
   }
 

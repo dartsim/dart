@@ -363,6 +363,12 @@ public:
   /// Get the Skeleton that this DegreeOfFreedom is inside of
   ConstSkeletonPtr getSkeleton() const;
 
+  ///
+  Skeleton* getRawSkeleton();
+
+  ///
+  const Skeleton* getRawSkeleton() const;
+
   /// Get the BodyNode downstream of this DegreeOfFreedom
   BodyNode* getChildBodyNode();
 

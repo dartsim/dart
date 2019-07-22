@@ -62,6 +62,18 @@ public:
   /// Return the (const) Skeleton this BodyNode belongs to
   std::shared_ptr<const Skeleton> getSkeleton() const;
 
+  /// Convenience function to get the raw skeleton pointer. This is used by
+  /// dartsim internally for better performance.
+  inline Skeleton* getRawSkeleton()
+  {
+    return mReferenceSkeleton.get();
+  }
+
+  inline const Skeleton* getRawSkeleton() const
+  {
+    return mReferenceSkeleton.get();
+  }
+
 private:
 
   //--------------------------------------------------------------------------

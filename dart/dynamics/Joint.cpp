@@ -296,6 +296,18 @@ std::shared_ptr<const Skeleton> Joint::getSkeleton() const
 }
 
 //==============================================================================
+Skeleton* Joint::getRawSkeleton()
+{
+  return mChildBodyNode->getRawSkeleton();
+}
+
+//==============================================================================
+const Skeleton* Joint::getRawSkeleton() const
+{
+  return mChildBodyNode->getRawSkeleton();
+}
+
+//==============================================================================
 const Eigen::Isometry3d& Joint::getLocalTransform() const
 {
   return getRelativeTransform();

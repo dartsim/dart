@@ -984,7 +984,7 @@ static std::size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _ob
     return INVALID_INDEX;
   }
 
-  if(_skel == _obj->getSkeleton().get())
+  if(_skel == _obj->getRawSkeleton())
     return (_obj->*getIndexInSkeleton)();
 
   if(_warning)
@@ -1602,7 +1602,7 @@ void assignJacobian(JacobianType& _J,
   for (const auto& index : indices)
   {
     // Each index should be less than the number of dofs of this Skeleton.
-    assert(index < _node->getSkeleton()->getNumDofs());
+    assert(index < _node->getRawSkeleton()->getNumDofs());
 
     _J.col(index) = _JBodyNode.col(localIndex++);
   }
@@ -3695,7 +3695,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode->getSkeleton().get() == this);
+  assert(_bodyNode->getRawSkeleton() == this);
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
@@ -3726,7 +3726,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode->getSkeleton().get() == this);
+  assert(_bodyNode->getRawSkeleton() == this);
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
@@ -3772,8 +3772,8 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode1->getSkeleton().get() == this);
-  assert(_bodyNode2->getSkeleton().get() == this);
+  assert(_bodyNode1->getRawSkeleton() == this);
+  assert(_bodyNode2->getRawSkeleton() == this);
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero

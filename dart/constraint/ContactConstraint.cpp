@@ -118,14 +118,14 @@ ContactConstraint::ContactConstraint(
     mIsFrictionOn = false;
   }
 
-  assert(mBodyNodeA->getSkeleton());
-  assert(mBodyNodeB->getSkeleton());
-  mIsSelfCollision = (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton());
+  assert(mBodyNodeA->getRawSkeleton());
+  assert(mBodyNodeB->getRawSkeleton());
+  mIsSelfCollision = (mBodyNodeA->getRawSkeleton() == mBodyNodeB->getRawSkeleton());
 
   const math::Jacobian jacA
-      = mBodyNodeA->getSkeleton()->getJacobian(mBodyNodeA);
+      = mBodyNodeA->getRawSkeleton()->getJacobian(mBodyNodeA);
   const math::Jacobian jacB
-      = mBodyNodeB->getSkeleton()->getJacobian(mBodyNodeB);
+      = mBodyNodeB->getRawSkeleton()->getJacobian(mBodyNodeB);
 
   // Compute local contact Jacobians expressed in body frame
   if (mIsFrictionOn)
@@ -481,8 +481,8 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
   // assert(isActive());
   assert(mBodyNodeA->isReactive() || mBodyNodeB->isReactive());
 
-  dynamics::Skeleton* skelA = mBodyNodeA->getSkeleton().get();
-  dynamics::Skeleton* skelB = mBodyNodeB->getSkeleton().get();
+  dynamics::Skeleton* skelA = mBodyNodeA->getRawSkeleton();
+  dynamics::Skeleton* skelB = mBodyNodeB->getRawSkeleton();
 
   // Self collision case
   if (mIsSelfCollision)
@@ -552,10 +552,10 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
   Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
   velMap.setZero();
 
-  if (mBodyNodeA->getSkeleton()->isImpulseApplied() && mBodyNodeA->isReactive())
+  if (mBodyNodeA->getRawSkeleton()->isImpulseApplied() && mBodyNodeA->isReactive())
     velMap += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
 
-  if (mBodyNodeB->getSkeleton()->isImpulseApplied() && mBodyNodeB->isReactive())
+  if (mBodyNodeB->getRawSkeleton()->isImpulseApplied() && mBodyNodeB->isReactive())
     velMap += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
 
   // Add small values to the diagnal to keep it away from singular, similar to
@@ -571,20 +571,20 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 void ContactConstraint::excite()
 {
   if (mBodyNodeA->isReactive())
-    mBodyNodeA->getSkeleton()->setImpulseApplied(true);
+    mBodyNodeA->getRawSkeleton()->setImpulseApplied(true);
 
   if (mBodyNodeB->isReactive())
-    mBodyNodeB->getSkeleton()->setImpulseApplied(true);
+    mBodyNodeB->getRawSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
 void ContactConstraint::unexcite()
 {
   if (mBodyNodeA->isReactive())
-    mBodyNodeA->getSkeleton()->setImpulseApplied(false);
+    mBodyNodeA->getRawSkeleton()->setImpulseApplied(false);
 
   if (mBodyNodeB->isReactive())
-    mBodyNodeB->getSkeleton()->setImpulseApplied(false);
+    mBodyNodeB->getRawSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
@@ -667,9 +667,9 @@ dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
   assert(isActive());
 
   if (mBodyNodeA->isReactive())
-    return mBodyNodeA->getSkeleton()->mUnionRootSkeleton.lock();
+    return mBodyNodeA->getRawSkeleton()->mUnionRootSkeleton.lock();
   else
-    return mBodyNodeB->getSkeleton()->mUnionRootSkeleton.lock();
+    return mBodyNodeB->getRawSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================
@@ -748,7 +748,7 @@ void ContactConstraint::uniteSkeletons()
   if (!mBodyNodeA->isReactive() || !mBodyNodeB->isReactive())
     return;
 
-  if (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton())
+  if (mBodyNodeA->getRawSkeleton() == mBodyNodeB->getRawSkeleton())
     return;
 
   const dynamics::SkeletonPtr& unionIdA
@@ -763,12 +763,14 @@ void ContactConstraint::uniteSkeletons()
   {
     // Merge root1 --> root2
     unionIdA->mUnionRootSkeleton = unionIdB;
+    unionIdA->mRawUnionRootSkeleton = unionIdB.get();
     unionIdB->mUnionSize += unionIdA->mUnionSize;
   }
   else
   {
     // Merge root2 --> root1
     unionIdB->mUnionRootSkeleton = unionIdA;
+    unionIdB->mRawUnionRootSkeleton = unionIdA.get();
     unionIdA->mUnionSize += unionIdB->mUnionSize;
   }
 }

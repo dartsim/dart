@@ -525,7 +525,7 @@ void SoftBodyNode::clearConstraintImpulse()
 //==============================================================================
 void SoftBodyNode::checkArticulatedInertiaUpdate() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
+  const Skeleton* const skel = getRawSkeleton();
   if(skel && skel->mTreeCache[mTreeIndex].mDirty.mArticulatedInertia)
     skel->updateArticulatedInertia(mTreeIndex);
 }

@@ -119,7 +119,7 @@ void ServoMotorConstraint::update()
 
     if (mNegativeVelocityError[i] != 0.0)
     {
-      double timeStep = mJoint->getSkeleton()->getTimeStep();
+      double timeStep = mJoint->getRawSkeleton()->getTimeStep();
       // TODO: There are multiple ways to get time step (or its inverse).
       //   - ContactConstraint get it from the constructor parameter
       //   - Skeleton has it itself.
@@ -184,7 +184,7 @@ void ServoMotorConstraint::applyUnitImpulse(std::size_t index)
   assert(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
-  const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
+  dynamics::Skeleton* const skeleton = mJoint->getRawSkeleton();
 
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
@@ -219,7 +219,7 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
     if (mActive[i] == false)
       continue;
 
-    if (mJoint->getSkeleton()->isImpulseApplied())
+    if (mJoint->getRawSkeleton()->isImpulseApplied())
       delVel[localIndex] = mJoint->getVelocityChange(i);
     else
       delVel[localIndex] = 0.0;
@@ -241,13 +241,13 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 //==============================================================================
 void ServoMotorConstraint::excite()
 {
-  mJoint->getSkeleton()->setImpulseApplied(true);
+  mJoint->getRawSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
 void ServoMotorConstraint::unexcite()
 {
-  mJoint->getSkeleton()->setImpulseApplied(false);
+  mJoint->getRawSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
@@ -273,7 +273,7 @@ void ServoMotorConstraint::applyImpulse(double* lambda)
 //==============================================================================
 dynamics::SkeletonPtr ServoMotorConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
+  return mJoint->getRawSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================

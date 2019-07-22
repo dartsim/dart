@@ -178,6 +178,13 @@ public:
   /// Get the (const) Skeleton that this Joint belongs to.
   std::shared_ptr<const Skeleton> getSkeleton() const;
 
+  /// Get the Skeleton that this Joint belongs to without any safety checks.
+  /// Used internally for its performance.
+  Skeleton* getRawSkeleton();
+
+  /// Const-qualified getRawSkeleton()
+  const Skeleton* getRawSkeleton() const;
+
   /// Set transformation from parent body node to this joint
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
