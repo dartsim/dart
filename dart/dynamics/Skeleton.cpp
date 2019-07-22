@@ -1602,7 +1602,7 @@ void assignJacobian(JacobianType& _J,
   for (const auto& index : indices)
   {
     // Each index should be less than the number of dofs of this Skeleton.
-    assert(index < _node->getRawSkeleton()->getNumDofs());
+    assert(index < _node->getSkeleton()->getNumDofs());
 
     _J.col(index) = _JBodyNode.col(localIndex++);
   }

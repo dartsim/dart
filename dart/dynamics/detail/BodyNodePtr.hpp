@@ -66,12 +66,12 @@ public:
   /// dartsim internally for better performance.
   inline Skeleton* getRawSkeleton()
   {
-    return mReferenceSkeleton.get();
+    return mRawSkeleton;
   }
 
   inline const Skeleton* getRawSkeleton() const
   {
-    return mReferenceSkeleton.get();
+    return mRawSkeleton;
   }
 
 private:
@@ -95,6 +95,10 @@ protected:
 
   /// Weak pointer to the Skeleton this BodyNode belongs to.
   std::weak_ptr<Skeleton> mSkeleton;
+
+  /// Raw pointer to the Skeleton this BodyNode belongs to. Used for better
+  /// performance when safety isn't a concern.
+  Skeleton* mRawSkeleton = nullptr;
 
   /// Reference count for the number of BodyNodePtrs that are referring to this
   /// BodyNode

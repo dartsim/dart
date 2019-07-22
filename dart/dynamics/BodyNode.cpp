@@ -1299,6 +1299,7 @@ Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
 void BodyNode::init(const SkeletonPtr& _skeleton)
 {
   mSkeleton = _skeleton;
+  mRawSkeleton = _skeleton.get();
   assert(_skeleton);
   if(mReferenceCount > 0)
   {
