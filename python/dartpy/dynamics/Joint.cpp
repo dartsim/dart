@@ -262,7 +262,7 @@ void Joint(py::module& m)
           })
       .def(
           "getTransformFromChildBodyNode",
-          +[](dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
+          +[](const dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
             return self->getTransformFromChildBodyNode();
           })
       .def(
