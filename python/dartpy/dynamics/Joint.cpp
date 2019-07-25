@@ -256,6 +256,16 @@ void Joint(py::module& m)
           },
           ::py::arg("T"))
       .def(
+          "getTransformFromParentBodyNode",
+          +[](const dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
+            return self->getTransformFromParentBodyNode();
+          })
+      .def(
+          "getTransformFromChildBodyNode",
+          +[](const dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
+            return self->getTransformFromChildBodyNode();
+          })
+      .def(
           "setPositionLimitEnforced",
           +[](dart::dynamics::Joint* self,
               bool isPositionLimitEnforced) -> void {
