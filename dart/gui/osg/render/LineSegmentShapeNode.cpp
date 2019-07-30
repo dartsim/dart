@@ -84,6 +84,7 @@ protected:
 
   ::osg::ref_ptr<::osg::Vec3Array> mVertices;
   ::osg::ref_ptr<::osg::Vec4Array> mColors;
+  ::osg::ref_ptr<::osg::DrawElementsUInt> mElements;
 };
 
 //==============================================================================
@@ -187,8 +188,10 @@ LineSegmentShapeDrawable::LineSegmentShapeDrawable(
   : mLineSegmentShape(shape),
     mVisualAspect(visualAspect),
     mVertices(new ::osg::Vec3Array),
-    mColors(new ::osg::Vec4Array)
+    mColors(new ::osg::Vec4Array),
+    mElements(new ::osg::DrawElementsUInt(::osg::PrimitiveSet::LINES))
 {
+  addPrimitiveSet(mElements);
   refresh(true);
 }
 
@@ -207,18 +210,16 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     const common::aligned_vector<Eigen::Vector2i>& connections
         = mLineSegmentShape->getConnections();
 
-    ::osg::ref_ptr<::osg::DrawElementsUInt> elements
-        = new ::osg::DrawElementsUInt(::osg::PrimitiveSet::LINES);
-    elements->reserve(2 * connections.size());
+    mElements->resize(2 * connections.size());
 
     for (std::size_t i = 0; i < connections.size(); ++i)
     {
       const Eigen::Vector2i& c = connections[i];
-      elements->push_back(c[0]);
-      elements->push_back(c[1]);
+      mElements->push_back(static_cast<unsigned int>(c[0]));
+      mElements->push_back(static_cast<unsigned int>(c[1]));
     }
 
-    addPrimitiveSet(elements);
+    setPrimitiveSet(0, mElements);
   }
 
   if (mLineSegmentShape->checkDataVariance(
