@@ -210,7 +210,8 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     const common::aligned_vector<Eigen::Vector2i>& connections
         = mLineSegmentShape->getConnections();
 
-    mElements->resize(2 * connections.size());
+    mElements->clear();
+    mElements->reserve(2 * connections.size());
 
     for (std::size_t i = 0; i < connections.size(); ++i)
     {
