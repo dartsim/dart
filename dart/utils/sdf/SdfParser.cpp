@@ -1258,7 +1258,7 @@ static void readAxisElement(
     const Eigen::Isometry3d& _parentModelFrame,
     Eigen::Vector3d& axis,
     double& lower, double& upper, double& initial, double& rest,
-    double& damping)
+    double& damping, double &friction, double &sprint_stiffness)
 {
   // use_parent_model_frame
   bool useParentModelFrame = false;
@@ -1283,6 +1283,24 @@ static void readAxisElement(
     if (hasElement(dynamicsElement, "damping"))
     {
       damping = getValueDouble(dynamicsElement, "damping");
+    }
+
+    // friction
+    if (hasElement(dynamicsElement, "friction"))
+    {
+      friction = getValueDouble(dynamicsElement, "friction");
+    }
+
+    // spring reference
+    if (hasElement(dynamicsElement, "spring_reference"))
+    {
+      rest = getValueDouble(dynamicsElement, "spring_reference");
+    }
+
+    // spring stiffness
+    if (hasElement(dynamicsElement, "sprint_stiffness"))
+    {
+      sprint_stiffness = getValueDouble(dynamicsElement, "sprint_stiffness");
     }
   }
 
@@ -1353,7 +1371,9 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
                     newRevoluteJoint.mPositionUpperLimits[0],
                     newRevoluteJoint.mInitialPositions[0],
                     newRevoluteJoint.mRestPositions[0],
-                    newRevoluteJoint.mDampingCoefficients[0]);
+                    newRevoluteJoint.mDampingCoefficients[0],
+                    newRevoluteJoint.mFrictions[0],
+                    newRevoluteJoint.mSpringStiffnesses[0]);
   }
   else
   {
@@ -1385,7 +1405,9 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
                     newPrismaticJoint.mPositionUpperLimits[0],
                     newPrismaticJoint.mInitialPositions[0],
                     newPrismaticJoint.mRestPositions[0],
-                    newPrismaticJoint.mDampingCoefficients[0]);
+                    newPrismaticJoint.mDampingCoefficients[0],
+                    newPrismaticJoint.mFrictions[0],
+                    newPrismaticJoint.mSpringStiffnesses[0]);
   }
   else
   {
@@ -1417,7 +1439,9 @@ dynamics::ScrewJoint::Properties readScrewJoint(
                     newScrewJoint.mPositionUpperLimits[0],
                     newScrewJoint.mInitialPositions[0],
                     newScrewJoint.mRestPositions[0],
-                    newScrewJoint.mDampingCoefficients[0]);
+                    newScrewJoint.mDampingCoefficients[0],
+                    newScrewJoint.mFrictions[0],
+                    newScrewJoint.mSpringStiffnesses[0]);
   }
   else
   {
@@ -1456,7 +1480,9 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
                     newUniversalJoint.mPositionUpperLimits[0],
                     newUniversalJoint.mInitialPositions[0],
                     newUniversalJoint.mRestPositions[0],
-                    newUniversalJoint.mDampingCoefficients[0]);
+                    newUniversalJoint.mDampingCoefficients[0],
+                    newUniversalJoint.mFrictions[0],
+                    newUniversalJoint.mSpringStiffnesses[0]);
   }
   else
   {
@@ -1476,7 +1502,9 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
                     newUniversalJoint.mPositionUpperLimits[1],
                     newUniversalJoint.mInitialPositions[1],
                     newUniversalJoint.mRestPositions[1],
-                    newUniversalJoint.mDampingCoefficients[1]);
+                    newUniversalJoint.mDampingCoefficients[1],
+                    newUniversalJoint.mFrictions[1],
+                    newUniversalJoint.mSpringStiffnesses[1]);
   }
   else
   {
