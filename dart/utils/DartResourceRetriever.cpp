@@ -33,11 +33,11 @@
 #include "dart/utils/DartResourceRetriever.hpp"
 
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
-#include "dart/config.hpp"
+#include <iostream>
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/config.hpp"
 
 namespace dart {
 namespace utils {
@@ -145,11 +145,11 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
       if (!path.empty())
         return path;
     }
-    
+
     dtwarn << "Failed to retrieve a resource from '" << uri.toString()
-             << "'. Please make sure you set the environment variable for "
-             << "DART data path. For example:\n"
-             << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
+           << "'. Please make sure you set the environment variable for "
+           << "DART data path. For example:\n"
+           << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
   }
   else
   {
@@ -164,15 +164,13 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
 }
 
 //==============================================================================
-void DartResourceRetriever::addDataDirectory(
-    const std::string& dataDirectory)
+void DartResourceRetriever::addDataDirectory(const std::string& dataDirectory)
 {
   // Strip a trailing slash.
   std::string normalizedDataDirectory;
   if (!dataDirectory.empty() && dataDirectory.back() == '/')
   {
-    normalizedDataDirectory
-      = dataDirectory.substr(0, dataDirectory.size() - 1);
+    normalizedDataDirectory = dataDirectory.substr(0, dataDirectory.size() - 1);
   }
   else
   {
@@ -184,8 +182,7 @@ void DartResourceRetriever::addDataDirectory(
 
 //==============================================================================
 bool DartResourceRetriever::resolveDataUri(
-  const common::Uri& uri,
-  std::string& relativePath) const
+    const common::Uri& uri, std::string& relativePath) const
 {
   if (uri.mScheme.get_value_or("dart") != "dart")
     return false;
@@ -193,7 +190,8 @@ bool DartResourceRetriever::resolveDataUri(
   if (!uri.mPath)
   {
     dtwarn << "[DartResourceRetriever::resolveDataUri] Failed extracting"
-              " relative path from URI '" << uri.toString() << "'.\n";
+              " relative path from URI '"
+           << uri.toString() << "'.\n";
     return false;
   }
   relativePath = uri.mPath.get_value_or("");

@@ -37,7 +37,7 @@ namespace dart {
 
 namespace simulation {
 class Recording;
-}  // namespace simulation
+} // namespace simulation
 
 namespace utils {
 
@@ -69,7 +69,7 @@ protected:
   simulation::Recording* mRecord;
 };
 
-}  // namespace utils
-}  // namespace dart
+} // namespace utils
+} // namespace dart
 
-#endif  // DART_UTILS_FILEINFOWORLD_HPP_
+#endif // DART_UTILS_FILEINFOWORLD_HPP_
