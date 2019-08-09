@@ -14,6 +14,10 @@
   * Updated ImGui to 1.71: [#1362](https://github.com/dartsim/dart/pull/1362)
   * Fixed refresh of LineSegmentShapeNode: [#1381](https://github.com/dartsim/dart/pull/1381)
 
+* Parser
+
+  * Allowed parsing SDF up to version 1.6: [#1385](https://github.com/dartsim/dart/pull/1385)
+
 * dartpy
 
   * Added raycast option and result: [#1343](https://github.com/dartsim/dart/pull/1343)
