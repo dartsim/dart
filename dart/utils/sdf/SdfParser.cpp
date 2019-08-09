@@ -1269,7 +1269,7 @@ static void readAxisElement(
     double& rest,
     double& damping,
     double& friction,
-    double& sprint_stiffness)
+    double& spring_stiffness)
 {
   // use_parent_model_frame
   bool useParentModelFrame = false;
@@ -1308,9 +1308,9 @@ static void readAxisElement(
     }
 
     // spring stiffness
-    if (hasElement(dynamicsElement, "sprint_stiffness"))
+    if (hasElement(dynamicsElement, "spring_stiffness"))
     {
-      sprint_stiffness = getValueDouble(dynamicsElement, "sprint_stiffness");
+      spring_stiffness = getValueDouble(dynamicsElement, "spring_stiffness");
     }
   }
 
