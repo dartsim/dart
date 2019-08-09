@@ -248,12 +248,12 @@ simulation::WorldPtr readSdfFile(
 bool checkVersion(
     const tinyxml2::XMLElement& sdfElement, const common::Uri& uri)
 {
-  std::string version = getAttributeString(&sdfElement, "version");
+  const std::string version = getAttributeString(&sdfElement, "version");
   // TODO: We need version aware SDF parser (see #264)
   // We support 1.4 ~ 1.6.
   if (version != "1.4" && version != "1.5" && version != "1.6")
   {
-    dtwarn << "[SdfParser::readSdfFile] The file format of [" << uri.toString()
+    dtwarn << "[SdfParser] The file format of [" << uri.toString()
            << "] was found to be [" << version << "], but we only support SDF "
            << "1.4, 1.5, and 1.6!\n";
     return false;
