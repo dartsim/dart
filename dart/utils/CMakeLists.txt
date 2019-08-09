@@ -61,3 +61,5 @@ endif()
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+
+dart_format_add(${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})

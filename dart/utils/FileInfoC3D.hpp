@@ -41,32 +41,53 @@
 namespace dart {
 namespace utils {
 
-class FileInfoC3D {
-    
+class FileInfoC3D
+{
+
 public:
-    FileInfoC3D();
-    virtual ~FileInfoC3D(){}
+  FileInfoC3D();
+  virtual ~FileInfoC3D()
+  {
+  }
 
-    inline int getNumMarkers() const { return mNumMarkers; }
-    inline int getNumFrames() const { return mNumFrames; }
-    inline double getFPS() const { return mFPS; }
+  inline int getNumMarkers() const
+  {
+    return mNumMarkers;
+  }
+  inline int getNumFrames() const
+  {
+    return mNumFrames;
+  }
+  inline double getFPS() const
+  {
+    return mFPS;
+  }
 
-    inline Eigen::Vector3d getDataAt(int _frame, int _idx) const { return mData.at(_frame).at(_idx); } ///< Note: not checking index range
-    inline void addData(const std::vector<Eigen::Vector3d>& _data) { mData.push_back(_data); }
+  inline Eigen::Vector3d getDataAt(int _frame, int _idx) const
+  {
+    return mData.at(_frame).at(_idx);
+  } ///< Note: not checking index range
+  inline void addData(const std::vector<Eigen::Vector3d>& _data)
+  {
+    mData.push_back(_data);
+  }
 
-    virtual bool loadFile(const char*);
-    virtual bool saveFile(const char*, int _start, int _end, double _sampleRate = 1); ///< Note: down sampling not implemented yet
-    
+  virtual bool loadFile(const char*);
+  virtual bool saveFile(
+      const char*,
+      int _start,
+      int _end,
+      double _sampleRate = 1); ///< Note: down sampling not implemented yet
+
 protected:
-    int mNumMarkers;
-    int mNumFrames;
-    std::vector<std::vector<Eigen::Vector3d>> mData;
-    double mFPS;
-    char mFileName[256]; // change to string?
+  int mNumMarkers;
+  int mNumFrames;
+  std::vector<std::vector<Eigen::Vector3d>> mData;
+  double mFPS;
+  char mFileName[256]; // change to string?
 };
 
 } // namespace utils
 } // namespace dart
 
 #endif // #ifndef DART_UTILS_FILEINFOC3D_HPP_
-

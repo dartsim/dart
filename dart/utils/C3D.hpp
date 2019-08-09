@@ -33,8 +33,8 @@
 #ifndef DART_UTILS_C3D_HPP_
 #define DART_UTILS_C3D_HPP_
 
-#include <vector>
 #include <ctime>
+#include <vector>
 #include <Eigen/Dense>
 #include "dart/math/MathTypes.hpp"
 
@@ -43,52 +43,62 @@
 namespace dart {
 namespace utils {
 
-#define C3D_REC_SIZE   512
+#define C3D_REC_SIZE 512
 
-typedef struct c3d_head_t {
-    unsigned char	prec_start;
-    unsigned char	key;
-    short	pnt_cnt;
-    short	a_channels;
-    short	start_frame;
-    short	end_frame;
-    short	int_gap;
-    float	scale;
-    short	rec_start;
-    short	a_frames;
-    float	freq;
-    short	stuff[244];
+typedef struct c3d_head_t
+{
+  unsigned char prec_start;
+  unsigned char key;
+  short pnt_cnt;
+  short a_channels;
+  short start_frame;
+  short end_frame;
+  short int_gap;
+  float scale;
+  short rec_start;
+  short a_frames;
+  float freq;
+  short stuff[244];
 } c3d_head;
 
-typedef struct c3d_param_t {
-    unsigned char	reserved[2];
-    unsigned char	pblocks;
-    unsigned char	ftype;
-    char stuff[C3D_REC_SIZE-4];
+typedef struct c3d_param_t
+{
+  unsigned char reserved[2];
+  unsigned char pblocks;
+  unsigned char ftype;
+  char stuff[C3D_REC_SIZE - 4];
 } c3d_param;
 
-typedef struct c3d_frameSI_t {
-    short	x, y, z;
-    unsigned char	cam_byte;
-    unsigned char	residual;
+typedef struct c3d_frameSI_t
+{
+  short x, y, z;
+  unsigned char cam_byte;
+  unsigned char residual;
 } c3d_frameSI;
 
-typedef struct c3d_frame_t {
-    float	x, y, z;
-    float	residual;
+typedef struct c3d_frame_t
+{
+  float x, y, z;
+  float residual;
 } c3d_frame;
 
 float convertDecToFloat(char _bytes[4]);
 void convertFloatToDec(float _f, char* _bytes);
 
-bool loadC3DFile( const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData,
-                  int* _nFrame, int* _nMarker, double* _freq );
-bool saveC3DFile( const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData,
-                  int _nFrame, int _nMarker, double _freq );
+bool loadC3DFile(
+    const char* _fileName,
+    std::vector<std::vector<Eigen::Vector3d>>& _pointData,
+    int* _nFrame,
+    int* _nMarker,
+    double* _freq);
+bool saveC3DFile(
+    const char* _fileName,
+    std::vector<std::vector<Eigen::Vector3d>>& _pointData,
+    int _nFrame,
+    int _nMarker,
+    double _freq);
 
 } // namespace utils
 } // namespace dart
 
 #endif // #ifndef DART_UTILS_C3D_HPP_
-
-
