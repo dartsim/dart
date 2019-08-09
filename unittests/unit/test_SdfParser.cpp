@@ -71,6 +71,45 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 }
 
 //==============================================================================
+TEST(SdfParser, SDFJointProperties)
+{
+  WorldPtr world = SdfParser::readWorld(
+      "dart://sample/sdf/test/test_skeleton_joint.world");
+  EXPECT_TRUE(world != nullptr);
+
+  SkeletonPtr skel = world->getSkeleton(0);
+  EXPECT_TRUE(skel != nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 5u);
+  EXPECT_EQ(skel->getNumJoints(), 5u);
+
+  const double epsilon = 1e-7;
+
+  auto testProperties = [epsilon](const Joint* joint, const size_t idx) {
+    EXPECT_NEAR(joint->getPositionLowerLimit(idx), 0, epsilon);
+    EXPECT_NEAR(joint->getPositionUpperLimit(idx), 3, epsilon);
+    EXPECT_NEAR(joint->getDampingCoefficient(idx), 0, epsilon);
+    EXPECT_NEAR(joint->getCoulombFriction(idx), 1, epsilon);
+    EXPECT_NEAR(joint->getRestPosition(idx), 2, epsilon);
+    EXPECT_NEAR(joint->getSpringStiffness(idx), 3, epsilon);
+  };
+
+  for (auto& joint : skel->getJoints())
+  {
+    if (joint->getType() == PrismaticJoint::getStaticType()
+        || joint->getType() == RevoluteJoint::getStaticType()
+        || joint->getType() == ScrewJoint::getStaticType())
+    {
+      testProperties(joint, 0);
+    }
+    else if (joint->getType() == UniversalJoint::getStaticType())
+    {
+      testProperties(joint, 0);
+      testProperties(joint, 1);
+    }
+  }
+}
+
+//==============================================================================
 TEST(SdfParser, ParsingSDFFiles)
 {
   const auto numSteps = 10u;
