@@ -36,8 +36,8 @@
 #include <string>
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/Recording.hpp"
 
 namespace dart {
@@ -61,7 +61,8 @@ FileInfoDof::~FileInfoDof()
 bool FileInfoDof::loadFile(const char* _fName)
 {
   std::ifstream inFile(_fName);
-  if (inFile.fail() == 1) return false;
+  if (inFile.fail() == 1)
+    return false;
 
   inFile.precision(20);
   char buffer[256];
@@ -99,37 +100,43 @@ bool FileInfoDof::loadFile(const char* _fName)
   // fps
   inFile >> buffer;
   if (!inFile.eof())
-    inFile>>mFPS;
+    inFile >> mFPS;
 
   inFile.close();
 
   std::string text = _fName;
   int lastSlash = text.find_last_of("/");
-  text = text.substr(lastSlash+1);
+  text = text.substr(lastSlash + 1);
   strcpy(mFileName, text.c_str());
   return true;
 }
 
 //==============================================================================
-bool FileInfoDof::saveFile(const char* _fName, std::size_t _start, std::size_t _end,
-                           double /*_sampleRate*/ )
+bool FileInfoDof::saveFile(
+    const char* _fName,
+    std::size_t _start,
+    std::size_t _end,
+    double /*_sampleRate*/)
 {
-  if (_end < _start) return false;
+  if (_end < _start)
+    return false;
 
   std::ofstream outFile(_fName, std::ios::out);
-  if (outFile.fail()) return false;
+  if (outFile.fail())
+    return false;
 
   std::size_t first = _start < mNumFrames ? _start : mNumFrames - 1;
   std::size_t last = _end < mNumFrames ? _end : mNumFrames - 1;
 
   outFile.precision(20);
-  outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumDofs() << std::endl;
+  outFile << "frames = " << last - first + 1
+          << " dofs = " << mSkel->getNumDofs() << std::endl;
 
   for (std::size_t i = 0; i < mSkel->getNumDofs(); i++)
   {
-    const dynamics::DegreeOfFreedom* dof        = mSkel->getDof(i);
-    const dynamics::Joint*           joint      = dof->getJoint();
-    const std::size_t                     localIndex = dof->getIndexInJoint();
+    const dynamics::DegreeOfFreedom* dof = mSkel->getDof(i);
+    const dynamics::Joint* joint = dof->getJoint();
+    const std::size_t localIndex = dof->getIndexInJoint();
 
     outFile << joint->getName() << "." << localIndex << ' ';
   }
@@ -157,13 +164,15 @@ bool FileInfoDof::saveFile(const char* _fName, std::size_t _start, std::size_t _
 //==============================================================================
 void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
 {
-  mDofs.push_back(_dofs); mNumFrames++;
+  mDofs.push_back(_dofs);
+  mNumFrames++;
 }
 
 //==============================================================================
 double FileInfoDof::getDofAt(std::size_t _frame, std::size_t _id) const
 {
-  assert(_frame<mNumFrames); return mDofs.at(_frame)[_id];
+  assert(_frame < mNumFrames);
+  return mDofs.at(_frame)[_id];
 }
 
 //==============================================================================
@@ -191,10 +200,10 @@ int FileInfoDof::getNumFrames() const
 }
 
 //==============================================================================
-dynamics::Skeleton*FileInfoDof::getSkel() const
+dynamics::Skeleton* FileInfoDof::getSkel() const
 {
   return mSkel;
 }
 
-}  // namespace utils
-}  // namespace dart
+} // namespace utils
+} // namespace dart
