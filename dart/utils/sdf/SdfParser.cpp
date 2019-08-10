@@ -1060,6 +1060,7 @@ void readCollisionShapeNode(
       retriever);
 
   newShapeNode->createCollisionAspect();
+  newShapeNode->createDynamicsAspect();
 }
 
 //==============================================================================
