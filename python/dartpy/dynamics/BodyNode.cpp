@@ -867,10 +867,20 @@ void BodyNode(py::module& m)
             return self->getNumChildBodyNodes();
           })
       .def(
+          "getChildBodyNode",
+          +[](dart::dynamics::BodyNode* self, std::size_t index) -> dart::dynamics::BodyNode* { return self->getChildBodyNode(index); },
+          ::py::arg("index"),
+          ::py::return_value_policy::reference_internal)
+      .def(
           "getNumChildJoints",
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {
             return self->getNumChildJoints();
           })
+      .def(
+          "getChildJoint",
+          +[](dart::dynamics::BodyNode* self, std::size_t index) -> dart::dynamics::Joint* { return self->getChildJoint(index); },
+          ::py::arg("index"),
+          ::py::return_value_policy::reference_internal)
       .def(
           "getNumShapeNodes",
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {
