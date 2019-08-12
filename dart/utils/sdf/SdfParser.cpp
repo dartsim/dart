@@ -245,6 +245,24 @@ simulation::WorldPtr readSdfFile(
 }
 
 //==============================================================================
+bool checkVersion(
+    const tinyxml2::XMLElement& sdfElement, const common::Uri& uri)
+{
+  const std::string version = getAttributeString(&sdfElement, "version");
+  // TODO: We need version aware SDF parser (see #264)
+  // We support 1.4 ~ 1.6.
+  if (version != "1.4" && version != "1.5" && version != "1.6")
+  {
+    dtwarn << "[SdfParser] The file format of [" << uri.toString()
+           << "] was found to be [" << version << "], but we only support SDF "
+           << "1.4, 1.5, and 1.6!\n";
+    return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
 simulation::WorldPtr readWorld(
     const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
 {
@@ -273,16 +291,8 @@ simulation::WorldPtr readWorld(
 
   //--------------------------------------------------------------------------
   // version attribute
-  std::string version = getAttributeString(sdfElement, "version");
-  // TODO: We need version aware SDF parser (see #264)
-  // We support 1.4 only for now.
-  if (version != "1.4" && version != "1.5")
-  {
-    dtwarn << "[SdfParser::readSdfFile] The file format of [" << uri.toString()
-           << "] was found to be [" << version << "], but we only support SDF "
-           << "1.4 and 1.5!\n";
+  if (!checkVersion(*sdfElement, uri))
     return nullptr;
-  }
 
   //--------------------------------------------------------------------------
   // Load World
@@ -323,16 +333,9 @@ dynamics::SkeletonPtr readSkeleton(
 
   //--------------------------------------------------------------------------
   // version attribute
-  std::string version = getAttributeString(sdfElement, "version");
-  // TODO: We need version aware SDF parser (see #264)
-  // We support 1.4 only for now.
-  if (version != "1.4" && version != "1.5")
-  {
-    dtwarn << "[SdfParser::readSdfFile] The file format of [" << uri.toString()
-           << "] was found to be [" << version
-           << "], but we only support SDF 1.4 and 1.5!\n";
+  if (!checkVersion(*sdfElement, uri))
     return nullptr;
-  }
+
   //--------------------------------------------------------------------------
   // Load skeleton
   tinyxml2::XMLElement* skelElement = nullptr;
@@ -1057,6 +1060,7 @@ void readCollisionShapeNode(
       retriever);
 
   newShapeNode->createCollisionAspect();
+  newShapeNode->createDynamicsAspect();
 }
 
 //==============================================================================

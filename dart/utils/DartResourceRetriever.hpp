@@ -66,8 +66,7 @@ public:
   template <typename... Args>
   static std::shared_ptr<DartResourceRetriever> create(Args&&... args)
   {
-    return std::make_shared<DartResourceRetriever>(
-          std::forward<Args>(args)...);
+    return std::make_shared<DartResourceRetriever>(std::forward<Args>(args)...);
   }
 
   /// Constructor.
@@ -86,7 +85,6 @@ public:
   std::string getFilePath(const common::Uri& uri) override;
 
 private:
-
   void addDataDirectory(const std::string& packageDirectory);
 
   bool resolveDataUri(const common::Uri& uri, std::string& relativePath) const;
