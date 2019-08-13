@@ -25,7 +25,7 @@ def test_basic():
                 dynamics = shape_node.getDynamicsAspect()
 
 
-def testGetChildPMethods():
+def testGetChildMethods():
     urdfParser = dart.utils.DartLoader()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
@@ -43,6 +43,16 @@ def testGetChildPMethods():
         assert childJoint.getName() == kr5.getJoint(i).getName()
 
         currentBodyNode = childBodyNode
+
+
+def test_getInertia():
+    urdfParser = dart.utils.DartLoader()
+    kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    assert kr5 is not None
+
+    inertias = [kr5.getBodyNode(i).getInertia()
+                for i in range(1, kr5.getNumBodyNodes())]
+    assert all([inertia is not None for inertia in inertias])
 
 
 if __name__ == "__main__":
