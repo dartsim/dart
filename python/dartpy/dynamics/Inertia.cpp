@@ -107,10 +107,12 @@ void Inertia(py::module& m)
       .def(
           "verify",
           +[](const dart::dynamics::Inertia* self,
-              bool printWarnings = true,
-              double tolerance = 1e-8) -> bool {
+              bool printWarnings,
+              double tolerance) -> bool {
             return self->verify(printWarnings, tolerance);
-          })
+          },
+          ::py::arg_v("printWarnings", true),
+          ::py::arg_v("tolerance", 1e-8))
       .def(
           "__eq__",
           +[](const dart::dynamics::Inertia* self,
@@ -120,14 +122,14 @@ void Inertia(py::module& m)
       .def_static(
           "verifyMoment",
           +[](const Eigen::Matrix3d& moment,
-              bool printWarnings = true,
-              double tolerance = 1e-8) -> bool {
+              bool printWarnings,
+              double tolerance) -> bool {
             return dart::dynamics::Inertia::verifyMoment(
                 moment, printWarnings, tolerance);
           },
           ::py::arg("moment"),
-          ::py::arg("printWarnings"),
-          ::py::arg("tolerance"))
+          ::py::arg_v("printWarnings", true),
+          ::py::arg_v("tolerance", 1e-8))
       .def_static(
           "verifySpatialTensor",
           +[](const Eigen::Matrix6d& spatial,
@@ -137,8 +139,8 @@ void Inertia(py::module& m)
                 spatial, printWarnings, tolerance);
           },
           ::py::arg("spatial"),
-          ::py::arg("printWarnings"),
-          ::py::arg("tolerance"));
+          ::py::arg_v("printWarnings", true),
+          ::py::arg_v("tolerance", 1e-8));
 }
 
 } // namespace python
