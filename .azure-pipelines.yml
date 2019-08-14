@@ -3,6 +3,7 @@
 
 jobs:
 - job: xenial_gcc_release
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
@@ -15,6 +16,7 @@ jobs:
   - template: .ci/azure-pipelines/docker.yml
 
 - job: bionic_gcc_debug
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
@@ -27,6 +29,7 @@ jobs:
   - template: .ci/azure-pipelines/docker.yml
 
 - job: bionic_gcc_dartpy_release
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
@@ -38,9 +41,9 @@ jobs:
     DOCKERFILE: Dockerfile.ubuntu-bionic
   steps:
   - template: .ci/azure-pipelines/docker.yml
-  timeoutInMinutes: 0
 
 - job: disco_gcc_debug
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
@@ -53,6 +56,7 @@ jobs:
   - template: .ci/azure-pipelines/docker.yml
 
 - job: disco_gcc_dartpy_release
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
@@ -64,9 +68,9 @@ jobs:
     DOCKERFILE: Dockerfile.ubuntu-disco
   steps:
   - template: .ci/azure-pipelines/docker.yml
-  timeoutInMinutes: 0
 
 - job: eoan_gcc_debug
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
@@ -79,6 +83,7 @@ jobs:
   - template: .ci/azure-pipelines/docker.yml
 
 - job: eoan_gcc_dartpy_release
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
@@ -90,9 +95,9 @@ jobs:
     DOCKERFILE: Dockerfile.ubuntu-eoan
   steps:
   - template: .ci/azure-pipelines/docker.yml
-  timeoutInMinutes: 0
 
 - job: mojav_clang_debug
+  timeoutInMinutes: 120
   pool:
     vmImage: 'macOS-10.14'
   variables:
@@ -108,6 +113,7 @@ jobs:
     displayName: 'Script'
 
 - job: mojav_clang_dartpy_release
+  timeoutInMinutes: 120
   pool:
     vmImage: 'macOS-10.14'
   variables:
@@ -124,9 +130,9 @@ jobs:
     displayName: 'Script'
 
 - job: windows_vs2019_x64
+  timeoutInMinutes: 120
   pool:
     vmImage: 'windows-2019'
-  timeoutInMinutes: 0
   strategy:
     matrix:
       # Debug64:
