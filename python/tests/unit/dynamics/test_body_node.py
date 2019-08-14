@@ -45,7 +45,7 @@ def test_get_child_methods():
         currentBodyNode = childBodyNode
 
 
-def test_getInertia():
+def test_get_inertia():
     urdfParser = dart.utils.DartLoader()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
