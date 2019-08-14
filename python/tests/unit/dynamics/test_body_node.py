@@ -25,7 +25,7 @@ def test_basic():
                 dynamics = shape_node.getDynamicsAspect()
 
 
-def testGetChildMethods():
+def test_get_child_methods():
     urdfParser = dart.utils.DartLoader()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
