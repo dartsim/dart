@@ -622,6 +622,11 @@ void BodyNode(py::module& m)
           },
           ::py::arg("inertia"))
       .def(
+          "getInertia",
+          +[](const dart::dynamics::BodyNode* self)
+              -> const dart::dynamics::Inertia& { return self->getInertia(); },
+          ::py::return_value_policy::reference_internal)
+      .def(
           "setLocalCOM",
           +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _com) {
             self->setLocalCOM(_com);
@@ -868,7 +873,10 @@ void BodyNode(py::module& m)
           })
       .def(
           "getChildBodyNode",
-          +[](dart::dynamics::BodyNode* self, std::size_t index) -> dart::dynamics::BodyNode* { return self->getChildBodyNode(index); },
+          +[](dart::dynamics::BodyNode* self,
+              std::size_t index) -> dart::dynamics::BodyNode* {
+            return self->getChildBodyNode(index);
+          },
           ::py::arg("index"),
           ::py::return_value_policy::reference_internal)
       .def(
@@ -878,7 +886,8 @@ void BodyNode(py::module& m)
           })
       .def(
           "getChildJoint",
-          +[](dart::dynamics::BodyNode* self, std::size_t index) -> dart::dynamics::Joint* { return self->getChildJoint(index); },
+          +[](dart::dynamics::BodyNode* self, std::size_t index)
+              -> dart::dynamics::Joint* { return self->getChildJoint(index); },
           ::py::arg("index"),
           ::py::return_value_policy::reference_internal)
       .def(
