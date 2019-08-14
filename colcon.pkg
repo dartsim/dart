@@ -1,0 +1,4 @@
+{
+  "name": "DART",
+  "dependencies": ["BULLET_PHYSICS", "ODE"],
+}
