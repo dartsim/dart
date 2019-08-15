@@ -75,13 +75,6 @@ if(TARGET dart-collision-ode)
   target_link_libraries(dartpy PUBLIC dart-collision-ode)
 endif()
 
-set_target_properties(dartpy
-  PROPERTIES
-    PREFIX ""
-    SUFFIX ".so"  # python uses '.so' extension even on macOS
-    DEBUG_POSTFIX ""
-)
-
 install(TARGETS dartpy
   LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
 )

@@ -55,7 +55,7 @@ public:
   /// multiple times. In that case, the ResourceRetrievers will be queried
   /// in the same order in which they were added.
   void addDefaultRetriever(
-    const common::ResourceRetrieverPtr& _resourceRetriever);
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
   /// \brief Add a default \ref ResourceRetriever for \a _schema
   /// This \ref ResourceRetriever will be called after URIs that match the
@@ -63,8 +63,8 @@ public:
   /// case, the ResourceRetrievers will be queried in the same order in which
   /// they were added.
   bool addSchemaRetriever(
-    const std::string& _schema,
-    const common::ResourceRetrieverPtr& _resourceRetriever);
+      const std::string& _schema,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
   // Documentation inherited.
   bool exists(const common::Uri& _uri) override;
@@ -77,15 +77,15 @@ public:
 
 private:
   std::vector<common::ResourceRetrieverPtr> getRetrievers(
-    const common::Uri& _uri) const;
+      const common::Uri& _uri) const;
 
-  std::unordered_map<std::string,
-    std::vector<common::ResourceRetrieverPtr> > mResourceRetrievers;
+  std::unordered_map<std::string, std::vector<common::ResourceRetrieverPtr> >
+      mResourceRetrievers;
   std::vector<common::ResourceRetrieverPtr> mDefaultResourceRetrievers;
 };
 
 using CompositeResourceRetrieverPtr
-  = std::shared_ptr<CompositeResourceRetriever>;
+    = std::shared_ptr<CompositeResourceRetriever>;
 
 } // namespace utils
 } // namespace dart

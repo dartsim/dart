@@ -56,7 +56,7 @@ bool loadFunction(
 
   if (!symbol)
   {
-    dterr << "Failed to load the symbol '<<" << symbolName
+    dterr << "Failed to load the symbol '" << symbolName
           << "' from the file '" << fileName << "'.\n";
     return false;
   }
