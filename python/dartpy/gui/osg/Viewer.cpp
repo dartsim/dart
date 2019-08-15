@@ -59,6 +59,11 @@ void Viewer(py::module& m)
       dart::common::Subject,
       ::osg::ref_ptr<dart::gui::osg::Viewer>>(m, "Viewer")
       .def(::py::init<>())
+      .def(
+          ::py::init([](const Eigen::Vector4f& clearColor) {
+            return new ::dart::gui::osg::Viewer(eigToOsgVec4f(clearColor));
+          }),
+          ::py::arg("clearColor"))
       .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
       .def(
           "captureScreen",
