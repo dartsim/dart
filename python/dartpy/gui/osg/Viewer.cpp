@@ -61,7 +61,7 @@ void Viewer(py::module& m)
       .def(::py::init<>())
       .def(
           ::py::init([](const Eigen::Vector4f& clearColor) {
-            return new ::dart::gui::osg::Viewer(eigToOsgVec4f(clearColor));
+            return new ::dart::gui::osg::Viewer(eigToOsgVec4d(clearColor));
           }),
           ::py::arg("clearColor"))
       .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
