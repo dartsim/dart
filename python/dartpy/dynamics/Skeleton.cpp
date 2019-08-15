@@ -1060,12 +1060,12 @@ void Skeleton(py::module& m)
           "getGravityForces",
           +[](dart::dynamics::Skeleton* self,
               std::size_t treeIndex) -> const Eigen::VectorXd& {
-            return self->getCoriolisForces(treeIndex);
+            return self->getGravityForces(treeIndex);
           })
       .def(
           "getGravityForces",
           +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
-            return self->getCoriolisForces();
+            return self->getGravityForces();
           })
       .def(
           "getCoriolisAndGravityForces",
@@ -1082,12 +1082,12 @@ void Skeleton(py::module& m)
           "getExternalForces",
           +[](dart::dynamics::Skeleton* self,
               std::size_t treeIndex) -> const Eigen::VectorXd& {
-            return self->getCoriolisAndGravityForces(treeIndex);
+            return self->getExternalForces(treeIndex);
           })
       .def(
           "getExternalForces",
           +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
-            return self->getCoriolisAndGravityForces();
+            return self->getExternalForces();
           })
       .def(
           "getConstraintForces",
