@@ -76,6 +76,13 @@ namespace utils {
 class DartLoader
 {
 public:
+  enum Flags
+  {
+    NONE = 0,
+    FIXED_BASE_LINK = 1 << 1,
+    DEFAULT = NONE,
+  };
+
   /// Constructor with the default ResourceRetriever.
   DartLoader();
 
@@ -104,24 +111,28 @@ public:
   /// Parse a file to produce a Skeleton
   dynamics::SkeletonPtr parseSkeleton(
       const common::Uri& _uri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
+      unsigned int flags = DEFAULT);
 
   /// Parse a text string to produce a Skeleton
   dynamics::SkeletonPtr parseSkeletonString(
       const std::string& _urdfString,
       const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
+      unsigned int flags = DEFAULT);
 
   /// Parse a file to produce a World
   dart::simulation::WorldPtr parseWorld(
       const common::Uri& _uri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
+      unsigned int flags = DEFAULT);
 
   /// Parse a text string to produce a World
   dart::simulation::WorldPtr parseWorldString(
       const std::string& _urdfString,
       const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
+      unsigned int flags = DEFAULT);
 
 private:
   typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
@@ -131,7 +142,8 @@ private:
   static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
       const urdf::ModelInterface* model,
       const common::Uri& baseUri,
-      const common::ResourceRetrieverPtr& resourceRetriever);
+      const common::ResourceRetrieverPtr& resourceRetriever,
+      unsigned int flags);
 
   static bool createSkeletonRecursive(
       const urdf::ModelInterface* model,
@@ -139,7 +151,8 @@ private:
       const urdf::Link* lk,
       dynamics::BodyNode* parent,
       const common::Uri& baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever);
+      const common::ResourceRetrieverPtr& _resourceRetriever,
+      unsigned int flags);
 
   static bool addMimicJointsRecursive(
       const urdf::ModelInterface* model,
@@ -157,8 +170,7 @@ private:
       const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
       dynamics::SkeletonPtr _skeleton,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever);
+      unsigned int flgas);
 
   static bool createDartNodeProperties(
       const urdf::Link* _lk,
