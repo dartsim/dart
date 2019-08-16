@@ -85,6 +85,12 @@ void ReferentialSkeleton(py::module& m)
           })
       .def(
           "getBodyNodes",
+          +[](dart::dynamics::ReferentialSkeleton* self)
+              -> const std::vector<dart::dynamics::BodyNode*>& {
+            return self->getBodyNodes();
+          })
+      .def(
+          "getBodyNodes",
           +[](dart::dynamics::ReferentialSkeleton* self,
               const std::string& name)
               -> std::vector<dart::dynamics::BodyNode*> {
