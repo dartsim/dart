@@ -388,6 +388,12 @@ void Skeleton(py::module& m)
           py::return_value_policy::reference_internal)
       .def(
           "getBodyNodes",
+          +[](dart::dynamics::Skeleton* self)
+              -> const std::vector<dart::dynamics::BodyNode*>& {
+            return self->getBodyNodes();
+          })
+      .def(
+          "getBodyNodes",
           +[](dart::dynamics::Skeleton* self, const std::string& name)
               -> std::vector<dart::dynamics::BodyNode*> {
             return self->getBodyNodes(name);
