@@ -142,7 +142,8 @@ jobs:
   variables:
     VCPKG_INSTALL_ROOT: $(Build.SourcesDirectory)\vcpkg
     VCPKG_ARCH: 'x64-windows'
-    VCPKG_PACKAGES: 'assimp boost-system boost-filesystem bullet3 ccd eigen3 fcl ode'
+    VCPKG_PACKAGES: 'assimp boost-system boost-filesystem ccd eigen3 fcl'
+    VCPKG_OPTIONAL_PACKAGES: 'bullet3 ode'
     BUILD_TOOLSET_VERSION: '142'
     CMAKE_GENERATOR: 'Visual Studio 16 2019'
   steps:
@@ -151,7 +152,7 @@ jobs:
       $(VCPKG_INSTALL_ROOT)\bootstrap-vcpkg.bat
     displayName: 'Install vcpkg'
   - script: |
-      $(VCPKG_INSTALL_ROOT)\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) $(VCPKG_PACKAGES)
+      $(VCPKG_INSTALL_ROOT)\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) $(VCPKG_PACKAGES) $(VCPKG_OPTIONAL_PACKAGES)
       $(VCPKG_INSTALL_ROOT)\vcpkg.exe integrate install
     displayName: 'Install dependencies'
   - script: |
