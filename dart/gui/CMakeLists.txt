@@ -7,6 +7,8 @@ dart_find_package(OpenGL)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
 if(WIN32 AND NOT CYGWIN)
+  # disable component to test azure win32 build
+  return()
   set(GLUT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
   set(GLUT_LIBRARIES glut32)
   set(HAVE_GLUT TRUE)
