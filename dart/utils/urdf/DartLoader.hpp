@@ -76,10 +76,16 @@ namespace utils {
 class DartLoader
 {
 public:
+  /// Flags for specifying URDF file parsing policies.
   enum Flags
   {
     NONE = 0,
+
+    /// Parser the root link's joint type to be "fixed" joint when not
+    /// specified.
     FIXED_BASE_LINK = 1 << 1,
+
+    /// The default flgas
     DEFAULT = NONE,
   };
 
