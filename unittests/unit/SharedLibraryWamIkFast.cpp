@@ -39094,6 +39094,13 @@ bool SharedLibraryWamIkFast::computeIk(
 }
 
 //==============================================================================
+void SharedLibraryWamIkFast::computeFk(
+    const IkReal* parameters, IkReal* targetTranspose, IkReal* targetRotation)
+{
+  ComputeFk(parameters, targetTranspose, targetRotation);
+}
+
+//==============================================================================
 const char* SharedLibraryWamIkFast::getKinematicsHash()
 {
   return GetKinematicsHash();

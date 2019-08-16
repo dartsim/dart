@@ -56,8 +56,8 @@ bool loadFunction(
 
   if (!symbol)
   {
-    dterr << "Failed to load the symbol '" << symbolName
-          << "' from the file '" << fileName << "'.\n";
+    dterr << "Failed to load the symbol '" << symbolName << "' from the file '"
+          << fileName << "'.\n";
     return false;
   }
 
@@ -218,6 +218,20 @@ bool SharedLibraryIkFast::computeIk(
   }
 
   return mComputeIk(targetTranspose, targetRotation, freeParams, solutions);
+}
+
+//==============================================================================
+void SharedLibraryIkFast::computeFk(
+    const IkReal* parameters, IkReal* targetTranspose, IkReal* targetRotation)
+{
+  if (!mComputeFk)
+  {
+    dterr << "[SharedLibraryIkFast::mComputeFk] This SharedLibrary is "
+          << "invalid.\n";
+    return;
+  }
+
+  mComputeFk(parameters, targetTranspose, targetRotation);
 }
 
 //==============================================================================

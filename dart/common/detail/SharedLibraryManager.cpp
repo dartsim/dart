@@ -47,8 +47,8 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   const bool exists = boost::filesystem::exists(path);
   if (!exists)
   {
-    dtwarn << "[SharedLibraryManager::load] The given path doesn't exist. "
-           << "Returning nullptr.\n";
+    dtwarn << "[SharedLibraryManager::load] Failed to load the shared library '"
+           << path.c_str() << "'. The file doesn't exist. Returning nullptr.\n";
     return nullptr;
   }
 

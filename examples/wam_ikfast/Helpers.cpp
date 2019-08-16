@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sstream>
+
 #include "Helpers.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
@@ -105,18 +107,13 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 
   ee->getIK(true)->setTarget(wam7_target);
 
-  std::string libName = "libwamIk";
+  std::stringstream ss;
+  ss << DART_SHARED_LIB_PREFIX << "wamIk";
 #if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
-  libName += "d";
+  ss << "d";
 #endif
-#if DART_OS_LINUX
-  libName += ".so";
-#elif DART_OS_MACOS
-  libName += ".dylib";
-#elif DART_OS_WINDOWS
-  // TODO(JS): Maybe the prefix 'lib' should be removed.
-  libName += ".dll";
-#endif
+  ss << "." << DART_SHARED_LIB_EXTENSION;
+  std::string libName = ss.str();
 
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
