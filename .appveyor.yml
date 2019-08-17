@@ -52,8 +52,8 @@ install:
   - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
 
   # install optional dependencies
-  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% tinyxml2
-  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann freeglut nlopt ode opengl osg urdfdom
+  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% freeglut opengl tinyxml2
+  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann nlopt ode osg urdfdom
   #- vcpkg install ipopt:%VCPKG_ARCH%
 
   - cmd: vcpkg integrate install
