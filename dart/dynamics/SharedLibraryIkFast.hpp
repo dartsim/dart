@@ -96,6 +96,12 @@ protected:
       ikfast::IkSolutionListBase<IkReal>& solutions) override;
 
   // Documentation inherited.
+  void computeFk(
+      const IkReal* parameters,
+      IkReal* targetTranspose,
+      IkReal* targetRotation) override;
+
+  // Documentation inherited.
   const char* getKinematicsHash() override;
 
   // Documentation inherited.
@@ -112,6 +118,10 @@ protected:
       const IkReal* targetRotation,
       const IkReal* freeParams,
       ikfast::IkSolutionListBase<IkReal>& solutions);
+  using IkFastFuncComputeFk = void (*)(
+      const IkReal* parameters,
+      IkReal* targetTranspose,
+      IkReal* targetRotation);
   using IkFastFuncGetConstCharPtr = const char* (*)();
 
   /// File path to the ikfast shared library.
@@ -125,11 +135,9 @@ protected:
   mutable IkFastFuncGetInt mGetIkRealSize;
   mutable IkFastFuncGetInt mGetIkType;
   mutable IkFastFuncComputeIk mComputeIk;
+  mutable IkFastFuncComputeFk mComputeFk;
   mutable IkFastFuncGetConstCharPtr mGetKinematicsHash;
   mutable IkFastFuncGetConstCharPtr mGetIkFastVersion;
-
-  /// Indices of the DegreeOfFreedoms associated to this IkFast.
-  mutable std::vector<std::size_t> mDofs;
 };
 
 } // namespace dynamics

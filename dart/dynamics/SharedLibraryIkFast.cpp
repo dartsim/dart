@@ -221,6 +221,20 @@ bool SharedLibraryIkFast::computeIk(
 }
 
 //==============================================================================
+void SharedLibraryIkFast::computeFk(
+    const IkReal* parameters, IkReal* targetTranspose, IkReal* targetRotation)
+{
+  if (!mComputeFk)
+  {
+    dterr << "[SharedLibraryIkFast::mComputeFk] This SharedLibrary is "
+          << "invalid.\n";
+    return;
+  }
+
+  mComputeFk(parameters, targetTranspose, targetRotation);
+}
+
+//==============================================================================
 const char* SharedLibraryIkFast::getKinematicsHash()
 {
   if (!mGetKinematicsHash)
