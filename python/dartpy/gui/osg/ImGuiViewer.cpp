@@ -49,6 +49,11 @@ void ImGuiViewer(py::module& m)
       dart::gui::osg::Viewer,
       osg::ref_ptr<dart::gui::osg::ImGuiViewer>>(m, "ImGuiViewer")
       .def(::py::init<>())
+      .def(
+          ::py::init([](const Eigen::Vector4d& clearColor) {
+            return new ::dart::gui::osg::ImGuiViewer(eigToOsgVec4f(clearColor));
+          }),
+          ::py::arg("clearColor"))
       .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
       .def(
           "getImGuiHandler",
