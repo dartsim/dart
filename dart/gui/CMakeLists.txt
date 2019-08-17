@@ -1,7 +1,9 @@
+# Set local target name
+set(target_name ${PROJECT_NAME}-gui)
+set(component_name gui)
+
 # Dependency checks
-if (NOT TARGET dart-utils)
-  return()
-endif()
+dart_check_dependent_target(${target_name} dart-utils)
 
 dart_find_package(OpenGL)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
@@ -35,10 +37,6 @@ add_subdirectory(glut)
 
 get_property(dart_gui_headers GLOBAL PROPERTY DART_GUI_HEADERS)
 get_property(dart_gui_sources GLOBAL PROPERTY DART_GUI_SOURCES)
-
-# Set local target name
-set(target_name ${PROJECT_NAME}-gui)
-set(component_name gui)
 
 # Add target
 dart_add_library(${target_name}
