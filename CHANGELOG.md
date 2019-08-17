@@ -4,7 +4,7 @@
 
 * Kinematics
 
-  * Added IkFast friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
+  * Added IkFast parameter accessors to IkFast class: [#1396](https://github.com/dartsim/dart/pull/1396)
 
 * Dynamics
 
