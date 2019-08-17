@@ -10,7 +10,7 @@ dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
 dart_find_package(GLUT)
 if(WIN32 AND NOT CYGWIN)
-  dart_check_optional_package(GLUT "dart-gui" "glut")
+  dart_check_optional_package(GLUT "dart-gui" "freeglut")
 else()
   dart_check_optional_package(GLUT "dart-gui" "freeglut3")
 endif()
