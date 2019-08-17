@@ -2,6 +2,10 @@
 
 ### [DART 6.10.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
+* Kinematics
+
+  * Added IkFast friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
+
 * Dynamics
 
   * Fixed friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
@@ -18,7 +22,6 @@
 
   * Allowed parsing SDF up to version 1.6: [#1385](https://github.com/dartsim/dart/pull/1385)
   * Fixed SDF parser not creating dynamics aspect for collision shape: [#1386](https://github.com/dartsim/dart/pull/1386)
-  * Added root joint parsing option in URDF parser: [#1399](https://github.com/dartsim/dart/pull/1399)
 
 * dartpy
 
