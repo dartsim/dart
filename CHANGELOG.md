@@ -4,7 +4,7 @@
 
 * Dynamics
 
-  * Fixex friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
+  * Fixed friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
   * Fixed soft body simulation when command input is not resetted: [#1372](https://github.com/dartsim/dart/pull/1372)
 
 * GUI
@@ -18,6 +18,7 @@
 
   * Allowed parsing SDF up to version 1.6: [#1385](https://github.com/dartsim/dart/pull/1385)
   * Fixed SDF parser not creating dynamics aspect for collision shape: [#1386](https://github.com/dartsim/dart/pull/1386)
+  * Added root joint parsing option in URDF parser: [#1399](https://github.com/dartsim/dart/pull/1399)
 
 * dartpy
 
@@ -32,6 +33,12 @@
   * Fixed compiler warnings from GCC 9.1: [#1366](https://github.com/dartsim/dart/pull/1366)
   * Replaced M_PI with dart::math::constantsd::pi(): [#1367](https://github.com/dartsim/dart/pull/1367)
   * Enabled octomap support on macOS: [#1078](https://github.com/dartsim/dart/pull/1078)
+
+### [DART 6.9.2 (2019-08-16)](https://github.com/dartsim/dart/milestone/60?closed=1)
+
+* Dynamics
+
+  * Allowed constraint force mixing > 1: [#1371](https://github.com/dartsim/dart/pull/1371)
 
 ### [DART 6.9.1 (2019-06-06)](https://github.com/dartsim/dart/milestone/59?closed=1)
 

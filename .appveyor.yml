@@ -52,7 +52,8 @@ install:
   - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
 
   # install optional dependencies
-  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann freeglut nlopt ode opengl osg tinyxml2 urdfdom
+  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% freeglut opengl tinyxml2
+  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann nlopt ode osg urdfdom
   #- vcpkg install ipopt:%VCPKG_ARCH%
 
   - cmd: vcpkg integrate install
@@ -76,7 +77,7 @@ build_script:
   # Windows 10
   #------------------
   - cmd: mkdir build && cd build
-  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
+  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
   # - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
 
   #-------------------------------

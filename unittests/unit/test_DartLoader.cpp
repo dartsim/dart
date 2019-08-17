@@ -34,6 +34,7 @@
 #include <gtest/gtest.h>
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
 
 using namespace dart;
@@ -160,10 +161,10 @@ TEST(DartLoader, parseJointProperties)
 
   DartLoader loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
-  EXPECT_TRUE(nullptr != robot);
+  ASSERT_TRUE(nullptr != robot);
 
   auto joint1 = robot->getJoint(1);
-  EXPECT_TRUE(nullptr != joint1);
+  ASSERT_TRUE(nullptr != joint1);
   EXPECT_NEAR(joint1->getDampingCoefficient(0), 1.2, 1e-12);
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 
@@ -173,6 +174,41 @@ TEST(DartLoader, parseJointProperties)
   EXPECT_DOUBLE_EQ(
       joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
   EXPECT_TRUE(joint2->isCyclic(0));
+}
+
+TEST(DartLoader, parseUrdfWithoutWorldLink)
+{
+  const std::string urdfStr
+      = "<robot name=\"testRobot\">                                       "
+        "  <link name=\"link_0\" />                                       "
+        "  <joint name=\"0_to_1\" type=\"revolute\">                      "
+        "    <parent link=\"link_0\"/>                                    "
+        "    <child link=\"link_1\"/>                                     "
+        "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+        "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+        "    <axis xyz=\"0 0 1\"/>                                        "
+        "  </joint>                                                       "
+        "  <link name=\"link_1\" />                                       "
+        "</robot>                                                         ";
+
+  DartLoader loader;
+
+  auto robot1 = loader.parseSkeletonString(urdfStr, "", nullptr);
+  ASSERT_TRUE(nullptr != robot1);
+  EXPECT_EQ(
+      robot1->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
+
+  auto robot2 = loader.parseSkeletonString(
+      urdfStr, "", nullptr, DartLoader::Flags::NONE);
+  ASSERT_TRUE(nullptr != robot2);
+  EXPECT_EQ(
+      robot2->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
+
+  auto robot3 = loader.parseSkeletonString(
+      urdfStr, "", nullptr, DartLoader::Flags::FIXED_BASE_LINK);
+  ASSERT_TRUE(nullptr != robot3);
+  EXPECT_EQ(
+      robot3->getRootJoint()->getType(), dynamics::WeldJoint::getStaticType());
 }
 
 TEST(DartLoader, mimicJoint)
@@ -383,9 +419,9 @@ TEST(DartLoader, SingleLinkWithoutJoint)
 
   EXPECT_TRUE(robot->getNumBodyNodes() == 1u);
   EXPECT_TRUE(robot->getRootBodyNode()->getName() == "link_0");
-  EXPECT_TRUE(
-      robot->getRootJoint()->getType()
-      == dart::dynamics::FreeJoint::getStaticType());
+  EXPECT_EQ(
+      robot->getRootJoint()->getType(),
+      dart::dynamics::FreeJoint::getStaticType());
 }
 
 TEST(DartLoader, MultiTreeRobot)
