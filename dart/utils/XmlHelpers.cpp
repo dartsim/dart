@@ -192,7 +192,7 @@ Eigen::Vector2d toVector2d(const std::string& str)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector2d[" << i
-                  << std::endl;
+                  << "]: " << e.what() << std::endl;
       }
     }
   }
@@ -222,8 +222,8 @@ Eigen::Vector3d toVector3d(const std::string& str)
       catch (boost::bad_lexical_cast& e)
       {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::Vector3d[" << i << "]"
-                  << std::endl;
+                  << "] is not a valid double for Eigen::Vector3d[" << i
+                  << "]: " << e.what() << std::endl;
       }
     }
   }
@@ -253,8 +253,8 @@ Eigen::Vector3i toVector3i(const std::string& str)
       catch (boost::bad_lexical_cast& e)
       {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid int for Eigen::Vector3i[" << i << "]"
-                  << std::endl;
+                  << "] is not a valid int for Eigen::Vector3i[" << i
+                  << "]: " << e.what() << std::endl;
       }
     }
   }
@@ -284,8 +284,8 @@ Eigen::Vector6d toVector6d(const std::string& str)
       catch (boost::bad_lexical_cast& e)
       {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::Vector6d[" << i << "]"
-                  << std::endl;
+                  << "] is not a valid double for Eigen::Vector6d[" << i
+                  << "]: " << e.what() << std::endl;
       }
     }
   }
@@ -315,8 +315,8 @@ Eigen::VectorXd toVectorXd(const std::string& str)
       catch (boost::bad_lexical_cast& e)
       {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::VectorXd[" << i << "]"
-                  << std::endl;
+                  << "] is not a valid double for Eigen::VectorXd[" << i
+                  << "]: " << e.what() << std::endl;
       }
     }
   }
@@ -346,8 +346,8 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
       catch (boost::bad_lexical_cast& e)
       {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for SE3[" << i << "]"
-                  << std::endl;
+                  << "] is not a valid double for SE3[" << i
+                  << "]: " << e.what() << std::endl;
       }
     }
   }
@@ -379,8 +379,8 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
       catch (boost::bad_lexical_cast& e)
       {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for SE3[" << i << "]"
-                  << std::endl;
+                  << "] is not a valid double for SE3[" << i
+                  << "]: " << e.what() << std::endl;
       }
     }
   }
