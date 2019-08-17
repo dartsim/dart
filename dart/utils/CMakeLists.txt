@@ -50,7 +50,6 @@ set(component_name utils)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})
-target_include_directories(${target_name} PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2)
 
 # Component
