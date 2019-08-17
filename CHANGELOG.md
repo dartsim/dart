@@ -4,7 +4,7 @@
 
 * Dynamics
 
-  * Fixex friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
+  * Fixed friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
   * Fixed soft body simulation when command input is not resetted: [#1372](https://github.com/dartsim/dart/pull/1372)
 
 * GUI
@@ -18,6 +18,7 @@
 
   * Allowed parsing SDF up to version 1.6: [#1385](https://github.com/dartsim/dart/pull/1385)
   * Fixed SDF parser not creating dynamics aspect for collision shape: [#1386](https://github.com/dartsim/dart/pull/1386)
+  * Added root joint parsing option in URDF parser: [#1399](https://github.com/dartsim/dart/pull/1399)
 
 * dartpy
 
