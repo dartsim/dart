@@ -7,7 +7,7 @@
 #include <dart/optimizer/MultiObjectiveSolver.hpp>
 #include <gtest/gtest.h>
 #if HAVE_PAGMO
-#include <dart/optimizer/pagmo/pagmo.hpp>
+#  include <dart/optimizer/pagmo/pagmo.hpp>
 #endif
 
 using namespace dart;
