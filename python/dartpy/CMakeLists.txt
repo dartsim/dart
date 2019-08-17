@@ -10,7 +10,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 if(NOT PythonInterp_FOUND)
-  message(STATUS "DART_BUILD_DARTPY is ON, but failed to find PythonInterp. "
+  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonInterp. "
     "Disabling dartpy."
   )
   return()
@@ -18,7 +18,7 @@ endif()
 
 find_package(PythonLibs ${DARTPY_PYTHON_VERSION} QUIET)
 if(NOT PythonLibs_FOUND)
-  message(STATUS "DART_BUILD_DARTPY is ON, but failed to find PythonLibs. "
+  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonLibs. "
     "Disabling dartpy."
   )
   return()
@@ -29,7 +29,7 @@ endif()
 set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
 find_package(pybind11 2.2.0 QUIET)
 if(NOT pybind11_FOUND)
-  message(STATUS "DART_BUILD_DARTPY is ON, but failed to find pybind11 >= "
+  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find pybind11 >= "
     "2.2.0. Disabling dartpy."
   )
   return()
