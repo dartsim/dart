@@ -80,7 +80,8 @@ void DartLoader::addPackageDirectory(
 
 dynamics::SkeletonPtr DartLoader::parseSkeleton(
     const common::Uri& _uri,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::ResourceRetrieverPtr& _resourceRetriever,
+    unsigned int flags)
 {
   const common::ResourceRetrieverPtr resourceRetriever
       = getResourceRetriever(_resourceRetriever);
@@ -98,13 +99,15 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
     return nullptr;
   }
 
-  return modelInterfaceToSkeleton(urdfInterface.get(), _uri, resourceRetriever);
+  return modelInterfaceToSkeleton(
+      urdfInterface.get(), _uri, resourceRetriever, flags);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     const std::string& _urdfString,
     const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::ResourceRetrieverPtr& _resourceRetriever,
+    unsigned int flags)
 {
   if (_urdfString.empty())
   {
@@ -121,12 +124,16 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
   }
 
   return modelInterfaceToSkeleton(
-      urdfInterface.get(), _baseUri, getResourceRetriever(_resourceRetriever));
+      urdfInterface.get(),
+      _baseUri,
+      getResourceRetriever(_resourceRetriever),
+      flags);
 }
 
 simulation::WorldPtr DartLoader::parseWorld(
     const common::Uri& _uri,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::ResourceRetrieverPtr& _resourceRetriever,
+    unsigned int flags)
 {
   const common::ResourceRetrieverPtr resourceRetriever
       = getResourceRetriever(_resourceRetriever);
@@ -135,13 +142,14 @@ simulation::WorldPtr DartLoader::parseWorld(
   if (!readFileToString(resourceRetriever, _uri, content))
     return nullptr;
 
-  return parseWorldString(content, _uri, _resourceRetriever);
+  return parseWorldString(content, _uri, _resourceRetriever, flags);
 }
 
 simulation::WorldPtr DartLoader::parseWorldString(
     const std::string& _urdfString,
     const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::ResourceRetrieverPtr& _resourceRetriever,
+    unsigned int flags)
 {
   const common::ResourceRetrieverPtr resourceRetriever
       = getResourceRetriever(_resourceRetriever);
@@ -168,7 +176,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
   {
     const urdf_parsing::Entity& entity = worldInterface->models[i];
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-        entity.model.get(), entity.uri, resourceRetriever);
+        entity.model.get(), entity.uri, resourceRetriever, flags);
 
     if (!skeleton)
     {
@@ -198,16 +206,16 @@ simulation::WorldPtr DartLoader::parseWorldString(
 dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     const urdf::ModelInterface* model,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& resourceRetriever)
+    const common::ResourceRetrieverPtr& resourceRetriever,
+    unsigned int flags)
 {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(model->getName());
 
-  dynamics::BodyNode* rootNode = nullptr;
   const urdf::Link* root = model->getRoot().get();
 
-  // If the link name is "world" then the link is regarded as the inertial frame
-  // rather than a body in the robot model so we don't create a BodyNode for it.
-  // This is not officially specified in the URDF spec, but "world" is
+  // If the link name is "world" then the link is regarded as the inertial
+  // frame rather than a body in the robot model so we don't create a BodyNode
+  // for it. This is not officially specified in the URDF spec, but "world" is
   // practically treated as a keyword.
   if (root->name == "world")
   {
@@ -219,45 +227,26 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
              << "not the URDF standard. Please consider changing the robot "
              << "model as a single tree robot.\n";
     }
+
+    for (std::size_t i = 0; i < root->child_links.size(); i++)
+    {
+      if (!createSkeletonRecursive(
+              model,
+              skeleton,
+              root->child_links[i].get(),
+              nullptr,
+              baseUri,
+              resourceRetriever,
+              flags))
+      {
+        return nullptr;
+      }
+    }
   }
   else
   {
-    // If the root link is not "world" then it means the robot model is a free
-    // floating robot (like humanoid robots). So we create the root body with
-    // FreeJoint.
-
-    dynamics::BodyNode::Properties rootProperties;
-    if (!createDartNodeProperties(
-            root, rootProperties, baseUri, resourceRetriever))
-    {
-      return nullptr;
-    }
-
-    std::pair<dynamics::Joint*, dynamics::BodyNode*> pair
-        = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-            nullptr,
-            dynamics::FreeJoint::Properties(
-                dynamics::GenericJoint<math::SE3Space>::Properties(
-                    dynamics::Joint::Properties("rootJoint"))),
-            rootProperties);
-    rootNode = pair.second;
-
-    const auto result
-        = createShapeNodes(model, root, rootNode, baseUri, resourceRetriever);
-
-    if (!result)
-      return nullptr;
-  }
-
-  for (std::size_t i = 0; i < root->child_links.size(); i++)
-  {
     if (!createSkeletonRecursive(
-            model,
-            skeleton,
-            root->child_links[i].get(),
-            rootNode,
-            baseUri,
-            resourceRetriever))
+            model, skeleton, root, nullptr, baseUri, resourceRetriever, flags))
     {
       return nullptr;
     }
@@ -277,19 +266,23 @@ bool DartLoader::createSkeletonRecursive(
     const urdf::Link* lk,
     dynamics::BodyNode* parentNode,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& resourceRetriever)
+    const common::ResourceRetrieverPtr& resourceRetriever,
+    unsigned int flags)
 {
+  assert(lk);
+
+  if (parentNode != nullptr && lk->name == "world")
+  {
+    dtwarn << "[DartLoader] Link name 'world' is reserved for the inertial "
+           << "frame. Consider changing the name to something else.\n";
+  }
+
   dynamics::BodyNode::Properties properties;
   if (!createDartNodeProperties(lk, properties, baseUri, resourceRetriever))
     return false;
 
   dynamics::BodyNode* node = createDartJointAndNode(
-      lk->parent_joint.get(),
-      properties,
-      parentNode,
-      skel,
-      baseUri,
-      resourceRetriever);
+      lk->parent_joint.get(), properties, parentNode, skel, flags);
 
   if (!node)
     return false;
@@ -308,7 +301,8 @@ bool DartLoader::createSkeletonRecursive(
             lk->child_links[i].get(),
             node,
             baseUri,
-            resourceRetriever))
+            resourceRetriever,
+            flags))
     {
       return false;
     }
@@ -382,6 +376,32 @@ bool DartLoader::readFileToString(
   return true;
 }
 
+dynamics::BodyNode* createDartJointAndNodeForRoot(
+    const dynamics::BodyNode::Properties& _body,
+    dynamics::BodyNode* _parent,
+    dynamics::SkeletonPtr _skeleton,
+    unsigned int flags)
+{
+  dynamics::Joint::Properties basicProperties;
+
+  dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
+  std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
+  if (flags & DartLoader::Flags::FIXED_BASE_LINK)
+  {
+    pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+        _parent, basicProperties, _body);
+  }
+  else
+  {
+    dynamics::GenericJoint<math::SE3Space>::Properties properties(
+        basicProperties);
+    pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+        _parent, properties, _body);
+  }
+
+  return pair.second;
+}
+
 /**
  * @function createDartJoint
  */
@@ -390,9 +410,16 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    const common::Uri& /*_baseUri*/,
-    const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
+    unsigned int flags)
 {
+  // Special case for the root link (A root link doesn't have the parent joint).
+  // We don't have sufficient information what the joint type should be for the
+  // root link. So we create the root joint by the specified flgas.
+  if (!_jt)
+  {
+    return createDartJointAndNodeForRoot(_body, _parent, _skeleton, flags);
+  }
+
   dynamics::Joint::Properties basicProperties;
 
   basicProperties.mName = _jt->name;
