@@ -40,7 +40,7 @@ def main():
     # Create world node and add it to viewer
     node = HelloWorldNode(world)
 
-    # create a viewer with background color (red, green, blue, alpha), here: light grey
+    # create a viewer with background color (red, green, blue, alpha), here: white
     viewer = dart.gui.osg.Viewer([1.0, 1.0, 1.0, 1.0])
     viewer.addWorldNode(node)
 
