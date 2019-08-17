@@ -90,14 +90,6 @@ void ServoMotorConstraint::setConstraintForceMixing(double cfm)
            << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
   }
-  if (cfm > 1.0)
-  {
-    dtwarn << "[ServoMotorConstraint::setConstraintForceMixing] "
-           << "Constraint force mixing parameter[" << cfm
-           << "] is greater than 1.0. "
-           << "It is set to 1.0." << std::endl;
-    mConstraintForceMixing = 1.0;
-  }
 
   mConstraintForceMixing = cfm;
 }

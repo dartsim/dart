@@ -147,6 +147,16 @@ macro(dart_check_optional_package variable component dependency)
 endmacro()
 
 #===============================================================================
+macro(dart_check_dependent_target target)
+  foreach(dependent_target ${ARGN})
+    if (NOT TARGET ${dependent_target})
+      message(WARNING "${target} is disabled because dependent target ${dependent_target} is not being built.")
+      return()
+    endif()
+  endforeach()
+endmacro()
+
+#===============================================================================
 function(dart_add_custom_target rel_dir property_name)
   set(abs_dir "${CMAKE_CURRENT_LIST_DIR}/${rel_dir}")
 
