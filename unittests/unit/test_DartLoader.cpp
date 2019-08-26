@@ -197,18 +197,21 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   ASSERT_TRUE(nullptr != robot1);
   EXPECT_EQ(
       robot1->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
+  EXPECT_EQ(robot1->getRootJoint()->getName(), "rootJoint");
 
   auto robot2 = loader.parseSkeletonString(
       urdfStr, "", nullptr, DartLoader::Flags::NONE);
   ASSERT_TRUE(nullptr != robot2);
   EXPECT_EQ(
       robot2->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
+  EXPECT_EQ(robot2->getRootJoint()->getName(), "rootJoint");
 
   auto robot3 = loader.parseSkeletonString(
       urdfStr, "", nullptr, DartLoader::Flags::FIXED_BASE_LINK);
   ASSERT_TRUE(nullptr != robot3);
   EXPECT_EQ(
       robot3->getRootJoint()->getType(), dynamics::WeldJoint::getStaticType());
+  EXPECT_EQ(robot3->getRootJoint()->getName(), "rootJoint");
 }
 
 TEST(DartLoader, mimicJoint)

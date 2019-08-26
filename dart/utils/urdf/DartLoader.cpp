@@ -382,7 +382,7 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
     dynamics::SkeletonPtr _skeleton,
     unsigned int flags)
 {
-  dynamics::Joint::Properties basicProperties;
+  dynamics::Joint::Properties basicProperties("rootJoint");
 
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
