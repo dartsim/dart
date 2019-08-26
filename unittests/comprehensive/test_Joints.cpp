@@ -456,11 +456,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double limit0 = constantsd::pi() / 6.0;
   double limit1 = constantsd::pi() / 6.0;
 
-  joint0->setPositionLimitEnforced(true);
+  joint0->setPositionAndVelocityLimitEnforced(true);
   joint0->setPositionLowerLimit(0, -limit0);
   joint0->setPositionUpperLimit(0, limit0);
 
-  joint1->setPositionLimitEnforced(true);
+  joint1->setPositionAndVelocityLimitEnforced(true);
   joint1->setPositionLowerLimit(0, -limit1);
   joint1->setPositionUpperLimit(0, limit1);
 
@@ -600,8 +600,8 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   double frictionForce = 5.0;
 
-  joint0->setPositionLimitEnforced(false);
-  joint1->setPositionLimitEnforced(false);
+  joint0->setPositionAndVelocityLimitEnforced(false);
+  joint1->setPositionAndVelocityLimitEnforced(false);
 
   joint0->setCoulombFriction(0, frictionForce);
   joint1->setCoulombFriction(0, frictionForce);
@@ -725,7 +725,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   joint->setPosition(0, 90.0_deg);
   joint->setDampingCoefficient(0, 0.0);
   joint->setSpringStiffness(0, 0.0);
-  joint->setPositionLimitEnforced(true);
+  joint->setPositionAndVelocityLimitEnforced(true);
   joint->setCoulombFriction(0, 0.0);
 
   return pendulum;
@@ -933,7 +933,7 @@ void testMimicJoint()
     joint->setPosition(0, 90.0_deg);
     joint->setDampingCoefficient(0, 0.0);
     joint->setSpringStiffness(0, 0.0);
-    joint->setPositionLimitEnforced(true);
+    joint->setPositionAndVelocityLimitEnforced(true);
     joint->setCoulombFriction(0, 0.0);
 
     joints[i] = joint;
@@ -1010,8 +1010,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   double frictionForce = 5.0;
 
-  joint0->setPositionLimitEnforced(true);
-  joint1->setPositionLimitEnforced(true);
+  joint0->setPositionAndVelocityLimitEnforced(true);
+  joint1->setPositionAndVelocityLimitEnforced(true);
 
   const double ll = -constantsd::pi() / 12.0; // -15 degree
   const double ul = +constantsd::pi() / 12.0; // +15 degree

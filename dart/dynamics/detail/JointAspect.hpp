@@ -119,8 +119,10 @@ struct JointProperties
   /// Transformation from child BodyNode to this Joint
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
-  /// True if the joint limits should be enforced in dynamic simulation
+  /// True if the joint position or velocity limits should be enforced in
+  /// dynamic simulation
   bool mIsPositionLimitEnforced;
+  // TODO(JS): Rename this to mIsPositionAndVelocityLimitEnforced
 
   /// Actuator type
   ActuatorType mActuatorType;

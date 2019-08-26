@@ -55,7 +55,7 @@ Controller::Controller(
 
   // Remove position limits
   for (int i = 0; i < dof; ++i)
-    _robot->getJoint(i)->setPositionLimitEnforced(false);
+    _robot->getJoint(i)->setPositionAndVelocityLimitEnforced(false);
 
   // Set joint damping
   for (int i = 0; i < dof; ++i)

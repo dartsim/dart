@@ -191,21 +191,45 @@ public:
   /// Get transformation from child body node to this joint
   const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
-  /// Set to enforce joint position limit
+  /// Sets whether enforcing joint position and velocity limits.
   ///
-  /// The joint position limit is valid when the actutor type is one of
+  /// The joint position limit is valid when the actuator type is one of
   /// PASSIVE/FORCE.
   ///
   /// \sa ActuatorType
-  void setPositionLimitEnforced(bool _isPositionLimitEnforced);
+  ///
+  /// \deprecated Deprecated since DART 6.10. Please use
+  /// setPositionAndVelocityLimitEnforced() instead
+  DART_DEPRECATED(6.10)
+  void setPositionLimitEnforced(bool enforced);
 
-  /// Get whether enforcing joint position limit
+  /// Sets whether enforcing joint position and velocity limits.
   ///
-  /// The joint position limit is valid when the actutor type is one of
-  /// PASSIVE/FORCE.
+  /// This enforcement is only enabled when the actuator type is PASSIVE or
+  /// FORCE.
   ///
   /// \sa ActuatorType
+  void setPositionAndVelocityLimitEnforced(bool enforced);
+
+  /// Returns whether enforcing joint position limit
+  ///
+  /// This enforcement is only enabled when the actuator type is PASSIVE or
+  /// FORCE.
+  ///
+  /// \sa ActuatorType
+  ///
+  /// \deprecated Deprecated since DART 6.10. Please use
+  /// isPositionAndVelocityLimitEnforced() instead
+  DART_DEPRECATED(6.10)
   bool isPositionLimitEnforced() const;
+
+  /// Returns whether enforcing joint position limit
+  ///
+  /// This enforcement is only enabled when the actuator type is PASSIVE or
+  /// FORCE.
+  ///
+  /// \sa ActuatorType
+  bool isPositionAndVelocityLimitEnforced() const;
 
   /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual std::size_t getIndexInSkeleton(std::size_t _index) const = 0;

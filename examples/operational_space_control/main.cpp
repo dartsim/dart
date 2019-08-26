@@ -62,7 +62,7 @@ public:
     // Set joint properties
     for (std::size_t i = 0; i < mRobot->getNumJoints(); ++i)
     {
-      mRobot->getJoint(i)->setPositionLimitEnforced(false);
+      mRobot->getJoint(i)->setPositionAndVelocityLimitEnforced(false);
       mRobot->getJoint(i)->setDampingCoefficient(0, 0.5);
     }
 
