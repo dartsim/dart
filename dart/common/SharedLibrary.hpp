@@ -60,6 +60,26 @@ using hInstance = HINSTANCE__*;
 
 #endif
 
+#if DART_OS_LINUX
+static constexpr const char* DART_SHARED_LIB_EXTENSION = "so";
+#elif DART_OS_MACOS
+static constexpr const char* DART_SHARED_LIB_EXTENSION = "dylib";
+#elif DART_OS_WINDOWS
+static constexpr const char* DART_SHARED_LIB_EXTENSION = "dll";
+#else
+#  error Unhandled platform
+#endif
+
+#if DART_OS_LINUX
+static constexpr const char* DART_SHARED_LIB_PREFIX = "lib";
+#elif DART_OS_MACOS
+static constexpr const char* DART_SHARED_LIB_PREFIX = "lib";
+#elif DART_OS_WINDOWS
+static constexpr const char* DART_SHARED_LIB_PREFIX = "";
+#else
+#  error Unhandled platform
+#endif
+
 namespace dart {
 namespace common {
 

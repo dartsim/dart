@@ -53,7 +53,7 @@ if(PERL_FOUND)
 				mark_as_advanced(${modvarname})
 			else()
 				if(NOT PerlModules_FIND_QUIETLY)
-					message(STATUS "Checking for perl module ${module} - failed")
+					message(WARNING "Checking for perl module ${module} - failed")
 				endif()
 				set(${modvarname}
 					"NOTFOUND"

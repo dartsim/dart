@@ -142,7 +142,7 @@ elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
   set(BUILD_TYPE_MINSIZEREL TRUE)
 else()
-  message(STATUS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
+  message(WARNING "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
 #===============================================================================
@@ -497,7 +497,7 @@ if(CLANG_FORMAT_EXECUTABLE)
 else()
 
   if(DART_VERBOSE)
-    message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+    message(WARNING "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
   endif()
 
 endif()

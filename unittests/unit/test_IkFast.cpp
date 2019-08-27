@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sstream>
+
 #include <dart/dart.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 #include <gtest/gtest.h>
@@ -71,17 +73,13 @@ TEST(IkFast, LoadWamArmIk)
 
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
-  std::string libName = "libGeneratedWamIkFast";
+  std::stringstream ss;
+  ss << DART_SHARED_LIB_PREFIX << "GeneratedWamIkFast";
 #if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
-  libName += "d";
+  ss << "d";
 #endif
-#if DART_OS_LINUX
-  libName += ".so";
-#elif DART_OS_MACOS
-  libName += ".dylib";
-#elif DART_OS_WINDOWS
-  libName += ".dll";
-#endif
+  ss << "." << DART_SHARED_LIB_EXTENSION;
+  std::string libName = ss.str();
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
@@ -92,6 +90,10 @@ TEST(IkFast, LoadWamArmIk)
 
   auto ikfast = dynamic_cast<dynamics::SharedLibraryIkFast*>(analytical);
   EXPECT_NE(ikfast, nullptr);
+  EXPECT_EQ(ikfast->getNumJoints2(), 7);
+  EXPECT_EQ(ikfast->getNumFreeParameters2(), 1);
+  EXPECT_EQ(ikfast->getIkType2(), dynamics::IkFast::IkType::TRANSFORM_6D);
+  EXPECT_EQ(ikfast->getIkFastVersion2(), "71");
 
   targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
   auto solutions = ikfast->getSolutions(targetFrame->getTransform());

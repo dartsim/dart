@@ -6,12 +6,12 @@ execute_process(
   ERROR_QUIET
 )
 if(pytest_not_found)
-  message(STATUS "Running the tests requires pytest. Please install it manually"
+  message(WARNING "Running the tests requires pytest. Please install it manually"
     " (try: ${PYTHON_EXECUTABLE} -m pip install pytest)"
   )
   set(DARTPY_PYTEST_FOUND FALSE)
 elseif(pytest_version VERSION_LESS 3.0)
-  message(STATUS "Running the tests requires pytest >= 3.0. Found: ${pytest_version}"
+  message(WARNING "Running the tests requires pytest >= 3.0. Found: ${pytest_version}"
     "Please update it (try: ${PYTHON_EXECUTABLE} -m pip install -U pytest)"
   )
   set(DARTPY_PYTEST_FOUND FALSE)
