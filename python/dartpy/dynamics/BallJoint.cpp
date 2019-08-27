@@ -97,6 +97,12 @@ void BallJoint(py::module& m)
           },
           ::py::return_value_policy::reference_internal)
       .def_static(
+          "convertToPositions",
+          +[](const Eigen::Matrix3d& _tf) -> Eigen::Vector3d {
+            return dart::dynamics::BallJoint::convertToPositions(_tf);
+          },
+          ::py::arg("tf"))
+      .def_static(
           "convertToTransform",
           +[](const Eigen::Vector3d& _positions) -> Eigen::Isometry3d {
             return dart::dynamics::BallJoint::convertToTransform(_positions);
