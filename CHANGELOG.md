@@ -10,6 +10,7 @@
 
   * Fixed friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
   * Fixed soft body simulation when command input is not resetted: [#1372](https://github.com/dartsim/dart/pull/1372)
+  * Added joint velocity limit constraint support: [#1407](https://github.com/dartsim/dart/pull/1407)
 
 * GUI
 
