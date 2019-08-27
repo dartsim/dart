@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
   auto skel = world->getSkeleton("human");
   for (auto joint : skel->getJoints())
   {
-    joint->setPositionAndVelocityLimitEnforced(true);
+    joint->setLimitEnforcement(true);
   }
 
   // world->getSkeleton("arm")->enableSelfCollisionCheck();

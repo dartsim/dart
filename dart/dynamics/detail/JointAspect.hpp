@@ -122,7 +122,7 @@ struct JointProperties
   /// True if the joint position or velocity limits should be enforced in
   /// dynamic simulation
   bool mIsPositionLimitEnforced;
-  // TODO(JS): Rename this to mIsPositionAndVelocityLimitEnforced
+  // TODO(JS): Rename this to mAreLimitsEnforced
 
   /// Actuator type
   ActuatorType mActuatorType;

@@ -199,7 +199,7 @@ public:
   /// \sa ActuatorType
   ///
   /// \deprecated Deprecated since DART 6.10. Please use
-  /// setPositionAndVelocityLimitEnforced() instead
+  /// setLimitEnforcement() instead
   DART_DEPRECATED(6.10)
   void setPositionLimitEnforced(bool enforced);
 
@@ -209,7 +209,7 @@ public:
   /// FORCE.
   ///
   /// \sa ActuatorType
-  void setPositionAndVelocityLimitEnforced(bool enforced);
+  void setLimitEnforcement(bool enforced);
 
   /// Returns whether enforcing joint position limit
   ///
@@ -219,17 +219,17 @@ public:
   /// \sa ActuatorType
   ///
   /// \deprecated Deprecated since DART 6.10. Please use
-  /// isPositionAndVelocityLimitEnforced() instead
+  /// areLimitsEnforced() instead
   DART_DEPRECATED(6.10)
   bool isPositionLimitEnforced() const;
 
-  /// Returns whether enforcing joint position limit
+  /// Returns whether enforcing joint position and velocity limits
   ///
   /// This enforcement is only enabled when the actuator type is PASSIVE or
   /// FORCE.
   ///
   /// \sa ActuatorType
-  bool isPositionAndVelocityLimitEnforced() const;
+  bool areLimitsEnforced() const;
 
   /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual std::size_t getIndexInSkeleton(std::size_t _index) const = 0;

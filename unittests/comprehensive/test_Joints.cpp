@@ -456,11 +456,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double limit0 = constantsd::pi() / 6.0;
   double limit1 = constantsd::pi() / 6.0;
 
-  joint0->setPositionAndVelocityLimitEnforced(true);
+  joint0->setLimitEnforcement(true);
   joint0->setPositionLowerLimit(0, -limit0);
   joint0->setPositionUpperLimit(0, limit0);
 
-  joint1->setPositionAndVelocityLimitEnforced(true);
+  joint1->setLimitEnforcement(true);
   joint1->setPositionLowerLimit(0, -limit1);
   joint1->setPositionUpperLimit(0, limit1);
 
@@ -534,13 +534,13 @@ TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
   const double velLimit0 = math::toRadian(5.0); // 5 degree per second
   const double velLimit1 = math::toRadian(5.0); // 5 degree per second
 
-  joint0->setPositionAndVelocityLimitEnforced(true);
+  joint0->setLimitEnforcement(true);
   joint0->setPositionLowerLimit(0, -posLimit0);
   joint0->setPositionUpperLimit(0, posLimit0);
   joint0->setVelocityLowerLimit(0, -velLimit0);
   joint0->setVelocityUpperLimit(0, velLimit0);
 
-  joint1->setPositionAndVelocityLimitEnforced(true);
+  joint1->setLimitEnforcement(true);
   joint1->setPositionLowerLimit(0, -posLimit1);
   joint1->setPositionUpperLimit(0, posLimit1);
   joint1->setVelocityLowerLimit(0, -velLimit1);
@@ -698,8 +698,8 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   double frictionForce = 5.0;
 
-  joint0->setPositionAndVelocityLimitEnforced(false);
-  joint1->setPositionAndVelocityLimitEnforced(false);
+  joint0->setLimitEnforcement(false);
+  joint1->setLimitEnforcement(false);
 
   joint0->setCoulombFriction(0, frictionForce);
   joint1->setCoulombFriction(0, frictionForce);
@@ -823,7 +823,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   joint->setPosition(0, 90.0_deg);
   joint->setDampingCoefficient(0, 0.0);
   joint->setSpringStiffness(0, 0.0);
-  joint->setPositionAndVelocityLimitEnforced(true);
+  joint->setLimitEnforcement(true);
   joint->setCoulombFriction(0, 0.0);
 
   return pendulum;
@@ -1031,7 +1031,7 @@ void testMimicJoint()
     joint->setPosition(0, 90.0_deg);
     joint->setDampingCoefficient(0, 0.0);
     joint->setSpringStiffness(0, 0.0);
-    joint->setPositionAndVelocityLimitEnforced(true);
+    joint->setLimitEnforcement(true);
     joint->setCoulombFriction(0, 0.0);
 
     joints[i] = joint;
@@ -1108,8 +1108,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   double frictionForce = 5.0;
 
-  joint0->setPositionAndVelocityLimitEnforced(true);
-  joint1->setPositionAndVelocityLimitEnforced(true);
+  joint0->setLimitEnforcement(true);
+  joint1->setLimitEnforcement(true);
 
   const double ll = -constantsd::pi() / 12.0; // -15 degree
   const double ul = +constantsd::pi() / 12.0; // +15 degree

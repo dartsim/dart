@@ -569,7 +569,7 @@ void ConstraintSolver::updateConstraints()
         }
       }
 
-      if (joint->isPositionAndVelocityLimitEnforced())
+      if (joint->areLimitsEnforced())
       {
         mJointLimitConstraints.push_back(
             std::make_shared<JointLimitConstraint>(joint));

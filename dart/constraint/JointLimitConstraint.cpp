@@ -344,7 +344,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
 //==============================================================================
 void JointLimitConstraint::applyUnitImpulse(std::size_t index)
 {
-  assert(_index < mDim && "Invalid Index.");
+  assert(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
@@ -376,7 +376,7 @@ void JointLimitConstraint::applyUnitImpulse(std::size_t index)
 //==============================================================================
 void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
 {
-  assert(_delVel != nullptr && "Null pointer is not allowed.");
+  assert(delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
