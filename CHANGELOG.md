@@ -32,6 +32,13 @@
   * Added shadow technique: [#1348](https://github.com/dartsim/dart/pull/1348)
   * Added findSolution and solveAndApply to InverseKinematics: [#1358](https://github.com/dartsim/dart/pull/1358)
   * Added InteractiveFrame and ImGui APIs: [#1359](https://github.com/dartsim/dart/pull/1359)
+  * Added bindings for Joint::getTransformFrom{Parent|Child}BodyNode(): [#1377](https://github.com/dartsim/dart/pull/1377)
+  * Added bindings for BodyNode::getChild{BodyNode|Joint}(): [#1387](https://github.com/dartsim/dart/pull/1387)
+  * Added bindings for Inertia: [#1388](https://github.com/dartsim/dart/pull/1388)
+  * Added bindings for getting all BodyNodes from a Skeleton: [#1397](https://github.com/dartsim/dart/pull/1397)
+  * Added bindings for background color support in osg viewer: [#1398](https://github.com/dartsim/dart/pull/1398)
+  * Added bindings for BallJoint::convertToPositions(): [#1408](https://github.com/dartsim/dart/pull/1408)
+  * Fixed typos in Skeleton: [#1392](https://github.com/dartsim/dart/pull/1392)
 
 * Build
 
