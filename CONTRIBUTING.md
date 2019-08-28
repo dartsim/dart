@@ -48,6 +48,7 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [pchorak](https://github.com/pchorak)              | bug fixes
  [acxz](https://github.com/acxz)                    | doxygen warning fix
  [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector
+ [Christoph Hinze](https://github.com/chhinze)      | python bindings
 
 You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
 
