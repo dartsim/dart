@@ -456,11 +456,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double limit0 = constantsd::pi() / 6.0;
   double limit1 = constantsd::pi() / 6.0;
 
-  joint0->setPositionLimitEnforced(true);
+  joint0->setLimitEnforcement(true);
   joint0->setPositionLowerLimit(0, -limit0);
   joint0->setPositionUpperLimit(0, limit0);
 
-  joint1->setPositionLimitEnforced(true);
+  joint1->setLimitEnforcement(true);
   joint1->setPositionLowerLimit(0, -limit1);
   joint1->setPositionUpperLimit(0, limit1);
 
@@ -504,6 +504,104 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
     EXPECT_LE(jointPos0, limit0 + tol);
     EXPECT_LE(jointPos1, limit1 + tol);
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
+{
+  using namespace dart::math::suffixes;
+
+  const double tol = 1e-3;
+
+  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/joint_limit_test.skel");
+  EXPECT_TRUE(myWorld != nullptr);
+
+  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
+  EXPECT_TRUE(pendulum != nullptr);
+
+  dynamics::Joint* joint0 = pendulum->getJoint("joint0");
+  dynamics::Joint* joint1 = pendulum->getJoint("joint1");
+
+  EXPECT_TRUE(joint0 != nullptr);
+  EXPECT_TRUE(joint1 != nullptr);
+
+  const double posLimit0 = math::toRadian(360.0);
+  const double posLimit1 = math::toRadian(360.0);
+  const double velLimit0 = math::toRadian(5.0); // 5 degree per second
+  const double velLimit1 = math::toRadian(5.0); // 5 degree per second
+
+  joint0->setLimitEnforcement(true);
+  joint0->setPositionLowerLimit(0, -posLimit0);
+  joint0->setPositionUpperLimit(0, posLimit0);
+  joint0->setVelocityLowerLimit(0, -velLimit0);
+  joint0->setVelocityUpperLimit(0, velLimit0);
+
+  joint1->setLimitEnforcement(true);
+  joint1->setPositionLowerLimit(0, -posLimit1);
+  joint1->setPositionUpperLimit(0, posLimit1);
+  joint1->setVelocityLowerLimit(0, -velLimit1);
+  joint1->setVelocityUpperLimit(0, velLimit1);
+
+#ifndef NDEBUG // Debug mode
+  double simTime = 0.2;
+#else
+  double simTime = 2.0;
+#endif // ------- Debug mode
+  double timeStep = myWorld->getTimeStep();
+  int nSteps = simTime / timeStep;
+
+  // Two seconds with positive control forces
+  for (int i = 0; i < nSteps; i++)
+  {
+    // Apply sufficient force to hit the limits
+    joint0->setForce(0, 1.0);
+    joint1->setForce(0, 1.0);
+    myWorld->step();
+
+    // Check position limits
+    const double jointPos0 = joint0->getPosition(0);
+    const double jointPos1 = joint1->getPosition(0);
+    EXPECT_GE(jointPos0, -posLimit0 - tol);
+    EXPECT_GE(jointPos1, -posLimit1 - tol);
+    EXPECT_LE(jointPos0, posLimit0 + tol);
+    EXPECT_LE(jointPos1, posLimit1 + tol);
+
+    // Check velocity limits
+    const double jointVel0 = joint0->getVelocity(0);
+    const double jointVel1 = joint1->getVelocity(0);
+    EXPECT_GE(jointVel0, -velLimit0 - tol);
+    EXPECT_GE(jointVel1, -velLimit1 - tol);
+    EXPECT_LE(jointVel0, velLimit0 + tol);
+    EXPECT_LE(jointVel1, velLimit1 + tol);
+  }
+
+  // Two more seconds with negative control forces
+  for (int i = 0; i < nSteps; i++)
+  {
+    // Apply sufficient force to hit the limits
+    joint0->setForce(0, -1.0);
+    joint1->setForce(0, -1.0);
+    myWorld->step();
+
+    // Check position limits
+    const double jointPos0 = joint0->getPosition(0);
+    const double jointPos1 = joint1->getPosition(0);
+    EXPECT_GE(jointPos0, -posLimit0 - tol);
+    EXPECT_GE(jointPos1, -posLimit1 - tol);
+    EXPECT_LE(jointPos0, posLimit0 + tol);
+    EXPECT_LE(jointPos1, posLimit1 + tol);
+
+    // Check velocity limits
+    const double jointVel0 = joint0->getVelocity(0);
+    const double jointVel1 = joint1->getVelocity(0);
+    EXPECT_GE(jointVel0, -velLimit0 - tol);
+    EXPECT_GE(jointVel1, -velLimit1 - tol);
+    EXPECT_LE(jointVel0, velLimit0 + tol);
+    EXPECT_LE(jointVel1, velLimit1 + tol);
   }
 }
 
@@ -600,8 +698,8 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   double frictionForce = 5.0;
 
-  joint0->setPositionLimitEnforced(false);
-  joint1->setPositionLimitEnforced(false);
+  joint0->setLimitEnforcement(false);
+  joint1->setLimitEnforcement(false);
 
   joint0->setCoulombFriction(0, frictionForce);
   joint1->setCoulombFriction(0, frictionForce);
@@ -725,7 +823,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   joint->setPosition(0, 90.0_deg);
   joint->setDampingCoefficient(0, 0.0);
   joint->setSpringStiffness(0, 0.0);
-  joint->setPositionLimitEnforced(true);
+  joint->setLimitEnforcement(true);
   joint->setCoulombFriction(0, 0.0);
 
   return pendulum;
@@ -933,7 +1031,7 @@ void testMimicJoint()
     joint->setPosition(0, 90.0_deg);
     joint->setDampingCoefficient(0, 0.0);
     joint->setSpringStiffness(0, 0.0);
-    joint->setPositionLimitEnforced(true);
+    joint->setLimitEnforcement(true);
     joint->setCoulombFriction(0, 0.0);
 
     joints[i] = joint;
@@ -1010,8 +1108,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   double frictionForce = 5.0;
 
-  joint0->setPositionLimitEnforced(true);
-  joint1->setPositionLimitEnforced(true);
+  joint0->setLimitEnforcement(true);
+  joint1->setLimitEnforcement(true);
 
   const double ll = -constantsd::pi() / 12.0; // -15 degree
   const double ul = +constantsd::pi() / 12.0; // +15 degree

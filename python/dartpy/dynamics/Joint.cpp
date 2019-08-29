@@ -266,16 +266,15 @@ void Joint(py::module& m)
             return self->getTransformFromChildBodyNode();
           })
       .def(
-          "setPositionLimitEnforced",
-          +[](dart::dynamics::Joint* self,
-              bool isPositionLimitEnforced) -> void {
-            return self->setPositionLimitEnforced(isPositionLimitEnforced);
+          "setLimitEnforcement",
+          +[](dart::dynamics::Joint* self, bool enforce) -> void {
+            return self->setLimitEnforcement(enforce);
           },
-          ::py::arg("isPositionLimitEnforced"))
+          ::py::arg("enforced"))
       .def(
-          "isPositionLimitEnforced",
+          "areLimitsEnforced",
           +[](const dart::dynamics::Joint* self) -> bool {
-            return self->isPositionLimitEnforced();
+            return self->areLimitsEnforced();
           })
       .def(
           "getIndexInSkeleton",

@@ -117,7 +117,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setName(properties.mName);
   setTransformFromParentBodyNode(properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
-  setPositionLimitEnforced(properties.mIsPositionLimitEnforced);
+  setLimitEnforcement(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
   setMimicJoint(
       properties.mMimicJoint,
@@ -389,13 +389,25 @@ const Eigen::Vector6d& Joint::getRelativePrimaryAcceleration() const
 }
 
 //==============================================================================
-void Joint::setPositionLimitEnforced(bool _isPositionLimitEnforced)
+void Joint::setPositionLimitEnforced(bool enforced)
 {
-  mAspectProperties.mIsPositionLimitEnforced = _isPositionLimitEnforced;
+  setLimitEnforcement(enforced);
+}
+
+//==============================================================================
+void Joint::setLimitEnforcement(bool enforced)
+{
+  mAspectProperties.mIsPositionLimitEnforced = enforced;
 }
 
 //==============================================================================
 bool Joint::isPositionLimitEnforced() const
+{
+  return areLimitsEnforced();
+}
+
+//==============================================================================
+bool Joint::areLimitsEnforced() const
 {
   return mAspectProperties.mIsPositionLimitEnforced;
 }
