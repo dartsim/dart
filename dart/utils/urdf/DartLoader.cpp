@@ -626,6 +626,8 @@ bool DartLoader::createShapeNodes(
     {
       auto shapeNode
           = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
+      if (not visual->name.empty())
+        shapeNode->setName(visual->name);
       shapeNode->setRelativeTransform(toEigen(visual->origin));
       setMaterial(model, shapeNode->getVisualAspect(), visual.get());
     }
@@ -646,6 +648,8 @@ bool DartLoader::createShapeNodes(
       auto shapeNode = bodyNode->createShapeNodeWith<
           dynamics::CollisionAspect,
           dynamics::DynamicsAspect>(shape);
+      if (not collision->name.empty())
+        shapeNode->setName(collision->name);
       shapeNode->setRelativeTransform(toEigen(collision->origin));
     }
     else

@@ -486,3 +486,68 @@ TEST(DartLoader, KR5MeshColor)
     }
   }
 }
+
+//==============================================================================
+TEST(DartLoader, parseVisualCollisionName)
+{
+  std::string urdfStr
+      = "<robot name=\"testRobot\">                                       "
+        "  <link name=\"link_0\">                                         "
+        "    <visual name=\"first_visual\">                               "
+        "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+        "      <geometry>                                                 "
+        "        <box size=\"1 1 1\"/>                                    "
+        "      </geometry>                                                "
+        "    </visual>                                                    "
+        "    <visual name=\"second_visual\">                              "
+        "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+        "      <geometry>                                                 "
+        "        <box size=\"1 1 1\"/>                                    "
+        "      </geometry>                                                "
+        "    </visual>                                                    "
+        "  </link>                                                        "
+        "  <joint name=\"0_to_1\" type=\"revolute\">                      "
+        "    <parent link=\"link_0\"/>                                    "
+        "    <child link=\"link_1\"/>                                     "
+        "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+        "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+        "    <axis xyz=\"0 0 1\"/>                                        "
+        "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+        "  </joint>                                                       "
+        "  <link name=\"link_1\">                                         "
+        "    <visual>                                                     "
+        "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+        "      <geometry>                                                 "
+        "        <box size=\"1 1 1\"/>                                    "
+        "      </geometry>                                                "
+        "    </visual>                                                    "
+        "    <visual>                                                     "
+        "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+        "      <geometry>                                                 "
+        "        <box size=\"1 1 1\"/>                                    "
+        "      </geometry>                                                "
+        "    </visual>                                                    "
+        "  </link>                                                        "
+        "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(nullptr != robot);
+
+  auto body0 = robot->getBodyNode(0);
+  ASSERT_TRUE(nullptr != body0);
+  auto shape_nodes0 = body0->getShapeNodes();
+  ASSERT_EQ(shape_nodes0.size(), 2);
+  EXPECT_EQ(shape_nodes0[0]->getName(), "first_visual");
+  EXPECT_EQ(shape_nodes0[1]->getName(), "second_visual");
+
+  auto body1 = robot->getBodyNode(1);
+  ASSERT_TRUE(nullptr != body1);
+  auto shape_nodes1 = body1->getShapeNodes();
+  ASSERT_EQ(shape_nodes1.size(), 2);
+  // The ShapeNode naming pattern is infered from
+  // BodyNode::createShapeNodeWith(const ShapePtr& shape) sot this test could
+  // fail if the naming pattern in the function is changed.
+  EXPECT_EQ(shape_nodes1[0]->getName(), body1->getName() + "_ShapeNode_0");
+  EXPECT_EQ(shape_nodes1[1]->getName(), body1->getName() + "_ShapeNode_1");
+}
