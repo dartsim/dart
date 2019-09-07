@@ -64,7 +64,7 @@ install:
   #-------------------------------
   - sh: sudo apt-get update
   - sh: sudo apt-get --yes install build-essential cmake pkg-config git
-  - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev
+  - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-system-dev
   - sh: sudo apt-get --yes install libnlopt-dev coinor-libipopt-dev libbullet-dev libflann-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libopenscenegraph-dev
   - sh: sudo apt-get --yes install clang-format-6.0
 

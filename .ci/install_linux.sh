@@ -22,7 +22,6 @@ fi
 $SUDO apt-get -y install \
   libassimp-dev \
   libboost-filesystem-dev \
-  libboost-regex-dev \
   libboost-system-dev \
   libccd-dev \
   libeigen3-dev \

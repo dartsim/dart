@@ -31,32 +31,12 @@
  */
 
 #include "dart/common/Uri.hpp"
+
 #include <cassert>
 #include <sstream>
+#include <regex>
+
 #include "dart/common/Console.hpp"
-
-// std::regex is only implemented in GCC 4.9 and above; i.e. libstdc++ 6.0.20
-// or above. In fact, it contains major bugs in GCC 4.8 [1]. There is no
-// reliable way to test the version of libstdc++ when building with Clang [2],
-// so we'll fall back on Boost.Regex when using libstdc++.
-//
-// [1] http://stackoverflow.com/a/12665408/111426
-// [2] http://stackoverflow.com/q/31506594/111426
-//
-#ifdef __GLIBCXX__
-
-#  include <boost/regex.hpp>
-
-using boost::regex;
-using boost::regex_match;
-using boost::regex_search;
-using boost::smatch;
-using boost::ssub_match;
-using boost::regex_constants::match_continuous;
-
-#else
-
-#  include <regex>
 
 using std::regex;
 using std::regex_match;
@@ -64,8 +44,6 @@ using std::regex_search;
 using std::smatch;
 using std::ssub_match;
 using std::regex_constants::match_continuous;
-
-#endif
 
 static bool startsWith(const std::string& _target, const std::string& _prefix)
 {
