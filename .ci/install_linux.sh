@@ -27,6 +27,10 @@ $SUDO apt-get -y install \
   libeigen3-dev \
   libfcl-dev
 
+# Required dependencies for building API documentation of DART < 6.10
+$SUDO apt-get -y install \
+  libboost-regex-dev
+
 # Optional dependencies
 $SUDO apt-get -y install \
   freeglut3-dev \
