@@ -22,11 +22,14 @@ fi
 $SUDO apt-get -y install \
   libassimp-dev \
   libboost-filesystem-dev \
-  libboost-regex-dev \
   libboost-system-dev \
   libccd-dev \
   libeigen3-dev \
   libfcl-dev
+
+# Required dependencies for building API documentation of DART < 6.10
+$SUDO apt-get -y install \
+  libboost-regex-dev
 
 # Optional dependencies
 $SUDO apt-get -y install \
