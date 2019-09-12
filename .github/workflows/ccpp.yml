@@ -17,13 +17,14 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
-    - name: install dependencies
+    - name: Install Dependencies
       env:
         OS_NAME: linux
         COMPILER: gcc
         BUILD_TYPE: Release
         BUILD_DARTPY: OFF
         CODECOV: OFF
+        SUDO: sudo
       run: '.ci/install.sh'
     - name: build
       env:
