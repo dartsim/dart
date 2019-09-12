@@ -62,9 +62,10 @@ TEST(IkFast, LoadWamArmIk)
   urdfParser.addPackageDirectory(
       "herb_description", DART_DATA_PATH "/urdf/wam");
   auto wam = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
-  EXPECT_NE(wam, nullptr);
+  ASSERT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");
+  ASSERT_NE(wam7, nullptr);
   auto ee = wam7->createEndEffector("ee");
   auto ik = ee->createIK();
   auto targetFrame
@@ -85,11 +86,11 @@ TEST(IkFast, LoadWamArmIk)
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
       libName, ikFastDofs, ikFastFreeDofs);
   auto analytical = ik->getAnalytical();
-  EXPECT_NE(analytical, nullptr);
+  ASSERT_NE(analytical, nullptr);
   EXPECT_EQ(analytical->getDofs().size(), 6);
 
   auto ikfast = dynamic_cast<dynamics::SharedLibraryIkFast*>(analytical);
-  EXPECT_NE(ikfast, nullptr);
+  ASSERT_NE(ikfast, nullptr);
   EXPECT_EQ(ikfast->getNumJoints2(), 7);
   EXPECT_EQ(ikfast->getNumFreeParameters2(), 1);
   EXPECT_EQ(ikfast->getIkType2(), dynamics::IkFast::IkType::TRANSFORM_6D);
@@ -103,7 +104,7 @@ TEST(IkFast, LoadWamArmIk)
 
   for (const auto& solution : solutions)
   {
-    EXPECT_EQ(solution.mConfig.size(), 6);
+    ASSERT_EQ(solution.mConfig.size(), 6);
 
     if (solution.mValidity != InverseKinematics::Analytical::VALID)
       continue;
