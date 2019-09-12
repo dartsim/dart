@@ -43,13 +43,15 @@ using namespace dart;
 TEST(IkFast, FailedToLoadSharedLibrary)
 {
   auto skel = dynamics::Skeleton::create();
-  EXPECT_NE(skel, nullptr);
+  ASSERT_NE(skel, nullptr);
 
   auto bodyNode
       = skel->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
 
   auto ee = bodyNode->createEndEffector("ee");
+  ASSERT_NE(ee, nullptr);
   auto ik = ee->createIK();
+  ASSERT_NE(ik, nullptr);
   auto ikfast = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
       "doesn't exist", std::vector<std::size_t>(), std::vector<std::size_t>());
   EXPECT_EQ(ikfast.isConfigured(), false);
