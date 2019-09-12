@@ -1,0 +1,33 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+  schedule:
+    # Run every day at 02:00
+    - cron: '0 2 * * 0-6'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: install dependencies
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        BUILD_TYPE: Release
+        BUILD_DARTPY: OFF
+        CODECOV: OFF
+      run: '.ci/install.sh'
+    - name: build
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        BUILD_TYPE: Release
+      run: '.ci/script.sh'
