@@ -13,8 +13,10 @@ if [ -z "$BUILD_DOCS" ]; then
 fi
 
 if [ -z "$SUDO" ]; then
-  echo "Info: Environment variable SUDO is unset. Using sudo by default."
-  SUDO=sudo
+  if [ -z "${DOCKERFILE}"]
+    echo "Info: Environment variable SUDO is unset. Using sudo by default."
+    SUDO=sudo
+  fi
 fi
 
 if [ -z "$COMPILER" ]; then
