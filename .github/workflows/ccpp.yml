@@ -1,3 +1,5 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
 name: C/C++ CI
 
 on:
@@ -13,7 +15,7 @@ on:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
+    name: Build on Ubuntu 16.04
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v1
@@ -27,7 +29,7 @@ jobs:
         SUDO: sudo
         BUILD_TESTS: OFF
       run: '.ci/install.sh'
-    - name: build
+    - name: Build
       env:
         OS_NAME: linux
         COMPILER: gcc
