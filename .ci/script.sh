@@ -7,9 +7,14 @@ if [ -z "$BUILD_TYPE" ]; then
   exit 1
 fi
 
-if [ -z "$BUILD_TESTS" ]; then
-  echo "Info: Environment variable BUILD_TESTS is unset. Using ON by default."
-  BUILD_TESTS=OFF
+if [ -z "$RUN_TESTS" ]; then
+  echo "Info: Environment variable RUN_TESTS is unset. Using ON by default."
+  RUN_TESTS=ON
+fi
+
+if [ -z "$RUN_INSTALL_TEST" ]; then
+  echo "Info: Environment variable RUN_INSTALL_TEST is unset. Using ON by default."
+  RUN_INSTALL_TEST=ON
 fi
 
 if [ -z "$BUILD_DARTPY" ]; then
@@ -88,7 +93,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
 else
   if [ "$CODECOV" = "ON" ]; then
     make -j$num_threads all tests
-  elif [ "$BUILD_TESTS" = "ON" ]; then
+  elif [ "$RUN_TESTS" = "ON" ]; then
     make -j$num_threads all tutorials examples tests
   fi
 
@@ -98,24 +103,26 @@ else
 
   if [ $CODECOV = "ON" ]; then
     make -j$num_threads codecov
-  elif [ "$BUILD_TESTS" = "ON" ]; then
+  elif [ "$RUN_TESTS" = "ON" ]; then
     ctest --output-on-failure -j$num_threads
   fi
 fi
 
-# Make sure we can install with no issues
-$SUDO make -j$num_threads install
+if [ "$RUN_INSTALL_TEST" = "ON" ]; then
+  # Make sure we can install with no issues
+  $SUDO make -j$num_threads install
 
-if [ "$BUILD_DARTPY" = "ON" ]; then
-  # Run a python example (experimental)
   if [ "$BUILD_DARTPY" = "ON" ]; then
-    cd $BUILD_DIR/python/examples/hello_world
-    python3 main.py
+    # Run a python example (experimental)
+    if [ "$BUILD_DARTPY" = "ON" ]; then
+      cd $BUILD_DIR/python/examples/hello_world
+      python3 main.py
+    fi
+  else
+    # Build an example using installed DART
+    cd $BUILD_DIR/examples/hello_world
+    mkdir build && cd build
+    cmake ..
+    make -j$num_threads
   fi
-else
-  # Build an example using installed DART
-  cd $BUILD_DIR/examples/hello_world
-  mkdir build && cd build
-  cmake ..
-  make -j$num_threads
 fi
