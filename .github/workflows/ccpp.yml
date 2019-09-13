@@ -27,7 +27,7 @@ jobs:
         BUILD_DARTPY: OFF
         CODECOV: OFF
         SUDO: sudo
-        BUILD_TESTS: OFF
+        RUN_TESTS: OFF
         RUN_INSTALL_TEST: OFF
       run: '.ci/install.sh'
     - name: Build
