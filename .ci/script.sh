@@ -7,6 +7,11 @@ if [ -z "$BUILD_TYPE" ]; then
   exit 1
 fi
 
+if [ -z "$BUILD_TESTS" ]; then
+  echo "Info: Environment variable BUILD_TESTS is unset. Using ON by default."
+  BUILD_TESTS=OFF
+fi
+
 if [ -z "$BUILD_DARTPY" ]; then
   echo "Info: Environment variable BUILD_DARTPY is unset. Using OFF by default."
   BUILD_DARTPY=OFF
@@ -83,7 +88,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
 else
   if [ "$CODECOV" = "ON" ]; then
     make -j$num_threads all tests
-  else
+  elif [ "$BUILD_TESTS" = "ON" ]; then
     make -j$num_threads all tutorials examples tests
   fi
 
@@ -93,7 +98,7 @@ else
 
   if [ $CODECOV = "ON" ]; then
     make -j$num_threads codecov
-  else
+  elif [ "$BUILD_TESTS" = "ON" ]; then
     ctest --output-on-failure -j$num_threads
   fi
 fi
