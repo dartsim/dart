@@ -27,6 +27,16 @@ if [ -z "$BUILD_DOCS" ]; then
   BUILD_DOCS=OFF
 fi
 
+if [ -z "$SUDO" ]; then
+  echo "Info: Environment variable SUDO is unset. Using sudo by default."
+  SUDO=sudo
+fi
+
+if [ -z "$COMPILER" ]; then
+  echo "Info: Environment variable COMPILER is unset. Using gcc by default."
+  COMPILER=gcc
+fi
+
 if [ -z "$CODECOV" ]; then
   echo "Info: Environment variable CODECOV is unset. Using OFF by default."
   CODECOV=OFF

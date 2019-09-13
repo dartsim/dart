@@ -23,16 +23,12 @@ jobs:
       env:
         OS_NAME: linux
         COMPILER: gcc
-        BUILD_TYPE: Release
-        BUILD_DARTPY: OFF
-        CODECOV: OFF
-        SUDO: sudo
-        RUN_TESTS: OFF
-        RUN_INSTALL_TEST: OFF
       run: '.ci/install.sh'
     - name: Build
       env:
         OS_NAME: linux
         COMPILER: gcc
         BUILD_TYPE: Release
+        RUN_TESTS: OFF
+        RUN_INSTALL_TEST: OFF
       run: '.ci/script.sh'

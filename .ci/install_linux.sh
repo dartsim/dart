@@ -1,6 +1,27 @@
 #!/usr/bin/env bash
 set -ex
 
+# Sanity checks for required environment variables.
+if [ -z "$BUILD_DARTPY" ]; then
+  echo "Info: Environment variable BUILD_DARTPY is unset. Using OFF by default."
+  BUILD_DARTPY=OFF
+fi
+
+if [ -z "$BUILD_DOCS" ]; then
+  echo "Info: Environment variable BUILD_DOCS is unset. Using OFF by default."
+  BUILD_DOCS=OFF
+fi
+
+if [ -z "$SUDO" ]; then
+  echo "Info: Environment variable SUDO is unset. Using sudo by default."
+  SUDO=sudo
+fi
+
+if [ -z "$COMPILER" ]; then
+  echo "Info: Environment variable COMPILER is unset. Using gcc by default."
+  COMPILER=gcc
+fi
+
 $SUDO apt-get -qq update
 $SUDO apt-get -y install lsb-release software-properties-common
 $SUDO apt-add-repository -y ppa:dartsim/ppa
