@@ -30,5 +30,4 @@ jobs:
         COMPILER: gcc
         BUILD_TYPE: Release
         RUN_TESTS: OFF
-        RUN_INSTALL_TEST: OFF
       run: '.ci/script.sh'
