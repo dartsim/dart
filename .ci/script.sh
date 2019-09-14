@@ -44,13 +44,13 @@ if [ -z "$CODECOV" ]; then
   CODECOV=OFF
 fi
 
-if [ -z "$OS_NAME" ]; then
-  echo "Error: Required environment variable OS_NAME is unset."
-  exit 1
+if [ -z "$BUILD_DIR" ]; then
+  echo "Error: Environment variable BUILD_DIR is unset. Using $PWD by default."
+  BUILD_DIR=$PWD
 fi
 
-if [ -z "$BUILD_DIR" ]; then
-  echo "Error: Required environment variable BUILD_DIR is unset."
+if [ -z "$OS_NAME" ]; then
+  echo "Error: Required environment variable OS_NAME is unset."
   exit 1
 fi
 
