@@ -1,0 +1,33 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: C/C++ CI
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+  schedule:
+    # Run every day at 02:00
+    - cron: '0 2 * * 0-6'
+
+jobs:
+  build:
+    name: Build on Ubuntu 16.04
+    runs-on: ubuntu-16.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+      run: '.ci/install.sh'
+    - name: Build
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        BUILD_TYPE: Release
+        RUN_TESTS: OFF
+      run: '.ci/script.sh'
