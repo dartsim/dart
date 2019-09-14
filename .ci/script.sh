@@ -45,7 +45,12 @@ if [ -z "$CODECOV" ]; then
 fi
 
 if [ -z "$OS_NAME" ]; then
-  echo "Error: Environment variable OS_NAME is unset."
+  echo "Error: Required environment variable OS_NAME is unset."
+  exit 1
+fi
+
+if [ -z "$BUILD_DIR" ]; then
+  echo "Error: Required environment variable BUILD_DIR is unset."
   exit 1
 fi
 
