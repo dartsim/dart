@@ -30,4 +30,5 @@ jobs:
         COMPILER: gcc
         BUILD_TYPE: Release
         RUN_TESTS: OFF
+        BUILD_DIR: $GITHUB_WORKSPACE
       run: '.ci/script.sh'
