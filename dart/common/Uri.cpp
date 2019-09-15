@@ -33,8 +33,8 @@
 #include "dart/common/Uri.hpp"
 
 #include <cassert>
-#include <sstream>
 #include <regex>
+#include <sstream>
 
 #include "dart/common/Console.hpp"
 

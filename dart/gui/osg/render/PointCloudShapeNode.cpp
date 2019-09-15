@@ -31,6 +31,7 @@
  */
 
 #include <osg/Billboard>
+#include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
@@ -62,6 +63,9 @@ public:
     setShape(mShape);
     setDataVariance(::osg::Object::DYNAMIC);
     getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+    getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+    getOrCreateStateSet()->setAttributeAndModes(
+        new ::osg::CullFace(::osg::CullFace::BACK));
   }
 
   void updateSize(double size)
@@ -100,6 +104,9 @@ public:
 
     setDataVariance(::osg::Object::DYNAMIC);
     getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+    getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+    getOrCreateStateSet()->setAttributeAndModes(
+        new ::osg::CullFace(::osg::CullFace::BACK));
   }
 
   void updateSize(double size)
@@ -147,6 +154,9 @@ public:
 
     setDataVariance(::osg::Object::DYNAMIC);
     getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+    getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+    getOrCreateStateSet()->setAttributeAndModes(
+        new ::osg::CullFace(::osg::CullFace::BACK));
   }
 
   void updateSize(double size)
