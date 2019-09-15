@@ -18,6 +18,7 @@
   * Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351), [#1355](https://github.com/dartsim/dart/pull/1355)
   * Updated ImGui to 1.71: [#1362](https://github.com/dartsim/dart/pull/1362)
   * Fixed refresh of LineSegmentShapeNode: [#1381](https://github.com/dartsim/dart/pull/1381)
+  * Fixed OSG transparent object sorting: [#1414](https://github.com/dartsim/dart/pull/1414)
 
 * Parser
 
