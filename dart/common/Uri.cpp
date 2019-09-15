@@ -33,17 +33,10 @@
 #include "dart/common/Uri.hpp"
 
 #include <cassert>
-#include <sstream>
 #include <regex>
+#include <sstream>
 
 #include "dart/common/Console.hpp"
-
-using std::regex;
-using std::regex_match;
-using std::regex_search;
-using std::smatch;
-using std::ssub_match;
-using std::regex_constants::match_continuous;
 
 static bool startsWith(const std::string& _target, const std::string& _prefix)
 {
@@ -196,9 +189,9 @@ void Uri::clear()
 bool Uri::fromString(const std::string& _input)
 {
   // This is regex is from Appendix B of RFC 3986.
-  static regex uriRegex(
+  static std::regex uriRegex(
       R"END(^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)END",
-      regex::extended | regex::optimize);
+      std::regex::extended | std::regex::optimize);
   static const std::size_t schemeIndex = 2;
   static const std::size_t authorityIndex = 4;
   static const std::size_t pathIndex = 5;
@@ -207,32 +200,32 @@ bool Uri::fromString(const std::string& _input)
 
   clear();
 
-  smatch matches;
+  std::smatch matches;
   if (!regex_match(_input, matches, uriRegex))
     return false;
 
   assert(matches.size() > schemeIndex);
-  const ssub_match& schemeMatch = matches[schemeIndex];
+  const std::ssub_match& schemeMatch = matches[schemeIndex];
   if (schemeMatch.matched)
     mScheme = schemeMatch;
 
   assert(matches.size() > authorityIndex);
-  const ssub_match& authorityMatch = matches[authorityIndex];
+  const std::ssub_match& authorityMatch = matches[authorityIndex];
   if (authorityMatch.matched)
     mAuthority = authorityMatch;
 
   assert(matches.size() > pathIndex);
-  const ssub_match& pathMatch = matches[pathIndex];
+  const std::ssub_match& pathMatch = matches[pathIndex];
   if (pathMatch.matched)
     mPath = pathMatch;
 
   assert(matches.size() > queryIndex);
-  const ssub_match& queryMatch = matches[queryIndex];
+  const std::ssub_match& queryMatch = matches[queryIndex];
   if (queryMatch.matched)
     mQuery = queryMatch;
 
   assert(matches.size() > fragmentIndex);
-  const ssub_match& fragmentMatch = matches[fragmentIndex];
+  const std::ssub_match& fragmentMatch = matches[fragmentIndex];
   if (fragmentMatch.matched)
     mFragment = fragmentMatch;
 
@@ -266,8 +259,9 @@ bool Uri::fromStringOrPath(const std::string& _input)
 
   // Assume that any URI begin with pattern [SINGLE_LETTER]:[/ or \\] is an
   // absolute path.
-  static regex windowsPathRegex(R"END([a-zA-Z]:[/|\\])END");
-  bool isPath = regex_search(_input, windowsPathRegex, match_continuous);
+  static std::regex windowsPathRegex(R"END([a-zA-Z]:[/|\\])END");
+  const bool isPath = std::regex_search(
+      _input, windowsPathRegex, std::regex_constants::match_continuous);
 
   if (isPath)
     return fromPath(_input);
@@ -275,8 +269,9 @@ bool Uri::fromStringOrPath(const std::string& _input)
 #else
 
   // Assume that any URI without a scheme is a path.
-  static regex uriSchemeRegex(R"END(^(([^:/?#]+):))END");
-  bool noScheme = !regex_search(_input, uriSchemeRegex, match_continuous);
+  static std::regex uriSchemeRegex(R"END(^(([^:/?#]+):))END");
+  const bool noScheme = !std::regex_search(
+      _input, uriSchemeRegex, std::regex_constants::match_continuous);
 
   if (noScheme)
     return fromPath(_input);

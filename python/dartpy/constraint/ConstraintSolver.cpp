@@ -96,6 +96,18 @@ void ConstraintSolver(py::module& m)
           +[](dart::constraint::ConstraintSolver* self) {
             self->removeAllConstraints();
           })
+  .def(
+      "getNumConstraints",
+      +[](const dart::constraint::ConstraintSolver* self) -> bool {
+        return self->getNumConstraints();
+      })
+  .def(
+      "getConstraint",
+      +[](dart::constraint::ConstraintSolver* self,
+          std::size_t index) -> constraint::ConstraintBasePtr {
+        return self->getConstraint(index);
+      },
+      ::py::arg("index"))
       .def(
           "clearLastCollisionResult",
           +[](dart::constraint::ConstraintSolver* self) {

@@ -44,6 +44,11 @@ void ConstraintBase(py::module& m)
       dart::constraint::ConstraintBase,
       std::shared_ptr<dart::constraint::ConstraintBase> >(m, "ConstraintBase")
       .def(
+          "getType",
+          +[](const dart::constraint::ConstraintBase* self) -> std::string {
+            return self->getType();
+          })
+      .def(
           "getDimension",
           +[](const dart::constraint::ConstraintBase* self) -> std::size_t {
             return self->getDimension();
