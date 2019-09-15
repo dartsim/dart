@@ -100,6 +100,19 @@ WeldJointConstraint::~WeldJointConstraint()
 }
 
 //==============================================================================
+const std::string& WeldJointConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& WeldJointConstraint::getStaticType()
+{
+  static const std::string name = "WeldJointConstraint";
+  return name;
+}
+
+//==============================================================================
 void WeldJointConstraint::update()
 {
   // mBodyNode1 should not be null pointer ever

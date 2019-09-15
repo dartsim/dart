@@ -91,6 +91,19 @@ BallJointConstraint::~BallJointConstraint()
 }
 
 //==============================================================================
+const std::string& BallJointConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BallJointConstraint::getStaticType()
+{
+  static const std::string name = "BallJointConstraint";
+  return name;
+}
+
+//==============================================================================
 void BallJointConstraint::update()
 {
   // mBodyNode1 should not be null pointer ever

@@ -71,6 +71,19 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* joint)
 }
 
 //==============================================================================
+const std::string& JointLimitConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& JointLimitConstraint::getStaticType()
+{
+  static const std::string name = "JointLimitConstraint";
+  return name;
+}
+
+//==============================================================================
 void JointLimitConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range

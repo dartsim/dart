@@ -89,6 +89,19 @@ MimicMotorConstraint::~MimicMotorConstraint()
 }
 
 //==============================================================================
+const std::string& MimicMotorConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& MimicMotorConstraint::getStaticType()
+{
+  static const std::string name = "MimicMotorConstraint";
+  return name;
+}
+
+//==============================================================================
 void MimicMotorConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
