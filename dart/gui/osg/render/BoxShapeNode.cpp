@@ -32,10 +32,8 @@
 
 #include "dart/gui/osg/render/BoxShapeNode.hpp"
 
-#include <osg/BlendFunc>
 #include <osg/CullFace>
 #include <osg/Geode>
-#include <osg/Material>
 #include <osg/ShapeDrawable>
 
 #include "dart/dynamics/BoxShape.hpp"
@@ -132,6 +130,8 @@ BoxShapeGeode::BoxShapeGeode(
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setAttributeAndModes(
+      new ::osg::CullFace(::osg::CullFace::BACK));
   extractData();
 }
 

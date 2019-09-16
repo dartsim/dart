@@ -47,8 +47,8 @@ void JointConstraint(py::module& m)
       std::shared_ptr<dart::constraint::JointConstraint>>(m, "JointConstraint")
       .def_static(
           "setErrorAllowance",
-          +[](double _allowance) {
-            dart::constraint::JointConstraint::setErrorAllowance(_allowance);
+          +[](double allowance) {
+            dart::constraint::JointConstraint::setErrorAllowance(allowance);
           },
           ::py::arg("allowance"))
       .def_static(
@@ -58,8 +58,8 @@ void JointConstraint(py::module& m)
           })
       .def_static(
           "setErrorReductionParameter",
-          +[](double _erp) {
-            dart::constraint::JointConstraint::setErrorReductionParameter(_erp);
+          +[](double erp) {
+            dart::constraint::JointConstraint::setErrorReductionParameter(erp);
           },
           ::py::arg("erp"))
       .def_static(
@@ -83,8 +83,8 @@ void JointConstraint(py::module& m)
           })
       .def_static(
           "setConstraintForceMixing",
-          +[](double _cfm) {
-            dart::constraint::JointConstraint::setConstraintForceMixing(_cfm);
+          +[](double cfm) {
+            dart::constraint::JointConstraint::setConstraintForceMixing(cfm);
           },
           ::py::arg("cfm"))
       .def_static("getConstraintForceMixing", +[]() -> double {
@@ -130,8 +130,8 @@ void JointConstraint(py::module& m)
       .def(
           "setRelativeTransform",
           +[](dart::constraint::WeldJointConstraint* self,
-              const Eigen::Isometry3d& _tf) {
-            self->setRelativeTransform(_tf);
+              const Eigen::Isometry3d& tf) {
+            self->setRelativeTransform(tf);
           },
           ::py::arg("tf"));
 }

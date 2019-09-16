@@ -204,9 +204,9 @@ HeightmapShapeGeode<S>::HeightmapShapeGeode(
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
-  getOrCreateStateSet()->setMode(GL_LIGHTING, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setAttributeAndModes(
       new ::osg::CullFace(::osg::CullFace::BACK));
+  getOrCreateStateSet()->setMode(GL_LIGHTING, ::osg::StateAttribute::ON);
   extractData();
 }
 
