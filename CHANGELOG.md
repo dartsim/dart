@@ -25,6 +25,7 @@
   * Fixed SDF parser not creating dynamics aspect for collision shape: [#1386](https://github.com/dartsim/dart/pull/1386)
   * Added root joint parsing option in URDF parser: [#1399](https://github.com/dartsim/dart/pull/1399), [#1406](https://github.com/dartsim/dart/pull/1406)
   * Enabled URDF parser to read visual and collision names: [#1410](https://github.com/dartsim/dart/pull/1410)
+  * Added (experimental) MJCF parser: [#1416](https://github.com/dartsim/dart/pull/1416)
 
 * dartpy
 
