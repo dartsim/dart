@@ -210,15 +210,27 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
         = getAttributeString(element, "inertiafromgeom");
     if (inertiafromgeom == "false")
     {
+#if DART_OS_WINDOWS
+      mInertiaFromGeom = InertiaFromGeom::IFG_FALSE;
+#else
       mInertiaFromGeom = InertiaFromGeom::FALSE;
+#endif
     }
     else if (inertiafromgeom == "true")
     {
+#if DART_OS_WINDOWS
+      mInertiaFromGeom = InertiaFromGeom::IFG_TRUE;
+#else
       mInertiaFromGeom = InertiaFromGeom::TRUE;
+#endif
     }
     else if (inertiafromgeom == "auto")
     {
+#if DART_OS_WINDOWS
+      mInertiaFromGeom = InertiaFromGeom::IFG_AUTO;
+#else
       mInertiaFromGeom = InertiaFromGeom::AUTO;
+#endif
     }
     else
     {

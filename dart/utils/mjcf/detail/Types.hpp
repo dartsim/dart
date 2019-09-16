@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_MJCF_DETAIL_TYPES_HPP_
 #define DART_UTILS_MJCF_DETAIL_TYPES_HPP_
 
+#include "dart/common/Platform.hpp"
+
 namespace dart {
 namespace utils {
 namespace MjcfParser {
@@ -75,9 +77,15 @@ enum class Integrator
 
 enum class InertiaFromGeom
 {
+#if DART_OS_WINDOWS
+  IFG_FALSE,
+  IFG_TRUE,
+  IFG_AUTO,
+#else
   FALSE,
   TRUE,
   AUTO,
+#endif
 };
 
 enum class CollisionType

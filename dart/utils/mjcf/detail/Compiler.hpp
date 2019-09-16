@@ -36,6 +36,7 @@
 #include <Eigen/Core>
 #include <tinyxml2.h>
 
+#include "dart/common/Platform.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
@@ -98,7 +99,11 @@ private:
   bool mConvexHull{true};
   bool mUserThread{true};
   bool mFuseStatic{false};
+#if DART_OS_WINDOWS
+  InertiaFromGeom mInertiaFromGeom{InertiaFromGeom::IFG_AUTO};
+#else
   InertiaFromGeom mInertiaFromGeom{InertiaFromGeom::AUTO};
+#endif
   Eigen::Vector2i mInertiaGroupRange{Eigen::Vector2i(0, 5)};
 };
 
