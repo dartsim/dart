@@ -32,11 +32,6 @@
 
 #include "dart/constraint/ConstraintBase.hpp"
 
-#include <cmath>
-#include <cstring>
-#include <iomanip>
-#include <iostream>
-
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
@@ -45,11 +40,24 @@ namespace constraint {
 //==============================================================================
 ConstraintBase::ConstraintBase() : mDim(0)
 {
+  // Do nothing
 }
 
 //==============================================================================
 ConstraintBase::~ConstraintBase()
 {
+  // Do nothing
+}
+
+//==============================================================================
+const std::string& ConstraintBase::getType() const
+{
+  dterr << "[ConstraintBase::getType] This function is for backward "
+        << "compatibility, but must not be called. Please override this "
+        << "function in the concrete constraint class.\n";
+
+  static const std::string type = "ConstraintBase";
+  return type;
 }
 
 //==============================================================================

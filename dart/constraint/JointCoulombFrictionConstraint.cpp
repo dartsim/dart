@@ -78,6 +78,19 @@ JointCoulombFrictionConstraint::~JointCoulombFrictionConstraint()
 }
 
 //==============================================================================
+const std::string& JointCoulombFrictionConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& JointCoulombFrictionConstraint::getStaticType()
+{
+  static const std::string name = "JointCoulombFrictionConstraint";
+  return name;
+}
+
+//==============================================================================
 void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
