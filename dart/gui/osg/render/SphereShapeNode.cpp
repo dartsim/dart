@@ -30,16 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/SphereShapeNode.hpp"
+
+#include <osg/BlendFunc>
+#include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Light>
 #include <osg/Material>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/SphereShapeNode.hpp"
-
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -137,6 +139,7 @@ SphereShapeGeode::SphereShapeGeode(
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   extractData();
 }
 

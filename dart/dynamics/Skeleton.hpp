@@ -1167,6 +1167,8 @@ protected:
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
+  void updateNameManagerNames();
+
 protected:
   /// The resource-managing pointer to this Skeleton
   std::weak_ptr<Skeleton> mPtr;

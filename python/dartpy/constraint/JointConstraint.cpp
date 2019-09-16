@@ -107,7 +107,10 @@ void JointConstraint(py::module& m)
               const Eigen::Vector3d&>(),
           ::py::arg("body1"),
           ::py::arg("body2"),
-          ::py::arg("jointPos"));
+          ::py::arg("jointPos"))
+      .def_static("getStaticType", +[]() -> std::string {
+        return dart::constraint::BallJointConstraint::getStaticType();
+      });
 
   ::py::class_<
       dart::constraint::WeldJointConstraint,
@@ -119,6 +122,11 @@ void JointConstraint(py::module& m)
           ::py::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
           ::py::arg("body1"),
           ::py::arg("body2"))
+      .def_static(
+          "getStaticType",
+          +[]() -> std::string {
+            return dart::constraint::WeldJointConstraint::getStaticType();
+          })
       .def(
           "setRelativeTransform",
           +[](dart::constraint::WeldJointConstraint* self,

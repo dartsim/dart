@@ -30,22 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/MeshShapeNode.hpp"
+
 #include <map>
 
 #include <boost/filesystem.hpp>
-
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/MeshShapeNode.hpp"
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -513,8 +512,7 @@ MeshShapeGeode::MeshShapeGeode(
     mMainNode(parentNode)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setAttributeAndModes(
-      new ::osg::CullFace(::osg::CullFace::BACK));
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   extractData(true);
 }
 

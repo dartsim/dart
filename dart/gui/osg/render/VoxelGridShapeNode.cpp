@@ -59,6 +59,7 @@ public:
     setShape(mShape);
     setDataVariance(::osg::Object::DYNAMIC);
     getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+    getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   }
 
   void updateSize(double size)

@@ -61,6 +61,12 @@ public:
   /// Destructor
   virtual ~WeldJointConstraint();
 
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Returns constraint type for this class.
+  static const std::string& getStaticType();
+
 protected:
   //----------------------------------------------------------------------------
   // Constraint virtual functions

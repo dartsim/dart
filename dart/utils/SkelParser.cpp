@@ -1390,7 +1390,8 @@ dynamics::ShapePtr readShape(
     std::string filename = getValueString(meshEle, "file_name");
     Eigen::Vector3d scale = getValueVector3d(meshEle, "scale");
 
-    const std::string meshUri = common::Uri::getRelativeUri(baseUri, filename);
+    const common::Uri meshUri
+        = common::Uri::createFromRelativeUri(baseUri, filename);
     const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, retriever);
     if (model)
     {
@@ -1432,6 +1433,7 @@ dynamics::Marker::BasicProperties readMarker(
   return newMarker;
 }
 
+//==============================================================================
 void readJoint(
     tinyxml2::XMLElement* _jointElement,
     const BodyMap& _bodyNodes,

@@ -74,6 +74,9 @@ struct ConstraintInfo
 class ConstraintBase
 {
 public:
+  /// Returns a string representing the constraint type
+  virtual const std::string& getType() const;
+
   /// Return dimesion of this constranit
   std::size_t getDimension() const;
 

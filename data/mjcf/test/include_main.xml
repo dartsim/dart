@@ -1,0 +1,12 @@
+<mujoco>
+    <include file="include_default.xml" />
+
+    <worldbody>
+        <geom type="box" />
+        <body childclass="sub" name="body0">
+            <geom type="ellipsoid"/>
+            <geom type="sphere" rgba="0 0 1 0"/>
+            <geom type="cylinder" class="main"/>
+        </body>
+    </worldbody>
+</mujoco>

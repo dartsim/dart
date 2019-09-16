@@ -243,6 +243,19 @@ ContactConstraint::ContactConstraint(
 }
 
 //==============================================================================
+const std::string& ContactConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& ContactConstraint::getStaticType()
+{
+  static const std::string name = "ContactConstraint";
+  return name;
+}
+
+//==============================================================================
 void ContactConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range

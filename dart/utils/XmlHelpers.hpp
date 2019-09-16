@@ -34,9 +34,13 @@
 #define DART_UTILS_XMLHELPERS_HPP_
 
 #include <string>
+
 #include <Eigen/Dense>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <tinyxml2.h>
 
+#include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/math/MathTypes.hpp"
@@ -64,10 +68,52 @@ float toFloat(const std::string& str);
 double toDouble(const std::string& str);
 char toChar(const std::string& str);
 Eigen::Vector2d toVector2d(const std::string& str);
+Eigen::Vector2i toVector2i(const std::string& str);
 Eigen::Vector3d toVector3d(const std::string& str);
 Eigen::Vector3i toVector3i(const std::string& str);
+Eigen::Vector4d toVector4d(const std::string& str);
 Eigen::Vector6d toVector6d(const std::string& str);
 Eigen::VectorXd toVectorXd(const std::string& str);
+template <std::size_t N>
+Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
+{
+  Eigen::Matrix<double, N, 1> ret = Eigen::Matrix<double, N, 1>::Zero();
+
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(
+      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  std::size_t sizeToRead = std::min(N, pieces.size());
+  if (pieces.size() < N)
+  {
+    dterr << "Failed to read a vector because the dimension '" << pieces.size()
+          << "' is less than the expectation '" << N << "'.\n";
+  }
+  else if (pieces.size() > N)
+  {
+    dterr << "Failed to read a vector because the dimension '" << pieces.size()
+          << "' is greater than the expectation '" << N << "'.\n";
+  }
+
+  for (std::size_t i = 0; i < sizeToRead; ++i)
+  {
+    if (pieces[i] != "")
+    {
+      try
+      {
+        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+        dterr << "value [" << pieces[i]
+              << "] is not a valid double for Eigen::Vector" << N << "d[" << i
+              << "]: " << e.what() << "\n";
+      }
+    }
+  }
+
+  return ret;
+}
 // TODO: The definition of _str is not clear for transform (see: #250)
 Eigen::Isometry3d toIsometry3d(const std::string& str);
 Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str);
@@ -101,10 +147,16 @@ Eigen::Isometry3d getValueIsometry3d(
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
 
+// TODO(JS): Deprecate
 void openXMLFile(
     tinyxml2::XMLDocument& doc,
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
+
+bool readXmlFile(
+    tinyxml2::XMLDocument& doc,
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retrieverOrNullPtr = nullptr);
 
 bool hasElement(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
@@ -140,14 +192,25 @@ double getAttributeDouble(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 char getAttributeChar(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
+Eigen::Vector2i getAttributeVector2i(
+    const tinyxml2::XMLElement* element, const std::string& attributeName);
 Eigen::Vector2d getAttributeVector2d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 Eigen::Vector3d getAttributeVector3d(
+    const tinyxml2::XMLElement* element, const std::string& attributeName);
+Eigen::Vector4d getAttributeVector4d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 Eigen::Vector6d getAttributeVector6d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 Eigen::VectorXd getAttributeVectorXd(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
+template <std::size_t N>
+Eigen::Matrix<double, N, 1> getAttributeVectorNd(
+    const tinyxml2::XMLElement* element, const std::string& attributeName)
+{
+  const std::string val = getAttributeString(element, attributeName);
+  return toVectorNd<N>(val);
+}
 
 /// TemplatedElementEnumerator is a convenience class to help visiting all the
 /// child elements of given parent element. This class is templated to cover
@@ -259,6 +322,11 @@ private:
 using ElementEnumerator = TemplatedElementEnumerator<tinyxml2::XMLElement>;
 using ConstElementEnumerator
     = TemplatedElementEnumerator<const tinyxml2::XMLElement>;
+
+bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src);
+
+bool copyChildNodes(
+    tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src);
 
 } // namespace utils
 } // namespace dart

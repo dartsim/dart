@@ -321,6 +321,19 @@ SoftContactConstraint::~SoftContactConstraint()
 }
 
 //==============================================================================
+const std::string& SoftContactConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& SoftContactConstraint::getStaticType()
+{
+  static const std::string name = "SoftContactConstraint";
+  return name;
+}
+
+//==============================================================================
 void SoftContactConstraint::setErrorAllowance(double _allowance)
 {
   // Clamp error reduction parameter if it is out of the range

@@ -85,6 +85,19 @@ HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
 }
 
 //==============================================================================
+const std::string& HumanArmJointLimitConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& HumanArmJointLimitConstraint::getStaticType()
+{
+  static const std::string name = "HumanArmJointLimitConstraint";
+  return name;
+}
+
+//==============================================================================
 void HumanArmJointLimitConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range

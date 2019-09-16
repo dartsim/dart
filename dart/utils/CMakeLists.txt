@@ -39,6 +39,7 @@ function(dart_add_utils_sources)
 endfunction(dart_add_utils_sources)
 
 # Add subdirectories
+add_subdirectory(mjcf)
 add_subdirectory(sdf)
 
 get_property(dart_utils_headers GLOBAL PROPERTY DART_UTILS_HEADERS)
@@ -66,6 +67,7 @@ endif()
 set(
   header_names
   ${header_names}
+  mjcf/mjcf.hpp
   sdf/sdf.hpp
 )
 dart_generate_include_header_file(

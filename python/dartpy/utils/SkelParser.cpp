@@ -43,9 +43,14 @@ void SkelParser(py::module& m)
 {
   auto sm = m.def_submodule("SkelParser");
 
-  sm.def("readWorld", +[](const common::Uri& uri) -> simulation::WorldPtr {
-    return utils::SkelParser::readWorld(uri);
-  });
+  sm.def(
+      "readWorld",
+      +[](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+          -> simulation::WorldPtr {
+        return utils::SkelParser::readWorld(uri, retriever);
+      },
+      ::py::arg("uri"),
+      ::py::arg_v("retriever", nullptr));
 }
 
 } // namespace python
