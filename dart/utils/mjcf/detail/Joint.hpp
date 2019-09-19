@@ -35,7 +35,6 @@
 
 #include <tinyxml2.h>
 
-#include "dart/common/Optional.hpp"
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Default.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"

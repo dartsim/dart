@@ -41,7 +41,6 @@
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
 #include "dart/utils/mjcf/detail/Mesh.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 
 namespace dart {
 namespace utils {

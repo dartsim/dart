@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_MJCF_DETAIL_EQUALITY_HPP_
 #define DART_UTILS_MJCF_DETAIL_EQUALITY_HPP_
 
+#include <vector>
+
 #include <tinyxml2.h>
 
 #include "dart/utils/mjcf/detail/Error.hpp"

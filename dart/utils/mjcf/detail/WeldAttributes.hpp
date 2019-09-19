@@ -38,7 +38,6 @@
 
 #include "dart/common/Optional.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 
 namespace dart {
 namespace utils {

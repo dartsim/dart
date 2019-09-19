@@ -33,6 +33,7 @@
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 
 #include <boost/filesystem.hpp>
+
 #include "dart/utils/XmlHelpers.hpp"
 
 namespace dart {

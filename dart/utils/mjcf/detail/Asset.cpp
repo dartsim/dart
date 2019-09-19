@@ -33,8 +33,6 @@
 #include "dart/utils/mjcf/detail/Asset.hpp"
 
 #include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/mjcf/detail/Body.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
 
 namespace dart {
 namespace utils {

@@ -33,12 +33,11 @@
 #ifndef DART_UTILS_MJCF_DETAIL_MESHATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_MESHATTRIBUTES_HPP_
 
+#include <Eigen/Core>
 #include <tinyxml2.h>
 
 #include "dart/common/Optional.hpp"
-#include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 
 namespace dart {
 namespace utils {

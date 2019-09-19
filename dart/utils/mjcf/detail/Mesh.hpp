@@ -35,12 +35,10 @@
 
 #include <tinyxml2.h>
 
-#include "dart/common/Optional.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
 #include "dart/utils/mjcf/detail/MeshAttributes.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 
 namespace dart {
 namespace utils {

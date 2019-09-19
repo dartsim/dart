@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_MJCF_DETAIL_SITE_HPP_
 #define DART_UTILS_MJCF_DETAIL_SITE_HPP_
 
+#include <string>
+
 #include <tinyxml2.h>
 
 #include "dart/common/Optional.hpp"

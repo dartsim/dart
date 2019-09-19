@@ -42,7 +42,6 @@
 #include "dart/utils/mjcf/detail/Inertial.hpp"
 #include "dart/utils/mjcf/detail/Joint.hpp"
 #include "dart/utils/mjcf/detail/Site.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 
 namespace dart {
 namespace utils {

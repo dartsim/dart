@@ -44,7 +44,6 @@
 #include "dart/utils/mjcf/detail/Error.hpp"
 #include "dart/utils/mjcf/detail/Option.hpp"
 #include "dart/utils/mjcf/detail/Size.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 #include "dart/utils/mjcf/detail/Worldbody.hpp"
 
 namespace dart {

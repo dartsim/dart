@@ -33,18 +33,22 @@
 #ifndef DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 
+#include <string>
+
+#include <Eigen/Dense>
 #include <tinyxml2.h>
 
 #include "dart/common/Optional.hpp"
+#include "dart/math/MathTypes.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
 #include "dart/utils/mjcf/detail/Inertial.hpp"
-#include "dart/utils/mjcf/detail/Size.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 
 namespace dart {
 namespace utils {
 namespace MjcfParser {
 namespace detail {
+
+class Size;
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#body

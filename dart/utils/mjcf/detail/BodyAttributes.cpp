@@ -32,12 +32,8 @@
 
 #include "dart/utils/mjcf/detail/BodyAttributes.hpp"
 
-#include <string>
-
 #include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Size.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
 
 namespace dart {
