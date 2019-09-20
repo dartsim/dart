@@ -2,6 +2,10 @@
 
 ### [DART 6.10.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
+* Common
+
+  * Removed use of boost::filesystem in public APIs: [#1417](https://github.com/dartsim/dart/pull/1417)
+
 * Kinematics
 
   * Added IkFast parameter accessors to IkFast class: [#1396](https://github.com/dartsim/dart/pull/1396)
