@@ -81,8 +81,7 @@ SharedLibrary::SharedLibrary(
     ProtectedConstructionTag, const std::string& canonicalPath)
   : mCanonicalPath(canonicalPath), mPath(canonicalPath), mInstance(nullptr)
 {
-  mInstance
-      = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.c_str()));
+  mInstance = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.c_str()));
 
   if (!mInstance)
   {

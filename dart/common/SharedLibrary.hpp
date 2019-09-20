@@ -38,8 +38,8 @@
 
 #include <boost/filesystem.hpp>
 
-#include "dart/common/Platform.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Platform.hpp"
 
 #if DART_OS_LINUX
 
