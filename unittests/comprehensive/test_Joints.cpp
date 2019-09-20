@@ -830,6 +830,55 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
 }
 
 //==============================================================================
+TEST_F(JOINTS, SpringRestPosition)
+{
+  using namespace math::suffixes;
+
+  auto skel = createPendulum(Joint::ActuatorType::PASSIVE);
+  ASSERT_NE(skel, nullptr);
+
+  auto joint = skel->getRootJoint();
+  ASSERT_NE(joint, nullptr);
+
+  auto world = simulation::World::create();
+  ASSERT_NE(world, nullptr);
+
+  world->addSkeleton(skel);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  joint->setPosition(0, 0);
+  joint->setRestPosition(0, -1.0_pi);
+  joint->setPositionLowerLimit(0, -0.5_pi);
+  joint->setPositionUpperLimit(0, +0.5_pi);
+  joint->setSpringStiffness(0, 5);
+
+  EXPECT_DOUBLE_EQ(joint->getPosition(0), 0);
+
+  const auto tol = 1e-3;
+
+  // Joint starts from 0 and rotates towards its spring rest position (i.e.,
+  // -pi), but it also should stay within the joint limits
+  // (i.e., [-0.5pi, 0.5pi]).
+  for (auto i = 0u; i < 1000; ++i)
+  {
+    world->step();
+    const auto pos = joint->getPosition(0);
+    EXPECT_GE(pos, joint->getPositionLowerLimit(0) - tol);
+    EXPECT_LE(pos, joint->getPositionUpperLimit(0) + tol);
+  }
+
+  // After a while, the joint should come to rest at its lower position limit.
+  for (auto i = 0u; i < 500; ++i)
+  {
+    world->step();
+    const auto pos = joint->getPosition(0);
+    EXPECT_GE(pos, joint->getPositionLowerLimit(0) - tol);
+    EXPECT_LE(pos, joint->getPositionUpperLimit(0) + tol);
+    EXPECT_NEAR(pos, joint->getPositionLowerLimit(0), tol);
+  }
+}
+
+//==============================================================================
 void testServoMotor()
 {
   using namespace dart::math::suffixes;
