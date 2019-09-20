@@ -59,16 +59,29 @@ namespace common {
 std::shared_ptr<SharedLibrary> SharedLibrary::create(
     const boost::filesystem::path& path)
 {
+  return create(path.string());
+}
+
+//==============================================================================
+std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
+{
   return detail::SharedLibraryManager::getSingleton().load(path);
 }
 
 //==============================================================================
 SharedLibrary::SharedLibrary(
     ProtectedConstructionTag, const boost::filesystem::path& canonicalPath)
-  : mCanonicalPath(canonicalPath), mInstance(nullptr)
+  : SharedLibrary(ProtectedConstruction, canonicalPath.string())
 {
-  mInstance
-      = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.string().c_str()));
+  // Do nothing
+}
+
+//==============================================================================
+SharedLibrary::SharedLibrary(
+    ProtectedConstructionTag, const std::string& canonicalPath)
+  : mCanonicalPath(canonicalPath), mPath(canonicalPath), mInstance(nullptr)
+{
+  mInstance = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.c_str()));
 
   if (!mInstance)
   {
@@ -86,7 +99,7 @@ SharedLibrary::~SharedLibrary()
   if (DYNLIB_UNLOAD(mInstance))
   {
     dterr << "[SharedLibrary::~SharedLibrary] Failed to unload library '"
-          << mCanonicalPath << "': " << getLastError() << "\n";
+          << mPath << "': " << getLastError() << "\n";
   }
 }
 
@@ -94,6 +107,12 @@ SharedLibrary::~SharedLibrary()
 const boost::filesystem::path& SharedLibrary::getCanonicalPath() const
 {
   return mCanonicalPath;
+}
+
+//==============================================================================
+const std::string& SharedLibrary::path() const
+{
+  return mPath;
 }
 
 //==============================================================================
