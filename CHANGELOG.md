@@ -12,6 +12,7 @@
   * Fixed soft body simulation when command input is not resetted: [#1372](https://github.com/dartsim/dart/pull/1372)
   * Added joint velocity limit constraint support: [#1407](https://github.com/dartsim/dart/pull/1407)
   * Added type property to constrain classes: [#1415](https://github.com/dartsim/dart/pull/1415)
+  * Allowed to set joint rest position out of joint limits: [#1418](https://github.com/dartsim/dart/pull/1418)
 
 * GUI
 
