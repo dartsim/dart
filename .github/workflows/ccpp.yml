@@ -29,5 +29,5 @@ jobs:
         OS_NAME: linux
         COMPILER: gcc
         BUILD_TYPE: Release
-        RUN_TESTS: OFF
+        RUN_TESTS: ON
       run: '.ci/script.sh'
