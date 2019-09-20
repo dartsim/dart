@@ -665,19 +665,7 @@ const std::string& Skeleton::setName(const std::string& _name)
   const std::string oldName = mAspectProperties.mName;
   mAspectProperties.mName = _name;
 
-  mNameMgrForBodyNodes.setManagerName(
-      "Skeleton::BodyNode | " + mAspectProperties.mName);
-  mNameMgrForSoftBodyNodes.setManagerName(
-      "Skeleton::SoftBodyNode | " + mAspectProperties.mName);
-  mNameMgrForJoints.setManagerName(
-      "Skeleton::Joint | " + mAspectProperties.mName);
-  mNameMgrForDofs.setManagerName(
-      "Skeleton::DegreeOfFreedom | " + mAspectProperties.mName);
-
-  for (auto& mgr : mNodeNameMgrMap)
-    mgr.second.setManagerName(
-        std::string("Skeleton::") + mgr.first.name() + " | "
-        + mAspectProperties.mName);
+  updateNameManagerNames();
 
   ConstMetaSkeletonPtr me = mPtr.lock();
   mNameChangedSignal.raise(me, oldName, mAspectProperties.mName);
@@ -720,6 +708,26 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
   // its name has already been resolved against all the BodyNodes, which
   // includes all SoftBodyNodes.
   mNameMgrForSoftBodyNodes.addName(_newNode->getName(), _newNode);
+}
+
+//==============================================================================
+void Skeleton::updateNameManagerNames()
+{
+  mNameMgrForBodyNodes.setManagerName(
+      "Skeleton::BodyNode | " + mAspectProperties.mName);
+  mNameMgrForSoftBodyNodes.setManagerName(
+      "Skeleton::SoftBodyNode | " + mAspectProperties.mName);
+  mNameMgrForJoints.setManagerName(
+      "Skeleton::Joint | " + mAspectProperties.mName);
+  mNameMgrForDofs.setManagerName(
+      "Skeleton::DegreeOfFreedom | " + mAspectProperties.mName);
+
+  for (auto& mgr : mNodeNameMgrMap)
+  {
+    mgr.second.setManagerName(
+        std::string("Skeleton::") + mgr.first.name() + " | "
+        + mAspectProperties.mName);
+  }
 }
 
 //==============================================================================
@@ -2127,6 +2135,8 @@ Skeleton::Skeleton(const AspectPropertiesData& properties)
   createAspect<Aspect>(properties);
   createAspect<detail::BodyNodeVectorProxyAspect>();
   createAspect<detail::JointVectorProxyAspect>();
+
+  updateNameManagerNames();
 }
 
 //==============================================================================

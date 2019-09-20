@@ -135,10 +135,11 @@ def test_BallJoint_positions_conversion():
     for i in range(30):
         ballJointPos = np.random.uniform(-np.pi/2, np.pi/2, 3)
         assert np.allclose(
-            dart.dynamics.BallJoint.convertToPositions(
-                dart.dynamics.BallJoint.convertToRotation(ballJointPos)
-            ),
-            ballJointPos
+            dart.dynamics.BallJoint.convertToRotation(
+                dart.dynamics.BallJoint.convertToPositions(
+                    dart.dynamics.BallJoint.convertToRotation(ballJointPos)
+                )),
+            dart.dynamics.BallJoint.convertToRotation(ballJointPos)
         )
 
 

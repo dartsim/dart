@@ -167,14 +167,18 @@ endif()
 if(MSVC)
 
   # Visual Studio enables C++14 support by default
-  if(MSVC_VERSION VERSION_LESS 1900)
-    message(FATAL_ERROR "${PROJECT_NAME} requires VS2017 or greater.")
+  set(msvc_required_version 1920)
+  if(MSVC_VERSION VERSION_LESS ${msvc_required_version})
+    message(FATAL_ERROR "Visual Studio ${MSVC_VERSION} is detected, but "
+      "${PROJECT_NAME_UPPERCASE} requires ${msvc_required_version} or greater."
+    )
   endif()
+
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase-")
-  #set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
@@ -189,9 +193,7 @@ if(MSVC)
   add_compile_options(/wd4305)
   add_compile_options(/wd4838)
   add_compile_options(/bigobj)
-  if(MSVC_VERSION GREATER_EQUAL 1915)
-    add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
-  endif()
+  add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 

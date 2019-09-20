@@ -130,9 +130,7 @@ void JointConstraint(py::module& m)
       .def(
           "setRelativeTransform",
           +[](dart::constraint::WeldJointConstraint* self,
-              const Eigen::Isometry3d& tf) {
-            self->setRelativeTransform(tf);
-          },
+              const Eigen::Isometry3d& tf) { self->setRelativeTransform(tf); },
           ::py::arg("tf"));
 }
 

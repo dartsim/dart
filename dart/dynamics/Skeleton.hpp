@@ -322,40 +322,15 @@ public:
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
-#ifdef _WIN32
-  template <typename JointType>
-  static typename JointType::Properties createJointProperties()
-  {
-    return typename JointType::Properties();
-  }
-
-  template <typename NodeType>
-  static typename NodeType::Properties createBodyNodeProperties()
-  {
-    return typename NodeType::Properties();
-  }
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
-
   /// Create a Joint and child BodyNode pair of the given types. When creating
   /// a root (parentless) BodyNode, pass in nullptr for the _parent argument.
   template <class JointType, class NodeType = BodyNode>
   std::pair<JointType*, NodeType*> createJointAndBodyNodePair(
       BodyNode* _parent = nullptr,
-#ifdef _WIN32
-      const typename JointType::Properties& _jointProperties
-      = Skeleton::createJointProperties<JointType>(),
-      const typename NodeType::Properties& _bodyProperties
-      = Skeleton::createBodyNodeProperties<NodeType>());
-#else
       const typename JointType::Properties& _jointProperties
       = typename JointType::Properties(),
       const typename NodeType::Properties& _bodyProperties
       = typename NodeType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   // Documentation inherited
   std::size_t getNumBodyNodes() const override;
@@ -1166,6 +1141,8 @@ protected:
 
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
+
+  void updateNameManagerNames();
 
 protected:
   /// The resource-managing pointer to this Skeleton

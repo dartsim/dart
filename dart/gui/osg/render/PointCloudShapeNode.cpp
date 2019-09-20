@@ -496,6 +496,8 @@ public:
       mGeometry->setDataVariance(::osg::Object::STATIC);
       mGeometry->getOrCreateStateSet()->setMode(
           GL_BLEND, ::osg::StateAttribute::ON);
+      mGeometry->getOrCreateStateSet()->setRenderingHint(
+          ::osg::StateSet::TRANSPARENT_BIN);
       mGeometry->addPrimitiveSet(mPrimitiveSet);
       mGeometry->getOrCreateStateSet()->setAttribute(
           mPoint, ::osg::StateAttribute::ON);

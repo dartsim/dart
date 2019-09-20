@@ -37,6 +37,9 @@ if(TARGET dart-utils)
   dart_add_test("unit" test_PackageResourceRetriever)
   target_link_libraries(test_PackageResourceRetriever dart-utils)
 
+  dart_add_test("unit" test_MjcfParser)
+  target_link_libraries(test_MjcfParser dart-utils)
+
   dart_add_test("unit" test_SdfParser)
   target_link_libraries(test_SdfParser dart-utils)
 

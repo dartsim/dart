@@ -323,22 +323,6 @@ public:
   /// version.
   bool moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent);
 
-#ifdef _WIN32
-  template <typename JointType>
-  static typename JointType::Properties createJointProperties()
-  {
-    return typename JointType::Properties();
-  }
-
-  template <typename NodeType>
-  static typename NodeType::Properties createBodyNodeProperties()
-  {
-    return typename NodeType::Properties();
-  }
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
-
   /// A version of moveTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode. This function returns the pointer to the
   /// newly created Joint. The original parent Joint will be deleted.
@@ -350,15 +334,8 @@ public:
   template <class JointType>
   JointType* moveTo(
       BodyNode* _newParent,
-#ifdef _WIN32
-      const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>());
-#else
       const typename JointType::Properties& _joint
       = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// A version of moveTo(SkeletonPtr, BodyNode*) that also changes the Joint
   /// type of the parent Joint of this BodyNode. This function returns the
@@ -367,15 +344,8 @@ public:
   JointType* moveTo(
       const SkeletonPtr& _newSkeleton,
       BodyNode* _newParent,
-#ifdef _WIN32
-      const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>());
-#else
       const typename JointType::Properties& _joint
       = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// Remove this BodyNode and all of its children (recursively) from their
   /// current Skeleton and move them into a newly created Skeleton. The newly
@@ -394,15 +364,8 @@ public:
   template <class JointType>
   SkeletonPtr split(
       const std::string& _skeletonName,
-#ifdef _WIN32
-      const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>());
-#else
       const typename JointType::Properties& _joint
       = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// Change the Joint type of this BodyNode's parent Joint.
   ///
@@ -410,15 +373,8 @@ public:
   /// BodyNodes and Joints in the Skeleton.
   template <class JointType>
   JointType* changeParentJointType(
-#ifdef _WIN32
-      const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>());
-#else
       const typename JointType::Properties& _joint
       = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// Create clones of this BodyNode and all of its children recursively (unless
   /// _recursive is set to false) and attach the clones to the specified
@@ -451,16 +407,9 @@ public:
   template <class JointType>
   std::pair<JointType*, BodyNode*> copyTo(
       BodyNode* _newParent,
-#ifdef _WIN32
-      const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>(),
-#else
       const typename JointType::Properties& _joint
       = typename JointType::Properties(),
-#endif
       bool _recursive = true);
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// A version of copyTo(Skeleton*,BodyNode*) that also changes the Joint type
   /// of the parent Joint of this BodyNode.
@@ -468,16 +417,9 @@ public:
   std::pair<JointType*, BodyNode*> copyTo(
       const SkeletonPtr& _newSkeleton,
       BodyNode* _newParent,
-#ifdef _WIN32
-      const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>(),
-#else
       const typename JointType::Properties& _joint
       = typename JointType::Properties(),
-#endif
       bool _recursive = true) const;
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// Create clones of this BodyNode and all of its children (recursively) and
   /// create a new Skeleton with the specified name to attach them to. The
@@ -491,16 +433,9 @@ public:
   template <class JointType>
   SkeletonPtr copyAs(
       const std::string& _skeletonName,
-#ifdef _WIN32
-      const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>(),
-#else
       const typename JointType::Properties& _joint
       = typename JointType::Properties(),
-#endif
       bool _recursive = true) const;
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   // Documentation inherited
   SkeletonPtr getSkeleton() override;
@@ -523,19 +458,10 @@ public:
   /// Create a Joint and BodyNode pair as a child of this BodyNode
   template <class JointType, class NodeType = BodyNode>
   std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
-#ifdef _WIN32
-      const typename JointType::Properties& _jointProperties
-      = BodyNode::createJointProperties<JointType>(),
-      const typename NodeType::Properties& _bodyProperties
-      = BodyNode::createBodyNodeProperties<NodeType>());
-#else
       const typename JointType::Properties& _jointProperties
       = typename JointType::Properties(),
       const typename NodeType::Properties& _bodyProperties
       = typename NodeType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// Return the number of child BodyNodes
   std::size_t getNumChildBodyNodes() const;

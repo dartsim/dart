@@ -202,6 +202,37 @@ Eigen::Vector2d toVector2d(const std::string& str)
 }
 
 //==============================================================================
+Eigen::Vector2i toVector2i(const std::string& str)
+{
+  Eigen::Vector2i ret;
+
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(
+      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  assert(pieces.size() == 2);
+
+  for (std::size_t i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
+    {
+      try
+      {
+        ret(i) = boost::lexical_cast<int>(pieces[i].c_str());
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value [" << pieces[i]
+                  << "] is not a valid double for Eigen::Vector2i[" << i
+                  << "]: " << e.what() << std::endl;
+      }
+    }
+  }
+
+  return ret;
+}
+
+//==============================================================================
 Eigen::Vector3d toVector3d(const std::string& str)
 {
   Eigen::Vector3d ret;
@@ -255,6 +286,37 @@ Eigen::Vector3i toVector3i(const std::string& str)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid int for Eigen::Vector3i[" << i
+                  << "]: " << e.what() << std::endl;
+      }
+    }
+  }
+
+  return ret;
+}
+
+//==============================================================================
+Eigen::Vector4d toVector4d(const std::string& str)
+{
+  Eigen::Vector4d ret;
+
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(
+      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  assert(pieces.size() == 4);
+
+  for (std::size_t i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
+    {
+      try
+      {
+        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value [" << pieces[i]
+                  << "] is not a valid double for Eigen::Vector4d[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -614,6 +676,54 @@ tinyxml2::XMLElement* getElement(
 }
 
 //==============================================================================
+std::string toString(tinyxml2::XMLError errorCode)
+{
+  switch (errorCode)
+  {
+    case tinyxml2::XMLError::XML_SUCCESS:
+      return "XML_SUCCESS";
+    case tinyxml2::XMLError::XML_NO_ATTRIBUTE:
+      return "XML_NO_ATTRIBUTE";
+    case tinyxml2::XMLError::XML_WRONG_ATTRIBUTE_TYPE:
+      return "XML_WRONG_ATTRIBUTE_TYPE";
+    case tinyxml2::XMLError::XML_ERROR_FILE_NOT_FOUND:
+      return "XML_ERROR_FILE_NOT_FOUND";
+    case tinyxml2::XMLError::XML_ERROR_FILE_COULD_NOT_BE_OPENED:
+      return "XML_ERROR_FILE_COULD_NOT_BE_OPENED";
+    case tinyxml2::XMLError::XML_ERROR_FILE_READ_ERROR:
+      return "XML_ERROR_FILE_READ_ERROR";
+    case tinyxml2::XMLError::XML_ERROR_PARSING_ELEMENT:
+      return "XML_ERROR_PARSING_ELEMENT";
+    case tinyxml2::XMLError::XML_ERROR_PARSING_ATTRIBUTE:
+      return "XML_ERROR_PARSING_ATTRIBUTE";
+    case tinyxml2::XMLError::XML_ERROR_PARSING_TEXT:
+      return "XML_ERROR_PARSING_TEXT";
+    case tinyxml2::XMLError::XML_ERROR_PARSING_CDATA:
+      return "XML_ERROR_PARSING_CDATA";
+    case tinyxml2::XMLError::XML_ERROR_PARSING_COMMENT:
+      return "XML_ERROR_PARSING_COMMENT";
+    case tinyxml2::XMLError::XML_ERROR_PARSING_DECLARATION:
+      return "XML_ERROR_PARSING_DECLARATION";
+    case tinyxml2::XMLError::XML_ERROR_PARSING_UNKNOWN:
+      return "XML_ERROR_PARSING_UNKNOWN";
+    case tinyxml2::XMLError::XML_ERROR_EMPTY_DOCUMENT:
+      return "XML_ERROR_EMPTY_DOCUMENT";
+    case tinyxml2::XMLError::XML_ERROR_MISMATCHED_ELEMENT:
+      return "XML_ERROR_MISMATCHED_ELEMENT";
+    case tinyxml2::XMLError::XML_ERROR_PARSING:
+      return "XML_ERROR_PARSING";
+    case tinyxml2::XMLError::XML_CAN_NOT_CONVERT_TEXT:
+      return "XML_CAN_NOT_CONVERT_TEXT";
+    case tinyxml2::XMLError::XML_NO_TEXT_NODE:
+      return "XML_NO_TEXT_NODE";
+    case tinyxml2::XMLError::XML_ERROR_COUNT:
+      return "XML_ERROR_COUNT";
+    default:
+      return "Unknow error";
+  }
+}
+
+//==============================================================================
 void openXMLFile(
     tinyxml2::XMLDocument& doc,
     const common::Uri& uri,
@@ -629,18 +739,41 @@ void openXMLFile(
   const auto result = doc.Parse(&content.front());
   if (result != tinyxml2::XML_SUCCESS)
   {
-    dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error"
-              " code "
-           << result << ".\n";
+    dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error '"
+           << toString(result) << "'.\n";
     throw std::runtime_error("Failed parsing XML.");
   }
+}
+
+//==============================================================================
+bool readXmlFile(
+    tinyxml2::XMLDocument& doc,
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retrieverOrNullPtr)
+{
+  common::ResourceRetrieverPtr retriever;
+  if (retrieverOrNullPtr)
+    retriever = retrieverOrNullPtr;
+  else
+    retriever = std::make_shared<common::LocalResourceRetriever>();
+
+  const auto content = retriever->readAll(uri);
+  const auto result = doc.Parse(&content.front());
+  if (result != tinyxml2::XML_SUCCESS)
+  {
+    dtwarn << "[readXmlFile] Failed parsing XML: TinyXML2 returned error '"
+           << toString(result) << "'.\n";
+    return false;
+  }
+
+  return true;
 }
 
 //==============================================================================
 bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name)
 {
   const char* const result = element->Attribute(name);
-  return result != 0;
+  return result != nullptr;
 }
 
 //==============================================================================
@@ -774,6 +907,15 @@ char getAttributeChar(
 }
 
 //==============================================================================
+Eigen::Vector2i getAttributeVector2i(
+    const tinyxml2::XMLElement* element, const std::string& attributeName)
+{
+  const std::string val = getAttributeString(element, attributeName);
+
+  return toVector2i(val);
+}
+
+//==============================================================================
 Eigen::Vector2d getAttributeVector2d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
@@ -792,6 +934,15 @@ Eigen::Vector3d getAttributeVector3d(
 }
 
 //==============================================================================
+Eigen::Vector4d getAttributeVector4d(
+    const tinyxml2::XMLElement* element, const std::string& attributeName)
+{
+  const std::string val = getAttributeString(element, attributeName);
+
+  return toVector4d(val);
+}
+
+//==============================================================================
 Eigen::Vector6d getAttributeVector6d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
@@ -807,6 +958,56 @@ Eigen::VectorXd getAttributeVectorXd(
   const std::string val = getAttributeString(element, attributeName);
 
   return toVectorXd(val);
+}
+
+//==============================================================================
+bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
+{
+  // Protect from evil
+  if (destParent == nullptr)
+  {
+    return false;
+  }
+
+  // Get the document context where new memory will be allocated from
+  tinyxml2::XMLDocument* doc = destParent->GetDocument();
+
+  // Make the copy
+  tinyxml2::XMLNode* copy = src.ShallowClone(doc);
+  if (copy == nullptr)
+  {
+    return false;
+  }
+
+  // Add this child
+  destParent->InsertEndChild(copy);
+
+  // Add the grandkids
+  for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
+       node = node->NextSibling())
+  {
+    if (not copyNode(copy, *node))
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool copyChildNodes(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
+{
+  for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
+       node = node->NextSibling())
+  {
+    if (not copyNode(destParent, *node))
+    {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 } // namespace utils

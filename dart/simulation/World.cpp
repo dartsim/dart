@@ -409,6 +409,12 @@ bool World::hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const
 }
 
 //==============================================================================
+bool World::hasSkeleton(const std::string& skeletonName) const
+{
+  return mNameMgrForSkeletons.hasName(skeletonName);
+}
+
+//==============================================================================
 int World::getIndex(int _index) const
 {
   return mIndices[_index];

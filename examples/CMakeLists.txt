@@ -24,5 +24,8 @@ add_subdirectory(soft_bodies)
 add_subdirectory(tinkertoy)
 add_subdirectory(wam_ikfast)
 
+# MJCF model based examples
+add_subdirectory(fetch)
+
 # Deprecated examples
 add_subdirectory(deprecated_examples)
