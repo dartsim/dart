@@ -14,25 +14,180 @@ on:
     - cron: '0 2 * * 0-6'
 
 jobs:
-  ubuntu_16_04:
-    name: Build on Ubuntu 16.04
-    runs-on: ubuntu-16.04
+  xenial_gcc_release:
+    name: Ubuntu 16.04 [GCC|Release]
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
         OS_NAME: linux
         COMPILER: gcc
-      run: '.ci/install.sh'
+        DOCKERFILE: Dockerfile.ubuntu-xenial
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
     - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  bionic_gcc_release:
+    name: Ubuntu 18.04 [GCC|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
       env:
         OS_NAME: linux
         COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-bionic
         BUILD_TYPE: Release
-        RUN_TESTS: ON
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  bionic_gcc_dartpy_release:
+    name: Ubuntu 18.04 [GCC|dartpy|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-bionic
+        BUILD_DARTPY: ON
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  disco_gcc_release:
+    name: Ubuntu 18.10 [GCC|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-bionic
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  disco_gcc_dartpy_release:
+    name: Ubuntu 18.10 [GCC|dartpy|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-disco
+        BUILD_DARTPY: ON
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  eoan_gcc_release:
+    name: Ubuntu 19.04 [GCC|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-eoan
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  eoan_gcc_dartpy_release:
+    name: Ubuntu 19.04 [GCC|dartpy|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: linux
+        COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-eoan
+        BUILD_DARTPY: ON
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  mojav_clang_release:
+    name: macOS 10.14 [Clang|Release]
+    runs-on: macOS-10.14
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: osx
+        COMPILER: CLANG
+      run: '.ci/install.sh'
+    - name: Build
+      env:
+        OS_NAME: osx
+        COMPILER: CLANG
+        BUILD_TYPE: Release
       run: '.ci/script.sh'
+
+  mojav_clang_dartpy_release:
+    name: macOS 10.14 [Clang|dartpy|Release]
+    runs-on: macOS-10.14
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        OS_NAME: osx
+        COMPILER: CLANG
+        BUILD_DARTPY: ON
+      run: '.ci/install.sh'
+    - name: Build
+      env:
+        OS_NAME: osx
+        COMPILER: CLANG
+        BUILD_TYPE: Release
+        BUILD_DARTPY: ON
+      run: '.ci/script.sh'
+
   windows_2019:
-    name: Build on Windows 2019
+    name: Windows [Release]
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v1
@@ -42,9 +197,10 @@ jobs:
         COMPILER: gcc
         VCPKG_ROOT: 'C:\vcpkg'
         VCPKG_PACKAGES: 'assimp boost-system boost-filesystem ccd eigen3 fcl'
-        # utils needs tinyxml2 and boost algorithm/lexical-cast
+        # 'dart-utils' needs tinyxml2 and boost algorithm/lexical-cast
         #   and also boost-math to resolve a circular dependency with lexical-cast
         VCPKG_OPTIONAL_PACKAGES: 'boost-algorithm boost-lexical-cast boost-math bullet3 ode tinyxml2'
+        # VCPKG_OPTIONAL_PACKAGES_NOT_WORKING: 'flann ipopt nlopt osg urdfdom'
       shell: cmd
       run: |
         vcpkg install --recurse --triplet x64-windows %VCPKG_PACKAGES%

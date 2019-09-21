@@ -33,40 +33,7 @@ matrix:
         - DOCKERFILE="Dockerfile.ubuntu-xenial-32bit"
         - BUILD_TYPE=Release  # TODO: Tests fail in debug mode
         - COMPILER=GCC
-        - CODECOV=ON
       services: docker
-
-    - os: linux
-      env:
-        - BUILD_NAME=BIONIC_RELEASE
-        - DOCKERFILE="Dockerfile.ubuntu-bionic"
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
-
-    - os: linux
-      env:
-        - BUILD_NAME=DISCO_RELEASE
-        - DOCKERFILE="Dockerfile.ubuntu-disco"
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
-
-    - os: linux
-      env:
-        - BUILD_NAME=EOAN_RELEASE
-        - DOCKERFILE="Dockerfile.ubuntu-eoan"
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
-
-    - os: osx
-      osx_image: xcode10.2
-      compiler: clang
-      env:
-        - BUILD_NAME=XCODE102_RELEASE
-        - BUILD_TYPE=Release
-        - COMPILER=CLANG
 
     - os: linux
       env:
@@ -75,16 +42,6 @@ matrix:
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
-
-  allow_failures:
-    - os: linux
-      env:
-        - BUILD_NAME=EOAN_RELEASE
-        - DOCKERFILE="Dockerfile.ubuntu-eoan"
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
-
 
 install:
   - if [ -n "$DOCKERFILE" ]; then

@@ -18,7 +18,7 @@ environment:
 
 # build configuration, i.e. Debug, Release, etc.
 configuration:
-  - Debug
+  # - Debug
   - Release
 
 # scripts that are called at very beginning, before repo cloning
@@ -52,9 +52,10 @@ install:
   - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
 
   # install optional dependencies
-  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% freeglut opengl tinyxml2
-  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann nlopt ode osg urdfdom
-  #- vcpkg install ipopt:%VCPKG_ARCH%
+  # 'dart-utils' needs tinyxml2 and boost algorithm/lexical-cast
+  #   and also boost-math to resolve a circular dependency with lexical-cast
+  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% boost-algorithm boost-lexical-cast boost-math bullet3 freeglut ode opengl tinyxml2
+  #- vcpkg install --recurse --triplet %VCPKG_ARCH% flann ipopt nlopt osg urdfdom
 
   - cmd: vcpkg integrate install
   - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
