@@ -30,7 +30,7 @@ $SUDO apt-add-repository -y ppa:dartsim/ppa
 $SUDO apt-get -qq update
 
 # Build tools
-$SUDO apt-get -y install \
+$SUDO apt-get install -y --no-install-recommends \
   sudo \
   build-essential \
   cmake \
@@ -42,7 +42,7 @@ if [ $COMPILER = clang ]; then
 fi
 
 # Required dependencies
-$SUDO apt-get -y install \
+$SUDO apt-get install -y --no-install-recommends \
   libassimp-dev \
   libboost-filesystem-dev \
   libboost-system-dev \
@@ -51,11 +51,11 @@ $SUDO apt-get -y install \
   libfcl-dev
 
 # Required dependencies for building API documentation of DART < 6.10
-$SUDO apt-get -y install \
+$SUDO apt-get install -y --no-install-recommends \
   libboost-regex-dev
 
 # Optional dependencies
-$SUDO apt-get -y install \
+$SUDO apt-get install -y --no-install-recommends \
   freeglut3-dev \
   libxi-dev \
   libxmu-dev \
@@ -126,8 +126,8 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   fi
 fi
 
-$SUDO apt-get -y install lcov
+$SUDO apt-get install -y --no-install-recommends lcov
 
 if [ $BUILD_DOCS = "ON" ]; then
-  $SUDO apt-get -qq -y install doxygen
+  $SUDO apt-get install -y --no-install-recommends doxygen
 fi
