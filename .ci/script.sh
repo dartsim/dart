@@ -27,13 +27,6 @@ if [ -z "$BUILD_DOCS" ]; then
   BUILD_DOCS=OFF
 fi
 
-if [ -z "$SUDO" ]; then
-  if [ -z "${DOCKERFILE}"]; then
-    echo "Info: Environment variable SUDO is unset. Using sudo by default."
-    SUDO=sudo
-  fi
-fi
-
 if [ -z "$COMPILER" ]; then
   echo "Info: Environment variable COMPILER is unset. Using gcc by default."
   COMPILER=gcc
@@ -47,11 +40,6 @@ fi
 if [ -z "$BUILD_DIR" ]; then
   echo "Error: Environment variable BUILD_DIR is unset. Using $PWD by default."
   BUILD_DIR=$PWD
-fi
-
-if [ -z "$OS_NAME" ]; then
-  echo "Error: Required environment variable OS_NAME is unset."
-  exit 1
 fi
 
 # Set number of threads for parallel build
@@ -91,7 +79,7 @@ fi
 
 mkdir build && cd build
 
-if [ "$OS_NAME" = "linux" ]; then
+if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 fi
 
@@ -114,7 +102,7 @@ else
     make -j$num_threads all tutorials examples tests
   fi
 
-  if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
+  if [ "$OSTYPE" = "linux-gnu" ] && [ $(lsb_release -sc) = "bionic" ]; then
     make check-format
   fi
 
@@ -127,7 +115,7 @@ fi
 
 if [ "$RUN_INSTALL_TEST" = "ON" ]; then
   # Make sure we can install with no issues
-  $SUDO make -j$num_threads install
+  make -j$num_threads install
 
   if [ "$BUILD_DARTPY" = "ON" ]; then
     # Run a python example (experimental)

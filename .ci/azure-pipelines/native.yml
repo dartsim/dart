@@ -3,8 +3,8 @@ parameters:
 
 steps:
 - script: |
-    ./.ci/install.sh
+    sudo -E ./.ci/install.sh
   displayName: 'Install'
 - script: |
-    ./.ci/script.sh -j${{ parameters.numThreads }}
+    sudo -E ./.ci/script.sh -j${{ parameters.numThreads }}
   displayName: 'Script'

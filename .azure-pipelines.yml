@@ -7,7 +7,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
-    OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
@@ -20,7 +19,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
-    OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
@@ -33,7 +31,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
-    OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
@@ -46,7 +43,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
-    OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
@@ -59,7 +55,6 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   variables:
-    OS_NAME: osx
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
   steps:
