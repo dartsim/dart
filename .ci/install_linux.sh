@@ -82,7 +82,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
     python3-dev \
     python3-numpy \
     python3-pip
-  sudo -u $(logname) pip3 install pytest -U
+  pip3 install pytest -U
 
   if [ $(lsb_release -sc) = "xenial" ] || [ $(lsb_release -sc) = "bionic" ]; then
     git clone https://github.com/pybind/pybind11 -b 'v2.3.0' --single-branch --depth 1
