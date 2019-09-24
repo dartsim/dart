@@ -21,7 +21,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         DOCKERFILE: Dockerfile.ubuntu-xenial
         BUILD_TYPE: Release
@@ -40,7 +39,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         DOCKERFILE: Dockerfile.ubuntu-bionic
         BUILD_TYPE: Release
@@ -59,7 +57,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         DOCKERFILE: Dockerfile.ubuntu-bionic
         BUILD_DARTPY: ON
@@ -79,7 +76,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         DOCKERFILE: Dockerfile.ubuntu-bionic
         BUILD_TYPE: Release
@@ -98,7 +94,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         DOCKERFILE: Dockerfile.ubuntu-disco
         BUILD_DARTPY: ON
@@ -118,7 +113,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         DOCKERFILE: Dockerfile.ubuntu-eoan
         BUILD_TYPE: Release
@@ -137,7 +131,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         DOCKERFILE: Dockerfile.ubuntu-eoan
         BUILD_DARTPY: ON
@@ -157,15 +150,13 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: osx
-        COMPILER: CLANG
-      run: '.ci/install.sh'
+        COMPILER: clang
+      run: .ci/install.sh
     - name: Build
       env:
-        OS_NAME: osx
-        COMPILER: CLANG
+        COMPILER: clang
         BUILD_TYPE: Release
-      run: '.ci/script.sh'
+      run: sudo -E .ci/script.sh
 
   mojav_clang_dartpy_release:
     name: macOS 10.14 [Clang|dartpy|Release]
@@ -174,17 +165,15 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: osx
-        COMPILER: CLANG
+        COMPILER: clang
         BUILD_DARTPY: ON
-      run: '.ci/install.sh'
+      run: .ci/install.sh
     - name: Build
       env:
-        OS_NAME: osx
-        COMPILER: CLANG
+        COMPILER: clang
         BUILD_TYPE: Release
         BUILD_DARTPY: ON
-      run: '.ci/script.sh'
+      run: sudo -E .ci/script.sh
 
   windows_2019:
     name: Windows [Release]
@@ -193,7 +182,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       env:
-        OS_NAME: linux
         COMPILER: gcc
         VCPKG_ROOT: 'C:\vcpkg'
         VCPKG_PACKAGES: 'assimp boost-system boost-filesystem ccd eigen3 fcl'
@@ -207,7 +195,6 @@ jobs:
         vcpkg install --recurse --triplet x64-windows %VCPKG_OPTIONAL_PACKAGES%
     - name: Build
       env:
-        OS_NAME: linux
         COMPILER: gcc
         VCPKG_ROOT: 'C:\vcpkg'
         BUILD_TYPE: Release
