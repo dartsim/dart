@@ -149,6 +149,9 @@ public:
   DART_COMMON_SET_GET_ASPECT_PROPERTY(double, RestitutionCoeff)
   // void setRestitutionCoeff(const double& value);
   // const double& getRestitutionCoeff() const;
+  DART_COMMON_SET_GET_ASPECT_PROPERTY( double, SecondaryFrictionCoeff )
+  // void setSecondaryFrictionCoeff(const double& value);
+  // const double& getSecondaryFrictionCoeff() const;
 };
 
 //==============================================================================

@@ -88,15 +88,19 @@ struct CollisionAspectProperties
 
 struct DynamicsAspectProperties
 {
-  /// Coefficient of friction
+  /// Primary coefficient of friction
   double mFrictionCoeff;
 
   /// Coefficient of restitution
   double mRestitutionCoeff;
 
+  /// Secondary coefficient of friction
+  double mSecondaryFrictionCoeff;
+
   /// Constructor
   DynamicsAspectProperties(
-      const double frictionCoeff = 1.0, const double restitutionCoeff = 0.0);
+      const double frictionCoeff = 1.0, const double restitutionCoeff = 0.0,
+      const double secondaryFrictionCoeff = 1.0);
 
   /// Destructor
   virtual ~DynamicsAspectProperties() = default;
