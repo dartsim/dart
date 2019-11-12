@@ -80,15 +80,18 @@ TEST(Friction, FrictionPerShapeNode)
   skeleton1->setName("Skeleton2");
 
   auto body1 = skeleton1->getRootBodyNode();
-  EXPECT_DOUBLE_EQ(
-      body1->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff(), 1.0);
+  // default friction values
+  EXPECT_DOUBLE_EQ(1.0,
+      body1->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
 
   auto body2 = skeleton2->getRootBodyNode();
-  EXPECT_DOUBLE_EQ(
-      body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff(), 1.0);
+  // default friction values
+  EXPECT_DOUBLE_EQ(1.0,
+      body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
+  // set all friction coeffs to 0.0
   body2->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.0);
-  EXPECT_DOUBLE_EQ(
-      body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff(), 0.0);
+  EXPECT_DOUBLE_EQ(0.0,
+      body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
 
   // Create a world and add the rigid body
   auto world = simulation::World::create();
