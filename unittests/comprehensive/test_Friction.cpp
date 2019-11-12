@@ -83,15 +83,43 @@ TEST(Friction, FrictionPerShapeNode)
   // default friction values
   EXPECT_DOUBLE_EQ(1.0,
       body1->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
+  EXPECT_DOUBLE_EQ(1.0,
+      body1->getShapeNode(0)->getDynamicsAspect()->getPrimaryFrictionCoeff());
+  EXPECT_DOUBLE_EQ(1.0,
+      body1->getShapeNode(0)->getDynamicsAspect()->getSecondaryFrictionCoeff());
 
   auto body2 = skeleton2->getRootBodyNode();
   // default friction values
   EXPECT_DOUBLE_EQ(1.0,
       body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
+  EXPECT_DOUBLE_EQ(1.0,
+      body2->getShapeNode(0)->getDynamicsAspect()->getPrimaryFrictionCoeff());
+  EXPECT_DOUBLE_EQ(1.0,
+      body2->getShapeNode(0)->getDynamicsAspect()->getSecondaryFrictionCoeff());
+  // test setting primary friction
+  body2->getShapeNode(0)->getDynamicsAspect()->setPrimaryFrictionCoeff(0.5);
+  EXPECT_DOUBLE_EQ(0.75,
+      body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
+  EXPECT_DOUBLE_EQ(0.5,
+      body2->getShapeNode(0)->getDynamicsAspect()->getPrimaryFrictionCoeff());
+  EXPECT_DOUBLE_EQ(1.0,
+      body2->getShapeNode(0)->getDynamicsAspect()->getSecondaryFrictionCoeff());
+  // test setting secondary friction
+  body2->getShapeNode(0)->getDynamicsAspect()->setSecondaryFrictionCoeff(0.25);
+  EXPECT_DOUBLE_EQ(0.375,
+      body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
+  EXPECT_DOUBLE_EQ(0.5,
+      body2->getShapeNode(0)->getDynamicsAspect()->getPrimaryFrictionCoeff());
+  EXPECT_DOUBLE_EQ(0.25,
+      body2->getShapeNode(0)->getDynamicsAspect()->getSecondaryFrictionCoeff());
   // set all friction coeffs to 0.0
   body2->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.0);
   EXPECT_DOUBLE_EQ(0.0,
       body2->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
+  EXPECT_DOUBLE_EQ(0.0,
+      body2->getShapeNode(0)->getDynamicsAspect()->getPrimaryFrictionCoeff());
+  EXPECT_DOUBLE_EQ(0.0,
+      body2->getShapeNode(0)->getDynamicsAspect()->getSecondaryFrictionCoeff());
 
   // Create a world and add the rigid body
   auto world = simulation::World::create();
