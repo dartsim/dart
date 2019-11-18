@@ -115,8 +115,10 @@ ContactConstraint::ContactConstraint(
   // TODO(JS): Assume the frictional coefficient can be changed during
   //           simulation steps.
   // Update mFrictionCoeff
-  const double frictionCoeffA = computeFrictionCoefficient(shapeNodeA);
-  const double frictionCoeffB = computeFrictionCoefficient(shapeNodeB);
+  const double primaryFrictionCoeffA =
+                       computePrimaryFrictionCoefficient(shapeNodeA);
+  const double primaryFrictionCoeffB =
+                       computePrimaryFrictionCoefficient(shapeNodeB);
   const double secondaryFrictionCoeffA =
                        computeSecondaryFrictionCoefficient(shapeNodeA);
   const double secondaryFrictionCoeffB =
@@ -124,10 +126,11 @@ ContactConstraint::ContactConstraint(
 
   // TODO(JS): Consider providing various ways of the combined friction or
   // allowing to override this method by a custom method
-  mFrictionCoeff = std::min(frictionCoeffA, frictionCoeffB);
+  mPrimaryFrictionCoeff =
+      std::min(primaryFrictionCoeffA, primaryFrictionCoeffB);
   mSecondaryFrictionCoeff =
       std::min(secondaryFrictionCoeffA, secondaryFrictionCoeffB);
-  if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD ||
+  if (mPrimaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD ||
       mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
@@ -394,8 +397,8 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     assert(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
-    info->lo[1] = -mFrictionCoeff;
-    info->hi[1] = mFrictionCoeff;
+    info->lo[1] = -mPrimaryFrictionCoeff;
+    info->hi[1] = mPrimaryFrictionCoeff;
     info->findex[1] = 0;
 
     // Upper and lower bounds of tangential direction-2 impulsive force
