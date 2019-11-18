@@ -710,6 +710,27 @@ double ContactConstraint::computeFrictionCoefficient(
 }
 
 //==============================================================================
+double ContactConstraint::computePrimaryFrictionCoefficient(
+    const dynamics::ShapeNode* shapeNode)
+{
+  assert(shapeNode);
+
+  auto dynamicAspect = shapeNode->getDynamicsAspect();
+
+  if (dynamicAspect == nullptr)
+  {
+    dtwarn << "[ContactConstraint] Attempt to extract "
+           << "primary friction coefficient "
+           << "from a ShapeNode that doesn't have DynamicAspect. The default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
+           << "instead.\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return dynamicAspect->getPrimaryFrictionCoeff();
+}
+
+//==============================================================================
 double ContactConstraint::computeSecondaryFrictionCoefficient(
     const dynamics::ShapeNode* shapeNode)
 {
@@ -719,7 +740,8 @@ double ContactConstraint::computeSecondaryFrictionCoefficient(
 
   if (dynamicAspect == nullptr)
   {
-    dtwarn << "[ContactConstraint] Attempt to extract friction coefficient "
+    dtwarn << "[ContactConstraint] Attempt to extract "
+           << "secondary friction coefficient "
            << "from a ShapeNode that doesn't have DynamicAspect. The default "
            << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
            << "instead.\n";
