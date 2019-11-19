@@ -55,7 +55,7 @@ CollisionAspectProperties::CollisionAspectProperties(const bool collidable)
 //==============================================================================
 DynamicsAspectProperties::DynamicsAspectProperties(
     const double frictionCoeff, const double restitutionCoeff)
-  : mPrimaryFrictionCoeff(frictionCoeff),
+  : mFrictionCoeff(frictionCoeff),
     mRestitutionCoeff(restitutionCoeff),
     mSecondaryFrictionCoeff(frictionCoeff)
 {
@@ -67,7 +67,7 @@ DynamicsAspectProperties::DynamicsAspectProperties(
     const double primaryFrictionCoeff,
     const double secondaryFrictionCoeff,
     const double restitutionCoeff)
-  : mPrimaryFrictionCoeff(primaryFrictionCoeff),
+  : mFrictionCoeff(primaryFrictionCoeff),
     mRestitutionCoeff(restitutionCoeff),
     mSecondaryFrictionCoeff(secondaryFrictionCoeff)
 {
@@ -189,15 +189,25 @@ DynamicsAspect::DynamicsAspect(const PropertiesData& properties)
 
 void DynamicsAspect::setFrictionCoeff(const double& value)
 {
-  mProperties.mPrimaryFrictionCoeff = value;
+  mProperties.mFrictionCoeff = value;
   mProperties.mSecondaryFrictionCoeff = value;
 }
 
 double DynamicsAspect::getFrictionCoeff() const
 {
   return 0.5 * (
-      mProperties.mPrimaryFrictionCoeff +
+      mProperties.mFrictionCoeff +
       mProperties.mSecondaryFrictionCoeff);
+}
+
+void DynamicsAspect::setPrimaryFrictionCoeff(const double& value)
+{
+  mProperties.mFrictionCoeff = value;
+}
+
+const double& DynamicsAspect::getPrimaryFrictionCoeff() const
+{
+  return mProperties.mFrictionCoeff;
 }
 
 //==============================================================================

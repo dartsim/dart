@@ -148,9 +148,10 @@ public:
   /// Get average of primary and secondary friction coefficients.
   double getFrictionCoeff() const;
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimaryFrictionCoeff)
-  // void setPrimaryFrictionCoeff(const double& value);
-  // const double& getPrimaryFrictionCoeff() const;
+  // DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimaryFrictionCoeff)
+  void setPrimaryFrictionCoeff(const double& value);
+  const double& getPrimaryFrictionCoeff() const;
+
   DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondaryFrictionCoeff)
   // void setSecondaryFrictionCoeff(const double& value);
   // const double& getSecondaryFrictionCoeff() const;
