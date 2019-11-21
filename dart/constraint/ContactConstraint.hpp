@@ -140,6 +140,10 @@ protected:
 
   static double computeFrictionCoefficient(
       const dynamics::ShapeNode* shapeNode);
+  static double computePrimaryFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+  static double computeSecondaryFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
   static double computeRestitutionCoefficient(
       const dynamics::ShapeNode* shapeNode);
 
@@ -173,8 +177,11 @@ private:
   /// First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;
 
-  /// Coefficient of Friction
-  double mFrictionCoeff;
+  /// Primary Coefficient of Friction
+  double mPrimaryFrictionCoeff;
+
+  /// Primary Coefficient of Friction
+  double mSecondaryFrictionCoeff;
 
   /// Coefficient of restitution
   double mRestitutionCoeff;

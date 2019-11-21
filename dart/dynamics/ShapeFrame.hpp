@@ -143,9 +143,18 @@ public:
 
   DynamicsAspect(const PropertiesData& properties = PropertiesData());
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, FrictionCoeff)
-  // void setFrictionCoeff(const double& value);
-  // const double& getFrictionCoeff() const;
+  /// Set both primary and secondary friction coefficients to the same value.
+  void setFrictionCoeff(const double& value);
+  /// Get average of primary and secondary friction coefficients.
+  double getFrictionCoeff() const;
+
+  // DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimaryFrictionCoeff)
+  void setPrimaryFrictionCoeff(const double& value);
+  const double& getPrimaryFrictionCoeff() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondaryFrictionCoeff)
+  // void setSecondaryFrictionCoeff(const double& value);
+  // const double& getSecondaryFrictionCoeff() const;
   DART_COMMON_SET_GET_ASPECT_PROPERTY(double, RestitutionCoeff)
   // void setRestitutionCoeff(const double& value);
   // const double& getRestitutionCoeff() const;
