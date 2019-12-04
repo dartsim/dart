@@ -797,7 +797,7 @@ Eigen::Vector3d ContactConstraint::computeWorldFirstFrictionDir(
   {
     dtwarn << "[ContactConstraint] Attempt to extract friction direction "
            << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_DIR << ") will be used "
+           << "value (" << DART_DEFAULT_FRICTION_DIR.transpose() << ") will be used "
            << "instead.\n";
     return DART_DEFAULT_FRICTION_DIR;
   }
