@@ -803,7 +803,7 @@ Eigen::Vector3d ContactConstraint::computeWorldFirstFrictionDir(
   }
 
   auto frame = dynamicAspect->getFirstFrictionDirectionFrame();
-  Eigen::Vector3d frictionDir = dynamicAspect->getFirstFrictionDirection();
+  const Eigen::Vector3d& frictionDir = dynamicAspect->getFirstFrictionDirection();
 
   // rotate using custom frame if it is specified
   if (frame)
