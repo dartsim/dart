@@ -141,7 +141,7 @@ ContactConstraint::ContactConstraint(
     auto frictionDirA = computeWorldFirstFrictionDir(shapeNodeA);
     auto frictionDirB = computeWorldFirstFrictionDir(shapeNodeB);
 
-    // resulting friction direction unit vector
+    // check if the friction direction unit vectors have been set
     bool nonzeroDirA = frictionDirA.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
     bool nonzeroDirB = frictionDirB.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
 
