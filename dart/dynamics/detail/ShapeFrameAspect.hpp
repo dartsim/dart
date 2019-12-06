@@ -105,7 +105,8 @@ struct DynamicsAspectProperties
   const Frame* mFirstFrictionDirectionFrame;
 
   /// Constructors
-  /// The frictionCoeff argument will be used for both primary and secondary friction
+  /// The frictionCoeff argument will be used for both primary and secondary
+  /// friction
   DynamicsAspectProperties(
       const double frictionCoeff = 1.0, const double restitutionCoeff = 0.0);
 

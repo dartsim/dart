@@ -201,9 +201,8 @@ void DynamicsAspect::setFrictionCoeff(const double& value)
 
 double DynamicsAspect::getFrictionCoeff() const
 {
-  return 0.5 * (
-      mProperties.mFrictionCoeff +
-      mProperties.mSecondaryFrictionCoeff);
+  return 0.5
+         * (mProperties.mFrictionCoeff + mProperties.mSecondaryFrictionCoeff);
 }
 
 void DynamicsAspect::setPrimaryFrictionCoeff(const double& value)

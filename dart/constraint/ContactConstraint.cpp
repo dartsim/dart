@@ -65,8 +65,7 @@ double ContactConstraint::mConstraintForceMixing = DART_CFM;
 
 constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
 constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
-const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR =
-    Eigen::Vector3d::UnitZ();
+const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR = Eigen::Vector3d::UnitZ();
 
 //==============================================================================
 ContactConstraint::ContactConstraint(
@@ -117,23 +116,23 @@ ContactConstraint::ContactConstraint(
   // TODO(JS): Assume the frictional coefficient can be changed during
   //           simulation steps.
   // Update mFrictionCoeff
-  const double primaryFrictionCoeffA =
-                       computePrimaryFrictionCoefficient(shapeNodeA);
-  const double primaryFrictionCoeffB =
-                       computePrimaryFrictionCoefficient(shapeNodeB);
-  const double secondaryFrictionCoeffA =
-                       computeSecondaryFrictionCoefficient(shapeNodeA);
-  const double secondaryFrictionCoeffB =
-                       computeSecondaryFrictionCoefficient(shapeNodeB);
+  const double primaryFrictionCoeffA
+      = computePrimaryFrictionCoefficient(shapeNodeA);
+  const double primaryFrictionCoeffB
+      = computePrimaryFrictionCoefficient(shapeNodeB);
+  const double secondaryFrictionCoeffA
+      = computeSecondaryFrictionCoefficient(shapeNodeA);
+  const double secondaryFrictionCoeffB
+      = computeSecondaryFrictionCoefficient(shapeNodeB);
 
   // TODO(JS): Consider providing various ways of the combined friction or
   // allowing to override this method by a custom method
-  mPrimaryFrictionCoeff =
-      std::min(primaryFrictionCoeffA, primaryFrictionCoeffB);
-  mSecondaryFrictionCoeff =
-      std::min(secondaryFrictionCoeffA, secondaryFrictionCoeffB);
-  if (mPrimaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD ||
-      mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
+  mPrimaryFrictionCoeff
+      = std::min(primaryFrictionCoeffA, primaryFrictionCoeffB);
+  mSecondaryFrictionCoeff
+      = std::min(secondaryFrictionCoeffA, secondaryFrictionCoeffB);
+  if (mPrimaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD
+      || mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
 
@@ -142,8 +141,10 @@ ContactConstraint::ContactConstraint(
     auto frictionDirB = computeWorldFirstFrictionDir(shapeNodeB);
 
     // check if the friction direction unit vectors have been set
-    bool nonzeroDirA = frictionDirA.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
-    bool nonzeroDirB = frictionDirB.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+    bool nonzeroDirA
+        = frictionDirA.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+    bool nonzeroDirB
+        = frictionDirB.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
 
     // only consider custom friction direction if one has nonzero length
     if (nonzeroDirA || nonzeroDirB)
@@ -797,13 +798,14 @@ Eigen::Vector3d ContactConstraint::computeWorldFirstFrictionDir(
   {
     dtwarn << "[ContactConstraint] Attempt to extract friction direction "
            << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_DIR.transpose() << ") will be used "
-           << "instead.\n";
+           << "value (" << DART_DEFAULT_FRICTION_DIR.transpose()
+           << ") will be used instead.\n";
     return DART_DEFAULT_FRICTION_DIR;
   }
 
   auto frame = dynamicAspect->getFirstFrictionDirectionFrame();
-  const Eigen::Vector3d& frictionDir = dynamicAspect->getFirstFrictionDirection();
+  const Eigen::Vector3d& frictionDir
+      = dynamicAspect->getFirstFrictionDirection();
 
   // rotate using custom frame if it is specified
   if (frame)

@@ -167,7 +167,7 @@ public:
   /// Get the frame for the first friction direction vector.
   const Frame* getFirstFrictionDirectionFrame() const;
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY( Eigen::Vector3d, FirstFrictionDirection )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(Eigen::Vector3d, FirstFrictionDirection)
   // void setFirstFrictionDirection(const Eigen::Vector3d& value);
   // const Eigen::Vector3d& getFirstFrictionDirection() const;
 };
