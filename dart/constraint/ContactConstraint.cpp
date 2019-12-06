@@ -870,7 +870,7 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
 
   // Pick an arbitrary vector to take the cross product of (in this case,
   // Z-axis)
-  Eigen::Vector3d tangent = mFirstFrictionalDirection.cross(n);
+  Eigen::Vector3d tangent = n.cross(mFirstFrictionalDirection);
 
   // TODO(JS): Modify following lines once _updateFirstFrictionalDirection() is
   //           implemented.
@@ -878,16 +878,16 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
   // pick another tangent (use X-axis as arbitrary vector)
   if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
   {
-    tangent = Eigen::Vector3d::UnitX().cross(n);
+    tangent = n.cross(Eigen::Vector3d::UnitX());
 
     // Make sure this is not zero length, otherwise normalization will lead to
     // NaN values.
     if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
     {
-      tangent = Eigen::Vector3d::UnitY().cross(n);
+      tangent = n.cross(Eigen::Vector3d::UnitY());
       if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
       {
-        tangent = Eigen::Vector3d::UnitZ().cross(n);
+        tangent = n.cross(Eigen::Vector3d::UnitZ());
 
         // Now tangent shouldn't be zero-length unless the normal is
         // zero-length, which shouldn't the case because ConstraintSolver
