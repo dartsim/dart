@@ -18,6 +18,7 @@
   * Added type property to constrain classes: [#1415](https://github.com/dartsim/dart/pull/1415)
   * Allowed to set joint rest position out of joint limits: [#1418](https://github.com/dartsim/dart/pull/1418)
   * Added secondary friction coefficient parameter: [#1424](https://github.com/dartsim/dart/pull/1424)
+  * Allowed to set friction direction per ShapeFrame: [#1427](https://github.com/dartsim/dart/pull/1427)
 
 * GUI
 
