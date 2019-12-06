@@ -579,7 +579,7 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
       // Both bodies are not reactive
       else
       {
-        // This case should not be happed
+        // This case should not be happened
         assert(0);
       }
     }
