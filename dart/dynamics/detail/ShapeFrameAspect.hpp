@@ -97,15 +97,39 @@ struct DynamicsAspectProperties
   /// Secondary coefficient of friction
   double mSecondaryFrictionCoeff;
 
+  /// First friction direction unit vector
+  Eigen::Vector3d mFirstFrictionDirection;
+
+  /// First friction direction frame
+  /// The first friction direction unit vector is expressed in this frame
+  const Frame* mFirstFrictionDirectionFrame;
+
   /// Constructors
-  /// The frictionCoeff argument will be used for both primary and secondary friction
+  /// The frictionCoeff argument will be used for both primary and secondary
+  /// friction
   DynamicsAspectProperties(
       const double frictionCoeff = 1.0, const double restitutionCoeff = 0.0);
 
+  /// Set primary and secondary friction and restitution coefficients.
+  /// The first friction direction vector and frame may optionally be set.
+  /// The vector defaults to a zero-vector, which will cause it to be ignored
+  /// and the global friction directions used instead.
+  /// If the vector is set to a non-zero vector, the first friction direction
+  /// for this shape is computed from this vector expressed in the frame
+  /// given by the Frame pointer. THe Frame pointer defaults to nullptr,
+  /// which is interpreted as the body-fixed frame of this Shape.
+  /// Note that if two objects with custom friction directions come into
+  /// contact, only one of the directions can be chosen.
+  /// One approach is to use the first friction direction for the ShapeNode
+  /// with the smaller primary friction coefficient, since that has the
+  /// dominant effect. See the ContactConstraint implementation for
+  /// further details.
   DynamicsAspectProperties(
       const double primaryFrictionCoeff,
       const double secondaryFrictionCoeff,
-      const double restitutionCoeff);
+      const double restitutionCoeff,
+      const Eigen::Vector3d& firstFrictionDirection = Eigen::Vector3d::Zero(),
+      const Frame* firstFrictionDirectionFrame = nullptr);
 
   /// Destructor
   virtual ~DynamicsAspectProperties() = default;

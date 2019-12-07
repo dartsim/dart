@@ -57,7 +57,9 @@ DynamicsAspectProperties::DynamicsAspectProperties(
     const double frictionCoeff, const double restitutionCoeff)
   : mFrictionCoeff(frictionCoeff),
     mRestitutionCoeff(restitutionCoeff),
-    mSecondaryFrictionCoeff(frictionCoeff)
+    mSecondaryFrictionCoeff(frictionCoeff),
+    mFirstFrictionDirection(Eigen::Vector3d::Zero()),
+    mFirstFrictionDirectionFrame(nullptr)
 {
   // Do nothing
 }
@@ -66,10 +68,14 @@ DynamicsAspectProperties::DynamicsAspectProperties(
 DynamicsAspectProperties::DynamicsAspectProperties(
     const double primaryFrictionCoeff,
     const double secondaryFrictionCoeff,
-    const double restitutionCoeff)
+    const double restitutionCoeff,
+    const Eigen::Vector3d& firstFrictionDirection,
+    const Frame* firstFrictionDirectionFrame)
   : mFrictionCoeff(primaryFrictionCoeff),
     mRestitutionCoeff(restitutionCoeff),
-    mSecondaryFrictionCoeff(secondaryFrictionCoeff)
+    mSecondaryFrictionCoeff(secondaryFrictionCoeff),
+    mFirstFrictionDirection(firstFrictionDirection),
+    mFirstFrictionDirectionFrame(firstFrictionDirectionFrame)
 {
   // Do nothing
 }
@@ -195,9 +201,8 @@ void DynamicsAspect::setFrictionCoeff(const double& value)
 
 double DynamicsAspect::getFrictionCoeff() const
 {
-  return 0.5 * (
-      mProperties.mFrictionCoeff +
-      mProperties.mSecondaryFrictionCoeff);
+  return 0.5
+         * (mProperties.mFrictionCoeff + mProperties.mSecondaryFrictionCoeff);
 }
 
 void DynamicsAspect::setPrimaryFrictionCoeff(const double& value)
@@ -208,6 +213,18 @@ void DynamicsAspect::setPrimaryFrictionCoeff(const double& value)
 const double& DynamicsAspect::getPrimaryFrictionCoeff() const
 {
   return mProperties.mFrictionCoeff;
+}
+
+//==============================================================================
+void DynamicsAspect::setFirstFrictionDirectionFrame(const Frame* value)
+{
+  mProperties.mFirstFrictionDirectionFrame = value;
+}
+
+//==============================================================================
+const Frame* DynamicsAspect::getFirstFrictionDirectionFrame() const
+{
+  return mProperties.mFirstFrictionDirectionFrame;
 }
 
 //==============================================================================

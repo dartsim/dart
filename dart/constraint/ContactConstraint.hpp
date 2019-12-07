@@ -144,6 +144,8 @@ protected:
       const dynamics::ShapeNode* shapeNode);
   static double computeSecondaryFrictionCoefficient(
       const dynamics::ShapeNode* shapeNode);
+  static Eigen::Vector3d computeWorldFirstFrictionDir(
+      const dynamics::ShapeNode* shapenode);
   static double computeRestitutionCoefficient(
       const dynamics::ShapeNode* shapeNode);
 
