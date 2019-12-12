@@ -508,20 +508,17 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   // valid constraint manifold faster than computing it from the edge of the
   // Task Space Region.
 
-  // Use the target's transform with respect to its reference frame
-  const Eigen::Isometry3d& targetTf = mIK->getTarget()->getRelativeTransform();
-  // Use the actual transform with respect to the target's reference frame
-  const Eigen::Isometry3d& actualTf
-      = mIK->getNode()->getTransform(mIK->getTarget()->getParentFrame());
+  // Use the actual transform with respect to the target reference frame
+  const Eigen::Isometry3d& errorTf
+      = mIK->getNode()->getTransform(mIK->getTarget().get());
 
-  // ^ This scheme makes it so that the bounds are expressed in the reference
-  // frame of the target
+  // ^ This scheme makes it so that bounds are expressed in the target frame
 
-  Eigen::Vector3d p_error = actualTf.translation() - targetTf.translation();
+  Eigen::Vector3d p_error = errorTf.translation();
   if (mIK->hasOffset())
-    p_error += actualTf.linear() * mIK->getOffset();
+    p_error += errorTf.linear() * mIK->getOffset();
 
-  Eigen::Matrix3d R_error = actualTf.linear() * targetTf.linear().transpose();
+  Eigen::Matrix3d R_error = errorTf.linear();
 
   Eigen::Vector6d displacement;
   displacement.head<3>() = math::matrixToEulerXYZ(R_error);
@@ -570,11 +567,10 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   if (error.norm() > mErrorP.mErrorLengthClamp)
     error = error.normalized() * mErrorP.mErrorLengthClamp;
 
-  if (!mIK->getTarget()->getParentFrame()->isWorld())
+  if (!mIK->getTarget()->isWorld())
   {
     // Transform the error term into the world frame if it's not already
-    const Eigen::Isometry3d& R
-        = mIK->getTarget()->getParentFrame()->getWorldTransform();
+    const Eigen::Isometry3d& R = mIK->getTarget()->getWorldTransform();
     error.head<3>() = R.linear() * error.head<3>();
     error.tail<3>() = R.linear() * error.tail<3>();
   }
