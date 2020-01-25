@@ -48,7 +48,6 @@ def main():
 
     viewer.addInstructionText("\nCtrl + Left-click: Rotate the box\n")
     print(viewer.getInstructions())
-    print(dart.__file__)
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
     viewer.setCameraHomePosition([20, 17, 17], [0, 0, 0], [0, 0, 1])
