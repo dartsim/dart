@@ -115,7 +115,7 @@ void InteractiveFrame(py::module& m)
                   self->removeAllShapeFrames();
                 });
 
-  ::pybind11::enum_<dart::gui::osg::InteractiveTool::Type>(it, "Type")
+  ::py::enum_<dart::gui::osg::InteractiveTool::Type>(it, "Type")
       .value("LINEAR", dart::gui::osg::InteractiveTool::Type::LINEAR)
       .value("ANGULAR", dart::gui::osg::InteractiveTool::Type::ANGULAR)
       .value("PLANAR", dart::gui::osg::InteractiveTool::Type::PLANAR)

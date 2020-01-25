@@ -29,14 +29,14 @@ def main():
     y_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), 'Y', tf)
     y_shape = dart.dynamics.BoxShape([0.2, 0.2, 0.2])
     y_marker.setShape(y_shape)
-    y_marker.getVisualAspect(True).setColor([0.0, 0.9, 0.0])
+    y_marker.getVisualAspect(True).setColor([0, 0.9, 0])
     world.addSimpleFrame(y_marker)
 
-    tf.set_translation([0.0, 0.0, 8.0])
+    tf.set_translation([0, 0, 8])
     z_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), 'Z', tf)
     z_shape = dart.dynamics.BoxShape([0.2, 0.2, 0.2])
     z_marker.setShape(z_shape)
-    z_marker.getVisualAspect(True).setColor([0.0, 0.0, 0.9])
+    z_marker.getVisualAspect(True).setColor([0, 0, 0.9])
     world.addSimpleFrame(z_marker)
 
     node = dart.gui.osg.WorldNode(world)
@@ -48,6 +48,7 @@ def main():
 
     viewer.addInstructionText("\nCtrl + Left-click: Rotate the box\n")
     print(viewer.getInstructions())
+    print(dart.__file__)
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
     viewer.setCameraHomePosition([20, 17, 17], [0, 0, 0], [0, 0, 1])

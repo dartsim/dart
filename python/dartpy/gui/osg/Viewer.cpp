@@ -237,101 +237,63 @@ void Viewer(py::module& m)
           })
       .def(
           "enableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::dynamics::Entity* entity) -> dart::gui::osg::DragAndDrop* {
-            return self->enableDragAndDrop(entity);
-          },
-          py::return_value_policy::reference_internal,
-          ::py::arg("entity"))
-      .def(
-          "enableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self, dart::dynamics::SimpleFrame* frame)
-              -> dart::gui::osg::SimpleFrameDnD* {
-            return self->enableDragAndDrop(frame);
-          },
-          py::return_value_policy::reference_internal,
+          ::py::overload_cast<dart::gui::osg::InteractiveFrame*>(
+              &dart::gui::osg::Viewer::enableDragAndDrop),
+          ::py::return_value_policy::reference_internal,
           ::py::arg("frame"))
       .def(
           "enableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::dynamics::SimpleFrame* frame,
-              dart::dynamics::Shape* shape)
-              -> dart::gui::osg::SimpleFrameShapeDnD* {
-            return self->enableDragAndDrop(frame, shape);
-          },
-          py::return_value_policy::reference_internal,
+          ::py::overload_cast<dart::dynamics::SimpleFrame*>(
+              &dart::gui::osg::Viewer::enableDragAndDrop),
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("frame"))
+      .def(
+          "enableDragAndDrop",
+          ::py::overload_cast<
+              dart::dynamics::SimpleFrame*,
+              dart::dynamics::Shape*>(
+              &dart::gui::osg::Viewer::enableDragAndDrop),
+          ::py::return_value_policy::reference_internal,
           ::py::arg("frame"),
           ::py::arg("shape"))
       .def(
           "enableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self, dart::dynamics::BodyNode* bodyNode)
-              -> dart::gui::osg::BodyNodeDnD* {
-            return self->enableDragAndDrop(bodyNode);
-          },
-          py::return_value_policy::reference_internal,
-          ::py::arg("bodyNode"))
-      .def(
-          "enableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::dynamics::BodyNode* bodyNode,
-              bool useExternalIK) -> dart::gui::osg::BodyNodeDnD* {
-            return self->enableDragAndDrop(bodyNode, useExternalIK);
-          },
-          py::return_value_policy::reference_internal,
+          ::py::overload_cast<dart::dynamics::BodyNode*, bool, bool>(
+              &dart::gui::osg::Viewer::enableDragAndDrop),
+          ::py::return_value_policy::reference_internal,
           ::py::arg("bodyNode"),
-          ::py::arg("useExternalIK"))
+          ::py::arg_v("useExternalIK", true),
+          ::py::arg_v("useWholeBody", false))
       .def(
           "enableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::dynamics::BodyNode* bodyNode,
-              bool useExternalIK,
-              bool useWholeBody) -> dart::gui::osg::BodyNodeDnD* {
-            return self->enableDragAndDrop(
-                bodyNode, useExternalIK, useWholeBody);
-          },
-          py::return_value_policy::reference_internal,
-          ::py::arg("bodyNode"),
-          ::py::arg("useExternalIK"),
-          ::py::arg("useWholeBody"))
-      .def(
-          "enableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::gui::osg::InteractiveFrame* frame)
-              -> dart::gui::osg::InteractiveFrameDnD* {
-            return self->enableDragAndDrop(frame);
-          },
-          py::return_value_policy::reference_internal,
-          ::py::arg("frame"))
+          ::py::overload_cast<dart::dynamics::Entity*>(
+              &dart::gui::osg::Viewer::enableDragAndDrop),
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("entity"))
       .def(
           "disableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self, dart::gui::osg::DragAndDrop* _dnd)
-              -> bool { return self->disableDragAndDrop(_dnd); },
+          ::py::overload_cast<dart::gui::osg::InteractiveFrameDnD*>(
+              &dart::gui::osg::Viewer::disableDragAndDrop),
           ::py::arg("dnd"))
       .def(
           "disableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::gui::osg::SimpleFrameDnD* _dnd) -> bool {
-            return self->disableDragAndDrop(_dnd);
-          },
+          ::py::overload_cast<dart::gui::osg::SimpleFrameDnD*>(
+              &dart::gui::osg::Viewer::disableDragAndDrop),
           ::py::arg("dnd"))
       .def(
           "disableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::gui::osg::SimpleFrameShapeDnD* _dnd) -> bool {
-            return self->disableDragAndDrop(_dnd);
-          },
+          ::py::overload_cast<dart::gui::osg::SimpleFrameShapeDnD*>(
+              &dart::gui::osg::Viewer::disableDragAndDrop),
           ::py::arg("dnd"))
       .def(
           "disableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self,
-              dart::gui::osg::InteractiveFrameDnD* _dnd) -> bool {
-            return self->disableDragAndDrop(_dnd);
-          },
+          ::py::overload_cast<dart::gui::osg::BodyNodeDnD*>(
+              &dart::gui::osg::Viewer::disableDragAndDrop),
           ::py::arg("dnd"))
       .def(
           "disableDragAndDrop",
-          +[](dart::gui::osg::Viewer* self, dart::gui::osg::BodyNodeDnD* _dnd)
-              -> bool { return self->disableDragAndDrop(_dnd); },
+          ::py::overload_cast<dart::gui::osg::DragAndDrop*>(
+              &dart::gui::osg::Viewer::disableDragAndDrop),
           ::py::arg("dnd"))
       .def(
           "getInstructions",
@@ -383,7 +345,7 @@ void Viewer(py::module& m)
 
             self->setCameraManipulator(self->getCameraManipulator());
           });
-}
+} // namespace python
 
 } // namespace python
 } // namespace dart
