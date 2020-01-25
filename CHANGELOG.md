@@ -50,6 +50,7 @@
   * Added bindings for background color support in osg viewer: [#1398](https://github.com/dartsim/dart/pull/1398)
   * Added bindings for BallJoint::convertToPositions(): [#1408](https://github.com/dartsim/dart/pull/1408)
   * Fixed typos in Skeleton: [#1392](https://github.com/dartsim/dart/pull/1392)
+  * Fixed enabling drag and drop for InteractiveFrame: [#1432](https://github.com/dartsim/dart/pull/1432)
 
 * Build
 
