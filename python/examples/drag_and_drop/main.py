@@ -29,14 +29,14 @@ def main():
     y_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), 'Y', tf)
     y_shape = dart.dynamics.BoxShape([0.2, 0.2, 0.2])
     y_marker.setShape(y_shape)
-    y_marker.getVisualAspect(True).setColor([0.0, 0.9, 0.0])
+    y_marker.getVisualAspect(True).setColor([0, 0.9, 0])
     world.addSimpleFrame(y_marker)
 
-    tf.set_translation([0.0, 0.0, 8.0])
+    tf.set_translation([0, 0, 8])
     z_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), 'Z', tf)
     z_shape = dart.dynamics.BoxShape([0.2, 0.2, 0.2])
     z_marker.setShape(z_shape)
-    z_marker.getVisualAspect(True).setColor([0.0, 0.0, 0.9])
+    z_marker.getVisualAspect(True).setColor([0, 0, 0.9])
     world.addSimpleFrame(z_marker)
 
     node = dart.gui.osg.WorldNode(world)
