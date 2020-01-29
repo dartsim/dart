@@ -142,7 +142,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
            << "', which doesn't exist in the ConstraintSolver.\n";
   }
 
-  mCollisionGroup->removeShapeFramesOf(skeleton.get());
+  mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());

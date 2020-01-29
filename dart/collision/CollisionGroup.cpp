@@ -143,6 +143,18 @@ void CollisionGroup::removeShapeFramesOf()
 }
 
 //==============================================================================
+void CollisionGroup::unsubscribeFrom()
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool CollisionGroup::isSubscribedTo()
+{
+  return true;
+}
+
+//==============================================================================
 void CollisionGroup::removeAllShapeFrames()
 {
   removeAllCollisionObjectsFromEngine();
