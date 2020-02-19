@@ -25,11 +25,6 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
-# Support new if() IN_LIST operator
-if(POLICY CMP0057)
-  cmake_policy(SET CMP0057 NEW)
-endif()
-
 include(GNUInstallDirs)
 
 # Variables used in Components.cmake
