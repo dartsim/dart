@@ -58,6 +58,7 @@
   * Replaced M_PI with dart::math::constantsd::pi(): [#1367](https://github.com/dartsim/dart/pull/1367)
   * Enabled octomap support on macOS: [#1078](https://github.com/dartsim/dart/pull/1078)
   * Removed dependency on Boost::regex: [#1412](https://github.com/dartsim/dart/pull/1412)
+  * Set CMP0075 to new to support new if() IN_LIST operator: [#1434](https://github.com/dartsim/dart/pull/1434)
 
 ### [DART 6.9.2 (2019-08-16)](https://github.com/dartsim/dart/milestone/60?closed=1)
 
