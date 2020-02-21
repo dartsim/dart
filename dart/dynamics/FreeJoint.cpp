@@ -589,10 +589,33 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Isometry3d Qnext
-      = getQ() * convertToTransform(getVelocitiesStatic() * _dt);
+  const Eigen::Isometry3d Qdiff
+      =  convertToTransform(getVelocitiesStatic() * _dt);
+  const Eigen::Isometry3d Qnext = getQ()* Qdiff;
+
+  // This is setVelocitiesStatic(math::AdR(Qnext.inverse() * getQ(), vel)), but
+  // using Qdiff instead.
+  setVelocitiesStatic(math::AdR(Qdiff.inverse(), getVelocitiesStatic()));
+  setAccelerationsStatic(math::AdR(Qdiff.inverse(), getAccelerationsStatic()));
 
   setPositionsStatic(convertToPositions(Qnext));
+}
+
+//==============================================================================
+void FreeJoint::integrateVelocities(double _dt)
+{
+  const Eigen::Vector6d &vel = getVelocitiesStatic();
+  // Acceleration with additional term to take into account changing linear
+  // velocity in the inertial frame.
+  Eigen::Vector6d accelWithInertialTerm = getAccelerationsStatic();
+  accelWithInertialTerm.tail<3>() += (vel.head<3>().cross(vel.tail<3>()));
+
+  setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
+      getVelocitiesStatic(), accelWithInertialTerm,  _dt));
+  // vel now points to the updated velocity
+  Eigen::Vector6d accel = accelWithInertialTerm;
+  accel.tail<3>() -= vel.head<3>().cross(vel.tail<3>());
+  setAccelerationsStatic(accel);
 }
 
 //==============================================================================
