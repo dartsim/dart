@@ -10,6 +10,20 @@
 #   dart     - Main target.
 #   dart-<C> - Target for specific component (e.g., dart-collision-bullet).
 
+# Specify CMake minimum required version
+if(NOT CMAKE_MINIMUM_REQUIRED_VERSION)
+  if(MSVC)
+    cmake_minimum_required(VERSION 3.8.0)
+  else()
+    cmake_minimum_required(VERSION 3.5.1)
+  endif()
+else()
+  # Support if() IN_LIST operator
+  if(POLICY CMP0057)
+    cmake_policy(SET CMP0057 NEW)
+  endif()
+endif()
+
 #===============================================================================
 # Helper Function Definitions
 #===============================================================================
