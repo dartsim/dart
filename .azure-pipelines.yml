@@ -53,7 +53,7 @@ jobs:
 - job: mojav_clang_debug
   timeoutInMinutes: 120
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-10.15'
   variables:
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
