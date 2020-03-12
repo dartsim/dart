@@ -144,8 +144,8 @@ jobs:
         docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
 
   mojav_clang_release:
-    name: macOS 10.14 [Clang|Release]
-    runs-on: macOS-10.14
+    name: macOS 10.15 [Clang|Release]
+    runs-on: macOS-10.15
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
@@ -159,8 +159,8 @@ jobs:
       run: sudo -E .ci/script.sh
 
   mojav_clang_dartpy_release:
-    name: macOS 10.14 [Clang|dartpy|Release]
-    runs-on: macOS-10.14
+    name: macOS 10.15 [Clang|dartpy|Release]
+    runs-on: macOS-10.15
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
