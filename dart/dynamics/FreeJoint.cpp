@@ -604,7 +604,7 @@ void FreeJoint::integratePositions(double _dt)
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  const Eigen::Vector6d &vel = getVelocitiesStatic();
+  const Eigen::Vector6d& vel = getVelocitiesStatic();
   // Acceleration with additional term to take into account changing linear
   // velocity in the inertial frame.
   Eigen::Vector6d accelWithInertialTerm = getAccelerationsStatic();

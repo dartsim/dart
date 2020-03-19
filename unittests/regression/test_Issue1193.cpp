@@ -75,10 +75,3 @@ TEST(Issue1193, AngularVelAdd)
   EXPECT_NEAR(maxSteps * world->getGravity().y() * dt, ly, 1e-8);
   EXPECT_NEAR(0.0, lz, 1e-8);
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
