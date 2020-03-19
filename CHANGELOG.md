@@ -60,6 +60,7 @@
   * Enabled octomap support on macOS: [#1078](https://github.com/dartsim/dart/pull/1078)
   * Removed dependency on Boost::regex: [#1412](https://github.com/dartsim/dart/pull/1412)
   * Added support new if() IN_LIST operator in DARTConfig.cmake: [#1434](https://github.com/dartsim/dart/pull/1434)
+  * Updated Findfcl.cmake to support FCL 0.6: [#1441](https://github.com/dartsim/dart/pull/1441)
 
 ### [DART 6.9.2 (2019-08-16)](https://github.com/dartsim/dart/milestone/60?closed=1)
 
