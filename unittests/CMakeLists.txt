@@ -142,3 +142,5 @@ add_custom_target(
   tests
   DEPENDS ${comprehensive_tests} ${regression_tests} ${unit_tests}
 )
+
+dart_format_add(GTestUtils.hpp)

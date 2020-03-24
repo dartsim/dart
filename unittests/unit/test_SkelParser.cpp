@@ -32,6 +32,8 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
+
+#include "GTestUtils.hpp"
 #include "TestHelpers.hpp"
 
 #include "dart/dart.hpp"
@@ -78,13 +80,12 @@ TEST(SkelParser, DataStructure)
   EXPECT_EQ(valFloat,  toFloat(strFloat));
   EXPECT_EQ(valDouble, toDouble(strDouble));
   EXPECT_EQ(valChar,   toChar(strChar));
-  EXPECT_TRUE(equals(valVector2d, toVector2d(strVector2d)));
-  EXPECT_TRUE(equals(valVector3d, toVector3d(strVector3d)));
-  EXPECT_EQ(valVector3i, toVector3i(strVector3i));
-  EXPECT_TRUE(equals(valVector6d, toVector6d(strVector6d)));
-  EXPECT_TRUE(equals(valVectorXd, toVectorXd(strVectorXd)));
-  EXPECT_TRUE(equals(valIsometry3d.matrix(),
-                     toIsometry3d(strIsometry3d).matrix()));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector2d, toVector2d(strVector2d));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector3d, toVector3d(strVector3d));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector3i, toVector3i(strVector3i));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector6d, toVector6d(strVector6d));
+  EXPECT_VECTOR_DOUBLE_EQ(valVectorXd, toVectorXd(strVectorXd));
+  EXPECT_TRANSFORM_DOUBLE_EQ(valIsometry3d, toIsometry3d(strIsometry3d));
 }
 
 //==============================================================================
