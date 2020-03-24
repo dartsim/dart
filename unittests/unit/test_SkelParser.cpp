@@ -98,7 +98,7 @@ TEST(SkelParser, EmptyWorld)
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), 0);
   EXPECT_EQ(world->getGravity()(2), -9.81);
-  EXPECT_EQ((int)world->getNumSkeletons(), 0);
+  EXPECT_EQ(world->getNumSkeletons(), 0);
 
   EXPECT_EQ(world->getTime(), 0);
   world->step();
@@ -116,11 +116,11 @@ TEST(SkelParser, SinglePendulum)
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
-  EXPECT_EQ(static_cast<int>(world->getNumSkeletons()), 1);
+  EXPECT_EQ(world->getNumSkeletons(), 1);
 
   SkeletonPtr skel1 = world->getSkeleton("single_pendulum");
 
-  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 1);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 1);
 
   world->step();
 }
@@ -136,11 +136,11 @@ TEST(SkelParser, SerialChain)
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
-  EXPECT_EQ(static_cast<int>(world->getNumSkeletons()), 1);
+  EXPECT_EQ(world->getNumSkeletons(), 1);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
-  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 10);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 10);
 
   world->step();
 }
@@ -173,12 +173,12 @@ TEST(SkelParser, RigidAndSoftBodies)
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
   EXPECT_TRUE(skel1 != nullptr);
-  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 2);
-  EXPECT_EQ(static_cast<int>(skel1->getNumRigidBodyNodes()), 1);
-  EXPECT_EQ(static_cast<int>(skel1->getNumSoftBodyNodes()), 1);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 2);
+  EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1);
+  EXPECT_EQ(skel1->getNumSoftBodyNodes(), 1);
 
   SoftBodyNode* sbn = skel1->getSoftBodyNode(0);
-  EXPECT_TRUE(static_cast<int>(sbn->getNumPointMasses()) > 0);
+  EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
   world->step();
 }
