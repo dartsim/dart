@@ -224,11 +224,10 @@ bool equals(
     const Eigen::Isometry3d& tf2,
     double tol = 1e-5)
 {
-  const Eigen::Isometry3d tfError = tf1.inverse() * tf2;
-  Eigen::Vector6d error;
-  error.head<3>() = dart::math::logMap(tfError.linear());
-  error.tail<3>() = tfError.translation();
-  return (error.norm() < tol);
+  auto se3 = dart::math::logMap(tf1.inverse() * tf2);
+  auto norm = se3.norm();
+
+  return (norm < tol);
 }
 
 } // namespace test
