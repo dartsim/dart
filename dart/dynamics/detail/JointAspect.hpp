@@ -119,8 +119,10 @@ struct JointProperties
   /// Transformation from child BodyNode to this Joint
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
-  /// True if the joint limits should be enforced in dynamic simulation
+  /// True if the joint position or velocity limits should be enforced in
+  /// dynamic simulation
   bool mIsPositionLimitEnforced;
+  // TODO(JS): Rename this to mAreLimitsEnforced
 
   /// Actuator type
   ActuatorType mActuatorType;
@@ -132,16 +134,17 @@ struct JointProperties
   double mMimicMultiplier, mMimicOffset;
 
   /// Constructor
-  JointProperties(const std::string& _name = "Joint",
-             const Eigen::Isometry3d& _T_ParentBodyToJoint =
-                                 Eigen::Isometry3d::Identity(),
-             const Eigen::Isometry3d& _T_ChildBodyToJoint =
-                                 Eigen::Isometry3d::Identity(),
-             bool _isPositionLimitEnforced = false,
-             ActuatorType _actuatorType = DefaultActuatorType,
-             const Joint* _mimicJoint = nullptr,
-             double _mimicMultiplier = 1.0,
-             double _mimicOffset = 0.0);
+  JointProperties(
+      const std::string& _name = "Joint",
+      const Eigen::Isometry3d& _T_ParentBodyToJoint
+      = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& _T_ChildBodyToJoint
+      = Eigen::Isometry3d::Identity(),
+      bool _isPositionLimitEnforced = false,
+      ActuatorType _actuatorType = DefaultActuatorType,
+      const Joint* _mimicJoint = nullptr,
+      double _mimicMultiplier = 1.0,
+      double _mimicOffset = 0.0);
 
   virtual ~JointProperties() = default;
 

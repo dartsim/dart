@@ -33,20 +33,22 @@
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
 #include "dart/collision/fcl/FCLTypes.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-dart::collision::fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject()
+dart::collision::fcl::CollisionObject*
+FCLCollisionObject::getFCLCollisionObject()
 {
   return mFCLCollisionObject.get();
 }
 
 //==============================================================================
-const dart::collision::fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject() const
+const dart::collision::fcl::CollisionObject*
+FCLCollisionObject::getFCLCollisionObject() const
 {
   return mFCLCollisionObject.get();
 }
@@ -81,16 +83,18 @@ void FCLCollisionObject::updateEngineData()
     const_cast<SoftMeshShape*>(softMeshShape)->update();
     // TODO(JS): update function be called by somewhere out of here.
 
-#if FCL_VERSION_AT_LEAST(0,3,0)
+#if FCL_VERSION_AT_LEAST(0, 3, 0)
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
-          mFCLCollisionObject->collisionGeometry().get());
+        mFCLCollisionObject->collisionGeometry().get());
 #else
     dart::collision::fcl::CollisionGeometry* collGeom
         = const_cast<dart::collision::fcl::CollisionGeometry*>(
-          mFCLCollisionObject->getCollisionGeometry());
+            mFCLCollisionObject->getCollisionGeometry());
 #endif
-    assert(dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
-    auto bvhModel = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
+    assert(
+        dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
+    auto bvhModel
+        = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
 
     bvhModel->beginUpdateModel();
     for (auto i = 0u; i < mesh->mNumFaces; ++i)
@@ -99,7 +103,8 @@ void FCLCollisionObject::updateEngineData()
       for (auto j = 0u; j < 3; ++j)
       {
         const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
-        vertices[j] = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
+        vertices[j]
+            = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
       }
       bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
     }
@@ -110,5 +115,5 @@ void FCLCollisionObject::updateEngineData()
   mFCLCollisionObject->computeAABB();
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

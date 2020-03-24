@@ -56,8 +56,8 @@ bool loadFunction(
 
   if (!symbol)
   {
-    dterr << "Failed to load the symbol '<<" << symbolName
-          << "' from the file '" << fileName << "'.\n";
+    dterr << "Failed to load the symbol '" << symbolName << "' from the file '"
+          << fileName << "'.\n";
     return false;
   }
 
@@ -67,10 +67,11 @@ bool loadFunction(
   return true;
 }
 
-} // namespace (anonymous)
+} // namespace
 
 //==============================================================================
-SharedLibraryIkFast::SharedLibraryIkFast(InverseKinematics* ik,
+SharedLibraryIkFast::SharedLibraryIkFast(
+    InverseKinematics* ik,
     const std::string& filePath,
     const std::vector<std::size_t>& dofMap,
     const std::vector<std::size_t>& freeDofMap,
@@ -101,28 +102,25 @@ SharedLibraryIkFast::SharedLibraryIkFast(InverseKinematics* ik,
   // So we should check if the symbol is actually loaded before using it.
 
   loadFunction<IkFastFuncGetInt>(
-        lib, "GetNumFreeParameters", mFilePath, mGetNumFreeParameters);
+      lib, "GetNumFreeParameters", mFilePath, mGetNumFreeParameters);
 
   loadFunction<IkFastFuncGetIntPtr>(
-        lib, "GetFreeParameters", mFilePath, mGetFreeParameters);
+      lib, "GetFreeParameters", mFilePath, mGetFreeParameters);
+
+  loadFunction<IkFastFuncGetInt>(lib, "GetNumJoints", mFilePath, mGetNumJoints);
 
   loadFunction<IkFastFuncGetInt>(
-        lib, "GetNumJoints", mFilePath, mGetNumJoints);
+      lib, "GetIkRealSize", mFilePath, mGetIkRealSize);
 
-  loadFunction<IkFastFuncGetInt>(
-        lib, "GetIkRealSize", mFilePath, mGetIkRealSize);
+  loadFunction<IkFastFuncGetInt>(lib, "GetIkType", mFilePath, mGetIkType);
 
-  loadFunction<IkFastFuncGetInt>(
-        lib, "GetIkType", mFilePath, mGetIkType);
-
-  loadFunction<IkFastFuncComputeIk>(
-        lib, "ComputeIk", mFilePath, mComputeIk);
+  loadFunction<IkFastFuncComputeIk>(lib, "ComputeIk", mFilePath, mComputeIk);
 
   loadFunction<IkFastFuncGetConstCharPtr>(
-        lib, "GetKinematicsHash", mFilePath, mGetKinematicsHash);
+      lib, "GetKinematicsHash", mFilePath, mGetKinematicsHash);
 
   loadFunction<IkFastFuncGetConstCharPtr>(
-        lib, "GetIkFastVersion", mFilePath, mGetIkFastVersion);
+      lib, "GetIkFastVersion", mFilePath, mGetIkFastVersion);
 
   mSharedLibrary = lib;
 }
@@ -131,7 +129,7 @@ SharedLibraryIkFast::SharedLibraryIkFast(InverseKinematics* ik,
 auto SharedLibraryIkFast::clone(InverseKinematics* newIK) const
     -> std::unique_ptr<GradientMethod>
 {
-  return dart::common::make_unique<SharedLibraryIkFast>(
+  return std::make_unique<SharedLibraryIkFast>(
       newIK,
       mFilePath,
       mDofs,
@@ -220,6 +218,20 @@ bool SharedLibraryIkFast::computeIk(
   }
 
   return mComputeIk(targetTranspose, targetRotation, freeParams, solutions);
+}
+
+//==============================================================================
+void SharedLibraryIkFast::computeFk(
+    const IkReal* parameters, IkReal* targetTranspose, IkReal* targetRotation)
+{
+  if (!mComputeFk)
+  {
+    dterr << "[SharedLibraryIkFast::mComputeFk] This SharedLibrary is "
+          << "invalid.\n";
+    return;
+  }
+
+  mComputeFk(parameters, targetTranspose, targetRotation);
 }
 
 //==============================================================================

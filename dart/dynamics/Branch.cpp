@@ -37,8 +37,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Branch::Criteria::Criteria(BodyNode* _start)
-  : mStart(_start)
+Branch::Criteria::Criteria(BodyNode* _start) : mStart(_start)
 {
   // Do nothing
 }
@@ -81,8 +80,8 @@ Branch::Criteria Branch::Criteria::convert(const Linkage::Criteria& criteria)
 }
 
 //==============================================================================
-BranchPtr Branch::create(const Branch::Criteria& _criteria,
-                         const std::string& _name)
+BranchPtr Branch::create(
+    const Branch::Criteria& _criteria, const std::string& _name)
 {
   BranchPtr branch(new Branch(_criteria, _name));
   branch->mPtr = branch;
@@ -130,13 +129,13 @@ MetaSkeletonPtr Branch::cloneMetaSkeleton(const std::string& cloneName) const
 //==============================================================================
 bool Branch::isStillBranch() const
 {
-  if(!isAssembled())
+  if (!isAssembled())
     return false;
 
-  for(std::size_t i=0; i<mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mBodyNodes.size(); ++i)
   {
     BodyNode* bn = mBodyNodes[i];
-    if(bn->getNumChildBodyNodes() != mNumChildNodes[i])
+    if (bn->getNumChildBodyNodes() != mNumChildNodes[i])
       return false;
   }
 
@@ -157,7 +156,7 @@ void Branch::update()
 
   mNumChildNodes.clear();
   mNumChildNodes.reserve(mBodyNodes.size());
-  for(std::size_t i=0; i<mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mBodyNodes.size(); ++i)
   {
     mNumChildNodes.push_back(mBodyNodes[i]->getNumChildBodyNodes());
   }

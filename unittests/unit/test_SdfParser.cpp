@@ -34,10 +34,10 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
@@ -51,9 +51,8 @@ using namespace utils;
 TEST(SdfParser, SDFSingleBodyWithoutJoint)
 {
   // Regression test for #444
-  WorldPtr world
-      = SdfParser::readWorld(
-            "dart://sample/sdf/test/single_bodynode_skeleton.world");
+  WorldPtr world = SdfParser::readWorld(
+      "dart://sample/sdf/test/single_bodynode_skeleton.world");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel = world->getSkeleton(0);
@@ -69,6 +68,45 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
   JointPtr joint = skel->getJoint(0);
   EXPECT_TRUE(joint != nullptr);
   EXPECT_EQ(joint->getType(), FreeJoint::getStaticType());
+}
+
+//==============================================================================
+TEST(SdfParser, SDFJointProperties)
+{
+  WorldPtr world = SdfParser::readWorld(
+      "dart://sample/sdf/test/test_skeleton_joint.world");
+  EXPECT_TRUE(world != nullptr);
+
+  SkeletonPtr skel = world->getSkeleton(0);
+  EXPECT_TRUE(skel != nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 5u);
+  EXPECT_EQ(skel->getNumJoints(), 5u);
+
+  const double epsilon = 1e-7;
+
+  auto testProperties = [epsilon](const Joint* joint, const size_t idx) {
+    EXPECT_NEAR(joint->getPositionLowerLimit(idx), 0, epsilon);
+    EXPECT_NEAR(joint->getPositionUpperLimit(idx), 3, epsilon);
+    EXPECT_NEAR(joint->getDampingCoefficient(idx), 0, epsilon);
+    EXPECT_NEAR(joint->getCoulombFriction(idx), 1, epsilon);
+    EXPECT_NEAR(joint->getRestPosition(idx), 2, epsilon);
+    EXPECT_NEAR(joint->getSpringStiffness(idx), 3, epsilon);
+  };
+
+  for (auto& joint : skel->getJoints())
+  {
+    if (joint->getType() == PrismaticJoint::getStaticType()
+        || joint->getType() == RevoluteJoint::getStaticType()
+        || joint->getType() == ScrewJoint::getStaticType())
+    {
+      testProperties(joint, 0);
+    }
+    else if (joint->getType() == UniversalJoint::getStaticType())
+    {
+      testProperties(joint, 0);
+      testProperties(joint, 1);
+    }
+  }
 }
 
 //==============================================================================
@@ -101,7 +139,8 @@ TEST(SdfParser, ParsingSDFFiles)
   // Skeleton
   std::vector<common::Uri> skeletonFiles;
   skeletonFiles.push_back("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
-  skeletonFiles.push_back("dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+  skeletonFiles.push_back(
+      "dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
 
   auto world = std::make_shared<World>();
   std::vector<SkeletonPtr> skeletons;
@@ -125,15 +164,17 @@ TEST(SdfParser, ReadMaterial)
 {
   std::string sdf_filename = "dart://sample/sdf/quad.sdf";
   SkeletonPtr skeleton = SdfParser::readSkeleton(sdf_filename);
-  EXPECT_TRUE(nullptr != skeleton);  auto bodynode = skeleton->getBodyNode(0);
+  EXPECT_TRUE(nullptr != skeleton);
+  auto bodynode = skeleton->getBodyNode(0);
 
-  for (auto shapenode : bodynode->getShapeNodes()) {
-    if (shapenode->has<dart::dynamics::VisualAspect>()) {
+  for (auto shapenode : bodynode->getShapeNodes())
+  {
+    if (shapenode->has<dart::dynamics::VisualAspect>())
+    {
       Eigen::Vector4d color = shapenode->getVisualAspect()->getRGBA();
       Eigen::Vector4d expected_color(0.5, 0.6, 0.8, 1.0);
       double diff = (color - expected_color).norm();
       EXPECT_LT(diff, 1e-4);
     }
   }
-
 }

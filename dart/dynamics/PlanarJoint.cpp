@@ -35,9 +35,9 @@
 #include <string>
 
 #include "dart/common/Console.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -51,8 +51,7 @@ PlanarJoint::~PlanarJoint()
 //==============================================================================
 void PlanarJoint::setProperties(const Properties& _properties)
 {
-  Base::setProperties(
-        static_cast<const Base::Properties&>(_properties));
+  Base::setProperties(static_cast<const Base::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -80,7 +79,7 @@ PlanarJoint::Properties PlanarJoint::getPlanarJointProperties() const
 //==============================================================================
 void PlanarJoint::copy(const PlanarJoint& _otherJoint)
 {
-  if(this == &_otherJoint)
+  if (this == &_otherJoint)
     return;
 
   setProperties(_otherJoint.getPlanarJointProperties());
@@ -89,7 +88,7 @@ void PlanarJoint::copy(const PlanarJoint& _otherJoint)
 //==============================================================================
 void PlanarJoint::copy(const PlanarJoint* _otherJoint)
 {
-  if(nullptr == _otherJoint)
+  if (nullptr == _otherJoint)
     return;
 
   copy(*_otherJoint);
@@ -152,9 +151,10 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 }
 
 //==============================================================================
-void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                                    const Eigen::Vector3d& _transAxis2,
-                                    bool _renameDofs)
+void PlanarJoint::setArbitraryPlane(
+    const Eigen::Vector3d& _transAxis1,
+    const Eigen::Vector3d& _transAxis2,
+    bool _renameDofs)
 {
   mAspectProperties.setArbitraryPlane(_transAxis1, _transAxis2);
 
@@ -196,12 +196,12 @@ Eigen::Matrix<double, 6, 3> PlanarJoint::getRelativeJacobianStatic(
   J.block<3, 1>(3, 1) = mAspectProperties.mTransAxis2;
   J.block<3, 1>(0, 2) = mAspectProperties.mRotAxis;
 
-  J.leftCols<2>()
-      = math::AdTJacFixed(Joint::mAspectProperties.mT_ChildBodyToJoint
-                          * math::expAngular(mAspectProperties.mRotAxis
-                                             * -_positions[2]),
-                          J.leftCols<2>());
-  J.col(2) = math::AdTJac(Joint::mAspectProperties.mT_ChildBodyToJoint, J.col(2));
+  J.leftCols<2>() = math::AdTJacFixed(
+      Joint::mAspectProperties.mT_ChildBodyToJoint
+          * math::expAngular(mAspectProperties.mRotAxis * -_positions[2]),
+      J.leftCols<2>());
+  J.col(2)
+      = math::AdTJac(Joint::mAspectProperties.mT_ChildBodyToJoint, J.col(2));
 
   // Verification
   assert(!math::isNan(J));
@@ -249,9 +249,9 @@ void PlanarJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_2");
       break;
     default:
-      dterr << "Unsupported plane type in PlanarJoint named '" << Joint::mAspectProperties.mName
-            << "' (" << static_cast<int>(mAspectProperties.mPlaneType)
-            << ")\n";
+      dterr << "Unsupported plane type in PlanarJoint named '"
+            << Joint::mAspectProperties.mName << "' ("
+            << static_cast<int>(mAspectProperties.mPlaneType) << ")\n";
   }
 
   if (affixes.size() == 2)
@@ -271,7 +271,7 @@ void PlanarJoint::updateRelativeTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(mAspectProperties.mTransAxis1 * positions[0])
        * Eigen::Translation3d(mAspectProperties.mTransAxis2 * positions[1])
-       * math::expAngular    (mAspectProperties.mRotAxis    * positions[2])
+       * math::expAngular(mAspectProperties.mRotAxis * positions[2])
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -294,24 +294,26 @@ void PlanarJoint::updateRelativeJacobianTimeDeriv() const
 
   const Eigen::Matrix<double, 6, 3>& Jacobian = getRelativeJacobianStatic();
   const Eigen::Vector3d& velocities = getVelocitiesStatic();
-  mJacobianDeriv.col(0)
-      = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint
-                            * math::expAngular(mAspectProperties.mRotAxis
-                                               * -getPositionsStatic()[2]),
-                            J.col(0)));
+  mJacobianDeriv.col(0) = -math::ad(
+      Jacobian.col(2) * velocities[2],
+      math::AdT(
+          Joint::mAspectProperties.mT_ChildBodyToJoint
+              * math::expAngular(
+                    mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
+          J.col(0)));
 
-  mJacobianDeriv.col(1)
-      = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint
-                            * math::expAngular(mAspectProperties.mRotAxis
-                                               * -getPositionsStatic()[2]),
-                            J.col(1)));
+  mJacobianDeriv.col(1) = -math::ad(
+      Jacobian.col(2) * velocities[2],
+      math::AdT(
+          Joint::mAspectProperties.mT_ChildBodyToJoint
+              * math::expAngular(
+                    mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
+          J.col(1)));
 
   assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
   assert(!math::isNan(mJacobianDeriv.col(0)));
   assert(!math::isNan(mJacobianDeriv.col(1)));
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

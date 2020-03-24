@@ -34,8 +34,8 @@
 #define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
 
 #include "dart/common/Virtual.hpp"
-#include "dart/dynamics/detail/BasicNodeManager.hpp"
 #include "dart/dynamics/NodeManagerJoiner.hpp"
+#include "dart/dynamics/detail/BasicNodeManager.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -46,17 +46,18 @@ class Skeleton;
 //==============================================================================
 /// Declaration of the variadic template
 template <class... OtherSpecNodes>
-class BodyNodeSpecializedFor { };
+class BodyNodeSpecializedFor
+{
+};
 
 //==============================================================================
 /// BodyNodeSpecializedFor allows classes that inherit BodyNode to
 /// have constant-time access to a specific type of Node
 template <class SpecNode>
-class BodyNodeSpecializedFor<SpecNode> :
-    public virtual detail::BasicNodeManagerForBodyNode
+class BodyNodeSpecializedFor<SpecNode>
+  : public virtual detail::BasicNodeManagerForBodyNode
 {
 public:
-
   /// Default constructor
   BodyNodeSpecializedFor();
 
@@ -77,7 +78,6 @@ public:
   static constexpr bool isSpecializedForNode();
 
 protected:
-
   /// Redirect to BasicNodeManagerForBodyNode::getNumNodes()
   template <class NodeType>
   std::size_t _getNumNodes(type<NodeType>) const;
@@ -101,7 +101,6 @@ protected:
 
   /// Iterator that allows direct access to the specialized Nodes
   BasicNodeManagerForBodyNode::NodeMap::iterator mSpecNodeIterator;
-
 };
 
 //==============================================================================
@@ -109,26 +108,29 @@ protected:
 /// which allows you to include arbitrarily many specialized types in the
 /// specialization.
 template <class SpecNode1, class... OtherSpecNodes>
-class BodyNodeSpecializedFor<SpecNode1, OtherSpecNodes...> :
-    public NodeManagerJoinerForBodyNode<
-      common::Virtual< BodyNodeSpecializedFor<SpecNode1> >,
-      common::Virtual< BodyNodeSpecializedFor<OtherSpecNodes...> > > { };
+class BodyNodeSpecializedFor<SpecNode1, OtherSpecNodes...>
+  : public NodeManagerJoinerForBodyNode<
+        common::Virtual<BodyNodeSpecializedFor<SpecNode1> >,
+        common::Virtual<BodyNodeSpecializedFor<OtherSpecNodes...> > >
+{
+};
 
 //==============================================================================
 /// Declaration of the variadic template
 template <class... OtherSpecNodes>
-class SkeletonSpecializedFor { };
+class SkeletonSpecializedFor
+{
+};
 
 //==============================================================================
 /// SkeletonSpecializedForNode allows classes that inherit Skeleton to
 /// have constant-time access to a specific type of Node
 template <class SpecNode>
-class SkeletonSpecializedFor<SpecNode> :
-    public virtual detail::BasicNodeManagerForSkeleton,
+class SkeletonSpecializedFor<SpecNode>
+  : public virtual detail::BasicNodeManagerForSkeleton,
     public virtual BodyNodeSpecializedFor<SpecNode>
 {
 public:
-
   using BodyNodeSpecializedFor<SpecNode>::getNode;
   using BodyNodeSpecializedFor<SpecNode>::getNumNodes;
   using BodyNodeSpecializedFor<SpecNode>::isSpecializedForNode;
@@ -163,7 +165,6 @@ public:
   static constexpr bool isSpecializedForNode();
 
 protected:
-
   /// Redirect to BasicNodeManagerForSkeleton::getNumNodes(std::size_t)
   template <class NodeType>
   std::size_t _getNumNodes(type<NodeType>, std::size_t treeIndex) const;
@@ -173,10 +174,12 @@ protected:
 
   /// Redirect to BasicNodeManagerForSkeleton::getNode(std::size_t, std::size_t)
   template <class NodeType>
-  NodeType* _getNode(type<NodeType>, std::size_t treeIndex, std::size_t nodeIndex);
+  NodeType* _getNode(
+      type<NodeType>, std::size_t treeIndex, std::size_t nodeIndex);
 
   /// Specialized implementation of getNode(std::size_t, std::size_t)
-  SpecNode* _getNode(type<SpecNode>, std::size_t treeIndex, std::size_t nodeIndex);
+  SpecNode* _getNode(
+      type<SpecNode>, std::size_t treeIndex, std::size_t nodeIndex);
 
   /// Redirect to BasicNodeManagerForSkeleton::getNode(const std::string&)
   template <class NodeType>
@@ -194,12 +197,12 @@ protected:
 
   /// std::vector of iterators that allow direct access to the specialized Nodes
   /// of each tree
-  std::vector<BasicNodeManagerForBodyNode::NodeMap::iterator> mTreeSpecNodeIterators;
+  std::vector<BasicNodeManagerForBodyNode::NodeMap::iterator>
+      mTreeSpecNodeIterators;
 
   /// Iterator that gives direct access to the name manager of the specialized
   /// Nodes
   NodeNameMgrMap::iterator mSpecNodeNameMgrIterator;
-
 };
 
 //==============================================================================
@@ -207,10 +210,12 @@ protected:
 /// which allows you to include arbitrarily many specialized types in the
 /// specialization.
 template <class SpecNode1, class... OtherSpecNodes>
-class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...> :
-    public NodeManagerJoinerForSkeleton<
-      common::Virtual< SkeletonSpecializedFor<SpecNode1> >,
-      common::Virtual< SkeletonSpecializedFor<OtherSpecNodes...> > > { };
+class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...>
+  : public NodeManagerJoinerForSkeleton<
+        common::Virtual<SkeletonSpecializedFor<SpecNode1> >,
+        common::Virtual<SkeletonSpecializedFor<OtherSpecNodes...> > >
+{
+};
 
 } // namespace dynamics
 } // namespace dart

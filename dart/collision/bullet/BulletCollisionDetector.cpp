@@ -33,45 +33,59 @@
 // Must be included before any Bullet headers.
 #include "dart/config.hpp"
 
+#include <algorithm>
+
 #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
-#include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+#include <BulletCollision/Gimpact/btGImpactShape.h>
 
-#include "dart/common/Console.hpp"
-#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
+#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
 namespace dart {
 namespace collision {
 
 namespace {
 
-Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       BulletCollisionObject* collObj1,
-                       BulletCollisionObject* collObj2);
+Contact convertContact(
+    const btManifoldPoint& bulletManifoldPoint,
+    BulletCollisionObject* collObj1,
+    BulletCollisionObject* collObj2);
 
-void reportContacts(btCollisionWorld* collWorld,
-                     const CollisionOption& option,
-                     CollisionResult& result);
+void reportContacts(
+    btCollisionWorld* collWorld,
+    const CollisionOption& option,
+    CollisionResult& result);
+
+void reportRayHits(
+    const btCollisionWorld::ClosestRayResultCallback callback,
+    const RaycastOption& option,
+    RaycastResult& result);
+
+void reportRayHits(
+    const btCollisionWorld::AllHitsRayResultCallback callback,
+    const RaycastOption& option,
+    RaycastResult& result);
 
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ);
@@ -79,26 +93,28 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene);
 
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh);
+std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
+    const aiMesh* mesh);
 
 template <typename HeightmapShapeT>
 std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap);
+
 } // anonymous namespace
 
 //==============================================================================
 BulletCollisionDetector::Registrar<BulletCollisionDetector>
-BulletCollisionDetector::mRegistrar{
-  BulletCollisionDetector::getStaticType(),
-  []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
-      return dart::collision::BulletCollisionDetector::create();
-  }};
+    BulletCollisionDetector::mRegistrar{
+        BulletCollisionDetector::getStaticType(),
+        []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+          return dart::collision::BulletCollisionDetector::create();
+        }};
 
 //==============================================================================
 std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 {
   return std::shared_ptr<BulletCollisionDetector>(
-        new BulletCollisionDetector());
+      new BulletCollisionDetector());
 }
 
 //==============================================================================
@@ -109,7 +125,7 @@ BulletCollisionDetector::~BulletCollisionDetector()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-BulletCollisionDetector::cloneWithoutCollisionObjects()
+BulletCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return BulletCollisionDetector::create();
 }
@@ -128,10 +144,9 @@ const std::string& BulletCollisionDetector::getStaticType()
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroup>
-BulletCollisionDetector::createCollisionGroup()
+std::unique_ptr<CollisionGroup> BulletCollisionDetector::createCollisionGroup()
 {
-  return common::make_unique<BulletCollisionGroup>(shared_from_this());
+  return std::make_unique<BulletCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
@@ -176,8 +191,8 @@ void filterOutCollisions(btCollisionWorld* world)
 {
   assert(world);
 
-  auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
-      world->getDispatcher());
+  auto dispatcher
+      = static_cast<detail::BulletCollisionDispatcher*>(world->getDispatcher());
   assert(dispatcher);
 
   const auto filter = dispatcher->getFilter();
@@ -252,8 +267,10 @@ bool BulletCollisionDetector::collide(
 
 //==============================================================================
 bool BulletCollisionDetector::collide(
-    CollisionGroup* group1, CollisionGroup* group2,
-    const CollisionOption& option, CollisionResult* result)
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const CollisionOption& option,
+    CollisionResult* result)
 {
   if (result)
     result->clear();
@@ -277,7 +294,8 @@ bool BulletCollisionDetector::collide(
   mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
   auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback = new detail::BulletOverlapFilterCallback(option.collisionFilter);
+  auto filterCallback
+      = new detail::BulletOverlapFilterCallback(option.collisionFilter);
   bulletPairCache->setOverlapFilterCallback(filterCallback);
 
   mGroupForFiltering->addShapeFramesOf(group1, group2);
@@ -323,8 +341,62 @@ double BulletCollisionDetector::distance(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollisionDetector()
-  : CollisionDetector()
+bool BulletCollisionDetector::raycast(
+    CollisionGroup* group,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result)
+{
+  if (result)
+    result->clear();
+
+  // Check if 'this' is the collision engine of 'group'.
+  if (!checkGroupValidity(this, group))
+    return false;
+
+  auto castedGroup = static_cast<BulletCollisionGroup*>(group);
+  auto collisionWorld = castedGroup->getBulletCollisionWorld();
+
+  const auto btFrom = convertVector3(from);
+  const auto btTo = convertVector3(to);
+
+  if (option.mEnableAllHits)
+  {
+    auto callback = btCollisionWorld::AllHitsRayResultCallback(btFrom, btTo);
+    castedGroup->updateEngineData();
+    collisionWorld->rayTest(btFrom, btTo, callback);
+
+    if (result)
+    {
+      reportRayHits(callback, option, *result);
+      return result->hasHit();
+    }
+    else
+    {
+      return callback.hasHit();
+    }
+  }
+  else
+  {
+    auto callback = btCollisionWorld::ClosestRayResultCallback(btFrom, btTo);
+    castedGroup->updateEngineData();
+    collisionWorld->rayTest(btFrom, btTo, callback);
+
+    if (result)
+    {
+      reportRayHits(callback, option, *result);
+      return result->hasHit();
+    }
+    else
+    {
+      return callback.hasHit();
+    }
+  }
+}
+
+//==============================================================================
+BulletCollisionDetector::BulletCollisionDetector() : CollisionDetector()
 {
   mCollisionObjectManager.reset(new ManagerForUnsharableCollisionObjects(this));
 }
@@ -336,7 +408,7 @@ std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
   auto bulletCollShape = claimBulletCollisionShape(shapeFrame->getShape());
 
   return std::unique_ptr<BulletCollisionObject>(
-        new BulletCollisionObject(this, shapeFrame, bulletCollShape));
+      new BulletCollisionObject(this, shapeFrame, bulletCollShape));
 }
 
 //==============================================================================
@@ -346,7 +418,7 @@ void BulletCollisionDetector::refreshCollisionObject(CollisionObject* object)
 
   bullet->mBulletCollisionShape = claimBulletCollisionShape(bullet->getShape());
   bullet->mBulletCollisionObject->setCollisionShape(
-        bullet->mBulletCollisionShape->mCollisionShape.get());
+      bullet->mBulletCollisionShape->mCollisionShape.get());
 }
 
 //==============================================================================
@@ -376,8 +448,8 @@ BulletCollisionDetector::claimBulletCollisionShape(
   }
 
   auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
-        createBulletCollisionShape(shape).release(),
-        BulletCollisionShapeDeleter(this, shape));
+      createBulletCollisionShape(shape).release(),
+      BulletCollisionShapeDeleter(this, shape));
   info.mShape = newBulletCollisionShape;
   info.mLastKnownVersion = currentVersion;
 
@@ -389,11 +461,11 @@ void BulletCollisionDetector::reclaimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
   const auto& search = mShapeMap.find(shape);
-  if(search == mShapeMap.end())
+  if (search == mShapeMap.end())
     return;
 
   const auto& bulletShape = search->second.mShape.lock();
-  if(!bulletShape || bulletShape.use_count() <= 2)
+  if (!bulletShape || bulletShape.use_count() <= 2)
     mShapeMap.erase(search);
 }
 
@@ -402,19 +474,19 @@ std::unique_ptr<BulletCollisionShape>
 BulletCollisionDetector::createBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
-  using dynamics::Shape;
-  using dynamics::SphereShape;
   using dynamics::BoxShape;
-  using dynamics::EllipsoidShape;
-  using dynamics::CylinderShape;
   using dynamics::CapsuleShape;
   using dynamics::ConeShape;
-  using dynamics::PlaneShape;
-  using dynamics::MultiSphereConvexHullShape;
-  using dynamics::MeshShape;
-  using dynamics::SoftMeshShape;
-  using dynamics::HeightmapShapef;
+  using dynamics::CylinderShape;
+  using dynamics::EllipsoidShape;
   using dynamics::HeightmapShaped;
+  using dynamics::HeightmapShapef;
+  using dynamics::MeshShape;
+  using dynamics::MultiSphereConvexHullShape;
+  using dynamics::PlaneShape;
+  using dynamics::Shape;
+  using dynamics::SoftMeshShape;
+  using dynamics::SphereShape;
 
   if (shape->is<SphereShape>())
   {
@@ -423,10 +495,10 @@ BulletCollisionDetector::createBulletCollisionShape(
     const auto sphere = static_cast<const SphereShape*>(shape.get());
     const auto radius = sphere->getRadius();
 
-    auto bulletCollisionShape = common::make_unique<btSphereShape>(radius);
+    auto bulletCollisionShape = std::make_unique<btSphereShape>(radius);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<BoxShape>())
   {
@@ -436,10 +508,10 @@ BulletCollisionDetector::createBulletCollisionShape(
     const Eigen::Vector3d& size = box->getSize();
 
     auto bulletCollisionShape
-        = common::make_unique<btBoxShape>(convertVector3(size*0.5));
+        = std::make_unique<btBoxShape>(convertVector3(size * 0.5));
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<EllipsoidShape>())
   {
@@ -449,10 +521,10 @@ BulletCollisionDetector::createBulletCollisionShape(
     const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
     auto bulletCollisionShape = createBulletEllipsoidMesh(
-          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
+        radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<CylinderShape>())
   {
@@ -463,10 +535,10 @@ BulletCollisionDetector::createBulletCollisionShape(
     const auto height = cylinder->getHeight();
     const auto size = btVector3(radius, radius, height * 0.5);
 
-    auto bulletCollisionShape = common::make_unique<btCylinderShapeZ>(size);
+    auto bulletCollisionShape = std::make_unique<btCylinderShapeZ>(size);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<CapsuleShape>())
   {
@@ -477,10 +549,10 @@ BulletCollisionDetector::createBulletCollisionShape(
     const auto height = capsule->getHeight();
 
     auto bulletCollisionShape
-        = common::make_unique<btCapsuleShapeZ>(radius, height);
+        = std::make_unique<btCapsuleShapeZ>(radius, height);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<ConeShape>())
   {
@@ -490,16 +562,15 @@ BulletCollisionDetector::createBulletCollisionShape(
     const auto radius = cone->getRadius();
     const auto height = cone->getHeight();
 
-    auto bulletCollisionShape
-        = common::make_unique<btConeShapeZ>(radius, height);
+    auto bulletCollisionShape = std::make_unique<btConeShapeZ>(radius, height);
     bulletCollisionShape->setMargin(0.0);
     // TODO(JS): Bullet seems to use constant margin 0.4, however this could be
     // dangerous when the cone is sufficiently small. We use zero margin here
     // until find better solution even using zero margin is not recommended:
     // https://www.sjbaker.org/wiki/index.php?title=Physics_-_Bullet_Collected_random_advice#Minimum_object_sizes_-_by_Erwin
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<PlaneShape>())
   {
@@ -509,11 +580,11 @@ BulletCollisionDetector::createBulletCollisionShape(
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
-    auto bulletCollisionShape = common::make_unique<btStaticPlaneShape>(
-          convertVector3(normal), offset);
+    auto bulletCollisionShape
+        = std::make_unique<btStaticPlaneShape>(convertVector3(normal), offset);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<MultiSphereConvexHullShape>())
   {
@@ -533,11 +604,11 @@ BulletCollisionDetector::createBulletCollisionShape(
       bulletPositions[i] = convertVector3(spheres[i].second);
     }
 
-    auto bulletCollisionShape = common::make_unique<btMultiSphereShape>(
-          bulletPositions.data(), bulletRadii.data(), numSpheres);
+    auto bulletCollisionShape = std::make_unique<btMultiSphereShape>(
+        bulletPositions.data(), bulletRadii.data(), numSpheres);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<MeshShape>())
   {
@@ -547,11 +618,11 @@ BulletCollisionDetector::createBulletCollisionShape(
     const auto scale = shapeMesh->getScale();
     const auto mesh = shapeMesh->getMesh();
 
-    auto bulletCollisionShape = createBulletCollisionShapeFromAssimpScene(
-          scale, mesh);
+    auto bulletCollisionShape
+        = createBulletCollisionShapeFromAssimpScene(scale, mesh);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<SoftMeshShape>())
   {
@@ -562,8 +633,8 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     auto bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
 
-    return common::make_unique<BulletCollisionShape>(
-          std::move(bulletCollisionShape));
+    return std::make_unique<BulletCollisionShape>(
+        std::move(bulletCollisionShape));
   }
   else if (shape->is<HeightmapShapef>())
   {
@@ -582,8 +653,8 @@ BulletCollisionDetector::createBulletCollisionShape(
           << shape->getType() << "]). Creating a sphere with 0.1 radius "
           << "instead.\n";
 
-    return common::make_unique<BulletCollisionShape>(
-          common::make_unique<btSphereShape>(0.1));
+    return std::make_unique<BulletCollisionShape>(
+        std::make_unique<btSphereShape>(0.1));
 
     // take this back in as soon as bullet supports double in heightmaps
     // const auto heightMap = static_cast<const HeightmapShaped*>(shape.get());
@@ -596,25 +667,23 @@ BulletCollisionDetector::createBulletCollisionShape(
           << shape->getType() << "] Creating a sphere with 0.1 radius "
           << "instead.\n";
 
-    return common::make_unique<BulletCollisionShape>(
-          common::make_unique<btSphereShape>(0.1));
+    return std::make_unique<BulletCollisionShape>(
+        std::make_unique<btSphereShape>(0.1));
   }
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollisionShapeDeleter
-::BulletCollisionShapeDeleter(
-    BulletCollisionDetector* cd,
-    const dynamics::ConstShapePtr& shape)
-  : mBulletCollisionDetector(cd),
-    mShape(shape)
+BulletCollisionDetector::BulletCollisionShapeDeleter ::
+    BulletCollisionShapeDeleter(
+        BulletCollisionDetector* cd, const dynamics::ConstShapePtr& shape)
+  : mBulletCollisionDetector(cd), mShape(shape)
 {
   // Do nothing
 }
 
 //==============================================================================
-void BulletCollisionDetector::BulletCollisionShapeDeleter
-::operator()(BulletCollisionShape* shape) const
+void BulletCollisionDetector::BulletCollisionShapeDeleter ::operator()(
+    BulletCollisionShape* shape) const
 {
   mBulletCollisionDetector->reclaimBulletCollisionShape(mShape);
 
@@ -624,9 +693,10 @@ void BulletCollisionDetector::BulletCollisionShapeDeleter
 namespace {
 
 //==============================================================================
-Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       BulletCollisionObject* collObj1,
-                       BulletCollisionObject* collObj2)
+Contact convertContact(
+    const btManifoldPoint& bulletManifoldPoint,
+    BulletCollisionObject* collObj1,
+    BulletCollisionObject* collObj2)
 {
   assert(collObj1);
   assert(collObj2);
@@ -650,8 +720,8 @@ void reportContacts(
 {
   assert(world);
 
-  auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
-      world->getDispatcher());
+  auto dispatcher
+      = static_cast<detail::BulletCollisionDispatcher*>(world->getDispatcher());
   assert(dispatcher);
 
   const auto numManifolds = dispatcher->getNumManifolds();
@@ -695,187 +765,164 @@ void reportContacts(
 }
 
 //==============================================================================
+RayHit convertRayHit(
+    const btCollisionObject* btCollObj,
+    btVector3 hitPointWorld,
+    btVector3 hitNormalWorld,
+    btScalar closestHitFraction)
+{
+  RayHit rayHit;
+  assert(btCollObj);
+  const auto* userPointer = btCollObj->getUserPointer();
+  assert(userPointer);
+  const auto* collObj = static_cast<const BulletCollisionObject*>(userPointer);
+  assert(collObj);
+  rayHit.mCollisionObject = collObj;
+  rayHit.mPoint = convertVector3(hitPointWorld);
+  rayHit.mNormal = convertVector3(hitNormalWorld);
+  rayHit.mFraction = static_cast<double>(closestHitFraction);
+
+  return rayHit;
+}
+
+//==============================================================================
+void reportRayHits(
+    const btCollisionWorld::ClosestRayResultCallback callback,
+    const RaycastOption& /*option*/,
+    RaycastResult& result)
+{
+  const auto rayHit = convertRayHit(
+      callback.m_collisionObject,
+      callback.m_hitPointWorld,
+      callback.m_hitNormalWorld,
+      callback.m_closestHitFraction);
+
+  result.mRayHits.clear();
+  result.mRayHits.reserve(1);
+  result.mRayHits.emplace_back(rayHit);
+}
+
+//==============================================================================
+struct FractionLess
+{
+  bool operator()(const RayHit& a, const RayHit& b)
+  {
+    return a.mFraction < b.mFraction;
+  }
+};
+
+//==============================================================================
+void reportRayHits(
+    const btCollisionWorld::AllHitsRayResultCallback callback,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  result.mRayHits.clear();
+  result.mRayHits.reserve(
+      static_cast<std::size_t>(callback.m_hitPointWorld.size()));
+
+  for (auto i = 0; i < callback.m_hitPointWorld.size(); ++i)
+  {
+    const auto rayHit = convertRayHit(
+        callback.m_collisionObjects[i],
+        callback.m_hitPointWorld[i],
+        callback.m_hitNormalWorld[i],
+        callback.m_hitFractions[i]);
+    result.mRayHits.emplace_back(rayHit);
+  }
+
+  if (option.mSortByClosest)
+    std::sort(result.mRayHits.begin(), result.mRayHits.end(), FractionLess());
+}
+
+//==============================================================================
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ)
 {
-  float v[59][3] =
-  {
-    {0, 0, 0},
-    {0.135299, -0.461940, -0.135299},
-    {0.000000, -0.461940, -0.191342},
-    {-0.135299, -0.461940, -0.135299},
-    {-0.191342, -0.461940, 0.000000},
-    {-0.135299, -0.461940, 0.135299},
-    {0.000000, -0.461940, 0.191342},
-    {0.135299, -0.461940, 0.135299},
-    {0.191342, -0.461940, 0.000000},
-    {0.250000, -0.353553, -0.250000},
-    {0.000000, -0.353553, -0.353553},
-    {-0.250000, -0.353553, -0.250000},
-    {-0.353553, -0.353553, 0.000000},
-    {-0.250000, -0.353553, 0.250000},
-    {0.000000, -0.353553, 0.353553},
-    {0.250000, -0.353553, 0.250000},
-    {0.353553, -0.353553, 0.000000},
-    {0.326641, -0.191342, -0.326641},
-    {0.000000, -0.191342, -0.461940},
-    {-0.326641, -0.191342, -0.326641},
-    {-0.461940, -0.191342, 0.000000},
-    {-0.326641, -0.191342, 0.326641},
-    {0.000000, -0.191342, 0.461940},
-    {0.326641, -0.191342, 0.326641},
-    {0.461940, -0.191342, 0.000000},
-    {0.353553, 0.000000, -0.353553},
-    {0.000000, 0.000000, -0.500000},
-    {-0.353553, 0.000000, -0.353553},
-    {-0.500000, 0.000000, 0.000000},
-    {-0.353553, 0.000000, 0.353553},
-    {0.000000, 0.000000, 0.500000},
-    {0.353553, 0.000000, 0.353553},
-    {0.500000, 0.000000, 0.000000},
-    {0.326641, 0.191342, -0.326641},
-    {0.000000, 0.191342, -0.461940},
-    {-0.326641, 0.191342, -0.326641},
-    {-0.461940, 0.191342, 0.000000},
-    {-0.326641, 0.191342, 0.326641},
-    {0.000000, 0.191342, 0.461940},
-    {0.326641, 0.191342, 0.326641},
-    {0.461940, 0.191342, 0.000000},
-    {0.250000, 0.353553, -0.250000},
-    {0.000000, 0.353553, -0.353553},
-    {-0.250000, 0.353553, -0.250000},
-    {-0.353553, 0.353553, 0.000000},
-    {-0.250000, 0.353553, 0.250000},
-    {0.000000, 0.353553, 0.353553},
-    {0.250000, 0.353553, 0.250000},
-    {0.353553, 0.353553, 0.000000},
-    {0.135299, 0.461940, -0.135299},
-    {0.000000, 0.461940, -0.191342},
-    {-0.135299, 0.461940, -0.135299},
-    {-0.191342, 0.461940, 0.000000},
-    {-0.135299, 0.461940, 0.135299},
-    {0.000000, 0.461940, 0.191342},
-    {0.135299, 0.461940, 0.135299},
-    {0.191342, 0.461940, 0.000000},
-    {0.000000, -0.500000, 0.000000},
-    {0.000000, 0.500000, 0.000000}
-  };
+  float v[59][3] = {{0, 0, 0},
+                    {0.135299, -0.461940, -0.135299},
+                    {0.000000, -0.461940, -0.191342},
+                    {-0.135299, -0.461940, -0.135299},
+                    {-0.191342, -0.461940, 0.000000},
+                    {-0.135299, -0.461940, 0.135299},
+                    {0.000000, -0.461940, 0.191342},
+                    {0.135299, -0.461940, 0.135299},
+                    {0.191342, -0.461940, 0.000000},
+                    {0.250000, -0.353553, -0.250000},
+                    {0.000000, -0.353553, -0.353553},
+                    {-0.250000, -0.353553, -0.250000},
+                    {-0.353553, -0.353553, 0.000000},
+                    {-0.250000, -0.353553, 0.250000},
+                    {0.000000, -0.353553, 0.353553},
+                    {0.250000, -0.353553, 0.250000},
+                    {0.353553, -0.353553, 0.000000},
+                    {0.326641, -0.191342, -0.326641},
+                    {0.000000, -0.191342, -0.461940},
+                    {-0.326641, -0.191342, -0.326641},
+                    {-0.461940, -0.191342, 0.000000},
+                    {-0.326641, -0.191342, 0.326641},
+                    {0.000000, -0.191342, 0.461940},
+                    {0.326641, -0.191342, 0.326641},
+                    {0.461940, -0.191342, 0.000000},
+                    {0.353553, 0.000000, -0.353553},
+                    {0.000000, 0.000000, -0.500000},
+                    {-0.353553, 0.000000, -0.353553},
+                    {-0.500000, 0.000000, 0.000000},
+                    {-0.353553, 0.000000, 0.353553},
+                    {0.000000, 0.000000, 0.500000},
+                    {0.353553, 0.000000, 0.353553},
+                    {0.500000, 0.000000, 0.000000},
+                    {0.326641, 0.191342, -0.326641},
+                    {0.000000, 0.191342, -0.461940},
+                    {-0.326641, 0.191342, -0.326641},
+                    {-0.461940, 0.191342, 0.000000},
+                    {-0.326641, 0.191342, 0.326641},
+                    {0.000000, 0.191342, 0.461940},
+                    {0.326641, 0.191342, 0.326641},
+                    {0.461940, 0.191342, 0.000000},
+                    {0.250000, 0.353553, -0.250000},
+                    {0.000000, 0.353553, -0.353553},
+                    {-0.250000, 0.353553, -0.250000},
+                    {-0.353553, 0.353553, 0.000000},
+                    {-0.250000, 0.353553, 0.250000},
+                    {0.000000, 0.353553, 0.353553},
+                    {0.250000, 0.353553, 0.250000},
+                    {0.353553, 0.353553, 0.000000},
+                    {0.135299, 0.461940, -0.135299},
+                    {0.000000, 0.461940, -0.191342},
+                    {-0.135299, 0.461940, -0.135299},
+                    {-0.191342, 0.461940, 0.000000},
+                    {-0.135299, 0.461940, 0.135299},
+                    {0.000000, 0.461940, 0.191342},
+                    {0.135299, 0.461940, 0.135299},
+                    {0.191342, 0.461940, 0.000000},
+                    {0.000000, -0.500000, 0.000000},
+                    {0.000000, 0.500000, 0.000000}};
 
-  int f[112][3] =
-  {
-    {1, 2, 9},
-    {9, 2, 10},
-    {2, 3, 10},
-    {10, 3, 11},
-    {3, 4, 11},
-    {11, 4, 12},
-    {4, 5, 12},
-    {12, 5, 13},
-    {5, 6, 13},
-    {13, 6, 14},
-    {6, 7, 14},
-    {14, 7, 15},
-    {7, 8, 15},
-    {15, 8, 16},
-    {8, 1, 16},
-    {16, 1, 9},
-    {9, 10, 17},
-    {17, 10, 18},
-    {10, 11, 18},
-    {18, 11, 19},
-    {11, 12, 19},
-    {19, 12, 20},
-    {12, 13, 20},
-    {20, 13, 21},
-    {13, 14, 21},
-    {21, 14, 22},
-    {14, 15, 22},
-    {22, 15, 23},
-    {15, 16, 23},
-    {23, 16, 24},
-    {16, 9, 24},
-    {24, 9, 17},
-    {17, 18, 25},
-    {25, 18, 26},
-    {18, 19, 26},
-    {26, 19, 27},
-    {19, 20, 27},
-    {27, 20, 28},
-    {20, 21, 28},
-    {28, 21, 29},
-    {21, 22, 29},
-    {29, 22, 30},
-    {22, 23, 30},
-    {30, 23, 31},
-    {23, 24, 31},
-    {31, 24, 32},
-    {24, 17, 32},
-    {32, 17, 25},
-    {25, 26, 33},
-    {33, 26, 34},
-    {26, 27, 34},
-    {34, 27, 35},
-    {27, 28, 35},
-    {35, 28, 36},
-    {28, 29, 36},
-    {36, 29, 37},
-    {29, 30, 37},
-    {37, 30, 38},
-    {30, 31, 38},
-    {38, 31, 39},
-    {31, 32, 39},
-    {39, 32, 40},
-    {32, 25, 40},
-    {40, 25, 33},
-    {33, 34, 41},
-    {41, 34, 42},
-    {34, 35, 42},
-    {42, 35, 43},
-    {35, 36, 43},
-    {43, 36, 44},
-    {36, 37, 44},
-    {44, 37, 45},
-    {37, 38, 45},
-    {45, 38, 46},
-    {38, 39, 46},
-    {46, 39, 47},
-    {39, 40, 47},
-    {47, 40, 48},
-    {40, 33, 48},
-    {48, 33, 41},
-    {41, 42, 49},
-    {49, 42, 50},
-    {42, 43, 50},
-    {50, 43, 51},
-    {43, 44, 51},
-    {51, 44, 52},
-    {44, 45, 52},
-    {52, 45, 53},
-    {45, 46, 53},
-    {53, 46, 54},
-    {46, 47, 54},
-    {54, 47, 55},
-    {47, 48, 55},
-    {55, 48, 56},
-    {48, 41, 56},
-    {56, 41, 49},
-    {2, 1, 57},
-    {3, 2, 57},
-    {4, 3, 57},
-    {5, 4, 57},
-    {6, 5, 57},
-    {7, 6, 57},
-    {8, 7, 57},
-    {1, 8, 57},
-    {49, 50, 58},
-    {50, 51, 58},
-    {51, 52, 58},
-    {52, 53, 58},
-    {53, 54, 58},
-    {54, 55, 58},
-    {55, 56, 58},
-    {56, 49, 58}
-  };
+  int f[112][3]
+      = {{1, 2, 9},    {9, 2, 10},   {2, 3, 10},   {10, 3, 11},  {3, 4, 11},
+         {11, 4, 12},  {4, 5, 12},   {12, 5, 13},  {5, 6, 13},   {13, 6, 14},
+         {6, 7, 14},   {14, 7, 15},  {7, 8, 15},   {15, 8, 16},  {8, 1, 16},
+         {16, 1, 9},   {9, 10, 17},  {17, 10, 18}, {10, 11, 18}, {18, 11, 19},
+         {11, 12, 19}, {19, 12, 20}, {12, 13, 20}, {20, 13, 21}, {13, 14, 21},
+         {21, 14, 22}, {14, 15, 22}, {22, 15, 23}, {15, 16, 23}, {23, 16, 24},
+         {16, 9, 24},  {24, 9, 17},  {17, 18, 25}, {25, 18, 26}, {18, 19, 26},
+         {26, 19, 27}, {19, 20, 27}, {27, 20, 28}, {20, 21, 28}, {28, 21, 29},
+         {21, 22, 29}, {29, 22, 30}, {22, 23, 30}, {30, 23, 31}, {23, 24, 31},
+         {31, 24, 32}, {24, 17, 32}, {32, 17, 25}, {25, 26, 33}, {33, 26, 34},
+         {26, 27, 34}, {34, 27, 35}, {27, 28, 35}, {35, 28, 36}, {28, 29, 36},
+         {36, 29, 37}, {29, 30, 37}, {37, 30, 38}, {30, 31, 38}, {38, 31, 39},
+         {31, 32, 39}, {39, 32, 40}, {32, 25, 40}, {40, 25, 33}, {33, 34, 41},
+         {41, 34, 42}, {34, 35, 42}, {42, 35, 43}, {35, 36, 43}, {43, 36, 44},
+         {36, 37, 44}, {44, 37, 45}, {37, 38, 45}, {45, 38, 46}, {38, 39, 46},
+         {46, 39, 47}, {39, 40, 47}, {47, 40, 48}, {40, 33, 48}, {48, 33, 41},
+         {41, 42, 49}, {49, 42, 50}, {42, 43, 50}, {50, 43, 51}, {43, 44, 51},
+         {51, 44, 52}, {44, 45, 52}, {52, 45, 53}, {45, 46, 53}, {53, 46, 54},
+         {46, 47, 54}, {54, 47, 55}, {47, 48, 55}, {55, 48, 56}, {48, 41, 56},
+         {56, 41, 49}, {2, 1, 57},   {3, 2, 57},   {4, 3, 57},   {5, 4, 57},
+         {6, 5, 57},   {7, 6, 57},   {8, 7, 57},   {1, 8, 57},   {49, 50, 58},
+         {50, 51, 58}, {51, 52, 58}, {52, 53, 58}, {53, 54, 58}, {54, 55, 58},
+         {55, 56, 58}, {56, 49, 58}};
 
   auto triMesh = new btTriangleMesh();
 
@@ -898,10 +945,10 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
+  auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
-  return std::move(gimpactMeshShape);
+  return gimpactMeshShape;
 }
 
 //==============================================================================
@@ -917,21 +964,21 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
       btVector3 vertices[3];
       for (auto k = 0u; k < 3; ++k)
       {
-        const aiVector3D& vertex = scene->mMeshes[i]->mVertices[
-                                   scene->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = btVector3(vertex.x * scale[0],
-                                vertex.y * scale[1],
-                                vertex.z * scale[2]);
+        const aiVector3D& vertex
+            = scene->mMeshes[i]
+                  ->mVertices[scene->mMeshes[i]->mFaces[j].mIndices[k]];
+        vertices[k] = btVector3(
+            vertex.x * scale[0], vertex.y * scale[1], vertex.z * scale[2]);
       }
       triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
   }
 
-  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
+  auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
   gimpactMeshShape->setUserPointer(triMesh);
 
-  return std::move(gimpactMeshShape);
+  return gimpactMeshShape;
 }
 
 //==============================================================================
@@ -951,20 +998,19 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
     triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
+  auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
-  return std::move(gimpactMeshShape);
+  return gimpactMeshShape;
 }
 
 //==============================================================================
 template <typename HeightmapShapeT>
-std::unique_ptr<BulletCollisionShape>
-createBulletCollisionShapeFromHeightmap(
+std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap)
 {
   // get the heightmap parameters
-  const Eigen::Vector3d& scale = heightMap->getScale();
+  const auto& scale = heightMap->getScale();
   const auto minHeight = heightMap->getMinHeight();
   const auto maxHeight = heightMap->getMaxHeight();
 
@@ -978,12 +1024,6 @@ createBulletCollisionShapeFromHeightmap(
     // scalarType = PHY_DOUBLE;
   }
 
-  // TODO take this out when testing is finished
-/*  dtdbg << "Creating height shape, heights w = "
-        << heightMap->getWidth() << ", h = " << heightMap->getDepth()
-        << " min/max = " << minHeight << "/" << maxHeight << " scale = "
-        << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;*/
-
   // the y-values in the height field need to be flipped
   heightMap->flipY();
 
@@ -992,23 +1032,24 @@ createBulletCollisionShapeFromHeightmap(
   // create the height field
   const btVector3 localScaling(scale.x(), scale.y(), scale.z());
   const bool flipQuadEdges = false;
-  auto heightFieldShape = common::make_unique<btHeightfieldTerrainShape>(
-      heightMap->getWidth(),   // Width of height field
-      heightMap->getDepth(),   // Depth of height field
-      heights.data(),          // Height values
-      1,                       // Height scaling
-      minHeight,               // Min height
-      maxHeight,               // Max height
-      2,                       // Up axis
-      scalarType,              // Float or double field
-      flipQuadEdges);          // Flip quad edges
+  auto heightFieldShape = std::make_unique<btHeightfieldTerrainShape>(
+      heightMap->getWidth(), // Width of height field
+      heightMap->getDepth(), // Depth of height field
+      heights.data(),        // Height values
+      1,                     // Height scaling
+      minHeight,             // Min height
+      maxHeight,             // Max height
+      2,                     // Up axis
+      scalarType,            // Float or double field
+      flipQuadEdges);        // Flip quad edges
   heightFieldShape->setLocalScaling(localScaling);
   heightFieldShape->setUseZigzagSubdivision(true);
 
   // change the relative transform of the height field so that the minimum
   // height is at the same z coordinate. Bullet shifts the height map such
   // that its center is the AABB center.
-  const btVector3 trans(0, 0, ((maxHeight - minHeight)*0.5 + minHeight)*scale.z());
+  const btVector3 trans(
+      0, 0, ((maxHeight - minHeight) * 0.5 + minHeight) * scale.z());
   btTransform relativeShapeTransform(btMatrix3x3::getIdentity(), trans);
 
   // bullet places the heightfield such that the origin is in the
@@ -1017,12 +1058,12 @@ createBulletCollisionShapeFromHeightmap(
   btVector3 min;
   btVector3 max;
   heightFieldShape->getAabb(btTransform::getIdentity(), min, max);
-  dtdbg << "DART Bullet heightfield AABB: min = {"
-        << min.x() << ", " << min.y() << ", " << min.z() << "}, max = {"
-        << max.x() << ", " << max.y() << ", " << max.z() << "}"
+  dtdbg << "DART Bullet heightfield AABB: min = {" << min.x() << ", " << min.y()
+        << ", " << min.z() << "}, max = {" << max.x() << ", " << max.y() << ", "
+        << max.z() << "}"
         << " (will be translated by z=" << trans.z() << ")" << std::endl;
 
-  return common::make_unique<BulletCollisionShape>(
+  return std::make_unique<BulletCollisionShape>(
       std::move(heightFieldShape), relativeShapeTransform);
 }
 

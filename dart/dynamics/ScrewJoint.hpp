@@ -42,7 +42,6 @@ namespace dynamics {
 class ScrewJoint : public detail::ScrewJointBase
 {
 public:
-
   friend class Skeleton;
   using UniqueProperties = detail::ScrewJointUniqueProperties;
   using Properties = detail::ScrewJointProperties;
@@ -102,7 +101,6 @@ public:
       const GenericJoint<math::R1Space>::Vector& positions) const override;
 
 protected:
-
   /// Constructor called by Skeleton class
   ScrewJoint(const Properties& properties);
 
@@ -116,13 +114,13 @@ protected:
   void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateRelativeJacobian(bool _mandatory=true) const override;
+  void updateRelativeJacobian(bool _mandatory = true) const override;
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_SCREWJOINT_HPP_
+#endif // DART_DYNAMICS_SCREWJOINT_HPP_

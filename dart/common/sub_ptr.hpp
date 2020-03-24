@@ -53,11 +53,14 @@ public:
   /// constructor.
   sub_ptr(T* _ptr);
 
-  /// Change the Subject of this sub_ptr
-  sub_ptr& operator = (const sub_ptr& _sp);
+  /// User defined copy constructor
+  sub_ptr(const sub_ptr& other);
 
   /// Change the Subject of this sub_ptr
-  sub_ptr& operator = (T* _ptr);
+  sub_ptr& operator=(const sub_ptr& _sp);
+
+  /// Change the Subject of this sub_ptr
+  sub_ptr& operator=(T* _ptr);
 
   /// Implicit conversion to pointer type
   operator T*() const;
@@ -78,7 +81,6 @@ public:
   bool valid();
 
 protected:
-
   void handleDestructionNotification(const Subject* _subject) override;
 
   /// Store the pointer to the full object

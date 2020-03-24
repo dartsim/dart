@@ -32,8 +32,8 @@
 
 #include "dart/collision/DistanceFilter.hpp"
 
-#include "dart/dynamics/BodyNode.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace collision {
@@ -91,5 +91,5 @@ bool BodyNodeDistanceFilter::areAdjacentBodies(
   return false;
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

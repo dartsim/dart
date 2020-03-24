@@ -49,10 +49,10 @@ public:
   virtual ~ResourceRetriever() = default;
 
   /// Returns whether the resource specified by a URI exists.
-  virtual bool exists(const Uri& _uri) = 0;
+  virtual bool exists(const Uri& uri) = 0;
 
   /// Returns the resource specified by a URI or nullptr on failure.
-  virtual ResourcePtr retrieve(const Uri& _uri) = 0;
+  virtual ResourcePtr retrieve(const Uri& uri) = 0;
 
   /// Reads all data from the resource of uri, and returns it as a string.
   ///

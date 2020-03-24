@@ -34,12 +34,12 @@
 #define DART_COMMON_FACTORY_HPP_
 
 #include <functional>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 
-#include "dart/common/StlHelpers.hpp"
 #include "dart/common/Singleton.hpp"
+#include "dart/common/StlHelpers.hpp"
 
 namespace dart {
 namespace common {
@@ -54,10 +54,11 @@ namespace common {
 /// factory.registerCreator<FclCollisionDetector>("fcl");
 /// auto fclCd = CdFactory::create("fcl");
 /// \endcode
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT = std::shared_ptr<BaseT>,
-          typename... Args>
+template <
+    typename KeyT,
+    typename BaseT,
+    typename HeldT = std::shared_ptr<BaseT>,
+    typename... Args>
 class Factory
 {
 public:
@@ -67,7 +68,9 @@ public:
   using Creator = std::function<HeldT(Args...)>;
   template <typename Key>
   using HashType = typename std::conditional<
-      std::is_enum<Key>::value, EnumClassHash, std::hash<Key>>::type;
+      std::is_enum<Key>::value,
+      EnumClassHash,
+      std::hash<Key>>::type;
   using CreatorMap = std::unordered_map<KeyT, Creator, HashType<KeyT>>;
 
   /// Default constructor.
@@ -112,11 +115,12 @@ private:
 };
 
 /// Helper class to register a object creator function to the Singleton.
-template <typename KeyT,
-          typename BaseT,
-          typename DerivedT,
-          typename HeldT = std::shared_ptr<BaseT>,
-          typename... Args>
+template <
+    typename KeyT,
+    typename BaseT,
+    typename DerivedT,
+    typename HeldT = std::shared_ptr<BaseT>,
+    typename... Args>
 class FactoryRegistrar final
 {
 public:

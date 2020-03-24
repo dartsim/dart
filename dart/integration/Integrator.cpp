@@ -55,5 +55,5 @@ Integrator::~Integrator()
 {
 }
 
-}  // namespace integration
-}  // namespace dart
+} // namespace integration
+} // namespace dart

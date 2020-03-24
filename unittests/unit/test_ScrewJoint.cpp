@@ -59,7 +59,7 @@ TEST(ScrewJoint, ThreadPitch)
   screwJoint->setPosition(0, angle);
   Eigen::Vector3d pos1 = bodyNode->getTransform().translation();
   Eigen::Vector3d diff = pos1 - pos0;
-  Eigen::Vector3d expectedDiff = axis*pitch*angle/2.0_pi;
+  Eigen::Vector3d expectedDiff = axis * pitch * angle / 2.0_pi;
   EXPECT_TRUE(diff.isApprox(expectedDiff));
 
   pitch = 1.23;
@@ -69,6 +69,6 @@ TEST(ScrewJoint, ThreadPitch)
   screwJoint->setPosition(0, angle);
   pos1 = bodyNode->getTransform().translation();
   diff = pos1 - pos0;
-  expectedDiff = axis*pitch*angle/2.0_pi;
+  expectedDiff = axis * pitch * angle / 2.0_pi;
   EXPECT_TRUE(diff.isApprox(expectedDiff));
 }

@@ -43,7 +43,8 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class Window {
+class Window
+{
 public:
   Window();
   virtual ~Window();
@@ -94,8 +95,8 @@ protected:
   std::vector<unsigned char> mScreenshotTemp2;
 };
 
-}  // namespace glut
-}  // namespace gui
-}  // namespace dart
+} // namespace glut
+} // namespace gui
+} // namespace dart
 
-#endif  // DART_GUI_GLUT_WINDOW_HPP_
+#endif // DART_GUI_GLUT_WINDOW_HPP_

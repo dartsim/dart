@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/render/CylinderShapeNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
+#include "dart/gui/osg/render/CylinderShapeNode.hpp"
 
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -47,55 +48,49 @@ namespace render {
 class CylinderShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
-
-  CylinderShapeGeode(dart::dynamics::CylinderShape* shape,
-                     ShapeFrameNode* parent,
-                     CylinderShapeNode* parentNode);
+  CylinderShapeGeode(
+      dart::dynamics::CylinderShape* shape,
+      ShapeFrameNode* parent,
+      CylinderShapeNode* parentNode);
 
   void refresh();
   void extractData();
 
 protected:
-
   virtual ~CylinderShapeGeode();
 
   dart::dynamics::CylinderShape* mCylinderShape;
   CylinderShapeDrawable* mDrawable;
-
 };
 
 //==============================================================================
 class CylinderShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
-
-  CylinderShapeDrawable(dart::dynamics::CylinderShape* shape,
-                        dart::dynamics::VisualAspect* visualAspect,
-                        CylinderShapeGeode* parent);
+  CylinderShapeDrawable(
+      dart::dynamics::CylinderShape* shape,
+      dart::dynamics::VisualAspect* visualAspect,
+      CylinderShapeGeode* parent);
 
   void refresh(bool firstTime);
 
 protected:
-
   virtual ~CylinderShapeDrawable();
 
   dart::dynamics::CylinderShape* mCylinderShape;
   dart::dynamics::VisualAspect* mVisualAspect;
 
   CylinderShapeGeode* mParent;
-
 };
 
 //==============================================================================
 CylinderShapeNode::CylinderShapeNode(
     std::shared_ptr<dart::dynamics::CylinderShape> shape,
     ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this),
-    mCylinderShape(shape),
-    mGeode(nullptr)
+  : ShapeNode(shape, parent, this), mCylinderShape(shape), mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -103,9 +98,9 @@ void CylinderShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -114,9 +109,10 @@ void CylinderShapeNode::refresh()
 //==============================================================================
 void CylinderShapeNode::extractData(bool /*firstTime*/)
 {
-  if(nullptr == mGeode)
+  if (nullptr == mGeode)
   {
-    mGeode = new CylinderShapeGeode(mCylinderShape.get(), mParentShapeFrameNode, this);
+    mGeode = new CylinderShapeGeode(
+        mCylinderShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
   }
@@ -140,6 +136,9 @@ CylinderShapeGeode::CylinderShapeGeode(
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setAttributeAndModes(
+      new ::osg::CullFace(::osg::CullFace::BACK));
   extractData();
 }
 
@@ -154,7 +153,7 @@ void CylinderShapeGeode::refresh()
 //==============================================================================
 void CylinderShapeGeode::extractData()
 {
-  if(nullptr == mDrawable)
+  if (nullptr == mDrawable)
   {
     mDrawable = new CylinderShapeDrawable(mCylinderShape, mVisualAspect, this);
     addDrawable(mDrawable);
@@ -175,9 +174,7 @@ CylinderShapeDrawable::CylinderShapeDrawable(
     dart::dynamics::CylinderShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     CylinderShapeGeode* parent)
-  : mCylinderShape(shape),
-    mVisualAspect(visualAspect),
-    mParent(parent)
+  : mCylinderShape(shape), mVisualAspect(visualAspect), mParent(parent)
 {
   refresh(true);
 }
@@ -185,26 +182,27 @@ CylinderShapeDrawable::CylinderShapeDrawable(
 //==============================================================================
 void CylinderShapeDrawable::refresh(bool firstTime)
 {
-  if(mCylinderShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mCylinderShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if(mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-     || firstTime)
+  if (mCylinderShape->checkDataVariance(
+          dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+      || firstTime)
   {
     double R = mCylinderShape->getRadius();
     double h = mCylinderShape->getHeight();
-    ::osg::ref_ptr<::osg::Cylinder> osg_shape =
-        new ::osg::Cylinder(::osg::Vec3(0,0,0), R, h);
+    ::osg::ref_ptr<::osg::Cylinder> osg_shape
+        = new ::osg::Cylinder(::osg::Vec3(0, 0, 0), R, h);
     setShape(osg_shape);
     dirtyDisplayList();
   }
 
-  if(mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-     || firstTime)
+  if (mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
+    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 

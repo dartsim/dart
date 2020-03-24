@@ -43,7 +43,7 @@ if(NOT CCD_FOUND AND NOT ccd_FOUND)
 
   # Libraries
   if(MSVC)
-    set(CCD_LIBRARIES optimized ccd debug ccdd)
+    set(CCD_LIBRARIES "ccd$<$<CONFIG:Debug>:d>")
   else()
     # Give explicit precedence to ${PC_CCD_LIBDIR}
     find_library(CCD_LIBRARIES

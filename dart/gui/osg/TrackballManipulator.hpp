@@ -39,12 +39,27 @@ namespace dart {
 namespace gui {
 namespace osg {
 
-#define DART_META_Object(library,name) \
-        ::osg::Object* cloneType() const override { return new name (); } \
-        ::osg::Object* clone(const ::osg::CopyOp& copyop) const override { return new name (*this,copyop); } \
-        bool isSameKindAs(const ::osg::Object* obj) const override { return dynamic_cast<const name *>(obj)!=NULL; } \
-        const char* libraryName() const override { return #library; }\
-        const char* className() const override { return #name; }
+#define DART_META_Object(library, name)                                        \
+  ::osg::Object* cloneType() const override                                    \
+  {                                                                            \
+    return new name();                                                         \
+  }                                                                            \
+  ::osg::Object* clone(const ::osg::CopyOp& copyop) const override             \
+  {                                                                            \
+    return new name(*this, copyop);                                            \
+  }                                                                            \
+  bool isSameKindAs(const ::osg::Object* obj) const override                   \
+  {                                                                            \
+    return dynamic_cast<const name*>(obj) != NULL;                             \
+  }                                                                            \
+  const char* libraryName() const override                                     \
+  {                                                                            \
+    return #library;                                                           \
+  }                                                                            \
+  const char* className() const override                                       \
+  {                                                                            \
+    return #name;                                                              \
+  }
 // TODO(JS): Copied from osg/Object. Due to the namespace conflict between osg
 // and dart::gui::osg, we need to explicitly specify the root namespace osg as
 // ::osg
@@ -53,26 +68,25 @@ class OSGGA_EXPORT TrackballManipulator : public ::osgGA::OrbitManipulator
 {
 public:
   /// Constructor
-  TrackballManipulator(int flags=DEFAULT_SETTINGS);
+  TrackballManipulator(int flags = DEFAULT_SETTINGS);
 
   /// Copy-constructor
-  TrackballManipulator(const TrackballManipulator& tm,
-                       const ::osg::CopyOp& copyOp = ::osg::CopyOp::SHALLOW_COPY);
+  TrackballManipulator(
+      const TrackballManipulator& tm,
+      const ::osg::CopyOp& copyOp = ::osg::CopyOp::SHALLOW_COPY);
 
   /// Destructor
   virtual ~TrackballManipulator();
 
   /// Overriding behavior of left mouse button
-  bool performMovementLeftMouseButton(const double eventTimeDelta,
-                                      const double dx,
-                                      const double dy) override;
+  bool performMovementLeftMouseButton(
+      const double eventTimeDelta, const double dx, const double dy) override;
 
   /// Overriding behavior of right mouse button
-  bool performMovementRightMouseButton(const double eventTimeDelta,
-                                       const double dx,
-                                       const double dy) override;
+  bool performMovementRightMouseButton(
+      const double eventTimeDelta, const double dx, const double dy) override;
 
-  DART_META_Object( dart-gui-osg, TrackballManipulator )
+  DART_META_Object(dart - gui - osg, TrackballManipulator)
   // TODO(MXG): Consider applying the META macros to every dart::gui::osg Node
 };
 

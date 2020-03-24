@@ -33,18 +33,20 @@
 #ifndef DART_COLLISION_COLLISIONDETECTOR_HPP_
 #define DART_COLLISION_COLLISIONDETECTOR_HPP_
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include <Eigen/Dense>
 
-#include "dart/common/Factory.hpp"
-#include "dart/collision/Contact.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/DistanceOption.hpp"
 #include "dart/collision/DistanceResult.hpp"
+#include "dart/collision/RaycastOption.hpp"
+#include "dart/collision/RaycastResult.hpp"
 #include "dart/collision/SmartPointer.hpp"
+#include "dart/common/Factory.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -55,18 +57,22 @@ class CollisionObject;
 class CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
 {
 public:
-
   friend class CollisionObject;
   friend class CollisionGroup;
 
   using Factory = common::Factory<
-      std::string, CollisionDetector, std::shared_ptr<CollisionDetector>>;
+      std::string,
+      CollisionDetector,
+      std::shared_ptr<CollisionDetector>>;
 
   using SingletonFactory = common::Singleton<Factory>;
 
   template <typename Derived>
   using Registrar = common::FactoryRegistrar<
-      std::string, CollisionDetector, Derived, std::shared_ptr<CollisionDetector>>;
+      std::string,
+      CollisionDetector,
+      Derived,
+      std::shared_ptr<CollisionDetector>>;
 
   /// Returns the singleton factory.
   static Factory* getFactory();
@@ -76,7 +82,8 @@ public:
 
   /// \brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
-  virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() = 0;
+  virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
+      const = 0;
 
   /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;
@@ -114,7 +121,8 @@ public:
   virtual bool collide(
       CollisionGroup* group,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
-      CollisionResult* result = nullptr) = 0;
+      CollisionResult* result = nullptr)
+      = 0;
 
   /// Perform collision check for two groups. If nullptr is passed to
   /// result, then the this returns only simple information whether there is a
@@ -123,7 +131,8 @@ public:
       CollisionGroup* group1,
       CollisionGroup* group2,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
-      CollisionResult* result = nullptr) = 0;
+      CollisionResult* result = nullptr)
+      = 0;
 
   /// Get the minimum signed distance between the Shape pairs in the given
   /// CollisionGroup.
@@ -136,7 +145,8 @@ public:
   virtual double distance(
       CollisionGroup* group,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
-      DistanceResult* result = nullptr) = 0;
+      DistanceResult* result = nullptr)
+      = 0;
 
   /// Get the minimum signed distance between the Shape pairs where a pair
   /// consist of two shapes from each groups (one from group1 and one from
@@ -154,10 +164,25 @@ public:
       CollisionGroup* group1,
       CollisionGroup* group2,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
-      DistanceResult* result = nullptr) = 0;
+      DistanceResult* result = nullptr)
+      = 0;
+
+  /// Performs raycast to a collision group.
+  ///
+  /// \param[in] group The collision group the ray will be casted onto.
+  /// \param[in] from The start point of the ray in world coordinates.
+  /// \param[in] to The end point of the ray in world coordinates.
+  /// \param[in] option The raycast option.
+  /// \param[in] result The raycast result.
+  /// \return True if the ray hit an collision object.
+  virtual bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr);
 
 protected:
-
   class CollisionObjectManager;
   class ManagerForUnsharableCollisionObjects;
   class ManagerForSharableCollisionObjects;
@@ -172,7 +197,8 @@ protected:
 
   /// Create CollisionObject
   virtual std::unique_ptr<CollisionObject> createCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame) = 0;
+      const dynamics::ShapeFrame* shapeFrame)
+      = 0;
 
   /// Update the collision geometry of a ShapeFrame
   virtual void refreshCollisionObject(CollisionObject* object) = 0;
@@ -181,23 +207,21 @@ protected:
   virtual void notifyCollisionObjectDestroying(CollisionObject* object);
 
 protected:
-
   std::unique_ptr<CollisionObjectManager> mCollisionObjectManager;
-
 };
 
 //==============================================================================
 class CollisionDetector::CollisionObjectManager
 {
 public:
-
   /// Constructor
   CollisionObjectManager(CollisionDetector* cd);
 
   /// Claim CollisionObject associated with shapeFrame. New CollisionObject
   /// will be created if it hasn't created yet for shapeFrame.
   virtual std::shared_ptr<CollisionObject> claimCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame) = 0;
+      const dynamics::ShapeFrame* shapeFrame)
+      = 0;
 
   /// Returns collision detector
   CollisionDetector* getCollisionDetector();
@@ -206,17 +230,14 @@ public:
   virtual ~CollisionObjectManager() = default;
 
 protected:
-
   CollisionDetector* mCollisionDetector;
-
 };
 
 //==============================================================================
-class CollisionDetector::ManagerForUnsharableCollisionObjects final :
-    public CollisionDetector::CollisionObjectManager
+class CollisionDetector::ManagerForUnsharableCollisionObjects final
+  : public CollisionDetector::CollisionObjectManager
 {
 public:
-
   /// Constructor
   ManagerForUnsharableCollisionObjects(CollisionDetector* cd);
 
@@ -225,7 +246,6 @@ public:
       const dynamics::ShapeFrame* shapeFrame);
 
 private:
-
   /// This deleter is responsible for deleting CollisionObject and removing it
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
   struct CollisionObjectDeleter final
@@ -238,15 +258,13 @@ private:
   };
 
   const CollisionObjectDeleter mCollisionObjectDeleter;
-
 };
 
 //==============================================================================
-class CollisionDetector::ManagerForSharableCollisionObjects final :
-    public CollisionDetector::CollisionObjectManager
+class CollisionDetector::ManagerForSharableCollisionObjects final
+  : public CollisionDetector::CollisionObjectManager
 {
 public:
-
   /// Constructor
   ManagerForSharableCollisionObjects(CollisionDetector* cd);
 
@@ -258,7 +276,6 @@ public:
       const dynamics::ShapeFrame* shapeFrame);
 
 private:
-
   /// This deleter is responsible for deleting CollisionObject and removing it
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
   struct CollisionObjectDeleter final
@@ -272,16 +289,15 @@ private:
 
   const CollisionObjectDeleter mCollisionObjectDeleter;
 
-  using CollisionObjectMap = std::map<const dynamics::ShapeFrame*,
-                                      std::weak_ptr<CollisionObject>>;
+  using CollisionObjectMap
+      = std::map<const dynamics::ShapeFrame*, std::weak_ptr<CollisionObject>>;
 
   CollisionObjectMap mCollisionObjectMap;
-
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
 #include "dart/collision/detail/CollisionDetector.hpp"
 
-#endif  // DART_COLLISION_COLLISIONDETECTOR_HPP_
+#endif // DART_COLLISION_COLLISIONDETECTOR_HPP_

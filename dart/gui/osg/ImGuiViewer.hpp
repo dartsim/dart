@@ -48,7 +48,6 @@ class AboutWidget;
 class ImGuiViewer : public Viewer
 {
 public:
-
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.
   ImGuiViewer(
@@ -70,13 +69,11 @@ public:
   void hideAbout();
 
 protected:
-
   /// ImGui handler.
-  ImGuiHandler* mImGuiHandler;
+  ::osg::ref_ptr<ImGuiHandler> mImGuiHandler;
 
   /// About widget.
   std::shared_ptr<AboutWidget> mAboutWidget;
-
 };
 
 } // namespace osg

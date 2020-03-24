@@ -47,7 +47,6 @@ class Skeleton;
 class ZeroDofJoint : public Joint
 {
 public:
-
   struct Properties : Joint::Properties
   {
     Properties(const Joint::Properties& _properties = Joint::Properties());
@@ -73,7 +72,7 @@ public:
   const DegreeOfFreedom* getDof(std::size_t) const override;
 
   // Documentation inherited
-  const std::string& setDofName(std::size_t, const std::string&, bool ) override;
+  const std::string& setDofName(std::size_t, const std::string&, bool) override;
 
   // Documentation inherited
   void preserveDofName(std::size_t, bool) override;
@@ -250,7 +249,8 @@ public:
   void resetAccelerations() override;
 
   // Documentation inherited
-  void setAccelerationLowerLimit(std::size_t _index, double _acceleration) override;
+  void setAccelerationLowerLimit(
+      std::size_t _index, double _acceleration) override;
 
   // Documentation inherited
   double getAccelerationLowerLimit(std::size_t _index) const override;
@@ -262,7 +262,8 @@ public:
   Eigen::VectorXd getAccelerationLowerLimits() const override;
 
   // Documentation inherited
-  void setAccelerationUpperLimit(std::size_t _index, double _acceleration) override;
+  void setAccelerationUpperLimit(
+      std::size_t _index, double _acceleration) override;
 
   // Documentation inherited
   double getAccelerationUpperLimit(std::size_t _index) const override;
@@ -395,7 +396,6 @@ public:
   Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
-
   /// Constructor called by inheriting classes
   ZeroDofJoint();
 
@@ -444,13 +444,11 @@ protected:
       const Eigen::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
-  void updateInvProjArtInertia(
-      const Eigen::Matrix6d& _artInertia) override;
+  void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia) override;
 
   // Documentation inherited
   void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& _artInertia,
-      double _timeStep) override;
+      const Eigen::Matrix6d& _artInertia, double _timeStep) override;
 
   // Documentation inherited
   void addChildBiasForceTo(
@@ -466,12 +464,11 @@ protected:
       const Eigen::Vector6d& _childBiasImpulse) override;
 
   // Documentation inherited
-  void updateTotalForce(const Eigen::Vector6d& _bodyForce,
-                                  double _timeStep) override;
+  void updateTotalForce(
+      const Eigen::Vector6d& _bodyForce, double _timeStep) override;
 
   // Documentation inherited
-  void updateTotalImpulse(
-      const Eigen::Vector6d& _bodyImpulse) override;
+  void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
   void resetTotalImpulses() override;
@@ -487,16 +484,18 @@ protected:
       const Eigen::Vector6d& _velocityChange) override;
 
   // Documentation inherited
-  void updateForceID(const Eigen::Vector6d& _bodyForce,
-                             double _timeStep,
-                             bool _withDampingForces,
-                             bool _withSpringForces) override;
+  void updateForceID(
+      const Eigen::Vector6d& _bodyForce,
+      double _timeStep,
+      bool _withDampingForces,
+      bool _withSpringForces) override;
 
   // Documentation inherited
-  void updateForceFD(const Eigen::Vector6d& _bodyForce,
-                             double _timeStep,
-                             bool _withDampingForces,
-                             bool _withSpringForces) override;
+  void updateForceFD(
+      const Eigen::Vector6d& _bodyForce,
+      double _timeStep,
+      bool _withDampingForces,
+      bool _withSpringForces) override;
 
   // Documentation inherited
   void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) override;
@@ -530,16 +529,18 @@ protected:
       const Eigen::Vector6d& _bodyForce) override;
 
   // Documentation inherited
-  void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                       const std::size_t _col,
-                                       const Eigen::Matrix6d& _artInertia,
-                                       const Eigen::Vector6d& _spatialAcc) override;
+  void getInvMassMatrixSegment(
+      Eigen::MatrixXd& _invMassMat,
+      const std::size_t _col,
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
-  void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                          const std::size_t _col,
-                                          const Eigen::Matrix6d& _artInertia,
-                                          const Eigen::Vector6d& _spatialAcc) override;
+  void getInvAugMassMatrixSegment(
+      Eigen::MatrixXd& _invMassMat,
+      const std::size_t _col,
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
   void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) override;
@@ -551,12 +552,11 @@ protected:
   /// \}
 
 private:
-
   /// Used by getDofName()
   const std::string emptyString;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_ZERODOFJOINT_HPP_
+#endif // DART_DYNAMICS_ZERODOFJOINT_HPP_

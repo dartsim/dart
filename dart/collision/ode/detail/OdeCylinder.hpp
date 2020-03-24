@@ -45,8 +45,7 @@ class OdeCylinder : public OdeGeom
 {
 public:
   /// Constructor
-  OdeCylinder(
-      const OdeCollisionObject* parent, double radius, double height);
+  OdeCylinder(const OdeCollisionObject* parent, double radius, double height);
 
   /// Destructor
   virtual ~OdeCylinder();
@@ -56,4 +55,4 @@ public:
 } // namespace collision
 } // namespace dart
 
-#endif  // DART_COLLISION_ODE_DETAIL_ODECYLINDER_HPP_
+#endif // DART_COLLISION_ODE_DETAIL_ODECYLINDER_HPP_

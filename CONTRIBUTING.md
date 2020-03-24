@@ -46,16 +46,24 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Donghyun Kim](https://github.com/dhkim0821)       | Atlas texture images
  [Aditya Vamsikrishna](https://github.com/aditya-vk) | bug fix
  [pchorak](https://github.com/pchorak)              | bug fixes
+ [acxz](https://github.com/acxz)                    | doxygen warning fix
+ [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector
+ [Christoph Hinze](https://github.com/chhinze)      | python bindings
 
 You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
 
 ## DART Style Guide
 
-* [C++ Style](#c-style)
-  * [C++ Header Style](#header-style)
-  * [C++ Source Style](#source-style)
-  * [Autoformatting using ClangFormat](#autoformatting-using-clangformat)
-* [CMake Style](#cmake-style)
+- [How to Contribute to DART?](#how-to-contribute-to-dart)
+- [DART Contributors](#dart-contributors)
+- [DART Style Guide](#dart-style-guide)
+  - [C++ Style](#c-style)
+    - [Header Style](#header-style)
+    - [Source Style](#source-style)
+    - [Smart Pointers](#smart-pointers)
+    - [Autoformatting using ClangFormat](#autoformatting-using-clangformat)
+      - [Using CMake](#using-cmake)
+  - [CMake Style](#cmake-style)
 
 ### C++ Style
 
@@ -119,10 +127,10 @@ public:
   ExampleClass(ExampleClass&& other) = delete;
   ExampleClass& operator=(const ExampleClass& other) = delete;
   ExampleClass& operator=(ExampleClass&& other) = delete;
-  
+
   // Classes should explicitly declare a default virtual destructor
   // if they do not declare one (unless marking a class as final).
-  virtual ~ExampleClass() = default; 
+  virtual ~ExampleClass() = default;
 
   // Documentation inherited.  <-- Use this comment to indicate that the docstring of the interface method applies
   int exampleInterfaceFunction() const override;  // <-- Always explicitly `override` interface functions without `virtual`
@@ -221,7 +229,7 @@ int ExampleClass::exampleMethod(int a, int b, int* out) const
 
 You can automatically format all DART code
 using [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html) through
-CMake. Make sure `clang-format 3.8` is installed.
+CMake. Make sure `clang-format 6.0` is installed.
 
 ##### Using CMake
 
@@ -239,7 +247,7 @@ $ make format       # to format the code
 * Use **lowercase** function names
 * Use **all-caps** variables except when referring to target names
 * Use `target_VARIABLE` when naming target-specific variables
-* **ALWAYS** quote singleton variables (e.g. `"${MY_VARIABLE}"` but not `${MY_LIST_VARIABLE}`) 
+* **ALWAYS** quote singleton variables (e.g. `"${MY_VARIABLE}"` but not `${MY_LIST_VARIABLE}`)
 
 ```cmake
 cmake_minimum_required(VERSION 2.8.11)  # Always declare a minimum version in the top-level CMakeLists.txt.
@@ -266,7 +274,7 @@ include_directories(
 
 # Complex commands should be split into one line for each semantic group (with two-space indentation).
 # It is OK to put a target or output on the first line.
-include_directories(SYSTEM 
+include_directories(SYSTEM
   ${SomeLibrary_INCLUDE_DIRS}  # This should NOT be quoted, because it is a list.
 )
 

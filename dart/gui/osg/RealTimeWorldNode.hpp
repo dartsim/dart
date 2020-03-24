@@ -62,7 +62,7 @@ public:
   ///   means the simulation will try to run at half of real-time speed (slowed
   ///   down).
   ///
-  /// \param[in] shadowTech
+  /// \param[in] shadower
   ///   The shading technique to use when rendering this world.
   RealTimeWorldNode(
       const std::shared_ptr<dart::simulation::World>& world = nullptr,
@@ -92,9 +92,6 @@ public:
 
   /// Get the highest real time factor that has been hit during the simulation.
   double getHighestRealTimeFactor() const;
-
-  /// Turn the text displaying the real time factor on or off
-  void setRealTimeFactorDisplay(bool on);
 
   // Documentation inherited
   void refresh() override;

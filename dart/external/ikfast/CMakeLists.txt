@@ -2,8 +2,10 @@
 file(GLOB hdrs "*.h")
 
 # Install
-install(
-  FILES ${hdrs}
-  DESTINATION include/dart/external/ikfast
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs}
+    DESTINATION include/dart/external/ikfast
+    COMPONENT headers
+  )
+endif()

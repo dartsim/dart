@@ -48,7 +48,7 @@ JointType* Skeleton::moveBodyNodeTree(
 {
   JointType* parentJoint = new JointType(_joint);
 
-  if(moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode))
+  if (moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode))
     return parentJoint;
 
   // If the move failed, we should delete the Joint that we created and return
@@ -63,12 +63,12 @@ std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
     const BodyNode* _bodyNode,
     const SkeletonPtr& _newSkeleton,
     BodyNode* _parentNode,
-    const typename JointType::Properties& _joint, bool _recursive) const
+    const typename JointType::Properties& _joint,
+    bool _recursive) const
 {
   JointType* parentJoint = new JointType(_joint);
-  std::pair<Joint*, BodyNode*> root =
-      cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode,
-                        _recursive);
+  std::pair<Joint*, BodyNode*> root = cloneBodyNodeTree(
+      parentJoint, _bodyNode, _newSkeleton, _parentNode, _recursive);
   return std::pair<JointType*, BodyNode*>(parentJoint, root.second);
 }
 

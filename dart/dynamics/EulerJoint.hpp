@@ -42,7 +42,6 @@ namespace dynamics {
 class EulerJoint : public detail::EulerJointBase
 {
 public:
-
   friend class Skeleton;
   using AxisOrder = detail::AxisOrder;
   using UniqueProperties = detail::EulerJointUniqueProperties;
@@ -98,14 +97,15 @@ public:
   /// Convert a rotation into a 3D vector that can be used to set the positions
   /// of an EulerJoint with the specified AxisOrder. The positions returned by
   /// this function will result in a relative transform of
-  /// getTransformFromParentBodyNode() * _rotation * getTransformFromChildBodyNode().inverse()
-  /// between the parent BodyNode and the child BodyNode frames when applied to
-  /// an EulerJoint with the correct axis ordering.
+  /// getTransformFromParentBodyNode() * _rotation *
+  /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
+  /// the child BodyNode frames when applied to an EulerJoint with the correct
+  /// axis ordering.
   template <typename RotationType>
   static Eigen::Vector3d convertToPositions(
       const RotationType& _rotation, AxisOrder _ordering)
   {
-    switch(_ordering)
+    switch (_ordering)
     {
       case AxisOrder::XYZ:
         return math::matrixToEulerXYZ(_rotation);
@@ -128,8 +128,8 @@ public:
   }
 
   /// Convert a set of Euler angle positions into a transform
-  static Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions,
-                                           AxisOrder _ordering);
+  static Eigen::Isometry3d convertToTransform(
+      const Eigen::Vector3d& _positions, AxisOrder _ordering);
 
   /// This is a version of EulerJoint::convertToRotation(const Eigen::Vector3d&,
   /// AxisOrder) which will use the AxisOrder belonging to the joint instance
@@ -137,8 +137,8 @@ public:
   Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions) const;
 
   /// Convert a set of Euler angle positions into a rotation matrix
-  static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions,
-                                           AxisOrder _ordering);
+  static Eigen::Matrix3d convertToRotation(
+      const Eigen::Vector3d& _positions, AxisOrder _ordering);
 
   Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
@@ -147,7 +147,6 @@ public:
       const Eigen::Vector3d& _positions) const override;
 
 protected:
-
   /// Constructor called by Skeleton class
   EulerJoint(const Properties& properties);
 
@@ -164,13 +163,13 @@ protected:
   void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateRelativeJacobian(bool =true) const override;
+  void updateRelativeJacobian(bool = true) const override;
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_EULERJOINT_HPP_
+#endif // DART_DYNAMICS_EULERJOINT_HPP_

@@ -33,16 +33,16 @@
 #ifndef DART_GUI_OSG_DEFAULTEVENTHANDLER_HPP_
 #define DART_GUI_OSG_DEFAULTEVENTHANDLER_HPP_
 
-#include <vector>
 #include <array>
 #include <memory>
+#include <vector>
 
 #include <Eigen/Core>
 
 #include <osgGA/GUIEventHandler>
 
-#include "dart/common/Subject.hpp"
 #include "dart/common/Observer.hpp"
+#include "dart/common/Subject.hpp"
 
 namespace dart {
 
@@ -50,7 +50,7 @@ namespace dynamics {
 class Shape;
 class ShapeFrame;
 class Entity;
-} // dynamics
+} // namespace dynamics
 
 namespace gui {
 namespace osg {
@@ -65,7 +65,8 @@ struct PickInfo
 
 class Viewer;
 
-enum MouseButton {
+enum MouseButton
+{
 
   LEFT_MOUSE = 0,
   RIGHT_MOUSE,
@@ -74,7 +75,8 @@ enum MouseButton {
   NUM_MOUSE_BUTTONS
 };
 
-enum MouseButtonEvent {
+enum MouseButtonEvent
+{
 
   BUTTON_PUSH = 0,
   BUTTON_DRAG,
@@ -83,7 +85,8 @@ enum MouseButtonEvent {
 
 };
 
-enum ConstraintType {
+enum ConstraintType
+{
 
   UNCONSTRAINED = 0,
   LINE_CONSTRAINT,
@@ -100,7 +103,6 @@ class DefaultEventHandler : public ::osgGA::GUIEventHandler,
                             public virtual dart::common::Observer
 {
 public:
-
   /// Constructor takes in a pointer to a viewer
   explicit DefaultEventHandler(Viewer* _viewer);
 
@@ -130,21 +132,21 @@ public:
   /// If _constraint is set to PLANE_CONSTRAINT, the change in cursor position
   /// will be constrained to a plane that passes through _fromPosition with a
   /// normal vector of _constraintVector.
-  Eigen::Vector3d getDeltaCursor(const Eigen::Vector3d& _fromPosition,
-                                 ConstraintType _constraint=UNCONSTRAINED,
-                                 const Eigen::Vector3d& _constraintVector =
-                                                Eigen::Vector3d::UnitZ()) const;
+  Eigen::Vector3d getDeltaCursor(
+      const Eigen::Vector3d& _fromPosition,
+      ConstraintType _constraint = UNCONSTRAINED,
+      const Eigen::Vector3d& _constraintVector
+      = Eigen::Vector3d::UnitZ()) const;
 
   /// Get two points that are under the current cursor position. The near point
   /// will be inside the plane of the camera. The far point will have the given
   /// distance from the plane of the camera (default is 1.0).
-  void getNearAndFarPointUnderCursor(Eigen::Vector3d& near,
-                                     Eigen::Vector3d& far,
-                                     double distance=1.0) const;
+  void getNearAndFarPointUnderCursor(
+      Eigen::Vector3d& near, Eigen::Vector3d& far, double distance = 1.0) const;
 
   /// Get the most recent picks for the specified button and event type
-  const std::vector<PickInfo>& getButtonPicks(MouseButton button,
-                                              MouseButtonEvent event) const;
+  const std::vector<PickInfo>& getButtonPicks(
+      MouseButton button, MouseButtonEvent event) const;
 
   /// Get the most recent picks for a mouse movement (click-and-drag actions do
   /// not qualify as movements)
@@ -164,8 +166,8 @@ public:
 
   /// Detect picks
   /// TODO(MXG): Consider putting this functionality in a more accessible place
-  void pick(std::vector<PickInfo>& infoVector,
-            const ::osgGA::GUIEventAdapter& ea);
+  void pick(
+      std::vector<PickInfo>& infoVector, const ::osgGA::GUIEventAdapter& ea);
 
   /// Add a MouseEventHandler that will get invoked whenever a mouse event
   /// occurs. You never need to worry about removing a MouseEventHandler from a
@@ -178,11 +180,10 @@ public:
   const std::set<MouseEventHandler*>& getMouseEventHandlers() const;
 
   /// Handle incoming user input
-  bool handle(const ::osgGA::GUIEventAdapter& ea,
-              ::osgGA::GUIActionAdapter&) override;
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override;
 
 protected:
-
   /// Calls update on all MouseEventHandlers
   void triggerMouseEventHandlers();
 
@@ -225,7 +226,6 @@ protected:
 
   /// Storage for the last modkey mask
   int mLastModKeyMask;
-
 };
 
 } // namespace osg

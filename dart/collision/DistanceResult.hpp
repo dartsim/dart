@@ -39,7 +39,7 @@ namespace dart {
 
 namespace dynamics {
 class ShapeFrame;
-} // namesapce dynamics
+} // namespace dynamics
 
 namespace collision {
 
@@ -117,7 +117,7 @@ struct DistanceResult
   bool isMinDistanceClamped() const;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DISTANCE_RESULT_HPP_
+#endif // DART_COLLISION_DISTANCE_RESULT_HPP_

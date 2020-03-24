@@ -45,7 +45,7 @@ public:
   static Eigen::Vector3d convertVector3(const dVector3& vec);
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_ODE_ODETYPES_HPP_
+#endif // DART_COLLISION_ODE_ODETYPES_HPP_

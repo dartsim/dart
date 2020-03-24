@@ -49,8 +49,8 @@ bool usedSpecializedNodeAccess;
 template <class SpecNode>
 BodyNodeSpecializedFor<SpecNode>::BodyNodeSpecializedFor()
 {
-  mNodeMap[typeid( SpecNode )] = std::vector<Node*>();
-  mSpecNodeIterator = mNodeMap.find(typeid( SpecNode ));
+  mNodeMap[typeid(SpecNode)] = std::vector<Node*>();
+  mSpecNodeIterator = mNodeMap.find(typeid(SpecNode));
 }
 
 //==============================================================================
@@ -72,10 +72,11 @@ NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(std::size_t index)
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-const NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(std::size_t index) const
+const NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(
+    std::size_t index) const
 {
-  return const_cast<BodyNodeSpecializedFor<SpecNode>*>(this)->
-      _getNode(type<NodeType>(), index);
+  return const_cast<BodyNodeSpecializedFor<SpecNode>*>(this)->_getNode(
+      type<NodeType>(), index);
 }
 
 //==============================================================================
@@ -108,34 +109,38 @@ std::size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<SpecNode>) const
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* BodyNodeSpecializedFor<SpecNode>::_getNode(type<NodeType>, std::size_t index)
+NodeType* BodyNodeSpecializedFor<SpecNode>::_getNode(
+    type<NodeType>, std::size_t index)
 {
   return detail::BasicNodeManagerForBodyNode::getNode<NodeType>(index);
 }
 
 //==============================================================================
 template <class SpecNode>
-SpecNode* BodyNodeSpecializedFor<SpecNode>::_getNode(type<SpecNode>, std::size_t index)
+SpecNode* BodyNodeSpecializedFor<SpecNode>::_getNode(
+    type<SpecNode>, std::size_t index)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
   return static_cast<SpecNode*>(
-        getVectorObjectIfAvailable(index, mSpecNodeIterator->second));
+      getVectorObjectIfAvailable(index, mSpecNodeIterator->second));
 }
 
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(type<NodeType>)
+constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(
+    type<NodeType>)
 {
   return false;
 }
 
 //==============================================================================
 template <class SpecNode>
-constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(type<SpecNode>)
+constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(
+    type<SpecNode>)
 {
   return true;
 }
@@ -144,10 +149,10 @@ constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(type<Spec
 template <class SpecNode>
 SkeletonSpecializedFor<SpecNode>::SkeletonSpecializedFor()
 {
-  mSpecializedTreeNodes[typeid( SpecNode )] = &mTreeSpecNodeIterators;
+  mSpecializedTreeNodes[typeid(SpecNode)] = &mTreeSpecNodeIterators;
 
-  mNodeNameMgrMap[typeid( SpecNode )] = common::NameManager<Node*>();
-  mSpecNodeNameMgrIterator = mNodeNameMgrMap.find(typeid( SpecNode ));
+  mNodeNameMgrMap[typeid(SpecNode)] = common::NameManager<Node*>();
+  mSpecNodeNameMgrIterator = mNodeNameMgrMap.find(typeid(SpecNode));
 }
 
 //==============================================================================
@@ -174,15 +179,14 @@ template <class NodeType>
 const NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
     std::size_t treeIndex, std::size_t nodeIndex) const
 {
-  return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->
-        _getNode(type<NodeType>(), treeIndex, nodeIndex);
+  return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->_getNode(
+      type<NodeType>(), treeIndex, nodeIndex);
 }
 
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
-    const std::string& name)
+NodeType* SkeletonSpecializedFor<SpecNode>::getNode(const std::string& name)
 {
   return _getNode(type<NodeType>(), name);
 }
@@ -193,8 +197,8 @@ template <class NodeType>
 const NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
     const std::string& name) const
 {
-  return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->
-        _getNode(type<NodeType>(), name);
+  return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->_getNode(
+      type<NodeType>(), name);
 }
 
 //==============================================================================
@@ -223,7 +227,7 @@ std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
   usedSpecializedNodeAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
-  if(treeIndex >= mTreeNodeMaps.size())
+  if (treeIndex >= mTreeNodeMaps.size())
   {
     dterr << "[Skeleton::getNumNodes<" << typeid(SpecNode).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
@@ -242,7 +246,7 @@ NodeType* SkeletonSpecializedFor<SpecNode>::_getNode(
     type<NodeType>, std::size_t treeIndex, std::size_t nodeIndex)
 {
   return detail::BasicNodeManagerForSkeleton::getNode<NodeType>(
-        treeIndex, nodeIndex);
+      treeIndex, nodeIndex);
 }
 
 //==============================================================================
@@ -254,7 +258,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
   usedSpecializedNodeAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
-  if(treeIndex >= mTreeNodeMaps.size())
+  if (treeIndex >= mTreeNodeMaps.size())
   {
     dterr << "[Skeleton::getNode<" << typeid(SpecNode).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
@@ -265,7 +269,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
 
   NodeMap::iterator& it = mTreeSpecNodeIterators[treeIndex];
 
-  if(nodeIndex >= it->second.size())
+  if (nodeIndex >= it->second.size())
   {
     dterr << "[Skeleton::getNode<" << typeid(SpecNode).name() << ">] "
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex

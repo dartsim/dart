@@ -18,12 +18,16 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/snopt.h
-  DESTINATION include/dart/optimizer/snopt
-  COMPONENT headers
-)
-install(TARGETS dart-optimizer-snopt
-  EXPORT DARTTargets
-  DESTINATION lib
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/snopt.h
+    DESTINATION include/dart/optimizer/snopt
+    COMPONENT headers
+  )
+  install(TARGETS dart-optimizer-snopt
+    EXPORT DARTTargets
+    DESTINATION lib
+  )
+endif()
+
+dart_format_add(${hdrs} ${srcs})

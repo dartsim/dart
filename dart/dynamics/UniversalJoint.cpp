@@ -34,8 +34,8 @@
 
 #include <string>
 
-#include "dart/math/Helpers.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -50,8 +50,7 @@ UniversalJoint::~UniversalJoint()
 void UniversalJoint::setProperties(const Properties& _properties)
 {
   GenericJoint<math::R2Space>::setProperties(
-        static_cast<const GenericJoint<math::R2Space>::Properties&>(
-          _properties));
+      static_cast<const GenericJoint<math::R2Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -77,7 +76,7 @@ UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 //==============================================================================
 void UniversalJoint::copy(const UniversalJoint& _otherJoint)
 {
-  if(this == &_otherJoint)
+  if (this == &_otherJoint)
     return;
 
   setProperties(_otherJoint.getUniversalJointProperties());
@@ -86,7 +85,7 @@ void UniversalJoint::copy(const UniversalJoint& _otherJoint)
 //==============================================================================
 void UniversalJoint::copy(const UniversalJoint* _otherJoint)
 {
-  if(nullptr == _otherJoint)
+  if (nullptr == _otherJoint)
     return;
 
   copy(*this);
@@ -152,9 +151,11 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getRelativeJacobianStatic(
 {
   Eigen::Matrix<double, 6, 2> J;
   J.col(0) = math::AdTAngular(
-               Joint::mAspectProperties.mT_ChildBodyToJoint
-               * math::expAngular(-getAxis2() * _positions[1]), getAxis1());
-  J.col(1) = math::AdTAngular(Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis2());
+      Joint::mAspectProperties.mT_ChildBodyToJoint
+          * math::expAngular(-getAxis2() * _positions[1]),
+      getAxis1());
+  J.col(1) = math::AdTAngular(
+      Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis2());
   assert(!math::isNan(J));
   return J;
 }
@@ -179,9 +180,9 @@ Joint* UniversalJoint::clone() const
 //==============================================================================
 void UniversalJoint::updateDegreeOfFreedomNames()
 {
-  if(!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_1", false);
-  if(!mDofs[1]->isNamePreserved())
+  if (!mDofs[1]->isNamePreserved())
     mDofs[1]->setName(Joint::mAspectProperties.mName + "_2", false);
 }
 
@@ -205,14 +206,14 @@ void UniversalJoint::updateRelativeJacobian(bool) const
 //==============================================================================
 void UniversalJoint::updateRelativeJacobianTimeDeriv() const
 {
-  Eigen::Vector6d tmpV1 = getRelativeJacobianStatic().col(1)
-                        * getVelocitiesStatic()[1];
+  Eigen::Vector6d tmpV1
+      = getRelativeJacobianStatic().col(1) * getVelocitiesStatic()[1];
 
-  Eigen::Isometry3d tmpT = math::expAngular(
-        -getAxis2() * getPositionsStatic()[1]);
+  Eigen::Isometry3d tmpT
+      = math::expAngular(-getAxis2() * getPositionsStatic()[1]);
 
-  Eigen::Vector6d tmpV2
-      = math::AdTAngular(Joint::mAspectProperties.mT_ChildBodyToJoint * tmpT, getAxis1());
+  Eigen::Vector6d tmpV2 = math::AdTAngular(
+      Joint::mAspectProperties.mT_ChildBodyToJoint * tmpT, getAxis1());
 
   mJacobianDeriv.col(0) = -math::ad(tmpV1, tmpV2);
 
@@ -220,5 +221,5 @@ void UniversalJoint::updateRelativeJacobianTimeDeriv() const
   assert(mJacobianDeriv.col(1) == Eigen::Vector6d::Zero());
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

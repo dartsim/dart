@@ -32,8 +32,8 @@
 
 #include "dart/gui/osg/ImGuiViewer.hpp"
 
-#include "dart/gui/osg/ImGuiWidget.hpp"
 #include "dart/gui/osg/ImGuiHandler.hpp"
+#include "dart/gui/osg/ImGuiWidget.hpp"
 
 namespace dart {
 namespace gui {
@@ -60,13 +60,13 @@ ImGuiViewer::~ImGuiViewer()
 //==============================================================================
 ImGuiHandler* ImGuiViewer::getImGuiHandler()
 {
-  return mImGuiHandler;
+  return mImGuiHandler.get();
 }
 
 //==============================================================================
 const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
 {
-  return mImGuiHandler;
+  return mImGuiHandler.get();
 }
 
 //==============================================================================

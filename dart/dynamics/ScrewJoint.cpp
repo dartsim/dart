@@ -34,9 +34,9 @@
 
 #include <string>
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -51,7 +51,7 @@ ScrewJoint::~ScrewJoint()
 void ScrewJoint::setProperties(const Properties& _properties)
 {
   GenericJoint<math::R1Space>::setProperties(
-        static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
+      static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -77,7 +77,7 @@ ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
 //==============================================================================
 void ScrewJoint::copy(const ScrewJoint& _otherJoint)
 {
-  if(this == &_otherJoint)
+  if (this == &_otherJoint)
     return;
 
   setProperties(_otherJoint.getScrewJointProperties());
@@ -86,7 +86,7 @@ void ScrewJoint::copy(const ScrewJoint& _otherJoint)
 //==============================================================================
 void ScrewJoint::copy(const ScrewJoint* _otherJoint)
 {
-  if(nullptr == _otherJoint)
+  if (nullptr == _otherJoint)
     return;
 
   copy(*_otherJoint);
@@ -121,7 +121,7 @@ bool ScrewJoint::isCyclic(std::size_t /*_index*/) const
 //==============================================================================
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  if(_axis == mAspectProperties.mAxis)
+  if (_axis == mAspectProperties.mAxis)
     return;
 
   mAspectProperties.mAxis = _axis.normalized();
@@ -139,7 +139,7 @@ const Eigen::Vector3d& ScrewJoint::getAxis() const
 //==============================================================================
 void ScrewJoint::setPitch(double _pitch)
 {
-  if(_pitch == mAspectProperties.mPitch)
+  if (_pitch == mAspectProperties.mPitch)
     return;
 
   mAspectProperties.mPitch = _pitch;
@@ -215,7 +215,7 @@ void ScrewJoint::updateRelativeTransform() const
 //==============================================================================
 void ScrewJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if(_mandatory)
+  if (_mandatory)
     mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
@@ -226,5 +226,5 @@ void ScrewJoint::updateRelativeJacobianTimeDeriv() const
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

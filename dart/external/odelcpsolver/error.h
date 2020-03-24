@@ -27,9 +27,9 @@
 
 #include "dart/external/odelcpsolver/odeconfig.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace dart {
+namespace external {
+namespace ode {
 
 /* all user defined error functions have this type. error and debug functions
  * should not return.
@@ -55,9 +55,8 @@ ODE_API void dError (int num, const char *msg, ...);
 ODE_API void dDebug (int num, const char *msg, ...);
 ODE_API void dMessage (int num, const char *msg, ...);
 
-
-#ifdef __cplusplus
-}
-#endif
+} // namespace ode
+} // namespace external
+} // namespace dart
 
 #endif

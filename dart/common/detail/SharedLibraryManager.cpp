@@ -32,8 +32,10 @@
 
 #include "dart/common/detail/SharedLibraryManager.hpp"
 
-#include "dart/common/SharedLibrary.hpp"
+#include <fstream>
+
 #include "dart/common/Console.hpp"
+#include "dart/common/SharedLibrary.hpp"
 
 namespace dart {
 namespace common {
@@ -43,21 +45,28 @@ namespace detail {
 std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
     const boost::filesystem::path& path)
 {
+  return load(path.string());
+}
+
+//==============================================================================
+std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
+    const std::string& path)
+{
   // Check if the given path exits
-  const bool exists = boost::filesystem::exists(path);
+  const bool exists = std::ifstream(path).good();
   if (!exists)
   {
-    dtwarn << "[SharedLibraryManager::load] The given path doesn't exist. "
-           << "Returning nullptr.\n";
+    dtwarn << "[SharedLibraryManager::load] Failed to load the shared library '"
+           << path.c_str() << "'. The file doesn't exist. Returning nullptr.\n";
     return nullptr;
   }
 
   // Convert the given path to the canonical path
-  const auto canonicalPath = boost::filesystem::canonical(path);
+  const auto canonicalPath = boost::filesystem::canonical(path).string();
 
-  const auto iter = mLibraries.find(canonicalPath);
+  const auto iter = mSharedLibraries.find(canonicalPath);
 
-  const auto found = iter != mLibraries.end();
+  const auto found = iter != mSharedLibraries.end();
   if (found)
   {
     auto lib = iter->second.lock();
@@ -68,7 +77,7 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
     if (lib)
       return lib;
     else
-      mLibraries.erase(iter);
+      mSharedLibraries.erase(iter);
   }
 
   const auto newLib = std::make_shared<SharedLibrary>(
@@ -77,7 +86,7 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   if (!newLib->isValid())
     return nullptr;
 
-  mLibraries[canonicalPath] = newLib;
+  mSharedLibraries[canonicalPath] = newLib;
   assert(canonicalPath == newLib->getCanonicalPath());
 
   return newLib;

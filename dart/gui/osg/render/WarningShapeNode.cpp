@@ -33,21 +33,21 @@
 #include "dart/gui/osg/render/WarningShapeNode.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/Entity.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace gui {
 namespace osg {
 namespace render {
 
-WarningShapeNode::WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
-                                   ShapeFrameNode* parent)
+WarningShapeNode::WarningShapeNode(
+    std::shared_ptr<dart::dynamics::Shape> shape, ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this)
 {
-  dtwarn << "Shape type (" << shape->getType()
-         << ") found in Entity '" << parent->getName()
+  dtwarn << "Shape type (" << shape->getType() << ") found in Entity '"
+         << parent->getName()
          << "' is not currently supported by dart::gui::osg, "
          << "and will not be rendered\n";
 }

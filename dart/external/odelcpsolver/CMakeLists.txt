@@ -13,9 +13,9 @@ target_include_directories(${target_name}
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
 )
 if(CMAKE_VERSION VERSION_LESS 3.8.2)
-  target_compile_options(${target_name} PUBLIC -std=c++11)
+  target_compile_options(${target_name} PUBLIC -std=c++14)
 else()
-  target_compile_features(${target_name} PUBLIC cxx_std_11)
+  target_compile_features(${target_name} PUBLIC cxx_std_14)
 endif()
 
 # Component
@@ -23,8 +23,10 @@ add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 
 # Install
-install(
-  FILES ${hdrs}
-  DESTINATION include/dart/external/odelcpsolver
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs}
+    DESTINATION include/dart/external/odelcpsolver
+    COMPONENT headers
+  )
+endif()

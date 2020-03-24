@@ -37,11 +37,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Chain::Criteria::Criteria(BodyNode* _start, BodyNode* _target,
-                          bool _includeBoth)
-  : mStart(_start),
-    mTarget(_target),
-    mIncludeBoth(_includeBoth)
+Chain::Criteria::Criteria(
+    BodyNode* start, BodyNode* target, bool includeUpstreamParentJoint)
+  : mStart(start),
+    mTarget(target),
+    mIncludeUpstreamParentJoint(includeUpstreamParentJoint)
 {
   // Do nothing
 }
@@ -64,16 +64,16 @@ Linkage::Criteria Chain::Criteria::convert() const
   target.mChain = true;
   target.mPolicy = Linkage::Criteria::INCLUDE;
 
-  if(!mIncludeBoth)
+  if (!mIncludeUpstreamParentJoint)
   {
-    if(target.mNode.lock() &&
-       target.mNode.lock()->descendsFrom(criteria.mStart.mNode.lock()))
+    if (target.mNode.lock()
+        && target.mNode.lock()->descendsFrom(criteria.mStart.mNode.lock()))
     {
       criteria.mStart.mPolicy = Linkage::Criteria::EXCLUDE;
     }
 
-    if(criteria.mStart.mNode.lock() &&
-       criteria.mStart.mNode.lock()->descendsFrom(target.mNode.lock()))
+    if (criteria.mStart.mNode.lock()
+        && criteria.mStart.mNode.lock()->descendsFrom(target.mNode.lock()))
     {
       target.mPolicy = Linkage::Criteria::EXCLUDE;
     }
@@ -115,14 +115,14 @@ Chain::Criteria Chain::Criteria::convert(const Linkage::Criteria& criteria)
     return Chain::Criteria(nullptr, nullptr);
   }
 
-  bool includeBoth = true;
+  bool includeUpstreamParentJoint = true;
   if (criteria.mStart.mPolicy != Linkage::Criteria::INCLUDE)
-    includeBoth = false;
+    includeUpstreamParentJoint = false;
   if (target.mPolicy != Linkage::Criteria::INCLUDE)
-    includeBoth = false;
+    includeUpstreamParentJoint = false;
 
   return Chain::Criteria(
-      startBodyNode.get(), targetBodyNode.get(), includeBoth);
+      startBodyNode.get(), targetBodyNode.get(), includeUpstreamParentJoint);
 }
 
 //==============================================================================
@@ -132,8 +132,8 @@ Chain::Criteria::operator Linkage::Criteria() const
 }
 
 //==============================================================================
-ChainPtr Chain::create(const Chain::Criteria& _criteria,
-                       const std::string& _name)
+ChainPtr Chain::create(
+    const Chain::Criteria& _criteria, const std::string& _name)
 {
   ChainPtr chain(new Chain(_criteria, _name));
   chain->mPtr = chain;
@@ -141,8 +141,8 @@ ChainPtr Chain::create(const Chain::Criteria& _criteria,
 }
 
 //==============================================================================
-ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
-                       const std::string& _name)
+ChainPtr Chain::create(
+    BodyNode* _start, BodyNode* _target, const std::string& _name)
 {
   ChainPtr chain(new Chain(_start, _target, _name));
   chain->mPtr = chain;
@@ -150,10 +150,13 @@ ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
 }
 
 //==============================================================================
-ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
-                       IncludeBothTag, const std::string& _name)
+ChainPtr Chain::create(
+    BodyNode* _start,
+    BodyNode* _target,
+    IncludeUpstreamParentJointTag,
+    const std::string& _name)
 {
-  ChainPtr chain(new Chain(_start, _target, IncludeBoth, _name));
+  ChainPtr chain(new Chain(_start, _target, IncludeUpstreamParentJoint, _name));
   chain->mPtr = chain;
   return chain;
 }
@@ -202,25 +205,25 @@ MetaSkeletonPtr Chain::cloneMetaSkeleton(const std::string& cloneName) const
 //==============================================================================
 bool Chain::isStillChain() const
 {
-  if(!isAssembled())
+  if (!isAssembled())
     return false;
 
   // Make sure there are no Branches and no parent FreeJoints on the BodyNodes
   // on the inside of the chain
-  for(std::size_t i=1; i<mBodyNodes.size()-1; ++i)
+  for (std::size_t i = 1; i < mBodyNodes.size() - 1; ++i)
   {
-    if(mBodyNodes[i]->getNumChildBodyNodes() > 1)
+    if (mBodyNodes[i]->getNumChildBodyNodes() > 1)
       return false;
 
-    if(dynamic_cast<FreeJoint*>(mBodyNodes[i]->getParentJoint()))
+    if (dynamic_cast<FreeJoint*>(mBodyNodes[i]->getParentJoint()))
       return false;
   }
 
   // Make sure there is not a FreeJoint at the final BodyNode (which was not
   // tested above)
-  if(mBodyNodes.size() > 1)
+  if (mBodyNodes.size() > 1)
   {
-    if(dynamic_cast<FreeJoint*>(mBodyNodes.back()->getParentJoint()))
+    if (dynamic_cast<FreeJoint*>(mBodyNodes.back()->getParentJoint()))
       return false;
   }
 
@@ -242,8 +245,11 @@ Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
 }
 
 //==============================================================================
-Chain::Chain(BodyNode* _start, BodyNode* _target,
-             IncludeBothTag, const std::string& _name)
+Chain::Chain(
+    BodyNode* _start,
+    BodyNode* _target,
+    IncludeUpstreamParentJointTag,
+    const std::string& _name)
   : Linkage(Chain::Criteria(_start, _target, true), _name)
 {
   // Do nothing
@@ -251,16 +257,3 @@ Chain::Chain(BodyNode* _start, BodyNode* _target,
 
 } // namespace dynamics
 } // namespace dart
-
-
-
-
-
-
-
-
-
-
-
-
-

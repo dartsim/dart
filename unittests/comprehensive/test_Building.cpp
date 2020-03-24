@@ -34,10 +34,10 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
 
 using namespace dart;
@@ -52,8 +52,8 @@ TEST(BUILDING, BASIC)
   SkeletonPtr skel1 = Skeleton::create();
 
   std::pair<RevoluteJoint*, BodyNode*> pair;
-  BodyNode* body1, * body2, * body3;
-  RevoluteJoint* joint1, * joint2, * joint3;
+  BodyNode *body1, *body2, *body3;
+  RevoluteJoint *joint1, *joint2, *joint3;
 
   pair = skel1->createJointAndBodyNodePair<RevoluteJoint>(nullptr);
   joint1 = pair.first;
@@ -67,7 +67,7 @@ TEST(BUILDING, BASIC)
   joint3 = pair.first;
   body3 = pair.second;
 
-	// Joints
+  // Joints
   joint1->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
   joint1->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
   joint1->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
@@ -84,9 +84,9 @@ TEST(BUILDING, BASIC)
   WorldPtr world = World::create();
   world->addSkeleton(skel1);
 
-	//--------------------------------------------------------------------------
-	//
-	//--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  //
+  //--------------------------------------------------------------------------
   EXPECT_TRUE(body1->getParentBodyNode() == nullptr);
   EXPECT_TRUE(body1->getNumChildBodyNodes() == 1);
   EXPECT_TRUE(body1->getChildBodyNode(0) == body2);
@@ -97,7 +97,7 @@ TEST(BUILDING, BASIC)
 
   EXPECT_TRUE(body3->getParentBodyNode() == body2);
   EXPECT_TRUE(body3->getNumChildBodyNodes() == 0);
-//  EXPECT_TRUE(body3->getChildBodyNode(0) == nullptr);
+  //  EXPECT_TRUE(body3->getChildBodyNode(0) == nullptr);
 
   EXPECT_TRUE(skel1->getNumBodyNodes() == 3);
   EXPECT_TRUE(skel1->getNumDofs() == 3);
@@ -106,5 +106,5 @@ TEST(BUILDING, BASIC)
 
   int nSteps = 20;
   for (int i = 0; i < nSteps; ++i)
-      world->step();
+    world->step();
 }

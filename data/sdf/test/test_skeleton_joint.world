@@ -1,0 +1,278 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <world name="default">
+    <!-- A global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <!-- A ground plane -->
+    <!--include>
+      <uri>model://ground_plane</uri>
+    </include-->
+
+    <physics type="dart">
+      <gravity>0.0 0.0 -9.81</gravity>
+      <real_time_update_rate>0.000000</real_time_update_rate>
+      <max_step_size>0.001000</max_step_size>
+    </physics>
+
+    <model name="skeleton 1">
+      <pose>0 0 0 0 0 0</pose>
+      <link name="link 1">
+        <pose>0 0 0  0 0 0</pose>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0  0 0 0</pose>
+        </inertial>
+        <visual name="visual 1">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+          </material>
+        </visual>
+        <collision name="collision 1">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <link name="link 2">
+        <pose>0 0 0  0 0 0</pose>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0  0 0 0</pose>
+        </inertial>
+        <visual name="visual 2">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+          </material>
+        </visual>
+        <collision name="collision 2">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <link name="link 3">
+        <pose>0 0 0  0 0 0</pose>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0  0 0 0</pose>
+        </inertial>
+        <visual name="visual 3">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+          </material>
+        </visual>
+        <collision name="collision 3">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <link name="link 4">
+        <pose>0 0 0  0 0 0</pose>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0  0 0 0</pose>
+        </inertial>
+        <visual name="visual 4">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+          </material>
+        </visual>
+        <collision name="collision 4">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <link name="link 5">
+        <pose>0 0 0  0 0 0</pose>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0  0 0 0</pose>
+        </inertial>
+        <visual name="visual 5">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+          </material>
+        </visual>
+        <collision name="collision 5">
+          <pose>0 0 0  0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <joint name="joint_prismatic" type="prismatic">
+        <pose>0 0 0  0 0 0</pose>
+        <use_parent_model_frame>0</use_parent_model_frame>
+        <parent>link 1</parent>
+        <child>link 2</child>
+        <axis>
+          <xyz>0 1 2</xyz>
+          <limit>
+            <lower>0</lower>
+            <upper>3</upper>
+            <effort>1</effort>
+            <velocity>2</velocity>
+          </limit>
+          <dynamics>
+            <damping>0</damping>
+            <friction>1</friction>
+            <spring_reference>2</spring_reference>
+            <spring_stiffness>3</spring_stiffness>
+          </dynamics>
+        </axis>
+      </joint>
+      <joint name="joint_revolute" type="revolute">
+        <pose>0 0 0  0 0 0</pose>
+        <use_parent_model_frame>0</use_parent_model_frame>
+        <parent>link 2</parent>
+        <child>link 3</child>
+        <axis>
+          <xyz>0 1 2</xyz>
+          <limit>
+            <lower>0</lower>
+            <upper>3</upper>
+            <effort>1</effort>
+            <velocity>2</velocity>
+          </limit>
+          <dynamics>
+            <damping>0</damping>
+            <friction>1</friction>
+            <spring_reference>2</spring_reference>
+            <spring_stiffness>3</spring_stiffness>
+          </dynamics>
+        </axis>
+      </joint>
+      <joint name="joint_screw" type="screw">
+        <pose>0 0 0  0 0 0</pose>
+        <use_parent_model_frame>0</use_parent_model_frame>
+        <parent>link 3</parent>
+        <child>link 4</child>
+        <axis>
+          <xyz>0 1 2</xyz>
+          <limit>
+            <lower>0</lower>
+            <upper>3</upper>
+            <effort>1</effort>
+            <velocity>2</velocity>
+          </limit>
+          <dynamics>
+            <damping>0</damping>
+            <friction>1</friction>
+            <spring_reference>2</spring_reference>
+            <spring_stiffness>3</spring_stiffness>
+          </dynamics>
+        </axis>
+      </joint>
+      <joint name="joint_revolute2" type="revolute2">
+        <pose>0 0 0  0 0 0</pose>
+        <use_parent_model_frame>0</use_parent_model_frame>
+        <parent>link 4</parent>
+        <child>link 5</child>
+        <axis>
+          <xyz>0 1 2</xyz>
+          <limit>
+            <lower>0</lower>
+            <upper>3</upper>
+            <effort>1</effort>
+            <velocity>2</velocity>
+          </limit>
+          <dynamics>
+            <damping>0</damping>
+            <friction>1</friction>
+            <spring_reference>2</spring_reference>
+            <spring_stiffness>3</spring_stiffness>
+          </dynamics>
+        </axis>
+        <axis2>
+          <xyz>1 2 3</xyz>
+          <limit>
+            <lower>0</lower>
+            <upper>3</upper>
+            <effort>1</effort>
+            <velocity>2</velocity>
+          </limit>
+          <dynamics>
+            <damping>0</damping>
+            <friction>1</friction>
+            <spring_reference>2</spring_reference>
+            <spring_stiffness>3</spring_stiffness>
+          </dynamics>
+        </axis2>
+      </joint>
+    </model>
+
+  </world>
+</sdf>

@@ -35,8 +35,8 @@
 
 #include <cassert>
 
-#include "dart/common/Console.hpp"
 #include "dart/common/Aspect.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {
@@ -44,7 +44,8 @@ namespace common {
 //==============================================================================
 template <class CompositeType>
 CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect()
-  : mComposite(nullptr) // This will be set later when the Composite calls setComposite
+  : mComposite(
+        nullptr) // This will be set later when the Composite calls setComposite
 {
   // Do nothing
 }
@@ -58,7 +59,8 @@ CompositeType* CompositeTrackingAspect<CompositeType>::getComposite()
 
 //==============================================================================
 template <class CompositeType>
-const CompositeType* CompositeTrackingAspect<CompositeType>::getComposite() const
+const CompositeType* CompositeTrackingAspect<CompositeType>::getComposite()
+    const
 {
   return mComposite;
 }
@@ -72,7 +74,8 @@ bool CompositeTrackingAspect<CompositeType>::hasComposite() const
 
 //==============================================================================
 template <class CompositeType>
-void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposite)
+void CompositeTrackingAspect<CompositeType>::setComposite(
+    Composite* newComposite)
 {
   assert(nullptr == mComposite);
 

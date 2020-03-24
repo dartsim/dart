@@ -49,7 +49,6 @@ namespace optimizer {
 class GradientDescentSolver : public Solver
 {
 public:
-
   static const std::string Type;
 
   struct UniqueProperties
@@ -108,14 +107,14 @@ public:
         double _maxRandomizationStep = 1e10,
         double _defaultConstraintWeight = 1.0,
         Eigen::VectorXd _eqConstraintWeights = Eigen::VectorXd(),
-        Eigen::VectorXd _ineqConstraintWeights = Eigen::VectorXd() );
+        Eigen::VectorXd _ineqConstraintWeights = Eigen::VectorXd());
   };
 
   struct Properties : Solver::Properties, UniqueProperties
   {
     Properties(
         const Solver::Properties& _solverProperties = Solver::Properties(),
-        const UniqueProperties& _descentProperties = UniqueProperties() );
+        const UniqueProperties& _descentProperties = UniqueProperties());
   };
 
   /// Default constructor
@@ -210,7 +209,6 @@ public:
   std::size_t getLastNumIterations() const;
 
 protected:
-
   /// GradientDescentSolver properties
   UniqueProperties mGradientP;
 

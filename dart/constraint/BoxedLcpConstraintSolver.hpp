@@ -43,14 +43,59 @@ class BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
   /// Constructor
+  ///
+  /// \param[in] timeStep Simulation time step
+  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
+  /// passed, Dantzig solver will be used.
+  /// \param[in] secondaryBoxedLcpSolver The secondary boxed-LCP solver. When
+  /// nullptr is passed, PGS solver will be used. This is to make the default
+  /// solver setting to be Dantzig + PGS. In order to disable use of secondary
+  /// solver, call setSecondaryBoxedLcpSolver(nullptr) explicitly.
+  ///
+  /// \deprecated Deprecated in DART 6.8. Please use other constructors that
+  /// doesn't take timespte. Timestep should be set by the owner of this solver
+  /// such as dart::simulation::World when the solver added.
+  DART_DEPRECATED(6.8)
   BoxedLcpConstraintSolver(
-      double timeStep, BoxedLcpSolverPtr boxedLcpSolver = nullptr);
+      double timeStep,
+      BoxedLcpSolverPtr boxedLcpSolver = nullptr,
+      BoxedLcpSolverPtr secondaryBoxedLcpSolver = nullptr);
+
+  /// Constructos with default primary and secondary LCP solvers, which are
+  /// Dantzig and PGS, respectively.
+  BoxedLcpConstraintSolver();
+
+  /// Constructors with specific primary LCP solver.
+  ///
+  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
+  /// passed, which is discouraged, Dantzig solver will be used.
+  BoxedLcpConstraintSolver(BoxedLcpSolverPtr boxedLcpSolver);
+
+  /// Constructs with specific primary and secondary LCP solvers.
+  ///
+  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
+  /// passed, which is discouraged, Dantzig solver will be used.
+  /// \param[in] secondaryBoxedLcpSolver The secondary boxed-LCP solver. Pass
+  /// nullptr to disable using secondary LCP solver.
+  BoxedLcpConstraintSolver(
+      BoxedLcpSolverPtr boxedLcpSolver,
+      BoxedLcpSolverPtr secondaryBoxedLcpSolver);
 
   /// Sets boxed LCP (BLCP) solver
+  ///
+  /// \param[in] lcpSolver The primary boxed LCP solver. When nullptr is
+  /// passed, Dantzig solver will be used.
   void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
 
   /// Returns boxed LCP (BLCP) solver
   ConstBoxedLcpSolverPtr getBoxedLcpSolver() const;
+
+  /// Sets boxed LCP (BLCP) solver that is used when the primary solver failed
+  void setSecondaryBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
+
+  /// Returns boxed LCP (BLCP) solver that is used when the primary solver
+  /// failed
+  ConstBoxedLcpSolverPtr getSecondaryBoxedLcpSolver() const;
 
 protected:
   // Documentation inherited.
@@ -58,15 +103,32 @@ protected:
 
   /// Boxed LCP solver
   BoxedLcpSolverPtr mBoxedLcpSolver;
+  // TODO(JS): Hold as unique_ptr because there is no reason to share. Make this
+  // change in DART 7 because it's API breaking change.
+
+  /// Boxed LCP solver to be used when the primary solver failed
+  BoxedLcpSolverPtr mSecondaryBoxedLcpSolver;
+  // TODO(JS): Hold as unique_ptr because there is no reason to share. Make this
+  // change in DART 7 because it's API breaking change.
 
   /// Cache data for boxed LCP formulation
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
 
   /// Cache data for boxed LCP formulation
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      mABackup;
+
+  /// Cache data for boxed LCP formulation
   Eigen::VectorXd mX;
 
   /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mXBackup;
+
+  /// Cache data for boxed LCP formulation
   Eigen::VectorXd mB;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mBBackup;
 
   /// Cache data for boxed LCP formulation
   Eigen::VectorXd mW;
@@ -75,10 +137,19 @@ protected:
   Eigen::VectorXd mLo;
 
   /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mLoBackup;
+
+  /// Cache data for boxed LCP formulation
   Eigen::VectorXd mHi;
 
   /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mHiBackup;
+
+  /// Cache data for boxed LCP formulation
   Eigen::VectorXi mFIndex;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi mFIndexBackup;
 
   /// Cache data for boxed LCP formulation
   Eigen::VectorXi mOffset;

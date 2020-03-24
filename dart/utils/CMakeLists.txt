@@ -2,6 +2,30 @@
 dart_find_package(tinyxml2)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
+# Test whether boost algorithm and lexical_cast headers are available.
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-w")
+set(CMAKE_REQUIRED_INCLUDES "${Boost_INCLUDE_DIRS}")
+check_cxx_source_compiles(
+  "
+  #include <boost/algorithm/string.hpp>
+  #include <boost/lexical_cast.hpp>
+  int main()
+  {
+    return 0;
+  }
+  "
+  HAS_BOOST_ALGORITHM_LEXICAL_CAST
+)
+if(HAS_BOOST_ALGORITHM_LEXICAL_CAST)
+  if(DART_VERBOSE)
+    message(STATUS "Looking for Boost algorithm and lexical_cast headers - found")
+  endif()
+else()
+  message(WARNING "Looking for Boost algorithm and lexical_cast headers - NOT found, to use dart-utils, please install missing boost headers")
+  return()
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -15,6 +39,7 @@ function(dart_add_utils_sources)
 endfunction(dart_add_utils_sources)
 
 # Add subdirectories
+add_subdirectory(mjcf)
 add_subdirectory(sdf)
 
 get_property(dart_utils_headers GLOBAL PROPERTY DART_UTILS_HEADERS)
@@ -42,6 +67,7 @@ endif()
 set(
   header_names
   ${header_names}
+  mjcf/mjcf.hpp
   sdf/sdf.hpp
 )
 dart_generate_include_header_file(
@@ -51,11 +77,15 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
-  DESTINATION include/dart/utils
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
+    DESTINATION include/dart/utils
+    COMPONENT headers
+  )
+endif()
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+
+dart_format_add(${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})

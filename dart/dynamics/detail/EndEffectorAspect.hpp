@@ -34,8 +34,8 @@
 #define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
 
 #include <Eigen/Geometry>
-#include "dart/dynamics/CompositeNode.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
+#include "dart/dynamics/CompositeNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -67,7 +67,9 @@ struct SupportStateData
   /// weight of the robot.
   bool mActive;
 
-  inline SupportStateData(bool active = false) : mActive(active) { }
+  inline SupportStateData(bool active = false) : mActive(active)
+  {
+  }
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -83,7 +85,9 @@ struct SupportPropertiesData
 
   inline SupportPropertiesData(
       const math::SupportGeometry& geometry = math::SupportGeometry())
-    : mGeometry(geometry) { }
+    : mGeometry(geometry)
+  {
+  }
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -91,12 +95,9 @@ struct SupportPropertiesData
 
 void SupportUpdate(Support* support);
 
-using EndEffectorCompositeBase = CompositeNode<
-    common::CompositeJoiner<
-        FixedJacobianNode,
-        common::SpecializedForAspect<Support>
-    >
->;
+using EndEffectorCompositeBase = CompositeNode<common::CompositeJoiner<
+    FixedJacobianNode,
+    common::SpecializedForAspect<Support> > >;
 
 } // namespace detail
 } // namespace dynamics

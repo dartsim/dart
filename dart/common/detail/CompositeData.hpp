@@ -36,9 +36,9 @@
 #include <Eigen/Core>
 
 #include <map>
-#include <unordered_set>
-#include <typeinfo>
 #include <typeindex>
+#include <typeinfo>
+#include <unordered_set>
 
 #include "dart/common/Aspect.hpp"
 
@@ -76,8 +76,9 @@ struct GetAspectImpl<AspectOrComposite, false>
 template <class AspectT>
 struct GetAspect
 {
-  using Type = typename GetAspectImpl<
-    AspectT, std::is_base_of<Aspect, AspectT>::value>::Type;
+  using Type =
+      typename GetAspectImpl<AspectT, std::is_base_of<Aspect, AspectT>::value>::
+          Type;
 };
 
 //==============================================================================
@@ -95,15 +96,16 @@ struct GetProperties
 };
 
 //==============================================================================
-using CompositeStateMap = std::map< std::type_index, std::unique_ptr<Aspect::State> >;
-using CompositePropertiesMap = std::map< std::type_index, std::unique_ptr<Aspect::Properties> >;
+using CompositeStateMap
+    = std::map<std::type_index, std::unique_ptr<Aspect::State>>;
+using CompositePropertiesMap
+    = std::map<std::type_index, std::unique_ptr<Aspect::Properties>>;
 
 //==============================================================================
 template <typename MapType, template <class> class GetData>
 class CompositeData : public CloneableMap<MapType>
 {
 public:
-
   /// Forwarding constructor
   template <typename... Args>
   CompositeData(Args&&... args)
@@ -123,7 +125,7 @@ public:
     using DataType = typename GetData<Aspect>::Type;
 
     std::unique_ptr<DataType>& data = this->mMap[typeid(AspectType)]
-        = make_unique<Data>(std::forward<Args>(args)...);
+        = std::make_unique<Data>(std::forward<Args>(args)...);
     return static_cast<Data&>(*data);
   }
 
@@ -134,7 +136,7 @@ public:
     using AspectType = typename GetAspect<AspectT>::Type;
 
     typename MapType::iterator it = this->mMap.find(typeid(AspectType));
-    if(this->mMap.end() == it)
+    if (this->mMap.end() == it)
       return nullptr;
 
     return static_cast<Data*>(it->second.get());
@@ -153,12 +155,12 @@ public:
     using AspectType = typename GetAspect<AspectT>::Type;
 
     auto& it = this->mMap.insert(
-          std::make_pair<std::type_index, std::unique_ptr<Data>>(
+        std::make_pair<std::type_index, std::unique_ptr<Data>>(
             typeid(AspectType), nullptr));
 
     const bool exists = !it.second;
-    if(!exists)
-      it.first = make_unique<Data>(std::forward<Args>(args)...);
+    if (!exists)
+      it.first = std::make_unique<Data>(std::forward<Args>(args)...);
 
     return static_cast<Data&>(*it.first);
   }
@@ -172,14 +174,17 @@ public:
 
 //==============================================================================
 using CompositeState = CompositeData<CompositeStateMap, GetState>;
-using CompositeProperties = CompositeData<CompositePropertiesMap, GetProperties>;
+using CompositeProperties
+    = CompositeData<CompositePropertiesMap, GetProperties>;
 
 //==============================================================================
-template <class CompositeType, template<class> class GetData, typename... Aspects>
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
 class ComposeData
 {
 public:
-
   ComposeData() = default;
 
   ComposeData(const CompositeType&)
@@ -195,7 +200,6 @@ public:
   }
 
 protected:
-
   void _addData(CompositeType&) const
   {
     // Do nothing
@@ -203,15 +207,20 @@ protected:
 };
 
 //==============================================================================
-template <class CompositeType, template<class> class GetData, class AspectT,
-          typename... Remainder>
-struct ComposeData<CompositeType, GetData, AspectT, Remainder...> :
-    public GetData<AspectT>::Type,
+template <
+    class CompositeType,
+    template <class> class GetData,
+    class AspectT,
+    typename... Remainder>
+struct ComposeData<CompositeType, GetData, AspectT, Remainder...>
+  : public GetData<AspectT>::Type,
     public ComposeData<CompositeType, GetData, Remainder...>
 {
 public:
-
-  enum DelegateTag { Delegate };
+  enum DelegateTag
+  {
+    Delegate
+  };
 
   using ThisClass = ComposeData<CompositeType, GetData, AspectT, Remainder...>;
   using Base = typename GetData<AspectT>::Type;
@@ -223,7 +232,8 @@ public:
   {
     using Type = typename std::conditional<
         std::is_base_of<typename Base::Data, Arg>::value,
-        typename Base::Data, Arg>::type;
+        typename Base::Data,
+        Arg>::type;
   };
 
   template <typename Arg>
@@ -231,7 +241,8 @@ public:
   {
     using Type = typename std::conditional<
         std::is_base_of<CompositeType, Arg>::value,
-        CompositeType, Arg>::type;
+        CompositeType,
+        Arg>::type;
   };
 
   // To get byte-aligned Eigen vectors
@@ -246,9 +257,9 @@ public:
   template <typename Arg1, typename... Args>
   ComposeData(const Arg1& arg1, const Args&... args)
     : ComposeData(
-        Delegate,
-        static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1),
-        args...)
+          Delegate,
+          static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1),
+          args...)
   {
     // This constructor delegates
   }
@@ -292,7 +303,7 @@ public:
     ComposeData<CompositeType, GetData, Remainder...>::setFrom(composite);
   }
 
-  ComposeData& operator =(const CompositeType& composite)
+  ComposeData& operator=(const CompositeType& composite)
   {
     setFrom(composite);
     return *this;
@@ -309,7 +320,6 @@ public:
   }
 
 protected:
-
   template <typename... Args>
   ComposeData(DelegateTag, const Args&... args)
     : ComposeData<CompositeType, GetData, Remainder...>(args...)
@@ -319,8 +329,7 @@ protected:
 
   template <typename... Args>
   ComposeData(DelegateTag, const Data& arg1, const Args&... args)
-    : Base(arg1),
-      ComposeData<CompositeType, GetData, Remainder...>(args...)
+    : Base(arg1), ComposeData<CompositeType, GetData, Remainder...>(args...)
   {
     // Peel off the first argument and then pass along the rest
   }
@@ -328,7 +337,7 @@ protected:
   void _setBaseFrom(const CompositeType& composite)
   {
     const Base* data = composite.template get<AspectType>();
-    if(data)
+    if (data)
       static_cast<Base&>(*this) = *data;
   }
 
@@ -372,8 +381,8 @@ template <typename... Aspects>
 using MakeCompositeState = ComposeData<CompositeState, GetState, Aspects...>;
 
 template <typename... Data>
-using MakeCompositeProperties =
-    ComposeData<CompositeProperties, GetProperties, Data...>;
+using MakeCompositeProperties
+    = ComposeData<CompositeProperties, GetProperties, Data...>;
 
 } // namespace detail
 } // namespace common

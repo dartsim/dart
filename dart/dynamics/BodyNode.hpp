@@ -39,18 +39,18 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "dart/config.hpp"
 #include "dart/common/Deprecated.hpp"
-#include "dart/common/Signal.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/dynamics/Node.hpp"
+#include "dart/common/Signal.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/Frame.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
-#include "dart/dynamics/TemplatedJacobianNode.hpp"
-#include "dart/dynamics/SpecializedNodeManager.hpp"
-#include "dart/dynamics/detail/BodyNodeAspect.hpp"
+#include "dart/dynamics/Node.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/dynamics/SpecializedNodeManager.hpp"
+#include "dart/dynamics/TemplatedJacobianNode.hpp"
+#include "dart/dynamics/detail/BodyNodeAspect.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -70,21 +70,19 @@ class Marker;
 ///
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
-class BodyNode :
-    public detail::BodyNodeCompositeBase,
+class BodyNode
+  : public detail::BodyNodeCompositeBase,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector, Marker>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
 public:
-
   using ColShapeAddedSignal
       = common::Signal<void(const BodyNode*, ConstShapePtr _newColShape)>;
 
   using ColShapeRemovedSignal = ColShapeAddedSignal;
 
-  using StructuralChangeSignal
-      = common::Signal<void(const BodyNode*)>;
+  using StructuralChangeSignal = common::Signal<void(const BodyNode*)>;
   using CompositeProperties = common::Composite::Properties;
 
   using AllNodeStates = detail::AllNodeStates;
@@ -184,13 +182,21 @@ public:
   /// Principal moments of inertia (_Ixx, _Iyy, _Izz) must be positive or zero
   /// values.
   void setMomentOfInertia(
-      double _Ixx, double _Iyy, double _Izz,
-      double _Ixy = 0.0, double _Ixz = 0.0, double _Iyz = 0.0);
+      double _Ixx,
+      double _Iyy,
+      double _Izz,
+      double _Ixy = 0.0,
+      double _Ixz = 0.0,
+      double _Iyz = 0.0);
 
   /// Return moment of inertia defined around the center of mass
   void getMomentOfInertia(
-      double& _Ixx, double& _Iyy, double& _Izz,
-      double& _Ixy, double& _Ixz, double& _Iyz) const;
+      double& _Ixx,
+      double& _Iyy,
+      double& _Izz,
+      double& _Ixy,
+      double& _Ixz,
+      double& _Iyz) const;
 
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
@@ -220,8 +226,8 @@ public:
   /// Return the linear velocity of the center of mass, expressed in terms of
   /// arbitrary Frames
   Eigen::Vector3d getCOMLinearVelocity(
-                          const Frame* _relativeTo = Frame::World(),
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Return the spatial velocity of the center of mass, expressed in
   /// coordinates of this Frame and relative to the World Frame
@@ -229,14 +235,14 @@ public:
 
   /// Return the spatial velocity of the center of mass, expressed in terms of
   /// arbitrary Frames
-  Eigen::Vector6d getCOMSpatialVelocity(const Frame* _relativeTo,
-                                        const Frame* _inCoordinatesOf) const;
+  Eigen::Vector6d getCOMSpatialVelocity(
+      const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Return the linear acceleration of the center of mass, expressed in terms
   /// of arbitary Frames
   Eigen::Vector3d getCOMLinearAcceleration(
-                          const Frame* _relativeTo = Frame::World(),
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Return the acceleration of the center of mass expressed in coordinates of
   /// this BodyNode Frame and relative to the World Frame
@@ -244,19 +250,35 @@ public:
 
   /// Return the spatial acceleration of the center of mass, expressed in terms
   /// of arbitrary Frames
-  Eigen::Vector6d getCOMSpatialAcceleration(const Frame* _relativeTo,
-                                            const Frame* _inCoordinatesOf) const;
+  Eigen::Vector6d getCOMSpatialAcceleration(
+      const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Set coefficient of friction in range of [0, ~]
+  /// \deprecated Deprecated since DART 6.10. Please set the friction
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   void setFrictionCoeff(double _coeff);
 
   /// Return frictional coefficient.
+  /// \deprecated Deprecated since DART 6.10. Please set the friction
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   double getFrictionCoeff() const;
 
   /// Set coefficient of restitution in range of [0, 1]
+  /// \deprecated Deprecated since DART 6.10. Please set the restitution
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   void setRestitutionCoeff(double _coeff);
 
   /// Return coefficient of restitution
+  /// \deprecated Deprecated since DART 6.10. Please set the restitution
+  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
+  /// next major release.
+  DART_DEPRECATED(6.10)
   double getRestitutionCoeff() const;
 
   //--------------------------------------------------------------------------
@@ -301,22 +323,6 @@ public:
   /// version.
   bool moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent);
 
-#ifdef _WIN32
-  template <typename JointType>
-  static typename JointType::Properties createJointProperties()
-  {
-    return typename JointType::Properties();
-  }
-
-  template <typename NodeType>
-  static typename NodeType::Properties createBodyNodeProperties()
-  {
-    return typename NodeType::Properties();
-  }
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
-
   /// A version of moveTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode. This function returns the pointer to the
   /// newly created Joint. The original parent Joint will be deleted.
@@ -326,31 +332,20 @@ public:
   /// this Skeleton will still be changed, even if only the Joint type is
   /// changed.
   template <class JointType>
-  JointType* moveTo(BodyNode* _newParent,
-#ifdef _WIN32
+  JointType* moveTo(
+      BodyNode* _newParent,
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>());
-#else
-      const typename JointType::Properties& _joint
-          = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
+      = typename JointType::Properties());
 
   /// A version of moveTo(SkeletonPtr, BodyNode*) that also changes the Joint
   /// type of the parent Joint of this BodyNode. This function returns the
   /// pointer to the newly created Joint. The original Joint will be deleted.
   template <class JointType>
-  JointType* moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
-#ifdef _WIN32
+  JointType* moveTo(
+      const SkeletonPtr& _newSkeleton,
+      BodyNode* _newParent,
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>());
-#else
-      const typename JointType::Properties& _joint
-          = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
+      = typename JointType::Properties());
 
   /// Remove this BodyNode and all of its children (recursively) from their
   /// current Skeleton and move them into a newly created Skeleton. The newly
@@ -367,16 +362,10 @@ public:
   /// A version of split(const std::string&) that also changes the Joint type of
   /// the parent Joint of this BodyNode.
   template <class JointType>
-  SkeletonPtr split(const std::string& _skeletonName,
-#ifdef _WIN32
+  SkeletonPtr split(
+      const std::string& _skeletonName,
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>());
-#else
-      const typename JointType::Properties& _joint
-          = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
+      = typename JointType::Properties());
 
   /// Change the Joint type of this BodyNode's parent Joint.
   ///
@@ -384,15 +373,8 @@ public:
   /// BodyNodes and Joints in the Skeleton.
   template <class JointType>
   JointType* changeParentJointType(
-#ifdef _WIN32
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>());
-#else
-      const typename JointType::Properties& _joint
-          = typename JointType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
+      = typename JointType::Properties());
 
   /// Create clones of this BodyNode and all of its children recursively (unless
   /// _recursive is set to false) and attach the clones to the specified
@@ -402,8 +384,8 @@ public:
   ///
   /// The return value is a pair of pointers to the root of the newly created
   /// BodyNode tree.
-  std::pair<Joint*, BodyNode*> copyTo(BodyNode* _newParent,
-                                      bool _recursive=true);
+  std::pair<Joint*, BodyNode*> copyTo(
+      BodyNode* _newParent, bool _recursive = true);
 
   /// Create clones of this BodyNode and all of its children recursively (unless
   /// recursive is set to false) and attach the clones to the specified BodyNode
@@ -415,64 +397,45 @@ public:
   ///
   /// The return value is a pair of pointers to the root of the newly created
   /// BodyNode tree.
-  std::pair<Joint*, BodyNode*> copyTo(const SkeletonPtr& _newSkeleton,
-                                      BodyNode* _newParent,
-                                      bool _recursive=true) const;
+  std::pair<Joint*, BodyNode*> copyTo(
+      const SkeletonPtr& _newSkeleton,
+      BodyNode* _newParent,
+      bool _recursive = true) const;
 
   /// A version of copyTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode.
   template <class JointType>
   std::pair<JointType*, BodyNode*> copyTo(
       BodyNode* _newParent,
-#ifdef _WIN32
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>(),
-#else
-      const typename JointType::Properties& _joint
-          = typename JointType::Properties(),
-#endif
+      = typename JointType::Properties(),
       bool _recursive = true);
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// A version of copyTo(Skeleton*,BodyNode*) that also changes the Joint type
   /// of the parent Joint of this BodyNode.
   template <class JointType>
   std::pair<JointType*, BodyNode*> copyTo(
-      const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
-#ifdef _WIN32
+      const SkeletonPtr& _newSkeleton,
+      BodyNode* _newParent,
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>(),
-#else
-      const typename JointType::Properties& _joint
-          = typename JointType::Properties(),
-#endif
+      = typename JointType::Properties(),
       bool _recursive = true) const;
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
 
   /// Create clones of this BodyNode and all of its children (recursively) and
   /// create a new Skeleton with the specified name to attach them to. The
   /// Skeleton::Properties of the current Skeleton will also be copied into the
   /// new Skeleton that gets created.
-  SkeletonPtr copyAs(const std::string& _skeletonName,
-                     bool _recursive=true) const;
+  SkeletonPtr copyAs(
+      const std::string& _skeletonName, bool _recursive = true) const;
 
   /// A version of copyAs(const std::string&) that also changes the Joint type
   /// of the root BodyNode.
   template <class JointType>
   SkeletonPtr copyAs(
       const std::string& _skeletonName,
-#ifdef _WIN32
       const typename JointType::Properties& _joint
-          = BodyNode::createJointProperties<JointType>(),
-#else
-      const typename JointType::Properties& _joint
-          = typename JointType::Properties(),
-#endif
-      bool _recursive=true) const;
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
+      = typename JointType::Properties(),
+      bool _recursive = true) const;
 
   // Documentation inherited
   SkeletonPtr getSkeleton() override;
@@ -495,19 +458,10 @@ public:
   /// Create a Joint and BodyNode pair as a child of this BodyNode
   template <class JointType, class NodeType = BodyNode>
   std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
-#ifdef _WIN32
       const typename JointType::Properties& _jointProperties
-          = BodyNode::createJointProperties<JointType>(),
+      = typename JointType::Properties(),
       const typename NodeType::Properties& _bodyProperties
-          = BodyNode::createBodyNodeProperties<NodeType>());
-#else
-      const typename JointType::Properties& _jointProperties
-          = typename JointType::Properties(),
-      const typename NodeType::Properties& _bodyProperties
-          = typename NodeType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
+      = typename NodeType::Properties());
 
   /// Return the number of child BodyNodes
   std::size_t getNumChildBodyNodes() const;
@@ -528,30 +482,29 @@ public:
   const Joint* getChildJoint(std::size_t _index) const;
 
   /// Create some Node type and attach it to this BodyNode.
-  template <class NodeType, typename ...Args>
+  template <class NodeType, typename... Args>
   NodeType* createNode(Args&&... args);
 
-  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( ShapeNode )
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS(ShapeNode)
 
   /// Create an ShapeNode attached to this BodyNode. Pass a
   /// ShapeNode::Properties argument into its constructor. If automaticName is
   /// true, then the mName field of properties will be ignored, and the
   /// ShapeNode will be automatically assigned a name:
-  /// <BodyNodeName>_ShapeNode_<#>
+  /// \<BodyNodeName\>_ShapeNode_<#>
   template <class ShapeNodeProperties>
-  ShapeNode* createShapeNode(ShapeNodeProperties properties,
-                             bool automaticName = true);
+  ShapeNode* createShapeNode(
+      ShapeNodeProperties properties, bool automaticName = true);
 
   /// Create a ShapeNode with an automatically assigned name:
-  /// <BodyNodeName>_ShapeNode_<#>.
+  /// \<BodyNodeName\>_ShapeNode_<#>.
   template <class ShapeType>
   ShapeNode* createShapeNode(const std::shared_ptr<ShapeType>& shape);
 
   /// Create a ShapeNode with the specified name
   template <class ShapeType, class StringType>
   ShapeNode* createShapeNode(
-      const std::shared_ptr<ShapeType>& shape,
-      StringType&& name);
+      const std::shared_ptr<ShapeType>& shape, StringType&& name);
 
   /// Return the list of ShapeNodes
   const std::vector<ShapeNode*> getShapeNodes();
@@ -562,15 +515,15 @@ public:
   /// Remove all ShapeNodes from this BodyNode
   void removeAllShapeNodes();
 
-  /// Create a ShapeNode with the specified Aspects and an automatically assigned
-  /// name: <BodyNodeName>_ShapeNode_<#>.
+  /// Create a ShapeNode with the specified Aspects and an automatically
+  /// assigned name: \<BodyNodeName\>_ShapeNode_<#>.
   template <class... Aspects>
   ShapeNode* createShapeNodeWith(const ShapePtr& shape);
 
   /// Create a ShapeNode with the specified name and Aspects
   template <class... Aspects>
-  ShapeNode* createShapeNodeWith(const ShapePtr& shape,
-                                 const std::string& name);
+  ShapeNode* createShapeNodeWith(
+      const ShapePtr& shape, const std::string& name);
 
   /// Return the number of ShapeNodes containing given Aspect in this BodyNode
   template <class Aspect>
@@ -588,7 +541,7 @@ public:
   template <class Aspect>
   void removeAllShapeNodesWith();
 
-  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( EndEffector )
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS(EndEffector)
 
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
@@ -601,7 +554,7 @@ public:
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const char* _name);
 
-  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( Marker )
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS(Marker)
 
   /// Create a Marker with the given fields
   Marker* createMarker(
@@ -707,7 +660,7 @@ public:
   /// Set whether this body node is colliding with other objects. Note that
   /// this status is set by the constraint solver during dynamics simulation but
   /// not by collision detector.
-  /// \param[in] True if this body node is colliding.
+  /// \param[in] _isColliding True if this body node is colliding.
   DART_DEPRECATED(6.0)
   void setColliding(bool _isColliding);
 
@@ -723,16 +676,18 @@ public:
   /// Coordinate transformations are applied when needed. The point of
   /// application and the force in local coordinates are stored in mContacts.
   /// When conversion is needed, make sure the transformations are avaialble.
-  void addExtForce(const Eigen::Vector3d& _force,
-                   const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-                   bool _isForceLocal = false,
-                   bool _isOffsetLocal = true);
+  void addExtForce(
+      const Eigen::Vector3d& _force,
+      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      bool _isForceLocal = false,
+      bool _isOffsetLocal = true);
 
   /// Set Applying linear Cartesian forces to this node.
-  void setExtForce(const Eigen::Vector3d& _force,
-                   const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-                   bool _isForceLocal = false,
-                   bool _isOffsetLocal = true);
+  void setExtForce(
+      const Eigen::Vector3d& _force,
+      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      bool _isForceLocal = false,
+      bool _isOffsetLocal = true);
 
   /// Add applying Cartesian torque to the node.
   ///
@@ -788,10 +743,11 @@ public:
   void addConstraintImpulse(const Eigen::Vector6d& _constImp);
 
   /// Add constraint impulse
-  void addConstraintImpulse(const Eigen::Vector3d& _constImp,
-                            const Eigen::Vector3d& _offset,
-                            bool _isImpulseLocal = false,
-                            bool _isOffsetLocal = true);
+  void addConstraintImpulse(
+      const Eigen::Vector3d& _constImp,
+      const Eigen::Vector3d& _offset,
+      bool _isImpulseLocal = false,
+      bool _isOffsetLocal = true);
 
   /// Clear constraint impulses and cache data used for impulse-based forward
   /// dynamics algorithm
@@ -876,18 +832,19 @@ public:
   friend class Node;
 
 protected:
-
   /// Constructor called by Skeleton class
-  BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
-           const Properties& _properties);
+  BodyNode(
+      BodyNode* _parentBodyNode,
+      Joint* _parentJoint,
+      const Properties& _properties);
 
   /// Delegating constructor
   BodyNode(const std::tuple<BodyNode*, Joint*, Properties>& args);
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
-  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
-                          bool cloneNodes) const;
+  virtual BodyNode* clone(
+      BodyNode* _parentBodyNode, Joint* _parentJoint, bool cloneNodes) const;
 
   /// This is needed in order to inherit the Node class, but it does nothing
   Node* cloneNode(BodyNode* bn) const override final;
@@ -926,8 +883,8 @@ protected:
   /// dynamics.
   /// \param[in] _gravity Vector of gravitational acceleration
   /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
-  virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
-                               double _timeStep);
+  virtual void updateBiasForce(
+      const Eigen::Vector3d& _gravity, double _timeStep);
 
   /// Update bias impulse associated with the articulated body inertia for
   /// impulse-based forward dynamics.
@@ -948,8 +905,8 @@ protected:
   /// The spatial body force is transmitted to this BodyNode from the parent
   /// body through the connecting joint. It is expressed in this BodyNode's
   /// frame.
-  virtual void updateTransmittedForceID(const Eigen::Vector3d& _gravity,
-                                        bool _withExternalForces = false);
+  virtual void updateTransmittedForceID(
+      const Eigen::Vector3d& _gravity, bool _withExternalForces = false);
 
   /// Update spatial body force for forward dynamics.
   ///
@@ -968,14 +925,12 @@ protected:
   // dynamics is implemented.
 
   /// Update the joint force for inverse dynamics.
-  virtual void updateJointForceID(double _timeStep,
-                                  bool _withDampingForces,
-                                  bool _withSpringForces);
+  virtual void updateJointForceID(
+      double _timeStep, bool _withDampingForces, bool _withSpringForces);
 
   /// Update the joint force for forward dynamics.
-  virtual void updateJointForceFD(double _timeStep,
-                                  bool _withDampingForces,
-                                  bool _withSpringForces);
+  virtual void updateJointForceFD(
+      double _timeStep, bool _withDampingForces, bool _withSpringForces);
 
   /// Update the joint impulse for forward dynamics.
   virtual void updateJointImpulseFD();
@@ -993,35 +948,36 @@ protected:
   ///
   virtual void updateMassMatrix();
   virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col);
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
-                                      double _timeStep);
+  virtual void aggregateAugMassMatrix(
+      Eigen::MatrixXd& _MCol, std::size_t _col, double _timeStep);
 
   ///
   virtual void updateInvMassMatrix();
   virtual void updateInvAugMassMatrix();
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col);
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col,
-                                         double _timeStep);
+  virtual void aggregateInvMassMatrix(
+      Eigen::MatrixXd& _InvMCol, std::size_t _col);
+  virtual void aggregateInvAugMassMatrix(
+      Eigen::MatrixXd& _InvMCol, std::size_t _col, double _timeStep);
 
   ///
   virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C);
 
   ///
-  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
-                                           const Eigen::Vector3d& _gravity);
+  virtual void aggregateGravityForceVector(
+      Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity);
 
   ///
   virtual void updateCombinedVector();
-  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
-                                       const Eigen::Vector3d& _gravity);
+  virtual void aggregateCombinedVector(
+      Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized coordinates
   /// recursively
   virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
 
   ///
-  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
-                                             const Eigen::Vector6d& _spatial);
+  virtual void aggregateSpatialToGeneralized(
+      Eigen::VectorXd& _generalized, const Eigen::Vector6d& _spatial);
 
   /// Update body Jacobian. getJacobian() calls this function if
   /// mIsBodyJacobianDirty is true.
@@ -1044,7 +1000,6 @@ protected:
   /// \}
 
 protected:
-
   //--------------------------------------------------------------------------
   // General properties
   //--------------------------------------------------------------------------
@@ -1215,16 +1170,14 @@ public:
   /// \}
 
 private:
-
   /// Hold onto a reference to this BodyNode's own Destructor to make sure that
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
 #include "dart/dynamics/detail/BodyNode.hpp"
 
-#endif  // DART_DYNAMICS_BODYNODE_HPP_
+#endif // DART_DYNAMICS_BODYNODE_HPP_

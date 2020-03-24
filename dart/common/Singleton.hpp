@@ -46,7 +46,7 @@ namespace common {
 ///
 /// // Call before main() and use theT only instead of calling getSingleton()
 /// static T& theT = T::getSingleton();
-template<typename T>
+template <typename T>
 class Singleton
 {
 public:
@@ -55,7 +55,7 @@ public:
   static T& getSingleton(Args... _args);
 
   /// Returns pointer of the singleton
-  template <typename ... Args>
+  template <typename... Args>
   static T* getSingletonPtr(Args... _args);
 
 protected:

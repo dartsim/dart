@@ -56,6 +56,12 @@ public:
   /// Destructor
   ~ContactConstraint() override = default;
 
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Returns constraint type for this class.
+  static const std::string& getStaticType();
+
   //----------------------------------------------------------------------------
   // Property settings
   //----------------------------------------------------------------------------
@@ -132,6 +138,17 @@ protected:
   // Documentation inherited
   bool isActive() const override;
 
+  static double computeFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+  static double computePrimaryFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+  static double computeSecondaryFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+  static Eigen::Vector3d computeWorldFirstFrictionDir(
+      const dynamics::ShapeNode* shapenode);
+  static double computeRestitutionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+
 private:
   using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
 
@@ -162,8 +179,11 @@ private:
   /// First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;
 
-  /// Coefficient of Friction
-  double mFrictionCoeff;
+  /// Primary Coefficient of Friction
+  double mPrimaryFrictionCoeff;
+
+  /// Primary Coefficient of Friction
+  double mSecondaryFrictionCoeff;
 
   /// Coefficient of restitution
   double mRestitutionCoeff;

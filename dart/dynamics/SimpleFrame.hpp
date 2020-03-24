@@ -51,20 +51,22 @@ namespace dynamics {
 class SimpleFrame : public Detachable, public ShapeFrame
 {
 public:
-
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SimpleFrame)
 
   /// Constructor
-  explicit SimpleFrame(Frame* _refFrame,
-    const std::string& _name = "simple_frame",
-    const Eigen::Isometry3d& _relativeTransform = Eigen::Isometry3d::Identity());
+  explicit SimpleFrame(
+      Frame* _refFrame = Frame::World(),
+      const std::string& _name = "simple_frame",
+      const Eigen::Isometry3d& _relativeTransform
+      = Eigen::Isometry3d::Identity());
 
   /// Copy constructor. Note that the parent frame of _otherFrame will not be
   /// copied as the reference frame for the newly created SimpleFrame.
-  SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame = Frame::World());
+  SimpleFrame(
+      const SimpleFrame& _otherFrame, Frame* _refFrame = Frame::World());
 
   /// Destructor
-  virtual ~SimpleFrame();
+  ~SimpleFrame() override;
 
   // Documentation inherited
   const std::string& setName(const std::string& _name) override;
@@ -81,12 +83,16 @@ public:
   /// SimpleFrame match another Frame. The _refFrame argument will be the new
   /// parent Frame of this SimpleFrame. Also copies the Entity Properties if
   /// _copyProperties is left as true.
-  void copy(const Frame& _otherFrame, Frame* _refFrame = Frame::World(),
-            bool _copyProperties=true);
+  void copy(
+      const Frame& _otherFrame,
+      Frame* _refFrame = Frame::World(),
+      bool _copyProperties = true);
 
   /// Same as copy(const Frame&)
-  void copy(const Frame* _otherFrame, Frame* _refFrame = Frame::World(),
-            bool _copyProperties=true);
+  void copy(
+      const Frame* _otherFrame,
+      Frame* _refFrame = Frame::World(),
+      bool _copyProperties = true);
 
   /// Same as copy(const Frame&) except the parent frame of this SimpleFrame is
   /// left the same, and _copyProperties is set to false.
@@ -99,7 +105,7 @@ public:
   std::shared_ptr<SimpleFrame> spawnChildSimpleFrame(
       const std::string& name = "SimpleFrame",
       const Eigen::Isometry3d& relativeTransform
-          = Eigen::Isometry3d::Identity());
+      = Eigen::Isometry3d::Identity());
 
   //--------------------------------------------------------------------------
   // Transform
@@ -117,20 +123,23 @@ public:
   /// Set the transform of this SimpleFrame so that its transform with respect
   /// to Frame _withRespectTo is equal to _newTransform. Note that the parent
   /// Frame of this SimpleFrame will not be changed.
-  void setTransform(const Eigen::Isometry3d& _newTransform,
-                    const Frame* _withRespectTo = Frame::World());
+  void setTransform(
+      const Eigen::Isometry3d& _newTransform,
+      const Frame* _withRespectTo = Frame::World());
 
   /// Set the translation of this SimpleFrame so that its translation with
   /// respect to Frame _withRespectTo is equal to _newTranslation. Note that the
   /// parent Frame of this SimpleFrame will not be changed.
-  void setTranslation(const Eigen::Vector3d& _newTranslation,
-                      const Frame* _withRespectTo = Frame::World());
+  void setTranslation(
+      const Eigen::Vector3d& _newTranslation,
+      const Frame* _withRespectTo = Frame::World());
 
   /// Set the rotation of this SimpleFrame so that its rotation with respect
   /// to Frame _withRespectTo is equal to _newRotation. Note that the parent
   /// Frame of this SimpleFrame will not be changed.
-  void setRotation(const Eigen::Matrix3d& _newRotation,
-                   const Frame* _withRespectTo = Frame::World());
+  void setRotation(
+      const Eigen::Matrix3d& _newRotation,
+      const Frame* _withRespectTo = Frame::World());
 
   // Documentation inherited
   const Eigen::Isometry3d& getRelativeTransform() const override;
@@ -154,8 +163,9 @@ public:
   ///
   /// Use setClassicDerivatives to set the velocity according to classic
   /// relative linear and angular velocity values.
-  void setRelativeSpatialVelocity(const Eigen::Vector6d& _newSpatialVelocity,
-                                  const Frame* _inCoordinatesOf);
+  void setRelativeSpatialVelocity(
+      const Eigen::Vector6d& _newSpatialVelocity,
+      const Frame* _inCoordinatesOf);
 
   // Documentation inherited
   const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
@@ -205,13 +215,12 @@ public:
   ///
   /// These values are equivalent to the terms in the Newton-Euler
   void setClassicDerivatives(
-      const Eigen::Vector3d& _linearVelocity      = Eigen::Vector3d::Zero(),
-      const Eigen::Vector3d& _angularVelocity     = Eigen::Vector3d::Zero(),
-      const Eigen::Vector3d& _linearAcceleration  = Eigen::Vector3d::Zero(),
+      const Eigen::Vector3d& _linearVelocity = Eigen::Vector3d::Zero(),
+      const Eigen::Vector3d& _angularVelocity = Eigen::Vector3d::Zero(),
+      const Eigen::Vector3d& _linearAcceleration = Eigen::Vector3d::Zero(),
       const Eigen::Vector3d& _angularAcceleration = Eigen::Vector3d::Zero());
 
 protected:
-
   /// Name of this SimpleFrame
   std::string mName;
 
@@ -230,10 +239,9 @@ protected:
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 
-} // namespace dart
 } // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_SIMPLEFRAME_HPP_

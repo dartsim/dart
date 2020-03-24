@@ -37,7 +37,7 @@ if(BULLET_FOUND)
 
   set(HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
 else()
-  message(STATUS "Looking for Bullet - NOT found, to use dart-collision-bullet, please install libbullet-dev")
+  message(WARNING "Looking for Bullet - NOT found, to use dart-collision-bullet, please install libbullet-dev")
   set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
   return()
 endif()
@@ -71,13 +71,12 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp
-  DESTINATION include/dart/collision/bullet
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp
+    DESTINATION include/dart/collision/bullet
+    COMPONENT headers
+  )
+endif()
 
-dart_format_add(
-  BulletCollisionShape.hpp
-  BulletCollisionShape.cpp
-)
+dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

@@ -28,11 +28,6 @@
 #include "dart/external/odelcpsolver/odeconfig.h"
 #include "dart/external/odelcpsolver/error.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 #define PURE_INLINE static __inline
 
 
@@ -103,6 +98,10 @@ extern "C" {
 /* floating point data type, vector, matrix and quaternion types */
 
 #define dDOUBLE 1
+
+namespace dart {
+namespace external {
+namespace ode {
 
 #if defined(dSINGLE)
 typedef float dReal;
@@ -412,8 +411,8 @@ ODE_API const char* dGetConfiguration (void);
  */
 ODE_API int dCheckConfiguration( const char* token );
 
-#ifdef __cplusplus
-}
-#endif
+} // namespace ode
+} // namespace external
+} // namespace dart
 
 #endif

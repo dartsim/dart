@@ -43,11 +43,13 @@ void RenderInterface::destroy()
 {
 }
 
-void RenderInterface::setViewport(int /*_x*/,int /*_y*/,int /*_width*/,int /*_height*/)
+void RenderInterface::setViewport(
+    int /*_x*/, int /*_y*/, int /*_width*/, int /*_height*/)
 {
 }
 
-void RenderInterface::getViewport(int& /*_x*/, int& /*_y*/,int& /*_width*/,int& /*_height*/) const
+void RenderInterface::getViewport(
+    int& /*_x*/, int& /*_y*/, int& /*_width*/, int& /*_height*/) const
 {
 }
 
@@ -55,19 +57,22 @@ void RenderInterface::clear(const Eigen::Vector3d& /*_color*/)
 {
 }
 
-void RenderInterface::setMaterial(const Eigen::Vector3d& /*_diffuse*/, const Eigen::Vector3d& /*_specular*/, double /*_cosinePow*/)
+void RenderInterface::setMaterial(
+    const Eigen::Vector3d& /*_diffuse*/,
+    const Eigen::Vector3d& /*_specular*/,
+    double /*_cosinePow*/)
 {
-
 }
 
-void RenderInterface::getMaterial(Eigen::Vector3d& /*_diffuse*/, Eigen::Vector3d& /*_specular*/, double& /*cosinePow*/) const
+void RenderInterface::getMaterial(
+    Eigen::Vector3d& /*_diffuse*/,
+    Eigen::Vector3d& /*_specular*/,
+    double& /*cosinePow*/) const
 {
-
 }
 
 void RenderInterface::setDefaultMaterial()
 {
-
 }
 
 void RenderInterface::pushMatrix()
@@ -102,11 +107,15 @@ void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
 {
 }
 
-void RenderInterface::drawSphere(double /*_radius*/, int /*slices*/, int /*stacks*/)
+void RenderInterface::drawSphere(
+    double /*_radius*/, int /*slices*/, int /*stacks*/)
 {
 }
 
-void RenderInterface::drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/, int /*slices*/, int /*stacks*/)
+void RenderInterface::drawMultiSphere(
+    const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/,
+    int /*slices*/,
+    int /*stacks*/)
 {
   // Do nothing
 }
@@ -115,7 +124,8 @@ void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
 {
 }
 
-void RenderInterface::drawMesh(const Eigen::Vector3d& /*_scale*/, const aiScene* /*_mesh*/)
+void RenderInterface::drawMesh(
+    const Eigen::Vector3d& /*_scale*/, const aiScene* /*_mesh*/)
 {
 }
 
@@ -128,25 +138,33 @@ void RenderInterface::drawList(unsigned int /*indeX*/)
 {
 }
 
-void RenderInterface::drawLineSegments(const std::vector<Eigen::Vector3d>&,
-                                       const common::aligned_vector<Eigen::Vector2i>&)
+void RenderInterface::drawLineSegments(
+    const std::vector<Eigen::Vector3d>&,
+    const common::aligned_vector<Eigen::Vector2i>&)
 {
 }
 
-unsigned int RenderInterface::compileDisplayList(const Eigen::Vector3d& /*_size*/, const aiScene* /*_mesh*/)
+unsigned int RenderInterface::compileDisplayList(
+    const Eigen::Vector3d& /*_size*/, const aiScene* /*_mesh*/)
 {
-    return 0;
+  return 0;
 }
 
 void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/)
 {
 }
 
-void RenderInterface::drawOpenCylinder(double /*baseRadius*/, double /*topRadius*/, double /*height*/, int /*slices*/, int /*stacks*/)
+void RenderInterface::drawOpenCylinder(
+    double /*baseRadius*/,
+    double /*topRadius*/,
+    double /*height*/,
+    int /*slices*/,
+    int /*stacks*/)
 {
 }
 
-void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/, int /*slices*/, int /*stacks*/)
+void RenderInterface::drawCylinder(
+    double /*_radius*/, double /*_height*/, int /*slices*/, int /*stacks*/)
 {
 }
 
@@ -170,15 +188,14 @@ void RenderInterface::setLineWidth(float)
 {
 }
 
-
-void RenderInterface::saveToImage(const char* /*_filename*/, DecoBufferType /*_buffType*/)
+void RenderInterface::saveToImage(
+    const char* /*_filename*/, DecoBufferType /*_buffType*/)
 {
-
 }
 
-void RenderInterface::readFrameBuffer(DecoBufferType /*_buffType*/, DecoColorChannel /*_ch*/, void* /*_pixels*/)
+void RenderInterface::readFrameBuffer(
+    DecoBufferType /*_buffType*/, DecoColorChannel /*_ch*/, void* /*_pixels*/)
 {
-
 }
 
 } // namespace gui

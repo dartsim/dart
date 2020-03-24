@@ -35,8 +35,8 @@
 
 #include "dart/common/Factory.hpp"
 
-#include "dart/common/Memory.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Memory.hpp"
 
 namespace dart {
 namespace common {
@@ -61,7 +61,7 @@ struct DefaultCreator<T, std::unique_ptr<T>, Args...>
 {
   static std::unique_ptr<T> run(Args&&... args)
   {
-    return dart::common::make_unique<T>(std::forward<Args>(args)...);
+    return std::make_unique<T>(std::forward<Args>(args)...);
   }
 };
 
@@ -80,10 +80,7 @@ struct DefaultCreator<T, std::shared_ptr<T>, Args...>
 //==============================================================================
 // std::hash doesn't support enum type. This is an workaround for it.
 // Reference: http://stackoverflow.com/a/24847480
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 struct Factory<KeyT, BaseT, HeldT, Args...>::EnumClassHash
 {
   template <typename T>
@@ -94,10 +91,7 @@ struct Factory<KeyT, BaseT, HeldT, Args...>::EnumClassHash
 };
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
     const KeyT& key, Creator creator)
 {
@@ -105,46 +99,29 @@ void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 template <typename Derived>
-void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
-    const KeyT& key)
+void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(const KeyT& key)
 {
-  return registerCreator(
-      key,
-      &Factory::defaultCreator<Derived>
-  );
+  return registerCreator(key, &Factory::defaultCreator<Derived>);
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
-void Factory<KeyT, BaseT, HeldT, Args...>::unregisterCreator(
-    const KeyT& key)
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
+void Factory<KeyT, BaseT, HeldT, Args...>::unregisterCreator(const KeyT& key)
 {
   mCreatorMap.erase(key);
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 void Factory<KeyT, BaseT, HeldT, Args...>::unregisterAllCreators()
 {
   mCreatorMap.clear();
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 bool Factory<KeyT, BaseT, HeldT, Args...>::canCreate(const KeyT& key)
 {
   const auto it = mCreatorMap.find(key);
@@ -153,10 +130,7 @@ bool Factory<KeyT, BaseT, HeldT, Args...>::canCreate(const KeyT& key)
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
     const KeyT& key, Args&&... args)
 {
@@ -177,51 +151,47 @@ HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
 }
 
 //==============================================================================
-template <typename KeyT,
-         typename BaseT,
-         typename HeldT,
-         typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 std::unordered_set<KeyT> Factory<KeyT, BaseT, HeldT, Args...>::getKeys() const
 {
   std::unordered_set<KeyT> keys;
-  for(const auto& entry : mCreatorMap)
+  for (const auto& entry : mCreatorMap)
     keys.insert(entry.first);
 
   return keys;
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename HeldT,
-          typename... Args>
+template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 template <typename Derived>
 HeldT Factory<KeyT, BaseT, HeldT, Args...>::defaultCreator(Args&&... args)
 {
   return detail::DefaultCreator<Derived, HeldT, Args...>::run(
-        std::forward<Args>(args)...);
+      std::forward<Args>(args)...);
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename DerivedT,
-          typename HeldT,
-          typename... Args>
-FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::
-FactoryRegistrar(const KeyT& key, Creator creator)
+template <
+    typename KeyT,
+    typename BaseT,
+    typename DerivedT,
+    typename HeldT,
+    typename... Args>
+FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::FactoryRegistrar(
+    const KeyT& key, Creator creator)
 {
   SingletonFactory::getSingleton().registerCreator(key, creator);
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename DerivedT,
-          typename HeldT,
-          typename... Args>
-FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::
-FactoryRegistrar(const KeyT& key)
+template <
+    typename KeyT,
+    typename BaseT,
+    typename DerivedT,
+    typename HeldT,
+    typename... Args>
+FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::FactoryRegistrar(
+    const KeyT& key)
 {
   SingletonFactory::getSingleton().template registerCreator<DerivedT>(key);
 }

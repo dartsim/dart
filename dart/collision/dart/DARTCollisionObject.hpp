@@ -44,21 +44,19 @@ class CollisionObject;
 class DARTCollisionObject : public CollisionObject
 {
 public:
-
   friend class DARTCollisionDetector;
 
 protected:
-
   /// Constructor
-  DARTCollisionObject(CollisionDetector* collisionDetector,
-                      const dynamics::ShapeFrame* shapeFrame);
+  DARTCollisionObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame);
 
   // Documentation inherited
   void updateEngineData() override;
-
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
+#endif // DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_

@@ -39,9 +39,9 @@
 #include <Eigen/Eigen>
 
 #include "dart/common/Console.hpp"
-#include "dart/math/Constants.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/glut/GLUTFuncs.hpp"
+#include "dart/math/Constants.hpp"
 // TODO(JS): remove once glut become an optional dependency
 
 namespace dart {
@@ -53,9 +53,13 @@ void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
 }
 
 // draw a 3D arrow starting from pt along dir, the arrowhead is on the other end
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness) {
+void drawArrow3D(
+    const Eigen::Vector3d& _pt,
+    const Eigen::Vector3d& _dir,
+    const double _length,
+    const double _thickness,
+    const double _arrowThickness)
+{
   const double pi = math::constantsd::pi();
 
   Eigen::Vector3d normDir = _dir;
@@ -63,25 +67,25 @@ void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
 
   double arrowLength;
   if (_arrowThickness == -1)
-    arrowLength = 4*_thickness;
+    arrowLength = 4 * _thickness;
   else
-    arrowLength = 2*_arrowThickness;
+    arrowLength = 2 * _arrowThickness;
 
   // draw the arrow body as a cylinder
-  GLUquadricObj *c;
+  GLUquadricObj* c;
   c = gluNewQuadric();
   gluQuadricDrawStyle(c, GLU_FILL);
   gluQuadricNormals(c, GLU_SMOOTH);
 
   glPushMatrix();
   glTranslatef(_pt[0], _pt[1], _pt[2]);
-  glRotated(acos(normDir[2])*180/pi, -normDir[1], normDir[0], 0);
-  gluCylinder(c, _thickness, _thickness, _length-arrowLength, 16, 16);
+  glRotated(acos(normDir[2]) * 180 / pi, -normDir[1], normDir[0], 0);
+  gluCylinder(c, _thickness, _thickness, _length - arrowLength, 16, 16);
 
   // draw the arrowhed as a cone
   glPushMatrix();
-  glTranslatef(0, 0, _length-arrowLength);
-  gluCylinder(c, arrowLength*0.5, 0.0, arrowLength, 10, 10);
+  glTranslatef(0, 0, _length - arrowLength);
+  gluCylinder(c, arrowLength * 0.5, 0.0, arrowLength, 10, 10);
   glPopMatrix();
 
   glPopMatrix();
@@ -91,32 +95,34 @@ void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
 
 // draw a 2D arrow starting from pt along vec, the arrow head is on the other
 // end
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness) {
+void drawArrow2D(
+    const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec, double _thickness)
+{
   const double pi = math::constantsd::pi();
 
   // draw the arrow body as a thick line
   glLineWidth(_thickness);
   glBegin(GL_LINES);
   glVertex2f(_pt[0], _pt[1]);
-  glVertex2f(_pt[0]+_vec[0], _pt[1]+_vec[1]);
+  glVertex2f(_pt[0] + _vec[0], _pt[1] + _vec[1]);
   glEnd();
 
   // draw arrowhead as a triangle
   double theta = atan2(_vec[1], _vec[0]);
   glPushMatrix();
-  glTranslatef(_pt[0]+_vec[0], _pt[1]+_vec[1], 0.0);
-  glRotatef(theta*180.0/pi, 0.0, 0.0, 1.0);
+  glTranslatef(_pt[0] + _vec[0], _pt[1] + _vec[1], 0.0);
+  glRotatef(theta * 180.0 / pi, 0.0, 0.0, 1.0);
   glTranslatef(_thickness, 0.0, 0.0);
   glBegin(GL_TRIANGLES);
   glVertex2f(0.0, _thickness);
-  glVertex2f(2*_thickness, 0.0);
+  glVertex2f(2 * _thickness, 0.0);
   glVertex2f(0.0, -_thickness);
   glEnd();
   glPopMatrix();
 }
 
-void drawProgressBar(int _currFrame, int _totalFrame) {
+void drawProgressBar(int _currFrame, int _totalFrame)
+{
   GLint oldMode;
   glGetIntegerv(GL_MATRIX_MODE, &oldMode);
   glMatrixMode(GL_PROJECTION);
@@ -138,8 +144,8 @@ void drawProgressBar(int _currFrame, int _totalFrame) {
   glVertex2f(0.15f, 0.08f);
   glEnd();
 
-  float portion = static_cast<float>(_currFrame)/_totalFrame;
-  float end = 0.15f+portion*0.7f;
+  float portion = static_cast<float>(_currFrame) / _totalFrame;
+  float end = 0.15f + portion * 0.7f;
   glPolygonMode(GL_FRONT, GL_FILL);
   glColor4d(0.3, 0.3, 0.3, 0.5);
   glBegin(GL_QUADS);
@@ -156,5 +162,5 @@ void drawProgressBar(int _currFrame, int _totalFrame) {
   glMatrixMode(oldMode);
 }
 
-}  // namespace gui
-}  // namespace dart
+} // namespace gui
+} // namespace dart

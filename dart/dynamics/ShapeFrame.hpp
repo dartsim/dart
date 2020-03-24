@@ -35,28 +35,28 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Signal.hpp"
 #include "dart/common/AspectWithVersion.hpp"
+#include "dart/common/Signal.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/FixedFrame.hpp"
 #include "dart/dynamics/TemplatedJacobianNode.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/detail/ShapeFrameAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-class VisualAspect final :
-    public common::AspectWithVersionedProperties<
-        VisualAspect,
-        detail::VisualAspectProperties,
-        ShapeFrame>
+class VisualAspect final : public common::AspectWithVersionedProperties<
+                               VisualAspect,
+                               detail::VisualAspectProperties,
+                               ShapeFrame>
 {
 public:
-
   using Base = common::AspectWithVersionedProperties<
-      VisualAspect, detail::VisualAspectProperties, ShapeFrame>;
+      VisualAspect,
+      detail::VisualAspectProperties,
+      ShapeFrame>;
 
   /// Constructor
   VisualAspect(const PropertiesData& properties = PropertiesData());
@@ -66,14 +66,14 @@ public:
   /// Set RGBA color
   void setRGBA(const Eigen::Vector4d& color);
 
-  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector4d, RGBA )
+  DART_COMMON_GET_ASPECT_PROPERTY(Eigen::Vector4d, RGBA)
   // const Eigen::Vector4d& getRGBA() const;
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Hidden )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Hidden)
   // void setHidden(const bool& value);
   // const bool& getHidden() const;
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Shadowed )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Shadowed)
   // void setShadowed(const bool& value);
   // const bool& getShadowed() const;
 
@@ -107,74 +107,88 @@ public:
   /// True iff the ShapeNode is set to be hidden. Use hide(bool) to change this
   /// setting
   bool isHidden() const;
-
 };
 
 //==============================================================================
-class CollisionAspect final :
-    public common::AspectWithVersionedProperties<
-        CollisionAspect,
-        detail::CollisionAspectProperties,
-        ShapeFrame>
+class CollisionAspect final : public common::AspectWithVersionedProperties<
+                                  CollisionAspect,
+                                  detail::CollisionAspectProperties,
+                                  ShapeFrame>
 {
 public:
-
-  CollisionAspect(const CollisionAspect &) = delete;
+  CollisionAspect(const CollisionAspect&) = delete;
   CollisionAspect(const PropertiesData& properties = PropertiesData());
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Collidable )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Collidable)
   // void setCollidable(const bool& value);
   // const bool& getCollidable() const;
 
   /// Return true if this body can collide with others bodies
   bool isCollidable() const;
-
 };
 
 //==============================================================================
-class DynamicsAspect final :
-    public common::AspectWithVersionedProperties<
-        DynamicsAspect,
-        detail::DynamicsAspectProperties,
-        ShapeFrame>
+class DynamicsAspect final : public common::AspectWithVersionedProperties<
+                                 DynamicsAspect,
+                                 detail::DynamicsAspectProperties,
+                                 ShapeFrame>
 {
 public:
-
   using Base = common::AspectWithVersionedProperties<
-      DynamicsAspect, detail::DynamicsAspectProperties, ShapeFrame>;
+      DynamicsAspect,
+      detail::DynamicsAspectProperties,
+      ShapeFrame>;
 
   DynamicsAspect(const DynamicsAspect&) = delete;
 
   DynamicsAspect(const PropertiesData& properties = PropertiesData());
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY( double, FrictionCoeff )
-  // void setFrictionCoeff(const double& value);
-  // const double& getFrictionCoeff() const;
-  DART_COMMON_SET_GET_ASPECT_PROPERTY( double, RestitutionCoeff )
+  /// Set both primary and secondary friction coefficients to the same value.
+  void setFrictionCoeff(const double& value);
+  /// Get average of primary and secondary friction coefficients.
+  double getFrictionCoeff() const;
+
+  // DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimaryFrictionCoeff)
+  void setPrimaryFrictionCoeff(const double& value);
+  const double& getPrimaryFrictionCoeff() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondaryFrictionCoeff)
+  // void setSecondaryFrictionCoeff(const double& value);
+  // const double& getSecondaryFrictionCoeff() const;
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, RestitutionCoeff)
   // void setRestitutionCoeff(const double& value);
   // const double& getRestitutionCoeff() const;
 
+  /// Set the frame for interpreting the first friction direction vector.
+  /// The frame pointer defaults to nullptr, which is interpreted as this
+  /// ShapeFrame.
+  void setFirstFrictionDirectionFrame(const Frame* value);
+
+  /// Get the frame for the first friction direction vector.
+  const Frame* getFirstFrictionDirectionFrame() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(Eigen::Vector3d, FirstFrictionDirection)
+  // void setFirstFrictionDirection(const Eigen::Vector3d& value);
+  // const Eigen::Vector3d& getFirstFrictionDirection() const;
 };
 
 //==============================================================================
-class ShapeFrame :
-    public virtual common::VersionCounter,
-    public detail::ShapeFrameCompositeBase,
-    public virtual Frame
+class ShapeFrame : public virtual common::VersionCounter,
+                   public detail::ShapeFrameCompositeBase,
+                   public virtual Frame
 {
 public:
-
   friend class BodyNode;
 
-  using ShapeUpdatedSignal
-      = common::Signal<void(const ShapeFrame* thisShapeFrame,
-                            const ShapePtr& oldShape,
-                            const ShapePtr& newShape)>;
+  using ShapeUpdatedSignal = common::Signal<void(
+      const ShapeFrame* thisShapeFrame,
+      const ShapePtr& oldShape,
+      const ShapePtr& newShape)>;
 
-  using RelativeTransformUpdatedSignal
-      = common::Signal<void(const ShapeFrame* thisShapeFrame,
-                            const Eigen::Isometry3d& oldTransform,
-                            const Eigen::Isometry3d& newTransform)>;
+  using RelativeTransformUpdatedSignal = common::Signal<void(
+      const ShapeFrame* thisShapeFrame,
+      const Eigen::Isometry3d& oldTransform,
+      const Eigen::Isometry3d& newTransform)>;
 
   using UniqueProperties = AspectProperties;
   using Properties = UniqueProperties;
@@ -218,15 +232,14 @@ public:
   /// otherwise return nullptr
   virtual ShapeNode* asShapeNode();
 
-  /// Convert 'const this' into a ShapeNode pointer if ShapeFrame is a ShapeNode,
-  /// otherwise return nullptr.
+  /// Convert 'const this' into a ShapeNode pointer if ShapeFrame is a
+  /// ShapeNode, otherwise return nullptr.
   ///
   /// This should be preferred over performing a dynamic_cast when you want to
   /// cast a ShapeFrame into a ShapeNode, because this method costs less.
   virtual const ShapeNode* asShapeNode() const;
 
 protected:
-
   /// Constructor
   ShapeFrame(Frame* parent, const Properties& properties);
 
@@ -249,14 +262,12 @@ protected:
   common::Connection mConnectionForShapeVersionChange;
 
 public:
-
   /// Slot register for shape updated signal
   common::SlotRegister<ShapeUpdatedSignal> onShapeUpdated;
 
   /// Slot register for relative transformation updated signal
   common::SlotRegister<RelativeTransformUpdatedSignal>
       onRelativeTransformUpdated;
-
 };
 
 } // namespace dynamics

@@ -58,29 +58,29 @@ struct RevoluteJointUniqueProperties
 };
 
 //==============================================================================
-struct RevoluteJointProperties :
-    GenericJoint<math::R1Space>::Properties,
-    RevoluteJointUniqueProperties
+struct RevoluteJointProperties : GenericJoint<math::R1Space>::Properties,
+                                 RevoluteJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(RevoluteJointProperties)
 
   RevoluteJointProperties(
-      const GenericJoint<math::R1Space>::Properties& genericJointProperties =
-          GenericJoint<math::R1Space>::Properties(),
-      const RevoluteJointUniqueProperties& revoluteProperties =
-          RevoluteJointUniqueProperties());
+      const GenericJoint<math::R1Space>::Properties& genericJointProperties
+      = GenericJoint<math::R1Space>::Properties(),
+      const RevoluteJointUniqueProperties& revoluteProperties
+      = RevoluteJointUniqueProperties());
 
   virtual ~RevoluteJointProperties() = default;
 };
 
 //==============================================================================
 using RevoluteJointBase = common::EmbedPropertiesOnTopOf<
-    RevoluteJoint, RevoluteJointUniqueProperties, GenericJoint<math::R1Space> >;
+    RevoluteJoint,
+    RevoluteJointUniqueProperties,
+    GenericJoint<math::R1Space> >;
 
 } // namespace detail
 
 } // namespace dynamics
 } // namespace dart
-
 
 #endif // DART_DYNAMICS_DETAIL_REVOLUTEJOINTASPECT_HPP_

@@ -35,25 +35,25 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <gtest/gtest.h>
 #include <Eigen/Dense>
-#include "TestHelpers.hpp"
-#include "dart/config.hpp"
+#include <gtest/gtest.h>
 #include "dart/common/Console.hpp"
-#include "dart/optimizer/Function.hpp"
-#include "dart/optimizer/Problem.hpp"
-#include "dart/optimizer/GradientDescentSolver.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/optimizer/Function.hpp"
+#include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/optimizer/Problem.hpp"
+#include "TestHelpers.hpp"
 #if HAVE_NLOPT
-  #include "dart/optimizer/nlopt/NloptSolver.hpp"
+#  include "dart/optimizer/nlopt/NloptSolver.hpp"
 #endif
 #if HAVE_IPOPT
-  #include "dart/optimizer/ipopt/IpoptSolver.hpp"
+#  include "dart/optimizer/ipopt/IpoptSolver.hpp"
 #endif
 #if HAVE_SNOPT
-  #include "dart/optimizer/snopt/SnoptSolver.hpp"
+#  include "dart/optimizer/snopt/SnoptSolver.hpp"
 #endif
 
 using namespace std;
@@ -67,10 +67,14 @@ class SampleObjFunc : public Function
 {
 public:
   /// \brief Constructor
-  SampleObjFunc() : Function() {}
+  SampleObjFunc() : Function()
+  {
+  }
 
   /// \brief Destructor
-  virtual ~SampleObjFunc() {}
+  virtual ~SampleObjFunc()
+  {
+  }
 
   /// \copydoc Function::eval
   double eval(const Eigen::VectorXd& _x) override
@@ -79,8 +83,8 @@ public:
   }
 
   /// \copydoc Function::evalGradient
-  void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override
+  void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
   {
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
@@ -92,22 +96,26 @@ class SampleConstFunc : public Function
 {
 public:
   /// \brief Constructor
-  SampleConstFunc(double _a, double _b) : Function(), mA(_a), mB(_b) {}
+  SampleConstFunc(double _a, double _b) : Function(), mA(_a), mB(_b)
+  {
+  }
 
   /// \brief Destructor
-  virtual ~SampleConstFunc() {}
+  virtual ~SampleConstFunc()
+  {
+  }
 
   /// \copydoc Function::eval
   double eval(const Eigen::VectorXd& _x) override
   {
-    return ((mA*_x[0] + mB) * (mA*_x[0] + mB) * (mA*_x[0] + mB) - _x[1]);
+    return ((mA * _x[0] + mB) * (mA * _x[0] + mB) * (mA * _x[0] + mB) - _x[1]);
   }
 
   /// \copydoc Function::evalGradient
-  void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override
+  void evalGradient(
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
   {
-    _grad[0] = 3 * mA * (mA*_x[0] + mB) * (mA*_x[0] + mB);
+    _grad[0] = 3 * mA * (mA * _x[0] + mB) * (mA * _x[0] + mB);
     _grad[1] = -1.0;
   }
 
@@ -156,12 +164,12 @@ TEST(Optimizer, BasicNlopt)
   FunctionPtr obj = std::make_shared<SampleObjFunc>();
   prob->setObjective(obj);
 
-  FunctionPtr const1 = std::make_shared<SampleConstFunc>( 2, 0);
+  FunctionPtr const1 = std::make_shared<SampleConstFunc>(2, 0);
   FunctionPtr const2 = std::make_shared<SampleConstFunc>(-1, 1);
   prob->addIneqConstraint(const1);
   prob->addIneqConstraint(const2);
 
-  NloptSolver solver(prob, nlopt::LD_MMA);
+  NloptSolver solver(prob, NloptSolver::LD_MMA);
   EXPECT_TRUE(solver.solve());
 
   double minF = prob->getOptimumValue();
@@ -186,7 +194,7 @@ TEST(Optimizer, BasicIpopt)
   FunctionPtr obj = std::make_shared<SampleObjFunc>();
   prob->setObjective(obj);
 
-  FunctionPtr const1 = std::make_shared<SampleConstFunc>( 2, 0);
+  FunctionPtr const1 = std::make_shared<SampleConstFunc>(2, 0);
   FunctionPtr const2 = std::make_shared<SampleConstFunc>(-1, 1);
   prob->addIneqConstraint(const1);
   prob->addIneqConstraint(const2);
@@ -214,38 +222,8 @@ TEST(Optimizer, BasicSnopt)
 #endif
 
 //==============================================================================
-TEST(Optimizer, InverseKinematics)
-{
-  // Very simple test of InverseKinematics module, applied to a FreeJoint to
-  // ensure that the target is reachable
-
-  SkeletonPtr skel = Skeleton::create();
-  skel->createJointAndBodyNodePair<FreeJoint>();
-
-  std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
-
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);
-  tf.rotate(Eigen::AngleAxisd(M_PI/8, Eigen::Vector3d(0, 1, 0)));
-  ik->getTarget()->setTransform(tf);
-
-  ik->getErrorMethod().setBounds(Eigen::Vector6d::Constant(-1e-8),
-                                Eigen::Vector6d::Constant( 1e-8));
-
-  ik->getSolver()->setNumMaxIterations(100);
-
-  EXPECT_FALSE(equals(ik->getTarget()->getTransform().matrix(),
-                      skel->getBodyNode(0)->getTransform().matrix(), 1e-1));
-
-  EXPECT_TRUE(ik->getSolver()->solve());
-
-  EXPECT_TRUE(equals(ik->getTarget()->getTransform().matrix(),
-                     skel->getBodyNode(0)->getTransform().matrix(), 1e-8));
-}
-
-//==============================================================================
-bool compareStringAndFile(const std::string& content,
-                          const std::string& fileName)
+bool compareStringAndFile(
+    const std::string& content, const std::string& fileName)
 {
   std::ifstream ifs(fileName, std::ifstream::in);
   EXPECT_TRUE(ifs.is_open());

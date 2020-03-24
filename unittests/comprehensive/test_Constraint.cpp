@@ -37,13 +37,13 @@
 
 #include "TestHelpers.hpp"
 
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
@@ -81,8 +81,10 @@ void ConstraintTest::SetUp()
   list.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
   list.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
   list.push_back("dart://sample/skel/test/simple_tree_structure.skel");
-  list.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
-  list.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  list.push_back(
+      "dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  list.push_back(
+      "dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
   list.push_back("dart://sample/skel/test/tree_structure.skel");
   list.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
   list.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
@@ -111,7 +113,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   // Settings
   //----------------------------------------------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG  // Debug mode
+#ifndef NDEBUG // Debug mode
   // std::size_t testCount = 1;
 #else
   // std::size_t testCount = 1;
@@ -122,29 +124,29 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
   world->getConstraintSolver()->setCollisionDetector(
-        DARTCollisionDetector::create());
+      DARTCollisionDetector::create());
 
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
   Joint* sphereJoint = sphere->getParentJoint();
-  sphereJoint->setVelocity(3, Random::uniform(-2.0, 2.0));  // x-axis
-  sphereJoint->setVelocity(5, Random::uniform(-2.0, 2.0));  // z-axis
+  sphereJoint->setVelocity(3, Random::uniform(-2.0, 2.0)); // x-axis
+  sphereJoint->setVelocity(5, Random::uniform(-2.0, 2.0)); // z-axis
   world->addSkeleton(sphereSkel);
   EXPECT_EQ(sphereSkel->getGravity(), world->getGravity());
   assert(sphere);
 
-  SkeletonPtr boxSkel = createBox(Vector3d(1.0, 1.0, 1.0),
-                                  Vector3d(0.0, 1.0, 0.0));
+  SkeletonPtr boxSkel
+      = createBox(Vector3d(1.0, 1.0, 1.0), Vector3d(0.0, 1.0, 0.0));
   BodyNode* box = boxSkel->getBodyNode(0);
   Joint* boxJoint = box->getParentJoint();
-  boxJoint->setVelocity(3, Random::uniform(-2.0, 2.0));  // x-axis
-  boxJoint->setVelocity(5, Random::uniform(-2.0, 2.0));  // z-axis
-//  world->addSkeleton(boxSkel);
-//  EXPECT_EQ(boxSkel->getGravity(), world->getGravity());
-//  assert(box);
+  boxJoint->setVelocity(3, Random::uniform(-2.0, 2.0)); // x-axis
+  boxJoint->setVelocity(5, Random::uniform(-2.0, 2.0)); // z-axis
+  //  world->addSkeleton(boxSkel);
+  //  EXPECT_EQ(boxSkel->getGravity(), world->getGravity());
+  //  assert(box);
 
-  SkeletonPtr groundSkel = createGround(Vector3d(10000.0, 0.1, 10000.0),
-                                      Vector3d(0.0, -0.05, 0.0));
+  SkeletonPtr groundSkel = createGround(
+      Vector3d(10000.0, 0.1, 10000.0), Vector3d(0.0, -0.05, 0.0));
   groundSkel->setMobile(false);
   // BodyNode* ground = groundSkel->getBodyNode(0);
   world->addSkeleton(groundSkel);
@@ -160,11 +162,11 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   int maxSteps = 500;
   for (int i = 0; i < maxSteps; ++i)
   {
-//    Vector3d pos1 = sphere->getWorldTransform().translation();
-//    Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
+    //    Vector3d pos1 = sphere->getWorldTransform().translation();
+    //    Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
 
-//    std::cout << "pos1:" << pos1.transpose() << std::endl;
-//    std::cout << "vel1:" << vel1.transpose() << std::endl;
+    //    std::cout << "pos1:" << pos1.transpose() << std::endl;
+    //    std::cout << "vel1:" << vel1.transpose() << std::endl;
 
     if (!world->checkCollision())
     {
@@ -174,12 +176,12 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 
     // for (std::size_t j = 0; j < cd->getNumContacts(); ++j)
     // {
-      // Contact contact = cd->getContact(j);
-      // Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
-      // Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
+    // Contact contact = cd->getContact(j);
+    // Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
+    // Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
 
-      // std::cout << "pos1:" << pos1.transpose() << std::endl;
-      // std::cout << "vel1:" << vel1.transpose() << std::endl;
+    // std::cout << "pos1:" << pos1.transpose() << std::endl;
+    // std::cout << "vel1:" << vel1.transpose() << std::endl;
     // }
 
     world->step();
@@ -191,28 +193,29 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
       Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
       Vector3d vel1 = sphere->getLinearVelocity(pos1);
 
-//      std::cout << "pos1:" << pos1.transpose() << std::endl;
+      //      std::cout << "pos1:" << pos1.transpose() << std::endl;
 
-//      std::cout << "pos1[1]: " << pos1[1] << std::endl;
+      //      std::cout << "pos1[1]: " << pos1[1] << std::endl;
 
-//      std::cout << "pos1:" << pos1.transpose() << std::endl;
-      std::cout << "vel1:" << vel1.transpose() << ", pos1[1]: " << pos1[1] << std::endl;
+      //      std::cout << "pos1:" << pos1.transpose() << std::endl;
+      std::cout << "vel1:" << vel1.transpose() << ", pos1[1]: " << pos1[1]
+                << std::endl;
 
-//      EXPECT_NEAR(pos1[0], 0.0, 1e-9);
-//      EXPECT_NEAR(pos1[1], -0.05, 1e-2);
-//      EXPECT_NEAR(pos1[2], 0.0, 1e-9);
+      //      EXPECT_NEAR(pos1[0], 0.0, 1e-9);
+      //      EXPECT_NEAR(pos1[1], -0.05, 1e-2);
+      //      EXPECT_NEAR(pos1[2], 0.0, 1e-9);
 
-//      EXPECT_NEAR(vel1[0], 0.0, 1e-9);
-//      EXPECT_NEAR(vel1[1], 0.0, 1e-9);
-//      EXPECT_NEAR(vel1[2], 0.0, 1e-9);
+      //      EXPECT_NEAR(vel1[0], 0.0, 1e-9);
+      //      EXPECT_NEAR(vel1[1], 0.0, 1e-9);
+      //      EXPECT_NEAR(vel1[2], 0.0, 1e-9);
 
-//      if (!equals(vel1, Vector3d(0.0, 0.0, 0.0)))
-//        std::cout << "vel1:" << vel1.transpose() << std::endl;
+      //      if (!equals(vel1, Vector3d(0.0, 0.0, 0.0)))
+      //        std::cout << "vel1:" << vel1.transpose() << std::endl;
 
-//      EXPECT_EQ(vel1, Vector3d::Zero());
+      //      EXPECT_EQ(vel1, Vector3d::Zero());
     }
 
-//    std::cout << std::endl;
+    //    std::cout << std::endl;
 
     break;
   }
@@ -221,13 +224,13 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 //==============================================================================
 TEST_F(ConstraintTest, SingleContactTest)
 {
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    SingleContactTest(getList()[i]);
-//  }
+  //  for (int i = 0; i < getList().size(); ++i)
+  //  {
+  //#ifndef NDEBUG
+  //    dtdbg << getList()[i] << std::endl;
+  //#endif
+  //    SingleContactTest(getList()[i]);
+  //  }
 
   SingleContactTest(getList()[0]);
 }

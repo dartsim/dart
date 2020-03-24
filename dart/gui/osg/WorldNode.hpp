@@ -33,10 +33,10 @@
 #ifndef DART_GUI_OSG_WORLDNODE_HPP_
 #define DART_GUI_OSG_WORLDNODE_HPP_
 
+#include <memory>
+#include <unordered_map>
 #include <osg/Group>
 #include <osgShadow/ShadowTechnique>
-#include <unordered_map>
-#include <memory>
 
 #include "dart/gui/osg/Viewer.hpp"
 
@@ -64,12 +64,13 @@ class Viewer;
 class WorldNode : public ::osg::Group
 {
 public:
-
   friend class Viewer;
 
   /// Default constructor
   /// Shadows are disabled by default
-  explicit WorldNode(std::shared_ptr<dart::simulation::World> world = nullptr, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
+  explicit WorldNode(
+      std::shared_ptr<dart::simulation::World> world = nullptr,
+      ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
   /// Set the World that this WorldNode is associated with
   void setWorld(std::shared_ptr<dart::simulation::World> newWorld);
@@ -136,7 +137,8 @@ public:
 
   /// Set the ShadowTechnique
   /// If you wish to disable shadows, pass a nullptr
-  void setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
+  void setShadowTechnique(
+      ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
   /// Get the current ShadowTechnique
   /// nullptr is there are no shadows
@@ -144,13 +146,13 @@ public:
 
   /// Helper function to create a default ShadowTechnique given a Viewer
   /// the default ShadowTechnique is ShadowMap
-  static ::osg::ref_ptr<osgShadow::ShadowTechnique> createDefaultShadowTechnique(const Viewer* viewer);
-
-protected:
+  static ::osg::ref_ptr<osgShadow::ShadowTechnique>
+  createDefaultShadowTechnique(const Viewer* viewer);
 
   /// Destructor
   virtual ~WorldNode();
 
+protected:
   /// Called when this world gets added to an dart::gui::osg::Viewer. Override
   /// this function to customize the way your WorldNode starts up in an
   /// dart::gui::osg::Viewer. Default behavior does nothing.
@@ -173,7 +175,8 @@ protected:
 
   void refreshShapeFrameNode(dart::dynamics::Frame* frame);
 
-  using NodeMap = std::unordered_map<dart::dynamics::Frame*, ShapeFrameNode*>;
+  using NodeMap = std::
+      unordered_map<dart::dynamics::Frame*, ::osg::ref_ptr<ShapeFrameNode>>;
 
   /// Map from Frame pointers to FrameNode pointers
   NodeMap mFrameToNode;
@@ -194,11 +197,10 @@ protected:
   ::osg::ref_ptr<::osg::Group> mNormalGroup;
 
   /// OSG group for shadowed objects
-  ::osg::ref_ptr<::osg::Group> mShadowedGroup;
+  ::osg::ref_ptr<::osgShadow::ShadowedScene> mShadowedGroup;
 
   /// Whether the shadows are enabled
   bool mShadowed;
-
 };
 
 } // namespace osg

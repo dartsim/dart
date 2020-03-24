@@ -30,16 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/SphereShapeNode.hpp"
+
+#include <osg/BlendFunc>
+#include <osg/CullFace>
 #include <osg/Geode>
-#include <osg/ShapeDrawable>
 #include <osg/Light>
 #include <osg/Material>
+#include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/render/SphereShapeNode.hpp"
-#include "dart/gui/osg/Utils.hpp"
-
-#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -49,55 +51,48 @@ namespace render {
 class SphereShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
-
-  SphereShapeGeode(dart::dynamics::SphereShape* shape,
-                   ShapeFrameNode* parentShapeFrame,
-                   SphereShapeNode* parentNode);
+  SphereShapeGeode(
+      dart::dynamics::SphereShape* shape,
+      ShapeFrameNode* parentShapeFrame,
+      SphereShapeNode* parentNode);
 
   void refresh();
   void extractData();
 
 protected:
-
   virtual ~SphereShapeGeode();
 
   SphereShapeNode* mParentNode;
   dart::dynamics::SphereShape* mSphereShape;
   SphereShapeDrawable* mDrawable;
-
 };
 
 //==============================================================================
 class SphereShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
-
-  SphereShapeDrawable(dart::dynamics::SphereShape* shape,
-                         dart::dynamics::VisualAspect* visualAspect,
-                         SphereShapeGeode* parent);
+  SphereShapeDrawable(
+      dart::dynamics::SphereShape* shape,
+      dart::dynamics::VisualAspect* visualAspect,
+      SphereShapeGeode* parent);
 
   void refresh(bool firstTime);
 
 protected:
-
   virtual ~SphereShapeDrawable();
 
   dart::dynamics::SphereShape* mSphereShape;
   dart::dynamics::VisualAspect* mVisualAspect;
   SphereShapeGeode* mParent;
-
 };
 
 //==============================================================================
 SphereShapeNode::SphereShapeNode(
-    std::shared_ptr<dart::dynamics::SphereShape> shape,
-    ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this),
-    mSphereShape(shape),
-    mGeode(nullptr)
+    std::shared_ptr<dart::dynamics::SphereShape> shape, ShapeFrameNode* parent)
+  : ShapeNode(shape, parent, this), mSphereShape(shape), mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -105,9 +100,9 @@ void SphereShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -116,9 +111,10 @@ void SphereShapeNode::refresh()
 //==============================================================================
 void SphereShapeNode::extractData(bool /*firstTime*/)
 {
-  if(nullptr == mGeode)
+  if (nullptr == mGeode)
   {
-    mGeode = new SphereShapeGeode(mSphereShape.get(), mParentShapeFrameNode, this);
+    mGeode
+        = new SphereShapeGeode(mSphereShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
   }
@@ -133,15 +129,19 @@ SphereShapeNode::~SphereShapeNode()
 }
 
 //==============================================================================
-SphereShapeGeode::SphereShapeGeode(dart::dynamics::SphereShape* shape,
-                                         ShapeFrameNode* parentShapeFrame,
-                                         SphereShapeNode* parentNode)
+SphereShapeGeode::SphereShapeGeode(
+    dart::dynamics::SphereShape* shape,
+    ShapeFrameNode* parentShapeFrame,
+    SphereShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mParentNode(parentNode),
     mSphereShape(shape),
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setAttributeAndModes(
+      new ::osg::CullFace(::osg::CullFace::BACK));
   extractData();
 }
 
@@ -156,7 +156,7 @@ void SphereShapeGeode::refresh()
 //==============================================================================
 void SphereShapeGeode::extractData()
 {
-  if(nullptr == mDrawable)
+  if (nullptr == mDrawable)
   {
     mDrawable = new SphereShapeDrawable(mSphereShape, mVisualAspect, this);
     addDrawable(mDrawable);
@@ -177,9 +177,7 @@ SphereShapeDrawable::SphereShapeDrawable(
     dart::dynamics::SphereShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     SphereShapeGeode* parent)
-  : mSphereShape(shape),
-    mVisualAspect(visualAspect),
-    mParent(parent)
+  : mSphereShape(shape), mVisualAspect(visualAspect), mParent(parent)
 {
   refresh(true);
 }
@@ -187,25 +185,26 @@ SphereShapeDrawable::SphereShapeDrawable(
 //==============================================================================
 void SphereShapeDrawable::refresh(bool firstTime)
 {
-  if(mSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if(mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-     || firstTime)
+  if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+      || firstTime)
   {
     ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
-    osg_shape = new ::osg::Sphere(::osg::Vec3(0,0,0), mSphereShape->getRadius());
+    osg_shape
+        = new ::osg::Sphere(::osg::Vec3(0, 0, 0), mSphereShape->getRadius());
 
     setShape(osg_shape);
     dirtyDisplayList();
   }
 
-  if(mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-     || firstTime)
+  if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
+    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 

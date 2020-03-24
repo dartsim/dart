@@ -40,7 +40,7 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Joint;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -53,6 +53,12 @@ public:
 
   /// Destructor
   virtual ~JointCoulombFrictionConstraint();
+
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Returns constraint type for this class.
+  static const std::string& getStaticType();
 
   //----------------------------------------------------------------------------
   // Property settings
@@ -137,8 +143,7 @@ private:
   static double mConstraintForceMixing;
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_HPP_

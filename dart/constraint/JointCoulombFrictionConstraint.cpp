@@ -39,7 +39,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
-#define DART_CFM     1e-9
+#define DART_CFM 1e-9
 
 namespace dart {
 namespace constraint {
@@ -78,20 +78,28 @@ JointCoulombFrictionConstraint::~JointCoulombFrictionConstraint()
 }
 
 //==============================================================================
+const std::string& JointCoulombFrictionConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& JointCoulombFrictionConstraint::getStaticType()
+{
+  static const std::string name = "JointCoulombFrictionConstraint";
+  return name;
+}
+
+//==============================================================================
 void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
   if (_cfm < 1e-9)
   {
     dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+           << "] is lower than 1e-9. "
+           << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
-  }
-  if (_cfm > 1.0)
-  {
-    dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
-    mConstraintForceMixing = 1.0;
   }
 
   mConstraintForceMixing = _cfm;
@@ -126,7 +134,7 @@ void JointCoulombFrictionConstraint::update()
       // redundancy.
 
       // Note: Coulomb friction is force not impulse
-      mUpperBound[i] =  mJoint->getCoulombFriction(i) * timeStep;
+      mUpperBound[i] = mJoint->getCoulombFriction(i) * timeStep;
       mLowerBound[i] = -mUpperBound[i];
 
       if (mActive[i])
@@ -205,14 +213,14 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(std::size_t _index)
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::getVelocityChange(double* _delVel,
-                                                       bool _withCfm)
+void JointCoulombFrictionConstraint::getVelocityChange(
+    double* _delVel, bool _withCfm)
 {
   assert(_delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof ; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -229,8 +237,8 @@ void JointCoulombFrictionConstraint::getVelocityChange(double* _delVel,
   // varaible in ODE
   if (_withCfm)
   {
-    _delVel[mAppliedImpulseIndex] += _delVel[mAppliedImpulseIndex]
-                                     * mConstraintForceMixing;
+    _delVel[mAppliedImpulseIndex]
+        += _delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
   assert(localIndex == mDim);
@@ -253,13 +261,13 @@ void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
 {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof ; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
 
     mJoint->setConstraintImpulse(
-          i, mJoint->getConstraintImpulse(i) + _lambda[localIndex]);
+        i, mJoint->getConstraintImpulse(i) + _lambda[localIndex]);
 
     mOldX[i] = _lambda[localIndex];
 

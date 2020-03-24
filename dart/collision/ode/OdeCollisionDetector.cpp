@@ -34,29 +34,30 @@
 
 #include <ode/ode.h>
 
-#include "dart/dynamics/SphereShape.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/ConeShape.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
+#include "dart/collision/ode/OdeTypes.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
 namespace dart {
 namespace collision {
 
 namespace {
 
-void CollisionCallback(void *data, dGeomID o1, dGeomID o2);
+void CollisionCallback(void* data, dGeomID o1, dGeomID o2);
 
-void reportContacts(int numContacts,
+void reportContacts(
+    int numContacts,
     dContactGeom* contactGeoms,
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
@@ -88,12 +89,8 @@ struct OdeCollisionCallbackData
   std::size_t numContacts;
 
   OdeCollisionCallbackData(
-      const CollisionOption& option,
-      CollisionResult* result)
-    : option(option),
-      result(result),
-      done(false),
-      numContacts(0u)
+      const CollisionOption& option, CollisionResult* result)
+    : option(option), result(result), done(false), numContacts(0u)
   {
     // Do nothing
   }
@@ -103,17 +100,16 @@ struct OdeCollisionCallbackData
 
 //==============================================================================
 OdeCollisionDetector::Registrar<OdeCollisionDetector>
-OdeCollisionDetector::mRegistrar{
-  OdeCollisionDetector::getStaticType(),
-  []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
-      return dart::collision::OdeCollisionDetector::create();
-  }};
+    OdeCollisionDetector::mRegistrar{
+        OdeCollisionDetector::getStaticType(),
+        []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
+          return dart::collision::OdeCollisionDetector::create();
+        }};
 
 //==============================================================================
 std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::create()
 {
-  return std::shared_ptr<OdeCollisionDetector>(
-      new OdeCollisionDetector());
+  return std::shared_ptr<OdeCollisionDetector>(new OdeCollisionDetector());
 }
 
 //==============================================================================
@@ -127,7 +123,7 @@ OdeCollisionDetector::~OdeCollisionDetector()
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-OdeCollisionDetector::cloneWithoutCollisionObjects()
+OdeCollisionDetector::cloneWithoutCollisionObjects() const
 {
   return OdeCollisionDetector::create();
 }
@@ -148,7 +144,7 @@ const std::string& OdeCollisionDetector::getStaticType()
 //==============================================================================
 std::unique_ptr<CollisionGroup> OdeCollisionDetector::createCollisionGroup()
 {
-  return common::make_unique<OdeCollisionGroup>(shared_from_this());
+  return std::make_unique<OdeCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
@@ -187,7 +183,8 @@ bool OdeCollisionDetector::collide(
   dSpaceCollide2(
       reinterpret_cast<dGeomID>(odeGroup1->getOdeSpaceId()),
       reinterpret_cast<dGeomID>(odeGroup2->getOdeSpaceId()),
-      &data, CollisionCallback);
+      &data,
+      CollisionCallback);
 
   return data.numContacts > 0;
 }
@@ -243,7 +240,7 @@ void OdeCollisionDetector::refreshCollisionObject(CollisionObject* object)
   OdeCollisionObject temp(this, object->getShapeFrame());
 
   static_cast<OdeCollisionObject&>(*object) =
-//      OdeCollisionObject(this, object->getShapeFrame());
+      //      OdeCollisionObject(this, object->getShapeFrame());
       std::move(temp);
 }
 
@@ -266,10 +263,10 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   if (cdData->done)
     return;
 
-        auto& odeResult   = cdData->contactGeoms;
-        auto* result      = cdData->result;
-  const auto& option      = cdData->option;
-  const auto& filter      = option.collisionFilter;
+  auto& odeResult = cdData->contactGeoms;
+  auto* result = cdData->result;
+  const auto& option = cdData->option;
+  const auto& filter = option.collisionFilter;
 
   auto geomData1 = dGeomGetData(o1);
   auto geomData2 = dGeomGetData(o2);
@@ -280,11 +277,11 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   assert(collObj2);
 
   if (filter && filter->ignoresCollision(collObj1, collObj2))
-      return;
+    return;
 
   // Perform narrow-phase collision detection
-  auto numc = dCollide(
-      o1, o2, MAX_COLLIDE_RETURNS, odeResult, sizeof(odeResult[0]));
+  auto numc
+      = dCollide(o1, o2, MAX_COLLIDE_RETURNS, odeResult, sizeof(odeResult[0]));
 
   cdData->numContacts += numc;
 

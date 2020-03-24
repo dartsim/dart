@@ -33,9 +33,10 @@
 #ifndef DART_COLLISION_RESULT_HPP_
 #define DART_COLLISION_RESULT_HPP_
 
-#pragma message("This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead.")
+#pragma message(                                                               \
+    "This header has been deprecated in DART 6.1. "                            \
+    "Please include CollisionResult.hpp intead.")
 
 #include "dart/collision/CollisionResult.hpp"
 
-#endif  // DART_COLLISION_RESULT_HPP_
+#endif // DART_COLLISION_RESULT_HPP_

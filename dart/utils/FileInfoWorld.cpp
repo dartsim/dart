@@ -41,8 +41,7 @@ namespace dart {
 namespace utils {
 
 //==============================================================================
-FileInfoWorld::FileInfoWorld()
-  : mRecord(nullptr)
+FileInfoWorld::FileInfoWorld() : mRecord(nullptr)
 {
   std::strcpy(mFileName, "");
 }
@@ -57,7 +56,8 @@ FileInfoWorld::~FileInfoWorld()
 bool FileInfoWorld::loadFile(const char* _fName)
 {
   std::ifstream inFile(_fName);
-  if (inFile.fail() == 1) return false;
+  if (inFile.fail() == 1)
+    return false;
 
   inFile.precision(8);
   char buffer[256];
@@ -100,13 +100,13 @@ bool FileInfoWorld::loadFile(const char* _fName)
     inFile >> buffer;
     inFile >> intVal;
     for (int j = 0; j < intVal; j++)
+    {
+      for (int k = 0; k < 6; k++)
       {
-        for (int k = 0; k < 6; k++)
-          {
-            inFile >> doubleVal;
-            tempState.push_back(doubleVal);
-          }
+        inFile >> doubleVal;
+        tempState.push_back(doubleVal);
       }
+    }
 
     state.resize(tempState.size());
     for (std::size_t j = 0; j < tempState.size(); j++)
@@ -118,7 +118,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
 
   std::string text = _fName;
   int lastSlash = text.find_last_of("/");
-  text = text.substr(lastSlash+1);
+  text = text.substr(lastSlash + 1);
   strcpy(mFileName, text.c_str());
   return true;
 }
@@ -127,7 +127,8 @@ bool FileInfoWorld::loadFile(const char* _fName)
 bool FileInfoWorld::saveFile(const char* _fName, simulation::Recording* _record)
 {
   std::ofstream outFile(_fName, std::ios::out);
-  if (outFile.fail()) return false;
+  if (outFile.fail())
+    return false;
 
   outFile.precision(8);
 
@@ -153,12 +154,12 @@ bool FileInfoWorld::saveFile(const char* _fName, simulation::Recording* _record)
     }
     outFile << std::endl;
   }
-  
+
   outFile.close();
 
   std::string text = _fName;
   int lastSlash = text.find_last_of("/");
-  text = text.substr(lastSlash+1);
+  text = text.substr(lastSlash + 1);
   std::strcpy(mFileName, text.c_str());
   return true;
 }
@@ -169,5 +170,5 @@ simulation::Recording* FileInfoWorld::getRecording() const
   return mRecord;
 }
 
-}  // namespace utils
-}  // namespace dart
+} // namespace utils
+} // namespace dart

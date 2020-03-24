@@ -30,9 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#include <sstream>
+
 #include <dart/dart.hpp>
 #include <dart/utils/urdf/urdf.hpp>
+#include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -41,18 +43,17 @@ using namespace dart;
 TEST(IkFast, FailedToLoadSharedLibrary)
 {
   auto skel = dynamics::Skeleton::create();
-  EXPECT_NE(skel, nullptr);
+  ASSERT_NE(skel, nullptr);
 
   auto bodyNode
       = skel->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
 
   auto ee = bodyNode->createEndEffector("ee");
+  ASSERT_NE(ee, nullptr);
   auto ik = ee->createIK();
-  auto ikfast
-      = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
-        "doesn't exist",
-        std::vector<std::size_t>(),
-        std::vector<std::size_t>());
+  ASSERT_NE(ik, nullptr);
+  auto ikfast = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
+      "doesn't exist", std::vector<std::size_t>(), std::vector<std::size_t>());
   EXPECT_EQ(ikfast.isConfigured(), false);
 }
 
@@ -60,11 +61,13 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 TEST(IkFast, LoadWamArmIk)
 {
   utils::DartLoader urdfParser;
-  urdfParser.addPackageDirectory("herb_description", DART_DATA_PATH"/urdf/wam");
-  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH"/urdf/wam/wam.urdf");
-  EXPECT_NE(wam, nullptr);
+  urdfParser.addPackageDirectory(
+      "herb_description", DART_DATA_PATH "/urdf/wam");
+  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
+  ASSERT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");
+  ASSERT_NE(wam7, nullptr);
   auto ee = wam7->createEndEffector("ee");
   auto ik = ee->createIK();
   auto targetFrame
@@ -73,27 +76,27 @@ TEST(IkFast, LoadWamArmIk)
 
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
-  std::string libName = "libGeneratedWamIkFast";
+  std::stringstream ss;
+  ss << DART_SHARED_LIB_PREFIX << "GeneratedWamIkFast";
 #if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
-  libName += "d";
+  ss << "d";
 #endif
-#if DART_OS_LINUX
-  libName += ".so";
-#elif DART_OS_MACOS
-  libName += ".dylib";
-#elif DART_OS_WINDOWS
-  libName += ".dll";
-#endif
+  ss << "." << DART_SHARED_LIB_EXTENSION;
+  std::string libName = ss.str();
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
-        libName, ikFastDofs, ikFastFreeDofs);
+      libName, ikFastDofs, ikFastFreeDofs);
   auto analytical = ik->getAnalytical();
-  EXPECT_NE(analytical, nullptr);
+  ASSERT_NE(analytical, nullptr);
   EXPECT_EQ(analytical->getDofs().size(), 6);
 
   auto ikfast = dynamic_cast<dynamics::SharedLibraryIkFast*>(analytical);
-  EXPECT_NE(ikfast, nullptr);
+  ASSERT_NE(ikfast, nullptr);
+  EXPECT_EQ(ikfast->getNumJoints2(), 7);
+  EXPECT_EQ(ikfast->getNumFreeParameters2(), 1);
+  EXPECT_EQ(ikfast->getIkType2(), dynamics::IkFast::IkType::TRANSFORM_6D);
+  EXPECT_EQ(ikfast->getIkFastVersion2(), "71");
 
   targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
   auto solutions = ikfast->getSolutions(targetFrame->getTransform());
@@ -103,7 +106,7 @@ TEST(IkFast, LoadWamArmIk)
 
   for (const auto& solution : solutions)
   {
-    EXPECT_EQ(solution.mConfig.size(), 6);
+    ASSERT_EQ(solution.mConfig.size(), 6);
 
     if (solution.mValidity != InverseKinematics::Analytical::VALID)
       continue;

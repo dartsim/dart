@@ -37,10 +37,10 @@
 
 #if HAVE_OCTOMAP
 
-#include <octomap/octomap.h>
-#include "dart/collision/fcl/BackwardCompatibility.hpp"
-#include "dart/dynamics/Frame.hpp"
-#include "dart/dynamics/Shape.hpp"
+#  include <octomap/octomap.h>
+#  include "dart/collision/fcl/BackwardCompatibility.hpp"
+#  include "dart/dynamics/Frame.hpp"
+#  include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -142,6 +142,9 @@ public:
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
+
+  // Documentation inherited.
+  void notifyColorUpdated(const Eigen::Vector4d& color) override;
 
 protected:
   // Documentation inherited.

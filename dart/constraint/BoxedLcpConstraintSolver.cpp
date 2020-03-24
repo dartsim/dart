@@ -34,16 +34,16 @@
 
 #include <cassert>
 #ifndef NDEBUG
-#include <iomanip>
-#include <iostream>
+#  include <iomanip>
+#  include <iostream>
 #endif
 
 #include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
-#include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {
@@ -51,11 +51,49 @@ namespace constraint {
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
-    double timeStep, BoxedLcpSolverPtr boxedLcpSolver)
-  : ConstraintSolver(timeStep), mBoxedLcpSolver(std::move(boxedLcpSolver))
+    double timeStep,
+    BoxedLcpSolverPtr boxedLcpSolver,
+    BoxedLcpSolverPtr secondaryBoxedLcpSolver)
+  : BoxedLcpConstraintSolver(
+        std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
 {
-  if (!mBoxedLcpSolver)
-    mBoxedLcpSolver = std::make_shared<DantzigBoxedLcpSolver>();
+  setTimeStep(timeStep);
+}
+
+//==============================================================================
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
+  : BoxedLcpConstraintSolver(std::make_shared<DantzigBoxedLcpSolver>())
+{
+  // Do nothing
+}
+
+//==============================================================================
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
+    BoxedLcpSolverPtr boxedLcpSolver)
+  : BoxedLcpConstraintSolver(
+        std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
+{
+  // Do nothing
+}
+
+//==============================================================================
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
+    BoxedLcpSolverPtr boxedLcpSolver, BoxedLcpSolverPtr secondaryBoxedLcpSolver)
+  : ConstraintSolver()
+{
+  if (boxedLcpSolver)
+  {
+    setBoxedLcpSolver(std::move(boxedLcpSolver));
+  }
+  else
+  {
+    dtwarn << "[BoxedLcpConstraintSolver] Attempting to construct with nullptr "
+           << "LCP solver, which is not allowed. Using Dantzig solver "
+           << "instead.\n";
+    setBoxedLcpSolver(std::make_shared<DantzigBoxedLcpSolver>());
+  }
+
+  setSecondaryBoxedLcpSolver(std::move(secondaryBoxedLcpSolver));
 }
 
 //==============================================================================
@@ -68,6 +106,13 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
     return;
   }
 
+  if (lcpSolver == mSecondaryBoxedLcpSolver)
+  {
+    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
+           << "a primary LCP solver that is the same with the secondary LCP "
+           << "solver, which is discouraged. Ignoring this request.\n";
+  }
+
   mBoxedLcpSolver = std::move(lcpSolver);
 }
 
@@ -75,6 +120,28 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 {
   return mBoxedLcpSolver;
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
+    BoxedLcpSolverPtr lcpSolver)
+{
+  if (lcpSolver == mBoxedLcpSolver)
+  {
+    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
+           << "the secondary LCP solver that is identical to the primary LCP "
+           << "solver, which is redundant. Please use different solvers or set "
+           << "the secondary LCP solver to nullptr.\n";
+  }
+
+  mSecondaryBoxedLcpSolver = std::move(lcpSolver);
+}
+
+//==============================================================================
+ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
+    const
+{
+  return mSecondaryBoxedLcpSolver;
 }
 
 //==============================================================================
@@ -173,9 +240,22 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 
-  // Solve LCP using ODE's Dantzig algorithm
+  // Solve LCP using the primary solver and fallback to secondary solver when
+  // the parimary solver failed.
+  if (mSecondaryBoxedLcpSolver)
+  {
+    // Make backups for the secondary LCP solver because the primary solver
+    // modifies the original terms.
+    mABackup = mA;
+    mXBackup = mX;
+    mBBackup = mB;
+    mLoBackup = mLo;
+    mHiBackup = mHi;
+    mFIndexBackup = mFIndex;
+  }
+  const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
   assert(mBoxedLcpSolver);
-  mBoxedLcpSolver->solve(
+  bool success = mBoxedLcpSolver->solve(
       n,
       mA.data(),
       mX.data(),
@@ -183,7 +263,38 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       0,
       mLo.data(),
       mHi.data(),
-      mFIndex.data());
+      mFIndex.data(),
+      earlyTermination);
+
+  // Sanity check. LCP solvers should not report success with nan values, but
+  // it could happen. So we set the sucees to false for nan values.
+  if (success && mX.hasNaN())
+    success = false;
+
+  if (!success && mSecondaryBoxedLcpSolver)
+  {
+    mSecondaryBoxedLcpSolver->solve(
+        n,
+        mABackup.data(),
+        mXBackup.data(),
+        mBBackup.data(),
+        0,
+        mLoBackup.data(),
+        mHiBackup.data(),
+        mFIndexBackup.data(),
+        false);
+    mX = mXBackup;
+  }
+
+  if (mX.hasNaN())
+  {
+    dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
+          << "values: " << mX.transpose() << ". We're setting it zero for "
+          << "safety. Consider using more robust solver such as PGS as a "
+          << "secondary solver. If this happens even with PGS solver, please "
+          << "report this as a bug.\n";
+    mX.setZero();
+  }
 
   // Print LCP formulation
   //  dtdbg << "After solve:" << std::endl;

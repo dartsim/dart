@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <osg/CullFace>
 #include <osg/Geode>
-#include <osg/ShapeDrawable>
 #include <osg/Light>
 #include <osg/Material>
+#include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
+#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -50,55 +51,49 @@ namespace render {
 class MultiSphereShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
-
-  MultiSphereShapeGeode(dart::dynamics::MultiSphereConvexHullShape* shape,
-                        ShapeFrameNode* parentShapeFrame,
-                        MultiSphereShapeNode* parentNode);
+  MultiSphereShapeGeode(
+      dart::dynamics::MultiSphereConvexHullShape* shape,
+      ShapeFrameNode* parentShapeFrame,
+      MultiSphereShapeNode* parentNode);
 
   void refresh();
   void extractData();
 
 protected:
-
   virtual ~MultiSphereShapeGeode();
 
   MultiSphereShapeNode* mParentNode;
   dart::dynamics::MultiSphereConvexHullShape* mMultiSphereShape;
   MultiSphereShapeDrawable* mDrawable;
-
 };
 
 //==============================================================================
 class MultiSphereShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
-
-  MultiSphereShapeDrawable(dart::dynamics::MultiSphereConvexHullShape* shape,
-                           dart::dynamics::VisualAspect* visualAspect,
-                           MultiSphereShapeGeode* parent);
+  MultiSphereShapeDrawable(
+      dart::dynamics::MultiSphereConvexHullShape* shape,
+      dart::dynamics::VisualAspect* visualAspect,
+      MultiSphereShapeGeode* parent);
 
   void refresh(bool firstTime);
 
 protected:
-
   virtual ~MultiSphereShapeDrawable();
 
   dart::dynamics::MultiSphereConvexHullShape* mMultiSphereShape;
   dart::dynamics::VisualAspect* mVisualAspect;
   MultiSphereShapeGeode* mParent;
-
 };
 
 //==============================================================================
 MultiSphereShapeNode::MultiSphereShapeNode(
     std::shared_ptr<dart::dynamics::MultiSphereConvexHullShape> shape,
     ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this),
-    mMultiSphereShape(shape),
-    mGeode(nullptr)
+  : ShapeNode(shape, parent, this), mMultiSphereShape(shape), mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -106,9 +101,9 @@ void MultiSphereShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -117,10 +112,10 @@ void MultiSphereShapeNode::refresh()
 //==============================================================================
 void MultiSphereShapeNode::extractData(bool /*firstTime*/)
 {
-  if(nullptr == mGeode)
+  if (nullptr == mGeode)
   {
     mGeode = new MultiSphereShapeGeode(
-          mMultiSphereShape.get(), mParentShapeFrameNode, this);
+        mMultiSphereShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
   }
@@ -145,6 +140,9 @@ MultiSphereShapeGeode::MultiSphereShapeGeode(
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setAttributeAndModes(
+      new ::osg::CullFace(::osg::CullFace::BACK));
   extractData();
 }
 
@@ -159,10 +157,10 @@ void MultiSphereShapeGeode::refresh()
 //==============================================================================
 void MultiSphereShapeGeode::extractData()
 {
-  if(nullptr == mDrawable)
+  if (nullptr == mDrawable)
   {
-    mDrawable = new MultiSphereShapeDrawable(
-          mMultiSphereShape, mVisualAspect, this);
+    mDrawable
+        = new MultiSphereShapeDrawable(mMultiSphereShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
   }
@@ -181,9 +179,7 @@ MultiSphereShapeDrawable::MultiSphereShapeDrawable(
     dart::dynamics::MultiSphereConvexHullShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     MultiSphereShapeGeode* parent)
-  : mMultiSphereShape(shape),
-    mVisualAspect(visualAspect),
-    mParent(parent)
+  : mMultiSphereShape(shape), mVisualAspect(visualAspect), mParent(parent)
 {
   refresh(true);
 }
@@ -191,14 +187,14 @@ MultiSphereShapeDrawable::MultiSphereShapeDrawable(
 //==============================================================================
 void MultiSphereShapeDrawable::refresh(bool firstTime)
 {
-  if(mMultiSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mMultiSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if(mMultiSphereShape->checkDataVariance(
-       dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-     || firstTime)
+  if (mMultiSphereShape->checkDataVariance(
+          dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+      || firstTime)
   {
     ::osg::ref_ptr<::osg::CompositeShape> osg_shape = nullptr;
     osg_shape = new ::osg::CompositeShape();
@@ -217,11 +213,10 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if(mMultiSphereShape->checkDataVariance(
-       dart::dynamics::Shape::DYNAMIC_COLOR)
-     || firstTime)
+  if (mMultiSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
+    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 

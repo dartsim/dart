@@ -31,13 +31,12 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
-  DESTINATION include/dart/collision/ode
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
+    DESTINATION include/dart/collision/ode
+    COMPONENT headers
+  )
+endif()
 
-dart_format_add(
-  detail/OdeHeightmap.hpp
-  detail/OdeHeightmap-impl.hpp
-)
+dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

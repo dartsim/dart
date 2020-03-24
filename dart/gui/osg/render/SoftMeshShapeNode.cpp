@@ -30,16 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
 
-#include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
+#include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 
-#include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace gui {
@@ -49,36 +50,33 @@ namespace render {
 class SoftMeshShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
-
-  SoftMeshShapeGeode(dart::dynamics::SoftMeshShape* shape,
-                     ShapeFrameNode* parentShapeFrame,
-                     SoftMeshShapeNode* parentNode);
+  SoftMeshShapeGeode(
+      dart::dynamics::SoftMeshShape* shape,
+      ShapeFrameNode* parentShapeFrame,
+      SoftMeshShapeNode* parentNode);
 
   void refresh();
   void extractData();
 
 protected:
-
   virtual ~SoftMeshShapeGeode();
 
   dart::dynamics::SoftMeshShape* mSoftMeshShape;
   dart::dynamics::VisualAspect* mVisualAspect;
   SoftMeshShapeDrawable* mDrawable;
-
 };
 
 //==============================================================================
 class SoftMeshShapeDrawable : public ::osg::Geometry
 {
 public:
-
-  SoftMeshShapeDrawable(dart::dynamics::SoftMeshShape* shape,
-                        dart::dynamics::VisualAspect* visualAspect);
+  SoftMeshShapeDrawable(
+      dart::dynamics::SoftMeshShape* shape,
+      dart::dynamics::VisualAspect* visualAspect);
 
   void refresh(bool firstTime);
 
 protected:
-
   virtual ~SoftMeshShapeDrawable();
 
   ::osg::ref_ptr<::osg::Vec3Array> mVertices;
@@ -89,19 +87,16 @@ protected:
 
   dart::dynamics::SoftMeshShape* mSoftMeshShape;
   dart::dynamics::VisualAspect* mVisualAspect;
-
 };
 
 //==============================================================================
 SoftMeshShapeNode::SoftMeshShapeNode(
     std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
     ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this),
-    mSoftMeshShape(shape),
-    mGeode(nullptr)
+  : ShapeNode(shape, parent, this), mSoftMeshShape(shape), mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -109,9 +104,9 @@ void SoftMeshShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -120,9 +115,10 @@ void SoftMeshShapeNode::refresh()
 //==============================================================================
 void SoftMeshShapeNode::extractData(bool /*firstTime*/)
 {
-  if(nullptr == mGeode)
+  if (nullptr == mGeode)
   {
-    mGeode = new SoftMeshShapeGeode(mSoftMeshShape.get(), mParentShapeFrameNode, this);
+    mGeode = new SoftMeshShapeGeode(
+        mSoftMeshShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
   }
@@ -147,6 +143,9 @@ SoftMeshShapeGeode::SoftMeshShapeGeode(
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setAttributeAndModes(
+      new ::osg::CullFace(::osg::CullFace::BACK));
   extractData();
 }
 
@@ -161,7 +160,7 @@ void SoftMeshShapeGeode::refresh()
 //==============================================================================
 void SoftMeshShapeGeode::extractData()
 {
-  if(nullptr == mDrawable)
+  if (nullptr == mDrawable)
   {
     mDrawable = new SoftMeshShapeDrawable(mSoftMeshShape, mVisualAspect);
     addDrawable(mDrawable);
@@ -190,83 +189,88 @@ SoftMeshShapeDrawable::SoftMeshShapeDrawable(
   refresh(true);
 }
 
-static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
-                                        const Eigen::Vector3i& face,
-                                        std::size_t v)
+static Eigen::Vector3d normalFromVertex(
+    const dart::dynamics::SoftBodyNode* bn,
+    const Eigen::Vector3i& face,
+    std::size_t v)
 {
   const Eigen::Vector3d& v0 = bn->getPointMass(face[v])->getLocalPosition();
-  const Eigen::Vector3d& v1 = bn->getPointMass(face[(v+1)%3])->getLocalPosition();
-  const Eigen::Vector3d& v2 = bn->getPointMass(face[(v+2)%3])->getLocalPosition();
+  const Eigen::Vector3d& v1
+      = bn->getPointMass(face[(v + 1) % 3])->getLocalPosition();
+  const Eigen::Vector3d& v2
+      = bn->getPointMass(face[(v + 2) % 3])->getLocalPosition();
 
-  const Eigen::Vector3d dv1 = v1-v0;
-  const Eigen::Vector3d dv2 = v2-v0;
+  const Eigen::Vector3d dv1 = v1 - v0;
+  const Eigen::Vector3d dv2 = v2 - v0;
   const Eigen::Vector3d n = dv1.cross(dv2);
 
-  double weight = n.norm()/(dv1.norm()*dv2.norm());
-  weight = std::max( -1.0, std::min( 1.0, weight) );
+  double weight = n.norm() / (dv1.norm() * dv2.norm());
+  weight = std::max(-1.0, std::min(1.0, weight));
 
   return n.normalized() * asin(weight);
 }
 
-static void computeNormals(std::vector<Eigen::Vector3d>& normals,
-                           const dart::dynamics::SoftBodyNode* bn)
+static void computeNormals(
+    std::vector<Eigen::Vector3d>& normals,
+    const dart::dynamics::SoftBodyNode* bn)
 {
-  for(std::size_t i=0; i<normals.size(); ++i)
+  for (std::size_t i = 0; i < normals.size(); ++i)
     normals[i] = Eigen::Vector3d::Zero();
 
-  for(std::size_t i=0; i<bn->getNumFaces(); ++i)
+  for (std::size_t i = 0; i < bn->getNumFaces(); ++i)
   {
     const Eigen::Vector3i& face = bn->getFace(i);
-    for(std::size_t j=0; j<3; ++j)
+    for (std::size_t j = 0; j < 3; ++j)
       normals[face[j]] += normalFromVertex(bn, face, j);
   }
 
-  for(std::size_t i=0; i<normals.size(); ++i)
+  for (std::size_t i = 0; i < normals.size(); ++i)
     normals[i].normalize();
 }
 
 //==============================================================================
 void SoftMeshShapeDrawable::refresh(bool firstTime)
 {
-  if(mSoftMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mSoftMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   const dart::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
 
-  if(mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
-     || firstTime)
+  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+      || firstTime)
   {
-    ::osg::ref_ptr<::osg::DrawElementsUInt> elements =
-        new ::osg::DrawElementsUInt(GL_TRIANGLES);
-    elements->reserve(3*bn->getNumFaces());
+    ::osg::ref_ptr<::osg::DrawElementsUInt> elements
+        = new ::osg::DrawElementsUInt(GL_TRIANGLES);
+    elements->reserve(3 * bn->getNumFaces());
 
-    for(std::size_t i=0; i < bn->getNumFaces(); ++i)
+    for (std::size_t i = 0; i < bn->getNumFaces(); ++i)
     {
       const Eigen::Vector3i& F = bn->getFace(i);
-      for(std::size_t j=0; j<3; ++j)
+      for (std::size_t j = 0; j < 3; ++j)
         elements->push_back(F[j]);
     }
 
     addPrimitiveSet(elements);
   }
 
-  if(   mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-     || mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
-     || firstTime)
+  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
+      || mSoftMeshShape->checkDataVariance(
+             dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+      || firstTime)
   {
-    if(mVertices->size() != bn->getNumPointMasses())
+    if (mVertices->size() != bn->getNumPointMasses())
       mVertices->resize(bn->getNumPointMasses());
 
-    if(mNormals->size() != bn->getNumPointMasses())
+    if (mNormals->size() != bn->getNumPointMasses())
       mNormals->resize(bn->getNumPointMasses());
 
-    if(mEigNormals.size() != bn->getNumPointMasses())
+    if (mEigNormals.size() != bn->getNumPointMasses())
       mEigNormals.resize(bn->getNumPointMasses());
 
     computeNormals(mEigNormals, bn);
-    for(std::size_t i=0; i<bn->getNumPointMasses(); ++i)
+    for (std::size_t i = 0; i < bn->getNumPointMasses(); ++i)
     {
       (*mVertices)[i] = eigToOsgVec3(bn->getPointMass(i)->getLocalPosition());
       (*mNormals)[i] = eigToOsgVec3(mEigNormals[i]);
@@ -276,13 +280,13 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
   }
 
-  if(   mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-     || firstTime)
+  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+      || firstTime)
   {
-    if(mColors->size() != 1)
+    if (mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4(mVisualAspect->getRGBA());
+    (*mColors)[0] = eigToOsgVec4d(mVisualAspect->getRGBA());
 
     setColorArray(mColors, ::osg::Array::BIND_OVERALL);
   }

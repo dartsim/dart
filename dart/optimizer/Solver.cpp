@@ -44,7 +44,7 @@ Solver::Properties::Properties(
     std::size_t _iterationsPerPrint,
     std::ostream* _ostream,
     bool _printFinalResult,
-    const std::string &_resultFile)
+    const std::string& _resultFile)
   : mProblem(_problem),
     mTolerance(_tolerance),
     mNumMaxIterations(_numMaxIterations),
@@ -57,15 +57,13 @@ Solver::Properties::Properties(
 }
 
 //==============================================================================
-Solver::Solver(const Properties& _properties)
-  : mProperties(_properties)
+Solver::Solver(const Properties& _properties) : mProperties(_properties)
 {
   // Do nothing
 }
 
 //==============================================================================
-Solver::Solver(std::shared_ptr<Problem> _problem)
-  : mProperties(_problem)
+Solver::Solver(std::shared_ptr<Problem> _problem) : mProperties(_problem)
 {
   // Do nothing
 }
@@ -90,7 +88,7 @@ const Solver::Properties& Solver::getSolverProperties() const
 //==============================================================================
 void Solver::copy(const Solver& _otherSolver)
 {
-  if(this == &_otherSolver)
+  if (this == &_otherSolver)
     return;
 
   setProperties(_otherSolver.getSolverProperties());
@@ -187,5 +185,5 @@ const std::string& Solver::getResultFileName() const
   return mProperties.mResultFile;
 }
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace optimizer
+} // namespace dart

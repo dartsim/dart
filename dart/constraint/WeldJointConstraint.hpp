@@ -35,8 +35,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.hpp"
 #include "dart/constraint/JointConstraint.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace constraint {
@@ -60,6 +60,12 @@ public:
 
   /// Destructor
   virtual ~WeldJointConstraint();
+
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Returns constraint type for this class.
+  static const std::string& getStaticType();
 
 protected:
   //----------------------------------------------------------------------------
@@ -120,8 +126,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_

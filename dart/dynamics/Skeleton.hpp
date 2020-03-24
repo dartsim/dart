@@ -36,38 +36,37 @@
 #include <mutex>
 #include "dart/common/NameManager.hpp"
 #include "dart/common/VersionCounter.hpp"
-#include "dart/dynamics/MetaSkeleton.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/HierarchicalIK.hpp"
 #include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Marker.hpp"
-#include "dart/dynamics/detail/BodyNodeAspect.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 #include "dart/dynamics/SpecializedNodeManager.hpp"
+#include "dart/dynamics/detail/BodyNodeAspect.hpp"
 #include "dart/dynamics/detail/SkeletonAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class Skeleton
-class Skeleton :
-    public virtual common::VersionCounter,
-    public MetaSkeleton,
-    public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
-    public detail::SkeletonAspectBase
+class Skeleton : public virtual common::VersionCounter,
+                 public MetaSkeleton,
+                 public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
+                 public detail::SkeletonAspectBase
 {
 public:
   // Some of non-virtual functions of MetaSkeleton are hidden because of the
   // functions of the same name in this class. We expose those functions as
   // follows.
-  using MetaSkeleton::getJacobian;
-  using MetaSkeleton::getLinearJacobian;
   using MetaSkeleton::getAngularJacobian;
-  using MetaSkeleton::getJacobianSpatialDeriv;
-  using MetaSkeleton::getJacobianClassicDeriv;
-  using MetaSkeleton::getLinearJacobianDeriv;
   using MetaSkeleton::getAngularJacobianDeriv;
+  using MetaSkeleton::getJacobian;
+  using MetaSkeleton::getJacobianClassicDeriv;
+  using MetaSkeleton::getJacobianSpatialDeriv;
+  using MetaSkeleton::getLinearJacobian;
+  using MetaSkeleton::getLinearJacobianDeriv;
 
   using AspectPropertiesData = detail::SkeletonAspectProperties;
   using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
@@ -77,13 +76,13 @@ public:
 
   enum ConfigFlags
   {
-    CONFIG_NOTHING       = 0,
-    CONFIG_POSITIONS     = 1 << 1,
-    CONFIG_VELOCITIES    = 1 << 2,
+    CONFIG_NOTHING = 0,
+    CONFIG_POSITIONS = 1 << 1,
+    CONFIG_VELOCITIES = 1 << 2,
     CONFIG_ACCELERATIONS = 1 << 3,
-    CONFIG_FORCES        = 1 << 4,
-    CONFIG_COMMANDS      = 1 << 5,
-    CONFIG_ALL           = 0xFF
+    CONFIG_FORCES = 1 << 4,
+    CONFIG_COMMANDS = 1 << 5,
+    CONFIG_ALL = 0xFF
   };
 
   /// The Configuration struct represents the joint configuration of a Skeleton.
@@ -139,7 +138,7 @@ public:
   //----------------------------------------------------------------------------
 
   /// Create a new Skeleton inside of a shared_ptr
-  static SkeletonPtr create(const std::string& _name="Skeleton");
+  static SkeletonPtr create(const std::string& _name = "Skeleton");
 
   /// Create a new Skeleton inside of a shared_ptr
   static SkeletonPtr create(const AspectPropertiesData& properties);
@@ -162,8 +161,8 @@ public:
   std::mutex& getMutex() const;
 
   /// Get the mutex that protects the state of this Skeleton
-  std::unique_ptr<common::LockableReference> getLockableReference() const
-  override;
+  std::unique_ptr<common::LockableReference> getLockableReference()
+      const override;
 
   Skeleton(const Skeleton&) = delete;
 
@@ -210,8 +209,8 @@ public:
   Configuration getConfiguration(int flags = CONFIG_ALL) const;
 
   /// Get the configuration of the specified indices in this Skeleton
-  Configuration getConfiguration(const std::vector<std::size_t>& indices,
-                                 int flags = CONFIG_ALL) const;
+  Configuration getConfiguration(
+      const std::vector<std::size_t>& indices, int flags = CONFIG_ALL) const;
 
   /// \}
 
@@ -323,40 +322,15 @@ public:
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
-#ifdef _WIN32
-  template <typename JointType>
-  static typename JointType::Properties createJointProperties()
-  {
-    return typename JointType::Properties();
-  }
-
-  template <typename NodeType>
-  static typename NodeType::Properties createBodyNodeProperties()
-  {
-    return typename NodeType::Properties();
-  }
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
-
   /// Create a Joint and child BodyNode pair of the given types. When creating
   /// a root (parentless) BodyNode, pass in nullptr for the _parent argument.
   template <class JointType, class NodeType = BodyNode>
   std::pair<JointType*, NodeType*> createJointAndBodyNodePair(
-    BodyNode* _parent = nullptr,
-#ifdef _WIN32
+      BodyNode* _parent = nullptr,
       const typename JointType::Properties& _jointProperties
-          = Skeleton::createJointProperties<JointType>(),
+      = typename JointType::Properties(),
       const typename NodeType::Properties& _bodyProperties
-          = Skeleton::createBodyNodeProperties<NodeType>());
-#else
-      const typename JointType::Properties& _jointProperties
-          = typename JointType::Properties(),
-      const typename NodeType::Properties& _bodyProperties
-          = typename NodeType::Properties());
-#endif
-  // TODO: Workaround for MSVC bug on template function specialization with
-  // default argument. Please see #487 for detail
+      = typename NodeType::Properties());
 
   // Documentation inherited
   std::size_t getNumBodyNodes() const override;
@@ -433,7 +407,8 @@ public:
   bool hasBodyNode(const BodyNode* bodyNode) const override;
 
   // Documentation inherited
-  std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
+  std::size_t getIndexOf(
+      const BodyNode* _bn, bool _warning = true) const override;
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
   const std::vector<BodyNode*>& getTreeBodyNodes(std::size_t _treeIdx);
@@ -478,7 +453,8 @@ public:
   bool hasJoint(const Joint* joint) const override;
 
   // Documentation inherited
-  std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
+  std::size_t getIndexOf(
+      const Joint* _joint, bool _warning = true) const override;
 
   // Documentation inherited
   std::size_t getNumDofs() const override;
@@ -502,14 +478,15 @@ public:
   std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
-  std::size_t getIndexOf(const DegreeOfFreedom* _dof,
-                    bool _warning=true) const override;
+  std::size_t getIndexOf(
+      const DegreeOfFreedom* _dof, bool _warning = true) const override;
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<DegreeOfFreedom*>& getTreeDofs(std::size_t _treeIdx);
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
-  const std::vector<const DegreeOfFreedom*>& getTreeDofs(std::size_t _treeIdx) const;
+  const std::vector<const DegreeOfFreedom*>& getTreeDofs(
+      std::size_t _treeIdx) const;
 
   /// This function is only meant for debugging purposes. It will verify that
   /// all objects held in the Skeleton have the correct information about their
@@ -540,11 +517,11 @@ public:
   /// nullptr
   void clearIK();
 
-  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( Marker )
+  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(Marker)
 
-  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( ShapeNode )
+  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(ShapeNode)
 
-  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( EndEffector )
+  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(EndEffector)
 
   /// \}
 
@@ -657,9 +634,10 @@ public:
   /// an operational space controller. Instead of being idle from t0 to t1, it
   /// could use that time to compute the forward kinematics by calling this
   /// function.
-  void computeForwardKinematics(bool _updateTransforms = true,
-                                bool _updateVels = true,
-                                bool _updateAccs = true);
+  void computeForwardKinematics(
+      bool _updateTransforms = true,
+      bool _updateVels = true,
+      bool _updateAccs = true);
 
   //----------------------------------------------------------------------------
   // Dynamics algorithms
@@ -669,9 +647,10 @@ public:
   void computeForwardDynamics();
 
   /// Compute inverse dynamics
-  void computeInverseDynamics(bool _withExternalForces = false,
-                              bool _withDampingForces = false,
-                              bool _withSpringForces = false);
+  void computeInverseDynamics(
+      bool _withExternalForces = false,
+      bool _withDampingForces = false,
+      bool _withSpringForces = false);
 
   //----------------------------------------------------------------------------
   // Impulse-based dynamics algorithms
@@ -691,17 +670,21 @@ public:
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
   /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp1, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
-  /// \param _bodyNode Body node contraint impulse, _imp2, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode2
-  void updateBiasImpulse(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
-                         BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
+  /// \param _bodyNode1 Body node contraint impulse, _imp1, is applied
+  /// \param _imp1 Constraint impulse expressed in body frame of _bodyNode1
+  /// \param _bodyNode2 Body node contraint impulse, _imp2, is applied
+  /// \param _imp2 Constraint impulse expressed in body frame of _bodyNode2
+  void updateBiasImpulse(
+      BodyNode* _bodyNode1,
+      const Eigen::Vector6d& _imp1,
+      BodyNode* _bodyNode2,
+      const Eigen::Vector6d& _imp2);
 
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
-  void updateBiasImpulse(SoftBodyNode* _softBodyNode,
-                         PointMass* _pointMass,
-                         const Eigen::Vector3d& _imp);
+  void updateBiasImpulse(
+      SoftBodyNode* _softBodyNode,
+      PointMass* _pointMass,
+      const Eigen::Vector3d& _imp);
 
   /// \brief Update velocity changes in body nodes and joints due to applied
   /// impulse
@@ -727,8 +710,7 @@ public:
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const JacobianNode* _node,
-      const Frame* _inCoordinatesOf) const override;
+      const JacobianNode* _node, const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
@@ -742,8 +724,7 @@ public:
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
-  math::Jacobian getWorldJacobian(
-      const JacobianNode* _node) const override;
+  math::Jacobian getWorldJacobian(const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getWorldJacobian(
@@ -772,8 +753,7 @@ public:
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const JacobianNode* _node,
-      const Frame* _inCoordinatesOf) const override;
+      const JacobianNode* _node, const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
@@ -792,8 +772,7 @@ public:
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
-      const JacobianNode* _node,
-      const Frame* _inCoordinatesOf) const override;
+      const JacobianNode* _node, const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
@@ -865,7 +844,8 @@ public:
   const Eigen::VectorXd& getGravityForces() const override;
 
   /// Get the combined vector of Coriolis force and gravity force of a tree
-  const Eigen::VectorXd& getCoriolisAndGravityForces(std::size_t _treeIdx) const;
+  const Eigen::VectorXd& getCoriolisAndGravityForces(
+      std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::VectorXd& getCoriolisAndGravityForces() const override;
@@ -877,7 +857,7 @@ public:
   const Eigen::VectorXd& getExternalForces() const override;
 
   /// Get damping force of the skeleton.
-//  const Eigen::VectorXd& getDampingForceVector();
+  //  const Eigen::VectorXd& getDampingForceVector();
 
   /// Get constraint force vector for a tree
   const Eigen::VectorXd& getConstraintForces(std::size_t _treeIdx) const;
@@ -987,7 +967,8 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
-  template<class> friend class GenericJoint;
+  template <class>
+  friend class GenericJoint;
   friend class DegreeOfFreedom;
   friend class Node;
   friend class ShapeNode;
@@ -1033,9 +1014,11 @@ protected:
   void unregisterNode(Node* _oldNode);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
-  bool moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
-                        SkeletonPtr _newSkeleton,
-                        BodyNode* _parentNode);
+  bool moveBodyNodeTree(
+      Joint* _parentJoint,
+      BodyNode* _bodyNode,
+      SkeletonPtr _newSkeleton,
+      BodyNode* _parentNode);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton while
   /// changing the Joint type of the top parent Joint.
@@ -1146,20 +1129,22 @@ protected:
   /// Compute the constraint force vector for a tree
   const Eigen::VectorXd& computeConstraintForces(DataCache& cache) const;
 
-//  /// Update damping force vector.
-//  virtual void updateDampingForceVector();
+  //  /// Update damping force vector.
+  //  virtual void updateDampingForceVector();
 
   /// Add a BodyNode to the BodyNode NameManager
   const std::string& addEntryToBodyNodeNameMgr(BodyNode* _newNode);
 
   /// Add a Joint to to the Joint NameManager
-  const std::string& addEntryToJointNameMgr(Joint* _newJoint, bool _updateDofNames=true);
+  const std::string& addEntryToJointNameMgr(
+      Joint* _newJoint, bool _updateDofNames = true);
 
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
-protected:
+  void updateNameManagerNames();
 
+protected:
   /// The resource-managing pointer to this Skeleton
   std::weak_ptr<Skeleton> mPtr;
 
@@ -1293,7 +1278,8 @@ protected:
 
   mutable DataCache mSkelCache;
 
-  using SpecializedTreeNodes = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
+  using SpecializedTreeNodes
+      = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
 
   SpecializedTreeNodes mSpecializedTreeNodes;
 
@@ -1327,9 +1313,9 @@ public:
   std::size_t mUnionIndex;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
 #include "dart/dynamics/detail/Skeleton.hpp"
 
-#endif  // DART_DYNAMICS_SKELETON_HPP_
+#endif // DART_DYNAMICS_SKELETON_HPP_

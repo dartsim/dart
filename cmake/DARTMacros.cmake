@@ -136,14 +136,24 @@ macro(dart_check_optional_package variable component dependency)
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(ARGV3) # version
-      message(STATUS "Looking for ${dependency} - NOT found, to use"
-                     " ${component}, please install ${dependency} (>= ${ARGV3})")
+      message(WARNING "Looking for ${dependency} - NOT found, to use"
+                      " ${component}, please install ${dependency} (>= ${ARGV3})")
     else()
-      message(STATUS "Looking for ${dependency} - NOT found, to use"
-                     " ${component}, please install ${dependency}")
+      message(WARNING "Looking for ${dependency} - NOT found, to use"
+                      " ${component}, please install ${dependency}")
     endif()
     return()
   endif()
+endmacro()
+
+#===============================================================================
+macro(dart_check_dependent_target target)
+  foreach(dependent_target ${ARGN})
+    if (NOT TARGET ${dependent_target})
+      message(WARNING "${target} is disabled because dependent target ${dependent_target} is not being built.")
+      return()
+    endif()
+  endforeach()
 endmacro()
 
 #===============================================================================
@@ -194,4 +204,80 @@ function(dart_format_add)
         " this file or modify 'CMAKE_CURRENT_LIST_DIR'")
     endif()
   endforeach()
+endfunction()
+
+#===============================================================================
+# dart_build_target_in_source(target
+#   [LINK_LIBRARIES library1 ...])
+#   [COMPILE_FEATURES feature1 ...]
+#   [COMPILE_OPTIONS option1 ...]
+# )
+function(dart_build_target_in_source target)
+  set(prefix example)
+  set(options )
+  set(oneValueArgs )
+  set(multiValueArgs LINK_LIBRARIES COMPILE_FEATURES COMPILE_OPTIONS)
+  cmake_parse_arguments("${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(example_LINK_LIBRARIES)
+    foreach(dep_target ${example_LINK_LIBRARIES})
+      if(NOT TARGET ${dep_target})
+        if(DART_VERBOSE)
+          message(WARNING "Skipping ${target} because required target '${dep_target}' not found")
+        endif()
+        return()
+      endif()
+    endforeach()
+  endif()
+
+  file(GLOB srcs "*.cpp" "*.hpp")
+
+  add_executable(${target} ${srcs})
+
+  if(example_LINK_LIBRARIES)
+    foreach(dep_target ${example_LINK_LIBRARIES})
+      target_link_libraries(${target} ${dep_target})
+    endforeach()
+  endif()
+
+  if(example_COMPILE_FEATURES)
+    foreach(comple_feature ${example_COMPILE_FEATURES})
+      target_compile_features(${target} PUBLIC ${comple_feature})
+    endforeach()
+  endif()
+
+  if(example_COMPILE_OPTIONS)
+    foreach(comple_option ${example_COMPILE_OPTIONS})
+      target_compile_options(${target} PUBLIC ${comple_option})
+    endforeach()
+  endif()
+
+  set_target_properties(${target}
+    PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
+
+  dart_format_add(${srcs})
+endfunction()
+
+#===============================================================================
+# dart_build_example_in_source(target
+#   [LINK_LIBRARIES library1 ...])
+#   [COMPILE_FEATURES feature1 ...]
+#   [COMPILE_OPTIONS option1 ...]
+# )
+function(dart_build_example_in_source target)
+  dart_build_target_in_source(${target} ${ARGN})
+  dart_add_example(${target})
+endfunction()
+
+#===============================================================================
+# dart_build_tutorial_in_source(target
+#   [LINK_LIBRARIES library1 ...])
+#   [COMPILE_FEATURES feature1 ...]
+#   [COMPILE_OPTIONS option1 ...]
+# )
+function(dart_build_tutorial_in_source target)
+  dart_build_target_in_source(${target} ${ARGN})
+  dart_add_tutorial(${target})
 endfunction()

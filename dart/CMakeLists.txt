@@ -94,7 +94,9 @@ if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_HPP_OUT})
 endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+if(NOT DART_BUILD_DARTPY)
+  install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+endif()
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -139,13 +141,10 @@ target_link_libraries(dart
 if (TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)
 endif()
-if(NOT MSVC)
-  target_link_libraries(dart PUBLIC Boost::regex)
-endif()
 if(CMAKE_VERSION VERSION_LESS 3.8.2)
-  target_compile_options(dart PUBLIC -std=c++11)
+  target_compile_options(dart PUBLIC -std=c++14)
 else()
-  target_compile_features(dart PUBLIC cxx_std_11)
+  target_compile_features(dart PUBLIC cxx_std_14)
 endif()
 
 # Build DART with all available SIMD instructions
@@ -181,4 +180,8 @@ if(MSVC)
   )
 endif()
 
-install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
+if(NOT DART_BUILD_DARTPY)
+  install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
+endif()
+
+dart_format_add(${dart_core_headers} ${dart_core_sources})

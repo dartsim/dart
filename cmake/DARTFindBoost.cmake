@@ -13,37 +13,24 @@ endif()
 add_definitions(-DBOOST_TEST_DYN_LINK)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-if(MSVC)
-  set(BOOST_REQUIRED_COMPONENTS system filesystem)
-else()
-  set(BOOST_REQUIRED_COMPONENTS regex system filesystem)
-endif()
+set(BOOST_REQUIRED_COMPONENTS system filesystem)
 if(DART_VERBOSE)
   find_package(Boost ${DART_MIN_BOOST_VERSION} REQUIRED COMPONENTS ${BOOST_REQUIRED_COMPONENTS})
 else()
   find_package(Boost ${DART_MIN_BOOST_VERSION} QUIET REQUIRED COMPONENTS ${BOOST_REQUIRED_COMPONENTS})
 endif()
 
-if(NOT MSVC)
-  if(NOT TARGET Boost::regex)
-    add_library(Boost::regex INTERFACE IMPORTED)
-    set_target_properties(Boost::regex PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES “${Boost_INCLUDE_DIRS}”
-      INTERFACE_LINK_LIBRARIES “${Boost_REGEX_LIBRARY}”
-    )
-  endif()
-endif()
 if(NOT TARGET Boost::system)
   add_library(Boost::system INTERFACE IMPORTED)
   set_target_properties(Boost::system PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES “${Boost_INCLUDE_DIRS}”
-    INTERFACE_LINK_LIBRARIES “${Boost_SYSTEM_LIBRARY}”
+    INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${Boost_SYSTEM_LIBRARY}"
   )
 endif()
 if(NOT TARGET Boost::filesystem)
   add_library(Boost::filesystem INTERFACE IMPORTED)
   set_target_properties(Boost::filesystem PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES “${Boost_INCLUDE_DIRS}”
-    INTERFACE_LINK_LIBRARIES “${Boost_FILESYSTEM_LIBRARY}”
+    INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${Boost_FILESYSTEM_LIBRARY}"
   )
 endif()

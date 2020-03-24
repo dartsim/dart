@@ -13,25 +13,16 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
-  DESTINATION include/dart/optimizer
-  COMPONENT headers
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
+    DESTINATION include/dart/optimizer
+    COMPONENT headers
+  )
+endif()
 
 # Add subdirectories (components)
 add_subdirectory(ipopt)
 add_subdirectory(nlopt)
 add_subdirectory(pagmo)
 add_subdirectory(snopt)
-
-dart_format_add(
-  GenericMultiObjectiveProblem.hpp
-  GenericMultiObjectiveProblem.cpp
-  MultiObjectiveSolver.hpp
-  MultiObjectiveSolver.cpp
-  MultiObjectiveProblem.hpp
-  MultiObjectiveProblem.cpp
-  Population.hpp
-  Population.cpp
-)

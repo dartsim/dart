@@ -49,7 +49,7 @@ void CompositeStateNode<Base>::setNodeState(const Node::State& otherState)
 template <class Base>
 std::unique_ptr<Node::State> CompositeStateNode<Base>::getNodeState() const
 {
-  return common::make_unique<State>(common::Composite::getCompositeState());
+  return std::make_unique<State>(common::Composite::getCompositeState());
 }
 
 //==============================================================================
@@ -66,7 +66,7 @@ void CompositePropertiesNode<Base>::setNodeProperties(
     const Node::Properties& otherProperties)
 {
   common::Composite::setCompositeProperties(
-        static_cast<const Properties&>(otherProperties));
+      static_cast<const Properties&>(otherProperties));
 }
 
 //==============================================================================
@@ -74,8 +74,8 @@ template <class Base>
 std::unique_ptr<Node::Properties>
 CompositePropertiesNode<Base>::getNodeProperties() const
 {
-  return common::make_unique<Properties>(
-        common::Composite::getCompositeProperties());
+  return std::make_unique<Properties>(
+      common::Composite::getCompositeProperties());
 }
 
 //==============================================================================
@@ -84,7 +84,7 @@ void CompositePropertiesNode<Base>::copyNodePropertiesTo(
     std::unique_ptr<Node::Properties>& outputProperties) const
 {
   common::Composite::copyCompositePropertiesTo(
-        static_cast<Properties&>(*outputProperties));
+      static_cast<Properties&>(*outputProperties));
 }
 
 } // namespace dynamics

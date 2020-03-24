@@ -53,20 +53,18 @@ class LineSegmentShapeDrawable;
 class LineSegmentShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
-
-  LineSegmentShapeNode(std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
-                       ShapeFrameNode* parent);
+  LineSegmentShapeNode(
+      std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
+      ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
 
 protected:
-
   virtual ~LineSegmentShapeNode();
 
   std::shared_ptr<dart::dynamics::LineSegmentShape> mLineSegmentShape;
   LineSegmentShapeGeode* mGeode;
-
 };
 
 } // namespace render

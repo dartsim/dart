@@ -77,6 +77,8 @@ function(dart_add_test test_type target_name) # ARGN for source files
     target_link_libraries(${target_name} dart gtest gtest_main)
   endif()
 
+  dart_format_add(${sources})
+
 endfunction()
 
 #===============================================================================

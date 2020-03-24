@@ -37,8 +37,8 @@
 
 #include "dart/dynamics/SmartPointer.hpp"
 
-#include "dart/gui/osg/Viewer.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Viewer.hpp"
 
 namespace dart {
 namespace gui {
@@ -49,14 +49,16 @@ namespace osg {
 class SupportPolygonVisual : public ViewerAttachment
 {
 public:
-
   /// Visualize the support polygon of an entire Skeleton
-  SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton = nullptr,
-                double elevation = 0.02);
+  SupportPolygonVisual(
+      const dart::dynamics::SkeletonPtr& skeleton = nullptr,
+      double elevation = 0.02);
 
   /// Visualize the support polygon of a specific tree in a Skeleton
-  SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton, std::size_t treeIndex,
-                double elevation = 0.02);
+  SupportPolygonVisual(
+      const dart::dynamics::SkeletonPtr& skeleton,
+      std::size_t treeIndex,
+      double elevation = 0.02);
 
   /// Change the Skeleton that is being visualized
   void setSkeleton(const dart::dynamics::SkeletonPtr& skeleton);
@@ -132,7 +134,6 @@ public:
   void refresh() override final;
 
 protected:
-
   /// Initialize the memory used by this visual
   void initialize();
 

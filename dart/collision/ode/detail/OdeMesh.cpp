@@ -43,8 +43,7 @@ OdeMesh::OdeMesh(
     const OdeCollisionObject* parent,
     const aiScene* scene,
     const Eigen::Vector3d& scale)
-  : OdeGeom(parent),
-    mOdeTriMeshDataId(nullptr)
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
 {
   // Fill vertices, normals, and indices in the ODE friendly data structures.
   fillArrays(scene, scale);
@@ -57,11 +56,11 @@ OdeMesh::OdeMesh(
   dGeomTriMeshDataBuildDouble1(
       mOdeTriMeshDataId,
       mVertices.data(),
-      3*sizeof(double),
-      static_cast<int>(mVertices.size()),
+      3 * sizeof(double),
+      static_cast<int>(mVertices.size() / 3),
       mIndices.data(),
       static_cast<int>(mIndices.size()),
-      3*sizeof(int),
+      3 * sizeof(int),
       mNormals.data());
 
   mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
@@ -110,6 +109,7 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
 
   auto vertexIndex = 0u;
   auto indexIndex = 0u;
+  auto offset = 0u;
   for (auto i = 0u; i < scene->mNumMeshes; ++i)
   {
     const auto mesh = scene->mMeshes[i];
@@ -128,10 +128,12 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
 
     for (auto j = 0u; j < mesh->mNumFaces; ++j)
     {
-      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[0];
-      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[1];
-      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[2];
+      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[0] + offset;
+      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[1] + offset;
+      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[2] + offset;
     }
+
+    offset += mesh->mNumVertices;
   }
 }
 

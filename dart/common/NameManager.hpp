@@ -62,8 +62,9 @@ class NameManager
 {
 public:
   /// Constructor
-  NameManager(const std::string& _managerName = "default",
-              const std::string& _defaultName = "default");
+  NameManager(
+      const std::string& _managerName = "default",
+      const std::string& _defaultName = "default");
 
   /// Destructor
   virtual ~NameManager() = default;
@@ -140,7 +141,8 @@ public:
   /// string for a name
   const std::string& getDefaultName() const;
 
-  /// Set the name of this NameManager so that it can be printed in error reports
+  /// Set the name of this NameManager so that it can be printed in error
+  /// reports
   void setManagerName(const std::string& _managerName);
 
   /// Get the name of this NameManager

@@ -37,17 +37,18 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.hpp"
-#include "dart/constraint/SmartPointer.hpp"
-#include "dart/constraint/ConstraintBase.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/common/Deprecated.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
 
 namespace dynamics {
 class Skeleton;
 class ShapeNodeCollisionObject;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -56,9 +57,19 @@ class ConstraintSolver
 {
 public:
   /// Constructor
+  ///
+  /// \deprecated Deprecated in DART 6.8. Please use other constructors that
+  /// doesn't take timespte. Timestep should be set by the owner of this solver
+  /// such as dart::simulation::World when the solver added.
+  DART_DEPRECATED(6.8)
   explicit ConstraintSolver(double timeStep);
+
   // TODO(JS): Remove timeStep. The timestep can be set by world when a
   // constraint solver is assigned to a world.
+  // Deprecate
+
+  /// Default constructor
+  ConstraintSolver();
 
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to
@@ -66,7 +77,7 @@ public:
   ConstraintSolver(const ConstraintSolver& other) = delete;
 
   /// Destructor
-  virtual ~ConstraintSolver();
+  virtual ~ConstraintSolver() = default;
 
   /// Add single skeleton
   void addSkeleton(const dynamics::SkeletonPtr& skeleton);
@@ -95,7 +106,8 @@ public:
   /// Remove all constraints
   void removeAllConstraints();
 
-  /// Returns the number of constraints that was manually added to this ConstraintSolver.
+  /// Returns the number of constraints that was manually added to this
+  /// ConstraintSolver.
   std::size_t getNumConstraints() const;
 
   /// Returns a constraint by index.
@@ -114,7 +126,7 @@ public:
   void clearLastCollisionResult();
 
   /// Set time step
-  void setTimeStep(double _timeStep);
+  virtual void setTimeStep(double _timeStep);
 
   /// Get time step
   double getTimeStep() const;
@@ -236,7 +248,8 @@ protected:
   std::vector<MimicMotorConstraintPtr> mMimicMotorConstraints;
 
   /// Joint Coulomb friction constraints those are automatically created
-  std::vector<JointCoulombFrictionConstraintPtr> mJointCoulombFrictionConstraints;
+  std::vector<JointCoulombFrictionConstraintPtr>
+      mJointCoulombFrictionConstraints;
 
   /// Constraints that manually added
   std::vector<ConstraintBasePtr> mManualConstraints;
@@ -248,7 +261,7 @@ protected:
   std::vector<ConstrainedGroup> mConstrainedGroups;
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
+#endif // DART_CONSTRAINT_CONSTRAINTSOVER_HPP_

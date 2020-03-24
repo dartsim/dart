@@ -38,8 +38,8 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-const std::string& DegreeOfFreedom::setName(const std::string& _name,
-                                            bool _preserveName)
+const std::string& DegreeOfFreedom::setName(
+    const std::string& _name, bool _preserveName)
 {
   return mJoint->setDofName(mIndexInJoint, _name, _preserveName);
 }
@@ -124,16 +124,17 @@ void DegreeOfFreedom::setPositionLimits(double _lowerLimit, double _upperLimit)
 }
 
 //==============================================================================
-void DegreeOfFreedom::setPositionLimits(const std::pair<double,double>& _limits)
+void DegreeOfFreedom::setPositionLimits(
+    const std::pair<double, double>& _limits)
 {
   setPositionLimits(_limits.first, _limits.second);
 }
 
 //==============================================================================
-std::pair<double,double> DegreeOfFreedom::getPositionLimits() const
+std::pair<double, double> DegreeOfFreedom::getPositionLimits() const
 {
-  return std::pair<double,double>(getPositionLowerLimit(),
-                                  getPositionUpperLimit());
+  return std::pair<double, double>(
+      getPositionLowerLimit(), getPositionUpperLimit());
 }
 
 //==============================================================================
@@ -217,16 +218,17 @@ void DegreeOfFreedom::setVelocityLimits(double _lowerLimit, double _upperLimit)
 }
 
 //==============================================================================
-void DegreeOfFreedom::setVelocityLimits(const std::pair<double,double>& _limits)
+void DegreeOfFreedom::setVelocityLimits(
+    const std::pair<double, double>& _limits)
 {
   setVelocityLimits(_limits.first, _limits.second);
 }
 
 //==============================================================================
-std::pair<double,double> DegreeOfFreedom::getVelocityLimits() const
+std::pair<double, double> DegreeOfFreedom::getVelocityLimits() const
 {
-  return std::pair<double,double>(getVelocityLowerLimit(),
-                                  getVelocityUpperLimit());
+  return std::pair<double, double>(
+      getVelocityLowerLimit(), getVelocityUpperLimit());
 }
 
 //==============================================================================
@@ -284,8 +286,8 @@ void DegreeOfFreedom::resetAcceleration()
 }
 
 //==============================================================================
-void DegreeOfFreedom::setAccelerationLimits(double _lowerLimit,
-                                            double _upperLimit)
+void DegreeOfFreedom::setAccelerationLimits(
+    double _lowerLimit, double _upperLimit)
 {
   setAccelerationLowerLimit(_lowerLimit);
   setAccelerationUpperLimit(_upperLimit);
@@ -293,16 +295,16 @@ void DegreeOfFreedom::setAccelerationLimits(double _lowerLimit,
 
 //==============================================================================
 void DegreeOfFreedom::setAccelerationLimits(
-                                        const std::pair<double,double>& _limits)
+    const std::pair<double, double>& _limits)
 {
   setAccelerationLimits(_limits.first, _limits.second);
 }
 
 //==============================================================================
-std::pair<double,double> DegreeOfFreedom::getAccelerationLimits() const
+std::pair<double, double> DegreeOfFreedom::getAccelerationLimits() const
 {
-  return std::pair<double,double>(getAccelerationLowerLimit(),
-                                  getAccelerationUpperLimit());
+  return std::pair<double, double>(
+      getAccelerationLowerLimit(), getAccelerationUpperLimit());
 }
 
 //==============================================================================
@@ -355,15 +357,15 @@ void DegreeOfFreedom::setForceLimits(double _lowerLimit, double _upperLimit)
 }
 
 //==============================================================================
-void DegreeOfFreedom::setForceLimits(const std::pair<double, double> &_limits)
+void DegreeOfFreedom::setForceLimits(const std::pair<double, double>& _limits)
 {
   setForceLimits(_limits.first, _limits.second);
 }
 
 //==============================================================================
-std::pair<double,double> DegreeOfFreedom::getForceLimits() const
+std::pair<double, double> DegreeOfFreedom::getForceLimits() const
 {
-  return std::pair<double,double>(getForceLowerLimit(), getForceUpperLimit());
+  return std::pair<double, double>(getForceLowerLimit(), getForceUpperLimit());
 }
 
 //==============================================================================
@@ -523,8 +525,7 @@ const BodyNode* DegreeOfFreedom::getParentBodyNode() const
 }
 
 //==============================================================================
-DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
-                                 std::size_t _indexInJoint)
+DegreeOfFreedom::DegreeOfFreedom(Joint* _joint, std::size_t _indexInJoint)
   : mIndexInJoint(_indexInJoint),
     mIndexInSkeleton(0),
     mIndexInTree(0),

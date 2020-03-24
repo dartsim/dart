@@ -35,8 +35,8 @@
 #include "TestHelpers.hpp"
 
 #include "dart/common/common.hpp"
-#include "dart/dynamics/dynamics.hpp"
 #include "dart/constraint/constraint.hpp"
+#include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/World.hpp"
 
 using namespace dart;
@@ -47,8 +47,7 @@ void testContactWithKinematicJoint(
 {
   auto world = std::make_shared<simulation::World>();
   world->setConstraintSolver(
-      common::make_unique<constraint::BoxedLcpConstraintSolver>(
-          world->getTimeStep(), lcpSolver));
+      std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver));
 
   auto skeleton1 = dynamics::Skeleton::create("skeleton1");
   auto pair1 = skeleton1->createJointAndBodyNodePair<dynamics::FreeJoint>();
@@ -57,8 +56,8 @@ void testContactWithKinematicJoint(
   joint1->setActuatorType(dynamics::Joint::VELOCITY);
   auto shape1
       = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
-  bodyNode1->createShapeNodeWith<
-      VisualAspect, CollisionAspect, DynamicsAspect>(shape1);
+  bodyNode1->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+      shape1);
   skeleton1->setPosition(5, 0.0);
 
   auto skeleton2 = dynamics::Skeleton::create("skeleton2");
@@ -68,8 +67,8 @@ void testContactWithKinematicJoint(
   joint2->setActuatorType(dynamics::Joint::FORCE);
   auto shape2
       = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
-  bodyNode2->createShapeNodeWith<
-      VisualAspect, CollisionAspect, DynamicsAspect>(shape2);
+  bodyNode2->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+      shape2);
   skeleton2->setPosition(5, 0.75);
 
   world->addSkeleton(skeleton1);
@@ -95,13 +94,13 @@ void testContactWithKinematicJoint(
 TEST(ContactConstraint, ContactWithKinematicJoint)
 {
   testContactWithKinematicJoint(
-        std::make_shared<constraint::DantzigBoxedLcpSolver>(), 1e-6);
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), 1e-6);
 
 #ifdef DART_ARCH_32BITS
   testContactWithKinematicJoint(
-        std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-3);
+      std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-3);
 #else
   testContactWithKinematicJoint(
-        std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-4);
+      std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-4);
 #endif
 }

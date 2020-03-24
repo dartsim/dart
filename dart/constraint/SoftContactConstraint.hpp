@@ -35,21 +35,21 @@
 
 #include "dart/constraint/ConstraintBase.hpp"
 
-#include "dart/math/MathTypes.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 
-namespace collision{
+namespace collision {
 class SoftCollisionInfo;
-}  // namespace collision
+} // namespace collision
 
 namespace dynamics {
 class BodyNode;
 class SoftBodyNode;
 class PointMass;
 class Skeleton;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -62,6 +62,12 @@ public:
 
   /// Destructor
   virtual ~SoftContactConstraint();
+
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Returns constraint type for this class.
+  static const std::string& getStaticType();
 
   //----------------------------------------------------------------------------
   // Property settings
@@ -138,6 +144,11 @@ protected:
 
   // Documentation inherited
   bool isActive() const override;
+
+  static double computeFrictionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
+  static double computeRestitutionCoefficient(
+      const dynamics::ShapeNode* shapeNode);
 
 private:
   /// Get change in relative velocity at contact point due to external impulse
@@ -247,5 +258,4 @@ private:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_

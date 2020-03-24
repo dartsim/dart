@@ -48,7 +48,7 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited.
-  void solve(
+  bool solve(
       int n,
       double* A,
       double* x,
@@ -56,7 +56,8 @@ public:
       int nub,
       double* lo,
       double* hi,
-      int* findex) override;
+      int* findex,
+      bool earlyTermination) override;
 
 #ifndef NDEBUG
   // Documentation inherited.

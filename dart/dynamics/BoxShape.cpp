@@ -30,16 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cmath>
 #include "dart/dynamics/BoxShape.hpp"
+#include <cmath>
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BoxShape::BoxShape(const Eigen::Vector3d& _size)
-  : Shape(BOX),
-    mSize(_size)
+BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(BOX), mSize(_size)
 {
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
@@ -72,8 +70,8 @@ double BoxShape::computeVolume(const Eigen::Vector3d& size)
 }
 
 //==============================================================================
-Eigen::Matrix3d BoxShape::computeInertia(const Eigen::Vector3d& size,
-                                         double mass)
+Eigen::Matrix3d BoxShape::computeInertia(
+    const Eigen::Vector3d& size, double mass)
 {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
@@ -124,5 +122,5 @@ void BoxShape::updateVolume() const
   mIsVolumeDirty = false;
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

@@ -33,17 +33,17 @@
 #ifndef DART_DYNAMICS_JOINT_HPP_
 #define DART_DYNAMICS_JOINT_HPP_
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
-#include "dart/common/EmbeddedAspect.hpp"
-#include "dart/math/MathTypes.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/dynamics/detail/JointAspect.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -58,18 +58,17 @@ class Joint : public virtual common::Subject,
               public common::EmbedProperties<Joint, detail::JointProperties>
 {
 public:
-
   using CompositeProperties = common::Composite::Properties;
   using Properties = detail::JointProperties;
 
   typedef detail::ActuatorType ActuatorType;
-  static constexpr ActuatorType FORCE        = detail::FORCE;
-  static constexpr ActuatorType PASSIVE      = detail::PASSIVE;
-  static constexpr ActuatorType SERVO        = detail::SERVO;
-  static constexpr ActuatorType MIMIC        = detail::MIMIC;
+  static constexpr ActuatorType FORCE = detail::FORCE;
+  static constexpr ActuatorType PASSIVE = detail::PASSIVE;
+  static constexpr ActuatorType SERVO = detail::SERVO;
+  static constexpr ActuatorType MIMIC = detail::MIMIC;
   static constexpr ActuatorType ACCELERATION = detail::ACCELERATION;
-  static constexpr ActuatorType VELOCITY     = detail::VELOCITY;
-  static constexpr ActuatorType LOCKED       = detail::LOCKED;
+  static constexpr ActuatorType VELOCITY = detail::VELOCITY;
+  static constexpr ActuatorType LOCKED = detail::LOCKED;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, JointAspect)
 
@@ -116,13 +115,13 @@ public:
   Joint& operator=(const Joint& _otherJoint);
 
   /// \brief Set joint name and return the name.
+  /// \param[in] _name The specified joint name to be set.
   /// \param[in] _renameDofs If true, the names of the joint's degrees of
   /// freedom will be updated by calling updateDegreeOfFreedomNames().
   ///
   /// If the name is already taken, this will return an altered version which
   /// will be used by the Skeleton. Otherwise, return _name.
-  const std::string& setName(const std::string& _name,
-                             bool _renameDofs = true);
+  const std::string& setName(const std::string& _name, bool _renameDofs = true);
 
   /// Get joint name
   const std::string& getName() const;
@@ -137,7 +136,10 @@ public:
   ActuatorType getActuatorType() const;
 
   /// Set mimic joint
-  void setMimicJoint(const Joint* _mimicJoint, double _mimicMultiplier = 1.0, double _mimicOffset = 0.0);
+  void setMimicJoint(
+      const Joint* _mimicJoint,
+      double _mimicMultiplier = 1.0,
+      double _mimicOffset = 0.0);
 
   /// Get mimic joint
   const Joint* getMimicJoint() const;
@@ -189,21 +191,45 @@ public:
   /// Get transformation from child body node to this joint
   const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
-  /// Set to enforce joint position limit
+  /// Sets whether enforcing joint position and velocity limits.
   ///
-  /// The joint position limit is valid when the actutor type is one of
+  /// The joint position limit is valid when the actuator type is one of
   /// PASSIVE/FORCE.
   ///
   /// \sa ActuatorType
-  void setPositionLimitEnforced(bool _isPositionLimitEnforced);
+  ///
+  /// \deprecated Deprecated since DART 6.10. Please use
+  /// setLimitEnforcement() instead
+  DART_DEPRECATED(6.10)
+  void setPositionLimitEnforced(bool enforced);
 
-  /// Get whether enforcing joint position limit
+  /// Sets whether enforcing joint position and velocity limits.
   ///
-  /// The joint position limit is valid when the actutor type is one of
-  /// PASSIVE/FORCE.
+  /// This enforcement is only enabled when the actuator type is PASSIVE or
+  /// FORCE.
   ///
   /// \sa ActuatorType
+  void setLimitEnforcement(bool enforced);
+
+  /// Returns whether enforcing joint position limit
+  ///
+  /// This enforcement is only enabled when the actuator type is PASSIVE or
+  /// FORCE.
+  ///
+  /// \sa ActuatorType
+  ///
+  /// \deprecated Deprecated since DART 6.10. Please use
+  /// areLimitsEnforced() instead
+  DART_DEPRECATED(6.10)
   bool isPositionLimitEnforced() const;
+
+  /// Returns whether enforcing joint position and velocity limits
+  ///
+  /// This enforcement is only enabled when the actuator type is PASSIVE or
+  /// FORCE.
+  ///
+  /// \sa ActuatorType
+  bool areLimitsEnforced() const;
 
   /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual std::size_t getIndexInSkeleton(std::size_t _index) const = 0;
@@ -230,9 +256,9 @@ public:
   virtual const DegreeOfFreedom* getDof(std::size_t _index) const = 0;
 
   /// Alternative to DegreeOfFreedom::setName()
-  virtual const std::string& setDofName(std::size_t _index,
-                                const std::string& _name,
-                                bool _preserveName=true) = 0;
+  virtual const std::string& setDofName(
+      std::size_t _index, const std::string& _name, bool _preserveName = true)
+      = 0;
 
   /// Alternative to DegreeOfFreedom::preserveName()
   virtual void preserveDofName(std::size_t _index, bool _preserve) = 0;
@@ -424,25 +450,31 @@ public:
   virtual void resetAccelerations() = 0;
 
   /// Set lower limit for acceleration
-  virtual void setAccelerationLowerLimit(std::size_t _index, double _acceleration) = 0;
+  virtual void setAccelerationLowerLimit(
+      std::size_t _index, double _acceleration)
+      = 0;
 
   /// Get lower limit for acceleration
   virtual double getAccelerationLowerLimit(std::size_t _index) const = 0;
 
   /// Set the acceleration upper limits of all the generalized coordinates.
-  virtual void setAccelerationLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+  virtual void setAccelerationLowerLimits(const Eigen::VectorXd& lowerLimits)
+      = 0;
 
   /// Get the acceleration upper limits of all the generalized coordinates.
   virtual Eigen::VectorXd getAccelerationLowerLimits() const = 0;
 
   /// Set upper limit for acceleration
-  virtual void setAccelerationUpperLimit(std::size_t _index, double _acceleration) = 0;
+  virtual void setAccelerationUpperLimit(
+      std::size_t _index, double _acceleration)
+      = 0;
 
   /// Get upper limit for acceleration
   virtual double getAccelerationUpperLimit(std::size_t _index) const = 0;
 
   /// Set the acceleration upper limits of all the generalized coordinates.
-  virtual void setAccelerationUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+  virtual void setAccelerationUpperLimits(const Eigen::VectorXd& upperLimits)
+      = 0;
 
   /// Get the acceleration upper limits of all the generalized coordinates.
   virtual Eigen::VectorXd getAccelerationUpperLimits() const = 0;
@@ -508,7 +540,8 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set a single velocity change
-  virtual void setVelocityChange(std::size_t _index, double _velocityChange) = 0;
+  virtual void setVelocityChange(std::size_t _index, double _velocityChange)
+      = 0;
 
   /// Get a single velocity change
   virtual double getVelocityChange(std::size_t _index) const = 0;
@@ -644,7 +677,7 @@ public:
   /// BodyNode expressed in the child BodyNode frame
   const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
 
-  /// Get J * \ddot{q} of this joint
+  /// Get J * \f$ \ddot{q} \f$ of this joint
   const Eigen::Vector6d& getRelativePrimaryAcceleration() const;
 
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
@@ -677,7 +710,7 @@ public:
   /// \sa BodyNode::updateArticulatedInertia(double).
   ///
   /// \param[in] _timeStep Time step used for approximating q(k+1).
-//  Eigen::VectorXd getSpringForces(double _timeStep) const;
+  //  Eigen::VectorXd getSpringForces(double _timeStep) const;
 
   /// Get damping force
   ///
@@ -689,8 +722,7 @@ public:
   /// -dampingCoefficient * h * ddq(k) term is rearranged at the recursive
   /// forward dynamics algorithm, and it affects on the articulated inertia.
   /// \sa BodyNode::updateArticulatedInertia(double).
-//  Eigen::VectorXd getDampingForces() const;
-
+  //  Eigen::VectorXd getDampingForces() const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Update Notifiers
@@ -728,7 +760,6 @@ public:
   friend class Skeleton;
 
 protected:
-
   /// Constructor called by inheriting class
   Joint();
 
@@ -740,7 +771,6 @@ protected:
   virtual void registerDofs() = 0;
 
   /// \brief Create a DegreeOfFreedom pointer.
-  /// \param[in] _name DegreeOfFreedom's name.
   /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
   /// that the index should be unique within the joint.
   ///
@@ -793,7 +823,7 @@ protected:
   /// BodyNode expressed in the child BodyNode frame
   virtual void updateRelativeSpatialAcceleration() const = 0;
 
-  /// Update J * \ddot{q} of this joint
+  /// Update J * \f$ \ddot{q} \f$ of this joint
   virtual void updateRelativePrimaryAcceleration() const = 0;
 
   /// Update spatial Jacobian of the child BodyNode relative to the parent
@@ -821,7 +851,8 @@ protected:
   /// Set joint partial acceleration to _partialAcceleration
   virtual void setPartialAccelerationTo(
       Eigen::Vector6d& _partialAcceleration,
-      const Eigen::Vector6d& _childVelocity) = 0;
+      const Eigen::Vector6d& _childVelocity)
+      = 0;
   // TODO(JS): Rename with more informative name
 
   /// Add joint acceleration to _acc
@@ -833,12 +864,14 @@ protected:
   /// Add child's articulated inertia to parent's one
   virtual void addChildArtInertiaTo(
       Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia) = 0;
+      const Eigen::Matrix6d& _childArtInertia)
+      = 0;
 
   /// Add child's articulated inertia to parent's one. Forward dynamics routine.
   virtual void addChildArtInertiaImplicitTo(
       Eigen::Matrix6d& _parentArtInertiaImplicit,
-      const Eigen::Matrix6d& _childArtInertiaImplicit) = 0;
+      const Eigen::Matrix6d& _childArtInertiaImplicit)
+      = 0;
   // TODO(JS): rename to updateAInertiaChildAInertia()
 
   /// Update inverse of projected articulated body inertia
@@ -846,8 +879,8 @@ protected:
 
   /// Forward dynamics routine.
   virtual void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& _artInertia,
-      double _timeStep) = 0;
+      const Eigen::Matrix6d& _artInertia, double _timeStep)
+      = 0;
   // TODO(JS): rename to updateAInertiaPsi()
 
   /// Add child's bias force to parent's one
@@ -855,17 +888,20 @@ protected:
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
-      const Eigen::Vector6d& _childPartialAcc) = 0;
+      const Eigen::Vector6d& _childPartialAcc)
+      = 0;
 
   /// Add child's bias impulse to parent's one
   virtual void addChildBiasImpulseTo(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasImpulse) = 0;
+      const Eigen::Vector6d& _childBiasImpulse)
+      = 0;
 
   /// Update joint total force
-  virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
-                                double _timeStep) = 0;
+  virtual void updateTotalForce(
+      const Eigen::Vector6d& _bodyForce, double _timeStep)
+      = 0;
   // TODO: rename
 
   /// Update joint total impulse
@@ -876,33 +912,45 @@ protected:
   virtual void resetTotalImpulses() = 0;
 
   /// Update joint acceleration
-  virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
-                                  const Eigen::Vector6d& _spatialAcc) = 0;
+  virtual void updateAcceleration(
+      const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
+      = 0;
 
   /// Update joint velocity change
   /// \param _artInertia
   /// \param _velocityChange
   virtual void updateVelocityChange(
       const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _velocityChange) = 0;
+      const Eigen::Vector6d& _velocityChange)
+      = 0;
 
   /// Update joint force for inverse dynamics.
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
-  virtual void updateForceID(const Eigen::Vector6d& _bodyForce,
-                             double _timeStep,
-                             bool _withDampingForces,
-                             bool _withSpringForces) = 0;
+  /// \param[in] _timeStep
+  /// \param[in] _withDampingForces
+  /// \param[in] _withSpringForces
+  virtual void updateForceID(
+      const Eigen::Vector6d& _bodyForce,
+      double _timeStep,
+      bool _withDampingForces,
+      bool _withSpringForces)
+      = 0;
 
   /// Update joint force for forward dynamics.
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
-  virtual void updateForceFD(const Eigen::Vector6d& _bodyForce,
-                             double _timeStep,
-                             bool _withDampingForcese,
-                             bool _withSpringForces) = 0;
+  /// \param[in] _timeStep
+  /// \param[in] _withDampingForces
+  /// \param[in] _withSpringForces
+  virtual void updateForceFD(
+      const Eigen::Vector6d& _bodyForce,
+      double _timeStep,
+      bool _withDampingForces,
+      bool _withSpringForces)
+      = 0;
 
   /// Update joint impulses for inverse dynamics
   virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) = 0;
@@ -923,41 +971,48 @@ protected:
   virtual void addChildBiasForceForInvMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce) = 0;
+      const Eigen::Vector6d& _childBiasForce)
+      = 0;
 
   /// Add child's bias force to parent's one
   virtual void addChildBiasForceForInvAugMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce) = 0;
+      const Eigen::Vector6d& _childBiasForce)
+      = 0;
 
   ///
   virtual void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& _bodyForce) = 0;
+      const Eigen::Vector6d& _bodyForce)
+      = 0;
 
   ///
-  virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                       const std::size_t _col,
-                                       const Eigen::Matrix6d& _artInertia,
-                                       const Eigen::Vector6d& _spatialAcc) = 0;
+  virtual void getInvMassMatrixSegment(
+      Eigen::MatrixXd& _invMassMat,
+      const std::size_t _col,
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc)
+      = 0;
 
   ///
-  virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                       const std::size_t _col,
-                                       const Eigen::Matrix6d& _artInertia,
-                                       const Eigen::Vector6d& _spatialAcc) = 0;
+  virtual void getInvAugMassMatrixSegment(
+      Eigen::MatrixXd& _invMassMat,
+      const std::size_t _col,
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc)
+      = 0;
 
   ///
   virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) = 0;
 
   ///
   virtual Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& _spatial) = 0;
+      const Eigen::Vector6d& _spatial)
+      = 0;
 
   /// \}
 
 protected:
-
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;
 
@@ -1004,21 +1059,20 @@ protected:
   mutable bool mNeedPrimaryAccelerationUpdate;
   // TODO(JS): Rename this to mIsPrimaryAccelerationDirty in DART 7
 
-  /// True iff this joint's relative Jacobian has not been updated since the last
-  /// position change
+  /// True iff this joint's relative Jacobian has not been updated since the
+  /// last position change
   mutable bool mIsRelativeJacobianDirty;
 
-  /// True iff this joint's relative Jacobian time derivative has not been updated
-  /// since the last position or velocity change
+  /// True iff this joint's relative Jacobian time derivative has not been
+  /// updated since the last position or velocity change
   mutable bool mIsRelativeJacobianTimeDerivDirty;
 
 public:
-
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_JOINT_HPP_
+#endif // DART_DYNAMICS_JOINT_HPP_

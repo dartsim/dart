@@ -38,8 +38,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-SphereShape::SphereShape(double radius)
-  : Shape(SPHERE)
+SphereShape::SphereShape(double radius) : Shape(SPHERE)
 {
   setRadius(radius);
 }
@@ -85,7 +84,7 @@ double SphereShape::getRadius() const
 //==============================================================================
 double SphereShape::computeVolume(double radius)
 {
-  return math::constantsd::pi() * 4.0 / 3.0 * std::pow(radius, 3) ;
+  return math::constantsd::pi() * 4.0 / 3.0 * std::pow(radius, 3);
 }
 
 //==============================================================================
@@ -121,5 +120,5 @@ void SphereShape::updateVolume() const
   mIsVolumeDirty = false;
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

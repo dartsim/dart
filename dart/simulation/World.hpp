@@ -39,36 +39,36 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 
 #include <Eigen/Dense>
 
-#include "dart/common/Timer.hpp"
+#include "dart/collision/CollisionOption.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
+#include "dart/common/Timer.hpp"
+#include "dart/constraint/SmartPointer.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/collision/CollisionOption.hpp"
 #include "dart/simulation/Recording.hpp"
 #include "dart/simulation/SmartPointer.hpp"
-#include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
 
 namespace integration {
 class Integrator;
-}  // namespace integration
+} // namespace integration
 
 namespace dynamics {
 class Skeleton;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 class ConstraintSolver;
-}  // namespace constraint
+} // namespace constraint
 
 namespace collision {
 class CollisionResult;
@@ -82,10 +82,8 @@ DART_COMMON_DECLARE_SHARED_WEAK(World)
 class World : public virtual common::Subject
 {
 public:
-
-  using NameChangedSignal
-      = common::Signal<void(const std::string& _oldName,
-                            const std::string& _newName)>;
+  using NameChangedSignal = common::Signal<void(
+      const std::string& _oldName, const std::string& _newName)>;
 
   /// Creates World as shared_ptr
   template <typename... Args>
@@ -106,9 +104,6 @@ public:
 
   /// Create a clone of this World. All Skeletons and SimpleFrames that are held
   /// by this World will be copied over.
-  ///
-  /// Note that the states of the Skeletons will not be transferred over to this
-  /// clone [TODO: copy the states as well]
   std::shared_ptr<World> clone() const;
 
   //--------------------------------------------------------------------------
@@ -141,7 +136,7 @@ public:
   dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
 
   /// Find a Skeleton by name
-  /// \param[in] The name of the Skeleton you are looking for.
+  /// \param[in] _name The name of the Skeleton you are looking for.
   /// \return If the skeleton does not exist then return nullptr.
   dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 
@@ -158,8 +153,11 @@ public:
   /// pointers to them, in case you want to recycle them
   std::set<dynamics::SkeletonPtr> removeAllSkeletons();
 
-  /// Returns wether this World contains a Skeleton.
+  /// Returns whether this World contains a Skeleton.
   bool hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
+
+  /// Returns whether this World contains a Skeleton named \c skeletonName.
+  bool hasSkeleton(const std::string& skeletonName) const;
 
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
@@ -198,7 +196,7 @@ public:
   /// penetration depth.
   bool checkCollision(
       const collision::CollisionOption& option
-          = collision::CollisionOption(false, 1u, nullptr),
+      = collision::CollisionOption(false, 1u, nullptr),
       collision::CollisionResult* result = nullptr);
 
   /// Return the collision checking result of the last simulation step. If this
@@ -242,7 +240,10 @@ public:
   void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
 
   /// Get the constraint solver
-  constraint::ConstraintSolver* getConstraintSolver() const;
+  constraint::ConstraintSolver* getConstraintSolver();
+
+  /// Get the constraint solver
+  const constraint::ConstraintSolver* getConstraintSolver() const;
 
   /// Bake simulated current state and store it into mRecording
   void bake();
@@ -251,7 +252,6 @@ public:
   Recording* getRecording();
 
 protected:
-
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
       const dynamics::ConstMetaSkeletonPtr& _skeleton);
@@ -265,8 +265,8 @@ protected:
   /// Skeletons in this world
   std::vector<dynamics::SkeletonPtr> mSkeletons;
 
-  std::map<dynamics::ConstMetaSkeletonPtr,
-           dynamics::SkeletonPtr> mMapForSkeletons;
+  std::map<dynamics::ConstMetaSkeletonPtr, dynamics::SkeletonPtr>
+      mMapForSkeletons;
 
   /// Connections for noticing changes in Skeleton names
   /// TODO(MXG): Consider putting this functionality into NameManager
@@ -283,7 +283,8 @@ protected:
   std::vector<common::Connection> mNameConnectionsForSimpleFrames;
 
   /// Map from raw SimpleFrame pointers to their shared_ptrs
-  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr> mSimpleFrameToShared;
+  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr>
+      mSimpleFrameToShared;
 
   /// NameManager for keeping track of Entities
   dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;
@@ -322,12 +323,11 @@ public:
   // Slot registers
   //--------------------------------------------------------------------------
   common::SlotRegister<NameChangedSignal> onNameChanged;
-
 };
 
-}  // namespace simulation
-}  // namespace dart
+} // namespace simulation
+} // namespace dart
 
 #include "dart/simulation/detail/World-impl.hpp"
 
-#endif  // DART_SIMULATION_WORLD_HPP_
+#endif // DART_SIMULATION_WORLD_HPP_

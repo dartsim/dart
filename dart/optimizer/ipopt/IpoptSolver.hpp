@@ -33,15 +33,8 @@
 #ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
-//------------------------------------------------------------------------------
-// Workaround for bug:
-// (see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=684062)
-// This is fixed at IpOpt 3.11.4-1
-#define HAVE_CSTDDEF
-#include <coin/IpTNLP.hpp>
 #include <coin/IpIpoptApplication.hpp>
-#undef HAVE_CSTDDEF
-//------------------------------------------------------------------------------
+#include <coin/IpTNLP.hpp>
 
 #include <memory>
 
@@ -57,7 +50,6 @@ class DartTNLP;
 class IpoptSolver : public Solver
 {
 public:
-
   /// Default constructor
   IpoptSolver(const Solver::Properties& _properties = Solver::Properties());
 
@@ -83,10 +75,10 @@ public:
   Ipopt::SmartPtr<const Ipopt::IpoptApplication> getApplication() const;
 
 private:
-
   /// Constructor used during cloning
-  IpoptSolver(const Properties& _properties,
-              const Ipopt::SmartPtr<Ipopt::IpoptApplication>& _app);
+  IpoptSolver(
+      const Properties& _properties,
+      const Ipopt::SmartPtr<Ipopt::IpoptApplication>& _app);
 
   /// IPOPT nonlinear programming problem
   Ipopt::SmartPtr<Ipopt::TNLP> mNlp;
@@ -99,7 +91,6 @@ private:
 class DartTNLP : public Ipopt::TNLP
 {
 public:
-
   friend class IpoptSolver;
 
   /// \brief
@@ -107,96 +98,103 @@ public:
 
   //------------------------- Ipopt::TNLP --------------------------------------
   /// \brief Method to return some info about the nlp
-  bool get_nlp_info(Ipopt::Index& n,
-                    Ipopt::Index& m,
-                    Ipopt::Index& nnz_jac_g,
-                    Ipopt::Index& nnz_h_lag,
-                    Ipopt::TNLP::IndexStyleEnum& index_style) override;
+  bool get_nlp_info(
+      Ipopt::Index& n,
+      Ipopt::Index& m,
+      Ipopt::Index& nnz_jac_g,
+      Ipopt::Index& nnz_h_lag,
+      Ipopt::TNLP::IndexStyleEnum& index_style) override;
 
   /// \brief Method to return the bounds for my problem
-  bool get_bounds_info(Ipopt::Index n,
-                       Ipopt::Number* x_l,
-                       Ipopt::Number* x_u,
-                       Ipopt::Index m,
-                       Ipopt::Number* g_l,
-                       Ipopt::Number* g_u) override;
+  bool get_bounds_info(
+      Ipopt::Index n,
+      Ipopt::Number* x_l,
+      Ipopt::Number* x_u,
+      Ipopt::Index m,
+      Ipopt::Number* g_l,
+      Ipopt::Number* g_u) override;
 
   /// \brief Method to return the starting point for the algorithm
-  bool get_starting_point(Ipopt::Index n,
-                          bool init_x,
-                          Ipopt::Number* x,
-                          bool init_z,
-                          Ipopt::Number* z_L,
-                          Ipopt::Number* z_U,
-                          Ipopt::Index m,
-                          bool init_lambda,
-                          Ipopt::Number* lambda) override;
+  bool get_starting_point(
+      Ipopt::Index n,
+      bool init_x,
+      Ipopt::Number* x,
+      bool init_z,
+      Ipopt::Number* z_L,
+      Ipopt::Number* z_U,
+      Ipopt::Index m,
+      bool init_lambda,
+      Ipopt::Number* lambda) override;
 
   /// \brief Method to return the objective value
-  bool eval_f(Ipopt::Index _n,
-              const Ipopt::Number* _x,
-              bool _new_x,
-              Ipopt::Number&
-              _obj_value) override;
+  bool eval_f(
+      Ipopt::Index _n,
+      const Ipopt::Number* _x,
+      bool _new_x,
+      Ipopt::Number& _obj_value) override;
 
   /// \brief Method to return the gradient of the objective
-  bool eval_grad_f(Ipopt::Index _n,
-                   const Ipopt::Number* _x,
-                   bool _new_x,
-                   Ipopt::Number* _grad_f) override;
+  bool eval_grad_f(
+      Ipopt::Index _n,
+      const Ipopt::Number* _x,
+      bool _new_x,
+      Ipopt::Number* _grad_f) override;
 
   /// \brief Method to return the constraint residuals
-  bool eval_g(Ipopt::Index _n,
-              const Ipopt::Number* _x,
-              bool _new_x,
-              Ipopt::Index _m,
-              Ipopt::Number* _g) override;
+  bool eval_g(
+      Ipopt::Index _n,
+      const Ipopt::Number* _x,
+      bool _new_x,
+      Ipopt::Index _m,
+      Ipopt::Number* _g) override;
 
   /// \brief Method to return:
   ///        1) The structure of the jacobian (if "values" is nullptr)
   ///        2) The values of the jacobian (if "values" is not nullptr)
-  bool eval_jac_g(Ipopt::Index _n,
-                  const Ipopt::Number* _x,
-                  bool _new_x,
-                  Ipopt::Index _m,
-                  Ipopt::Index _nele_jac,
-                  Ipopt::Index* _iRow,
-                  Ipopt::Index* _jCol,
-                  Ipopt::Number* _values) override;
+  bool eval_jac_g(
+      Ipopt::Index _n,
+      const Ipopt::Number* _x,
+      bool _new_x,
+      Ipopt::Index _m,
+      Ipopt::Index _nele_jac,
+      Ipopt::Index* _iRow,
+      Ipopt::Index* _jCol,
+      Ipopt::Number* _values) override;
 
   /// \brief Method to return:
   ///        1) The structure of the hessian of the lagrangian (if "values" is
   ///           nullptr)
   ///        2) The values of the hessian of the lagrangian (if "values" is not
   ///           nullptr)
-  bool eval_h(Ipopt::Index _n,
-              const Ipopt::Number* _x,
-              bool _new_x,
-              Ipopt::Number _obj_factor,
-              Ipopt::Index _m,
-              const Ipopt::Number* _lambda,
-              bool _new_lambda,
-              Ipopt::Index _nele_hess,
-              Ipopt::Index* _iRow,
-              Ipopt::Index* _jCol,
-              Ipopt::Number* _values) override;
+  bool eval_h(
+      Ipopt::Index _n,
+      const Ipopt::Number* _x,
+      bool _new_x,
+      Ipopt::Number _obj_factor,
+      Ipopt::Index _m,
+      const Ipopt::Number* _lambda,
+      bool _new_lambda,
+      Ipopt::Index _nele_hess,
+      Ipopt::Index* _iRow,
+      Ipopt::Index* _jCol,
+      Ipopt::Number* _values) override;
 
   /// \brief This method is called when the algorithm is complete so the TNLP
   ///        can store/write the solution
-  void finalize_solution(Ipopt::SolverReturn _status,
-                         Ipopt::Index _n,
-                         const Ipopt::Number* _x,
-                         const Ipopt::Number* _z_L,
-                         const Ipopt::Number* _z_U,
-                         Ipopt::Index _m,
-                         const Ipopt::Number* _g,
-                         const Ipopt::Number* _lambda,
-                         Ipopt::Number _obj_value,
-                         const Ipopt::IpoptData* _ip_data,
-                         Ipopt::IpoptCalculatedQuantities* _ip_cq) override;
+  void finalize_solution(
+      Ipopt::SolverReturn _status,
+      Ipopt::Index _n,
+      const Ipopt::Number* _x,
+      const Ipopt::Number* _z_L,
+      const Ipopt::Number* _z_U,
+      Ipopt::Index _m,
+      const Ipopt::Number* _g,
+      const Ipopt::Number* _lambda,
+      Ipopt::Number _obj_value,
+      const Ipopt::IpoptData* _ip_data,
+      Ipopt::IpoptCalculatedQuantities* _ip_cq) override;
 
 private:
-
   /// \brief
   explicit DartTNLP(IpoptSolver* _solver);
 
@@ -213,7 +211,7 @@ private:
   Eigen::MatrixXd mObjHessian;
 };
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace optimizer
+} // namespace dart
 
-#endif  // DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
+#endif // DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_

@@ -81,8 +81,9 @@ void UnorderedPairs<T>::addPair(const T* left, const T* right)
   // Call insert in case an entry for bodyNodeLess doesn't exist. If it doesn't
   // exist, it will be initialized with an empty set. If it does already exist,
   // we will just get an iterator to the existing entry.
-  const auto itLess = mList.insert(
-      std::make_pair(less, std::unordered_set<const T*>())).first;
+  const auto itLess
+      = mList.insert(std::make_pair(less, std::unordered_set<const T*>()))
+            .first;
 
   // Insert bodyNodeGreater into the set corresponding to bodyNodeLess. If the
   // pair already existed, this will do nothing.
@@ -90,7 +91,7 @@ void UnorderedPairs<T>::addPair(const T* left, const T* right)
 }
 
 //==============================================================================
-template<class T>
+template <class T>
 void UnorderedPairs<T>::removePair(const T* left, const T* right)
 {
   if (!left || !right)
@@ -116,14 +117,14 @@ void UnorderedPairs<T>::removePair(const T* left, const T* right)
 }
 
 //==============================================================================
-template<class T>
+template <class T>
 void UnorderedPairs<T>::removeAllPairs()
 {
   mList.clear();
 }
 
 //==============================================================================
-template<class T>
+template <class T>
 bool UnorderedPairs<T>::contains(const T* left, const T* right) const
 {
   const auto* less = left;

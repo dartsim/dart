@@ -15,29 +15,15 @@ dart_generate_include_header_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp
-  DESTINATION include/dart/constraint
-  COMPONENT headers
-)
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/constraint/detail
-  COMPONENT headers
-)
-
-dart_format_add(
-  BoxedLcpConstraintSolver.hpp
-  BoxedLcpConstraintSolver.cpp
-  BoxedLcpSolver.hpp
-  ContactConstraint.hpp
-  ContactConstraint.cpp
-  DantzigBoxedLcpSolver.hpp
-  DantzigBoxedLcpSolver.cpp
-  MimicMotorConstraint.hpp
-  MimicMotorConstraint.cpp
-  PgsBoxedLcpSolver.hpp
-  PgsBoxedLcpSolver.cpp
-  SmartPointer.hpp
-  detail/BoxedLcpSolver-impl.hpp
-)
+if(NOT DART_BUILD_DARTPY)
+  install(
+    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp
+    DESTINATION include/dart/constraint
+    COMPONENT headers
+  )
+  install(
+    FILES ${detail_hdrs}
+    DESTINATION include/dart/constraint/detail
+    COMPONENT headers
+  )
+endif()

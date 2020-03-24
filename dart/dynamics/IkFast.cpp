@@ -32,9 +32,9 @@
 
 #include "dart/dynamics/IkFast.hpp"
 
-#include "dart/external/ikfast/ikfast.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/external/ikfast/ikfast.h"
 
 namespace dart {
 namespace dynamics {
@@ -47,19 +47,42 @@ void convertTransform(
     std::array<IkReal, 3>& eetrans,
     std::array<IkReal, 9>& eerot)
 {
-  eerot[0*3+0] = tf.linear()(0, 0);
-  eerot[0*3+1] = tf.linear()(0, 1);
-  eerot[0*3+2] = tf.linear()(0, 2);
-  eerot[1*3+0] = tf.linear()(1, 0);
-  eerot[1*3+1] = tf.linear()(1, 1);
-  eerot[1*3+2] = tf.linear()(1, 2);
-  eerot[2*3+0] = tf.linear()(2, 0);
-  eerot[2*3+1] = tf.linear()(2, 1);
-  eerot[2*3+2] = tf.linear()(2, 2);
+  eerot[0 * 3 + 0] = tf.linear()(0, 0);
+  eerot[0 * 3 + 1] = tf.linear()(0, 1);
+  eerot[0 * 3 + 2] = tf.linear()(0, 2);
+  eerot[1 * 3 + 0] = tf.linear()(1, 0);
+  eerot[1 * 3 + 1] = tf.linear()(1, 1);
+  eerot[1 * 3 + 2] = tf.linear()(1, 2);
+  eerot[2 * 3 + 0] = tf.linear()(2, 0);
+  eerot[2 * 3 + 1] = tf.linear()(2, 1);
+  eerot[2 * 3 + 2] = tf.linear()(2, 2);
 
   eetrans[0] = tf.translation()[0];
   eetrans[1] = tf.translation()[1];
   eetrans[2] = tf.translation()[2];
+}
+
+//==============================================================================
+void convertTransform(
+    const std::array<IkReal, 3>& eetrans,
+    const std::array<IkReal, 9>& eerot,
+    Eigen::Isometry3d& tf)
+{
+  tf.setIdentity();
+
+  tf(0, 0) = eerot[0 * 3 + 0];
+  tf(0, 1) = eerot[0 * 3 + 1];
+  tf(0, 2) = eerot[0 * 3 + 2];
+  tf(1, 0) = eerot[1 * 3 + 0];
+  tf(1, 1) = eerot[1 * 3 + 1];
+  tf(1, 2) = eerot[1 * 3 + 2];
+  tf(2, 0) = eerot[2 * 3 + 0];
+  tf(2, 1) = eerot[2 * 3 + 1];
+  tf(2, 2) = eerot[2 * 3 + 2];
+
+  tf(3, 0) = eetrans[0];
+  tf(3, 1) = eetrans[1];
+  tf(3, 2) = eetrans[2];
 }
 
 //==============================================================================
@@ -128,9 +151,9 @@ void convertIkSolution(
     index++;
   }
 
-  solution.mValidity
-      = limitViolated ? InverseKinematics::Analytical::LIMIT_VIOLATED
-                      : InverseKinematics::Analytical::VALID;
+  solution.mValidity = limitViolated
+                           ? InverseKinematics::Analytical::LIMIT_VIOLATED
+                           : InverseKinematics::Analytical::VALID;
 }
 
 //==============================================================================
@@ -196,7 +219,7 @@ bool checkDofMapValidity(
   return true;
 }
 
-} // namespace (anonymous)
+} // namespace
 
 //==============================================================================
 IkFast::IkFast(
@@ -233,9 +256,85 @@ auto IkFast::getDofs() const -> const std::vector<std::size_t>&
 }
 
 //==============================================================================
+const std::vector<std::size_t>& IkFast::getFreeDofs() const
+{
+  return mFreeDofs;
+}
+
+//==============================================================================
 bool IkFast::isConfigured() const
 {
   return mConfigured;
+}
+
+//==============================================================================
+std::size_t IkFast::getNumFreeParameters2() const
+{
+  return static_cast<std::size_t>(getNumFreeParameters());
+}
+
+//==============================================================================
+std::size_t IkFast::getNumJoints2() const
+{
+  return static_cast<std::size_t>(getNumJoints());
+}
+
+//==============================================================================
+IkFast::IkType IkFast::getIkType2() const
+{
+  // Following conversion is referred from:
+  // https://github.com/rdiankov/openrave/blob/b1ebe135b4217823ebdf56d9af5fe89b29723603/include/openrave/openrave.h#L575-L623
+
+  const int type = getIkType();
+
+  if (type == 0)
+    return IkType::UNKNOWN;
+  else if (type == 0x67000001)
+    return IkType::TRANSFORM_6D;
+  else if (type == 0x34000002)
+    return IkType::ROTATION_3D;
+  else if (type == 0x34000003)
+    return IkType::TRANSLATION_3D;
+  else if (type == 0x34000004)
+    return IkType::DIRECTION_3D;
+  else if (type == 0x34000005)
+    return IkType::RAY_4D;
+  else if (type == 0x34000006)
+    return IkType::LOOKAT_3D;
+  else if (type == 0x34000007)
+    return IkType::TRANSLATION_DIRECTION_5D;
+  else if (type == 0x34000008)
+    return IkType::TRANSLATION_XY_2D;
+  else if (type == 0x34000009)
+    return IkType::TRANSLATION_XY_ORIENTATION_3D;
+  else if (type == 0x3400000a)
+    return IkType::TRANSLATION_LOCAL_GLOBAL_6D;
+  else if (type == 0x3400000b)
+    return IkType::TRANSLATION_X_AXIS_ANGLE_4D;
+  else if (type == 0x3400000c)
+    return IkType::TRANSLATION_Y_AXIS_ANGLE_4D;
+  else if (type == 0x3400000d)
+    return IkType::TRANSLATION_Z_AXIS_ANGLE_4D;
+  else if (type == 0x3400000e)
+    return IkType::TRANSLATION_X_AXIS_ANGLE_Z_NORM_4D;
+  else if (type == 0x3400000f)
+    return IkType::TRANSLATION_Y_AXIS_ANGLE_X_NORM_4D;
+  else if (type == 0x34000010)
+    return IkType::TRANSLATION_Z_AXIS_ANGLE_Y_NORM_4D;
+
+  return IkType::UNKNOWN;
+}
+
+//==============================================================================
+const std::string IkFast::getKinematicsHash2() const
+{
+  return const_cast<IkFast*>(this)->getKinematicsHash();
+}
+
+//==============================================================================
+std::string IkFast::getIkFastVersion2() const
+{
+  return const_cast<IkFast*>(this)->getIkFastVersion();
 }
 
 //==============================================================================
@@ -268,7 +367,7 @@ void IkFast::configure() const
   if (!checkDofMapValidity(mIK.get(), mFreeDofs, "free dof map"))
     return;
 
-  mFreeParams.resize(ikFastNumFreeJoints);
+  mFreeParams.resize(static_cast<std::size_t>(ikFastNumFreeJoints));
 
   mConfigured = true;
 }
@@ -310,14 +409,37 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
   if (success)
   {
     convertIkSolutions(
-          this,
-          getNumJoints(),
-          getNumFreeParameters(),
-          getFreeParameters(),
-          solutions, mSolutions);
+        this,
+        getNumJoints(),
+        getNumFreeParameters(),
+        getFreeParameters(),
+        solutions,
+        mSolutions);
   }
 
   return mSolutions;
+}
+
+//==============================================================================
+Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
+{
+  const std::size_t ikFastNumNonFreeJoints
+      = getNumJoints2() - getNumFreeParameters2();
+  if (static_cast<std::size_t>(parameters.size()) != ikFastNumNonFreeJoints)
+  {
+    dtwarn << "[IkFast::computeFk] The dimension of given joint positions "
+           << "doesn't agree with the number of joints of this IkFast solver. "
+           << "Returning identity.\n";
+    return Eigen::Isometry3d::Identity();
+  }
+
+  std::array<IkReal, 3> eetrans;
+  std::array<IkReal, 9> eerot;
+  computeFk(parameters.data(), eetrans.data(), eerot.data());
+
+  Eigen::Isometry3d tf;
+  convertTransform(eetrans, eerot, tf);
+  return tf;
 }
 
 } // namespace dynamics

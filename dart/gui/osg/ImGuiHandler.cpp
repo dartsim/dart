@@ -44,6 +44,7 @@
 #include <osg/RenderInfo>
 
 #include "dart/external/imgui/imgui.h"
+#include "dart/external/imgui/imgui_impl_opengl2.h"
 
 #include "dart/common/Console.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
@@ -53,167 +54,165 @@ namespace gui {
 namespace osg {
 
 //==============================================================================
-void ImGui_RenderDrawLists(ImDrawData* draw_data)
+// Special keys that are usually greater than 512 in osgGA
+//
+// Imporant Note: Dear ImGui expects the control Keys indices not to be greater
+// thant 511. It actually uses an array of 512 elements. However, OSG has
+// indices greater than that. So here I do a conversion for special keys between
+// ImGui and OSG.
+enum ConvertedKey : int
 {
-  // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-  ImGuiIO& io = ImGui::GetIO();
-  int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-  int fb_height = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
-  if (fb_width == 0 || fb_height == 0)
-    return;
-  draw_data->ScaleClipRects(io.DisplayFramebufferScale);
+  ConvertedKey_Tab = 257,
+  ConvertedKey_Left,
+  ConvertedKey_Right,
+  ConvertedKey_Up,
+  ConvertedKey_Down,
+  ConvertedKey_PageUp,
+  ConvertedKey_PageDown,
+  ConvertedKey_Home,
+  ConvertedKey_End,
+  ConvertedKey_Delete,
+  ConvertedKey_BackSpace,
+  ConvertedKey_Enter,
+  ConvertedKey_Escape,
+  ConvertedKey_LeftControl,
+  ConvertedKey_RightControl,
+  ConvertedKey_LeftShift,
+  ConvertedKey_RightShift,
+  ConvertedKey_LeftAlt,
+  ConvertedKey_RightAlt,
+  ConvertedKey_LeftSuper,
+  ConvertedKey_RightSuper,
+};
 
-  // We are using the OpenGL fixed pipeline to make the example code simpler to read!
-  // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, vertex/texcoord/color pointers.
-  GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-  GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
-  glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TRANSFORM_BIT);
-  glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_CULL_FACE);
-  glDisable(GL_DEPTH_TEST);
-  glEnable(GL_SCISSOR_TEST);
-  glDisable(GL_LIGHTING);
-  glEnableClientState(GL_VERTEX_ARRAY);
-  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  glEnableClientState(GL_COLOR_ARRAY);
-  glEnable(GL_TEXTURE_2D);
-  //glUseProgram(0); // You may want this if using this code in an OpenGL 3+ context
+//==============================================================================
+// Check for a special key and return the converted code (range [257, 511]) if
+// so. Otherwise returns -1
+int convertFromOSGKey(int key)
+{
+  using KeySymbol = osgGA::GUIEventAdapter::KeySymbol;
 
-  // Setup viewport, orthographic projection matrix
-  glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  glLoadIdentity();
-  glOrtho(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  glLoadIdentity();
-
-  // Render command lists
-#define OFFSETOF(TYPE, ELEMENT) ((size_t)&(((TYPE *)0)->ELEMENT))
-  for (int n = 0; n < draw_data->CmdListsCount; n++)
+  switch (key)
   {
-    const ImDrawList* cmd_list = draw_data->CmdLists[n];
-    const unsigned char* vtx_buffer = (const unsigned char*)&cmd_list->VtxBuffer.front();
-    const ImDrawIdx* idx_buffer = &cmd_list->IdxBuffer.front();
-    glVertexPointer(2, GL_FLOAT, sizeof(ImDrawVert), (void*)(vtx_buffer + OFFSETOF(ImDrawVert, pos)));
-    glTexCoordPointer(2, GL_FLOAT, sizeof(ImDrawVert), (void*)(vtx_buffer + OFFSETOF(ImDrawVert, uv)));
-    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(ImDrawVert), (void*)(vtx_buffer + OFFSETOF(ImDrawVert, col)));
-
-    for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.size(); cmd_i++)
-    {
-      const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-      if (pcmd->UserCallback)
-      {
-        pcmd->UserCallback(cmd_list, pcmd);
-      }
-      else
-      {
-        glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
-        glScissor((int)pcmd->ClipRect.x, (int)(fb_height - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
-        glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer);
-      }
-      idx_buffer += pcmd->ElemCount;
-    }
+    case KeySymbol::KEY_Tab:
+      return ConvertedKey_Tab;
+    case KeySymbol::KEY_Left:
+      return ConvertedKey_Left;
+    case KeySymbol::KEY_Right:
+      return ConvertedKey_Right;
+    case KeySymbol::KEY_Up:
+      return ConvertedKey_Up;
+    case KeySymbol::KEY_Down:
+      return ConvertedKey_Down;
+    case KeySymbol::KEY_Page_Up:
+      return ConvertedKey_PageUp;
+    case KeySymbol::KEY_Page_Down:
+      return ConvertedKey_PageDown;
+    case KeySymbol::KEY_Home:
+      return ConvertedKey_Home;
+    case KeySymbol::KEY_End:
+      return ConvertedKey_End;
+    case KeySymbol::KEY_Delete:
+      return ConvertedKey_Delete;
+    case KeySymbol::KEY_BackSpace:
+      return ConvertedKey_BackSpace;
+    case KeySymbol::KEY_Return:
+      return ConvertedKey_Enter;
+    case KeySymbol::KEY_Escape:
+      return ConvertedKey_Escape;
+    case KeySymbol::KEY_Control_L:
+      return ConvertedKey_LeftControl;
+    case KeySymbol::KEY_Control_R:
+      return ConvertedKey_RightControl;
+    case KeySymbol::KEY_Shift_L:
+      return ConvertedKey_LeftShift;
+    case KeySymbol::KEY_Shift_R:
+      return ConvertedKey_RightShift;
+    case KeySymbol::KEY_Alt_L:
+      return ConvertedKey_LeftAlt;
+    case KeySymbol::KEY_Alt_R:
+      return ConvertedKey_RightAlt;
+    case KeySymbol::KEY_Super_L:
+      return ConvertedKey_LeftSuper;
+    case KeySymbol::KEY_Super_R:
+      return ConvertedKey_RightSuper;
+    default:
+      return -1;
   }
-#undef OFFSETOF
-
-  // Restore modified state
-  //glDisableClientState(GL_COLOR_ARRAY);
-  //glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-  //glDisableClientState(GL_VERTEX_ARRAY);
-  glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);
-  glMatrixMode(GL_MODELVIEW);
-  glPopMatrix();
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
-  glPopAttrib();
-  glPopClientAttrib();
-  glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
 //==============================================================================
 struct ImGuiNewFrameCallback : public ::osg::Camera::DrawCallback
 {
-  ImGuiNewFrameCallback(ImGuiHandler& handler) : mHandler(handler)
+  ImGuiNewFrameCallback(ImGuiHandler* handler) : mHandler(handler)
   {
     // Do nothing
   }
 
   virtual void operator()(::osg::RenderInfo& renderInfo) const
   {
-    mHandler.newFrame(renderInfo);
+    mHandler->newFrame(renderInfo);
   }
 
 private:
-  ImGuiHandler& mHandler;
+  ::osg::ref_ptr<ImGuiHandler> mHandler;
 };
 
 //==============================================================================
 struct ImGuiDrawCallback : public ::osg::Camera::DrawCallback
 {
-  ImGuiDrawCallback(ImGuiHandler& handler) : mHandler(handler)
+  ImGuiDrawCallback(ImGuiHandler* handler) : mHandler(handler)
   {
     // Do nothing
   }
 
   virtual void operator()(::osg::RenderInfo& renderInfo) const
   {
-    mHandler.render(renderInfo);
+    mHandler->render(renderInfo);
   }
 
 private:
-  ImGuiHandler& mHandler;
+  ::osg::ref_ptr<ImGuiHandler> mHandler;
 };
 
 //==============================================================================
 ImGuiHandler::ImGuiHandler()
-  : mTime{0.0f},
-    mMousePressed{false, false, false},
-    mMouseWheel{0.0f},
-    mFontTexture{0u}
+  : mTime{0.0}, mMousePressed{false, false, false}, mMouseWheel{0.0f}
 {
   ImGui::CreateContext();
+
+  ImGui::StyleColorsDark();
+
+  ImGui_ImplOpenGL2_Init();
+
+  // Keyboard mapping. ImGui will use those indices to peek into the
+  // io.KeyDown[] array.
+  ImGuiIO& io = ImGui::GetIO();
+  io.KeyMap[ImGuiKey_Tab] = ConvertedKey_Tab;
+  io.KeyMap[ImGuiKey_LeftArrow] = ConvertedKey_Left;
+  io.KeyMap[ImGuiKey_RightArrow] = ConvertedKey_Right;
+  io.KeyMap[ImGuiKey_UpArrow] = ConvertedKey_Up;
+  io.KeyMap[ImGuiKey_DownArrow] = ConvertedKey_Down;
+  io.KeyMap[ImGuiKey_PageUp] = ConvertedKey_PageUp;
+  io.KeyMap[ImGuiKey_PageDown] = ConvertedKey_PageDown;
+  io.KeyMap[ImGuiKey_Home] = ConvertedKey_Home;
+  io.KeyMap[ImGuiKey_End] = ConvertedKey_End;
+  io.KeyMap[ImGuiKey_Delete] = ConvertedKey_Delete;
+  io.KeyMap[ImGuiKey_Backspace] = ConvertedKey_BackSpace;
+  io.KeyMap[ImGuiKey_Enter] = ConvertedKey_Enter;
+  io.KeyMap[ImGuiKey_Escape] = ConvertedKey_Escape;
+  io.KeyMap[ImGuiKey_A] = osgGA::GUIEventAdapter::KeySymbol::KEY_A;
+  io.KeyMap[ImGuiKey_C] = osgGA::GUIEventAdapter::KeySymbol::KEY_C;
+  io.KeyMap[ImGuiKey_V] = osgGA::GUIEventAdapter::KeySymbol::KEY_V;
+  io.KeyMap[ImGuiKey_X] = osgGA::GUIEventAdapter::KeySymbol::KEY_X;
+  io.KeyMap[ImGuiKey_Y] = osgGA::GUIEventAdapter::KeySymbol::KEY_Y;
+  io.KeyMap[ImGuiKey_Z] = osgGA::GUIEventAdapter::KeySymbol::KEY_Z;
 }
 
 //==============================================================================
-void ImGuiHandler::init()
+ImGuiHandler::~ImGuiHandler()
 {
-  ImGuiIO& io = ImGui::GetIO();
-
-  // Build texture atlas
-  unsigned char* pixels;
-  int width, height;
-  io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
-
-  // Create OpenGL texture
-  GLint last_texture;
-  glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-  glGenTextures(1, &mFontTexture);
-  glBindTexture(GL_TEXTURE_2D, mFontTexture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D,
-               0,
-               GL_ALPHA,
-               width,
-               height,
-               0,
-               GL_ALPHA,
-               GL_UNSIGNED_BYTE,
-               pixels);
-
-  // Store our identifier
-  io.Fonts->TexID = (void*)(intptr_t)mFontTexture;
-
-  // Cleanup (don't clear the input data if you want to append new fonts later)
-  io.Fonts->ClearInputData();
-  io.Fonts->ClearTexData();
-  glBindTexture(GL_TEXTURE_2D, last_texture);
-
-  io.RenderDrawListsFn = ImGui_RenderDrawLists;
+  // Do nothing
 }
 
 //==============================================================================
@@ -222,10 +221,10 @@ void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
   if (nullptr == camera)
     return;
 
-  ImGuiDrawCallback* postDrawCallback = new ImGuiDrawCallback(*this);
+  ImGuiDrawCallback* postDrawCallback = new ImGuiDrawCallback(this);
   camera->setPostDrawCallback(postDrawCallback);
 
-  ImGuiNewFrameCallback* preDrawCallback = new ImGuiNewFrameCallback(*this);
+  ImGuiNewFrameCallback* preDrawCallback = new ImGuiNewFrameCallback(this);
   camera->setPreDrawCallback(preDrawCallback);
 }
 
@@ -236,8 +235,8 @@ bool ImGuiHandler::hasWidget(const std::shared_ptr<ImGuiWidget>& widget) const
 }
 
 //==============================================================================
-void ImGuiHandler::addWidget(const std::shared_ptr<ImGuiWidget>& widget,
-                             bool visible)
+void ImGuiHandler::addWidget(
+    const std::shared_ptr<ImGuiWidget>& widget, bool visible)
 {
   if (hasWidget(widget))
   {
@@ -257,13 +256,12 @@ void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
   if (!hasWidget(widget))
   {
     dtwarn << "[ImGuiHandler::removeWidget] Attempting to remove not existing "
-              "widget "
-              "from the viewer. Ignoring this action.";
+              "widget from the viewer. Ignoring this action.\n";
     return;
   }
 
-  mWidgets.erase(std::remove(mWidgets.begin(), mWidgets.end(), widget),
-                 mWidgets.end());
+  mWidgets.erase(
+      std::remove(mWidgets.begin(), mWidgets.end(), widget), mWidgets.end());
 }
 
 //==============================================================================
@@ -273,55 +271,105 @@ void ImGuiHandler::removeAllWidget()
 }
 
 //==============================================================================
-bool ImGuiHandler::handle(const osgGA::GUIEventAdapter& eventAdapter,
-                          osgGA::GUIActionAdapter& /*actionAdapter*/,
-                          ::osg::Object* /*object*/,
-                          ::osg::NodeVisitor* /*nodeVisitor*/)
+bool ImGuiHandler::handle(
+    const osgGA::GUIEventAdapter& eventAdapter,
+    osgGA::GUIActionAdapter& /*actionAdapter*/,
+    ::osg::Object* /*object*/,
+    ::osg::NodeVisitor* /*nodeVisitor*/)
 {
-  const auto wantCapureMouse = ImGui::GetIO().WantCaptureMouse;
-  const auto wantCapureKeyboard = ImGui::GetIO().WantCaptureKeyboard;
+  auto& io = ImGui::GetIO();
+  const auto wantCapureMouse = io.WantCaptureMouse;
+  const auto wantCapureKeyboard = io.WantCaptureKeyboard;
 
   switch (eventAdapter.getEventType())
   {
     case osgGA::GUIEventAdapter::KEYDOWN:
     {
-      auto& io = ImGui::GetIO();
-      const auto c = eventAdapter.getKey();
+      const auto c = eventAdapter.getUnmodifiedKey();
+      const auto special_key = convertFromOSGKey(c);
 
-      if (c > 0 && c < 0x10000)
+      if (special_key > 0)
+      {
+        assert(special_key < 512 && "ImGui KeysDown is an array of 512");
+        assert(
+            special_key > 256
+            && "ASCII stop at 127, but we use the range [257, 511]");
+
+        io.KeysDown[special_key] = true;
+
+        io.KeyCtrl = io.KeysDown[ConvertedKey_LeftControl]
+                     || io.KeysDown[ConvertedKey_RightControl];
+        io.KeyShift = io.KeysDown[ConvertedKey_LeftShift]
+                      || io.KeysDown[ConvertedKey_RightShift];
+        io.KeyAlt = io.KeysDown[ConvertedKey_LeftAlt]
+                    || io.KeysDown[ConvertedKey_RightAlt];
+        io.KeySuper = io.KeysDown[ConvertedKey_LeftSuper]
+                      || io.KeysDown[ConvertedKey_RightSuper];
+      }
+      else if (0 < c && c < 0x10000)
+      {
+        io.KeysDown[c] = true;
         io.AddInputCharacter(static_cast<ImWchar>(c));
+      }
 
       return wantCapureKeyboard;
     }
-    case (osgGA::GUIEventAdapter::PUSH):
+    case osgGA::GUIEventAdapter::KEYUP:
     {
-      auto& io = ImGui::GetIO();
+      const auto c = eventAdapter.getUnmodifiedKey();
+      const auto special_key = convertFromOSGKey(c);
 
-      io.MousePos =
-          ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
+      if (special_key > 0)
+      {
+        assert(special_key < 512 && "ImGui KeysDown is an array of 512");
+        assert(
+            special_key > 256
+            && "ASCII stop at 127, but we use the range [257, 511]");
+
+        io.KeysDown[special_key] = false;
+
+        io.KeyCtrl = io.KeysDown[ConvertedKey_LeftControl]
+                     || io.KeysDown[ConvertedKey_RightControl];
+        io.KeyShift = io.KeysDown[ConvertedKey_LeftShift]
+                      || io.KeysDown[ConvertedKey_RightShift];
+        io.KeyAlt = io.KeysDown[ConvertedKey_LeftAlt]
+                    || io.KeysDown[ConvertedKey_RightAlt];
+        io.KeySuper = io.KeysDown[ConvertedKey_LeftSuper]
+                      || io.KeysDown[ConvertedKey_RightSuper];
+      }
+      else if (0 < c && c < 0x10000)
+      {
+        io.KeysDown[c] = false;
+        io.AddInputCharacter(static_cast<ImWchar>(c));
+      }
+
+      return wantCapureKeyboard;
+    }
+    case osgGA::GUIEventAdapter::PUSH:
+    {
+      io.MousePos
+          = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
       mMousePressed[0] = true;
 
       return wantCapureMouse;
     }
-    case (osgGA::GUIEventAdapter::DRAG):
-    case (osgGA::GUIEventAdapter::MOVE):
+    case osgGA::GUIEventAdapter::DRAG:
+    case osgGA::GUIEventAdapter::MOVE:
     {
-      auto& io = ImGui::GetIO();
-
-      io.MousePos =
-          ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
+      io.MousePos
+          = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
 
       return wantCapureMouse;
     }
-    case (osgGA::GUIEventAdapter::RELEASE):
+    case osgGA::GUIEventAdapter::RELEASE:
     {
       mMousePressed[0] = false;
 
       return wantCapureMouse;
     }
-    case (osgGA::GUIEventAdapter::SCROLL):
+    case osgGA::GUIEventAdapter::SCROLL:
     {
-      float increment = 0.1;
+      constexpr float increment = 0.1f;
 
       switch (eventAdapter.getScrollingMotion())
       {
@@ -349,26 +397,24 @@ bool ImGuiHandler::handle(const osgGA::GUIEventAdapter& eventAdapter,
       return false;
     }
   }
-
-  return false;
 }
 
 //==============================================================================
 void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 {
-  if (!mFontTexture)
-    init();
+  ImGui_ImplOpenGL2_NewFrame();
 
   auto& io = ImGui::GetIO();
   auto* viewport = renderInfo.getCurrentCamera()->getViewport();
 
   io.DisplaySize = ImVec2(viewport->width(), viewport->height());
 
-  const auto currentTime =
-      renderInfo.getView()->getFrameStamp()->getSimulationTime();
+  const auto currentTime
+      = renderInfo.getView()->getFrameStamp()->getSimulationTime();
 
-  io.DeltaTime =
-      mTime > 0.0 ? static_cast<float>(currentTime - mTime) : 1.0f / 60.0f;
+  io.DeltaTime
+      = mTime > 0.0 ? static_cast<float>(currentTime - mTime) : 1.0f / 60.0f;
+  io.DeltaTime = std::max(io.DeltaTime, std::numeric_limits<float>::min());
   mTime = currentTime;
   assert(mTime >= 0.0);
 
@@ -391,6 +437,9 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   }
 
   ImGui::Render();
+
+  auto* drawData = ImGui::GetDrawData();
+  ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 
 } // namespace osg

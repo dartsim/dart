@@ -93,6 +93,32 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
 }
 
 //==============================================================================
+TranslationalJoint2DUniqueProperties& TranslationalJoint2DUniqueProperties::
+operator=(const TranslationalJoint2DUniqueProperties& other)
+{
+  if (this != &other)
+  {
+    switch (other.mPlaneType)
+    {
+      case PlaneType::ARBITRARY:
+        setArbitraryPlane(other.mTransAxes);
+        break;
+      case PlaneType::XY:
+        setXYPlane();
+        break;
+      case PlaneType::YZ:
+        setYZPlane();
+        break;
+      case PlaneType::ZX:
+        setZXPlane();
+        break;
+    }
+  }
+
+  return *this;
+}
+
+//==============================================================================
 void TranslationalJoint2DUniqueProperties::setXYPlane()
 {
   mPlaneType = PlaneType::XY;

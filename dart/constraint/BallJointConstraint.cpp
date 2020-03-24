@@ -29,8 +29,8 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#include <iostream>
 #include "dart/constraint/BallJointConstraint.hpp"
+#include <iostream>
 
 #include "dart/external/odelcpsolver/lcp.h"
 
@@ -41,8 +41,8 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
-BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body,
-                                         const Eigen::Vector3d& _jointPos)
+BallJointConstraint::BallJointConstraint(
+    dynamics::BodyNode* _body, const Eigen::Vector3d& _jointPos)
   : JointConstraint(_body),
     mOffset1(_body->getTransform().inverse() * _jointPos),
     mOffset2(_jointPos),
@@ -56,14 +56,15 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body,
   mOldX[2] = 0.0;
 
   Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
-  mJacobian1.leftCols<3>()  = ssm1;
+  mJacobian1.leftCols<3>() = ssm1;
   mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
 }
 
 //==============================================================================
-BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body1,
-                                         dynamics::BodyNode* _body2,
-                                         const Eigen::Vector3d& _jointPos)
+BallJointConstraint::BallJointConstraint(
+    dynamics::BodyNode* _body1,
+    dynamics::BodyNode* _body2,
+    const Eigen::Vector3d& _jointPos)
   : JointConstraint(_body1, _body2),
     mOffset1(_body1->getTransform().inverse() * _jointPos),
     mOffset2(_body2->getTransform().inverse() * _jointPos),
@@ -78,15 +79,28 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body1,
 
   Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
   Eigen::Matrix3d ssm2 = dart::math::makeSkewSymmetric(-mOffset2);
-  mJacobian1.leftCols<3>()  = ssm1;
+  mJacobian1.leftCols<3>() = ssm1;
   mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
-  mJacobian2.leftCols<3>()  = ssm2;
+  mJacobian2.leftCols<3>() = ssm2;
   mJacobian2.rightCols<3>() = Eigen::Matrix3d::Identity();
 }
 
 //==============================================================================
 BallJointConstraint::~BallJointConstraint()
 {
+}
+
+//==============================================================================
+const std::string& BallJointConstraint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BallJointConstraint::getStaticType()
+{
+  static const std::string name = "BallJointConstraint";
+  return name;
 }
 
 //==============================================================================
@@ -98,12 +112,12 @@ void BallJointConstraint::update()
   // Update Jacobian for body2
   if (mBodyNode2)
   {
-    Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
-                            * mBodyNode2->getTransform();
+    Eigen::Isometry3d T12
+        = mBodyNode1->getTransform().inverse() * mBodyNode2->getTransform();
     Eigen::Vector3d p2 = T12.inverse() * mOffset1;
 
     Eigen::Matrix<double, 3, 6> J2;
-    J2.leftCols<3>()  = math::makeSkewSymmetric(-p2);
+    J2.leftCols<3>() = math::makeSkewSymmetric(-p2);
     J2.rightCols<3>() = Eigen::Matrix3d::Identity();
 
     mJacobian2 = T12.linear() * J2;
@@ -112,8 +126,9 @@ void BallJointConstraint::update()
   // Update position constraint error
   if (mBodyNode2)
   {
-    mViolation = mOffset1 - mBodyNode1->getTransform().inverse()
-                            * mBodyNode2->getTransform() * mOffset2;
+    mViolation = mOffset1
+                 - mBodyNode1->getTransform().inverse()
+                       * mBodyNode2->getTransform() * mOffset2;
   }
   else
   {
@@ -156,7 +171,8 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->b[1] = negativeVel[1] - mViolation[1];
   _lcp->b[2] = negativeVel[2] - mViolation[2];
 
-  //  std::cout << "b: " << _lcp->b[0] << " " << _lcp->b[1] << " " << _lcp->b[2] << " " << std::endl;
+  //  std::cout << "b: " << _lcp->b[0] << " " << _lcp->b[1] << " " << _lcp->b[2]
+  //  << " " << std::endl;
 }
 
 //==============================================================================
@@ -179,13 +195,15 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
         if (mBodyNode2->isReactive())
         {
           mBodyNode1->getSkeleton()->updateBiasImpulse(
-                 mBodyNode1, mJacobian1.row(_index), 
-                 mBodyNode2, -mJacobian2.row(_index));
+              mBodyNode1,
+              mJacobian1.row(_index),
+              mBodyNode2,
+              -mJacobian2.row(_index));
         }
         else
         {
           mBodyNode1->getSkeleton()->updateBiasImpulse(
-                 mBodyNode1, mJacobian1.row(_index));
+              mBodyNode1, mJacobian1.row(_index));
         }
       }
       else
@@ -193,7 +211,7 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
         if (mBodyNode2->isReactive())
         {
           mBodyNode2->getSkeleton()->updateBiasImpulse(
-                 mBodyNode2, -mJacobian2.row(_index));
+              mBodyNode2, -mJacobian2.row(_index));
         }
         else
         {
@@ -209,7 +227,7 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
       {
         mBodyNode1->getSkeleton()->clearConstraintImpulses();
         mBodyNode1->getSkeleton()->updateBiasImpulse(
-              mBodyNode1, mJacobian1.row(_index));
+            mBodyNode1, mJacobian1.row(_index));
         mBodyNode1->getSkeleton()->updateVelocityChange();
       }
 
@@ -217,7 +235,7 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
-              mBodyNode2, -mJacobian2.row(_index));
+            mBodyNode2, -mJacobian2.row(_index));
         mBodyNode2->getSkeleton()->updateVelocityChange();
       }
     }
@@ -228,7 +246,7 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
-         mBodyNode1, mJacobian1.row(_index));
+        mBodyNode1, mJacobian1.row(_index));
     mBodyNode1->getSkeleton()->updateVelocityChange();
   }
 
@@ -241,20 +259,18 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
   assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (std::size_t i = 0; i < mDim; ++i)
-   _vel[i] = 0.0;
+    _vel[i] = 0.0;
 
-  if (mBodyNode1->getSkeleton()->isImpulseApplied()
-      && mBodyNode1->isReactive())
+  if (mBodyNode1->getSkeleton()->isImpulseApplied() && mBodyNode1->isReactive())
   {
     Eigen::Vector3d v1 = mJacobian1 * mBodyNode1->getBodyVelocityChange();
-    // std::cout << "velChange " << mBodyNode1->getBodyVelocityChange() << std::endl;
-    // std::cout << "v1: " << v1 << std::endl;
+    // std::cout << "velChange " << mBodyNode1->getBodyVelocityChange() <<
+    // std::endl; std::cout << "v1: " << v1 << std::endl;
     for (std::size_t i = 0; i < mDim; ++i)
       _vel[i] += v1[i];
   }
 
-  if (mBodyNode2
-      && mBodyNode2->getSkeleton()->isImpulseApplied()
+  if (mBodyNode2 && mBodyNode2->getSkeleton()->isImpulseApplied()
       && mBodyNode2->isReactive())
   {
     Eigen::Vector3d v2 = mJacobian2 * mBodyNode2->getBodyVelocityChange();
@@ -267,8 +283,8 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
   // varaible in ODE
   if (_withCfm)
   {
-    _vel[mAppliedImpulseIndex] += _vel[mAppliedImpulseIndex]
-                                  * mConstraintForceMixing;
+    _vel[mAppliedImpulseIndex]
+        += _vel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 }
 
@@ -307,7 +323,8 @@ void BallJointConstraint::applyImpulse(double* _lambda)
 
   Eigen::Vector3d imp(_lambda[0], _lambda[1], _lambda[2]);
 
-  // std::cout << "lambda: " << _lambda[0] << " " << _lambda[1] << " " << _lambda[2] << std::endl;
+  // std::cout << "lambda: " << _lambda[0] << " " << _lambda[1] << " " <<
+  // _lambda[2] << std::endl;
 
   mBodyNode1->addConstraintImpulse(mJacobian1.transpose() * imp);
 
@@ -395,4 +412,3 @@ bool BallJointConstraint::isActive() const
 
 } // namespace constraint
 } // namespace dart
-

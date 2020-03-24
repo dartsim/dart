@@ -81,7 +81,7 @@ protected:
   dSpaceID mSpaceId;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
+#endif // DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_

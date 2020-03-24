@@ -2,22 +2,30 @@ cmake_minimum_required(VERSION 3.5.1)
 
 project(dart-examples)
 
-add_subdirectory(addDeleteSkels)
-add_subdirectory(atlasSimbicon)
-add_subdirectory(bipedStand)
-add_subdirectory(hardcodedDesign)
-add_subdirectory(hybridDynamics)
-add_subdirectory(jointConstraints)
-add_subdirectory(mixedChain)
-add_subdirectory(operationalSpaceControl)
-add_subdirectory(rigidChain)
-add_subdirectory(rigidCubes)
-add_subdirectory(rigidLoop)
-add_subdirectory(rigidShapes)
-add_subdirectory(simpleFrames)
-add_subdirectory(softBodies)
-add_subdirectory(speedTest)
-add_subdirectory(vehicle)
-add_subdirectory(humanJointLimits)
+# None GUI examples
+add_subdirectory(hello_world)
+add_subdirectory(speed_test)
 
-add_subdirectory(osgExamples)
+# OSG renderer examples
+add_subdirectory(atlas_puppet)
+add_subdirectory(atlas_simbicon)
+add_subdirectory(biped_stand)
+add_subdirectory(box_stacking)
+add_subdirectory(drag_and_drop)
+add_subdirectory(empty)
+add_subdirectory(heightmap)
+add_subdirectory(hubo_puppet)
+add_subdirectory(imgui)
+add_subdirectory(operational_space_control)
+if(HAVE_OCTOMAP)
+  add_subdirectory(point_cloud)
+endif()
+add_subdirectory(soft_bodies)
+add_subdirectory(tinkertoy)
+add_subdirectory(wam_ikfast)
+
+# MJCF model based examples
+add_subdirectory(fetch)
+
+# Deprecated examples
+add_subdirectory(deprecated_examples)

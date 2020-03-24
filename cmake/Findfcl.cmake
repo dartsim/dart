@@ -13,9 +13,6 @@
 #   FCL_INCLUDE_DIRS
 #   FCL_LIBRARIES
 #   FCL_VERSION
-#
-# and the following targets:
-#   fcl
 
 find_package(PkgConfig QUIET)
 
@@ -23,21 +20,15 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_FCL fcl QUIET)
 
 # Include directories
-if(PC_FCL_VERSION VERSION_LESS 0.6.0)
-  find_path(FCL_INCLUDE_DIRS
-      NAMES fcl/collision.h
-      HINTS ${PC_FCL_INCLUDEDIR}
-      PATHS "${CMAKE_INSTALL_PREFIX}/include")
-else()
-  find_path(FCL_INCLUDE_DIRS
-      NAMES fcl/narrowphase/collision.h
-      HINTS ${PC_FCL_INCLUDEDIR}
-      PATHS "${CMAKE_INSTALL_PREFIX}/include")
-endif()
+find_path(FCL_INCLUDE_DIRS
+    NAMES fcl/collision.h  # for FCL < 0.6
+    NAMES fcl/narrowphase/collision.h
+    HINTS ${PC_FCL_INCLUDEDIR}
+    PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
 # Libraries
 if(MSVC)
-  set(FCL_LIBRARIES optimized fcl debug fcld)
+  set(FCL_LIBRARIES "fcl$<$<CONFIG:Debug>:d>")
 else()
   # Give explicit precedence to ${PC_FCL_LIBDIR}
   find_library(FCL_LIBRARIES

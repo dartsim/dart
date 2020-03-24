@@ -33,8 +33,8 @@
 #ifndef DART_GUI_OSG_MOUSEEVENTHANDLER_HPP_
 #define DART_GUI_OSG_MOUSEEVENTHANDLER_HPP_
 
-#include "dart/common/Subject.hpp"
 #include "dart/common/Observer.hpp"
+#include "dart/common/Subject.hpp"
 
 #include "dart/gui/osg/DefaultEventHandler.hpp"
 
@@ -48,25 +48,24 @@ class MouseEventHandler : public virtual dart::common::Subject,
                           public virtual dart::common::Observer
 {
 public:
-
   friend class DefaultEventHandler;
 
-  inline MouseEventHandler() : mEventHandler(nullptr) { }
+  inline MouseEventHandler() : mEventHandler(nullptr)
+  {
+  }
 
   /// Overload this function to set behavior that will get triggered during a
   /// mouse event
   virtual void update() = 0;
 
 protected:
-
   void handleDestructionNotification(const Subject* _subject) override
   {
-    if(mEventHandler == _subject)
+    if (mEventHandler == _subject)
       delete this;
   }
 
   DefaultEventHandler* mEventHandler;
-
 };
 
 } // namespace osg

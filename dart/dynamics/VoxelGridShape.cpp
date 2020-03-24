@@ -34,8 +34,8 @@
 
 #if HAVE_OCTOMAP
 
-#include "dart/common/Console.hpp"
-#include "dart/math/Helpers.hpp"
+#  include "dart/common/Console.hpp"
+#  include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -43,23 +43,35 @@ namespace dynamics {
 namespace {
 
 //==============================================================================
-octomap::point3d toPoint3d(const Eigen::Vector3d& point)
+octomap::point3d toPoint3f(const Eigen::Vector3f& point)
 {
   return octomap::point3d(point.x(), point.y(), point.z());
 }
 
 //==============================================================================
-octomath::Quaternion toQuaternion(const Eigen::Matrix3d& rotation)
+octomap::point3d toPoint3d(const Eigen::Vector3d& point)
 {
-  Eigen::Quaterniond quat(rotation);
+  return toPoint3f(point.cast<float>());
+}
+
+//==============================================================================
+octomath::Quaternion toQuaternionf(const Eigen::Matrix3f& rotation)
+{
+  Eigen::Quaternionf quat(rotation);
   return octomath::Quaternion(quat.w(), quat.x(), quat.y(), quat.z());
+}
+
+//==============================================================================
+octomath::Quaternion toQuaterniond(const Eigen::Matrix3d& rotation)
+{
+  return toQuaternionf(rotation.cast<float>());
 }
 
 //==============================================================================
 octomap::pose6d toPose6d(const Eigen::Isometry3d& frame)
 {
   return octomap::pose6d(
-      toPoint3d(frame.translation()), toQuaternion(frame.linear()));
+      toPoint3d(frame.translation()), toQuaterniond(frame.linear()));
 }
 
 } // namespace
@@ -68,6 +80,8 @@ octomap::pose6d toPose6d(const Eigen::Isometry3d& frame)
 VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 {
   setOctree(fcl_make_shared<octomap::OcTree>(resolution));
+
+  mVariance = DYNAMIC_ELEMENTS;
 }
 
 //==============================================================================
@@ -194,6 +208,12 @@ Eigen::Matrix3d VoxelGridShape::computeInertia(double /*mass*/) const
   // TODO(JS): Not implemented. Do we really want to compute inertia out of
   // voxels?
   return Eigen::Matrix3d::Identity();
+}
+
+//==============================================================================
+void VoxelGridShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
+{
+  incrementVersion();
 }
 
 //==============================================================================

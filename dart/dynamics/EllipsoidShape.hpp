@@ -106,7 +106,7 @@ private:
   Eigen::Vector3d mDiameters;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_ELLIPSOIDSHAPE_HPP_
+#endif // DART_DYNAMICS_ELLIPSOIDSHAPE_HPP_

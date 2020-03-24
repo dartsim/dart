@@ -45,13 +45,14 @@ using namespace dynamics;
 //==============================================================================
 void createAndDestroyFrames(int threadNum)
 {
-  for(std::size_t i=0; i < 100; ++i)
+  for (std::size_t i = 0; i < 100; ++i)
   {
     EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
     EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
 
-    SimpleFrame someFrame(Frame::World(),
-                          "Frame_"+std::to_string(threadNum)+std::to_string(i));
+    SimpleFrame someFrame(
+        Frame::World(),
+        "Frame_" + std::to_string(threadNum) + std::to_string(i));
 
     EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
     EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
@@ -63,11 +64,11 @@ TEST(Concurrency, FrameDeletion)
 {
   // Regression test for issue #576
   std::vector<std::future<void>> futures;
-  for(std::size_t i=0; i < 10; ++i)
-    futures.push_back(std::async(std::launch::async,
-                                 &createAndDestroyFrames, i));
+  for (std::size_t i = 0; i < 10; ++i)
+    futures.push_back(
+        std::async(std::launch::async, &createAndDestroyFrames, i));
 
-  for(std::size_t i=0; i < futures.size(); ++i)
+  for (std::size_t i = 0; i < futures.size(); ++i)
   {
     EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
     EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
