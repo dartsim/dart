@@ -26,18 +26,6 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: disco_gcc_debug
-  timeoutInMinutes: 120
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    COMPILER: gcc
-    BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-disco
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
-
 - job: eoan_gcc_debug
   timeoutInMinutes: 120
   pool:
@@ -47,6 +35,18 @@ jobs:
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-eoan
+  steps:
+  - template: .ci/azure-pipelines/docker.yml
+
+- job: focal_gcc_debug
+  timeoutInMinutes: 120
+  pool:
+    vmImage: 'ubuntu-16.04'
+  variables:
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    BUILD_DIR: $(Build.SourcesDirectory)
+    DOCKERFILE: Dockerfile.ubuntu-focal
   steps:
   - template: .ci/azure-pipelines/docker.yml
 

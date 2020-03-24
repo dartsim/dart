@@ -66,7 +66,7 @@ if [ $(lsb_release -sc) = "xenial" ] || [ $(lsb_release -sc) = "bionic" ]; then
     liboctomap-dev \
     libode-dev \
     clang-format-6.0
-elif [ $(lsb_release -sc) = "cosmic" ] || [ $(lsb_release -sc) = "disco" ] || [ $(lsb_release -sc) = "eoan" ]; then
+elif [ $(lsb_release -sc) = "eoan" ] || [ $(lsb_release -sc) = "focal" ]; then
   apt-get install -y --no-install-recommends \
     libnlopt-cxx-dev \
     liboctomap-dev \
@@ -93,7 +93,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
     make -j4
     make install
     cd ../..
-  elif [ $(lsb_release -sc) = "cosmic" ] || [ $(lsb_release -sc) = "disco" ] || [ $(lsb_release -sc) = "eoan" ]; then
+  elif [ $(lsb_release -sc) = "eoan" ] || [ $(lsb_release -sc) = "focal" ]; then
     apt-get -y install pybind11-dev python3 libpython3-dev python3-pytest \
       python3-distutils
   else
