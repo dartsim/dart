@@ -52,6 +52,7 @@
   do                                                                           \
   {                                                                            \
   } while (0)
+// do {} while (0) is to require semicolon after the macro
 
 //==============================================================================
 #define EXPECT_MATRIX_DOUBLE_EQ(mat1, mat2)                                    \
