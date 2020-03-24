@@ -48,7 +48,10 @@
        << "  Expected: " << vec1.transpose() << "\n"                           \
        << "  Actual  : " << vec2.transpose() << "\n";                          \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 //==============================================================================
 #define EXPECT_MATRIX_DOUBLE_EQ(mat1, mat2)                                    \
@@ -61,7 +64,10 @@
        << "  Actual  :\n"                                                      \
        << "  " << mat2.matrix() << "\n";                                       \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 //==============================================================================
 #define EXPECT_ROTATION_DOUBLE_EQ(rot1, rot2)                                  \
@@ -74,7 +80,10 @@
        << "  Actual  :\n"                                                      \
        << "  " << rot2 << "\n";                                                \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 //==============================================================================
 #define EXPECT_TRANSFORM_DOUBLE_EQ(tf1, tf2)                                   \
@@ -87,7 +96,10 @@
        << "  Actual  :\n"                                                      \
        << "  " << tf2.matrix() << "\n";                                        \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 //==============================================================================
 #define EXPECT_VECTOR_NEAR(vec1, vec2, abs_error)                              \
@@ -100,7 +112,10 @@
        << vec2.transpose() << "\n"                                             \
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 //==============================================================================
 #define EXPECT_MATRIX_NEAR(mat1, mat2, abs_error)                              \
@@ -113,7 +128,10 @@
        << mat2.matrix() << "\n"                                                \
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 //==============================================================================
 #define EXPECT_ROTATION_NEAR(rot1, rot2, abs_error)                            \
@@ -126,7 +144,10 @@
        << rot2 << "\n"                                                         \
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 //==============================================================================
 #define EXPECT_TRANSFORM_NEAR(tf1, tf2, abs_error)                             \
@@ -139,7 +160,10 @@
        << tf2.matrix() << "\n"                                                 \
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
-  }
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
 
 namespace dart {
 namespace test {

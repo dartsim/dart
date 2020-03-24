@@ -587,8 +587,6 @@ void check_world_values(
 
     EXPECT_VECTOR_NEAR(
         T->getLinearAcceleration(), F->getLinearAcceleration(), tolerance);
-
-    EXPECT_VECTOR_NEAR(
   }
 }
 
@@ -641,6 +639,7 @@ void check_values(
     EXPECT_VECTOR_NEAR(
         T->getAngularAcceleration(relativeTo, inCoordinatesOf),
         F->getAngularAcceleration(relativeTo, inCoordinatesOf),
+        tolerance);
   }
 }
 
@@ -726,18 +725,9 @@ void check_offset_computations(
     Eigen::Vector3d v_FO_actual
         = F->getLinearVelocity(offset_F, relativeTo, inCoordinatesOf);
 
-    Eigen::Vector3d v_TO_actual
-        = T->getLinearVelocity(offset_T, relativeTo, inCoordinatesOf);
-    Eigen::Vector3d v_FO_actual
-        = F->getLinearVelocity(offset_F, relativeTo, inCoordinatesOf);
-
     EXPECT_VECTOR_NEAR(v_TO, v_FO, tolerance);
     EXPECT_VECTOR_NEAR(v_TO, v_TO_actual, tolerance);
-
-    Eigen::Vector3d a_TO_actual
-        = T->getLinearAcceleration(offset_T, relativeTo, inCoordinatesOf);
-    Eigen::Vector3d a_FO_actual
-        = F->getLinearAcceleration(offset_F, relativeTo, inCoordinatesOf);
+    EXPECT_VECTOR_NEAR(v_FO, v_FO_actual, tolerance);
 
     Eigen::Vector3d a_TO_actual
         = T->getLinearAcceleration(offset_T, relativeTo, inCoordinatesOf);
