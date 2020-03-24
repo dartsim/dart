@@ -107,7 +107,7 @@
   if (!::dart::test::equals(vec1, vec2, abs_error))                            \
   {                                                                            \
     std::stringstream ss;                                                      \
-    ss << "The element wise difference between:\n"                             \
+    ss << "The element-wise difference between:\n"                             \
        << vec1.transpose() << "\n"                                             \
        << "and\n"                                                              \
        << vec2.transpose() << "\n"                                             \
@@ -123,7 +123,7 @@
   if (!::dart::test::equals(mat1, mat2, abs_error))                            \
   {                                                                            \
     std::stringstream ss;                                                      \
-    ss << "The element wise difference between:\n"                             \
+    ss << "The element-wise difference between:\n"                             \
        << mat1.matrix() << "\n"                                                \
        << "and\n"                                                              \
        << mat2.matrix() << "\n"                                                \
