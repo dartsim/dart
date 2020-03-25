@@ -32,6 +32,8 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
+
+#include "GTestUtils.hpp"
 #include "TestHelpers.hpp"
 
 #include "dart/dart.hpp"
@@ -78,13 +80,12 @@ TEST(SkelParser, DataStructure)
   EXPECT_EQ(valFloat, toFloat(strFloat));
   EXPECT_EQ(valDouble, toDouble(strDouble));
   EXPECT_EQ(valChar, toChar(strChar));
-  EXPECT_TRUE(equals(valVector2d, toVector2d(strVector2d)));
-  EXPECT_TRUE(equals(valVector3d, toVector3d(strVector3d)));
-  EXPECT_EQ(valVector3i, toVector3i(strVector3i));
-  EXPECT_TRUE(equals(valVector6d, toVector6d(strVector6d)));
-  EXPECT_TRUE(equals(valVectorXd, toVectorXd(strVectorXd)));
-  EXPECT_TRUE(
-      equals(valIsometry3d.matrix(), toIsometry3d(strIsometry3d).matrix()));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector2d, toVector2d(strVector2d));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector3d, toVector3d(strVector3d));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector3i, toVector3i(strVector3i));
+  EXPECT_VECTOR_DOUBLE_EQ(valVector6d, toVector6d(strVector6d));
+  EXPECT_VECTOR_DOUBLE_EQ(valVectorXd, toVectorXd(strVectorXd));
+  EXPECT_TRANSFORM_DOUBLE_EQ(valIsometry3d, toIsometry3d(strIsometry3d));
 }
 
 //==============================================================================
@@ -97,7 +98,7 @@ TEST(SkelParser, EmptyWorld)
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), 0);
   EXPECT_EQ(world->getGravity()(2), -9.81);
-  EXPECT_EQ((int)world->getNumSkeletons(), 0);
+  EXPECT_EQ(world->getNumSkeletons(), 0);
 
   EXPECT_EQ(world->getTime(), 0);
   world->step();
@@ -115,11 +116,11 @@ TEST(SkelParser, SinglePendulum)
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
-  EXPECT_EQ(static_cast<int>(world->getNumSkeletons()), 1);
+  EXPECT_EQ(world->getNumSkeletons(), 1);
 
   SkeletonPtr skel1 = world->getSkeleton("single_pendulum");
 
-  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 1);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 1);
 
   world->step();
 }
@@ -135,11 +136,11 @@ TEST(SkelParser, SerialChain)
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
-  EXPECT_EQ(static_cast<int>(world->getNumSkeletons()), 1);
+  EXPECT_EQ(world->getNumSkeletons(), 1);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
-  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 10);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 10);
 
   world->step();
 }
@@ -172,12 +173,12 @@ TEST(SkelParser, RigidAndSoftBodies)
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
   EXPECT_TRUE(skel1 != nullptr);
-  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 2);
-  EXPECT_EQ(static_cast<int>(skel1->getNumRigidBodyNodes()), 1);
-  EXPECT_EQ(static_cast<int>(skel1->getNumSoftBodyNodes()), 1);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 2);
+  EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1);
+  EXPECT_EQ(skel1->getNumSoftBodyNodes(), 1);
 
   SoftBodyNode* sbn = skel1->getSoftBodyNode(0);
-  EXPECT_TRUE(static_cast<int>(sbn->getNumPointMasses()) > 0);
+  EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
   world->step();
 }

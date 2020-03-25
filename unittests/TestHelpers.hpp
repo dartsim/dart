@@ -49,6 +49,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/simulation/World.hpp"
+#include "GTestUtils.hpp"
 
 using namespace Eigen;
 using namespace dart::math;
@@ -63,47 +64,20 @@ enum TypeOfDOF
 };
 
 //==============================================================================
-/// Returns true if the two matrices are equal within the given bound
+// Deprecated. Use dart::test::equals() instead.
 template <class MATRIX>
 bool equals(const Eigen::DenseBase<MATRIX>& _expected,
             const Eigen::DenseBase<MATRIX>& _actual, double tol = 1e-5)
 {
-  // Get the matrix sizes and sanity check the call
-  const size_t n1 = _expected.cols(), m1 = _expected.rows();
-  const size_t n2 = _actual.cols(), m2 = _actual.rows();
-  if (m1 != m2 || n1 != n2)
-      return false;
-
-  // Check each index
-  for (size_t i = 0; i < m1; i++)
-  {
-    for (size_t j = 0; j < n1; j++)
-    {
-      if (std::isnan(_expected(i,j)) ^ std::isnan(_actual(i,j)))
-        return false;
-      else if (fabs(_expected(i,j)) > 1)
-      {
-        // Test relative error for values that are larger than 1
-        if (fabs( (_expected(i,j) - _actual(i,j))/_expected(i,j) ) > tol)
-          return false;
-      }
-      else if (fabs(_expected(i,j) - _actual(i,j)) > tol)
-          return false;
-    }
-  }
-
-  // If no problems, the two matrices are equal
-  return true;
+  return dart::test::equals(_expected, _actual, tol);
 }
 
 //==============================================================================
+// Deprecated. Use dart::test::equals() instead.
 bool equals(const Eigen::Isometry3d& tf1,
             const Eigen::Isometry3d& tf2, double tol = 1e-5)
 {
-  auto se3 = dart::math::logMap(tf1.inverse()*tf2);
-  auto norm = se3.norm();
-
-  return (norm < tol);
+  return dart::test::equals(tf1, tf2, tol);
 }
 
 //==============================================================================
