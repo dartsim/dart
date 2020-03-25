@@ -69,45 +69,8 @@ jobs:
       run: |
         docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
 
-  disco_gcc_release:
-    name: Ubuntu 18.10 [GCC|Release]
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-bionic
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
-
-  disco_gcc_dartpy_release:
-    name: Ubuntu 18.10 [GCC|dartpy|Release]
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-disco
-        BUILD_DARTPY: ON
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
-
   eoan_gcc_release:
-    name: Ubuntu 19.04 [GCC|Release]
+    name: Ubuntu 19.10 [GCC|Release]
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
@@ -125,7 +88,7 @@ jobs:
         docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
 
   eoan_gcc_dartpy_release:
-    name: Ubuntu 19.04 [GCC|dartpy|Release]
+    name: Ubuntu 19.10 [GCC|dartpy|Release]
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
@@ -143,9 +106,46 @@ jobs:
       run: |
         docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
 
+  focal_gcc_release:
+    name: Ubuntu 20.04 [GCC|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-focal
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
+  focal_gcc_dartpy_release:
+    name: Ubuntu 20.04 [GCC|dartpy|Release]
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      env:
+        COMPILER: gcc
+        DOCKERFILE: Dockerfile.ubuntu-focal
+        BUILD_DARTPY: ON
+        BUILD_TYPE: Release
+      run: |
+        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
+    - name: Build
+      run: |
+        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+
   mojav_clang_release:
-    name: macOS 10.14 [Clang|Release]
-    runs-on: macOS-10.14
+    name: macOS 10.15 [Clang|Release]
+    runs-on: macOS-10.15
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
@@ -159,8 +159,8 @@ jobs:
       run: sudo -E .ci/script.sh
 
   mojav_clang_dartpy_release:
-    name: macOS 10.14 [Clang|dartpy|Release]
-    runs-on: macOS-10.14
+    name: macOS 10.15 [Clang|dartpy|Release]
+    runs-on: macOS-10.15
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
