@@ -53,7 +53,7 @@
   * Fixed typos in Skeleton: [#1392](https://github.com/dartsim/dart/pull/1392)
   * Fixed enabling drag and drop for InteractiveFrame: [#1432](https://github.com/dartsim/dart/pull/1432)
 
-* Build
+* Build and testing
 
   * Fixed compiler warnings from GCC 9.1: [#1366](https://github.com/dartsim/dart/pull/1366)
   * Replaced M_PI with dart::math::constantsd::pi(): [#1367](https://github.com/dartsim/dart/pull/1367)
@@ -61,6 +61,7 @@
   * Removed dependency on Boost::regex: [#1412](https://github.com/dartsim/dart/pull/1412)
   * Added support new if() IN_LIST operator in DARTConfig.cmake: [#1434](https://github.com/dartsim/dart/pull/1434)
   * Updated Findfcl.cmake to support FCL 0.6: [#1441](https://github.com/dartsim/dart/pull/1441)
+  * Added gtest macros for Eigen object comparisons: [#1443](https://github.com/dartsim/dart/pull/1443)
 
 ### [DART 6.9.2 (2019-08-16)](https://github.com/dartsim/dart/milestone/60?closed=1)
 
