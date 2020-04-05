@@ -18,6 +18,10 @@
 
 ### [DART 6.9.0 (2019-05-26)](https://github.com/dartsim/dart/milestone/52?closed=1)
 
+* API Breaking Changes
+
+  * DART 6.9.0 and later require compilers that support C++14.
+
 * Common
 
   * Deprecated custom make_unique in favor of std::make_unique: [#1317](https://github.com/dartsim/dart/pull/1317)
