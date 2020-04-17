@@ -801,6 +801,77 @@ TEST_F(Collision, testCylinderCylinder)
 }
 
 //==============================================================================
+void testConeCone(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto shape1 = std::make_shared<ConeShape>(1.0, 1.0);
+  auto shape2 = std::make_shared<ConeShape>(0.5, 1.0);
+
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+
+//==============================================================================
+TEST_F(Collision, testConeCone)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testCylinderCylinder(fcl_mesh_dart);
+
+  auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  testCylinderCylinder(fcl_mesh_fcl);
+
+  auto fcl_prim_dart = FCLCollisionDetector::create();
+  fcl_prim_dart->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  fcl_prim_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testCylinderCylinder(fcl_prim_dart);
+
+  auto fcl_prim_fcl = FCLCollisionDetector::create();
+  fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  testCylinderCylinder(fcl_prim_fcl);
+
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  testCylinderCylinder(ode);
+#endif
+
+#if HAVE_BULLET
+  auto bullet = BulletCollisionDetector::create();
+  testCylinderCylinder(bullet);
+#endif
+
+  // auto dart = DARTCollisionDetector::create();
+  // testCylinderCylinder(dart);
+}
+
+//==============================================================================
 void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
