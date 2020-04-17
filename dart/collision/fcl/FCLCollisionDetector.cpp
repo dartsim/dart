@@ -48,6 +48,7 @@
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -488,6 +489,53 @@ template <class BV>
 }
 
 //==============================================================================
+template <typename BV>
+::fcl::BVHModel<BV>* createPyramid(
+    const dynamics::PyramidShape& shape, const fcl::Transform3& pose)
+{
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
+
+  std::vector<fcl::Vector3> points(5);
+  std::vector<fcl::Triangle> faces(6);
+
+  const double w = shape.getBaseWidth();
+  const double d = shape.getBaseDepth();
+  const double h = shape.getHeight();
+
+  const double hTop = h / 2;
+  const double hBottom = -hTop;
+  const double left = -w / 2;
+  const double right = w / 2;
+  const double front = -d / 2;
+  const double back = d / 2;
+
+  points[0].setValue(0, 0, hTop);
+  points[1].setValue(right, back, hBottom);
+  points[2].setValue(left, back, hBottom);
+  points[3].setValue(left, front, hBottom);
+  points[4].setValue(right, front, hBottom);
+
+  faces[0].set(0, 1, 2);
+  faces[1].set(0, 2, 3);
+  faces[2].set(0, 3, 4);
+  faces[3].set(0, 4, 1);
+  faces[4].set(1, 3, 2);
+  faces[5].set(1, 4, 3);
+
+  for (unsigned int i = 0; i < points.size(); ++i)
+  {
+    points[i] = pose.transform(points[i]);
+  }
+
+  model->beginModel();
+  model->addSubModel(points, faces);
+  model->endModel();
+  model->computeLocalAABB();
+
+  return model;
+}
+
+//==============================================================================
 template <class BV>
 ::fcl::BVHModel<BV>* createMesh(
     float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
@@ -837,6 +885,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::EllipsoidShape;
   using dynamics::MeshShape;
   using dynamics::PlaneShape;
+  using dynamics::PyramidShape;
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
@@ -941,6 +990,14 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
       geom = fclMesh;
     }
+  }
+  else if (PyramidShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const PyramidShape*>(shape.get()));
+
+    const auto pyramid = std::static_pointer_cast<const PyramidShape>(shape);
+    // Use mesh since FCL doesn't support pyramid shape.
+    geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::Transform3());
   }
   else if (PlaneShape::getStaticType() == shapeType)
   {

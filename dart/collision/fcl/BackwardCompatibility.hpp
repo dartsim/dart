@@ -122,6 +122,7 @@ namespace fcl {
 using Vector3 = ::fcl::Vector3<double>;
 using Matrix3 = ::fcl::Matrix3<double>;
 using Transform3 = ::fcl::Transform3<double>;
+using Triangle = ::fcl::Triangle<double>;
 // Geometric primitives
 using Box = ::fcl::Box<double>;
 using Cylinder = ::fcl::Cylinder<double>;
@@ -148,6 +149,7 @@ using Contact = ::fcl::Contact<double>;
 using Vector3 = ::fcl::Vec3f;
 using Matrix3 = ::fcl::Matrix3f;
 using Transform3 = ::fcl::Transform3f;
+using Triangle = ::fcl::Triangle;
 // Geometric primitives
 using Box = ::fcl::Box;
 using Cylinder = ::fcl::Cylinder;

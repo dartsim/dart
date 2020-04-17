@@ -63,6 +63,8 @@ public:
     CYLINDER,
     CAPSULE,
     CONE,
+    PYRAMID,
+    RECTANGULAR_PYRAMID,
     PLANE,
     MULTISPHERE,
     MESH,

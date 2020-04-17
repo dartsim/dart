@@ -37,7 +37,7 @@
         <skeleton name="box skeleton">
             <body name="box">
                 <gravity>1</gravity>
-                <transformation>-0.4 -0.0 0 1 2 3</transformation>
+                <transformation>-0.6 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -70,7 +70,7 @@
         <skeleton name="sphere skeleton">
             <body name="sphere">
                 <gravity>1</gravity>
-                <transformation>-0.2 -0.0 0 1 2 3</transformation>
+                <transformation>-0.4 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -103,7 +103,7 @@
         <skeleton name="ellipsoid skeleton">
             <body name="ellipsoid">
                 <gravity>1</gravity>
-                <transformation>-0.0 -0.0 0 1 2 3</transformation>
+                <transformation>-0.2 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -136,7 +136,7 @@
         <skeleton name="cylinder skeleton">
             <body name="cylinder">
                 <gravity>1</gravity>
-                <transformation>0.2 -0.0 0 1 2 3</transformation>
+                <transformation>0.0 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -171,7 +171,7 @@
         <skeleton name="capsule skeleton">
             <body name="capsule">
                 <gravity>1</gravity>
-                <transformation>0.4 -0.0 0 1 2 3</transformation>
+                <transformation>0.2 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -206,7 +206,7 @@
         <skeleton name="cone skeleton">
             <body name="cone">
                 <gravity>1</gravity>
-                <transformation>0.6 -0.0 0 1 2 3</transformation>
+                <transformation>0.4 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -235,6 +235,52 @@
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>cone</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="pyramid skeleton">
+            <body name="pyramid">
+                <gravity>1</gravity>
+                <transformation>0.6 -0.0 0 1 2 3</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0</offset>
+                    <!-- MOI is not correct -->
+                    <moment_of_inertia>
+                        <ixx>0.01</ixx>
+                        <iyy>0.01</iyy>
+                        <izz>0.01</izz>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyz>0</iyz>
+                    </moment_of_inertia>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <pyramid>
+                            <base_width>0.05</base_width>
+                            <base_depth>0.1</base_depth>
+                            <height>0.1</height>
+                        </pyramid>
+                    </geometry>
+                    <color>0.6 0.6 0.8</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <pyramid>
+                            <base_width>0.05</base_width>
+                            <base_depth>0.1</base_depth>
+                            <height>0.1</height>
+                        </pyramid>
+                    </geometry>
+                </collision_shape>
+            </body>
+
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>pyramid</child>
             </joint>
         </skeleton>
 
