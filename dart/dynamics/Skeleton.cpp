@@ -2208,6 +2208,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
 #endif // ------- Debug mode
 
+  _newBodyNode->incrementVersion();
   _newBodyNode->mStructuralChangeSignal.raise(_newBodyNode);
 }
 
