@@ -15,6 +15,8 @@ if(TARGET dart-utils-urdf)
 
   dart_add_test("regression" test_Issue1231)
 
+  dart_add_test("regression" test_Issue1445)
+
 endif()
 
 if(TARGET dart-collision-bullet)
