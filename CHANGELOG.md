@@ -1,5 +1,11 @@
 ## DART 6
 
+### [DART 6.9.3 XXXXX]
+
+* Dynamics
+
+  * Update the Properties version of a BodyNode when moved to a new Skeleton: [#1445](https://github.com/dartsim/dart/pull/1445)
+
 ### [DART 6.9.2 (2019-08-16)](https://github.com/dartsim/dart/milestone/60?closed=1)
 
 * Dynamics
