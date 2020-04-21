@@ -129,7 +129,7 @@ void CollisionResult::addObject(CollisionObject* object)
   {
     dterr << "[CollisionResult::addObject] Attempting to add a collision with "
           << "a nullptr object to a CollisionResult instance. This is not "
-          << "allowed. Please report this as a bug!";
+          << "allowed. Please report this as a bug!\n";
     assert(false);
     return;
   }
