@@ -20,4 +20,3 @@ brew 'urdfdom'
 
 # dartpy dependencies
 brew 'pybind11'
-brew 'numpy'
