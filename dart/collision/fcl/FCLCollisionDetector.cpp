@@ -43,6 +43,7 @@
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -831,6 +832,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const FCLCollisionGeometryDeleter& deleter)
 {
   using dynamics::BoxShape;
+  using dynamics::ConeShape;
   using dynamics::CylinderShape;
   using dynamics::EllipsoidShape;
   using dynamics::MeshShape;
@@ -911,6 +913,33 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     else
     {
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
+    }
+  }
+  else if (ConeShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const ConeShape*>(shape.get()));
+
+    const auto cone = std::static_pointer_cast<const ConeShape>(shape);
+    const auto radius = cone->getRadius();
+    const auto height = cone->getHeight();
+
+    if (FCLCollisionDetector::PRIMITIVE == type)
+    {
+      // TODO(JS): We still need to use mesh for cone because FCL 0.4.0
+      // returns single contact point for cone yet. Once FCL support
+      // multiple contact points then above code will be replaced by:
+      // fclCollGeom.reset(new fcl::Cone(radius, height));
+      auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
+      auto fclCone = fcl::Cone(radius, height);
+      ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
+      geom = fclMesh;
+    }
+    else
+    {
+      auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
+      auto fclCone = fcl::Cone(radius, height);
+      ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
+      geom = fclMesh;
     }
   }
   else if (PlaneShape::getStaticType() == shapeType)

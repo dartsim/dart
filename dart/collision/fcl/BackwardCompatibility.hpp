@@ -70,6 +70,7 @@
 
 #  include <fcl/BV/OBBRSS.h>
 #  include <fcl/BVH/BVH_model.h>
+#  include <fcl/shape/geometric_shape_to_BVH_model.h>
 #  include <fcl/collision.h>
 #  include <fcl/collision_data.h>
 #  include <fcl/collision_object.h>
@@ -124,6 +125,7 @@ using Transform3 = ::fcl::Transform3<double>;
 // Geometric primitives
 using Box = ::fcl::Box<double>;
 using Cylinder = ::fcl::Cylinder<double>;
+using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
@@ -149,6 +151,7 @@ using Transform3 = ::fcl::Transform3f;
 // Geometric primitives
 using Box = ::fcl::Box;
 using Cylinder = ::fcl::Cylinder;
+using Cone = ::fcl::Cone;
 using Halfspace = ::fcl::Halfspace;
 using Sphere = ::fcl::Sphere;
 #  if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP

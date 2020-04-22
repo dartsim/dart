@@ -6,6 +6,10 @@
 
   * Removed use of boost::filesystem in public APIs: [#1417](https://github.com/dartsim/dart/pull/1417)
 
+* Collision
+
+  * Add ConeShape support for FCLCollisionDetector: [#1447](https://github.com/dartsim/dart/pull/1447)
+
 * Kinematics
 
   * Added IkFast parameter accessors to IkFast class: [#1396](https://github.com/dartsim/dart/pull/1396)
