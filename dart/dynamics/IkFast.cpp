@@ -34,6 +34,7 @@
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/external/ikfast/ikfast.h"
 
 namespace dart {
@@ -134,14 +135,18 @@ void convertIkSolution(
 
     const auto dofIndex = dofIndices[index];
     const auto* dof = skel->getDof(dofIndex);
+    const auto* joint = dof->getJoint();
 
     auto solutionValue = solutionValues[i];
 
     const auto lb = dof->getPositionLowerLimit();
     const auto ub = dof->getPositionUpperLimit();
 
-    if (dof->isCyclic())
+    if (joint->getType() == RevoluteJoint::getStaticType())
     {
+      // TODO(JS): Apply this to any DegreeOfFreedom whose configuration space
+      // is SO(2).
+
       const auto currentValue = dof->getPosition();
       if (!wrapCyclicSolution(currentValue, lb, ub, solutionValue))
       {
