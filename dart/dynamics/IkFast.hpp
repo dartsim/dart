@@ -254,6 +254,23 @@ private:
   std::array<IkReal, 3> mTargetTranspose;
 };
 
+/// Tries to wrap a single dof IK solution, from IKFast, in the range of joint
+/// limits.
+///
+/// This function shouldn't be used for a non-cyclic DegreeOfFreedom.
+///
+/// If multiple solution are available (when the range is wider than 2*pi),
+/// returns the closest solution to the current joint position.
+///
+/// \param[in] curr The current joint positions before solving IK.
+/// \param[in] lb The lower joint position limit.
+/// \param[in] ub The upper joint position limit.
+/// \param[in,out] sol The IK solution to be wrapped. No assumption that the
+/// value initially in the bounds. This value is only updated if an available
+/// solution is found.
+/// \return True if a solution is found. False, otherwise.
+bool wrapCyclicSolution(double curr, double lb, double ub, double& sol);
+
 } // namespace dynamics
 } // namespace dart
 
