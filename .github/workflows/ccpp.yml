@@ -187,8 +187,8 @@ jobs:
         VCPKG_PACKAGES: 'assimp boost-system boost-filesystem ccd eigen3 fcl'
         # 'dart-utils' needs tinyxml2 and boost algorithm/lexical-cast
         #   and also boost-math to resolve a circular dependency with lexical-cast
-        VCPKG_OPTIONAL_PACKAGES: 'boost-algorithm boost-lexical-cast boost-math bullet3 ode tinyxml2'
-        # VCPKG_OPTIONAL_PACKAGES_NOT_WORKING: 'flann ipopt nlopt osg urdfdom'
+        VCPKG_OPTIONAL_PACKAGES: 'boost-algorithm boost-lexical-cast boost-math bullet3 tinyxml2'
+        # VCPKG_OPTIONAL_PACKAGES_NOT_WORKING: 'flann ipopt nlopt ode osg urdfdom'
       shell: cmd
       run: |
         vcpkg install --recurse --triplet x64-windows %VCPKG_PACKAGES%
