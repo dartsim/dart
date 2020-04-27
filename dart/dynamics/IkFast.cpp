@@ -34,6 +34,7 @@
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/external/ikfast/ikfast.h"
 
 namespace dart {
@@ -132,21 +133,43 @@ void convertIkSolution(
     if (isFreeJoint)
       continue;
 
-    solution.mConfig[index] = solutionValues[i];
-
     const auto dofIndex = dofIndices[index];
+    const auto* dof = skel->getDof(dofIndex);
+    const auto* joint = dof->getJoint();
 
-    if (solutionValues[i] < skel->getDof(dofIndex)->getPositionLowerLimit())
+    auto solutionValue = solutionValues[i];
+
+    const auto lb = dof->getPositionLowerLimit();
+    const auto ub = dof->getPositionUpperLimit();
+
+    if (joint->getType() == RevoluteJoint::getStaticType())
     {
-      limitViolated = true;
-      break;
+      // TODO(JS): Apply this to any DegreeOfFreedom whose configuration space
+      // is SO(2).
+
+      const auto currentValue = dof->getPosition();
+      if (!wrapCyclicSolution(currentValue, lb, ub, solutionValue))
+      {
+        limitViolated = true;
+        break;
+      }
+    }
+    else
+    {
+      if (solutionValues[i] < lb)
+      {
+        limitViolated = true;
+        break;
+      }
+
+      if (solutionValues[i] > ub)
+      {
+        limitViolated = true;
+        break;
+      }
     }
 
-    if (solutionValues[i] > skel->getDof(dofIndex)->getPositionUpperLimit())
-    {
-      limitViolated = true;
-      break;
-    }
+    solution.mConfig[index] = solutionValue;
 
     index++;
   }
@@ -440,6 +463,84 @@ Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
   Eigen::Isometry3d tf;
   convertTransform(eetrans, eerot, tf);
   return tf;
+}
+
+//==============================================================================
+bool wrapCyclicSolution(
+    double currentValue, double lb, double ub, double& solutionValue)
+{
+  if (lb > ub)
+    return false;
+
+  const auto pi2 = math::constantsd::two_pi();
+
+  if (currentValue < lb)
+  {
+    const auto diff_lb = lb - solutionValue;
+    const auto lb_ceil = solutionValue + std::ceil(diff_lb / pi2) * pi2;
+    assert(lb <= lb_ceil);
+    if (lb_ceil <= ub)
+    {
+      solutionValue = lb_ceil;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else if (ub < currentValue)
+  {
+    const auto diff_ub = ub - solutionValue;
+    const auto ub_floor = solutionValue + std::floor(diff_ub / pi2) * pi2;
+    assert(ub_floor <= ub);
+    if (lb <= ub_floor)
+    {
+      solutionValue = ub_floor;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  {
+    const auto diff_curr = currentValue - solutionValue;
+    const auto curr_floor = solutionValue + std::floor(diff_curr / pi2) * pi2;
+    const auto curr_ceil = solutionValue + std::ceil(diff_curr / pi2) * pi2;
+
+    bool found = false;
+
+    if (lb <= curr_floor)
+    {
+      solutionValue = curr_floor;
+      found = true;
+    }
+
+    if (curr_ceil <= ub)
+    {
+      if (found)
+      {
+        if (std::abs(curr_floor - currentValue)
+            > std::abs(curr_ceil - currentValue))
+        {
+          solutionValue = curr_ceil;
+          found = true;
+        }
+      }
+      else
+      {
+        solutionValue = curr_ceil;
+        found = true;
+      }
+    }
+
+    if (!found)
+    {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 } // namespace dynamics
