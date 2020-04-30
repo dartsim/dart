@@ -41,10 +41,27 @@ namespace python {
 void CollisionObject(py::module& m)
 {
   ::py::class_<dart::collision::CollisionObject>(m, "CollisionObject")
-      .def(
+    .def(
+        "getCollisionDetector",
+        +[](dart::collision::CollisionObject* self) -> dart::collision::CollisionDetector* {
+            return self->getCollisionDetector();
+        },
+        ::py::return_value_policy::reference_internal)
+    .def(
+        "getShapeFrame",
+        +[](const dart::collision::CollisionObject* self) -> const dart::dynamics::ShapeFrame* {
+            return self->getShapeFrame();
+        },
+        ::py::return_value_policy::reference_internal)
+        .def(
           "getShape",
           +[](const dart::collision::CollisionObject* self)
-              -> dart::dynamics::ConstShapePtr { return self->getShape(); });
+              -> dart::dynamics::ConstShapePtr { return self->getShape(); })
+        .def("getTransform",
+        +[](const dart::collision::CollisionObject* self) -> const Eigen::Isometry3d& {
+            return self->getTransform();
+        },
+        ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

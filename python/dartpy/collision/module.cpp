@@ -57,6 +57,8 @@ void CollisionGroup(py::module& sm);
 void FCLCollisionGroup(py::module& sm);
 void DARTCollisionGroup(py::module& sm);
 
+void CollisionObject(py::module& sm);
+
 #if HAVE_BULLET
 void BulletCollisionDetector(py::module& sm);
 void BulletCollisionGroup(py::module& sm);
@@ -89,6 +91,8 @@ void dart_collision(py::module& m)
   CollisionGroup(sm);
   FCLCollisionGroup(sm);
   DARTCollisionGroup(sm);
+
+  CollisionObject(sm);
 
 #if HAVE_BULLET
   BulletCollisionDetector(sm);
