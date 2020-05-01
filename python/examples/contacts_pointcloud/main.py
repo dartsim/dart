@@ -16,7 +16,7 @@ class ContactVisualizingNode(dart.gui.osg.RealTimeWorldNode):
 
     Note: Simulation must run for the contacts to be displayed.
 
-     """
+    """
 
     def __init__(self, world, pointCloudShape):
         """
