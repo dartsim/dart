@@ -57,6 +57,7 @@
   * Added bindings for BallJoint::convertToPositions(): [#1408](https://github.com/dartsim/dart/pull/1408)
   * Fixed typos in Skeleton: [#1392](https://github.com/dartsim/dart/pull/1392)
   * Fixed enabling drag and drop for InteractiveFrame: [#1432](https://github.com/dartsim/dart/pull/1432)
+  * Added bindings for pointcloud and contact retrieval: [#1455](https://github.com/dartsim/dart/pull/1455)
 
 * Build and testing
 
