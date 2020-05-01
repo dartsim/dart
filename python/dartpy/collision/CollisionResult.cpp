@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
@@ -47,6 +48,19 @@ void CollisionResult(py::module& m)
           +[](const dart::collision::CollisionResult* self) -> std::size_t {
             return self->getNumContacts();
           })
+      .def(
+          "getContact",
+          +[](dart::collision::CollisionResult* self, std::size_t index)
+              -> dart::collision::Contact& { return self->getContact(index); },
+          ::py::arg("index"),
+          ::py::return_value_policy::reference)
+      .def(
+          "getContacts",
+          +[](const dart::collision::CollisionResult* self)
+              -> const std::vector<dart::collision::Contact>& {
+            return self->getContacts();
+          },
+          ::py::return_value_policy::reference)
       .def(
           "inCollision",
           +[](const dart::collision::CollisionResult* self,
@@ -66,9 +80,9 @@ void CollisionResult(py::module& m)
           +[](const dart::collision::CollisionResult* self) -> bool {
             return self->isCollision();
           })
-      .def("clear", +[](dart::collision::CollisionResult* self) {
-        self->clear();
-      });
+      .def(
+          "clear",
+          +[](dart::collision::CollisionResult* self) { self->clear(); });
 }
 
 } // namespace python
