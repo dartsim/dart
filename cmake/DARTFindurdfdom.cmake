@@ -8,6 +8,18 @@
 
 find_package(urdfdom QUIET CONFIG)
 
+if(MSVC)
+  # Remove invalid path (i.e., /include) from urdfdom_INCLUDE_DIRS. This happens
+  # when it's installed by vcpkg on Windows. See:
+  # - https://github.com/dartsim/dart/issues/1365
+  # - https://github.com/ros/urdfdom/issues/140
+  if ("/include" IN_LIST urdfdom_INCLUDE_DIRS)
+    list(REMOVE_ITEM urdfdom_INCLUDE_DIRS "/include")
+    find_package(TinyXML REQUIRED MODULE)
+    list(APPEND urdfdom_INCLUDE_DIRS ${TinyXML_INCLUDE_DIRS})
+  endif()
+endif()
+
 if(urdfdom_FOUND AND NOT TARGET urdfdom)
   add_library(urdfdom INTERFACE IMPORTED)
   set_target_properties(urdfdom PROPERTIES
