@@ -76,23 +76,16 @@ jobs:
       # Release64:
       #   CONFIGURATION: 'Release'
   variables:
-    VCPKG_INSTALL_ROOT: $(Build.SourcesDirectory)\vcpkg
-    VCPKG_ARCH: 'x64-windows'
-    VCPKG_PACKAGES: 'assimp boost-system boost-filesystem ccd eigen3 fcl'
-    # 'dart-utils' needs tinyxml2 and boost algorithm/lexical-cast
-    #   and also boost-math to resolve a circular dependency with lexical-cast
-    VCPKG_OPTIONAL_PACKAGES: 'boost-algorithm boost-lexical-cast boost-math bullet3 freeglut ode opengl tinyxml2 urdfdom'
-    VCPKG_OPTIONAL_PACKAGES_NOT_WORKING: 'flann ipopt nlopt osg'
+    VCPKG_INSTALL_ROOT: $(Build.SourcesDirectory)\dartsim\vcpkg
+    VCPKG_BUILD_TAG: v0.1.0
     BUILD_TOOLSET_VERSION: '142'
     CMAKE_GENERATOR: 'Visual Studio 16 2019'
   steps:
   - script: |
-      git clone -q --depth 1 https://github.com/microsoft/vcpkg.git $(VCPKG_INSTALL_ROOT)
-      $(VCPKG_INSTALL_ROOT)\bootstrap-vcpkg.bat
-    displayName: 'Install vcpkg'
-  - script: |
-      $(VCPKG_INSTALL_ROOT)\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) $(VCPKG_PACKAGES) $(VCPKG_OPTIONAL_PACKAGES)
-      $(VCPKG_INSTALL_ROOT)\vcpkg.exe integrate install
+      mkdir -p $(Build.SourcesDirectory)\dartsim
+      choco install -y wget
+      wget https://github.com/jslee02/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+      unzip vcpkg-dartsim-dependencies.zip -d $(Build.SourcesDirectory)\dartsim
     displayName: 'Install dependencies'
   - script: |
       cmake --version
