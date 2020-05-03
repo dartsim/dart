@@ -198,9 +198,9 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" \
-          -DDART_MSVC_DEFAULT_OPTIONS=ON \
-          -DDART_VERBOSE=ON \
+        cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+          -DDART_MSVC_DEFAULT_OPTIONS=ON ^
+          -DDART_VERBOSE=ON
         cmake --build . --target ALL_BUILD -- /maxcpucount:4
