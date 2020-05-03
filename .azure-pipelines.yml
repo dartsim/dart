@@ -77,7 +77,7 @@ jobs:
       #   CONFIGURATION: 'Release'
   variables:
     VCPKG_INSTALL_ROOT: $(Build.SourcesDirectory)\dartsim\vcpkg
-    VCPKG_BUILD_TAG: v0.1.0
+    VCPKG_BUILD_TAG: v0.1.1
     BUILD_TOOLSET_VERSION: '142'
     CMAKE_GENERATOR: 'Visual Studio 16 2019'
   steps:

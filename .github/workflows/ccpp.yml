@@ -183,7 +183,7 @@ jobs:
       BUILD_TYPE: Release
       RUN_TESTS: OFF
       VCPKG_ROOT: 'C:/dartsim/vcpkg'
-      VCPKG_BUILD_TAG: v0.1.0
+      VCPKG_BUILD_TAG: v0.1.1
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
