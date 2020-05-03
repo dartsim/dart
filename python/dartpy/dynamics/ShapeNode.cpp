@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -108,7 +109,7 @@ void ShapeNode(py::module& m)
           })
       .def(
           "getBodyNodePtr",
-          +[](dart::dynamics::ShapeNode* self) -> dart::dynamics::BodyNode*{
+          +[](dart::dynamics::ShapeNode* self) -> dart::dynamics::BodyNode* {
             return self->getBodyNodePtr().get();
           },
           ::py::return_value_policy::reference_internal)
