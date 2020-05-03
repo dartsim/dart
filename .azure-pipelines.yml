@@ -84,7 +84,7 @@ jobs:
   - script: |
       mkdir -p $(Build.SourcesDirectory)\dartsim
       choco install -y wget
-      wget https://github.com/jslee02/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+      wget https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
       unzip vcpkg-dartsim-dependencies.zip -d $(Build.SourcesDirectory)\dartsim
     displayName: 'Install dependencies'
   - script: |
