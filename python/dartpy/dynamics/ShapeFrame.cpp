@@ -134,9 +134,28 @@ void ShapeFrame(py::module& m)
       DARTPY_DEFINE_SPECIALIZED_ASPECT(CollisionAspect)
       DARTPY_DEFINE_SPECIALIZED_ASPECT(DynamicsAspect)
       // clang-format on
-      .def("isShapeNode", +[](const dart::dynamics::ShapeFrame* self) -> bool {
-        return self->isShapeNode();
-      });
+      .def(
+          "isShapeNode",
+          +[](const dart::dynamics::ShapeFrame* self) -> bool {
+            return self->isShapeNode();
+          })
+      .def(
+          "asShapeNode",
+          +[](dart::dynamics::ShapeFrame* self) -> dart::dynamics::ShapeNode* {
+            return self->asShapeNode();
+          },
+          ::py::return_value_policy::reference,
+          "Convert to a ShapeNode pointer if ShapeFrame is a ShapeNode, "
+          "otherwise return None.")
+      .def(
+          "asShapeNode",
+          +[](const dart::dynamics::ShapeFrame* self)
+              -> const dart::dynamics::ShapeNode* {
+            return self->asShapeNode();
+          },
+          ::py::return_value_policy::reference,
+          "Convert to a ShapeNode pointer if ShapeFrame is a ShapeNode, "
+          "otherwise return None.");
 
   ::py::class_<dart::dynamics::VisualAspect>(m, "VisualAspect")
       .def(::py::init<>())

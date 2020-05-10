@@ -45,6 +45,7 @@ void ShapeNode(py::module& m)
 {
   ::py::class_<
       dart::dynamics::ShapeNode,
+      dart::dynamics::JacobianNode,
       dart::dynamics::ShapeFrame,
       std::shared_ptr<dart::dynamics::ShapeNode>>(m, "ShapeNode")
       .def(

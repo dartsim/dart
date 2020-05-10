@@ -68,6 +68,83 @@ def test_collision_groups():
         collision_groups_tester(cd)
 
 
+# TODO: Add more collision detectors
+@pytest.mark.parametrize("cd", [dart.collision.FCLCollisionDetector()])
+def test_filter(cd):
+    # Create two bodies skeleton. The two bodies are placed at the same position
+    # with the same size shape so that they collide by default.
+    skel = dart.dynamics.Skeleton()
+
+    shape = dart.dynamics.BoxShape(np.zeros(3))
+
+    _, body0 = skel.createRevoluteJointAndBodyNodePair()
+    shape_node0 = body0.createShapeNode(shape)
+    shape_node0.createVisualAspect()
+    shape_node0.createCollisionAspect()
+
+    _, body1 = skel.createRevoluteJointAndBodyNodePair(body0)
+    shape_node1 = body1.createShapeNode(shape)
+    shape_node1.createVisualAspect()
+    shape_node1.createCollisionAspect()
+
+    # Create a world and add the created skeleton
+    world = dart.simulation.World()
+    world.addSkeleton(skel)
+
+    # Set a new collision detector
+    constraint_solver = world.getConstraintSolver()
+    constraint_solver.setCollisionDetector(cd)
+
+    # Get the collision group from the constraint solver
+    group = constraint_solver.getCollisionGroup()
+    assert group.getNumShapeFrames() == 2
+
+    # Create BodyNodeCollisionFilter
+    option = constraint_solver.getCollisionOption()
+    body_node_filter = dart.collision.BodyNodeCollisionFilter()
+    option.collisionFilter = body_node_filter
+
+    skel.enableSelfCollisionCheck()
+    skel.enableAdjacentBodyCheck()
+    assert skel.isEnabledSelfCollisionCheck()
+    assert skel.isEnabledAdjacentBodyCheck()
+    assert group.collide()
+    assert group.collide(option)
+
+    skel.enableSelfCollisionCheck()
+    skel.disableAdjacentBodyCheck()
+    assert skel.isEnabledSelfCollisionCheck()
+    assert not skel.isEnabledAdjacentBodyCheck()
+    assert group.collide()
+    assert not group.collide(option)
+
+    skel.disableSelfCollisionCheck()
+    skel.enableAdjacentBodyCheck()
+    assert not skel.isEnabledSelfCollisionCheck()
+    assert skel.isEnabledAdjacentBodyCheck()
+    assert group.collide()
+    assert not group.collide(option)
+
+    skel.disableSelfCollisionCheck()
+    skel.disableAdjacentBodyCheck()
+    assert not skel.isEnabledSelfCollisionCheck()
+    assert not skel.isEnabledAdjacentBodyCheck()
+    assert group.collide()
+    assert not group.collide(option)
+
+    # Test collision body filtering
+    skel.enableSelfCollisionCheck()
+    skel.enableAdjacentBodyCheck()
+    body_node_filter.addBodyNodePairToBlackList(body0, body1)
+    assert not group.collide(option)
+    body_node_filter.removeBodyNodePairFromBlackList(body0, body1)
+    assert group.collide(option)
+    body_node_filter.addBodyNodePairToBlackList(body0, body1)
+    assert not group.collide(option)
+    body_node_filter.removeAllBodyNodePairsFromBlackList()
+    assert group.collide(option)
+
+
 def test_raycast():
     cd = dart.collision.BulletCollisionDetector()
 

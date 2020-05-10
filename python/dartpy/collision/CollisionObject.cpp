@@ -47,23 +47,36 @@ void CollisionObject(py::module& m)
               -> dart::collision::CollisionDetector* {
             return self->getCollisionDetector();
           },
-          ::py::return_value_policy::reference_internal)
+          ::py::return_value_policy::reference_internal,
+          "Return collision detection engine associated with this "
+          "CollisionObject.")
+      .def(
+          "getCollisionDetector",
+          +[](const dart::collision::CollisionObject* self)
+              -> const dart::collision::CollisionDetector* {
+            return self->getCollisionDetector();
+          },
+          ::py::return_value_policy::reference_internal,
+          "Return collision detection engine associated with this "
+          "CollisionObject.")
       .def(
           "getShapeFrame",
           +[](const dart::collision::CollisionObject* self)
-              -> const dart::dynamics::ShapeFrame* {
-            return self->getShapeFrame();
-          },
-          ::py::return_value_policy::reference_internal)
+              -> const dynamics::ShapeFrame* { return self->getShapeFrame(); },
+          ::py::return_value_policy::reference_internal,
+          "Return the associated ShapeFrame.")
       .def(
           "getShape",
           +[](const dart::collision::CollisionObject* self)
-              -> dart::dynamics::ConstShapePtr { return self->getShape(); })
+              -> dart::dynamics::ConstShapePtr { return self->getShape(); },
+          "Return the associated Shape.")
       .def(
           "getTransform",
           +[](const dart::collision::CollisionObject* self)
               -> const Eigen::Isometry3d& { return self->getTransform(); },
-          ::py::return_value_policy::reference_internal);
+          ::py::return_value_policy::reference_internal,
+          "Return the transformation of this CollisionObject in world "
+          "coordinates.");
 }
 
 } // namespace python
