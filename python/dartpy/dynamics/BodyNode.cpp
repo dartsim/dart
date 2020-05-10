@@ -35,8 +35,7 @@
 #include <pybind11/stl.h>
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
-
-PYBIND11_DECLARE_HOLDER_TYPE(T, dart::dynamics::TemplateBodyNodePtr<T>, true);
+#include "pointers.hpp"
 
 namespace py = pybind11;
 
