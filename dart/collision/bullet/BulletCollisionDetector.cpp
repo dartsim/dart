@@ -367,14 +367,17 @@ bool BulletCollisionDetector::raycast(
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result)
+    if (result == nullptr)
+      return callback.hasHit();
+
+    if (callback.hasHit())
     {
       reportRayHits(callback, option, *result);
       return result->hasHit();
     }
     else
     {
-      return callback.hasHit();
+      return false;
     }
   }
   else
@@ -383,14 +386,17 @@ bool BulletCollisionDetector::raycast(
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result)
+    if (result == nullptr)
+      return callback.hasHit();
+
+    if (callback.hasHit())
     {
       reportRayHits(callback, option, *result);
       return result->hasHit();
     }
     else
     {
-      return callback.hasHit();
+      return false;
     }
   }
 }
@@ -791,6 +797,9 @@ void reportRayHits(
     const RaycastOption& /*option*/,
     RaycastResult& result)
 {
+  // This function shouldn't be called if callback has not ray hit.
+  assert(callback.hasHit());
+
   const auto rayHit = convertRayHit(
       callback.m_collisionObject,
       callback.m_hitPointWorld,
