@@ -37,6 +37,7 @@
 #include <memory>
 #include <set>
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/detail/ConnectionBody.hpp"
 
 namespace dart {
@@ -69,6 +70,7 @@ public:
 
   /// Disconnect the connection
   void disconnect() const;
+  // TODO(JS): Make this non-const in the next major release
 
   template <typename _Signature, template <class> class Combiner>
   friend class Signal;
@@ -115,7 +117,7 @@ public:
   using SlotType = std::function<ResultType(_ArgTypes...)>;
   using SignalType = Signal<_Res(_ArgTypes...), Combiner>;
 
-  using ConnectionBodyType = signal::detail::ConnectionBody<SlotType>;
+  using ConnectionBodyType = signal::detail::ConnectionBody<Signal, SlotType>;
   using ConnectionSetType = std::set<
       std::shared_ptr<ConnectionBodyType>,
       std::owner_less<std::shared_ptr<ConnectionBodyType>>>;
@@ -135,11 +137,17 @@ public:
   /// Disconnect given connection
   void disconnect(const Connection& _connection) const;
 
+  /// Disconnect a connection
+  void disconnect(const std::shared_ptr<ConnectionBodyType>& connectionBody);
+
   /// Disconnect all the connections
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
+  DART_DEPRECATED(6.10)
   void cleanupConnections();
+  // This explicit connection cleaning is no longer necessary because now a
+  // connection gets removed when it's disconnected.
 
   /// Get the number of connections
   std::size_t getNumConnections() const;
@@ -165,7 +173,7 @@ public:
   using SlotType = std::function<void(_ArgTypes...)>;
   using SignalType = Signal<void(_ArgTypes...)>;
 
-  using ConnectionBodyType = signal::detail::ConnectionBody<SlotType>;
+  using ConnectionBodyType = signal::detail::ConnectionBody<Signal, SlotType>;
   using ConnectionSetType = std::set<
       std::shared_ptr<ConnectionBodyType>,
       std::owner_less<std::shared_ptr<ConnectionBodyType>>>;
@@ -185,11 +193,17 @@ public:
   /// Disconnect given connection
   void disconnect(const Connection& _connection) const;
 
+  /// Disconnect given connection
+  void disconnect(const std::shared_ptr<ConnectionBodyType>& connectionBody);
+
   /// Disconnect all the connections
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
+  DART_DEPRECATED(6.10)
   void cleanupConnections();
+  // This explicit connection cleaning is no longer necessary because now a
+  // connection gets removed when it's disconnected.
 
   /// Get the number of connections
   std::size_t getNumConnections() const;

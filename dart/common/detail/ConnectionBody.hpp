@@ -46,70 +46,83 @@ class ConnectionBodyBase
 {
 public:
   /// Constructor
-  ConnectionBodyBase();
+  ConnectionBodyBase() = default;
 
   /// Destructor
   virtual ~ConnectionBodyBase();
 
   /// Disconnect
-  void disconnect();
-
-  /// Get true if this connection body is connected to the signal
-  bool isConnected() const;
-
-protected:
-  /// Connection flag
-  bool mIsConnected;
+  virtual void disconnect() = 0;
 };
 
 /// class ConnectionBody
-template <typename SlotType>
-class ConnectionBody : public ConnectionBodyBase
+template <typename SignalType, typename SlotType>
+class ConnectionBody final
+  : public ConnectionBodyBase,
+    public std::enable_shared_from_this<ConnectionBody<SignalType, SlotType>>
 {
 public:
   /// Constructor given slot
-  ConnectionBody(const SlotType& _slot);
+  ConnectionBody(SignalType& signal, const SlotType& _slot);
 
   /// Move constructor given slot
-  ConnectionBody(SlotType&& _slot);
+  ConnectionBody(SignalType& signal, SlotType&& _slot);
 
   /// Destructor
   virtual ~ConnectionBody();
 
+  /// Disconnect
+  void disconnect() override;
+
   /// Get slot
-  const SlotType& getSlot();
+  const SlotType& getSlot() const;
 
 private:
+  /// Signal of this connection
+  SignalType& mSignal;
+  // Holding the reference of the Signal is safe because the lifetime of this
+  // ConnectionBody is always shorter than the Signal since the Signal has the
+  // ownership of this ConnectionBody.
+
   /// Slot
   SlotType mSlot;
 };
 
 //==============================================================================
-template <typename SlotType>
-ConnectionBody<SlotType>::ConnectionBody(const SlotType& _slot)
-  : ConnectionBodyBase(), mSlot(_slot)
+template <typename SignalType, typename SlotType>
+ConnectionBody<SignalType, SlotType>::ConnectionBody(
+    SignalType& signal, const SlotType& _slot)
+  : ConnectionBodyBase(), mSignal(signal), mSlot(_slot)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename SlotType>
-ConnectionBody<SlotType>::ConnectionBody(SlotType&& _slot)
-  : ConnectionBodyBase(), mSlot(std::forward<SlotType>(_slot))
+template <typename SignalType, typename SlotType>
+ConnectionBody<SignalType, SlotType>::ConnectionBody(
+    SignalType& signal, SlotType&& _slot)
+  : ConnectionBodyBase(), mSignal(signal), mSlot(std::forward<SlotType>(_slot))
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename SlotType>
-ConnectionBody<SlotType>::~ConnectionBody()
+template <typename SignalType, typename SlotType>
+ConnectionBody<SignalType, SlotType>::~ConnectionBody()
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename SlotType>
-const SlotType& ConnectionBody<SlotType>::getSlot()
+template <typename SignalType, typename SlotType>
+void ConnectionBody<SignalType, SlotType>::disconnect()
+{
+  mSignal.disconnect(this->shared_from_this());
+}
+
+//==============================================================================
+template <typename SignalType, typename SlotType>
+const SlotType& ConnectionBody<SignalType, SlotType>::getSlot() const
 {
   return mSlot;
 }
