@@ -117,7 +117,7 @@ public:
   using SlotType = std::function<ResultType(_ArgTypes...)>;
   using SignalType = Signal<_Res(_ArgTypes...), Combiner>;
 
-  using ConnectionBodyType = signal::detail::ConnectionBody<Signal, SlotType>;
+  using ConnectionBodyType = signal::detail::ConnectionBody<Signal>;
   using ConnectionSetType = std::set<
       std::shared_ptr<ConnectionBodyType>,
       std::owner_less<std::shared_ptr<ConnectionBodyType>>>;
@@ -173,7 +173,7 @@ public:
   using SlotType = std::function<void(_ArgTypes...)>;
   using SignalType = Signal<void(_ArgTypes...)>;
 
-  using ConnectionBodyType = signal::detail::ConnectionBody<Signal, SlotType>;
+  using ConnectionBodyType = signal::detail::ConnectionBody<Signal>;
   using ConnectionSetType = std::set<
       std::shared_ptr<ConnectionBodyType>,
       std::owner_less<std::shared_ptr<ConnectionBodyType>>>;

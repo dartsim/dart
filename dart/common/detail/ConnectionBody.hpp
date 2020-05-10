@@ -56,12 +56,14 @@ public:
 };
 
 /// class ConnectionBody
-template <typename SignalType, typename SlotType>
+template <typename SignalType>
 class ConnectionBody final
   : public ConnectionBodyBase,
-    public std::enable_shared_from_this<ConnectionBody<SignalType, SlotType>>
+    public std::enable_shared_from_this<ConnectionBody<SignalType>>
 {
 public:
+  using SlotType = typename SignalType::SlotType;
+
   /// Constructor given slot
   ConnectionBody(SignalType& signal, const SlotType& _slot);
 
@@ -89,8 +91,8 @@ private:
 };
 
 //==============================================================================
-template <typename SignalType, typename SlotType>
-ConnectionBody<SignalType, SlotType>::ConnectionBody(
+template <typename SignalType>
+ConnectionBody<SignalType>::ConnectionBody(
     SignalType& signal, const SlotType& _slot)
   : ConnectionBodyBase(), mSignal(signal), mSlot(_slot)
 {
@@ -98,31 +100,31 @@ ConnectionBody<SignalType, SlotType>::ConnectionBody(
 }
 
 //==============================================================================
-template <typename SignalType, typename SlotType>
-ConnectionBody<SignalType, SlotType>::ConnectionBody(
-    SignalType& signal, SlotType&& _slot)
+template <typename SignalType>
+ConnectionBody<SignalType>::ConnectionBody(SignalType& signal, SlotType&& _slot)
   : ConnectionBodyBase(), mSignal(signal), mSlot(std::forward<SlotType>(_slot))
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename SignalType, typename SlotType>
-ConnectionBody<SignalType, SlotType>::~ConnectionBody()
+template <typename SignalType>
+ConnectionBody<SignalType>::~ConnectionBody()
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename SignalType, typename SlotType>
-void ConnectionBody<SignalType, SlotType>::disconnect()
+template <typename SignalType>
+void ConnectionBody<SignalType>::disconnect()
 {
   mSignal.disconnect(this->shared_from_this());
 }
 
 //==============================================================================
-template <typename SignalType, typename SlotType>
-const SlotType& ConnectionBody<SignalType, SlotType>::getSlot() const
+template <typename SignalType>
+const typename ConnectionBody<SignalType>::SlotType&
+ConnectionBody<SignalType>::getSlot() const
 {
   return mSlot;
 }

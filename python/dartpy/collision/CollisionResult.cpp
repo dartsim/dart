@@ -80,9 +80,9 @@ void CollisionResult(py::module& m)
           +[](const dart::collision::CollisionResult* self) -> bool {
             return self->isCollision();
           })
-      .def(
-          "clear",
-          +[](dart::collision::CollisionResult* self) { self->clear(); });
+      .def("clear", +[](dart::collision::CollisionResult* self) {
+        self->clear();
+      });
 }
 
 } // namespace python
