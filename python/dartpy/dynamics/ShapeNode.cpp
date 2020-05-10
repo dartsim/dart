@@ -107,20 +107,7 @@ void ShapeNode(py::module& m)
           "getOffset",
           +[](const dart::dynamics::ShapeNode* self) -> Eigen::Vector3d {
             return self->getOffset();
-          })
-      .def(
-          "getBodyNodePtr",
-          +[](dart::dynamics::ShapeNode* self) -> dart::dynamics::BodyNode* {
-            return self->getBodyNodePtr().get();
-          },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "getBodyNodePtr",
-          +[](const dart::dynamics::ShapeNode* self)
-              -> const dart::dynamics::BodyNode* {
-            return self->getBodyNodePtr().get();
-          },
-          ::py::return_value_policy::reference_internal);
+          });
 }
 
 } // namespace python
