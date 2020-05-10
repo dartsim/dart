@@ -39,6 +39,12 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
+CollisionFilter::~CollisionFilter()
+{
+  // Do nothing
+}
+
+//==============================================================================
 bool CollisionFilter::needCollision(
     const CollisionObject* object1, const CollisionObject* object2) const
 {

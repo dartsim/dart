@@ -49,6 +49,9 @@ class CollisionObject;
 class CollisionFilter
 {
 public:
+  /// Destructor.
+  virtual ~CollisionFilter();
+
   /// Returns true if the given two CollisionObjects should be checked by the
   /// collision detector, false otherwise.
   /// \deprecated Deprecated in 6.3.0. Please use ignoreCollision instead. Note
