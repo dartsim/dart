@@ -96,6 +96,13 @@ option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 option(DART_BUILD_DARTPY "Build dartpy (the python binding)" OFF)
+# GCC and Clang add ANSI-formatted colors when they detect the output medium is a 
+# terminal. However, this doesn't work in some cases such as when the makefile is
+# invoked by Ninja. DART_FORCE_COLORED_OUTPUT can be used in this case to enforce
+# to always generate ANSI-formatted colors regardless of the output medium types.
+# See: https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
+option(DART_FORCE_COLORED_OUTPUT
+  "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 
 if(DART_BUILD_DARTPY)
   set(BUILD_SHARED_LIBS OFF)
@@ -216,6 +223,11 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
+  # Enforce to colorize compilation output
+  if(${DART_FORCE_COLORED_OUTPUT})
+    add_compile_options(-fdiagnostics-color=always)
+  endif()
+
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 
   if(DART_TREAT_WARNINGS_AS_ERRORS)
@@ -241,6 +253,11 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.8")
+
+  # Enforce to colorize compilation output
+  if(${DART_FORCE_COLORED_OUTPUT})
+     add_compile_options(-fcolor-diagnostics)
+  endif()
 
 else()
 
@@ -575,20 +592,6 @@ if(DOXYGEN_FOUND)
     DEPENDS "${DOXYGEN_HTML_INDEX}"
     COMMENT "Opening documentation in a web browser.")
 
-endif()
-
-#===============================================================================
-# Coloring build outputs using gccfilter if appliciable
-# Ref: http://stackoverflow.com/questions/14399984/make-cmake-use-gccfilter
-#===============================================================================
-if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
-  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCPP)
-    option(COLOR_GCC "Use GCCFilter to color compiler output messages" ON)
-    set(COLOR_GCC_OPTIONS "-c -r -w" CACHE STRING "Arguments that are passed to gccfilter when output coloring is switchend on. Defaults to -c -r -w.")
-    if(COLOR_GCC)
-      set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${PROJECT_SOURCE_DIR}/tools/gccfilter ${COLOR_GCC_OPTIONS}")
-    endif()
-  endif()
 endif()
 
 #===============================================================================
