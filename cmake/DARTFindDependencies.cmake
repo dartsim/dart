@@ -123,16 +123,6 @@ endif()
 # Misc. dependencies
 #--------------------
 
-# Perl modules
-find_package(PerlModules COMPONENTS Regexp::Common Getopt::ArgvFile Getopt::Long Term::ANSIColor QUIET)
-if(DART_VERBOSE)
-  if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
-    message(STATUS "Looking for PerlModules - found")
-  else()
-    message(WARNING "Looking for PerlModules - NOT found, to colorize gcc messages, please install Regexp::Common Getopt::ArgvFile Getopt::Long Term::ANSIColor (http://www.cpan.org/modules/INSTALL.html)")
-  endif()
-endif()
-
 # Doxygen
 find_package(Doxygen QUIET)
 dart_check_optional_package(DOXYGEN "generating API documentation" "doxygen")
