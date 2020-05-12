@@ -496,7 +496,7 @@ template <typename BV>
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
 
   std::vector<fcl::Vector3> points(5);
-  std::vector<fcl::Triangle> faces(6);
+  std::vector<::fcl::Triangle> faces(6);
 
   const double w = shape.getBaseWidth();
   const double d = shape.getBaseDepth();

@@ -75,7 +75,7 @@ double PyramidShape::getBaseWidth() const
 //==============================================================================
 void PyramidShape::setBaseWidth(double width)
 {
-  assert(0.0 < radius);
+  assert(0.0 < width);
   mBaseWidth = width;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -92,7 +92,7 @@ double PyramidShape::getBaseDepth() const
 //==============================================================================
 void PyramidShape::setBaseDepth(double depth)
 {
-  assert(0.0 < radius);
+  assert(0.0 < depth);
   mBaseDepth = depth;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
