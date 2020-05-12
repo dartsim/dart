@@ -94,25 +94,14 @@ Connection::~Connection()
 //==============================================================================
 bool Connection::isConnected() const
 {
-  std::shared_ptr<signal::detail::ConnectionBodyBase> connectionBody(
-      mWeakConnectionBody.lock());
-
-  if (nullptr == connectionBody)
-    return false;
-
-  return connectionBody->isConnected();
+  return !mWeakConnectionBody.expired();
 }
 
 //==============================================================================
 void Connection::disconnect() const
 {
-  std::shared_ptr<signal::detail::ConnectionBodyBase> connectionBody(
-      mWeakConnectionBody.lock());
-
-  if (nullptr == connectionBody)
-    return;
-
-  connectionBody->disconnect();
+  if (auto connectionBody = mWeakConnectionBody.lock())
+    connectionBody->disconnect();
 }
 
 //==============================================================================

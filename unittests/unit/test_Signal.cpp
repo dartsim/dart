@@ -190,6 +190,7 @@ TEST(Signal, ConnectionLifeTime)
     // scopedConnection disconnected connection2 when it was destroyed.
   }
   EXPECT_FALSE(connection2.isConnected());
+  EXPECT_EQ(signal->getNumConnections(), 1);
 
   delete signal;
 
