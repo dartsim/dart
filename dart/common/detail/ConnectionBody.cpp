@@ -39,27 +39,9 @@ namespace signal {
 namespace detail {
 
 //==============================================================================
-ConnectionBodyBase::ConnectionBodyBase() : mIsConnected(true)
-{
-  // Do nothing
-}
-
-//==============================================================================
 ConnectionBodyBase::~ConnectionBodyBase()
 {
   // Do nothing
-}
-
-//==============================================================================
-void ConnectionBodyBase::disconnect()
-{
-  mIsConnected = false;
-}
-
-//==============================================================================
-bool ConnectionBodyBase::isConnected() const
-{
-  return mIsConnected;
 }
 
 } // namespace detail
