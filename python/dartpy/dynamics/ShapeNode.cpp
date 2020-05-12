@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -44,6 +45,7 @@ void ShapeNode(py::module& m)
 {
   ::py::class_<
       dart::dynamics::ShapeNode,
+      dart::dynamics::JacobianNode,
       dart::dynamics::ShapeFrame,
       std::shared_ptr<dart::dynamics::ShapeNode>>(m, "ShapeNode")
       .def(
