@@ -97,6 +97,12 @@ struct DynamicsAspectProperties
   /// Secondary coefficient of friction
   double mSecondaryFrictionCoeff;
 
+  /// Primary slip compliance coefficient
+  double mSlipCompliance;
+
+  /// Secondary slip compliance coefficient
+  double mSecondarySlipCompliance;
+
   /// First friction direction unit vector
   Eigen::Vector3d mFirstFrictionDirection;
 
@@ -128,6 +134,8 @@ struct DynamicsAspectProperties
       const double primaryFrictionCoeff,
       const double secondaryFrictionCoeff,
       const double restitutionCoeff,
+      const double slipCompliance = -1.0,
+      const double secondarySlipCompliance = -1.0,
       const Eigen::Vector3d& firstFrictionDirection = Eigen::Vector3d::Zero(),
       const Frame* firstFrictionDirectionFrame = nullptr);
 

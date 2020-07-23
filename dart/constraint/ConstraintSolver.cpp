@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/ConstraintSolver.hpp"
+#include <algorithm>
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
@@ -478,6 +479,28 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous soft contact constraints
   mSoftContactConstraints.clear();
 
+  // Create a mapping of contact pairs to the number of contacts between them
+  using ContactPair
+      = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+
+  // Compare contact pairs while ignoring their order in the pair.
+  struct ContactPairCompare {
+    ContactPair SortedPair(const ContactPair &a) const
+    {
+      if (a.first < a.second)
+        return std::make_pair(a.second, a.first);
+      return a;
+    }
+
+    bool operator()(const ContactPair &a, const ContactPair & b) const
+    {
+      // Sort each pair and then do a lexicographical comparison
+      return SortedPair(a) < SortedPair(b);
+    }
+  };
+
+  std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
+
   // Create new contact constraints
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
@@ -515,6 +538,10 @@ void ConstraintSolver::updateConstraints()
     }
     else
     {
+      // Increment the count of contacts between the two collision objects
+      ++contactPairMap[std::make_pair(
+          contact.collisionObject1, contact.collisionObject2)];
+
       mContactConstraints.push_back(
           std::make_shared<ContactConstraint>(contact, mTimeStep));
     }
@@ -523,6 +550,19 @@ void ConstraintSolver::updateConstraints()
   // Add the new contact constraints to dynamic constraint list
   for (const auto& contactConstraint : mContactConstraints)
   {
+    // update the slip compliances of the contact constraints based on the
+    // number of contacts between the collision objects.
+    auto& contact = contactConstraint->getContact();
+    std::size_t numContacts = 1;
+    auto it = contactPairMap.find(
+        std::make_pair(contact.collisionObject1, contact.collisionObject2));
+    if (it != contactPairMap.end())
+      numContacts = it->second;
+
+    contactConstraint->setPrimarySlipCompliance(
+        contactConstraint->getPrimarySlipCompliance() * numContacts);
+    contactConstraint->setSecondarySlipCompliance(
+        contactConstraint->getSecondarySlipCompliance() * numContacts);
     contactConstraint->update();
 
     if (contactConstraint->isActive())

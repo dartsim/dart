@@ -65,7 +65,9 @@ double ContactConstraint::mConstraintForceMixing = DART_CFM;
 
 constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
 constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
-const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR = Eigen::Vector3d::UnitZ();
+constexpr double DART_DEFAULT_SLIP_COMPLIANCE = 0.0;
+const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR =
+    Eigen::Vector3d::UnitZ();
 
 //==============================================================================
 ContactConstraint::ContactConstraint(
@@ -84,6 +86,8 @@ ContactConstraint::ContactConstraint(
                    .get()),
     mContact(contact),
     mFirstFrictionalDirection(DART_DEFAULT_FRICTION_DIR),
+    mSlipCompliance(DART_DEFAULT_SLIP_COMPLIANCE),
+    mSecondarySlipCompliance(DART_DEFAULT_SLIP_COMPLIANCE),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(dynamics::INVALID_INDEX),
     mIsBounceOn(false),
@@ -135,6 +139,18 @@ ContactConstraint::ContactConstraint(
       || mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
+
+    // Compute slip compliance
+    const double slipComplianceA = computeSlipCompliance(shapeNodeA);
+    const double slipComplianceB = computeSlipCompliance(shapeNodeB);
+    const double secondarySlipComplianceA =
+                         computeSecondarySlipCompliance(shapeNodeA);
+    const double secondarySlipComplianceB =
+                         computeSecondarySlipCompliance(shapeNodeB);
+    // Combine slip compliances through addition
+    mSlipCompliance = slipComplianceA + slipComplianceB;
+    mSecondarySlipCompliance =
+        secondarySlipComplianceA + secondarySlipComplianceB;
 
     // Check shapeNodes for valid friction direction unit vectors
     auto frictionDirA = computeWorldFirstFrictionDir(shapeNodeA);
@@ -627,6 +643,17 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
   {
     vel[mAppliedImpulseIndex]
         += vel[mAppliedImpulseIndex] * mConstraintForceMixing;
+    switch (mAppliedImpulseIndex)
+    {
+      case 1:
+        vel[1] += (mSlipCompliance / mTimeStep);
+        break;
+      case 2:
+        vel[2] += (mSecondarySlipCompliance / mTimeStep);
+        break;
+      default:
+        break;
+    }
   }
 }
 
@@ -784,6 +811,57 @@ double ContactConstraint::computeSecondaryFrictionCoefficient(
   }
 
   return dynamicAspect->getSecondaryFrictionCoeff();
+}
+
+//==============================================================================
+double ContactConstraint::computeSlipCompliance(
+    const dynamics::ShapeNode* shapeNode)
+{
+  assert(shapeNode);
+
+  auto dynamicAspect = shapeNode->getDynamicsAspect();
+
+  if (dynamicAspect == nullptr)
+  {
+    dtwarn << "[ContactConstraint] Attempt to extract slip compliance "
+           << "from a ShapeNode that doesn't have DynamicAspect. The default "
+           << "value (" << DART_DEFAULT_SLIP_COMPLIANCE << ") will be used "
+           << "instead.\n";
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+  }
+
+  double slipCompliance = dynamicAspect->getSlipCompliance();
+  if (slipCompliance < 0)
+  {
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+  }
+  return slipCompliance;
+}
+
+//==============================================================================
+double ContactConstraint::computeSecondarySlipCompliance(
+    const dynamics::ShapeNode* shapeNode)
+{
+  assert(shapeNode);
+
+  auto dynamicAspect = shapeNode->getDynamicsAspect();
+
+  if (dynamicAspect == nullptr)
+  {
+    dtwarn << "[ContactConstraint] Attempt to extract "
+           << "secondary slip compliance "
+           << "from a ShapeNode that doesn't have DynamicAspect. The default "
+           << "value (" << DART_DEFAULT_SLIP_COMPLIANCE << ") will be used "
+           << "instead.\n";
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+  }
+
+  double slipCompliance = dynamicAspect->getSecondarySlipCompliance();
+  if (slipCompliance < 0)
+  {
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+  }
+  return slipCompliance;
 }
 
 //==============================================================================
@@ -950,5 +1028,34 @@ void ContactConstraint::uniteSkeletons()
   }
 }
 
+//==============================================================================
+double ContactConstraint::getPrimarySlipCompliance() const
+{
+  return mSlipCompliance;
+}
+
+//==============================================================================
+void ContactConstraint::setPrimarySlipCompliance(double slip)
+{
+  mSlipCompliance = slip;
+}
+
+//==============================================================================
+double ContactConstraint::getSecondarySlipCompliance() const
+{
+  return mSecondarySlipCompliance;
+}
+
+//==============================================================================
+void ContactConstraint::setSecondarySlipCompliance(double slip)
+{
+  mSecondarySlipCompliance = slip;
+}
+
+//==============================================================================
+const collision::Contact &ContactConstraint::getContact() const
+{
+  return mContact;
+}
 } // namespace constraint
 } // namespace dart

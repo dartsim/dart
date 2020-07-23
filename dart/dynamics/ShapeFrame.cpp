@@ -69,11 +69,15 @@ DynamicsAspectProperties::DynamicsAspectProperties(
     const double primaryFrictionCoeff,
     const double secondaryFrictionCoeff,
     const double restitutionCoeff,
+    const double slipCompliance,
+    const double secondarySlipCompliance,
     const Eigen::Vector3d& firstFrictionDirection,
     const Frame* firstFrictionDirectionFrame)
   : mFrictionCoeff(primaryFrictionCoeff),
     mRestitutionCoeff(restitutionCoeff),
     mSecondaryFrictionCoeff(secondaryFrictionCoeff),
+    mSlipCompliance(slipCompliance),
+    mSecondarySlipCompliance(secondarySlipCompliance),
     mFirstFrictionDirection(firstFrictionDirection),
     mFirstFrictionDirectionFrame(firstFrictionDirectionFrame)
 {
