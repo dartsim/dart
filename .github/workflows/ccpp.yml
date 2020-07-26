@@ -106,7 +106,7 @@ jobs:
       run: |
         docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
 
-  mojav_clang_release:
+  catalina_clang_release:
     name: macOS 10.15 [Clang|Release]
     runs-on: macOS-10.15
     steps:
@@ -121,7 +121,7 @@ jobs:
         BUILD_TYPE: Release
       run: sudo -E .ci/script.sh
 
-  mojav_clang_dartpy_release:
+  catalina_clang_dartpy_release:
     name: macOS 10.15 [Clang|dartpy|Release]
     runs-on: macOS-10.15
     steps:

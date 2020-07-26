@@ -38,7 +38,7 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: mojav_clang_debug
+- job: catalina_clang_debug
   timeoutInMinutes: 120
   pool:
     vmImage: 'macOS-10.15'
