@@ -168,6 +168,22 @@ void ConstraintSolver(py::module& m)
               -> dart::collision::ConstCollisionGroupPtr {
             return self->getCollisionGroup();
           })
+      .def(
+          "getCollisionOption",
+          +[](dart::constraint::ConstraintSolver* self)
+              -> dart::collision::CollisionOption& {
+            return self->getCollisionOption();
+          },
+          "Returns collision option that is used for collision checkings in "
+          "this ConstraintSolver to generate contact constraints.")
+      .def(
+          "getCollisionOption",
+          +[](const dart::constraint::ConstraintSolver* self)
+              -> const dart::collision::CollisionOption& {
+            return self->getCollisionOption();
+          },
+          "Returns collision option that is used for collision checkings in "
+          "this ConstraintSolver to generate contact constraints.")
       .def("solve", +[](dart::constraint::ConstraintSolver* self) {
         self->solve();
       });
