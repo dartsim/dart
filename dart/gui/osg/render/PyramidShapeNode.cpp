@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <array>
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
