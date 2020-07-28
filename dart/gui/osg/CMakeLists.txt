@@ -5,6 +5,18 @@ set(component_name gui-osg)
 # Dependency checks
 dart_check_dependent_target(${target_name} dart-gui)
 
+# Minimum required OSG version
+set(min_osg_version 3.0.0)
+# OpenSceneGraph 3.6.5 or less are not compatible with macOS 10.15 (Catalina) or greater
+# See:
+#   - https://github.com/openscenegraph/OpenSceneGraph/issues/926
+#   - https://github.com/dartsim/dart/issues/1439
+if(APPLE)
+  if(NOT ${CMAKE_SYSTEM_VERSION} VERSION_LESS 19)
+    set(min_osg_version 3.7.0)
+  endif()
+endif()
+
 # OpenSceneGraph
 if(DART_BUILD_GUI_OSG)
 
@@ -13,7 +25,7 @@ if(DART_BUILD_GUI_OSG)
     set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
   endif()
 
-  find_package(OpenSceneGraph 3.0 QUIET
+  find_package(OpenSceneGraph ${min_osg_version} QUIET
     COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
   )
 
