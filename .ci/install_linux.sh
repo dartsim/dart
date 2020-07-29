@@ -81,7 +81,8 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   apt-get install -y --no-install-recommends \
     python3-dev \
     python3-numpy \
-    python3-pip
+    python3-pip \
+    python3-setuptools
   pip3 install pytest -U
 
   if [ $(lsb_release -sc) = "xenial" ] || [ $(lsb_release -sc) = "bionic" ]; then
