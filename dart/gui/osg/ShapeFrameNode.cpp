@@ -46,6 +46,7 @@
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 #include "dart/gui/osg/render/PlaneShapeNode.hpp"
 #include "dart/gui/osg/render/PointCloudShapeNode.hpp"
+#include "dart/gui/osg/render/PyramidShapeNode.hpp"
 #include "dart/gui/osg/render/ShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/SphereShapeNode.hpp"
@@ -67,6 +68,7 @@
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PointCloudShape.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -261,6 +263,15 @@ void ShapeFrameNode::createShapeNode(
     std::shared_ptr<ConeShape> cs = std::dynamic_pointer_cast<ConeShape>(shape);
     if (cs)
       mRenderShapeNode = new render::ConeShapeNode(cs, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  else if (PyramidShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<PyramidShape> cs
+        = std::dynamic_pointer_cast<PyramidShape>(shape);
+    if (cs)
+      mRenderShapeNode = new render::PyramidShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }

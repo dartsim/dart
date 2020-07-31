@@ -473,6 +473,62 @@ void OpenGLRenderInterface::drawCone(double radius, double height)
   gluDisk(quadObj, 0, radius, slices, stacks);
 }
 
+//==============================================================================
+Eigen::Vector3d computeNormal(
+    const Eigen::Vector3d& v1,
+    const Eigen::Vector3d& v2,
+    const Eigen::Vector3d& v3)
+{
+  return (v1 - v2).cross(v2 - v3).normalized();
+}
+
+//==============================================================================
+void OpenGLRenderInterface::drawPyramid(
+    double baseWidth, double baseDepth, double height)
+{
+  const double w = baseWidth;
+  const double d = baseDepth;
+  const double h = height;
+
+  const double hTop = h / 2;
+  const double hBottom = -hTop;
+  const double left = -w / 2;
+  const double right = w / 2;
+  const double front = -d / 2;
+  const double back = d / 2;
+
+  std::vector<Eigen::Vector3d> points(5);
+  std::vector<Eigen::Vector3i> faces(6);
+
+  points[0] << 0, 0, hTop;
+  points[1] << right, back, hBottom;
+  points[2] << left, back, hBottom;
+  points[3] << left, front, hBottom;
+  points[4] << right, front, hBottom;
+
+  faces[0] << 0, 1, 2;
+  faces[1] << 0, 2, 3;
+  faces[2] << 0, 3, 4;
+  faces[3] << 0, 4, 1;
+  faces[4] << 1, 3, 2;
+  faces[5] << 1, 4, 3;
+
+  glBegin(GL_TRIANGLES);
+  for (const auto& face : faces)
+  {
+    const auto& p1 = points[static_cast<size_t>(face[0])];
+    const auto& p2 = points[static_cast<size_t>(face[1])];
+    const auto& p3 = points[static_cast<size_t>(face[2])];
+    const Eigen::Vector3d n = computeNormal(p1, p2, p3);
+
+    glNormal3dv(n.data());
+    glVertex3dv(p1.data());
+    glVertex3dv(p2.data());
+    glVertex3dv(p3.data());
+  }
+  glEnd();
+}
+
 void OpenGLRenderInterface::color4_to_float4(const aiColor4D* c, float f[4])
 {
   f[0] = c->r;

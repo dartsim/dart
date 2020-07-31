@@ -176,6 +176,11 @@ void RenderInterface::drawCone(double /*_radius*/, double /*_height*/)
 {
 }
 
+void RenderInterface::drawPyramid(
+    double /*baseWidth*/, double /*baseDepth*/, double /*height*/)
+{
+}
+
 void RenderInterface::setPenColor(const Eigen::Vector4d& /*_col*/)
 {
 }

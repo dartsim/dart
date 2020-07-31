@@ -122,6 +122,7 @@ public:
       double _radius, double _height, int slices = 16, int stacks = 16);
   virtual void drawCapsule(double _radius, double _height);
   virtual void drawCone(double _radius, double _height);
+  virtual void drawPyramid(double baseWidth, double baseDepth, double height);
   virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
   virtual void drawSoftMesh(const aiMesh* mesh);
   virtual void drawList(unsigned int index);

@@ -61,6 +61,7 @@
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
@@ -1340,6 +1341,15 @@ dynamics::ShapePtr readShape(
     double radius = getValueDouble(coneEle, "radius");
     double height = getValueDouble(coneEle, "height");
     newShape = dynamics::ShapePtr(new dynamics::ConeShape(radius, height));
+  }
+  else if (hasElement(geometryEle, "pyramid"))
+  {
+    tinyxml2::XMLElement* coneEle = getElement(geometryEle, "pyramid");
+    double base_width = getValueDouble(coneEle, "base_width");
+    double base_depth = getValueDouble(coneEle, "base_depth");
+    double height = getValueDouble(coneEle, "height");
+    newShape = dynamics::ShapePtr(
+        new dynamics::PyramidShape(base_width, base_depth, height));
   }
   else if (hasElement(geometryEle, "plane"))
   {

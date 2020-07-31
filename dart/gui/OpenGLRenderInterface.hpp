@@ -116,6 +116,7 @@ public:
       int stacks = 16) override;
   void drawCapsule(double radius, double height) override;
   void drawCone(double radius, double height) override;
+  void drawPyramid(double baseWidth, double baseDepth, double height) override;
   void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
   void drawSoftMesh(const aiMesh* mesh) override;
   void drawList(GLuint index) override;

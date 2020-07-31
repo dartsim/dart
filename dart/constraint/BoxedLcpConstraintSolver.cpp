@@ -102,7 +102,7 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
   if (!lcpSolver)
   {
     dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] "
-           << "nullptr for boxed LCP solver is not allowed.";
+           << "nullptr for boxed LCP solver is not allowed.\n";
     return;
   }
 
