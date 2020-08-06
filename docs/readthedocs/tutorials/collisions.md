@@ -230,8 +230,8 @@ Finally, we want to add this shape as a visualization **and** collision shape fo
 the BodyNode:
 
 ```cpp
-bn->addVisualizationShape(shape);
-bn->addCollisionShape(shape);
+auto shapeNode = 
+   bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
 ```
 
 We want to do this no matter which type was selected, so those two lines of code
@@ -257,7 +257,7 @@ bn->setInertia(inertia);
 This is very easily done with the following function:
 
 ```cpp
-bn->setRestitutionCoeff(default_restitution);
+shapeNode->getDynamicsAspect()->setRestitutionCoeff(default_restitution);
 ```
 
 ### Lesson 1f: Set the damping coefficient
@@ -331,7 +331,6 @@ For the SOFT_BOX:
 double width = default_shape_height, height = 2*default_shape_width;
 Eigen::Vector3d dims(width, width, height);
 
-Eigen::Vector3d dims(width, width, height);
 double mass = 2*dims[0]*dims[1] + 2*dims[0]*dims[2] + 2*dims[1]*dims[2];
 mass *= default_shape_density * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeBoxProperties(
@@ -383,7 +382,7 @@ that we're creating a soft BodyNode. First, let's create a full
 ``SoftBodyNode::Properties``:
 
 ```cpp
-SoftBodyNode::Properties body_properties(BodyNode::Properties(name),
+SoftBodyNode::Properties body_properties(BodyNode::AspectProperties(name),
                                          soft_properties);
 ```
 
@@ -393,7 +392,7 @@ the creation function:
 
 ```cpp
 SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
-      parent, joint_properties, body_properties).second;
+      parent, properties, body_properties).second;
 ```
 
 Notice that this time it will return a ``SoftBodyNode`` pointer rather than a
@@ -424,9 +423,10 @@ will have exactly one visualization shape: the soft shape visualizer. We can
 grab that shape and reduce the value of its alpha channel:
 
 ```
-Eigen::Vector4d color = bn->getVisualizationShape(0)->getRGBA();
+auto shape = bn->getShapeNodesWith<VisualAspect>()[0];
+Eigen::Vector4d color = shape->getVisualAspect()->getRGBA();
 color[3] = 0.4;
-bn->getVisualizationShape(0)->setRGBA(color);
+shape->getVisualAspect()->setRGBA(color);
 ```
 
 ### Lesson 2f: Give a hard bone to the SoftBodyNode
@@ -451,8 +451,7 @@ And then we can add that shape to the visualization and collision shapes of the
 SoftBodyNode, just like normal:
 
 ```cpp
-bn->addCollisionShape(box);
-bn->addVisualizationShape(box);
+bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 ```
 
 And we'll want to make sure that we set the inertia of the underlying BodyNode,
@@ -487,8 +486,7 @@ double box_shape_height = default_shape_height;
 std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
       box_shape_height*Eigen::Vector3d::Ones());
 
-bn->addCollisionShape(box);
-bn->addVisualizationShape(box);
+bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 ```
 
 To make the box protrude, we'll shift it away from the center of its parent:
@@ -560,7 +558,7 @@ We trust that the root Joint is a FreeJoint with 6 degrees of freedom because
 of how we constructed all the objects that are going to be thrown at the wall:
 They were all given a FreeJoint between the world and the root BodyNode.
 
-### Lesson 3b: Add the object to the world
+### Lesson 3b: Set the object's name
 
 Every object in the world is required to have a non-empty unique name. Just like
 Joint names in a Skeleton, if we pass a Skeleton into a world with a non-unique
@@ -571,54 +569,47 @@ ugly printout, we'll make sure the new object has a unique name ahead of time:
 object->setName(object->getName()+std::to_string(mSkelCount++));
 ```
 
-And now we can add it to the world without any complaints:
-```cpp
-mWorld->addSkeleton(object);
-```
+### Lesson 3c: Add the object to the world without collisions
 
-### Lesson 3c: Compute collisions
-
-Now that we've added the Skeleton to the world, we want to make sure that it
-wasn't actually placed inside of something accidentally. If an object in a 
+Before we add the Skeleton to the world, we want to make sure that it
+isn't actually placed inside of something accidentally. If an object in a 
 simulation starts off inside of another object, it can result in extremely
 non-physical simulations, perhaps even breaking the simulation entirely.
 We can access the world's collision detector directly to check make sure the
 new object is collision-free:
 
 ```cpp
-dart::collision::CollisionDetector* detector =
-    mWorld->getConstraintSolver()->getCollisionDetector();
-detector->detectCollision(true, true);
+auto collisionEngine
+  = mWorld->getConstraintSolver()->getCollisionDetector();
 ```
 
 Now we shouldn't be surprised if the *other* objects are in collision with each
-other, so we'll want to look through the list of collisions and check whether
-any of them are the new Skeleton:
+other, so we'll need to check whether our new object overlaps with any existing objects. 
+First, we use the collision engine to create a group which contains our object. Then, 
+we get a group containing the existing objects in the world and use it to check for 
+collisions. 
 
 ```cpp
-bool collision = false;
-size_t collisionCount = detector->getNumContacts();
-for(size_t i = 0; i < collisionCount; ++i)
-{
-  const dart::collision::Contact& contact = detector->getContact(i);
-  if(contact.bodyNode1.lock()->getSkeleton() == object
-     || contact.bodyNode2.lock()->getSkeleton() == object)
-  {
-    collision = true;
-    break;
-  }
-}
+auto newGroup = collisionEngine->createCollisionGroup(object.get());
+auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
+
+dart::collision::CollisionOption option;
+dart::collision::CollisionResult result;
+bool collision = collisionGroup->collide(newGroup.get(), option, &result);
 ```
 
-If the new Skeleton *was* in collision with anything, we'll want to remove it
-from the world and abandon our attempt to add it:
+If the new skeleton doesn't overlap an existing object, we can add it to the
+world without any complaints:
 
 ```cpp
-if(collision)
+if (!collision)
 {
-  mWorld->removeSkeleton(object);
+  mWorld->addSkeleton(object);
+}
+else
+{
   std::cout << "The new object spawned in a collision. "
-            << "It will not be added to the world." << std::endl;
+    << "It will not be added to the world." << std::endl;
   return false;
 }
 ```
@@ -754,7 +745,7 @@ edge of a polygon like so:
 
 ```cpp
 size_t numEdges = ring->getNumBodyNodes();
-double angle = 2*M_PI/numEdges;
+double angle = 2 * dart::math::constantsd::pi() / numEdges;
 ```
 
 Now it's important to remember that the joints we have between the BodyNodes are
