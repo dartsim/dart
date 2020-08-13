@@ -75,7 +75,7 @@ a skeleton. You can enable self-collision checking on the biped by
 SkeletonPtr loadBiped()
 {
 ...
-   biped->enableSelfCollisionCheck();
+    biped->enableSelfCollisionCheck();
 ...
 }
 ```
