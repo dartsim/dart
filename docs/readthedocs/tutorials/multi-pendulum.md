@@ -107,7 +107,6 @@ for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
     visualShapeNodes[j]->getVisualAspect()->setColor(dart::Color::Blue());
   }
 
-
   // TODO: Remove any arrows
 }
 ```
