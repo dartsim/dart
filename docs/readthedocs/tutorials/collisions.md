@@ -50,7 +50,7 @@ consistent API that works cleanly for fundamentally different types of classes.
 
 To create a ``Properties`` class for our Joint type, we'll want to say
 ```cpp
-typename JointType::Properties properties;
+typename JointType::Properties joint_properties;
 ```
 
 We need to include the ``typename`` keywords because of how the syntax works for
@@ -67,7 +67,7 @@ wants you to be aware when you are being negligent about naming things). For the
 sake of simplicity, let's just give it a name based off its child BodyNode:
 
 ```cpp
-properties.mName = name+"_joint";
+joint_properties.mName = name+"_joint";
 ```
 
 Don't forget to uncomment the function arguments.
@@ -105,8 +105,8 @@ We can then offset the parent and child BodyNodes of this Joint using this
 transform:
 
 ```cpp
-properties.mT_ParentBodyToJoint = tf;
-properties.mT_ChildBodyToJoint = tf.inverse();
+joint_properties.mT_ParentBodyToJoint = tf;
+joint_properties.mT_ChildBodyToJoint = tf.inverse();
 ```
 
 Remember that all of that code should go inside the ``if(parent)`` condition.
@@ -127,7 +127,7 @@ that new BodyNode:
 
 ```cpp
 BodyNode* bn = chain->createJointAndBodyNodePair<JointType>(
-      parent, properties, BodyNode::AspectProperties(name)).second;
+      parent, joint_properties, BodyNode::AspectProperties(name)).second;
 ```
 
 There's a lot going on in this function, so let's break it down for a moment:
@@ -145,13 +145,13 @@ type that we want to create, but the default argument is a standard rigid
 BodyNode, so we can leave the second argument blank.
 
 ```cpp
-(parent, properties, BodyNode::AspectProperties(name))
+(parent, joint_properties, BodyNode::AspectProperties(name))
 ```
 
 Now for the function arguments: The first specifies the parent BodyNode. In the
 event that you want to create a root BodyNode, you can simply pass in a nullptr
 as the parent. The second argument is a ``JointType::Properties`` struct, so we
-pass in the ``properties`` object that we created earlier. The third argument is
+pass in the ``joint_properties`` object that we created earlier. The third argument is
 a ``BodyNode::Properties`` struct, but we're going to set the BodyNode properties
 later, so we'll just toss the name in by wrapping it up in a
 ``BodyNode::AspectProperties`` object and leave the rest as default values.
