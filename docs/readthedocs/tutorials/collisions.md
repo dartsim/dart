@@ -392,7 +392,7 @@ the creation function:
 
 ```cpp
 SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
-      parent, properties, body_properties).second;
+      parent, joint_properties, body_properties).second;
 ```
 
 Notice that this time it will return a ``SoftBodyNode`` pointer rather than a
