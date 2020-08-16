@@ -37,6 +37,7 @@
   * Fixed refresh of LineSegmentShapeNode: [#1381](https://github.com/dartsim/dart/pull/1381)
   * Fixed OSG transparent object sorting: [#1414](https://github.com/dartsim/dart/pull/1414)
   * Added modifier key support to ImGuiHandler: [#1436](https://github.com/dartsim/dart/pull/1436)
+  * Fixed mixed intrinsic and extrinsic camera parameters in OpenGL projection matrix: [#1485](https://github.com/dartsim/dart/pull/1485)
 
 * Parser
 
@@ -77,6 +78,10 @@
   * Removed gccfilter: [#1464](https://github.com/dartsim/dart/pull/1464)
   * Allowed to set CMAKE_INSTALL_PREFIX on Windows: [#1478](https://github.com/dartsim/dart/pull/1478)
   * Enforced to use OpenSceneGraph 3.7.0 or greater on macOS Catalina: [#1479](https://github.com/dartsim/dart/pull/1479)
+
+* Documentation
+
+  * Updated tutorial documentation and code to reflect new APIs: [#1481](https://github.com/dartsim/dart/pull/1481)
 
 ### [DART 6.9.2 (2019-08-16)](https://github.com/dartsim/dart/milestone/60?closed=1)
 
