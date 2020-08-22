@@ -72,6 +72,11 @@ elif [ $(lsb_release -sc) = "focal" ]; then
     liboctomap-dev \
     libode-dev \
     clang-format-6.0
+elif [ $(lsb_release -sc) = "groovy" ]; then
+  apt-get install -y --no-install-recommends \
+    libnlopt-cxx-dev \
+    liboctomap-dev \
+    libode-dev
 else
   echo -e "$(lsb_release -sc) is not supported."
   exit 1
@@ -94,7 +99,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
     make -j4
     make install
     cd ../..
-  elif [ $(lsb_release -sc) = "focal" ]; then
+  elif [ $(lsb_release -sc) = "focal" ] || [ $(lsb_release -sc) = "groovy" ]; then
     apt-get -y install pybind11-dev python3 libpython3-dev python3-pytest \
       python3-distutils
   else
