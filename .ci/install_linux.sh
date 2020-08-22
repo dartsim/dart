@@ -78,7 +78,6 @@ elif [ $(lsb_release -sc) = "groovy" ]; then
     liboctomap-dev \
     libode-dev
 else
-else
   echo -e "$(lsb_release -sc) is not supported."
   exit 1
 fi
