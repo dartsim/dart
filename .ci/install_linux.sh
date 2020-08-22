@@ -66,12 +66,18 @@ if [ $(lsb_release -sc) = "xenial" ] || [ $(lsb_release -sc) = "bionic" ]; then
     liboctomap-dev \
     libode-dev \
     clang-format-6.0
-elif [ $(lsb_release -sc) = "focal" ] || [ $(lsb_release -sc) = "groovy" ]; then
+elif [ $(lsb_release -sc) = "focal" ]; then
   apt-get install -y --no-install-recommends \
     libnlopt-cxx-dev \
     liboctomap-dev \
     libode-dev \
     clang-format-6.0
+elif [ $(lsb_release -sc) = "groovy" ]; then
+  apt-get install -y --no-install-recommends \
+    libnlopt-cxx-dev \
+    liboctomap-dev \
+    libode-dev
+else
 else
   echo -e "$(lsb_release -sc) is not supported."
   exit 1
