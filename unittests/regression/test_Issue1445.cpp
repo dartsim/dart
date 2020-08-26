@@ -76,12 +76,12 @@ TEST(Issue1445, Collision)
 
   {
     auto ground = dart::dynamics::Skeleton::create("ground");
-    auto* bn =
-        ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+    auto* bn = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>()
+                   .second;
     bn->createShapeNodeWith<
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(
-          std::make_shared<dart::dynamics::PlaneShape>(
+        std::make_shared<dart::dynamics::PlaneShape>(
             Eigen::Vector3d::UnitZ(), 0.0));
 
     world->addSkeleton(ground);
@@ -98,7 +98,7 @@ TEST(Issue1445, Collision)
     bn->createShapeNodeWith<
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(
-          std::make_shared<dart::dynamics::BoxShape>(
+        std::make_shared<dart::dynamics::BoxShape>(
             Eigen::Vector3d(0.2, 0.2, 0.2)));
 
     auto tf = Eigen::Isometry3d::Identity();
@@ -121,8 +121,7 @@ TEST(Issue1445, Collision)
     bn->createShapeNodeWith<
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(
-          std::make_shared<dart::dynamics::SphereShape>(
-            0.1));
+        std::make_shared<dart::dynamics::SphereShape>(0.1));
 
     auto tf = Eigen::Isometry3d::Identity();
     tf.translation() = Eigen::Vector3d(1.0, 0.0, 0.1);
@@ -165,7 +164,3 @@ TEST(Issue1445, Collision)
   EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), 1e-3);
   EXPECT_NEAR(0.0, model2Body->getLinearVelocity().z(), 1e-3);
 }
-
-
-
-
