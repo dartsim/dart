@@ -2324,22 +2324,26 @@ void GenericJoint<ConfigSpaceT>::updateForceID(
   this->mAspectState.mForces
       = getRelativeJacobianStatic().transpose() * bodyForce;
 
-  // Damping force
+  // Implicit damping force:
+  //   tau_d = -Kd * dq - Kd * h * ddq
   if (withDampingForces)
   {
     const typename ConfigSpaceT::Vector dampingForces
         = -Base::mAspectProperties.mDampingCoefficients.cwiseProduct(
-            getVelocitiesStatic());
+          getVelocitiesStatic() + getAccelerationsStatic() * timeStep);
     this->mAspectState.mForces -= dampingForces;
   }
 
-  // Spring force
+  // Implicit spring force:
+  //   tau_s = -Kp * (q - q0) - Kp * h * dq - Kp * h^2 * ddq
   if (withSpringForces)
   {
     const typename ConfigSpaceT::Vector springForces
         = -Base::mAspectProperties.mSpringStiffnesses.cwiseProduct(
-            getPositionsStatic() - Base::mAspectProperties.mRestPositions
-            + getVelocitiesStatic() * timeStep);
+          getPositionsStatic()
+          - Base::mAspectProperties.mRestPositions
+          + getVelocitiesStatic() * timeStep
+          + getAccelerationsStatic() * timeStep * timeStep);
     this->mAspectState.mForces -= springForces;
   }
 }
