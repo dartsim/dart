@@ -5,7 +5,7 @@
 * Dynamics
 
   * Changed to update the Properties version of a BodyNode when moved to a new Skeleton: [#1445](https://github.com/dartsim/dart/pull/1445)
-  * Fixed incorrect implicit joint damping/spring force computation in inverse dynamics: : [#1451](https://github.com/dartsim/dart/pull/1451)
+  * Fixed incorrect implicit joint damping/spring force computation in inverse dynamics: [#1451](https://github.com/dartsim/dart/pull/1451)
 
 ### [DART 6.9.2 (2019-08-16)](https://github.com/dartsim/dart/milestone/60?closed=1)
 
