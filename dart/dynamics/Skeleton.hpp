@@ -672,9 +672,10 @@ public:
   /// account.
   /// \param[in] _withSpringForces   Set \c true to take spring forces into
   /// account.
-  void computeInverseDynamics(bool _withExternalForces = false,
-                              bool _withDampingForces = false,
-                              bool _withSpringForces = false);
+  void computeInverseDynamics(
+      bool _withExternalForces = false,
+      bool _withDampingForces = false,
+      bool _withSpringForces = false);
 
   //----------------------------------------------------------------------------
   // Impulse-based dynamics algorithms
