@@ -2,23 +2,23 @@
 # Ref: https://docs.microsoft.com/en-us/azure/devops/pipelines
 
 jobs:
-- job: xenial_gcc_release
+- job: xenial_gcc_debug
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
-    OS_NAME: linux
     COMPILER: gcc
-    BUILD_TYPE: Release
+    BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
     DOCKERFILE: Dockerfile.ubuntu-xenial
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
 - job: bionic_gcc_debug
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
-    OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
@@ -26,77 +26,23 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: bionic_gcc_dartpy_release
+- job: focal_gcc_debug
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-16.04'
   variables:
-    OS_NAME: linux
-    COMPILER: gcc
-    BUILD_TYPE: Release
-    BUILD_DARTPY: ON
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-bionic
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
-  timeoutInMinutes: 0
-
-- job: disco_gcc_debug
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    OS_NAME: linux
     COMPILER: gcc
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-disco
+    DOCKERFILE: Dockerfile.ubuntu-focal
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
-- job: disco_gcc_dartpy_release
+- job: catalina_clang_debug
+  timeoutInMinutes: 120
   pool:
-    vmImage: 'ubuntu-16.04'
+    vmImage: 'macOS-10.15'
   variables:
-    OS_NAME: linux
-    COMPILER: gcc
-    BUILD_TYPE: Release
-    BUILD_DARTPY: ON
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-disco
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
-  timeoutInMinutes: 0
-
-- job: eoan_gcc_debug
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    OS_NAME: linux
-    COMPILER: gcc
-    BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-eoan
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
-
-- job: eoan_gcc_dartpy_release
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    OS_NAME: linux
-    COMPILER: gcc
-    BUILD_TYPE: Release
-    BUILD_DARTPY: ON
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-eoan
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
-  timeoutInMinutes: 0
-
-- job: mojav_clang_debug
-  pool:
-    vmImage: 'macOS-10.14'
-  variables:
-    OS_NAME: osx
     BUILD_TYPE: Debug
     BUILD_DIR: $(Build.SourcesDirectory)
   steps:
@@ -106,54 +52,3 @@ jobs:
   - script: |
       '.ci/script.sh'
     displayName: 'Script'
-
-- job: mojav_clang_dartpy_release
-  pool:
-    vmImage: 'macOS-10.14'
-  variables:
-    OS_NAME: osx
-    BUILD_TYPE: Release
-    BUILD_DARTPY: ON
-    BUILD_DIR: $(Build.SourcesDirectory)
-  steps:
-  - script: |
-      '.ci/install.sh'
-    displayName: 'Install'
-  - script: |
-      '.ci/script.sh'
-    displayName: 'Script'
-
-- job: windows_vs2019_x64
-  pool:
-    vmImage: 'windows-2019'
-  timeoutInMinutes: 0
-  strategy:
-    matrix:
-      # Debug64:
-      #   CONFIGURATION: 'Debug'
-      Release64:
-        CONFIGURATION: 'Release'
-  variables:
-    VCPKG_INSTALL_ROOT: $(Build.SourcesDirectory)\vcpkg
-    VCPKG_ARCH: 'x64-windows'
-    VCPKG_PACKAGES: 'assimp boost-system boost-filesystem ccd eigen3 fcl'
-    BUILD_TOOLSET_VERSION: '142'
-    CMAKE_GENERATOR: 'Visual Studio 16 2019'
-  steps:
-  - script: |
-      git clone -q --depth 1 https://github.com/microsoft/vcpkg.git $(VCPKG_INSTALL_ROOT)
-      $(VCPKG_INSTALL_ROOT)\bootstrap-vcpkg.bat
-    displayName: 'Install vcpkg'
-  - script: |
-      $(VCPKG_INSTALL_ROOT)\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) $(VCPKG_PACKAGES)
-      $(VCPKG_INSTALL_ROOT)\vcpkg.exe integrate install
-    displayName: 'Install dependencies'
-  - script: |
-      cmake --version
-      mkdir build
-      cd build
-      cmake .. -G "$(CMAKE_GENERATOR)" -A x64 -DCMAKE_BUILD_TYPE=$(CONFIGURATION) -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64" -DVCPKG_TARGET_TRIPLET=$(VCPKG_ARCH) -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_INSTALL_ROOT)/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)" -DDART_MSVC_DEFAULT_OPTIONS=ON
-      cmake --build . --target ALL_BUILD --config $(CONFIGURATION) -- /maxcpucount:4
-    displayName: 'Build'
-    workingDirectory: '$(Build.SourcesDirectory)'
-

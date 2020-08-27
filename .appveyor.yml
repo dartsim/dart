@@ -2,7 +2,7 @@
 version: "{build}"
 
 image:
-  - Visual Studio 2017
+  - Visual Studio 2019
   # - Ubuntu1604
   # - Ubuntu1804
 
@@ -13,13 +13,13 @@ environment:
   MSVC_DEFAULT_OPTIONS: ON
   CMAKE_TOOLCHAIN_FILE: -DCMAKE_TOOLCHAIN_FILE="C:\tools\vcpkg\scripts\buildsystems\vcpkg.cmake"
   matrix:
-    - CMAKE_GENERATOR: -G"Visual Studio 15 2017 Win64"
-      CMAKE_TOOLCHAIN: -T"v141"
+    - CMAKE_GENERATOR: -G"Visual Studio 16 2019"
+      CMAKE_TOOLCHAIN: -T"v142"
 
 # build configuration, i.e. Debug, Release, etc.
 configuration:
   - Debug
-  - Release
+  # - Release
 
 # scripts that are called at very beginning, before repo cloning
 init:
@@ -52,8 +52,10 @@ install:
   - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
 
   # install optional dependencies
-  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann freeglut nlopt ode opengl osg tinyxml2 urdfdom
-  #- vcpkg install ipopt:%VCPKG_ARCH%
+  # 'dart-utils' needs tinyxml2 and boost algorithm/lexical-cast
+  #   and also boost-math to resolve a circular dependency with lexical-cast
+  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% boost-algorithm boost-lexical-cast boost-math bullet3 freeglut ode opengl tinyxml2
+  #- vcpkg install --recurse --triplet %VCPKG_ARCH% flann ipopt nlopt osg urdfdom
 
   - cmd: vcpkg integrate install
   - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
@@ -63,7 +65,7 @@ install:
   #-------------------------------
   - sh: sudo apt-get update
   - sh: sudo apt-get --yes install build-essential cmake pkg-config git
-  - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev
+  - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-system-dev
   - sh: sudo apt-get --yes install libnlopt-dev coinor-libipopt-dev libbullet-dev libflann-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libopenscenegraph-dev
   - sh: sudo apt-get --yes install clang-format-6.0
 
@@ -76,8 +78,8 @@ build_script:
   # Windows 10
   #------------------
   - cmd: mkdir build && cd build
-  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
-  # - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
+  - cmd: cmake %CMAKE_GENERATOR% -A x64 -DCMAKE_BUILD_TYPE=%configuration% -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
+  # - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4
 
   #-------------------------------
   # Ubuntu 16.04 LTS && 18.04 LTS

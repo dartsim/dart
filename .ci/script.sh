@@ -7,6 +7,16 @@ if [ -z "$BUILD_TYPE" ]; then
   exit 1
 fi
 
+if [ -z "$RUN_TESTS" ]; then
+  echo "Info: Environment variable RUN_TESTS is unset. Using ON by default."
+  RUN_TESTS=ON
+fi
+
+if [ -z "$RUN_INSTALL_TEST" ]; then
+  echo "Info: Environment variable RUN_INSTALL_TEST is unset. Using ON by default."
+  RUN_INSTALL_TEST=ON
+fi
+
 if [ -z "$BUILD_DARTPY" ]; then
   echo "Info: Environment variable BUILD_DARTPY is unset. Using OFF by default."
   BUILD_DARTPY=OFF
@@ -17,14 +27,19 @@ if [ -z "$BUILD_DOCS" ]; then
   BUILD_DOCS=OFF
 fi
 
+if [ -z "$COMPILER" ]; then
+  echo "Info: Environment variable COMPILER is unset. Using gcc by default."
+  COMPILER=gcc
+fi
+
 if [ -z "$CODECOV" ]; then
   echo "Info: Environment variable CODECOV is unset. Using OFF by default."
   CODECOV=OFF
 fi
 
-if [ -z "$OS_NAME" ]; then
-  echo "Error: Environment variable OS_NAME is unset."
-  exit 1
+if [ -z "$BUILD_DIR" ]; then
+  echo "Error: Environment variable BUILD_DIR is unset. Using $PWD by default."
+  BUILD_DIR=$PWD
 fi
 
 # Set number of threads for parallel build
@@ -64,7 +79,7 @@ fi
 
 mkdir build && cd build
 
-if [ "$OS_NAME" = "linux" ]; then
+if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 fi
 
@@ -83,34 +98,36 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
 else
   if [ "$CODECOV" = "ON" ]; then
     make -j$num_threads all tests
-  else
+  elif [ "$RUN_TESTS" = "ON" ]; then
     make -j$num_threads all tutorials examples tests
   fi
 
-  if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
+  if [ "$OSTYPE" = "linux-gnu" ] && [ $(lsb_release -sc) = "bionic" ]; then
     make check-format
   fi
 
   if [ $CODECOV = "ON" ]; then
     make -j$num_threads codecov
-  else
+  elif [ "$RUN_TESTS" = "ON" ]; then
     ctest --output-on-failure -j$num_threads
   fi
 fi
 
-# Make sure we can install with no issues
-$SUDO make -j$num_threads install
+if [ "$RUN_INSTALL_TEST" = "ON" ]; then
+  # Make sure we can install with no issues
+  make -j$num_threads install
 
-if [ "$BUILD_DARTPY" = "ON" ]; then
-  # Run a python example (experimental)
   if [ "$BUILD_DARTPY" = "ON" ]; then
-    cd $BUILD_DIR/python/examples/hello_world
-    python3 main.py
+    # Run a python example (experimental)
+    if [ "$BUILD_DARTPY" = "ON" ]; then
+      cd $BUILD_DIR/python/examples/hello_world
+      python3 main.py
+    fi
+  else
+    # Build an example using installed DART
+    cd $BUILD_DIR/examples/hello_world
+    mkdir build && cd build
+    cmake ..
+    make -j$num_threads
   fi
-else
-  # Build an example using installed DART
-  cd $BUILD_DIR/examples/hello_world
-  mkdir build && cd build
-  cmake ..
-  make -j$num_threads
 fi
