@@ -91,6 +91,9 @@ public:
   // transformations, spatial velocities, and spatial accelerations correctly.
   void testForwardKinematics(const common::Uri& uri);
 
+  // Test inverse dynamics with various joint forces.
+  void testInverseDynamics(const common::Uri& uri);
+
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
   // force vector.
@@ -1530,6 +1533,84 @@ void DynamicsTest::testForwardKinematics(const common::Uri& uri)
 }
 
 //==============================================================================
+void DynamicsTest::testInverseDynamics(const common::Uri& uri)
+{
+  //---------------------------- Settings --------------------------------------
+  // Number of random state tests for each skeleton
+#ifndef NDEBUG // Debug mode
+  const std::size_t nRandomItr = 2;
+#else
+  const std::size_t nRandomItr = 100;
+#endif
+
+  // Lower and upper bound of configuration for system
+  const double lb = -1.0 * math::constantsd::pi();
+  const double ub = 1.0 * math::constantsd::pi();
+
+  // Lower and upper bound of joint damping and stiffness
+  const double lbD = 0.0;
+  const double ubD = 10.0;
+  const double lbK = 0.0;
+  const double ubK = 10.0;
+
+  // Lower and upper bound of joint forces
+  const double lbF = -10.0;
+  const double ubF = 10.0;
+
+  simulation::WorldPtr world = utils::SkelParser::readWorld(uri);
+  ASSERT_TRUE(world != nullptr);
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
+  {
+    dynamics::SkeletonPtr skel = world->getSkeleton(i);
+    const std::size_t dofs = skel->getNumDofs();
+
+    for (std::size_t j = 0; j < nRandomItr; ++j)
+    {
+      // Random joint stiffness and damping coefficients
+      for (std::size_t l = 0; l < dofs; ++l)
+      {
+        dynamics::DegreeOfFreedom* dof = skel->getDof(l);
+        dof->setDampingCoefficient(math::Random::uniform(lbD, ubD));
+        dof->setSpringStiffness(math::Random::uniform(lbK, ubK));
+
+        double lbRP = dof->getPositionLowerLimit();
+        double ubRP = dof->getPositionUpperLimit();
+        lbRP = std::max(lbRP, -math::constantsd::pi());
+        ubRP = std::min(ubRP, +math::constantsd::pi());
+        dof->setRestPosition(math::Random::uniform(lbRP, ubRP));
+      }
+
+      // Set random states and forces
+      const VectorXd q0 = math::Random::uniform<VectorXd>(dofs, lb, ub);
+      const VectorXd dq0 = math::Random::uniform<VectorXd>(dofs, lb, ub);
+      const VectorXd f0 = math::Random::uniform<VectorXd>(dofs, lbF, ubF);
+
+      // Forward dynamics to compute accelerations
+      skel->setPositions(q0);
+      skel->setVelocities(dq0);
+      skel->setForces(f0);
+      skel->computeForwardDynamics();
+      const VectorXd ddq = skel->getAccelerations();
+
+      // Test inverse dynamics to ensure the result joint forces are identical
+      // to the forces used to compute the input accelerations
+      skel->setAccelerations(ddq);
+      skel->computeInverseDynamics(false, true, true);
+      const VectorXd f = skel->getForces();
+      EXPECT_TRUE(equals(f, f0));
+
+      // Test forward dynamics to ensure the result joint accelerations are
+      // identical to the accelerations used to compute the input forces
+      skel->setForces(f);
+      skel->computeForwardDynamics();
+      const VectorXd ddq2 = skel->getAccelerations();
+      EXPECT_TRUE(equals(ddq, ddq2));
+    }
+  }
+}
+
+//==============================================================================
 void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 {
   using namespace std;
@@ -2326,6 +2407,18 @@ TEST_F(DynamicsTest, testForwardKinematics)
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testForwardKinematics(getList()[i]);
+  }
+}
+
+//==============================================================================
+TEST_F(DynamicsTest, testInverseDynamics)
+{
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i].toString() << std::endl;
+#endif
+    testInverseDynamics(getList()[i]);
   }
 }
 
