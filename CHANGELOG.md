@@ -28,6 +28,7 @@
   * Added secondary friction coefficient parameter: [#1424](https://github.com/dartsim/dart/pull/1424)
   * Allowed to set friction direction per ShapeFrame: [#1427](https://github.com/dartsim/dart/pull/1427)
   * Fixed incorrect vector resizing in BoxedLcpConstraintSolver: [#1459](https://github.com/dartsim/dart/pull/1459)
+  * Changed to increment BodyNode version when it's being removed from Skeleton: [#1489](https://github.com/dartsim/dart/pull/1489)
 
 * GUI
 

@@ -144,7 +144,11 @@ TEST(Skeleton, Restructuring)
     BodyNode* child = bn1->descendsFrom(bn2) ? bn1 : bn2;
     BodyNode* parent = child == bn1 ? bn2 : bn1;
 
+    auto skelVer = skeleton->getVersion();
+    auto childVer = child->getVersion();
     child->moveTo(parent);
+    EXPECT_NE(skeleton->getVersion(), skelVer);
+    EXPECT_NE(child->getVersion(), childVer);
 
     EXPECT_TRUE(skeleton->getNumBodyNodes() == original->getNumBodyNodes());
     if (skeleton->getNumBodyNodes() == original->getNumBodyNodes())
@@ -263,7 +267,13 @@ TEST(Skeleton, Restructuring)
     constructSubtree(subtree, childBn);
 
     // Move to a new Skeleton
+    auto fromSkelVer = fromSkel->getVersion();
+    auto toSkelVer = toSkel->getVersion();
+    auto child_ver = childBn->getVersion();
     childBn->moveTo(parentBn);
+    EXPECT_NE(fromSkel->getVersion(), fromSkelVer);
+    EXPECT_NE(toSkel->getVersion(), toSkelVer);
+    EXPECT_NE(childBn->getVersion(), child_ver);
     EXPECT_TRUE(childBn->getSkeleton()->checkIndexingConsistency());
     EXPECT_TRUE(parentBn->getSkeleton()->checkIndexingConsistency());
 

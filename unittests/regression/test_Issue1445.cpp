@@ -74,8 +74,8 @@ TEST(Issue1445, Collision)
 
   auto world = std::make_shared<dart::simulation::World>();
 
+  auto ground = dart::dynamics::Skeleton::create("ground");
   {
-    auto ground = dart::dynamics::Skeleton::create("ground");
     auto* bn = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>()
                    .second;
     bn->createShapeNodeWith<
@@ -153,9 +153,9 @@ TEST(Issue1445, Collision)
   EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), 1e-3);
   EXPECT_NEAR(0.0, model2Body->getLinearVelocity().z(), 1e-3);
 
-  auto temp = dart::dynamics::Skeleton::create("temp");
-  world->addSkeleton(temp);
-  model2Body->moveTo<dart::dynamics::FreeJoint>(temp, nullptr);
+  auto temp1 = dart::dynamics::Skeleton::create("temp1");
+  world->addSkeleton(temp1);
+  model2Body->moveTo<dart::dynamics::FreeJoint>(temp1, nullptr);
 
   for (std::size_t i = 0; i < numSteps; ++i)
     world->step();
@@ -163,4 +163,15 @@ TEST(Issue1445, Collision)
   // Expect both bodies to remain in contact with the ground with zero velocity.
   EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), 1e-3);
   EXPECT_NEAR(0.0, model2Body->getLinearVelocity().z(), 1e-3);
+
+  auto* groundBody = ground->getRootBodyNode();
+  auto temp2 = groundBody->remove();
+
+  for (std::size_t i = 0; i < numSteps; ++i)
+    world->step();
+
+  // Expect both bodies to be falling after the BodyNode ofthe the ground is
+  // removed
+  EXPECT_LE(model1Body->getLinearVelocity().z(), -1e-2);
+  EXPECT_LE(model2Body->getLinearVelocity().z(), -1e-2);
 }
