@@ -15,7 +15,7 @@ brew 'libccd'
 #brew 'nlopt'
 brew 'octomap'
 brew 'ode'
-brew 'open-scene-graph'
+#brew 'open-scene-graph'  # disabled until 3.7.0 is released
 #brew 'pagmo'  # disabled to reduce the build time
 brew 'tinyxml2'
 brew 'urdfdom'
