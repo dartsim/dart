@@ -82,6 +82,16 @@ else
   exit 1
 fi
 
+git clone https://github.com/esa/pagmo2.git -b 'v2.15.0' --single-branch --depth 1 &&
+  cd pagmo2 && mkdir build && cd build &&
+  cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DPAGMO_WITH_EIGEN3=ON \
+    -DPAGMO_WITH_NLOPT=ON \
+    -DPAGMO_WITH_IPOPT=ON &&
+  make -j$(nproc) &&
+  make install
+
 if [ "$BUILD_DARTPY" = "ON" ]; then
   apt-get install -y --no-install-recommends \
     python3-dev \
@@ -91,14 +101,13 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   pip3 install pytest -U
 
   if [ $(lsb_release -sc) = "xenial" ] || [ $(lsb_release -sc) = "bionic" ]; then
-    git clone https://github.com/pybind/pybind11 -b 'v2.3.0' --single-branch --depth 1
-    cd pybind11
-    mkdir build
-    cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DPYBIND11_TEST=OFF
-    make -j4
-    make install
-    cd ../..
+    git clone https://github.com/pybind/pybind11 -b 'v2.3.0' --single-branch --depth 1 &&
+      cd pybind11 && mkdir build && cd build &&
+      cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DPYBIND11_TEST=OFF &&
+      make -j$(nproc) &&
+      make install
   elif [ $(lsb_release -sc) = "focal" ] || [ $(lsb_release -sc) = "groovy" ]; then
     apt-get -y install pybind11-dev python3 libpython3-dev python3-pytest \
       python3-distutils
