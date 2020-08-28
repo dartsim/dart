@@ -84,6 +84,7 @@ fi
 
 # pagmo2
 apt-get install -y --no-install-recommends \
+  libboost-serialization-dev \
   libtbb-dev
 git clone https://github.com/esa/pagmo2.git -b 'v2.15.0' --single-branch --depth 1 &&
   cd pagmo2 && mkdir build && cd build &&
