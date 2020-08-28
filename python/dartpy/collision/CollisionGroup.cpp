@@ -71,9 +71,43 @@ void CollisionGroup(py::module& m)
           ::py::arg("shapeFrames"))
       .def(
           "addShapeFramesOf",
-          +[](dart::collision::CollisionGroup* self) {
-            self->addShapeFramesOf();
-          })
+          +[](dart::collision::CollisionGroup* self,
+              const dynamics::ShapeFrame* shapeFrame) {
+            self->addShapeFramesOf(shapeFrame);
+          },
+          ::py::arg("shapeFrame"),
+          "Adds a ShapeFrame")
+      .def(
+          "addShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const std::vector<const dart::dynamics::ShapeFrame*>&
+                  shapeFrames) { self->addShapeFramesOf(shapeFrames); },
+          ::py::arg("shapeFrames"),
+          "Adds ShapeFrames")
+      .def(
+          "addShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::collision::CollisionGroup* otherGroup) {
+            self->addShapeFramesOf(otherGroup);
+          },
+          ::py::arg("otherGroup"),
+          "Adds ShapeFrames of other CollisionGroup")
+      .def(
+          "addShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::dynamics::BodyNode* body) {
+            self->addShapeFramesOf(body);
+          },
+          ::py::arg("body"),
+          "Adds ShapeFrames of BodyNode")
+      .def(
+          "addShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::dynamics::MetaSkeleton* skeleton) {
+            self->addShapeFramesOf(skeleton);
+          },
+          ::py::arg("skeleton"),
+          "Adds ShapeFrames of MetaSkeleton")
       .def(
           "subscribeTo",
           +[](dart::collision::CollisionGroup* self) { self->subscribeTo(); })
@@ -92,9 +126,43 @@ void CollisionGroup(py::module& m)
           ::py::arg("shapeFrames"))
       .def(
           "removeShapeFramesOf",
-          +[](dart::collision::CollisionGroup* self) {
-            self->removeShapeFramesOf();
-          })
+          +[](dart::collision::CollisionGroup* self,
+              const dynamics::ShapeFrame* shapeFrame) {
+            self->removeShapeFramesOf(shapeFrame);
+          },
+          ::py::arg("shapeFrame"),
+          "Removes a ShapeFrame")
+      .def(
+          "removeShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const std::vector<const dart::dynamics::ShapeFrame*>&
+                  shapeFrames) { self->removeShapeFramesOf(shapeFrames); },
+          ::py::arg("shapeFrames"),
+          "Removes ShapeFrames")
+      .def(
+          "removeShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::collision::CollisionGroup* otherGroup) {
+            self->removeShapeFramesOf(otherGroup);
+          },
+          ::py::arg("otherGroup"),
+          "Removes ShapeFrames of other CollisionGroup")
+      .def(
+          "removeShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::dynamics::BodyNode* body) {
+            self->removeShapeFramesOf(body);
+          },
+          ::py::arg("body"),
+          "Removes ShapeFrames of BodyNode")
+      .def(
+          "removeShapeFramesOf",
+          +[](dart::collision::CollisionGroup* self,
+              const dart::dynamics::MetaSkeleton* skeleton) {
+            self->removeShapeFramesOf(skeleton);
+          },
+          ::py::arg("skeleton"),
+          "Removes ShapeFrames of MetaSkeleton")
       .def(
           "removeAllShapeFrames",
           +[](dart::collision::CollisionGroup* self) {
@@ -116,14 +184,16 @@ void CollisionGroup(py::module& m)
           "collide",
           +[](dart::collision::CollisionGroup* self) -> bool {
             return self->collide();
-          })
+          },
+          "Performs collision check within this CollisionGroup")
       .def(
           "collide",
           +[](dart::collision::CollisionGroup* self,
               const dart::collision::CollisionOption& option) -> bool {
             return self->collide(option);
           },
-          ::py::arg("option"))
+          ::py::arg("option"),
+          "Performs collision check within this CollisionGroup")
       .def(
           "collide",
           +[](dart::collision::CollisionGroup* self,
@@ -132,7 +202,38 @@ void CollisionGroup(py::module& m)
             return self->collide(option, result);
           },
           ::py::arg("option"),
-          ::py::arg("result"))
+          ::py::arg("result"),
+          "Performs collision check within this CollisionGroup")
+      .def(
+          "collide",
+          +[](dart::collision::CollisionGroup* self,
+              dart::collision::CollisionGroup* otherGroup) -> bool {
+            return self->collide(otherGroup);
+          },
+          ::py::arg("otherGroup"),
+          "Perform collision check against other CollisionGroup")
+      .def(
+          "collide",
+          +[](dart::collision::CollisionGroup* self,
+              dart::collision::CollisionGroup* otherGroup,
+              const dart::collision::CollisionOption& option) -> bool {
+            return self->collide(otherGroup, option);
+          },
+          ::py::arg("otherGroup"),
+          ::py::arg("option"),
+          "Perform collision check against other CollisionGroup")
+      .def(
+          "collide",
+          +[](dart::collision::CollisionGroup* self,
+              dart::collision::CollisionGroup* otherGroup,
+              const dart::collision::CollisionOption& option,
+              dart::collision::CollisionResult* result) -> bool {
+            return self->collide(otherGroup, option, result);
+          },
+          ::py::arg("otherGroup"),
+          ::py::arg("option"),
+          ::py::arg("result"),
+          "Perform collision check against other CollisionGroup")
       .def(
           "distance",
           +[](dart::collision::CollisionGroup* self) -> double {
