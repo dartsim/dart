@@ -14,7 +14,7 @@ brew 'nlopt'
 brew 'octomap'
 brew 'ode'
 #brew 'open-scene-graph'  # disabled until 3.7.0 is released
-brew 'pagmo'
+#brew 'pagmo'             # build from source until https://github.com/esa/pagmo2/issues/445 is resolved
 brew 'tinyxml2'
 brew 'urdfdom'
 

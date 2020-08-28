@@ -91,7 +91,7 @@ git clone https://github.com/esa/pagmo2.git -b 'v2.15.0' --single-branch --depth
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DPAGMO_WITH_EIGEN3=ON &&
-  # NLopt and IPopt supports are disabled until https://github.com/esa/pagmo2/issues/445 resolved
+  # NLopt and IPopt supports are disabled until https://github.com/esa/pagmo2/issues/445 is resolved
   # -DPAGMO_WITH_NLOPT=ON \
   # -DPAGMO_WITH_IPOPT=ON \
   make -j$(nproc) &&
