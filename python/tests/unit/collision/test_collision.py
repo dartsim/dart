@@ -21,6 +21,7 @@ def collision_groups_tester(cd):
     group = cd.createCollisionGroup()
     group.addShapeFrame(simple_frame1)
     group.addShapeFrame(simple_frame2)
+    assert group.getNumShapeFrames() is 2
 
     #
     #    ( s1,s2 )              collision!
@@ -50,6 +51,54 @@ def collision_groups_tester(cd):
     group.collide(option, result)
     assert result.isCollision()
     assert result.getNumContacts() is not 0
+
+    # Repeat the same test with BodyNodes instead of SimpleFrames
+
+    group.removeAllShapeFrames()
+    assert group.getNumShapeFrames() is 0
+
+    skel1 = dart.dynamics.Skeleton()
+    skel2 = dart.dynamics.Skeleton()
+
+    [joint1, body1] = skel1.createFreeJointAndBodyNodePair(None)
+    [joint2, body2] = skel2.createFreeJointAndBodyNodePair(None)
+
+    shape_node1 = body1.createShapeNode(sphere1)
+    shape_node1.createVisualAspect()
+    shape_node1.createCollisionAspect()
+
+    shape_node2 = body2.createShapeNode(sphere2)
+    shape_node2.createVisualAspect()
+    shape_node2.createCollisionAspect()
+
+    group.addShapeFramesOf(body1)
+    group.addShapeFramesOf(body2)
+
+    assert group.getNumShapeFrames() is 2
+
+    assert group.collide()
+
+    joint2.setPosition(3, 3)
+    assert not group.collide()
+
+    # Repeat the same test with BodyNodes and two groups
+
+    joint2.setPosition(3, 0)
+
+    group.removeAllShapeFrames()
+    assert group.getNumShapeFrames() is 0
+    group2 = cd.createCollisionGroup()
+
+    group.addShapeFramesOf(body1)
+    group2.addShapeFramesOf(body2)
+
+    assert group.getNumShapeFrames() is 1
+    assert group2.getNumShapeFrames() is 1
+
+    assert group.collide(group2)
+
+    joint2.setPosition(3, 3)
+    assert not group.collide(group2)
 
 
 def test_collision_groups():
