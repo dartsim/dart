@@ -165,8 +165,8 @@ void testZDT1Generic(MultiObjectiveSolver& solver)
 TEST(ZDT1, Basic)
 {
 #if HAVE_PAGMO
-  // PagmoMultiObjectiveSolver pagmoSolver;
-  // testZDT1(pagmoSolver);
+  PagmoMultiObjectiveSolver pagmoSolver;
+  testZDT1(pagmoSolver);
   // testZDT1Generic(pagmoSolver);
 #endif
 }
