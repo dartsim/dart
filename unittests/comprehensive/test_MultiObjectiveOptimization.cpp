@@ -98,12 +98,12 @@ public:
 void testZDT1(MultiObjectiveSolver& solver)
 {
 #ifdef NDEBUG // release mode
-  std::size_t numSolutions = 100;
+  std::size_t numSolutions = 50;
 #else
   std::size_t numSolutions = 10;
 #endif
 #ifdef NDEBUG // release mode
-  std::size_t iterationNum = 500;
+  std::size_t iterationNum = 1000;
 #else
   std::size_t iterationNum = 200;
 #endif
@@ -134,12 +134,12 @@ void testZDT1Generic(MultiObjectiveSolver& solver)
   pFuncs.push_back(pFunc2);
 
 #ifdef NDEBUG // release mode
-  std::size_t numSolutions = 100;
+  std::size_t numSolutions = 50;
 #else
   std::size_t numSolutions = 10;
 #endif
 #ifdef NDEBUG // release mode
-  std::size_t iterationNum = 500;
+  std::size_t iterationNum = 1000;
 #else
   std::size_t iterationNum = 200;
 #endif
