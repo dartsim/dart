@@ -12,6 +12,7 @@
 find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
 
 if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
+  cmake_policy(SET CMP0057 NEW)
   if(WIN32 AND "optimized" IN_LIST BULLET_LIBRARIES
            AND     "debug" IN_LIST BULLET_LIBRARIES)
     cmake_parse_arguments(BULLET_INTERFACE_LIBRARIES "" "" "debug;optimized"
