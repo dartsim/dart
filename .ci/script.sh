@@ -44,7 +44,14 @@ fi
 
 # Set number of threads for parallel build
 # Ref: https://unix.stackexchange.com/a/129401
-num_threads=4
+if [ "$OSTYPE" = "linux-gnu" ]; then
+  num_threads=$(nproc)
+elif [ "$OSTYPE" = "darwin" ]; then
+  num_threads=$(sysctl -n hw.logicalcpu)
+else
+  num_threads=1
+  echo "$OSTYPE is not supported to detect the number of logical CPU cores."
+fi
 while getopts ":j:" opt; do
   case $opt in
     j) num_threads="$OPTARG"
