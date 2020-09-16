@@ -35,6 +35,7 @@
   * Fixed memory leaks from dart::gui::osg::Viewer: [#1349](https://github.com/dartsim/dart/pull/1349)
   * Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351), [#1355](https://github.com/dartsim/dart/pull/1355)
   * Updated ImGui to 1.71: [#1362](https://github.com/dartsim/dart/pull/1362)
+  * Updated ImGui to 1.79: [#1498](https://github.com/dartsim/dart/pull/1498)
   * Fixed refresh of LineSegmentShapeNode: [#1381](https://github.com/dartsim/dart/pull/1381)
   * Fixed OSG transparent object sorting: [#1414](https://github.com/dartsim/dart/pull/1414)
   * Added modifier key support to ImGuiHandler: [#1436](https://github.com/dartsim/dart/pull/1436)
