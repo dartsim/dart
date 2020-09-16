@@ -39,6 +39,7 @@
   * Fixed OSG transparent object sorting: [#1414](https://github.com/dartsim/dart/pull/1414)
   * Added modifier key support to ImGuiHandler: [#1436](https://github.com/dartsim/dart/pull/1436)
   * Fixed mixed intrinsic and extrinsic camera parameters in OpenGL projection matrix: [#1485](https://github.com/dartsim/dart/pull/1485)
+  * Enabled mouse middle and right buttons in ImGuiHandler: [#1500](https://github.com/dartsim/dart/pull/1500)
 
 * Parser
 
