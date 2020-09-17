@@ -349,7 +349,29 @@ bool ImGuiHandler::handle(
     {
       io.MousePos
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
-      mMousePressed[0] = true;
+
+      if (eventAdapter.getButtonMask()
+          == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
+      {
+        mMousePressed[0] = true;
+      }
+      else if (
+          eventAdapter.getButtonMask()
+          == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+      {
+        mMousePressed[1] = true;
+      }
+      else if (
+          eventAdapter.getButtonMask()
+          == osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+      {
+        mMousePressed[2] = true;
+      }
+      else
+      {
+        // Shouldn't be reached to here. Mark left button by default.
+        mMousePressed[0] = true;
+      }
 
       return wantCapureMouse;
     }
@@ -363,7 +385,11 @@ bool ImGuiHandler::handle(
     }
     case osgGA::GUIEventAdapter::RELEASE:
     {
+      // When a mouse button is released no button mask is set. So we mark all
+      // the buttons are released.
       mMousePressed[0] = false;
+      mMousePressed[1] = false;
+      mMousePressed[2] = false;
 
       return wantCapureMouse;
     }
