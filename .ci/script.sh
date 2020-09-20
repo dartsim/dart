@@ -121,15 +121,16 @@ else
 fi
 
 if [ "$RUN_INSTALL_TEST" = "ON" ]; then
-  # Make sure we can install with no issues
+  # Install C++ package
   make -j$num_threads install
 
   if [ "$BUILD_DARTPY" = "ON" ]; then
-    # Run a python example (experimental)
-    if [ "$BUILD_DARTPY" = "ON" ]; then
-      cd $BUILD_DIR/python/examples/hello_world
-      python3 main.py
-    fi
+    # Install dartpy
+    make -j$num_threads install-dartpy
+
+    # Run a python example
+    cd $BUILD_DIR/python/examples/hello_world
+    python3 main.py
   else
     # Build an example using installed DART
     cd $BUILD_DIR/examples/hello_world

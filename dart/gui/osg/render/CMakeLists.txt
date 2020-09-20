@@ -13,13 +13,11 @@ dart_generate_include_header_file(
 )
 
 # Install
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/render.hpp
-    DESTINATION include/dart/gui/osg/render
-    COMPONENT headers
-  )
-endif()
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/render.hpp
+  DESTINATION include/dart/gui/osg/render
+  COMPONENT headers
+)
 
 dart_format_add(
   HeightmapShapeNode.hpp

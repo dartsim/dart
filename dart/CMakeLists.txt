@@ -94,9 +94,7 @@ if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_HPP_OUT})
 endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-if(NOT DART_BUILD_DARTPY)
-  install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
-endif()
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -180,8 +178,6 @@ if(MSVC)
   )
 endif()
 
-if(NOT DART_BUILD_DARTPY)
-  install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
-endif()
+install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})
