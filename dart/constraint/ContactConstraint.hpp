@@ -144,8 +144,7 @@ protected:
       const dynamics::ShapeNode* shapeNode);
   static double computeSecondaryFrictionCoefficient(
       const dynamics::ShapeNode* shapeNode);
-  static double computeSlipCompliance(
-      const dynamics::ShapeNode* shapeNode);
+  static double computeSlipCompliance(const dynamics::ShapeNode* shapeNode);
   static double computeSecondarySlipCompliance(
       const dynamics::ShapeNode* shapeNode);
   static Eigen::Vector3d computeWorldFirstFrictionDir(
@@ -185,7 +184,7 @@ private:
   void setSecondarySlipCompliance(double slip);
 
   /// Get contact object associated witht this constraint
-  const collision::Contact &getContact() const;
+  const collision::Contact& getContact() const;
 
 private:
   /// Time step
