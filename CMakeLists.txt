@@ -104,10 +104,6 @@ option(DART_BUILD_DARTPY "Build dartpy (the python binding)" OFF)
 option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 
-if(DART_BUILD_DARTPY)
-  set(BUILD_SHARED_LIBS OFF)
-endif()
-
 #===============================================================================
 # Print intro
 #===============================================================================
@@ -301,7 +297,7 @@ add_subdirectory(dart)
 
 set(DART_IN_SOURCE_BUILD TRUE)
 
-if(TARGET dart AND NOT DART_BUILD_DARTPY)
+if(TARGET dart)
 
   # Add a "tests" target to build unit tests.
   enable_testing()
@@ -357,7 +353,7 @@ if (DART_BUILD_DARTPY)
   add_subdirectory(python)
 endif()
 
-if(DART_BUILD_EXTRAS AND NOT DART_BUILD_DARTPY)
+if(DART_BUILD_EXTRAS)
   add_subdirectory(extras)
 endif()
 
@@ -408,12 +404,10 @@ write_basic_config_version_file(
   VERSION ${${PROJECT_NAME_UPPERCASE}_VERSION}
   COMPATIBILITY SameMajorVersion
 )
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${DART_CONFIG_OUT} ${DART_VERSION_OUT}
-    DESTINATION "${CONFIG_INSTALL_DIR}"
-  )
-endif()
+install(
+  FILES ${DART_CONFIG_OUT} ${DART_VERSION_OUT}
+  DESTINATION "${CONFIG_INSTALL_DIR}"
+)
 
 # Generate the DART pkg-config
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
@@ -422,41 +416,31 @@ if(DART_VERBOSE)
   message(STATUS ${PC_CONFIG_OUT})
 endif()
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
-if(NOT DART_BUILD_DARTPY)
-  install(FILES ${PC_CONFIG_OUT} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
+install(FILES ${PC_CONFIG_OUT} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
-if(NOT DART_BUILD_DARTPY)
-  install(FILES package.xml DESTINATION
-    ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
-  )
-endif()
+install(FILES package.xml DESTINATION
+  ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
+)
 
 #===============================================================================
 # Install sample data, examples, and tutorials
 #===============================================================================
 
 # Sample data
-if(NOT DART_BUILD_DARTPY)
-  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
-    DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
-  )
-endif()
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
+)
 
 # Examples source
-if(NOT DART_BUILD_DARTPY)
-  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples"
-    DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
-  )
-endif()
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
+)
 
 # Tutorials source
-if(NOT DART_BUILD_DARTPY)
-  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
-    DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
-  )
-endif()
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
+)
 
 #===============================================================================
 # Uninstall

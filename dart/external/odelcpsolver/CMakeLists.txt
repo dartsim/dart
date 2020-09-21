@@ -23,10 +23,8 @@ add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 
 # Install
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${hdrs}
-    DESTINATION include/dart/external/odelcpsolver
-    COMPONENT headers
-  )
-endif()
+install(
+  FILES ${hdrs}
+  DESTINATION include/dart/external/odelcpsolver
+  COMPONENT headers
+)

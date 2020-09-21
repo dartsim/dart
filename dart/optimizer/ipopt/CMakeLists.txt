@@ -29,12 +29,10 @@ dart_generate_include_header_file(
 )
 
 # Install
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
-    DESTINATION include/dart/optimizer/ipopt
-    COMPONENT headers
-  )
-endif()
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
+  DESTINATION include/dart/optimizer/ipopt
+  COMPONENT headers
+)
 
 dart_format_add(${hdrs} ${srcs})

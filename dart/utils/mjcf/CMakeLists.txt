@@ -16,10 +16,8 @@ dart_generate_include_header_file(
 )
 
 # Install
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/mjcf.hpp
-    DESTINATION include/dart/utils/mjcf
-    COMPONENT headers
-  )
-endif()
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/mjcf.hpp
+  DESTINATION include/dart/utils/mjcf
+  COMPONENT headers
+)

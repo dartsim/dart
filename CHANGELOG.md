@@ -69,6 +69,7 @@
   * Fixed TypeError from dartpy.dynamics.Node.getBodyNodePtr(): [#1463](https://github.com/dartsim/dart/pull/1463)
   * Added pybind/eigen.h to DistanceResult.cpp for read/write of eigen types: [#1480](https://github.com/dartsim/dart/pull/1480)
   * Added bindings for adding ShapeFrames to CollisionGroup: [#1490](https://github.com/dartsim/dart/pull/1490)
+  * Changed dartpy install command to make install-dartpy: [#1503](https://github.com/dartsim/dart/pull/1503)
 
 * Build and testing
 
