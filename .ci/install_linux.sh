@@ -82,6 +82,7 @@ else
 fi
 
 # DEBUG: Install IpOpt from source for testing
+apt-get install -y --no-install-recommends libblas-dev libatlas-dev liblapack-dev
 git clone https://github.com/coin-or/Ipopt -b 'releases/3.13.2' --single-branch --depth 1
 cd Ipopt
 ./configure
