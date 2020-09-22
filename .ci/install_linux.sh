@@ -55,7 +55,6 @@ apt-get install -y --no-install-recommends \
   libbullet-dev \
   liblz4-dev \
   libflann-dev \
-  # coinor-libipopt-dev \
   libtinyxml2-dev \
   liburdfdom-dev \
   liburdfdom-headers-dev \
