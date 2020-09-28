@@ -81,9 +81,11 @@ TEST(Issue1445, Collision)
     bn->createShapeNodeWith<
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(
-        std::make_shared<dart::dynamics::PlaneShape>(
-            Eigen::Vector3d::UnitZ(), 0.0));
-
+        std::make_shared<dart::dynamics::BoxShape>(
+            Eigen::Vector3d(10, 10, 0.2)));
+    auto sn = bn->getShapeNode(0);
+    ASSERT_TRUE(sn);
+    sn->setRelativeTranslation({0, 0, -0.1});
     world->addSkeleton(ground);
   }
 
