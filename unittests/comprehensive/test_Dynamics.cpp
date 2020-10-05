@@ -2512,3 +2512,66 @@ TEST_F(DynamicsTest, HybridDynamics)
     EXPECT_NEAR(command(i, 4), output(i, 4), tol);
   }
 }
+
+//==============================================================================
+TEST_F(DynamicsTest, OffsetCOM)
+{
+  WorldPtr world = World::create();
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+
+  SkeletonPtr boxSkel = createBox(Vector3d(1.0, 1.0, 1.0));
+  world->addSkeleton(boxSkel);
+  BodyNode* box = boxSkel->getBodyNode(0);
+  dynamics::Inertia inertia;
+  inertia.setMass(60);
+  inertia.setMoment(
+      box->getShapeNode(0)->getShape()->computeInertia(inertia.getMass()));
+  inertia.setLocalCOM({0, 500, 0});
+  box->setInertia(inertia);
+  box->addExtTorque({0, 0, 100}, false);
+
+  {
+    Vector3d comVel = box->getCOMLinearVelocity();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel))
+        << "comVel: " << comVel.transpose();
+  }
+  {
+    Vector3d linVel = box->getLinearVelocity();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0), linVel))
+        << "linVel: " << linVel.transpose();
+  }
+
+  world->step();
+  // Velocity at COM should be zero since the object is just rotating.
+  {
+    Vector3d comVel = box->getCOMLinearVelocity();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel))
+        << "comVel: " << comVel.transpose();
+  }
+  {
+    Vector3d angVel = box->getAngularVelocity();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0.01), angVel))
+        << "angVel: " << angVel.transpose();
+    Vector3d linVel = box->getLinearVelocity();
+    Vector3d expLinVel
+        = angVel.cross(box->getWorldTransform().linear() * -box->getLocalCOM());
+    EXPECT_TRUE(equals(expLinVel, linVel))
+        << "Expected: " << expLinVel.transpose()
+        << "\nActual: " << linVel.transpose();
+
+    Vector3d angAccel = box->getAngularAcceleration();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 10), angAccel))
+        << "angAccel: " << angAccel.transpose();
+    Vector3d linAccel = box->getLinearAcceleration();
+    Vector3d expLinAccel
+        = angVel.cross(linVel)
+          + angAccel.cross(
+                box->getWorldTransform().linear() * -box->getLocalCOM());
+    EXPECT_TRUE(equals(expLinAccel, linAccel))
+        << "Expected: " << expLinAccel.transpose()
+        << "\nActual: " << linAccel.transpose();
+  }
+}

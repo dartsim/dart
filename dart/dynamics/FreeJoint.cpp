@@ -589,15 +589,28 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Isometry3d Qdiff
-      =  convertToTransform(getVelocitiesStatic() * _dt);
-  const Eigen::Isometry3d Qnext = getQ()* Qdiff;
+  const Eigen::Vector6d& vel = getVelocitiesStatic();
+  const Eigen::Vector6d& accel = getAccelerationsStatic();
+  auto* bn = getChildBodyNode();
+  Eigen::Isometry3d Tcom;
+  // Transform from joint to center of mass of child body
+  Tcom = Eigen::Translation3d(
+      Joint::mAspectProperties.mT_ChildBodyToJoint.inverse()
+      * bn->getLocalCOM());
+  auto velAtCom = math::AdT(Tcom.inverse(), vel);
+  auto accelAtCom = math::AdT(Tcom.inverse(), accel);
 
-  // This is setVelocitiesStatic(math::AdR(Qnext.inverse() * getQ(), vel)), but
-  // using Qdiff instead.
-  setVelocitiesStatic(math::AdR(Qdiff.inverse(), getVelocitiesStatic()));
-  setAccelerationsStatic(math::AdR(Qdiff.inverse(), getAccelerationsStatic()));
+  const Eigen::Isometry3d Qcom = getQ() * Tcom;
+  const Eigen::Isometry3d Qdiff = convertToTransform(velAtCom * _dt);
 
+  const Eigen::Vector6d newVelAtCom = math::AdR(Qdiff.inverse(), velAtCom);
+  const Eigen::Vector6d newAccelAtCom = math::AdR(Qdiff.inverse(), accelAtCom);
+
+  const Eigen::Isometry3d QnextAtCom = Qcom * Qdiff;
+  const Eigen::Isometry3d Qnext = QnextAtCom * Tcom.inverse();
+
+  setVelocitiesStatic(math::AdT(Tcom, newVelAtCom));
+  setAccelerationsStatic(math::AdT(Tcom, newAccelAtCom));
   setPositionsStatic(convertToPositions(Qnext));
 }
 
@@ -608,14 +621,47 @@ void FreeJoint::integrateVelocities(double _dt)
   // Acceleration with additional term to take into account changing linear
   // velocity in the inertial frame.
   Eigen::Vector6d accelWithInertialTerm = getAccelerationsStatic();
-  accelWithInertialTerm.tail<3>() += (vel.head<3>().cross(vel.tail<3>()));
+
+  // Not sure if we need a different inertia than the one from the child body
+  // node.
+  const Eigen::Matrix6d& mI = getChildBodyNode()->getSpatialInertia();
+  const Eigen::Matrix6d& artInvProjI = getInvProjArtInertia();
+  // Remove Coriolis term because the velocity will be updated when integrating
+  // position and that will account for the rotation of the frame.
+  accelWithInertialTerm.tail<3>()
+      -= (artInvProjI * math::dad(vel, mI * vel)).tail<3>();
 
   setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
-      getVelocitiesStatic(), accelWithInertialTerm,  _dt));
+      getVelocitiesStatic(), accelWithInertialTerm, _dt));
   // vel now points to the updated velocity
-  Eigen::Vector6d accel = accelWithInertialTerm;
-  accel.tail<3>() -= vel.head<3>().cross(vel.tail<3>());
-  setAccelerationsStatic(accel);
+  accelWithInertialTerm.tail<3>()
+      += (artInvProjI * math::dad(vel, mI * vel)).tail<3>();
+  setAccelerationsStatic(accelWithInertialTerm);
+}
+
+void FreeJoint::updateConstrainedTerms(double timeStep)
+{
+  const double invTimeStep = 1.0 / timeStep;
+
+  const Eigen::Vector6d& vel = getVelocitiesStatic();
+  Eigen::Vector6d accelWithInertialTerm = getAccelerationsStatic();
+  const Eigen::Matrix6d& mI = getChildBodyNode()->getSpatialInertia();
+  const Eigen::Matrix6d& artInvI = getInvProjArtInertia();
+  // Remove Coriolis term because the velocity will be updated when integrating
+  // position and that will account for the rotation of the frame.
+  accelWithInertialTerm.tail<3>()
+      -= (artInvI * math::dad(vel, mI * vel)).tail<3>();
+
+  setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
+
+  // vel now points to the updated velocity
+  accelWithInertialTerm.tail<3>()
+      += (artInvI * math::dad(vel, mI * vel)).tail<3>();
+  setAccelerationsStatic(
+      accelWithInertialTerm + mVelocityChanges * invTimeStep);
+
+  this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
+  // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 
 //==============================================================================
