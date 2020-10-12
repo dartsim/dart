@@ -204,3 +204,34 @@ jobs:
           -DDART_MSVC_DEFAULT_OPTIONS=ON ^
           -DDART_VERBOSE=ON
         cmake --build . --target ALL_BUILD -- /maxcpucount:4
+        
+  windows_2019_clang_cl:
+    name: Windows (clang-cl) [Release]
+    runs-on: windows-2019
+    env:
+      COMPILER: gcc
+      BUILD_TYPE: Release
+      RUN_TESTS: OFF
+      VCPKG_ROOT: 'C:/dartsim/vcpkg'
+      VCPKG_BUILD_TAG: v0.1.1
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      shell: cmd
+      run: |
+        mkdir -p C:/dartsim
+        choco install -y wget
+        wget https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+        unzip vcpkg-dartsim-dependencies.zip -d C:/dartsim
+    - name: Build
+      shell: cmd
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ^
+          -T ClangCl ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+          -DDART_MSVC_DEFAULT_OPTIONS=ON ^
+          -DDART_VERBOSE=ON
+        cmake --build . --target ALL_BUILD
