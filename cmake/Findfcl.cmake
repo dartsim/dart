@@ -28,7 +28,10 @@ find_path(FCL_INCLUDE_DIRS
 
 # Libraries
 if(MSVC)
-  set(FCL_LIBRARIES "fcl$<$<CONFIG:Debug>:d>")
+  find_package(fcl QUIET CONFIG)
+  if(TARGET fcl)
+    set(FCL_LIBRARIES fcl)
+  endif()
 else()
   # Give explicit precedence to ${PC_FCL_LIBDIR}
   find_library(FCL_LIBRARIES
