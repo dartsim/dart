@@ -47,7 +47,9 @@ else()
 endif()
 
 # Version
-set(FCL_VERSION ${PC_FCL_VERSION})
+if(PC_FCL_VERSION)
+  set(FCL_VERSION ${PC_FCL_VERSION})
+endif()
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
