@@ -222,7 +222,7 @@ jobs:
         mkdir -p C:\dartsim
         choco install -y wget
         wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-        unzip vcpkg-dartsim-dependencies.zip -d C:\dartsim
+        unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
     - name: Build
       shell: cmd
       run: |
