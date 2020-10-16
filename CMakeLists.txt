@@ -302,7 +302,7 @@ if(TARGET dart)
   # Add a "tests" target to build unit tests.
   enable_testing()
   if(MSVC)
-    # add_subdirectory(unittests)
+    add_subdirectory(unittests)
   else()
     add_subdirectory(unittests EXCLUDE_FROM_ALL)
   endif()
