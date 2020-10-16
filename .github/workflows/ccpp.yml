@@ -203,8 +203,12 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
           -DDART_MSVC_DEFAULT_OPTIONS=ON ^
           -DDART_VERBOSE=ON
-        cmake --build . --target ALL_BUILD -- /maxcpucount:4
-        
+        cmake --build . --target ALL_BUILD --parallel
+    - name: Test
+      shell: cmd
+      run: |
+        ctest --output-on-fauilure
+
   windows_2019_clang_cl:
     name: Windows (clang-cl) [Release]
     runs-on: windows-2019
@@ -234,4 +238,8 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
           -DDART_MSVC_DEFAULT_OPTIONS=ON ^
           -DDART_VERBOSE=ON
-        cmake --build . --target ALL_BUILD
+        cmake --build . --target ALL_BUILD --parallel
+    - name: Test
+      shell: cmd
+      run: |
+        ctest --output-on-fauilure

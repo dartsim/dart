@@ -61,7 +61,7 @@ build_script:
   #------------------
   - cmd: mkdir build && cd build
   - cmd: cmake %CMAKE_GENERATOR% -A x64 -DCMAKE_BUILD_TYPE=%configuration% -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
-  # - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4
+  - cmd: cmake --build . --target ALL_BUILD --config %configuration% --parallel
 
   #-------------------------------
   # Ubuntu 16.04 LTS && 18.04 LTS
@@ -72,5 +72,12 @@ build_script:
   - sh: make check-format
 
 test_script:
-  #- cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure
+  #------------------
+  # Windows 10
+  #------------------
+  - cmd: ctest --output-on-fauilure
+
+  #-------------------------------
+  # Ubuntu 16.04 LTS && 18.04 LTS
+  #-------------------------------
   - sh: ctest -j4
