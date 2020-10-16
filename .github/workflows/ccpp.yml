@@ -183,16 +183,16 @@ jobs:
       BUILD_TYPE: Release
       RUN_TESTS: OFF
       VCPKG_ROOT: 'C:/dartsim/vcpkg'
-      VCPKG_BUILD_TAG: v0.1.1
+      VCPKG_BUILD_TAG: v0.2.0-70f192e
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
       shell: cmd
       run: |
-        mkdir -p C:/dartsim
+        mkdir -p C:\dartsim
         choco install -y wget
         wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-        unzip -qq vcpkg-dartsim-dependencies.zip -d C:/dartsim
+        unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
     - name: Build
       shell: cmd
       run: |
@@ -219,10 +219,10 @@ jobs:
     - name: Install Dependencies
       shell: cmd
       run: |
-        mkdir -p C:/dartsim
+        mkdir -p C:\dartsim
         choco install -y wget
-        wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip > /dev/null
-        unzip vcpkg-dartsim-dependencies.zip -d C:/dartsim
+        wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+        unzip vcpkg-dartsim-dependencies.zip -d C:\dartsim
     - name: Build
       shell: cmd
       run: |
