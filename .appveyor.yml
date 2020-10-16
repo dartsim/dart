@@ -10,8 +10,9 @@ platform: x64
 
 # specify custom environment variables
 environment:
+  VCPKG_BUILD_TAG: v0.2.0-70f192e
   MSVC_DEFAULT_OPTIONS: ON
-  CMAKE_TOOLCHAIN_FILE: -DCMAKE_TOOLCHAIN_FILE="C:\tools\vcpkg\scripts\buildsystems\vcpkg.cmake"
+  CMAKE_TOOLCHAIN_FILE: -DCMAKE_TOOLCHAIN_FILE="C:\dartsim\vcpkg\scripts\buildsystems\vcpkg.cmake"
   matrix:
     - CMAKE_GENERATOR: -G"Visual Studio 16 2019"
       CMAKE_TOOLCHAIN: -T"v142"
@@ -37,27 +38,12 @@ install:
   #------------------
   # Windows 10
   #------------------
-  # update vcpkg
-  # - cmd: cd C:\tools\vcpkg
-  # - cmd: git pull
-  # - cmd: .\bootstrap-vcpkg.bat
-
   - cmd: if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
   - cmd: if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
-
-  # remove outdated versions
-  # - cmd: vcpkg remove --outdated --recurse
-
-  # install required dependencies
-  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
-
-  # install optional dependencies
-  # 'dart-utils' needs tinyxml2 and boost algorithm/lexical-cast
-  #   and also boost-math to resolve a circular dependency with lexical-cast
-  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% boost-algorithm boost-lexical-cast boost-math bullet3 freeglut ode opengl tinyxml2
-  #- vcpkg install --recurse --triplet %VCPKG_ARCH% flann ipopt nlopt osg urdfdom
-
-  - cmd: vcpkg integrate install
+  - cmd: mkdir -p C:\dartsim
+  - cmd: choco install -y wget
+  - cmd: wget https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+  - cmd: unzip vcpkg-dartsim-dependencies.zip -d C:/dartsim
   - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
 
   #-------------------------------
@@ -68,10 +54,6 @@ install:
   - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-system-dev
   - sh: sudo apt-get --yes install libnlopt-dev coinor-libipopt-dev libbullet-dev libflann-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libopenscenegraph-dev
   - sh: sudo apt-get --yes install clang-format-6.0
-
-# preserve contents of selected directories and files across project builds
-cache:
-  - C:\tools\vcpkg\installed -> .appveyor.yml
 
 build_script:
   #------------------
