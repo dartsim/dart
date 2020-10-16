@@ -10,8 +10,7 @@ platform: x64
 
 # specify custom environment variables
 environment:
-  # VCPKG_BUILD_TAG: v0.2.0-70f192e
-  VCPKG_BUILD_TAG: v0.1.1
+  VCPKG_BUILD_TAG: v0.2.0-70f192e
   MSVC_DEFAULT_OPTIONS: ON
   CMAKE_TOOLCHAIN_FILE: -DCMAKE_TOOLCHAIN_FILE="C:\dartsim\vcpkg\scripts\buildsystems\vcpkg.cmake"
   matrix:
