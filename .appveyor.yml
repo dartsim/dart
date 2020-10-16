@@ -55,10 +55,6 @@ install:
   - sh: sudo apt-get --yes install libnlopt-dev coinor-libipopt-dev libbullet-dev libflann-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libopenscenegraph-dev
   - sh: sudo apt-get --yes install clang-format-6.0
 
-# preserve contents of selected directories and files across project builds
-cache:
-  - C:\dartsim\vcpkg\installed -> .appveyor.yml
-
 build_script:
   #------------------
   # Windows 10
