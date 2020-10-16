@@ -41,7 +41,7 @@ install:
   #------------------
   - cmd: if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
   - cmd: if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
-  - cmd: mkdir -p C:/dartsim
+  - cmd: mkdir -p C:\dartsim
   - cmd: choco install -y wget
   - cmd: wget https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
   - cmd: unzip vcpkg-dartsim-dependencies.zip -d C:/dartsim
