@@ -189,10 +189,10 @@ jobs:
     - name: Install Dependencies
       shell: cmd
       run: |
-        mkdir -p C:/dartsim
+        mkdir -p C:\dartsim
         choco install -y wget
-        wget https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-        unzip vcpkg-dartsim-dependencies.zip -d C:/dartsim
+        wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+        unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
     - name: Build
       shell: cmd
       run: |
@@ -219,10 +219,10 @@ jobs:
     - name: Install Dependencies
       shell: cmd
       run: |
-        mkdir -p C:/dartsim
+        mkdir -p C:\dartsim
         choco install -y wget
-        wget https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-        unzip vcpkg-dartsim-dependencies.zip -d C:/dartsim
+        wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+        unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
     - name: Build
       shell: cmd
       run: |
