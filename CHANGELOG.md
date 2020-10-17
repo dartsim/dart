@@ -1,11 +1,10 @@
 ## DART 6
 
-### [DART 6.9.5 (2020-XX-XX)](https://github.com/dartsim/dart/milestone/63?closed=1)
+### [DART 6.9.5 (2020-10-17)](https://github.com/dartsim/dart/milestone/63?closed=1)
 
 * Build
 
   * Added Ipopt >= 3.13 support: [#1506](https://github.com/dartsim/dart/pull/1506)
-
 
 ### [DART 6.9.4 (2020-08-30)](https://github.com/dartsim/dart/milestone/62?closed=1)
 
