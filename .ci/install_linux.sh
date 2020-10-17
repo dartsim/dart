@@ -55,6 +55,7 @@ apt-get install -y --no-install-recommends \
   libbullet-dev \
   liblz4-dev \
   libflann-dev \
+  coinor-libipopt-dev \
   libtinyxml2-dev \
   liburdfdom-dev \
   liburdfdom-headers-dev \
@@ -80,18 +81,6 @@ else
   echo -e "$(lsb_release -sc) is not supported."
   exit 1
 fi
-
-# DEBUG: Install IpOpt from source for testing
-if [ $(lsb_release -sc) = "bionic" ]; then
-  apt-get install -y --no-install-recommends libblas-dev libatlas-base-dev liblapack-dev
-else
-  apt-get install -y --no-install-recommends libblas-dev libatlas-dev liblapack-dev
-fi
-git clone https://github.com/coin-or/Ipopt -b 'releases/3.13.3' --single-branch --depth 1
-cd Ipopt
-./configure
-make -j4
-make install
 
 if [ "$BUILD_DARTPY" = "ON" ]; then
   apt-get install -y --no-install-recommends \
