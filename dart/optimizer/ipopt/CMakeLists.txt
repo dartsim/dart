@@ -28,6 +28,18 @@ dart_generate_include_header_file(
   ${header_names}
 )
 
+# Add definitions for the IpOpt version
+string(REPLACE "." ";" ipopt_version_list ${IPOPT_VERSION})
+list(GET ipopt_version_list 0 IPOPT_VERSION_MAJOR)
+list(GET ipopt_version_list 1 IPOPT_VERSION_MINOR)
+list(GET ipopt_version_list 2 IPOPT_VERSION_PATCH)
+target_compile_definitions(${target_name}
+  PUBLIC
+    IPOPT_VERSION_MAJOR=${IPOPT_VERSION_MAJOR}
+    IPOPT_VERSION_MINOR=${IPOPT_VERSION_MINOR}
+    IPOPT_VERSION_PATCH=${IPOPT_VERSION_PATCH}
+)
+
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp

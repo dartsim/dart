@@ -88,6 +88,18 @@
 
   * Updated tutorial documentation and code to reflect new APIs: [#1481](https://github.com/dartsim/dart/pull/1481)
 
+### [DART 6.9.5 (2020-10-17)](https://github.com/dartsim/dart/milestone/63?closed=1)
+
+* Optimization
+
+  * Added Ipopt >= 3.13 support: [#1506](https://github.com/dartsim/dart/pull/1506)
+
+### [DART 6.9.4 (2020-08-30)](https://github.com/dartsim/dart/milestone/62?closed=1)
+
+* Build
+
+  * Added support new if() IN_LIST operator in DARTConfig.cmake (6.9 backport): [#1494](https://github.com/dartsim/dart/pull/1494)
+
 ### [DART 6.9.3 (2020-08-26)](https://github.com/dartsim/dart/milestone/61?closed=1)
 
 * Dynamics
