@@ -82,7 +82,11 @@ else
 fi
 
 # DEBUG: Install IpOpt from source for testing
-apt-get install -y --no-install-recommends libblas-dev libatlas-dev liblapack-dev
+if [ $(lsb_release -sc) = "bionic" ]; then
+  apt-get install -y --no-install-recommends libblas-dev libatlas-base-dev liblapack-dev
+else
+  apt-get install -y --no-install-recommends libblas-dev libatlas-dev liblapack-dev
+fi
 git clone https://github.com/coin-or/Ipopt -b 'releases/3.13.3' --single-branch --depth 1
 cd Ipopt
 ./configure
