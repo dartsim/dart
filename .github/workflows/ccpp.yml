@@ -207,7 +207,7 @@ jobs:
     - name: Test
       shell: cmd
       run: |
-        ctest --output-on-fauilure
+        cmake --build . --target RUN_TESTS
 
   windows_2019_clang_cl:
     name: Windows (clang-cl) [Release]
@@ -242,4 +242,4 @@ jobs:
     - name: Test
       shell: cmd
       run: |
-        ctest --output-on-fauilure
+        cmake --build . --target RUN_TESTS
