@@ -13,7 +13,7 @@ RUN apt-get clean \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+# Install DART dependencies
 RUN apt-get update \
     && apt-get -y install --no-install-recommends \
     libeigen3-dev \
@@ -36,6 +36,17 @@ RUN apt-get update \
     libopenscenegraph-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install dartpy dependencies
+RUN apt-get update \
+    && apt-get -y install --no-install-recommends \
+    libpython3-dev \
+    pybind11-dev \
+    python3 \
+    python3-pip \
+    python3-pytest \
+    python3-distutils \
+    && rm -rf /var/lib/apt/lists/*
+
 # Compile and install DART and dartpy
 COPY . /opt/dart
 WORKDIR /opt/dart
@@ -47,9 +58,13 @@ RUN cd /opt/dart \
     -DCMAKE_BUILD_TYPE=Release .. \
     -DBUILD_SHARED_LIBS=ON \
     -DDART_BUILD_DARTPY=ON \
-    && make -j \
+    && make \
     && make install \
-    && make -j dartpy \
+    && make dartpy \
     && make install-dartpy
+
+# Install python dependencies
+RUN python3 -m pip install\
+    numpy
 
 WORKDIR "/"
