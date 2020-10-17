@@ -67,8 +67,10 @@ if(TARGET dart-utils)
 endif()
 
 if(TARGET dart-utils-urdf)
-  dart_add_test("unit" test_DartLoader)
-  target_link_libraries(test_DartLoader dart-utils-urdf)
+  if(NOT MSVC)
+    dart_add_test("unit" test_DartLoader)
+    target_link_libraries(test_DartLoader dart-utils-urdf)
+  endif()
 
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
   target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
