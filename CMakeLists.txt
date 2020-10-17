@@ -77,8 +77,9 @@ if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
   option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+else()
+  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile
 # option `-march=native` is added to the target `dart` that enables all
