@@ -202,6 +202,7 @@ jobs:
           -DDART_MSVC_DEFAULT_OPTIONS=ON ^
           -DDART_VERBOSE=ON
         cmake --build . --target ALL_BUILD --parallel
+        ctest --output-on-fauilure
         cmake --build . --target RUN_TESTS
 
   windows_2019_clang_cl:
@@ -232,4 +233,5 @@ jobs:
           -DDART_MSVC_DEFAULT_OPTIONS=ON ^
           -DDART_VERBOSE=ON
         cmake --build . --target ALL_BUILD --parallel
+        ctest --output-on-fauilure
         cmake --build . --target RUN_TESTS
