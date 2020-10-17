@@ -74,18 +74,6 @@ IKFAST_COMPILE_ASSERT(IKFAST_VERSION == 71);
 #define IKPI ((IkReal)3.14159265358979)
 #define IKPI_2 ((IkReal)1.57079632679490)
 
-#ifdef _MSC_VER
-#  ifndef isnan
-#    define isnan _isnan
-#  endif
-#  ifndef isinf
-#    define isinf _isinf
-#  endif
-//#ifndef isfinite
-//#define isfinite _isfinite
-//#endif
-#endif // _MSC_VER
-
 // lapack routines
 extern "C" {
 void dgetrf_(
