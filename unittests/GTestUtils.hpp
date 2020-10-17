@@ -171,13 +171,13 @@ namespace test {
 
 namespace detail {
 
-template <typename Derived, typename Enable = void>
+template <typename DerivedA, typename DerivedB, typename Enable = void>
 struct EqualsImpl
 {
   static bool run(
-      const Eigen::DenseBase<Derived>& expected,
-      const Eigen::DenseBase<Derived>& actual,
-      double tol)
+      const Eigen::DenseBase<DerivedA>& expected,
+      const Eigen::DenseBase<DerivedB>& actual,
+      typename DerivedA::Scalar tol)
   {
     // Get the matrix sizes and sanity check the call
     const std::size_t n1 = expected.cols(), m1 = expected.rows();
@@ -215,15 +215,16 @@ struct EqualsImpl
 // Workaround to resolve: "fpclassify': ambiguous call to overloaded function
 // Reference: https://stackoverflow.com/a/61646279
 #ifdef _WIN32
-template <typename Derived>
+template <typename DerivedA, typename DerivedB>
 struct EqualsImpl<
-    Derived,
-    std::enable_if<std::is_integral<typename Derived::Scalar>::type>>
+    DerivedA,
+    DerivedB,
+    std::enable_if_t<std::is_integral<typename DerivedA::Scalar>::value>>
 {
   static bool run(
-      const Eigen::DenseBase<Derived>& expected,
-      const Eigen::DenseBase<Derived>& actual,
-      double tol)
+      const Eigen::DenseBase<DerivedA>& expected,
+      const Eigen::DenseBase<DerivedB>& actual,
+      typename DerivedA::Scalar tol)
   {
     // Get the matrix sizes and sanity check the call
     const std::size_t n1 = expected.cols(), m1 = expected.rows();
@@ -264,10 +265,11 @@ struct EqualsImpl<
 
 //==============================================================================
 /// Returns true if the two matrices are equal within the given bound
-template <typename T>
-bool equals(const T& expected, const T& actual, double tol = 1e-5)
+template <typename T1, typename T2>
+bool equals(
+    const T1& expected, const T2& actual, typename T1::Scalar tol = 1e-5)
 {
-  return detail::EqualsImpl<T>::run(expected, actual, tol);
+  return detail::EqualsImpl<T1, T2>::run(expected, actual, tol);
 }
 
 //==============================================================================
