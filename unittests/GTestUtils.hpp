@@ -169,44 +169,105 @@
 namespace dart {
 namespace test {
 
-//==============================================================================
-/// Returns true if the two matrices are equal within the given bound
-template <typename Derived>
-bool equals(
-    const Eigen::DenseBase<Derived>& expected,
-    const Eigen::DenseBase<Derived>& actual,
-    double tol = 1e-5)
-{
-  // Get the matrix sizes and sanity check the call
-  const std::size_t n1 = expected.cols(), m1 = expected.rows();
-  const std::size_t n2 = actual.cols(), m2 = actual.rows();
-  if (m1 != m2 || n1 != n2)
-    return false;
+namespace detail {
 
-  // Check each index
-  for (std::size_t i = 0; i < m1; i++)
+template <typename Derived, typename Enable = void>
+struct EqualsImpl
+{
+  static bool run(
+      const Eigen::DenseBase<Derived>& expected,
+      const Eigen::DenseBase<Derived>& actual,
+      double tol)
   {
-    for (std::size_t j = 0; j < n1; j++)
+    // Get the matrix sizes and sanity check the call
+    const std::size_t n1 = expected.cols(), m1 = expected.rows();
+    const std::size_t n2 = actual.cols(), m2 = actual.rows();
+    if (m1 != m2 || n1 != n2)
+      return false;
+
+    // Check each index
+    for (std::size_t i = 0; i < m1; i++)
     {
-      if (std::isnan(expected(i, j)) ^ std::isnan(actual(i, j)))
+      for (std::size_t j = 0; j < n1; j++)
       {
-        return false;
-      }
-      else if (std::abs(expected(i, j)) > 1)
-      {
-        // Test relative error for values that are larger than 1
-        if (std::abs((expected(i, j) - actual(i, j)) / expected(i, j)) > tol)
+        if (std::isnan(expected(i, j)) ^ std::isnan(actual(i, j)))
+        {
           return false;
-      }
-      else if (std::abs(expected(i, j) - actual(i, j)) > tol)
-      {
-        return false;
+        }
+        else if (std::abs(expected(i, j)) > 1)
+        {
+          // Test relative error for values that are larger than 1
+          if (std::abs((expected(i, j) - actual(i, j)) / expected(i, j)) > tol)
+            return false;
+        }
+        else if (std::abs(expected(i, j) - actual(i, j)) > tol)
+        {
+          return false;
+        }
       }
     }
-  }
 
-  // If no problems, the two matrices are equal
-  return true;
+    // If no problems, the two matrices are equal
+    return true;
+  }
+};
+
+// Workaround to resolve: "fpclassify': ambiguous call to overloaded function
+// Reference: https://stackoverflow.com/a/61646279
+#ifdef _WIN32
+template <typename Derived>
+struct EqualsImpl<
+    Derived,
+    std::enable_if<std::is_integral<typename Derived::Scalar>::type>>
+{
+  static bool run(
+      const Eigen::DenseBase<Derived>& expected,
+      const Eigen::DenseBase<Derived>& actual,
+      double tol)
+  {
+    // Get the matrix sizes and sanity check the call
+    const std::size_t n1 = expected.cols(), m1 = expected.rows();
+    const std::size_t n2 = actual.cols(), m2 = actual.rows();
+    if (m1 != m2 || n1 != n2)
+      return false;
+
+    // Check each index
+    for (std::size_t i = 0; i < m1; i++)
+    {
+      for (std::size_t j = 0; j < n1; j++)
+      {
+        if (std::isnan(static_cast<double>(expected(i, j)))
+            ^ std::isnan(static_cast<double>(actual(i, j))))
+        {
+          return false;
+        }
+        else if (std::abs(expected(i, j)) > 1)
+        {
+          // Test relative error for values that are larger than 1
+          if (std::abs((expected(i, j) - actual(i, j)) / expected(i, j)) > tol)
+            return false;
+        }
+        else if (std::abs(expected(i, j) - actual(i, j)) > tol)
+        {
+          return false;
+        }
+      }
+    }
+
+    // If no problems, the two matrices are equal
+    return true;
+  }
+};
+#endif
+
+} // namespace detail
+
+//==============================================================================
+/// Returns true if the two matrices are equal within the given bound
+template <typename T>
+bool equals(const T& expected, const T& actual, double tol = 1e-5)
+{
+  return detail::EqualsImpl<T>::run(expected, actual, tol);
 }
 
 //==============================================================================
