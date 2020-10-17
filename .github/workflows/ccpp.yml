@@ -182,7 +182,6 @@ jobs:
       BUILD_TYPE: Release
       VCPKG_ROOT: 'C:/dartsim/vcpkg'
       VCPKG_BUILD_TAG: v0.2.0-70f192e
-      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
@@ -204,7 +203,6 @@ jobs:
           -DDART_VERBOSE=ON
         cmake --build . --target ALL_BUILD --parallel
         ctest --output-on-fauilure
-        cmake --build . --target RUN_TESTS
 
   windows_2019_clang_cl:
     name: Windows (clang-cl) [Release]
@@ -213,7 +211,6 @@ jobs:
       BUILD_TYPE: Release
       VCPKG_ROOT: 'C:/dartsim/vcpkg'
       VCPKG_BUILD_TAG: v0.2.0-70f192e
-      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
@@ -236,4 +233,3 @@ jobs:
           -DDART_VERBOSE=ON
         cmake --build . --target ALL_BUILD --parallel
         ctest --output-on-fauilure
-        cmake --build . --target RUN_TESTS

@@ -267,7 +267,9 @@ struct EqualsImpl<
 /// Returns true if the two matrices are equal within the given bound
 template <typename T1, typename T2>
 bool equals(
-    const T1& expected, const T2& actual, typename T1::Scalar tol = 1e-5)
+    const T1& expected,
+    const T2& actual,
+    typename T1::Scalar tol = static_cast<typename T1::Scalar>(1e-5))
 {
   return detail::EqualsImpl<T1, T2>::run(expected, actual, tol);
 }
