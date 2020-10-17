@@ -33,10 +33,16 @@
 #ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
+#include <memory>
+
+#include "dart/optimizer/ipopt/BackwardCompatibility.hpp"
+#if IPOPT_VERSION_GE(3, 13, 0)
+#include <IpIpoptApplication.hpp>
+#include <IpTNLP.hpp>
+#else
 #include <coin/IpIpoptApplication.hpp>
 #include <coin/IpTNLP.hpp>
-
-#include <memory>
+#endif
 
 #include "dart/optimizer/Solver.hpp"
 
