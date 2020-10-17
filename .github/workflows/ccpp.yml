@@ -182,6 +182,7 @@ jobs:
       BUILD_TYPE: Release
       VCPKG_ROOT: 'C:/dartsim/vcpkg'
       VCPKG_BUILD_TAG: v0.2.0-70f192e
+      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
@@ -212,6 +213,7 @@ jobs:
       BUILD_TYPE: Release
       VCPKG_ROOT: 'C:/dartsim/vcpkg'
       VCPKG_BUILD_TAG: v0.2.0-70f192e
+      CTEST_OUTPUT_ON_FAILURE: 1
     steps:
     - uses: actions/checkout@v1
     - name: Install Dependencies
