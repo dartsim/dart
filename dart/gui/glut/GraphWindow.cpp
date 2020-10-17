@@ -126,11 +126,7 @@ void GraphWindow::draw()
 
 void GraphWindow::keyboard(unsigned char _key, int _x, int _y)
 {
-  switch (_key)
-  {
-    default:
-      Win2D::keyboard(_key, _x, _y);
-  }
+  Win2D::keyboard(_key, _x, _y);
   glutPostRedisplay();
 }
 

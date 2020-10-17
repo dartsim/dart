@@ -236,13 +236,6 @@ public:
   }
 };
 
-class StateAndPropertiesAspectTest
-  : public dart::common::AspectWithVersionedProperties<
-        StateAndPropertiesAspectTest,
-        dart::common::Empty>
-{
-};
-
 class GenericAspect : public Aspect, public Subject
 {
 public:

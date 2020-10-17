@@ -66,16 +66,7 @@ function(dart_add_test test_type target_name) # ARGN for source files
 
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
-
-  if(MSVC)
-    target_link_libraries(${target_name}
-        dart
-        optimized gtest debug gtestd
-        optimized gtest_main debug gtest_maind
-    )
-  else()
-    target_link_libraries(${target_name} dart gtest gtest_main)
-  endif()
+  target_link_libraries(${target_name} dart gtest gtest_main)
 
   dart_format_add(${sources})
 
@@ -102,8 +93,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #   fixed even after further changes are made
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
-add_subdirectory(comprehensive)
-add_subdirectory(regression)
+if(NOT MSVC)
+  # Disabled due to limitied disk space in CI image
+  add_subdirectory(comprehensive)
+  add_subdirectory(regression)
+endif()
 add_subdirectory(unit)
 
 # Print tests

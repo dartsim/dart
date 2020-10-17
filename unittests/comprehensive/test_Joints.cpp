@@ -82,7 +82,7 @@ public:
   void kinematicsTest(
 #ifdef _WIN32
       const typename JointType::Properties& _joint
-      = BodyNode::createJointProperties<JointType>());
+      = createJointProperties<JointType>());
 #else
       const typename JointType::Properties& _joint
       = typename JointType::Properties());

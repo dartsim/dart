@@ -39,7 +39,7 @@
 namespace dart {
 namespace collision {
 
-class DistanceFilter;
+struct DistanceFilter;
 
 struct DistanceOption
 {
