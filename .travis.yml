@@ -27,32 +27,34 @@ matrix:
 
     - os: linux
       env:
+        - DOCKER_NAME="dartsim/dart-dev:xenial-32bit-v6.10"
         - BUILD_NAME=XENIAL_32BIT_DEBUG_CODECOV
-        - DOCKERFILE="Dockerfile.ubuntu-xenial-32bit"
         - BUILD_TYPE=Release  # TODO: Tests fail in debug mode
         - COMPILER=gcc
       services: docker
 
     - os: linux
       env:
+        - DOCKER_NAME="dartsim/dart-dev:bionic-v6.10"
         - BUILD_DOCS=ON
-        - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
         - COMPILER=gcc
       services: docker
 
 install:
-  - if [ -n "$DOCKERFILE" ]; then
-      docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-      docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --env-file .ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-      docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/install.sh";
+  - if [ -n "$DOCKER_NAME" ]; then
+      docker pull $DOCKER_NAME;
     else
       sudo -E .ci/install.sh;
     fi
 
 script:
-  - if [ -n "$DOCKERFILE" ]; then
-      docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
+  - if [ -n "$DOCKER_NAME" ]; then
+      docker run "$DOCKER_NAME"
+      docker run \
+          -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR \
+          --env-file .ci/docker/env.list \
+          "$DOCKER_NAME" /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
     else
       sudo -E .ci/script.sh;
     fi
