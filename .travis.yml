@@ -36,7 +36,7 @@ matrix:
     - os: linux
       env:
         - BUILD_NAME=BIONIC_RELEASE_DOCS
-        - DOCKER_NAME=dartsim/dart-dev:bionic-v6.10
+        - DOCKER_NAME=dartsim/dart-dev:bionic-docs
         - BUILD_TYPE=Release
         - COMPILER=gcc
         - BUILD_DOCS=ON
