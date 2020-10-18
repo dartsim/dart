@@ -10,7 +10,7 @@ jobs:
       COMPILER: gcc
       BUILD_TYPE: Debug
       BUILD_DIR: $(Build.SourcesDirectory)
-      DOCKERFILE: Dockerfile.ubuntu-xenial
+      DOCKER_NAME: dartsim/dart-dev:xenial-v6.10
       BUILD_DARTPY: OFF
     steps:
       - template: .ci/azure-pipelines/docker.yml
@@ -23,7 +23,7 @@ jobs:
       COMPILER: gcc
       BUILD_TYPE: Debug
       BUILD_DIR: $(Build.SourcesDirectory)
-      DOCKERFILE: Dockerfile.ubuntu-bionic
+      DOCKER_NAME: dartsim/dart-dev:bionic-v6.10
       BUILD_DARTPY: OFF
     steps:
       - template: .ci/azure-pipelines/docker.yml
@@ -36,7 +36,7 @@ jobs:
       COMPILER: gcc
       BUILD_TYPE: Debug
       BUILD_DIR: $(Build.SourcesDirectory)
-      DOCKERFILE: Dockerfile.ubuntu-focal
+      DOCKER_NAME: dartsim/dart-dev:focal-v6.10
       BUILD_DARTPY: OFF
     steps:
       - template: .ci/azure-pipelines/docker.yml
