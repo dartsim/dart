@@ -70,12 +70,7 @@ jobs:
       - name: Pull dev container
         run: docker pull ${{ env.DART_DEV_IMAGE }}:${{ env.DOCKER_TAG }}
       - name: Build
-        run: |
-          docker run \
-            -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
-            --env-file ./.ci/docker/env.list \
-            $DOCKER_NAME \
-            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh"
+        run: ${{ env.UBUNTU_BUILD_CMD }}
 
   groovy_gcc_release:
     name: Ubuntu 20.10 [GCC|Release]
