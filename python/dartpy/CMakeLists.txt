@@ -81,6 +81,9 @@ if(TARGET dart-collision-ode)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
 endif()
 
+# Remove debug postfix for dartpy
+set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")
+
 # Get the path to the bind module
 set(PYBIND_MODULE $<TARGET_FILE:${pybind_module}>)
 
