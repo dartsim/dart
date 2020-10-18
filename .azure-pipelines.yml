@@ -2,53 +2,57 @@
 # Ref: https://docs.microsoft.com/en-us/azure/devops/pipelines
 
 jobs:
-- job: xenial_gcc_debug
-  timeoutInMinutes: 120
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    COMPILER: gcc
-    BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-xenial
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
+  - job: xenial_gcc_debug
+    timeoutInMinutes: 120
+    pool:
+      vmImage: "ubuntu-20.04"
+    variables:
+      COMPILER: gcc
+      BUILD_TYPE: Debug
+      BUILD_DIR: $(Build.SourcesDirectory)
+      DOCKER_NAME: dartsim/dart-dev:xenial-v6.10
+      BUILD_DARTPY: OFF
+    steps:
+      - template: .ci/azure-pipelines/docker.yml
 
-- job: bionic_gcc_debug
-  timeoutInMinutes: 120
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    COMPILER: gcc
-    BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-bionic
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
+  - job: bionic_gcc_debug
+    timeoutInMinutes: 120
+    pool:
+      vmImage: "ubuntu-20.04"
+    variables:
+      COMPILER: gcc
+      BUILD_TYPE: Debug
+      BUILD_DIR: $(Build.SourcesDirectory)
+      DOCKER_NAME: dartsim/dart-dev:bionic-v6.10
+      BUILD_DARTPY: OFF
+    steps:
+      - template: .ci/azure-pipelines/docker.yml
 
-- job: focal_gcc_debug
-  timeoutInMinutes: 120
-  pool:
-    vmImage: 'ubuntu-16.04'
-  variables:
-    COMPILER: gcc
-    BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-    DOCKERFILE: Dockerfile.ubuntu-focal
-  steps:
-  - template: .ci/azure-pipelines/docker.yml
+  - job: focal_gcc_debug
+    timeoutInMinutes: 120
+    pool:
+      vmImage: "ubuntu-20.04"
+    variables:
+      COMPILER: gcc
+      BUILD_TYPE: Debug
+      BUILD_DIR: $(Build.SourcesDirectory)
+      DOCKER_NAME: dartsim/dart-dev:focal-v6.10
+      BUILD_DARTPY: OFF
+    steps:
+      - template: .ci/azure-pipelines/docker.yml
 
-- job: catalina_clang_debug
-  timeoutInMinutes: 120
-  pool:
-    vmImage: 'macOS-10.15'
-  variables:
-    BUILD_TYPE: Debug
-    BUILD_DIR: $(Build.SourcesDirectory)
-  steps:
-  - script: |
-      '.ci/install.sh'
-    displayName: 'Install'
-  - script: |
-      '.ci/script.sh'
-    displayName: 'Script'
+  - job: catalina_clang_debug
+    timeoutInMinutes: 120
+    pool:
+      vmImage: "macOS-10.15"
+    variables:
+      BUILD_TYPE: Debug
+      BUILD_DIR: $(Build.SourcesDirectory)
+      BUILD_DARTPY: OFF
+    steps:
+      - script: |
+          '.ci/install.sh'
+        displayName: "Install"
+      - script: |
+          '.ci/script.sh'
+        displayName: "Script"

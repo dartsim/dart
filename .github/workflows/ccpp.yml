@@ -5,231 +5,158 @@ name: C/C++ CI
 on:
   push:
     branches:
-      - '**'
+      - "**"
   pull_request:
     branches:
-      - '**'
+      - "**"
   schedule:
     # Run every day at 02:00
-    - cron: '0 2 * * 0-6'
+    - cron: "0 2 * * 0-6"
+
+env:
+  # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
+  DART_DEV_IMAGE: dartsim/dart-dev
+  UBUNTU_BUILD_CMD: |
+    docker run \
+      -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+      --env-file ./.ci/docker/env.list \
+      $DART_DEV_IMAGE:$DOCKER_TAG \
+      /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh"
 
 jobs:
   xenial_gcc_release:
     name: Ubuntu 16.04 [GCC|Release]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
+    env:
+      DOCKER_TAG: xenial-v6.10
+      COMPILER: gcc
+      BUILD_TYPE: Release
+      BUILD_DARTPY: OFF
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-xenial
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Pull dev container
+        run: docker pull ${{ env.DART_DEV_IMAGE }}:${{ env.DOCKER_TAG }}
+      - name: Build
+        run: ${{ env.UBUNTU_BUILD_CMD }}
 
   bionic_gcc_release:
     name: Ubuntu 18.04 [GCC|Release]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
+    env:
+      DOCKER_TAG: bionic-v6.10
+      COMPILER: gcc
+      BUILD_TYPE: Release
+      BUILD_DARTPY: ON
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-bionic
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
-
-  bionic_gcc_dartpy_release:
-    name: Ubuntu 18.04 [GCC|dartpy|Release]
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-bionic
-        BUILD_DARTPY: ON
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Pull dev container
+        run: docker pull ${{ env.DART_DEV_IMAGE }}:${{ env.DOCKER_TAG }}
+      - name: Build
+        run: ${{ env.UBUNTU_BUILD_CMD }}
 
   focal_gcc_release:
     name: Ubuntu 20.04 [GCC|Release]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
+    env:
+      DOCKER_TAG: focal-v6.10
+      COMPILER: gcc
+      BUILD_TYPE: Release
+      BUILD_DARTPY: ON
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-focal
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
-
-  focal_gcc_dartpy_release:
-    name: Ubuntu 20.04 [GCC|dartpy|Release]
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-focal
-        BUILD_DARTPY: ON
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Pull dev container
+        run: docker pull ${{ env.DART_DEV_IMAGE }}:${{ env.DOCKER_TAG }}
+      - name: Build
+        run: ${{ env.UBUNTU_BUILD_CMD }}
 
   groovy_gcc_release:
     name: Ubuntu 20.10 [GCC|Release]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
+    env:
+      DOCKER_TAG: groovy-v6.10
+      COMPILER: gcc
+      BUILD_TYPE: Release
+      BUILD_DARTPY: ON
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-groovy
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
-
-  groovy_gcc_dartpy_release:
-    name: Ubuntu 20.10 [GCC|dartpy|Release]
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: gcc
-        DOCKERFILE: Dockerfile.ubuntu-groovy
-        BUILD_DARTPY: ON
-        BUILD_TYPE: Release
-      run: |
-        docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
-        docker run -itd -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE --env-file ./.ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/install.sh";
-    - name: Build
-      run: |
-        docker exec dart-docker /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/script.sh";
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Pull dev container
+        run: docker pull ${{ env.DART_DEV_IMAGE }}:${{ env.DOCKER_TAG }}
+      - name: Build
+        run: ${{ env.UBUNTU_BUILD_CMD }}
 
   catalina_clang_release:
     name: macOS 10.15 [Clang|Release]
     runs-on: macOS-10.15
+    env:
+      COMPILER: clang
+      BUILD_TYPE: Release
+      BUILD_DARTPY: ON
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: clang
-      run: .ci/install.sh
-    - name: Build
-      env:
-        COMPILER: clang
-        BUILD_TYPE: Release
-      run: sudo -E .ci/script.sh
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: .ci/install.sh
+      - name: Build
+        run: sudo -E .ci/script.sh
 
-  catalina_clang_dartpy_release:
-    name: macOS 10.15 [Clang|dartpy|Release]
-    runs-on: macOS-10.15
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      env:
-        COMPILER: clang
-        BUILD_DARTPY: ON
-      run: .ci/install.sh
-    - name: Build
-      env:
-        COMPILER: clang
-        BUILD_TYPE: Release
-        BUILD_DARTPY: ON
-      run: sudo -E .ci/script.sh
-
-  windows_2019:
-    name: Windows [Release]
+  windows_2019_msvc:
+    name: Windows [MSVC|Release]
     runs-on: windows-2019
     env:
       BUILD_TYPE: Release
-      VCPKG_ROOT: 'C:/dartsim/vcpkg'
+      VCPKG_ROOT: "C:/dartsim/vcpkg"
       VCPKG_BUILD_TAG: v0.2.0-70f192e
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      shell: cmd
-      run: |
-        mkdir -p C:\dartsim
-        choco install -y wget
-        wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-        unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
-    - name: Build
-      shell: cmd
-      run: |
-        mkdir build
-        cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ^
-          -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
-          -DDART_MSVC_DEFAULT_OPTIONS=ON ^
-          -DDART_VERBOSE=ON
-        cmake --build . --target ALL_BUILD --parallel
-        ctest --output-on-fauilure
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        shell: cmd
+        run: |
+          mkdir -p C:\dartsim
+          choco install -y wget
+          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+          unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
+      - name: Build
+        shell: cmd
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ^
+            -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
+            -DDART_VERBOSE=ON
+          cmake --build . --target ALL_BUILD --parallel
+          ctest --output-on-fauilure
 
   windows_2019_clang_cl:
-    name: Windows (clang-cl) [Release]
+    name: Windows [ClangCl|Release]
     runs-on: windows-2019
     env:
       BUILD_TYPE: Release
-      VCPKG_ROOT: 'C:/dartsim/vcpkg'
+      VCPKG_ROOT: "C:/dartsim/vcpkg"
       VCPKG_BUILD_TAG: v0.2.0-70f192e
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      shell: cmd
-      run: |
-        mkdir -p C:\dartsim
-        choco install -y wget
-        wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-        unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
-    - name: Build
-      shell: cmd
-      run: |
-        mkdir build
-        cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ^
-          -T ClangCl ^
-          -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
-          -DDART_MSVC_DEFAULT_OPTIONS=ON ^
-          -DDART_VERBOSE=ON
-        cmake --build . --target ALL_BUILD --parallel
-        ctest --output-on-fauilure
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        shell: cmd
+        run: |
+          mkdir -p C:\dartsim
+          choco install -y wget
+          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+          unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
+      - name: Build
+        shell: cmd
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ^
+            -T ClangCl ^
+            -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
+            -DDART_VERBOSE=ON
+          cmake --build . --target ALL_BUILD --parallel
+          ctest --output-on-fauilure

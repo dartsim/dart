@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -ex
 
+# TODO(JS): Remove this file once CODECOV and gh-page migrated to the Docker builds
+
 # Sanity checks for required environment variables.
 if [ -z "$BUILD_DARTPY" ]; then
   echo "Info: Environment variable BUILD_DARTPY is unset. Using OFF by default."
