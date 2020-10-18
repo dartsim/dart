@@ -53,7 +53,8 @@ script:
       docker run \
           -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR \
           --env-file .ci/docker/env.list \
-          "$DOCKER_NAME" /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
+          $DOCKER_NAME \
+          /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
     else
       sudo -E .ci/script.sh;
     fi
