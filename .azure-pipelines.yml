@@ -24,7 +24,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_DIR: $(Build.SourcesDirectory)
       DOCKERFILE: Dockerfile.ubuntu-bionic
-      BUILD_DARTPY: ON
+      BUILD_DARTPY: OFF
     steps:
       - template: .ci/azure-pipelines/docker.yml
 
@@ -37,7 +37,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_DIR: $(Build.SourcesDirectory)
       DOCKERFILE: Dockerfile.ubuntu-focal
-      BUILD_DARTPY: ON
+      BUILD_DARTPY: OFF
     steps:
       - template: .ci/azure-pipelines/docker.yml
 
@@ -48,7 +48,7 @@ jobs:
     variables:
       BUILD_TYPE: Debug
       BUILD_DIR: $(Build.SourcesDirectory)
-      BUILD_DARTPY: ON
+      BUILD_DARTPY: OFF
     steps:
       - script: |
           '.ci/install.sh'

@@ -54,9 +54,11 @@ else
 fi
 while getopts ":j:" opt; do
   case $opt in
-    j) num_threads="$OPTARG"
+  j)
+    num_threads="$OPTARG"
     ;;
-    \?) echo "Invalid option -$OPTARG" >& 2
+  \?)
+    echo "Invalid option -$OPTARG" >&2
     ;;
   esac
 done
@@ -75,7 +77,7 @@ fi
 # Skip Xenial and Bionic in push builds
 if [ "$IS_PULL_REQUEST" = "false" ]; then
   if [ "$DOCKER_FILE" ]; then
-    exit 0;
+    exit 0
   fi
 fi
 

@@ -3,7 +3,7 @@ set -ex
 
 brew update > /dev/null
 brew bundle || brew bundle
-brew install open-scene-graph --HEAD  # install master branch until 3.7.0 is released
+brew install open-scene-graph --HEAD # install master branch until 3.7.0 is released
 
 # pagmo2: build from source until https://github.com/esa/pagmo2/issues/445 is resolved
 brew install tbb
@@ -18,4 +18,6 @@ git clone https://github.com/esa/pagmo2.git -b 'v2.15.0' --single-branch --depth
   make -j$(sysctl -n hw.logicalcpu) &&
   make install
 
-pip3 install -U numpy pytest
+# Use pip for the default Python3 version
+py_version=$(python3 -c "import sys; print('{}.{}'.format(sys.version_info[0], sys.version_info[1]))")
+pip$py_version install -U numpy pytest
