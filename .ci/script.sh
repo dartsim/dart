@@ -89,12 +89,12 @@ if [ "$OSTYPE" = "linux-gnu" ] && [ $(lsb_release -sc) = "bionic" ]; then
   make check-format
 fi
 
-# DART: build and run tests
+# DART: build, test, and install
 make -j$num_threads all tutorials examples tests
 ctest --output-on-failure -j$num_threads
 make -j$num_threads install
 
-# dartpy: build and run tests
+# dartpy: build, test, and install
 if [ "$BUILD_DARTPY" = "ON" ]; then
   make -j$num_threads dartpy
   make pytest
@@ -106,13 +106,13 @@ if [ "$CODECOV" = "ON" ]; then
   make -j$num_threads codecov
 fi
 
-# DART: build an example using installed DART
+# DART: build an C++ example using installed DART
 cd $BUILD_DIR/examples/hello_world
 mkdir build && cd build
 cmake ..
 make -j$num_threads
 
-# dartpy: run a python example using installed dartpy
+# dartpy: run a Python example using installed dartpy
 if [ "$BUILD_DARTPY" = "ON" ]; then
   cd $BUILD_DIR/python/examples/hello_world
   python3 main.py
