@@ -7,16 +7,6 @@ if [ -z "$BUILD_TYPE" ]; then
   exit 1
 fi
 
-if [ -z "$RUN_TESTS" ]; then
-  echo "Info: Environment variable RUN_TESTS is unset. Using ON by default."
-  RUN_TESTS=ON
-fi
-
-if [ -z "$RUN_INSTALL_TEST" ]; then
-  echo "Info: Environment variable RUN_INSTALL_TEST is unset. Using ON by default."
-  RUN_INSTALL_TEST=ON
-fi
-
 if [ -z "$BUILD_DARTPY" ]; then
   echo "Info: Environment variable BUILD_DARTPY is unset. Using OFF by default."
   BUILD_DARTPY=OFF
@@ -74,24 +64,17 @@ else
   echo "Info: Compiler isn't specified. Using the system default."
 fi
 
-# Skip Xenial and Bionic in push builds
-if [ "$IS_PULL_REQUEST" = "false" ]; then
-  if [ "$DOCKER_FILE" ]; then
-    exit 0
-  fi
-fi
-
+# Build API documentation and exit
 if [ $BUILD_DOCS = "ON" ]; then
   . "${BUILD_DIR}/.ci/travis/build_docs.sh"
   exit 0
 fi
 
+# Run CMake
 mkdir build && cd build
-
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 fi
-
 cmake .. \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_BUILD_DARTPY=$BUILD_DARTPY \
@@ -101,43 +84,36 @@ cmake .. \
   -DDART_CODECOV=$CODECOV \
   ${install_prefix_option}
 
+# Check format
+if [ "$OSTYPE" = "linux-gnu" ] && [ $(lsb_release -sc) = "bionic" ]; then
+  make check-format
+fi
+
+# DART: build and run tests
+make -j$num_threads all tutorials examples tests
+ctest --output-on-failure -j$num_threads
+make -j$num_threads install
+
+# dartpy: build and run tests
 if [ "$BUILD_DARTPY" = "ON" ]; then
   make -j$num_threads dartpy
   make pytest
-else
-  if [ "$CODECOV" = "ON" ]; then
-    make -j$num_threads all tests
-  elif [ "$RUN_TESTS" = "ON" ]; then
-    make -j$num_threads all tutorials examples tests
-  fi
-
-  if [ "$OSTYPE" = "linux-gnu" ] && [ $(lsb_release -sc) = "bionic" ]; then
-    make check-format
-  fi
-
-  if [ $CODECOV = "ON" ]; then
-    make -j$num_threads codecov
-  elif [ "$RUN_TESTS" = "ON" ]; then
-    ctest --output-on-failure -j$num_threads
-  fi
+  make -j$num_threads install-dartpy
 fi
 
-if [ "$RUN_INSTALL_TEST" = "ON" ]; then
-  # Install C++ package
-  make -j$num_threads install
+# Codecov
+if [ "$CODECOV" = "ON" ]; then
+  make -j$num_threads codecov
+fi
 
-  if [ "$BUILD_DARTPY" = "ON" ]; then
-    # Install dartpy
-    make -j$num_threads install-dartpy
+# DART: build an example using installed DART
+cd $BUILD_DIR/examples/hello_world
+mkdir build && cd build
+cmake ..
+make -j$num_threads
 
-    # Run a python example
-    cd $BUILD_DIR/python/examples/hello_world
-    python3 main.py
-  else
-    # Build an example using installed DART
-    cd $BUILD_DIR/examples/hello_world
-    mkdir build && cd build
-    cmake ..
-    make -j$num_threads
-  fi
+# dartpy: run a python example using installed dartpy
+if [ "$BUILD_DARTPY" = "ON" ]; then
+  cd $BUILD_DIR/python/examples/hello_world
+  python3 main.py
 fi
