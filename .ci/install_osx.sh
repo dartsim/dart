@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 set -ex
 
-# To resolve 'brew update' error
-# - Build log : https://github.com/dartsim/dart/runs/1290172536?check_suite_focus=true#step:3:18
-# - References:
-#   - https://github.com/osrf/homebrew-simulation/blob/df708147c138d9fef869326caa15aa36918e37cd/.travis.yml#L17-L18
-#   - https://github.com/Homebrew/legacy-homebrew/issues/49879#issuecomment-196294820
-git -C "$(brew --repo)" reset --hard origin/master
-git -C "$(brew --repo)" clean -qxdff
+# Temporary workaround for https://github.com/actions/virtual-environments/issues/1811
+brew untap local/homebrew-openssl
+brew untap local/homebrew-python2
 
 brew update > /dev/null
 brew bundle || brew bundle
