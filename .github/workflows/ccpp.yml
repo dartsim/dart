@@ -90,7 +90,7 @@ jobs:
 
   catalina_clang_release:
     name: macOS 10.15 [Clang|Release]
-    runs-on: macOS-10.15
+    runs-on: macos-10.15
     env:
       COMPILER: clang
       BUILD_TYPE: Release

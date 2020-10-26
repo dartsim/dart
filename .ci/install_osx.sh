@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -ex
 
+# Temporary workaround for https://github.com/actions/virtual-environments/issues/1811
+brew untap local/homebrew-openssl
+brew untap local/homebrew-python2
+
 brew update > /dev/null
 brew bundle || brew bundle
+
+# OpenSceneGraph
 brew install open-scene-graph --HEAD # install master branch until 3.7.0 is released
 
 # pagmo2: build from source until https://github.com/esa/pagmo2/issues/445 is resolved
