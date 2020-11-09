@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/ConstraintSolver.hpp"
+
 #include <algorithm>
 
 #include "dart/collision/CollisionFilter.hpp"
@@ -486,7 +487,7 @@ void ConstraintSolver::updateConstraints()
   // Compare contact pairs while ignoring their order in the pair.
   struct ContactPairCompare
   {
-    ContactPair SortedPair(const ContactPair& a) const
+    ContactPair getSortedPair(const ContactPair& a) const
     {
       if (a.first < a.second)
         return std::make_pair(a.second, a.first);
@@ -496,7 +497,7 @@ void ConstraintSolver::updateConstraints()
     bool operator()(const ContactPair& a, const ContactPair& b) const
     {
       // Sort each pair and then do a lexicographical comparison
-      return SortedPair(a) < SortedPair(b);
+      return getSortedPair(a) < getSortedPair(b);
     }
   };
 

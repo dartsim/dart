@@ -164,9 +164,9 @@ public:
   /// They start with a default value of -1.0 and will be ignored
   /// in favor of the global default value unless explicitly
   /// set to a positive value.
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SlipCompliance)
-  // void setSlipCompliance(const double& value);
-  // const double& getSlipCompliance() const;
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimarySlipCompliance)
+  // void sePrimarytSlipCompliance(const double& value);
+  // const double& getPrimarySlipCompliance() const;
   DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondarySlipCompliance)
   // void setSecondarySlipCompliance(const double& value);
   // const double& getSecondarySlipCompliance() const;

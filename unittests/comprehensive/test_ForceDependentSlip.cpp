@@ -72,7 +72,7 @@ dynamics::SkeletonPtr createFloor()
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(box);
   shapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
-  shapeNode->getDynamicsAspect()->setSlipCompliance(0);
+  shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(0);
   shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0);
 
   // Put the body into position
@@ -117,9 +117,9 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 
   EXPECT_DOUBLE_EQ(body1Dynamics->getFrictionCoeff(), 1.0);
 
-  body1Dynamics->setSlipCompliance(slip);
+  body1Dynamics->setPrimarySlipCompliance(slip);
   body1Dynamics->setFirstFrictionDirection(Vector3d::UnitX());
-  EXPECT_DOUBLE_EQ(body1Dynamics->getSlipCompliance(), slip);
+  EXPECT_DOUBLE_EQ(body1Dynamics->getPrimarySlipCompliance(), slip);
   EXPECT_EQ(body1Dynamics->getFirstFrictionDirection(), Vector3d::UnitX());
 
   auto body2 = skeleton2->getRootBodyNode();
@@ -157,10 +157,10 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 
   const double slip2 = 0.03;
   // Test slip compliance in the secondary friction direction
-  body1Dynamics->setSlipCompliance(0);
+  body1Dynamics->setPrimarySlipCompliance(0);
   body1Dynamics->setSecondarySlipCompliance(slip2);
 
-  EXPECT_DOUBLE_EQ(body1Dynamics->getSlipCompliance(), 0.0);
+  EXPECT_DOUBLE_EQ(body1Dynamics->getPrimarySlipCompliance(), 0.0);
   EXPECT_DOUBLE_EQ(body1Dynamics->getSecondarySlipCompliance(), slip2);
 
   // Step without external force so the body stop moving
@@ -218,9 +218,9 @@ TEST(ForceDependentSlip, CylinderSlipVelocity)
 
   EXPECT_DOUBLE_EQ(body1Dynamics->getFrictionCoeff(), 1.0);
 
-  body1Dynamics->setSlipCompliance(slip);
+  body1Dynamics->setPrimarySlipCompliance(slip);
   body1Dynamics->setFirstFrictionDirection(Vector3d::UnitX());
-  EXPECT_DOUBLE_EQ(body1Dynamics->getSlipCompliance(), slip);
+  EXPECT_DOUBLE_EQ(body1Dynamics->getPrimarySlipCompliance(), slip);
   EXPECT_EQ(body1Dynamics->getFirstFrictionDirection(), Vector3d::UnitX());
 
   auto body2 = skeleton2->getRootBodyNode();

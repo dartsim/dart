@@ -144,7 +144,8 @@ protected:
       const dynamics::ShapeNode* shapeNode);
   static double computeSecondaryFrictionCoefficient(
       const dynamics::ShapeNode* shapeNode);
-  static double computeSlipCompliance(const dynamics::ShapeNode* shapeNode);
+  static double computePrimarySlipCompliance(
+      const dynamics::ShapeNode* shapeNode);
   static double computeSecondarySlipCompliance(
       const dynamics::ShapeNode* shapeNode);
   static Eigen::Vector3d computeWorldFirstFrictionDir(
@@ -209,7 +210,7 @@ private:
   double mSecondaryFrictionCoeff;
 
   /// Primary Coefficient of Slip Compliance
-  double mSlipCompliance;
+  double mPrimarySlipCompliance;
 
   /// Secondary Coefficient of Slip Compliance
   double mSecondarySlipCompliance;
