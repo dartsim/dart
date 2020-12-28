@@ -91,7 +91,7 @@ public:
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
   using AspectStateImpl
-      = AspectWithState<Derived, StateData, CompositeType, updateState>;
+      = common::AspectWithState<Derived, StateData, CompositeType, updateState>;
 
   using AspectPropertiesImpl = detail::AspectWithVersionedProperties<
       AspectStateImpl,
