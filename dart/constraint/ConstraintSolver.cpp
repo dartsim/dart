@@ -561,6 +561,10 @@ void ConstraintSolver::updateConstraints()
     if (it != contactPairMap.end())
       numContacts = it->second;
 
+    // The slip compliance acts like a damper at each contact point so the total
+    // damping for each collision is multiplied by the number of contact points
+    // (numContacts). To eliminate this dependence on numContacts, the inverse
+    // damping is multiplied by numContacts.
     contactConstraint->setPrimarySlipCompliance(
         contactConstraint->getPrimarySlipCompliance() * numContacts);
     contactConstraint->setSecondarySlipCompliance(
