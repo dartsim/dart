@@ -97,6 +97,11 @@ jobs:
       BUILD_DARTPY: ON
     steps:
       - uses: actions/checkout@v2
+      - name: Fix issue with Python 2to3 symlink
+        # Explicitly overwrite symlinks created by Python2 such as /usr/local/bin/2to3 since they conflict with symlinks from Python3
+        # https://github.com/actions/virtual-environments/issues/2322
+        run: |
+          rm -rf /usr/local/bin/2to3
       - name: Install Dependencies
         run: .ci/install.sh
       - name: Build
