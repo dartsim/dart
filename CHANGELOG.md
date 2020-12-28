@@ -83,6 +83,7 @@
   * Removed gccfilter: [#1464](https://github.com/dartsim/dart/pull/1464)
   * Allowed to set CMAKE_INSTALL_PREFIX on Windows: [#1478](https://github.com/dartsim/dart/pull/1478)
   * Enforced to use OpenSceneGraph 3.7.0 or greater on macOS Catalina: [#1479](https://github.com/dartsim/dart/pull/1479)
+  * Made `dart.pc` relocatable: [#1529](https://github.com/dartsim/dart/pull/1529)
 
 * Documentation
 
