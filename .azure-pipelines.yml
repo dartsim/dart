@@ -54,5 +54,5 @@ jobs:
           '.ci/install.sh'
         displayName: "Install"
       - script: |
-          '.ci/script.sh'
+          '.ci/build.sh'
         displayName: "Script"
