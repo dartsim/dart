@@ -6,5 +6,5 @@ steps:
     sudo -E ./.ci/install.sh
   displayName: 'Install'
 - script: |
-    sudo -E ./.ci/script.sh -j${{ parameters.numThreads }}
+    sudo -E ./.ci/build.sh -j${{ parameters.numThreads }}
   displayName: 'Script'

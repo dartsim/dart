@@ -9,5 +9,5 @@ steps:
         -v $(Build.SourcesDirectory):$(Build.SourcesDirectory) \
         --env-file .ci/docker/env.list \
         $DOCKER_NAME \
-        /bin/sh -c "cd $(Build.SourcesDirectory) && ./.ci/script.sh -j${{ parameters.numThreads }}"
+        /bin/sh -c "cd $(Build.SourcesDirectory) && ./.ci/build.sh -j${{ parameters.numThreads }}"
     displayName: "Build"
