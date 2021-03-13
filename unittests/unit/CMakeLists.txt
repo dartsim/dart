@@ -56,10 +56,11 @@ if(TARGET dart-utils)
     
     dart_add_test("unit" test_SkelParser)
     target_link_libraries(test_SkelParser dart-utils)
-    
-    dart_add_test("unit" test_VskParser)
-    target_link_libraries(test_VskParser dart-utils)
 
+    if(NOT MSVC) 
+       dart_add_test("unit" test_VskParser)
+       target_link_libraries(test_VskParser dart-utils)
+    endif()
 endif()
 
 if(TARGET dart-utils-urdf)
