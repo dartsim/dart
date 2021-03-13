@@ -90,8 +90,7 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-      # ClangCl disabled as the /vd2 option is not supported there
-        toolset: [""]
+        toolset: ["", "-T ClangCl"]
     env:
       BUILD_TYPE: Release
       VCPKG_ROOT: "C:/dartsim/vcpkg"
