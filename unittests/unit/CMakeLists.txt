@@ -1,4 +1,4 @@
-if(NOT MSVC)
+
   dart_add_test("unit" test_Aspect)
   dart_add_test("unit" test_CollisionGroups)
   foreach(collision_engine
@@ -9,7 +9,7 @@ if(NOT MSVC)
     endif()
   endforeach()
   dart_add_test("unit" test_ContactConstraint)
-endif()
+
 dart_add_test("unit" test_Factory)
 dart_add_test("unit" test_GenericJoints)
 dart_add_test("unit" test_Geometry)
@@ -19,11 +19,11 @@ dart_add_test("unit" test_LocalResourceRetriever)
 dart_add_test("unit" test_Math)
 dart_add_test("unit" test_Optimizer)
 dart_add_test("unit" test_Random)
-if(NOT MSVC)
+
   dart_add_test("unit" test_ScrewJoint)
   dart_add_test("unit" test_Signal)
   dart_add_test("unit" test_Subscriptions)
-endif()
+
 dart_add_test("unit" test_Uri)
 
 if(TARGET dart-optimizer-ipopt)
@@ -42,15 +42,12 @@ if(TARGET dart-utils)
   dart_add_test("unit" test_DartResourceRetriever)
   target_link_libraries(test_DartResourceRetriever dart-utils)
   
-  if(NOT MSVC)
     dart_add_test("unit" test_FileInfoWorld)
     target_link_libraries(test_FileInfoWorld dart-utils)
-  endif()
 
   dart_add_test("unit" test_PackageResourceRetriever)
   target_link_libraries(test_PackageResourceRetriever dart-utils)
 
-  if(NOT MSVC)
     dart_add_test("unit" test_MjcfParser)
     target_link_libraries(test_MjcfParser dart-utils)
     
@@ -62,15 +59,12 @@ if(TARGET dart-utils)
     
     dart_add_test("unit" test_VskParser)
     target_link_libraries(test_VskParser dart-utils)
-  endif()
 
 endif()
 
 if(TARGET dart-utils-urdf)
-  if(NOT MSVC)
     dart_add_test("unit" test_DartLoader)
     target_link_libraries(test_DartLoader dart-utils-urdf)
-  endif()
 
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
   target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
