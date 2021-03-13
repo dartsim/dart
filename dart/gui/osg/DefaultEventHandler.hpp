@@ -41,6 +41,7 @@
 
 #include <osgGA/GUIEventHandler>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/common/Subject.hpp"
 
