@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,47 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#ifndef DART_CLASS_WITH_VIRTUAL_BASE_HPP_
+#define DART_CLASS_WITH_VIRTUAL_BASE_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Resource.hpp"
+// This macro is used to mark all the class that inherit
+// virtually from another to avoid problems on MSVC
+// See https://github.com/dartsim/dart/issues/1522
+#if defined(_MSC_VER)
+#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN __pragma(vtordisp(push, 2))
+#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END __pragma(vtordisp(pop))
+#else
+#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
+#endif
 
-namespace dart {
-namespace common {
-
-DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class LocalResource : public virtual Resource
-{
-public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
-
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
-
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
-
-  // Documentation inherited.
-  std::size_t getSize() override;
-
-  // Documentation inherited.
-  std::size_t tell() override;
-
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
-
-  // Documentation inherited.
-  std::size_t read(
-      void* _buffer, std::size_t _size, std::size_t _count) override;
-
-private:
-  std::FILE* mFile;
-};
-DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
-
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
+#endif // DART_CLASS_WITH_VIRTUAL_BASE_HPP_

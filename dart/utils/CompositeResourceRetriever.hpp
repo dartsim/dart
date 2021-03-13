@@ -35,6 +35,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
@@ -44,6 +45,7 @@ namespace utils {
 /// used interchangably by: (1) associating each \ref ResourceRetriever with a
 /// particular URI schema and/or (2) providing a precedence order for trying
 /// multiple retrievers.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class CompositeResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
@@ -83,6 +85,7 @@ private:
       mResourceRetrievers;
   std::vector<common::ResourceRetrieverPtr> mDefaultResourceRetrievers;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 using CompositeResourceRetrieverPtr
     = std::shared_ptr<CompositeResourceRetriever>;

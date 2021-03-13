@@ -37,6 +37,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
@@ -47,6 +48,7 @@
 namespace dart {
 namespace dynamics {
 
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Shape : public virtual common::Subject,
               public virtual common::VersionCounter
 {
@@ -229,6 +231,7 @@ public:
   /// Use this to subscribe to version change signals
   common::SlotRegister<VersionChangedSignal> onVersionChanged;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

@@ -79,6 +79,7 @@ namespace simulation {
 DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class World : public virtual common::Subject
 {
 public:
@@ -324,6 +325,7 @@ public:
   //--------------------------------------------------------------------------
   common::SlotRegister<NameChangedSignal> onNameChanged;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace simulation
 } // namespace dart

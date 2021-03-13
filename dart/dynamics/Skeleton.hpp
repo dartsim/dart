@@ -51,6 +51,7 @@ namespace dart {
 namespace dynamics {
 
 /// class Skeleton
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Skeleton : public virtual common::VersionCounter,
                  public MetaSkeleton,
                  public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
@@ -1337,6 +1338,7 @@ public:
   ///
   std::size_t mUnionIndex;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

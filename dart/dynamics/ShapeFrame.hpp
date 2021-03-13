@@ -185,6 +185,7 @@ public:
 };
 
 //==============================================================================
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class ShapeFrame : public virtual common::VersionCounter,
                    public detail::ShapeFrameCompositeBase,
                    public virtual Frame
@@ -281,6 +282,7 @@ public:
   common::SlotRegister<RelativeTransformUpdatedSignal>
       onRelativeTransformUpdated;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

@@ -35,6 +35,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
@@ -45,6 +46,7 @@ namespace utils {
 /// \ref ResourceRetriever. This class uses requires you to manually provide the
 /// base URI of every package that you wish to resolve using the
 /// \ref addPackageDirectory method.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class PackageResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
@@ -105,6 +107,7 @@ private:
       std::string& _packageName,
       std::string& _relativePath) const;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 using PackageResourceRetrieverPtr = std::shared_ptr<PackageResourceRetriever>;
 

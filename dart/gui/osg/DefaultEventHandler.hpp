@@ -98,6 +98,7 @@ enum ConstraintType
 
 class MouseEventHandler;
 
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DefaultEventHandler : public ::osgGA::GUIEventHandler,
                             public virtual dart::common::Subject,
                             public virtual dart::common::Observer
@@ -227,6 +228,7 @@ protected:
   /// Storage for the last modkey mask
   int mLastModKeyMask;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace osg
 } // namespace gui
