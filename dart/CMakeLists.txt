@@ -145,6 +145,12 @@ else()
   target_compile_features(dart PUBLIC cxx_std_14)
 endif()
 
+# Fix for https://github.com/dartsim/dart/issues/1522
+if(MSVC)
+  target_compile_options(dart PUBLIC /vd2)
+endif()
+
+
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
   if(MSVC)
