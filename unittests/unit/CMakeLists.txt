@@ -31,6 +31,7 @@ if(TARGET dart-optimizer-nlopt)
 endif()
 
 if(TARGET dart-utils)
+
   dart_add_test("unit" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)
 
@@ -56,6 +57,7 @@ if(TARGET dart-utils)
     dart_add_test("unit" test_VskParser)
     target_link_libraries(test_VskParser dart-utils)
   endif()
+
 endif()
 
 if(TARGET dart-utils-urdf)
@@ -63,6 +65,7 @@ if(TARGET dart-utils-urdf)
     dart_add_test("unit" test_DartLoader)
     target_link_libraries(test_DartLoader dart-utils-urdf)
   endif()
+
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
   target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
   target_compile_definitions(SharedLibraryWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
