@@ -37,6 +37,7 @@
 #include <typeindex>
 #include <unordered_set>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Empty.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/dynamics/Node.hpp"

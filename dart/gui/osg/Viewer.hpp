@@ -42,6 +42,7 @@
 
 #include <Eigen/Core>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Subject.hpp"
 
 namespace dart {
