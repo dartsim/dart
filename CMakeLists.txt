@@ -196,6 +196,7 @@ if(MSVC)
   add_compile_options(/wd4838)
   add_compile_options(/wd4996)
   add_compile_options(/bigobj)
+  add_compile_options(/vd2)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
