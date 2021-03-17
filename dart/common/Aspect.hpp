@@ -35,6 +35,7 @@
 
 #include <string>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Cloneable.hpp"
 #include "dart/common/detail/NoOp.hpp"
 

@@ -51,6 +51,8 @@ public:
 //==============================================================================
 /// SpecializedForAspect allows classes that inherit Composite to have
 /// constant-time access to a specific type of Aspect
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+
 template <class SpecAspect>
 class SpecializedForAspect<SpecAspect> : public virtual Composite
 {
@@ -181,6 +183,7 @@ protected:
   /// Iterator that points to the Aspect of this SpecializedForAspect
   Composite::AspectMap::iterator mSpecAspectIterator;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 /// This is the variadic version of the SpecializedForAspect class which

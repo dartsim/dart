@@ -90,7 +90,7 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        toolset: ["", "-T ClangCl"]
+        toolset: [""]
     env:
       BUILD_TYPE: Release
       VCPKG_ROOT: "C:/dartsim/vcpkg"

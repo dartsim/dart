@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_COMPOSITE_HPP_
 #define DART_COMMON_COMPOSITE_HPP_
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/detail/CompositeData.hpp"
 
 namespace dart {

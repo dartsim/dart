@@ -53,6 +53,7 @@ class Skeleton;
 class DegreeOfFreedom;
 
 /// class Joint
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Joint : public virtual common::Subject,
               public virtual common::VersionCounter,
               public common::EmbedProperties<Joint, detail::JointProperties>
@@ -1071,6 +1072,7 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

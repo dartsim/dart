@@ -56,6 +56,7 @@ class Frame;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Entity : public virtual common::Subject
 {
 public:
@@ -228,9 +229,11 @@ private:
   /// Whether or not this Entity is a Frame
   bool mAmFrame;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 /// The Detachable class is a special case of the Entity base class. Detachable
 /// allows the Entity's reference Frame to be changed arbitrarily by the user.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Detachable : public virtual Entity
 {
 public:
@@ -245,6 +248,7 @@ protected:
   /// arguments
   Detachable();
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
