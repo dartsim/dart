@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CLASS_WITH_VIRTUAL_BASE_HPP_
-#define DART_CLASS_WITH_VIRTUAL_BASE_HPP_
+#ifndef DART_COMMON_CLASSWITHVIRTUALBASE_HPP_
+#define DART_COMMON_CLASSWITHVIRTUALBASE_HPP_
 
 // This macro is used to mark all the class that inherit
 // virtually from another to avoid problems on MSVC
