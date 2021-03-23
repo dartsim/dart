@@ -17,6 +17,18 @@
 # and the following targets:
 #   ODE::ODE
 
+include(FindPackageHandleStandardArgs)
+
+# First try to find ODE via the official cmake config
+find_package(ODE QUIET NO_MODULE)
+mark_as_advanced(ODE_DIR)
+
+if(ODE_FOUND)
+  find_package_handle_standard_args(ODE CONFIG_MODE)
+  return()
+endif()
+
+# Fallback to use pkg-config
 find_package(PkgConfig QUIET)
 
 # Check to see if pkgconfig is installed.
@@ -41,7 +53,6 @@ endif()
 set(ODE_VERSION ${PC_ODE_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
-include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ODE
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS ODE_INCLUDE_DIRS ODE_LIBRARIES
