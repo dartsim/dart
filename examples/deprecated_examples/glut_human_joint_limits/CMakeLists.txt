@@ -34,11 +34,10 @@ set(required_libraries
 )
 
 if(DART_IN_SOURCE_BUILD)
-    dart_build_example_in_source(${example_name}
-      LINK_LIBRARIES ${required_libraries}
-      COMPILE_FEATURES cxx_std_14
-    )
-  endif()
+  dart_build_example_in_source(${example_name}
+    LINK_LIBRARIES ${required_libraries}
+    COMPILE_FEATURES cxx_std_14
+  )
   return()
 endif()
 
