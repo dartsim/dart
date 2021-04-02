@@ -47,6 +47,7 @@ void ShapeNode(py::module& m)
       dart::dynamics::ShapeNode,
       dart::dynamics::JacobianNode,
       dart::dynamics::ShapeFrame,
+      dart::dynamics::Node,
       std::shared_ptr<dart::dynamics::ShapeNode>>(m, "ShapeNode")
       .def(
           "setProperties",

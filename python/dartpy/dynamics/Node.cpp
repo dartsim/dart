@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 #include "pointers.hpp"
@@ -95,6 +96,11 @@ void Node(py::module& m)
           +[](const dart::dynamics::Node* self)
               -> dart::dynamics::ConstBodyNodePtr {
             return self->getBodyNodePtr();
+          })
+      .def(
+          "getBodyNode",
+          +[](dart::dynamics::Node* self) -> dart::dynamics::BodyNode* {
+            return self->getBodyNodePtr().get();
           })
       .def(
           "isRemoved",

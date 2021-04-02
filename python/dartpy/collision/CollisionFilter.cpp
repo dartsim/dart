@@ -129,7 +129,18 @@ void CollisionFilter(py::module& m)
           +[](dart::collision::BodyNodeCollisionFilter* self) {
             self->removeAllBodyNodePairsFromBlackList();
           },
-          "Remove all the BodyNode pairs from the blacklist.");
+          "Remove all the BodyNode pairs from the blacklist.")
+      .def(
+          "ignoresCollision",
+          +[](const dart::collision::BodyNodeCollisionFilter* self,
+              const dart::collision::CollisionObject* object1,
+              const dart::collision::CollisionObject* object2) -> bool {
+            return self->ignoresCollision(object1, object2);
+          },
+          ::py::arg("object1"),
+          ::py::arg("object2"),
+          "Returns true if the given two CollisionObjects should be checked by "
+          "the collision detector, false otherwise.");
 }
 
 } // namespace python
