@@ -127,7 +127,9 @@ endfunction()
 
 #===============================================================================
 macro(dart_check_optional_package variable component dependency)
-  if(${${variable}_FOUND})
+  option(DART_SKIP_${variable} "If ON, do not use ${variable} even if it is found." OFF)
+  mark_as_advanced(DART_SKIP_${variable})
+  if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable}})
     set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
@@ -135,12 +137,17 @@ macro(dart_check_optional_package variable component dependency)
     endif()
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
-    if(ARGV3) # version
-      message(WARNING "Looking for ${dependency} - NOT found, to use"
-                      " ${component}, please install ${dependency} (>= ${ARGV3})")
-    else()
-      message(WARNING "Looking for ${dependency} - NOT found, to use"
-                      " ${component}, please install ${dependency}")
+    if(NOT ${${variable}_FOUND})
+      if(ARGV3) # version
+        message(WARNING "Looking for ${dependency} - NOT found, to use"
+                        " ${component}, please install ${dependency} (>= ${ARGV3})")
+      else()
+        message(WARNING "Looking for ${dependency} - NOT found, to use"
+                        " ${component}, please install ${dependency}")
+      endif()
+    elseif(${DART_SKIP_${variable}} AND DART_VERBOSE)
+      message(STATUS "Not using ${dependency} - version ${${variable}_VERSION}"
+                     " even if found because DART_SKIP_${variable} is ON.")
     endif()
     return()
   endif()
