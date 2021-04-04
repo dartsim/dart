@@ -754,8 +754,15 @@ public:
     /// drop to zero, regardless of whether this flag is true or false.
     bool mComputeErrorFromCenter;
 
+    /// The reference frame that the task space region is expressed. If this
+    /// frame is set to nullptr, which is the default, then the parent frame of
+    /// the target frame is used instead.
+    SimpleFramePtr mReferenceFrame;
+
     /// Default constructor
-    UniqueProperties(bool computeErrorFromCenter = true);
+    UniqueProperties(
+        bool computeErrorFromCenter = true,
+        SimpleFramePtr referenceFrame = nullptr);
   };
 
   struct Properties : ErrorMethod::Properties, UniqueProperties
@@ -792,6 +799,13 @@ public:
   /// Get whether this TaskSpaceRegion is set to compute its error vector from
   /// the center of the region.
   bool isComputingFromCenter() const;
+
+  /// Set the reference frame that the task space region is expressed. Pass
+  /// nullptr to use the parent frame of the target frame instead.
+  void setReferenceFrame(SimpleFramePtr referenceFrame);
+
+  /// Get the reference frame that the task space region is expressed.
+  ConstSimpleFramePtr getReferenceFrame() const;
 
   /// Get the Properties of this TaskSpaceRegion
   Properties getTaskSpaceRegionProperties() const;

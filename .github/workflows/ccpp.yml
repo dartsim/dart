@@ -18,17 +18,19 @@ env:
   DART_DEV_IMAGE: dartsim/dart-dev
   UBUNTU_BUILD_CMD: |
     docker run \
-      -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+      --platform $PLATFORM \
+      --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
       --env-file ./.ci/docker/env.list \
       $DART_DEV_IMAGE:$DOCKER_TAG \
       /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
 
 jobs:
   # Linux distros on multiple architectures
-  bionic_gcc_release:
+  ubuntu_gcc_release:
     name: Ubuntu [GCC|Release]
     runs-on: ubuntu-20.04
     strategy:
+      fail-fast: false
       matrix:
         os:
           [
@@ -37,22 +39,20 @@ jobs:
             ubuntu-groovy,
             ubuntu-hirsute,
           ]
-        sha256: [""]
+        platform: [linux/amd64]
         include:
-          # amd64
           - os: ubuntu-bionic
-            sha256: "@sha256:bbcc3086bb13c3bb59214b67ceb520f8fde89a92745611e3b62992575fd3bc9e"
-          # arm64
+            platform: linux/amd64
           - os: ubuntu-bionic
-            sha256: "@sha256:b798f02a2e16bb3b523dd087bb9e6e35598263af18bd0e61a8781c80352bf061"
-          # ppc64le
+            platform: linux/arm64
           - os: ubuntu-bionic
-            sha256: "@sha256:f9e60cad2904c7418a48bde5803a6866d0fa5893c4204689d978541572905b87"
+            platform: linux/ppc64le
     env:
-      DOCKER_TAG: ${{ matrix.os }}-v6.10${{ matrix.sha256 }}
+      DOCKER_TAG: ${{ matrix.os }}-v6.10
+      PLATFORM: ${{ matrix.platform }}
       COMPILER: gcc
       BUILD_TYPE: Release
-      BUILD_DARTPY: OFF
+      BUILD_DARTPY: "${{ matrix.os == 'ubuntu-xenial' && 'OFF' || 'ON' }}"
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
