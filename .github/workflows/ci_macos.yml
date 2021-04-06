@@ -1,0 +1,34 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI macOS
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  schedule:
+    # Run every day at 02:00
+    - cron: "0 2 * * 0-6"
+
+jobs:
+  # macOS 10.15 (Catalina)
+  catalina_clang_release:
+    name: macOS 10.15
+    runs-on: macos-10.15
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+    env:
+      COMPILER: clang
+      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_DARTPY: "${{ matrix.build_type == 'Debug' && 'OFF' || 'ON' }}"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: .ci/install.sh
+      - name: Build
+        run: sudo -E .ci/build.sh
