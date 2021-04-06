@@ -308,7 +308,37 @@ void InverseKinematics(py::module& m)
               dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties>(),
           ::py::arg("ik"),
           ::py::arg("properties")
-          = dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties());
+          = dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties())
+      .def(
+          "setComputeFromCenter",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              setComputeFromCenter,
+          ::py::arg("computeFromCenter"),
+          "Set whether this TaskSpaceRegion should compute its error vector "
+          "from the center of the region.")
+      .def(
+          "isComputingFromCenter",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              isComputingFromCenter,
+          "Get whether this TaskSpaceRegion is set to compute its error vector "
+          "from the center of the region.")
+      .def(
+          "setReferenceFrame",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              setReferenceFrame,
+          ::py::arg("referenceFrame"),
+          "Set the reference frame that the task space region is expressed. "
+          "Pass None to use the parent frame of the target frame instead.")
+      .def(
+          "getReferenceFrame",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              getReferenceFrame,
+          "Get the reference frame that the task space region is expressed.")
+      .def(
+          "getTaskSpaceRegionProperties",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              getTaskSpaceRegionProperties,
+          "Get the Properties of this TaskSpaceRegion.");
 
   ::py::class_<
       dart::dynamics::InverseKinematics,
