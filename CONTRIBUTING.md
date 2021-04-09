@@ -67,10 +67,10 @@ You can find the complete contribution history in [here](https://github.com/dart
 
 ### C++ Style
 
-#### Header Style
+C++ headers and sources should be contained in the same subdirectory of `dart/` that matches
+their namespace, with the extension `.hpp` and `.cpp`, respectively.
 
-C++ headers should be contained in a subdirectory of `include/` that matches
-their namespace, with the extension `.hpp`.
+#### Header Style
 
 * Use **two-space** indentation
 * Use **camelCase** function names
@@ -161,9 +161,6 @@ private:
 ```
 
 #### Source Style
-
-C++ sources should be contained in a subdirectory of `src/` that matches their
-namespace, with the extension `.cpp`.
 
 * Use **two-space** indentation
 * Use **camelCase** function names
