@@ -47,8 +47,10 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Aditya Vamsikrishna](https://github.com/aditya-vk) | bug fix
  [pchorak](https://github.com/pchorak)              | bug fixes
  [acxz](https://github.com/acxz)                    | doxygen warning fix
- [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector
+ [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector, slip effect on contact
  [Christoph Hinze](https://github.com/chhinze)      | python bindings
+ [Erwin Coumans](https://github.com/erwincoumans)   | build fix on Windows/MSVC
+ [Silvio Traversaro](https://github.com/traversaro) | build fix on Windows/MSVC, vcpkg packaging
 
 You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
 
