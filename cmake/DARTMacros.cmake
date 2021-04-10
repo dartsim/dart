@@ -261,7 +261,7 @@ function(dart_build_target_in_source target)
 
   set_target_properties(${target}
     PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+      RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
   )
 
   dart_format_add(${srcs})
