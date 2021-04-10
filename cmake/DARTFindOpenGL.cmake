@@ -14,7 +14,12 @@ if(POLICY CMP0072)
   cmake_policy(SET CMP0072 OLD)
 endif()
 
-find_package(OpenGL QUIET MODULE)
+# Use OpenGL config if available
+find_package(OpenGL QUIET CONFIG)
+# Otherwise, fall back to FindOpenGL.cmake provided by CMake
+if(NOT OPENGL_FOUND)
+  find_package(OpenGL QUIET MODULE)
+endif()
 
 cmake_policy(POP)
 
