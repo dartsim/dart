@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -51,6 +51,7 @@ namespace dart {
 namespace dynamics {
 
 /// class Skeleton
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Skeleton : public virtual common::VersionCounter,
                  public MetaSkeleton,
                  public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
@@ -1337,6 +1338,7 @@ public:
   ///
   std::size_t mUnionIndex;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

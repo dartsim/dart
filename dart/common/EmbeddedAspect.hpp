@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -85,6 +85,8 @@ public:
 /// It is possible to customize the way an EmbeddedStateAspect interacts with
 /// your Composite by using the dart::common::detail::EmbeddedStateAspect class
 /// directly instead of inheriting this class.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+
 template <class DerivedT, typename StateDataT>
 class EmbedState : public virtual common::RequiresAspect<
                        common::EmbeddedStateAspect<DerivedT, StateDataT> >
@@ -114,6 +116,7 @@ protected:
   /// Aspect::State data, directly accessible to your derived class
   AspectState mAspectState;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 /// This is an alternative to EmbedState which allows your class to also inherit
@@ -193,6 +196,7 @@ public:
 /// with your Composite by using the
 /// dart::common::detail::EmbeddedPropertiesAspect class directly instead of
 /// inheriting this class.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class DerivedT, typename PropertiesDataT>
 class EmbedProperties
   : public virtual common::RequiresAspect<
@@ -223,6 +227,7 @@ protected:
   /// Aspect::Properties data, directly accessible to your derived class
   AspectProperties mAspectProperties;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 /// This is an alternative to EmbedProperties which allows your class to also
@@ -366,6 +371,7 @@ public:
 /// void setAspectState(const AspectState& state);
 /// void setAspectProperties(const AspectProperties& state);
 /// \endcode
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class DerivedT, typename StateDataT, typename PropertiesDataT>
 class EmbedStateAndProperties : public virtual common::RequiresAspect<
                                     common::EmbeddedStateAndPropertiesAspect<
@@ -411,6 +417,7 @@ protected:
   /// Aspect::Properties data, directly accessible to your derived class
   AspectProperties mAspectProperties;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 /// This is an alternative to EmbedStateAndProperties which allows your class to

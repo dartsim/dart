@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_REQUIRESASPECT_HPP_
 #define DART_COMMON_REQUIRESASPECT_HPP_
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
 
 namespace dart {
@@ -50,6 +51,7 @@ class RequiresAspect
 };
 
 //==============================================================================
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class ReqAspect>
 class RequiresAspect<ReqAspect> : public virtual SpecializedForAspect<ReqAspect>
 {
@@ -58,6 +60,7 @@ public:
   /// the Aspect type is required.
   RequiresAspect();
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 template <class ReqAspect1, class... OtherReqAspects>

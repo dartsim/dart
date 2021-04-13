@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -53,6 +53,7 @@ class BodyNodeSpecializedFor
 //==============================================================================
 /// BodyNodeSpecializedFor allows classes that inherit BodyNode to
 /// have constant-time access to a specific type of Node
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class SpecNode>
 class BodyNodeSpecializedFor<SpecNode>
   : public virtual detail::BasicNodeManagerForBodyNode
@@ -102,6 +103,7 @@ protected:
   /// Iterator that allows direct access to the specialized Nodes
   BasicNodeManagerForBodyNode::NodeMap::iterator mSpecNodeIterator;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 /// This is the variadic version of the BodyNodeSpecializedFor class
@@ -125,6 +127,7 @@ class SkeletonSpecializedFor
 //==============================================================================
 /// SkeletonSpecializedForNode allows classes that inherit Skeleton to
 /// have constant-time access to a specific type of Node
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class SpecNode>
 class SkeletonSpecializedFor<SpecNode>
   : public virtual detail::BasicNodeManagerForSkeleton,
@@ -204,6 +207,7 @@ protected:
   /// Nodes
   NodeNameMgrMap::iterator mSpecNodeNameMgrIterator;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 /// This is the variadic version of the SkeletonSpecializedForNode class

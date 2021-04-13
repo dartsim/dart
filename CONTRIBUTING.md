@@ -47,8 +47,10 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Aditya Vamsikrishna](https://github.com/aditya-vk) | bug fix
  [pchorak](https://github.com/pchorak)              | bug fixes
  [acxz](https://github.com/acxz)                    | doxygen warning fix
- [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector
+ [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector, slip effect on contact
  [Christoph Hinze](https://github.com/chhinze)      | python bindings
+ [Erwin Coumans](https://github.com/erwincoumans)   | build fix on Windows/MSVC
+ [Silvio Traversaro](https://github.com/traversaro) | build fix on Windows/MSVC, vcpkg packaging
 
 You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
 
@@ -67,10 +69,10 @@ You can find the complete contribution history in [here](https://github.com/dart
 
 ### C++ Style
 
-#### Header Style
+C++ headers and sources should be contained in the same subdirectory of `dart/` that matches
+their namespace, with the extension `.hpp` and `.cpp`, respectively.
 
-C++ headers should be contained in a subdirectory of `include/` that matches
-their namespace, with the extension `.hpp`.
+#### Header Style
 
 * Use **two-space** indentation
 * Use **camelCase** function names
@@ -161,9 +163,6 @@ private:
 ```
 
 #### Source Style
-
-C++ sources should be contained in a subdirectory of `src/` that matches their
-namespace, with the extension `.cpp`.
 
 * Use **two-space** indentation
 * Use **camelCase** function names

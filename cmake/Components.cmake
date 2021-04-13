@@ -225,7 +225,7 @@ function(install_component_exports package_name)
     endforeach()
 
     configure_file(
-      "${CMAKE_SOURCE_DIR}/cmake/dart_Component.cmake.in"
+      "${DART_SOURCE_DIR}/cmake/dart_Component.cmake.in"
       "${output_path}"
       @ONLY)
 

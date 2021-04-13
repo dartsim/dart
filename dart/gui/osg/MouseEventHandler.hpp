@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,6 +33,7 @@
 #ifndef DART_GUI_OSG_MOUSEEVENTHANDLER_HPP_
 #define DART_GUI_OSG_MOUSEEVENTHANDLER_HPP_
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/common/Subject.hpp"
 
@@ -44,6 +45,7 @@ namespace osg {
 
 class DefaultEventHandler;
 
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class MouseEventHandler : public virtual dart::common::Subject,
                           public virtual dart::common::Observer
 {
@@ -67,6 +69,7 @@ protected:
 
   DefaultEventHandler* mEventHandler;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace osg
 } // namespace gui

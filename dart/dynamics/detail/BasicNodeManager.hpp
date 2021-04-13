@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,6 +37,7 @@
 #include <typeindex>
 #include <unordered_set>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Empty.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/dynamics/Node.hpp"
@@ -91,6 +92,7 @@ protected:
   NodeDestructorSet mNodeDestructors;
 };
 
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
 {
 public:
@@ -135,6 +137,7 @@ protected:
   /// types that are specialized for more than the default specialized Nodes.
   SpecializedTreeNodes mSpecializedTreeNodes;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
 template <class NodeType>

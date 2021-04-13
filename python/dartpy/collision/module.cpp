@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -41,6 +41,7 @@ namespace python {
 void Contact(py::module& sm);
 
 void CollisionFilter(py::module& sm);
+void CollisionObject(py::module& sm);
 void CollisionOption(py::module& sm);
 void CollisionResult(py::module& sm);
 
@@ -57,8 +58,6 @@ void DARTCollisionDetector(py::module& sm);
 void CollisionGroup(py::module& sm);
 void FCLCollisionGroup(py::module& sm);
 void DARTCollisionGroup(py::module& sm);
-
-void CollisionObject(py::module& sm);
 
 #if HAVE_BULLET
 void BulletCollisionDetector(py::module& sm);
@@ -77,6 +76,7 @@ void dart_collision(py::module& m)
   Contact(sm);
 
   CollisionFilter(sm);
+  CollisionObject(sm);
   CollisionOption(sm);
   CollisionResult(sm);
 
@@ -93,8 +93,6 @@ void dart_collision(py::module& m)
   CollisionGroup(sm);
   FCLCollisionGroup(sm);
   DARTCollisionGroup(sm);
-
-  CollisionObject(sm);
 
 #if HAVE_BULLET
   BulletCollisionDetector(sm);

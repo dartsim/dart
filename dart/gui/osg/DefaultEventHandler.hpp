@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -41,6 +41,7 @@
 
 #include <osgGA/GUIEventHandler>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/common/Subject.hpp"
 
@@ -98,6 +99,7 @@ enum ConstraintType
 
 class MouseEventHandler;
 
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DefaultEventHandler : public ::osgGA::GUIEventHandler,
                             public virtual dart::common::Subject,
                             public virtual dart::common::Observer
@@ -227,6 +229,7 @@ protected:
   /// Storage for the last modkey mask
   int mLastModKeyMask;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace osg
 } // namespace gui

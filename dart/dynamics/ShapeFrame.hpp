@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -185,6 +185,7 @@ public:
 };
 
 //==============================================================================
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class ShapeFrame : public virtual common::VersionCounter,
                    public detail::ShapeFrameCompositeBase,
                    public virtual Frame
@@ -281,6 +282,7 @@ public:
   common::SlotRegister<RelativeTransformUpdatedSignal>
       onRelativeTransformUpdated;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

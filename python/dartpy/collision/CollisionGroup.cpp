@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -182,46 +182,15 @@ void CollisionGroup(py::module& m)
           })
       .def(
           "collide",
-          +[](dart::collision::CollisionGroup* self) -> bool {
-            return self->collide();
-          },
-          "Performs collision check within this CollisionGroup")
-      .def(
-          "collide",
-          +[](dart::collision::CollisionGroup* self,
-              const dart::collision::CollisionOption& option) -> bool {
-            return self->collide(option);
-          },
-          ::py::arg("option"),
-          "Performs collision check within this CollisionGroup")
-      .def(
-          "collide",
           +[](dart::collision::CollisionGroup* self,
               const dart::collision::CollisionOption& option,
               dart::collision::CollisionResult* result) -> bool {
             return self->collide(option, result);
           },
-          ::py::arg("option"),
-          ::py::arg("result"),
+          ::py::arg("option")
+          = dart::collision::CollisionOption(false, 1u, nullptr),
+          ::py::arg("result") = nullptr,
           "Performs collision check within this CollisionGroup")
-      .def(
-          "collide",
-          +[](dart::collision::CollisionGroup* self,
-              dart::collision::CollisionGroup* otherGroup) -> bool {
-            return self->collide(otherGroup);
-          },
-          ::py::arg("otherGroup"),
-          "Perform collision check against other CollisionGroup")
-      .def(
-          "collide",
-          +[](dart::collision::CollisionGroup* self,
-              dart::collision::CollisionGroup* otherGroup,
-              const dart::collision::CollisionOption& option) -> bool {
-            return self->collide(otherGroup, option);
-          },
-          ::py::arg("otherGroup"),
-          ::py::arg("option"),
-          "Perform collision check against other CollisionGroup")
       .def(
           "collide",
           +[](dart::collision::CollisionGroup* self,
@@ -231,21 +200,10 @@ void CollisionGroup(py::module& m)
             return self->collide(otherGroup, option, result);
           },
           ::py::arg("otherGroup"),
-          ::py::arg("option"),
-          ::py::arg("result"),
+          ::py::arg("option")
+          = dart::collision::CollisionOption(false, 1u, nullptr),
+          ::py::arg("result") = nullptr,
           "Perform collision check against other CollisionGroup")
-      .def(
-          "distance",
-          +[](dart::collision::CollisionGroup* self) -> double {
-            return self->distance();
-          })
-      .def(
-          "distance",
-          +[](dart::collision::CollisionGroup* self,
-              const dart::collision::DistanceOption& option) -> double {
-            return self->distance(option);
-          },
-          ::py::arg("option"))
       .def(
           "distance",
           +[](dart::collision::CollisionGroup* self,
@@ -253,8 +211,9 @@ void CollisionGroup(py::module& m)
               dart::collision::DistanceResult* result) -> double {
             return self->distance(option, result);
           },
-          ::py::arg("option"),
-          ::py::arg("result"))
+          ::py::arg("option")
+          = dart::collision::DistanceOption(false, 0.0, nullptr),
+          ::py::arg("result") = nullptr)
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,

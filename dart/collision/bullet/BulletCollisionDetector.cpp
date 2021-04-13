@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -284,12 +284,18 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  dtwarn << "[BulletCollisionDetector::collide] collide(group1, group2) "
-         << "supposed to check collisions of the objects in group1 against the "
-         << "objects in group2. However, the current implementation of this "
-         << "function checks for all the objects against each other of both "
-         << "group1 and group2, which is an incorrect behavior. This bug will "
-         << "be fixed in the next patch release. (see #717 for the details)\n";
+  static bool warned = false;
+  if (!warned)
+  {
+    dtwarn
+        << "[BulletCollisionDetector::collide] collide(group1, group2) "
+        << "supposed to check collisions of the objects in group1 against the "
+        << "objects in group2. However, the current implementation of this "
+        << "function checks for all the objects against each other of both "
+        << "group1 and group2, which is an incorrect behavior. This bug will "
+        << "be fixed in the next patch release. (see #717 for the details)\n";
+    warned = true;
+  }
 
   mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
   auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
@@ -321,8 +327,14 @@ double BulletCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning 0.0.\n";
+  static bool warned = false;
+  if (!warned)
+  {
+    dtwarn
+        << "[BulletCollisionDetector::distance] This collision detector does "
+        << "not support (signed) distance queries. Returning 0.0.\n";
+    warned = true;
+  }
 
   return 0.0;
 }
@@ -334,8 +346,14 @@ double BulletCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning.\n";
+  static bool warned = false;
+  if (!warned)
+  {
+    dtwarn
+        << "[BulletCollisionDetector::distance] This collision detector does "
+        << "not support (signed) distance queries. Returning.\n";
+    warned = true;
+  }
 
   return 0.0;
 }
