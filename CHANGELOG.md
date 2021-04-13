@@ -1,5 +1,11 @@
 ## DART 6
 
+### [DART 6.10.1 (2021-04-13)](https://github.com/dartsim/dart/milestone/65?closed=1)
+
+* GUI
+
+  * Protect OpenGL attributes shared by ImGui and OSG: [#1558](https://github.com/dartsim/dart/pull/1558)
+
 ### [DART 6.10.0 (2021-04-09)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
 * Common
