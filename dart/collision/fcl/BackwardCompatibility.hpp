@@ -80,13 +80,13 @@
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
-#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 #  if FCL_VERSION_AT_LEAST(0, 6, 0)
 #    include <fcl/geometry/octree/octree.h>
 #  else
 #    include <fcl/octree.h>
 #  endif // FCL_VERSION_AT_LEAST(0,6,0)
-#endif   // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#endif   // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
 #if FCL_VERSION_AT_LEAST(0, 5, 0)
 #  include <memory>
@@ -129,9 +129,9 @@ using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-#  if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
-#  endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;
@@ -154,9 +154,9 @@ using Cylinder = ::fcl::Cylinder;
 using Cone = ::fcl::Cone;
 using Halfspace = ::fcl::Halfspace;
 using Sphere = ::fcl::Sphere;
-#  if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree;
-#  endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject;
 using CollisionGeometry = ::fcl::CollisionGeometry;

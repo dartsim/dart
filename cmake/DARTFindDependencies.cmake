@@ -97,22 +97,22 @@ if(MSVC)
       "is not supported on Windows until "
       "'https://github.com/OctoMap/octomap/pull/213' "
       "is resolved.")
-  set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+  set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
 else()
   if(OCTOMAP_FOUND OR octomap_FOUND)
     if(NOT DEFINED octomap_VERSION)
-      set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+      set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
       message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
           "please install octomap with version information"
       )
     else()
-      set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+      set(DART_HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
       if(DART_VERBOSE)
         message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
       endif()
     endif()
   else()
-    set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+    set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
     message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
         "please install octomap"
     )

@@ -50,7 +50,7 @@
 #include "dart/gui/osg/render/ShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/SphereShapeNode.hpp"
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
 #  include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 #endif
 #include "dart/gui/osg/render/HeightmapShapeNode.hpp"
@@ -72,7 +72,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
 #  include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 #include "dart/dynamics/HeightmapShape.hpp"
@@ -328,7 +328,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType)
   {
     std::shared_ptr<VoxelGridShape> lss
@@ -338,7 +338,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
   else if (HeightmapShapef::getStaticType() == shapeType)
   {
     std::shared_ptr<HeightmapShapef> lss
