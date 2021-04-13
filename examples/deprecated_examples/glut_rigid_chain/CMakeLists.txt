@@ -12,7 +12,7 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-find_package(DART 6.6.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 7.0.0 REQUIRED COMPONENTS ${required_components} CONFIG)
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
