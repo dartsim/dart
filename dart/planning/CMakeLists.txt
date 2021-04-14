@@ -1,6 +1,6 @@
 # Dependency checks
 dart_find_package(flann)
-dart_check_optional_package(FLANN "dart-planning" "flann" "1.8.4")
+dart_check_optional_package(FLANN "dart-planning" "flann" "1.9.2")
 
 # Add lz4 dependency explicitly. lz4 is a dependency of flann, but it's not
 # added to flann as the dependency.
