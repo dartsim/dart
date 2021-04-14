@@ -33,19 +33,10 @@
 #ifndef DART_GUI_GLFUNCS_HPP_
 #define DART_GUI_GLFUNCS_HPP_
 
-#include <string>
 #include <Eigen/Eigen>
-#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {
-
-/// \deprecated Deprecated in 6.6. Please use
-/// dart::gui::glut::drawStringOnScreen() instead in
-/// dart/gui/glut/GLUTFuncs.hpp file.
-DART_DEPRECATED(6.6)
-void drawStringOnScreen(
-    float _x, float _y, const std::string& _s, bool _bigFont = true);
 
 /// \brief
 void drawArrow3D(
@@ -61,14 +52,6 @@ void drawArrow2D(
 
 /// \brief
 void drawProgressBar(int _currFrame, int _totalFrame);
-
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
-//                bool _antialias);
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
-//                 char *fname, bool _antialias);
-// bool screenShot(int w, int h, char *fname, bool _antialias = false);
-
-// TODO(Unknown): freeimage
 
 } // namespace gui
 } // namespace dart

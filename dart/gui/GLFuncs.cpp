@@ -47,11 +47,6 @@
 namespace dart {
 namespace gui {
 
-void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
-{
-  glut::drawStringOnScreen(x, y, s, bigFont);
-}
-
 // draw a 3D arrow starting from pt along dir, the arrowhead is on the other end
 void drawArrow3D(
     const Eigen::Vector3d& _pt,

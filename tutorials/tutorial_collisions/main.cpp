@@ -33,7 +33,7 @@
 #include <random>
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
 const double default_shape_density = 1000;  // kg/m^3
 const double default_shape_height = 0.1;    // m
