@@ -27,14 +27,6 @@ matrix:
 
     - os: linux
       env:
-        - BUILD_NAME=XENIAL_32BIT_RELEASE
-        - DOCKER_NAME=dartsim/dart-dev:xenial-32bit-v6.10
-        - BUILD_TYPE=Release  # TODO: Tests fail in debug mode
-        - COMPILER=gcc
-      services: docker
-
-    - os: linux
-      env:
         - BUILD_NAME=BIONIC_RELEASE_DOCS
         - DOCKER_NAME=dartsim/dart-dev:bionic-docs
         - BUILD_TYPE=Release

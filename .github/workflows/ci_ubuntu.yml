@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-xenial, ubuntu-focal, ubuntu-hirsute]
+        os: [ubuntu-focal, ubuntu-hirsute]
         platform: [linux/amd64]
         build_type: [Release]
         include:
@@ -44,7 +44,7 @@ jobs:
       PLATFORM: ${{ matrix.platform }}
       COMPILER: gcc
       BUILD_TYPE: ${{ matrix.build_type }}
-      BUILD_DARTPY: "${{ ( matrix.os == 'ubuntu-xenial' || matrix.build_type == 'Debug' ) && 'OFF' || 'ON' }}"
+      BUILD_DARTPY: "${{ matrix.build_type == 'Debug' && 'OFF' || 'ON' }}"
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU

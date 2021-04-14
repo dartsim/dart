@@ -1,11 +1,7 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-if(MSVC)
-  cmake_minimum_required(VERSION 3.8.0)
-else()
-  cmake_minimum_required(VERSION 3.5.1)
-endif()
+cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
 project(dart)
 
