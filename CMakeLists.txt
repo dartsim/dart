@@ -113,22 +113,19 @@ message(STATUS "                DART ${DART_VERSION}")
 message(STATUS "============================================")
 
 #===============================================================================
-# CodeCov settings
-#===============================================================================
-if(DART_CODECOV)
-  include(CodeCoverage)
-  setup_target_for_coverage(codecov ctest coverage)
-  set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage"
-  )
-endif()
-
-#===============================================================================
 # Build type settings
 #===============================================================================
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel" FORCE)
 endif()
+
+if(NOT CMAKE_BUILD_TYPE STREQUAL Debug AND DART_CODECOV)
+  message(
+    FATAL_ERROR
+      "DART_CODECOV=${DART_CODECOV} and CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} are in conflict. Change one of the option."
+  )
+endif()
+
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
 
 set(BUILD_TYPE_DEBUG FALSE)

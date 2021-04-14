@@ -160,6 +160,24 @@ if(DART_ENABLE_SIMD)
   endif()
 endif()
 
+#===============================================================================
+# CodeCov settings
+# Reference: https://github.com/codecov/example-cpp11-cmake
+#===============================================================================
+if(DART_CODECOV AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+    target_link_options(dart PUBLIC --coverage)
+  else()
+    target_link_libraries(dart PUBLIC --coverage)
+  endif()
+  target_compile_options(dart
+    PUBLIC
+      -O0        # no optimization
+      -g         # generate debug info
+      --coverage # sets all required flags
+  )
+endif()
+
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
