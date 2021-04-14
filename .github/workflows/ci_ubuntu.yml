@@ -1,0 +1,63 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI Ubuntu
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  schedule:
+    # Run every day at 02:00
+    - cron: "0 2 * * 0-6"
+
+jobs:
+  # Linux distros on multiple architectures
+  ubuntu:
+    name: Ubuntu
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-xenial, ubuntu-focal, ubuntu-hirsute]
+        platform: [linux/amd64]
+        build_type: [Release]
+        include:
+          - os: ubuntu-bionic
+            platform: linux/amd64
+            build_type: Debug
+          - os: ubuntu-bionic
+            platform: linux/amd64
+            build_type: Release
+          - os: ubuntu-bionic
+            platform: linux/arm64
+            build_type: Release
+          - os: ubuntu-bionic
+            platform: linux/ppc64le
+            build_type: Release
+    env:
+      # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
+      DART_DEV_IMAGE: dartsim/dart-dev
+      DOCKER_TAG: ${{ matrix.os }}-v6.10
+      PLATFORM: ${{ matrix.platform }}
+      COMPILER: gcc
+      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_DARTPY: "${{ ( matrix.os == 'ubuntu-xenial' || matrix.build_type == 'Debug' ) && 'OFF' || 'ON' }}"
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Pull dev container
+        run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
+      - name: Build
+        run: |
+          docker run \
+          --platform $PLATFORM \
+          --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+          --env-file ./.ci/docker/env.list \
+          $DART_DEV_IMAGE:$DOCKER_TAG \
+          /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"

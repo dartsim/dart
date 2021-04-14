@@ -1,0 +1,47 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI Windows
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  schedule:
+    # Run every day at 02:00
+    - cron: "0 2 * * 0-6"
+
+jobs:
+  windows:
+    name: Windows
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        toolset: [""]
+    env:
+      BUILD_TYPE: Release
+      VCPKG_ROOT: "C:/dartsim/vcpkg"
+      VCPKG_BUILD_TAG: v0.2.0-70f192e
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        shell: cmd
+        run: |
+          mkdir -p C:\dartsim
+          choco install -y wget
+          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
+          unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
+      - name: Build
+        shell: cmd
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ${{ matrix.toolset }} ^
+            -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
+            -DDART_VERBOSE=ON
+          cmake --build . --target ALL_BUILD --parallel
+          ctest --output-on-fauilure
