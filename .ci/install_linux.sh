@@ -62,7 +62,7 @@ apt-get install -y --no-install-recommends \
   liburdfdom-dev \
   liburdfdom-headers-dev \
   libopenscenegraph-dev
-if [ $(lsb_release -sc) = "xenial" ] || [ $(lsb_release -sc) = "bionic" ]; then
+if [ $(lsb_release -sc) = "bionic" ]; then
   apt-get install -y --no-install-recommends \
     libnlopt-dev \
     liboctomap-dev \
@@ -107,7 +107,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
     python3-setuptools
   pip3 install pytest -U
 
-  if [ $(lsb_release -sc) = "xenial" ] || [ $(lsb_release -sc) = "bionic" ]; then
+  if [ $(lsb_release -sc) = "bionic" ]; then
     git clone https://github.com/pybind/pybind11 -b 'v2.3.0' --single-branch --depth 1 &&
       cd pybind11 && mkdir build && cd build &&
       cmake .. \

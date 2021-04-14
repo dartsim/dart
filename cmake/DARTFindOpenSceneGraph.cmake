@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-if (CMAKE_VERSION VERSION_LESS 3.12)
+if(CMAKE_VERSION VERSION_LESS 3.12)
   get_property(old_find_library_use_lib64_paths GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
   set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 endif()
@@ -15,7 +15,7 @@ find_package(OpenSceneGraph 3.0 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
 )
 
-if (CMAKE_VERSION VERSION_LESS 3.12)
+if(CMAKE_VERSION VERSION_LESS 3.12)
   set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ${old_find_library_use_lib64_paths})
 endif()
 

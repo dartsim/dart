@@ -41,11 +41,10 @@ class CMakeBuild(build_ext):
                 "CMake must be installed to build the following extensions: " +
                 ", ".join(e.name for e in self.extensions))
 
-        if platform.system() == "Windows":
-            cmake_version = LooseVersion(
-                re.search(r'version\s*([\d.]+)', out.decode()).group(1))
-            if cmake_version < '3.8.0':
-                raise RuntimeError("CMake >= 3.8.0 is required on Windows")
+        cmake_version = LooseVersion(
+            re.search(r'version\s*([\d.]+)', out.decode()).group(1))
+        if cmake_version < '3.10.2':
+            raise RuntimeError("CMake >= 3.10.2 is required")
 
         distutils.log.set_verbosity(distutils.log.DEBUG)  # Set DEBUG level
 

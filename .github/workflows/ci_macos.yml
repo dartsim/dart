@@ -29,6 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Dependencies
-        run: .ci/install.sh
+        run: .ci/install_osx.sh
       - name: Build
         run: sudo -E .ci/build.sh

@@ -2,7 +2,7 @@ language: cpp
 
 sudo: required
 
-dist: xenial
+dist: bionic
 
 cache:
   apt: true
@@ -20,7 +20,7 @@ matrix:
   include:
     - os: linux
       env:
-        - BUILD_NAME=XENIAL_DEBUG_CODECOV
+        - BUILD_NAME=BIONIC_DEBUG_CODECOV
         - BUILD_TYPE=Debug
         - COMPILER=gcc
         - CODECOV=ON
