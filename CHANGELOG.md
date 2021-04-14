@@ -4,7 +4,8 @@
 
 * GUI
 
-  * Protect OpenGL attributes shared by ImGui and OSG: [#1558](https://github.com/dartsim/dart/pull/1558)
+  * Changed to protect OpenGL attributes shared by ImGui and OSG: [#1558](https://github.com/dartsim/dart/pull/1558)
+  * Changed to set backface culling by default: [#1559](https://github.com/dartsim/dart/pull/1559)
 
 ### [DART 6.10.0 (2021-04-09)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
