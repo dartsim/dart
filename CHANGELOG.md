@@ -1,8 +1,11 @@
 ## DART 7
 
-### [DART 6.11.0 (TBD)](https://github.com/dartsim/dart/milestone/18?closed=1)
+### [DART 7.0.0 (TBD)](https://github.com/dartsim/dart/milestone/18?closed=1)
 
+* API Breaking Changes
 
+  * DART 7.0.0 and later require compilers that support C++17.
+  * DART 7.0.0 and later require CMake >= 3.10.2.
 
 ## DART 6
 

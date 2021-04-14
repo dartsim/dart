@@ -2,7 +2,7 @@ language: cpp
 
 sudo: required
 
-dist: xenial
+dist: bionic
 
 cache:
   apt: true
@@ -20,18 +20,10 @@ matrix:
   include:
     - os: linux
       env:
-        - BUILD_NAME=XENIAL_DEBUG_CODECOV
+        - BUILD_NAME=BIONIC_DEBUG_CODECOV
         - BUILD_TYPE=Debug
         - COMPILER=gcc
         - CODECOV=ON
-
-    - os: linux
-      env:
-        - BUILD_NAME=XENIAL_32BIT_RELEASE
-        - DOCKER_NAME=dartsim/dart-dev:xenial-32bit-v6.10
-        - BUILD_TYPE=Release  # TODO: Tests fail in debug mode
-        - COMPILER=gcc
-      services: docker
 
     - os: linux
       env:
