@@ -33,7 +33,7 @@
 #include <gtest/gtest.h>
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/dart.hpp"
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
 #  include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "TestHelpers.hpp"
@@ -147,7 +147,7 @@ TEST(Raycast, testBasicInterface)
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBasicInterface(bullet);
 #endif
@@ -231,7 +231,7 @@ TEST(Raycast, testOptions)
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif

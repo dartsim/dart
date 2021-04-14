@@ -40,9 +40,9 @@ namespace python {
 
 void Solver(py::module& sm);
 void GradientDescentSolver(py::module& sm);
-#if HAVE_NLOPT
+#if DART_HAVE_NLOPT
 void NloptSolver(py::module& sm);
-#endif // HAVE_NLOPT
+#endif // DART_HAVE_NLOPT
 
 void Function(py::module& sm);
 
@@ -54,9 +54,9 @@ void dart_optimizer(py::module& m)
 
   Solver(sm);
   GradientDescentSolver(sm);
-#if HAVE_NLOPT
+#if DART_HAVE_NLOPT
   NloptSolver(sm);
-#endif // HAVE_NLOPT
+#endif // DART_HAVE_NLOPT
 
   Function(sm);
 

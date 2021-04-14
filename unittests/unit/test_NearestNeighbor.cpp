@@ -9,14 +9,14 @@
 #include <Eigen/Core>
 #include <dart/dart.hpp>
 #include <gtest/gtest.h>
-#if HAVE_FLANN
+#if DART_HAVE_FLANN
 #  include <flann/flann.hpp>
-#endif // HAVE_FLANN
+#endif // DART_HAVE_FLANN
 #include "TestHelpers.hpp"
 
 /* *********************************************************************************************
  */
-#if HAVE_FLANN
+#if DART_HAVE_FLANN
 TEST(NEAREST_NEIGHBOR, 2D)
 {
 
@@ -56,4 +56,4 @@ TEST(NEAREST_NEIGHBOR, 2D)
   bool equality = equals(Vector2d(point[0], point[1]), p3, 1e-3);
   EXPECT_TRUE(equality);
 }
-#endif // HAVE_FLANN
+#endif // DART_HAVE_FLANN

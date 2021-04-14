@@ -37,7 +37,7 @@
 namespace dart {
 namespace dynamics {
 
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
 
 namespace {
 
@@ -49,7 +49,7 @@ Eigen::Vector3d toVector3d(const octomap::point3d& point)
 
 } // namespace
 
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
 
 //==============================================================================
 PointCloudShape::PointCloudShape(double visualSize)
@@ -109,7 +109,7 @@ void PointCloudShape::setPoint(const std::vector<Eigen::Vector3d>& points)
   incrementVersion();
 }
 
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
 //==============================================================================
 void PointCloudShape::setPoints(octomap::Pointcloud& pointCloud)
 {
