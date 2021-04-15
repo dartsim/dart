@@ -34,7 +34,7 @@
 #define EXAMPLES_VEHICLE_MYWINDOW_HPP_
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
 /// \brief
 class MyWindow : public dart::gui::glut::SimWindow
