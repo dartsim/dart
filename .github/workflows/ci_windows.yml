@@ -25,7 +25,8 @@ jobs:
       VCPKG_ROOT: "C:/dartsim/vcpkg"
       VCPKG_BUILD_TAG: v0.2.0-70f192e
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Install Dependencies
         shell: cmd
         run: |
