@@ -7,6 +7,10 @@
   * DART 7.0.0 and later require compilers that support C++17.
   * DART 7.0.0 and later require CMake >= 3.10.2.
 
+* GUI
+
+  * Upgraded ImGui to 1.82: [#1567](https://github.com/dartsim/dart/pull/1567)
+
 ## DART 6
 
 ### [DART 6.10.1 (2021-04-13)](https://github.com/dartsim/dart/milestone/65?closed=1)
