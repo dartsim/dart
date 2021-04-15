@@ -57,7 +57,7 @@ FCLCollisionObject::getFCLCollisionObject() const
 FCLCollisionObject::FCLCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    const fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
+    const std::shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
     mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom))
 {
@@ -83,14 +83,8 @@ void FCLCollisionObject::updateEngineData()
     const_cast<SoftMeshShape*>(softMeshShape)->update();
     // TODO(JS): update function be called by somewhere out of here.
 
-#if FCL_VERSION_AT_LEAST(0, 3, 0)
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
         mFCLCollisionObject->collisionGeometry().get());
-#else
-    dart::collision::fcl::CollisionGeometry* collGeom
-        = const_cast<dart::collision::fcl::CollisionGeometry*>(
-            mFCLCollisionObject->getCollisionGeometry());
-#endif
     assert(
         dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
     auto bvhModel

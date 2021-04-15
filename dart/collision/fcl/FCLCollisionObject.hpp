@@ -55,7 +55,7 @@ protected:
   FCLCollisionObject(
       CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>&
+      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
           fclCollGeom);
 
   // Documentation inherited

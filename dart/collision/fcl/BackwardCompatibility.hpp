@@ -88,31 +88,6 @@
 #  endif // FCL_VERSION_AT_LEAST(0,6,0)
 #endif   // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
-#if FCL_VERSION_AT_LEAST(0, 5, 0)
-#  include <memory>
-template <class T>
-using fcl_shared_ptr = std::shared_ptr<T>;
-template <class T>
-using fcl_weak_ptr = std::weak_ptr<T>;
-template <class T, class... Args>
-fcl_shared_ptr<T> fcl_make_shared(Args&&... args)
-{
-  return std::make_shared<T>(std::forward<Args>(args)...);
-}
-#else
-#  include <boost/make_shared.hpp>
-#  include <boost/weak_ptr.hpp>
-template <class T>
-using fcl_shared_ptr = boost::shared_ptr<T>;
-template <class T>
-using fcl_weak_ptr = boost::weak_ptr<T>;
-template <class T, class... Args>
-fcl_shared_ptr<T> fcl_make_shared(Args&&... args)
-{
-  return boost::make_shared<T>(std::forward<Args>(args)...);
-}
-#endif // FCL_VERSION_AT_LEAST(0,5,0)
-
 namespace dart {
 namespace collision {
 namespace fcl {
@@ -169,7 +144,7 @@ using DistanceResult = ::fcl::DistanceResult;
 using Contact = ::fcl::Contact;
 #endif
 
-#if FCL_VERSION_AT_LEAST(0, 4, 0) && !FCL_VERSION_AT_LEAST(0, 6, 0)
+#if !FCL_VERSION_AT_LEAST(0, 6, 0)
 using Ellipsoid = ::fcl::Ellipsoid;
 #endif
 

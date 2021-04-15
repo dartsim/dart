@@ -15,7 +15,7 @@ struct SkeletonManager final
 
   static dart::dynamics::SkeletonPtr asShared(void* skel);
 
-  static std::unordered_map<dart::dynamics::Skeleton*,
-                            dart::dynamics::SkeletonPtr>
-      mMap;
+  static std::
+      unordered_map<dart::dynamics::Skeleton*, dart::dynamics::SkeletonPtr>
+          mMap;
 };
