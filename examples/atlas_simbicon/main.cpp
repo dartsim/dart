@@ -32,8 +32,8 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <dart/utils/urdf/urdf.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include "AtlasSimbiconEventHandler.hpp"
 #include "AtlasSimbiconWidget.hpp"
@@ -45,9 +45,9 @@ int main()
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
   // Load ground and Atlas robot and add them to the world
-  dart::utils::DartLoader urdfLoader;
+  dart::io::DartLoader urdfLoader;
   auto ground = urdfLoader.parseSkeleton("dart://sample/sdf/atlas/ground.urdf");
-  auto atlas = dart::utils::SdfParser::readSkeleton(
+  auto atlas = dart::io::SdfParser::readSkeleton(
       "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
   world->addSkeleton(ground);
   world->addSkeleton(atlas);

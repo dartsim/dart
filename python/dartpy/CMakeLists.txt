@@ -65,8 +65,8 @@ target_include_directories(${pybind_module}
 target_link_libraries(${pybind_module}
   PUBLIC
     dart
-    dart-utils
-    dart-utils-urdf
+    dart-io
+    dart-io-urdf
     dart-gui
     dart-gui-osg
     ${PYTHON_LIBRARIES}

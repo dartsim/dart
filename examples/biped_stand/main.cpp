@@ -32,7 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 using namespace dart;
 
@@ -246,7 +246,7 @@ int main()
 {
   // Create a world and add the rigid body
   auto world
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
+      = dart::io::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
   world->setGravity(Eigen::Vector3d(0, -9.81, 0));
 
   auto biped = world->getSkeleton("fullbody1");

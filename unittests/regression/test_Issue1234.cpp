@@ -46,7 +46,7 @@
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
-#include <dart/utils/DartResourceRetriever.hpp>
+#include <dart/io/DartResourceRetriever.hpp>
 
 //==============================================================================
 bool runIssue1234Subtest(
@@ -90,7 +90,7 @@ void runIssue1234Test(
 {
   const std::string meshUri = "dart://sample/obj/BoxSmall.obj";
   const auto aiscene = dart::dynamics::MeshShape::loadMesh(
-      meshUri, dart::utils::DartResourceRetriever::create());
+      meshUri, dart::io::DartResourceRetriever::create());
   ASSERT_TRUE(aiscene);
   const auto mesh = std::make_shared<dart::dynamics::MeshShape>(
       100.0 * Eigen::Vector3d::Ones(), aiscene, meshUri);

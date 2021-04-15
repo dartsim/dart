@@ -35,21 +35,20 @@
 #include "TestHelpers.hpp"
 
 #include "dart/dart.hpp"
-#include "dart/utils/mjcf/detail/MujocoModel.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
-#include "dart/utils/utils.hpp"
+#include "dart/io/io.hpp"
+#include "dart/io/mjcf/detail/MujocoModel.hpp"
+#include "dart/io/mjcf/detail/Types.hpp"
+#include "dart/io/mjcf/detail/Utils.hpp"
 
 using namespace dart;
 
 //==============================================================================
 common::ResourceRetrieverPtr createRetriever()
 {
-  auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+  auto newRetriever = std::make_shared<io::CompositeResourceRetriever>();
   newRetriever->addSchemaRetriever(
       "file", std::make_shared<common::LocalResourceRetriever>());
-  newRetriever->addSchemaRetriever(
-      "dart", utils::DartResourceRetriever::create());
+  newRetriever->addSchemaRetriever("dart", io::DartResourceRetriever::create());
   return newRetriever;
 }
 
@@ -58,19 +57,19 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
 {
   const auto uri = "dart://sample/mjcf/openai/ant.xml";
 
-  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto mujoco = io::MjcfParser::detail::MujocoModel();
   auto errors = mujoco.read(uri, createRetriever());
   ASSERT_TRUE(errors.empty());
 
   EXPECT_EQ(mujoco.getModel(), "ant");
 
   const auto& compiler = mujoco.getCompiler();
-  EXPECT_EQ(compiler.getAngle(), utils::MjcfParser::detail::Angle::DEGREE);
+  EXPECT_EQ(compiler.getAngle(), io::MjcfParser::detail::Angle::DEGREE);
   EXPECT_EQ(
-      compiler.getCoordinate(), utils::MjcfParser::detail::Coordinate::LOCAL);
+      compiler.getCoordinate(), io::MjcfParser::detail::Coordinate::LOCAL);
 
   const auto& option = mujoco.getOption();
-  EXPECT_EQ(option.getIntegrator(), utils::MjcfParser::detail::Integrator::RK4);
+  EXPECT_EQ(option.getIntegrator(), io::MjcfParser::detail::Integrator::RK4);
   EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
 
   const auto& worldbody = mujoco.getWorldbody();
@@ -86,7 +85,7 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
 
   ASSERT_EQ(rootBody0.getNumJoints(), 1);
   const auto& rootJoint0 = rootBody0.getJoint(0);
-  EXPECT_EQ(rootJoint0.getType(), utils::MjcfParser::detail::JointType::FREE);
+  EXPECT_EQ(rootJoint0.getType(), io::MjcfParser::detail::JointType::FREE);
   EXPECT_EQ(rootJoint0.getName(), "root");
 }
 
@@ -96,8 +95,8 @@ TEST(MjcfParserTest, DefaultSettings)
   // For the details, see http://mujoco.org/book/modeling.html#CDefault
 
   const auto uri = "dart://sample/mjcf/test/default.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   ASSERT_EQ(world->getNumSkeletons(), 2);
@@ -138,8 +137,8 @@ TEST(MjcfParserTest, IncludeDefaultSettings)
   // For the details, see http://mujoco.org/book/modeling.html#CDefault
 
   const auto uri = "dart://sample/mjcf/test/include_main.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   ASSERT_EQ(world->getNumSkeletons(), 2);
@@ -178,8 +177,8 @@ TEST(MjcfParserTest, IncludeDefaultSettings)
 TEST(MjcfParserTest, Ant)
 {
   const auto uri = "dart://sample/mjcf/openai/ant.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   // The number of skeletons are the sum of the number of root <geom>s and root
@@ -205,8 +204,8 @@ TEST(MjcfParserTest, Ant)
 TEST(MjcfParserTest, InvertedPendulum)
 {
   const auto uri = "dart://sample/mjcf/openai/inverted_pendulum.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   // The number of skeletons are the sum of the number of root <geom>s and root
@@ -228,8 +227,8 @@ TEST(MjcfParserTest, InvertedPendulum)
 TEST(MjcfParserTest, InvertedDoublePendulum)
 {
   const auto uri = "dart://sample/mjcf/openai/inverted_double_pendulum.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   // The number of skeletons are the sum of the number of root <geom>s and root
@@ -255,8 +254,8 @@ TEST(MjcfParserTest, InvertedDoublePendulum)
 TEST(MjcfParserTest, Reacher)
 {
   const auto uri = "dart://sample/mjcf/openai/reacher.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   // The number of skeletons are the sum of the number of root <geom>s and root
@@ -285,8 +284,8 @@ TEST(MjcfParserTest, Reacher)
 TEST(MjcfParserTest, Striker)
 {
   const auto uri = "dart://sample/mjcf/openai/striker.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   // The number of skeletons are the sum of the number of root <geom>s and root
@@ -313,8 +312,8 @@ TEST(MjcfParserTest, Striker)
 TEST(MjcfParserTest, Thrower)
 {
   const auto uri = "dart://sample/mjcf/openai/thrower.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = io::MjcfParser::Options();
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   // The number of skeletons are the sum of the number of root <geom>s and root
@@ -342,7 +341,7 @@ TEST(MjcfParserTest, RoboticsFetch)
 {
   const common::Uri uri
       = "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml";
-  auto world = utils::MjcfParser::readWorld(uri);
+  auto world = io::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   ASSERT_EQ(world->getNumSkeletons(), 6);

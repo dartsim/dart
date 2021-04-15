@@ -2,10 +2,10 @@ dart_add_test("regression" test_Issue000Template test_Issue000Template.cpp)
 
 dart_add_test("regression" test_Issue1243 test_Issue1243.cpp)
 
-if(TARGET dart-utils-urdf)
+if(TARGET dart-io-urdf)
 
   dart_add_test("regression" test_Issue838)
-  target_link_libraries(test_Issue838 dart-utils-urdf)
+  target_link_libraries(test_Issue838 dart-io-urdf)
 
   dart_add_test("regression" test_Issue892)
 
@@ -32,6 +32,6 @@ if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
   target_link_libraries(test_Issue1234
     dart-collision-bullet
     dart-collision-ode
-    dart-utils)
+    dart-io)
 
 endif()

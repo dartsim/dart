@@ -41,9 +41,9 @@
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/io/SkelParser.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -239,7 +239,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -264,7 +264,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = io::SkelParser::readWorld(_fileName);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)

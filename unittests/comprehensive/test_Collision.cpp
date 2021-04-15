@@ -45,8 +45,8 @@
 #if DART_HAVE_BULLET
 #  include "dart/collision/bullet/bullet.hpp"
 #endif
+#include "dart/io/io.hpp"
 #include "dart/simulation/simulation.hpp"
-#include "dart/utils/utils.hpp"
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -55,7 +55,7 @@ using namespace math;
 using namespace collision;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace io;
 
 class Collision : public testing::Test
 {
