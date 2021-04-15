@@ -124,13 +124,13 @@ target_include_directories(dart BEFORE
 target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
-    Eigen3::Eigen
-    ccd
-    fcl
     assimp
     Boost::boost
     Boost::system
     Boost::filesystem
+    ccd
+    Eigen3::Eigen
+    fcl
   PRIVATE
     ${PROJECT_NAME}-external-odelcpsolver
 )
