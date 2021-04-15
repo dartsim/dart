@@ -4,8 +4,8 @@
 
 * API Breaking Changes
 
-  * DART 7.0.0 and later require compilers that support C++17.
-  * DART 7.0.0 and later require CMake >= 3.10.2.
+  * Increased required minimum versions to CMake 3.10.2 and C++17: [#1560](https://github.com/dartsim/dart/pull/1560)
+  * Dropped supporting FCL < 0.5.0: [#1568](https://github.com/dartsim/dart/pull/1568)
 
 * GUI
 

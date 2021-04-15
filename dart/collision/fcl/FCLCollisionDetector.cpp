@@ -857,7 +857,7 @@ void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
 }
 
 //==============================================================================
-fcl_shared_ptr<fcl::CollisionGeometry>
+std::shared_ptr<fcl::CollisionGeometry>
 FCLCollisionDetector::claimFCLCollisionGeometry(
     const dynamics::ConstShapePtr& shape)
 {
@@ -885,7 +885,7 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
 }
 
 //==============================================================================
-fcl_shared_ptr<fcl::CollisionGeometry>
+std::shared_ptr<fcl::CollisionGeometry>
 FCLCollisionDetector::createFCLCollisionGeometry(
     const dynamics::ConstShapePtr& shape,
     FCLCollisionDetector::PrimitiveShape type,
@@ -942,12 +942,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
-#if FCL_VERSION_AT_LEAST(0, 4, 0)
       geom = new fcl::Ellipsoid(FCLTypes::convertVector3(radii));
-#else
-      geom = createEllipsoid<fcl::OBBRSS>(
-          radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
-#endif
     }
     else
     {
@@ -1079,7 +1074,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   }
 
-  return fcl_shared_ptr<fcl::CollisionGeometry>(geom, deleter);
+  return std::shared_ptr<fcl::CollisionGeometry>(geom, deleter);
 }
 
 //==============================================================================
@@ -1657,9 +1652,7 @@ void convertOption(
 {
   request.num_max_contacts = option.maxNumContacts;
   request.enable_contact = option.enableContact;
-#if FCL_VERSION_AT_LEAST(0, 3, 0)
   request.gjk_solver_type = ::fcl::GST_LIBCCD;
-#endif
 }
 
 //==============================================================================

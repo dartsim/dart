@@ -79,19 +79,20 @@ octomap::pose6d toPose6d(const Eigen::Isometry3d& frame)
 //==============================================================================
 VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 {
-  setOctree(fcl_make_shared<octomap::OcTree>(resolution));
+  setOctree(std::make_shared<octomap::OcTree>(resolution));
 
   mVariance = DYNAMIC_ELEMENTS;
 }
 
 //==============================================================================
-VoxelGridShape::VoxelGridShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
+VoxelGridShape::VoxelGridShape(std::shared_ptr<octomap::OcTree> octree)
+  : Shape()
 {
   if (!octree)
   {
     dtwarn << "[VoxelGridShape] Attempting to assign null octree. Creating an "
            << "empty octree with resolution 0.01 instead.\n";
-    setOctree(fcl_make_shared<octomap::OcTree>(0.01));
+    setOctree(std::make_shared<octomap::OcTree>(0.01));
     return;
   }
 
@@ -112,7 +113,7 @@ const std::string& VoxelGridShape::getStaticType()
 }
 
 //==============================================================================
-void VoxelGridShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
+void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
 {
   if (!octree)
   {
@@ -134,13 +135,13 @@ void VoxelGridShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 }
 
 //==============================================================================
-fcl_shared_ptr<octomap::OcTree> VoxelGridShape::getOctree()
+std::shared_ptr<octomap::OcTree> VoxelGridShape::getOctree()
 {
   return mOctree;
 }
 
 //==============================================================================
-fcl_shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
+std::shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 {
   return mOctree;
 }
