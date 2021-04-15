@@ -2,19 +2,19 @@
 #include <dart/common/Console.hpp>
 #include <dart/common/Memory.hpp>
 #include <dart/config.hpp>
-#include <dart/optimizer/Function.hpp>
-#include <dart/optimizer/GenericMultiObjectiveProblem.hpp>
-#include <dart/optimizer/MultiObjectiveSolver.hpp>
+#include <dart/optimization/Function.hpp>
+#include <dart/optimization/GenericMultiObjectiveProblem.hpp>
+#include <dart/optimization/MultiObjectiveSolver.hpp>
 #include <gtest/gtest.h>
 #if DART_HAVE_PAGMO
-#  include <dart/optimizer/pagmo/pagmo.hpp>
+#  include <dart/optimization/pagmo/pagmo.hpp>
 #endif
 
 using namespace dart;
-using namespace dart::optimizer;
-using dart::optimizer::Function;
-using dart::optimizer::FunctionPtr;
-using dart::optimizer::UniqueFunctionPtr;
+using namespace dart::optimization;
+using dart::optimization::Function;
+using dart::optimization::FunctionPtr;
+using dart::optimization::UniqueFunctionPtr;
 
 //==============================================================================
 static int dimension = 10;
@@ -145,7 +145,7 @@ void testZDT1Generic(MultiObjectiveSolver& solver)
 #endif
 
   auto problem
-      = std::make_shared<optimizer::GenericMultiObjectiveProblem>(dimension);
+      = std::make_shared<optimization::GenericMultiObjectiveProblem>(dimension);
   problem->setObjectiveFunctions(pFuncs);
   problem->setLowerBounds(lowerLimits);
   problem->setUpperBounds(upperLimits);

@@ -15,7 +15,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # common
 # math
-# optimizer
+# optimization
 #   ipopt
 #   nlopt
 # dynamics
@@ -36,11 +36,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
-# dart - common, math, optimizer, dynamics, collision,
+# dart - common, math, optimization, dynamics, collision,
 #        collision/dart, collision/fcl, constraint, simulation, [eigen3, libccd,
 #        fcl, assimp, boost]
-# dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
-# dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
+# dart-optimization-ipopt - {dart}, optimization/ipopt, [ipopt]
+# dart-optimization-nlopt - {dart}, optimization/nlopt, [nlopt]
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
@@ -53,8 +53,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Components - (dependency component), {dependency targets}
 #===============================================================================
 # dart - {dart}
-# optimizer-ipopt - (dart), {dart-optimizer-ipopt}
-# optimizer-nlopt - (dart), {dart-optimizer-nlopt}
+# optimization-ipopt - (dart), {dart-optimization-ipopt}
+# optimization-nlopt - (dart), {dart-optimization-nlopt}
 # collision-bullet - (dart), {dart-collision-bullet}
 # utils - (collision-bullet), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
@@ -76,7 +76,7 @@ endfunction(dart_add_core_sources)
 # Add subdirectories
 add_subdirectory(common)
 add_subdirectory(math)
-add_subdirectory(optimizer)
+add_subdirectory(optimization)
 add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)

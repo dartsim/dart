@@ -42,7 +42,7 @@ namespace constraint {
 /// into a HierarchicalIK module. Adding this constraint to the Problem of a
 /// HierarchicalIK will allow the IK solver to constrain the Skeleton so that it
 /// satisfies a support polygon style balancing constraint.
-class BalanceConstraint : public optimizer::Function,
+class BalanceConstraint : public optimization::Function,
                           public dynamics::HierarchicalIK::Function
 {
 public:
@@ -93,7 +93,7 @@ public:
   virtual ~BalanceConstraint() = default;
 
   // Documentation inherited
-  optimizer::FunctionPtr clone(
+  optimization::FunctionPtr clone(
       const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const override;
 
   // Documentation inherited

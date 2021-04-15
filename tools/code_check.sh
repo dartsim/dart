@@ -9,7 +9,7 @@ CHECK_DIRS="#../dart/collision\
             #../dart/dynamics\
             #../dart/gui\
             #../dart/math\
-            #../dart/optimizer\
+            #../dart/optimization\
             #../dart/planning\
             #../dart/renderer\
             #../dart/simulation\

@@ -7,9 +7,9 @@ dart_add_test("comprehensive" test_Friction)
 dart_add_test("comprehensive" test_InverseKinematics)
 dart_add_test("comprehensive" test_NameManagement)
 
-if(TARGET dart-optimizer-pagmo)
+if(TARGET dart-optimization-pagmo)
   dart_add_test("comprehensive" test_MultiObjectiveOptimization)
-  target_link_libraries(test_MultiObjectiveOptimization dart-optimizer-pagmo)
+  target_link_libraries(test_MultiObjectiveOptimization dart-optimization-pagmo)
 endif()
 
 dart_add_test("comprehensive" test_Distance)

@@ -56,7 +56,7 @@ BalanceConstraint::BalanceConstraint(
 }
 
 //==============================================================================
-optimizer::FunctionPtr BalanceConstraint::clone(
+optimization::FunctionPtr BalanceConstraint::clone(
     const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const
 {
   return std::make_shared<BalanceConstraint>(_newIK, mBalanceMethod);

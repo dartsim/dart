@@ -43,7 +43,7 @@ using namespace dart::math;
 
 const double display_elevation = 0.05;
 
-class RelaxedPosture : public dart::optimizer::Function
+class RelaxedPosture : public dart::optimization::Function
 {
 public:
   RelaxedPosture(
@@ -793,8 +793,8 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 void setupWholeBodySolver(const SkeletonPtr& atlas)
 {
   // The default
-  std::shared_ptr<dart::optimizer::GradientDescentSolver> solver
-      = std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
+  std::shared_ptr<dart::optimization::GradientDescentSolver> solver
+      = std::dynamic_pointer_cast<dart::optimization::GradientDescentSolver>(
           atlas->getIK(true)->getSolver());
   solver->setNumMaxIterations(10);
 
