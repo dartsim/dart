@@ -55,7 +55,7 @@ jobs:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
-      - name: Check out the repo
+      - name: Checkout
         uses: actions/checkout@v2
       - name: Pull dev container
         run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
