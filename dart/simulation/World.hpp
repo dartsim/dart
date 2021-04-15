@@ -58,9 +58,9 @@
 
 namespace dart {
 
-namespace integration {
+namespace math {
 class Integrator;
-} // namespace integration
+} // namespace math
 
 namespace dynamics {
 class Skeleton;

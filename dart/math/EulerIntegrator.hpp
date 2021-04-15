@@ -30,39 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/EulerIntegrator.hpp"
+#ifndef DART_INTEGRATION_EULERINTEGRATOR_HPP_
+#define DART_INTEGRATION_EULERINTEGRATOR_HPP_
+
+#include "dart/math/Integrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
-//==============================================================================
-EulerIntegrator::EulerIntegrator() : Integrator()
+/// \brief class EulerIntegrator
+class EulerIntegrator : public Integrator
 {
-}
+public:
+  /// \brief Constructor
+  EulerIntegrator();
 
-//==============================================================================
-EulerIntegrator::~EulerIntegrator()
-{
-}
+  /// \brief Destructor
+  virtual ~EulerIntegrator();
 
-//==============================================================================
-void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
-{
-  _system->integrateConfigs(_system->getGenVels(), _dt);
-  _system->integrateGenVels(_system->evalGenAccs(), _dt);
-}
+  // Documentation inherited
+  void integrate(IntegrableSystem* _system, double _dt) override;
 
-//==============================================================================
-void EulerIntegrator::integratePos(IntegrableSystem* _system, double _dt)
-{
-  _system->integrateConfigs(_system->getGenVels(), _dt);
-}
+  // Documentation inherited
+  void integratePos(IntegrableSystem* _system, double _dt) override;
 
-//==============================================================================
-void EulerIntegrator::integrateVel(IntegrableSystem* _system, double _dt)
-{
-  _system->integrateGenVels(_system->evalGenAccs(), _dt);
-}
+  // Documentation inherited
+  void integrateVel(IntegrableSystem* _system, double _dt) override;
+};
 
-} // namespace integration
+} // namespace math
 } // namespace dart
+
+#endif // DART_INTEGRATION_EULERINTEGRATOR_HPP_

@@ -41,7 +41,6 @@
 #include "dart/utils/utils.hpp"
 
 using namespace dart;
-using namespace utils::MjcfParser::detail;
 
 //==============================================================================
 common::ResourceRetrieverPtr createRetriever()
@@ -66,11 +65,12 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
   EXPECT_EQ(mujoco.getModel(), "ant");
 
   const auto& compiler = mujoco.getCompiler();
-  EXPECT_EQ(compiler.getAngle(), Angle::DEGREE);
-  EXPECT_EQ(compiler.getCoordinate(), Coordinate::LOCAL);
+  EXPECT_EQ(compiler.getAngle(), utils::MjcfParser::detail::Angle::DEGREE);
+  EXPECT_EQ(
+      compiler.getCoordinate(), utils::MjcfParser::detail::Coordinate::LOCAL);
 
   const auto& option = mujoco.getOption();
-  EXPECT_EQ(option.getIntegrator(), Integrator::RK4);
+  EXPECT_EQ(option.getIntegrator(), utils::MjcfParser::detail::Integrator::RK4);
   EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
 
   const auto& worldbody = mujoco.getWorldbody();
@@ -86,7 +86,7 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
 
   ASSERT_EQ(rootBody0.getNumJoints(), 1);
   const auto& rootJoint0 = rootBody0.getJoint(0);
-  EXPECT_EQ(rootJoint0.getType(), JointType::FREE);
+  EXPECT_EQ(rootJoint0.getType(), utils::MjcfParser::detail::JointType::FREE);
   EXPECT_EQ(rootJoint0.getName(), "root");
 }
 

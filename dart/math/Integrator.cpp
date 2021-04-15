@@ -30,25 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_LCPSOLVER_LEMKE_HPP_
-#define DART_LCPSOLVER_LEMKE_HPP_
-
-#include <Eigen/Dense>
+#include "dart/math/Integrator.hpp"
 
 namespace dart {
-namespace lcpsolver {
+namespace math {
 
-/// \brief
-int Lemke(
-    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
+//==============================================================================
+IntegrableSystem::IntegrableSystem()
+{
+}
 
-/// \brief
-bool validate(
-    const Eigen::MatrixXd& _M,
-    const Eigen::VectorXd& _z,
-    const Eigen::VectorXd& _q);
+//==============================================================================
+IntegrableSystem::~IntegrableSystem()
+{
+}
 
-} // namespace lcpsolver
+//==============================================================================
+Integrator::Integrator()
+{
+}
+
+//==============================================================================
+Integrator::~Integrator()
+{
+}
+
+} // namespace math
 } // namespace dart
-
-#endif // DART_LCPSOLVER_LEMKE_HPP_

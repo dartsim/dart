@@ -81,11 +81,11 @@ private:
 #include <stdarg.h>
 #include "Controller.hpp"
 #include "dynamics/SkeletonDynamics.hpp"
-#include "integration/EulerIntegrator.hpp"
-#include "integration/RK4Integrator.hpp"
+#include "math/EulerIntegrator.hpp"
+#include "math/RK4Integrator.hpp"
 #include "yui/Win3D.hpp"
 
-class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
+class MyWindow : public yui::Win3D, public math::IntegrableSystem {
 public:
     //    MyWindow(dynamics::SkeletonDynamics* _m1, dynamics::SkeletonDynamics*
 _m2) MyWindow(dynamics::SkeletonDynamics* _mList = 0, ...): Win3D() {
@@ -134,7 +134,7 @@ dynamics::SkeletonDynamics*); if(skel) mSkels.push_back(skel); else break;
     virtual void keyboard(unsigned char key, int x, int y);
     virtual void displayTimer(int _val);
 
-    // Needed for integration
+    // Needed for math
     virtual Eigen::VectorXd getState();
     virtual Eigen::VectorXd evalDeriv();
     virtual void setState(const Eigen::VectorXd &state);
@@ -145,8 +145,8 @@ dynamics::SkeletonDynamics*); if(skel) mSkels.push_back(skel); else break;
     int mPlayFrame;
     bool mPlay;
     bool mShowMarkers;
-    integration::EulerIntegrator mIntegrator;
-    //    integration::RK4Integrator mIntegrator;
+    math::EulerIntegrator mIntegrator;
+    //    math::RK4Integrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
 
     std::vector<dynamics::SkeletonDynamics*> mSkels;

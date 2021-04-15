@@ -30,35 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_EULERINTEGRATOR_HPP_
-#define DART_INTEGRATION_EULERINTEGRATOR_HPP_
+#ifndef DART_LCPSOLVER_LEMKE_HPP_
+#define DART_LCPSOLVER_LEMKE_HPP_
 
-#include "dart/integration/Integrator.hpp"
+#include <Eigen/Dense>
 
 namespace dart {
-namespace integration {
+namespace math {
 
-/// \brief class EulerIntegrator
-class EulerIntegrator : public Integrator
-{
-public:
-  /// \brief Constructor
-  EulerIntegrator();
+/// \brief
+int Lemke(
+    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
 
-  /// \brief Destructor
-  virtual ~EulerIntegrator();
+/// \brief
+bool validate(
+    const Eigen::MatrixXd& _M,
+    const Eigen::VectorXd& _z,
+    const Eigen::VectorXd& _q);
 
-  // Documentation inherited
-  void integrate(IntegrableSystem* _system, double _dt) override;
-
-  // Documentation inherited
-  void integratePos(IntegrableSystem* _system, double _dt) override;
-
-  // Documentation inherited
-  void integrateVel(IntegrableSystem* _system, double _dt) override;
-};
-
-} // namespace integration
+} // namespace math
 } // namespace dart
 
-#endif // DART_INTEGRATION_EULERINTEGRATOR_HPP_
+#endif // DART_LCPSOLVER_LEMKE_HPP_

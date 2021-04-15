@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "dart/lcpsolver/Lemke.h"
+#include "dart/math/Lemke.h"
 #include "TestHelpers.h"
 
  
@@ -17,10 +17,10 @@ TEST(Lemke, Lemke_1D)
     A << 1;
     b.resize(1);
     b << -1.5;
-    err = dart::lcpsolver::Lemke(A,b,f);
+    err = dart::math::Lemke(A,b,f);
 
     EXPECT_EQ(err, 0);
-    EXPECT_TRUE(dart::lcpsolver::validate(A,(*f),b));
+    EXPECT_TRUE(dart::math::validate(A,(*f),b));
 }
 
 //==============================================================================
@@ -36,10 +36,10 @@ TEST(Lemke, Lemke_2D)
     A << 3.12, 0.1877, 0.1877, 3.254;
     b.resize(2);
     b << -0.00662, -0.006711;
-    err = dart::lcpsolver::Lemke(A,b,f);
+    err = dart::math::Lemke(A,b,f);
 
     EXPECT_EQ(err, 0);
-    EXPECT_TRUE(dart::lcpsolver::validate(A,(*f),b));
+    EXPECT_TRUE(dart::math::validate(A,(*f),b));
 }
 
 //==============================================================================
@@ -65,10 +65,10 @@ TEST(Lemke, Lemke_4D)
              -0.07234,
              -0.07177;
 
-    err = dart::lcpsolver::Lemke(A,b,f);
+    err = dart::math::Lemke(A,b,f);
 
     EXPECT_EQ(err, 0);
-    EXPECT_TRUE(dart::lcpsolver::validate(A,(*f),b));
+    EXPECT_TRUE(dart::math::validate(A,(*f),b));
 }
 
 //==============================================================================
@@ -98,10 +98,10 @@ TEST(Lemke, Lemke_6D)
            -0.0000,
            -0.0889;
 
-    err = dart::lcpsolver::Lemke(A,b,f);
+    err = dart::math::Lemke(A,b,f);
 
     EXPECT_EQ(err, 0);
-    EXPECT_TRUE(dart::lcpsolver::validate(A,(*f),b));
+    EXPECT_TRUE(dart::math::validate(A,(*f),b));
 }
 
 //==============================================================================
@@ -143,10 +143,10 @@ TEST(Lemke, Lemke_12D)
             -1.381e-10,
              5.316e-10;
 
-    err = dart::lcpsolver::Lemke(A,b,f);
+    err = dart::math::Lemke(A,b,f);
 
     EXPECT_EQ(err, 0);
-    EXPECT_TRUE(dart::lcpsolver::validate(A,(*f),b));
+    EXPECT_TRUE(dart::math::validate(A,(*f),b));
 }
 
 //==============================================================================

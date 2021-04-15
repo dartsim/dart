@@ -15,8 +15,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # common
 # math
-# integration
-# lcpsolver
 # optimizer
 #   ipopt
 #   nlopt
@@ -38,7 +36,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
-# dart - common, math, integration, lcpsolver, optimizer, dynamics, collision,
+# dart - common, math, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, constraint, simulation, [eigen3, libccd,
 #        fcl, assimp, boost]
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
@@ -78,8 +76,6 @@ endfunction(dart_add_core_sources)
 # Add subdirectories
 add_subdirectory(common)
 add_subdirectory(math)
-add_subdirectory(integration)
-add_subdirectory(lcpsolver)
 add_subdirectory(optimizer)
 add_subdirectory(dynamics)
 add_subdirectory(collision)
@@ -128,7 +124,6 @@ target_include_directories(dart BEFORE
 target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
-    ${PROJECT_NAME}-external-odelcpsolver
     Eigen3::Eigen
     ccd
     fcl
@@ -136,6 +131,8 @@ target_link_libraries(dart
     Boost::boost
     Boost::system
     Boost::filesystem
+  PRIVATE
+    ${PROJECT_NAME}-external-odelcpsolver
 )
 if (TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)
@@ -181,7 +178,7 @@ endif()
 
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
-add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
+add_component_dependencies(${PROJECT_NAME} dart)
 add_component_dependency_packages(${PROJECT_NAME} dart
   Eigen3 ccd fcl assimp Boost octomap
 )

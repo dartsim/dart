@@ -30,59 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_LCPSOLVER_ODELCPSOLVER_HPP_
-#define DART_LCPSOLVER_ODELCPSOLVER_HPP_
-
-#include <Eigen/Dense>
+#include "dart/math/EulerIntegrator.hpp"
 
 namespace dart {
-namespace lcpsolver {
+namespace math {
 
-/// \brief
-class ODELCPSolver
+//==============================================================================
+EulerIntegrator::EulerIntegrator() : Integrator()
 {
-public:
-  /// \brief
-  ODELCPSolver();
+}
 
-  /// \brief
-  virtual ~ODELCPSolver();
+//==============================================================================
+EulerIntegrator::~EulerIntegrator()
+{
+}
 
-  /// \brief
-  bool Solve(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::VectorXd* _x,
-      int numContacts,
-      double mu = 0,
-      int numDir = 0,
-      bool bUseODESolver = false);
+//==============================================================================
+void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
+}
 
-private:
-  /// \brief
-  void transferToODEFormulation(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::MatrixXd* _AOut,
-      Eigen::VectorXd* _bOut,
-      int _numDir,
-      int _numContacts);
+//==============================================================================
+void EulerIntegrator::integratePos(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+}
 
-  /// \brief
-  void transferSolFromODEFormulation(
-      const Eigen::VectorXd& _x,
-      Eigen::VectorXd* _xOut,
-      int _numDir,
-      int _numContacts);
+//==============================================================================
+void EulerIntegrator::integrateVel(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
+}
 
-  /// \brief
-  bool checkIfSolution(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      const Eigen::VectorXd& _x);
-};
-
-} // namespace lcpsolver
+} // namespace math
 } // namespace dart
-
-#endif // DART_LCPSOLVER_ODELCPSOLVER_HPP_
