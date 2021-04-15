@@ -50,6 +50,9 @@
 namespace dart {
 namespace dynamics {
 
+constexpr const double DART_DEFAULT_FRICTION_COEFF = 1.0;
+constexpr const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
+
 //==============================================================================
 template <
     class DataType,

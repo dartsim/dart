@@ -38,7 +38,6 @@ using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace gui;
-using namespace dart::constraint;
 
 void MyWindow::timeStepping()
 {

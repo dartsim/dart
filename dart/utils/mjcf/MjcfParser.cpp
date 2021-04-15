@@ -41,7 +41,6 @@
 #include "dart/collision/collision.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
-#include "dart/constraint/constraint.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
@@ -876,7 +875,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
     }
 
     auto weldJointConstraint
-        = std::make_shared<constraint::WeldJointConstraint>(body1, body2);
+        = std::make_shared<dynamics::WeldJointConstraint>(body1, body2);
     if (weld.getRelativeTransform())
     {
       weldJointConstraint->setRelativeTransform(

@@ -43,7 +43,6 @@ using namespace std;
 using namespace Eigen;
 
 using namespace dart::dynamics;
-using namespace dart::constraint;
 
 //==============================================================================
 Humanoid::Humanoid(Skeleton* /*_skeleton*/)

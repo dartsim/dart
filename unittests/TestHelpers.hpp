@@ -47,7 +47,7 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/collision/CollisionDetector.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/simulation/World.hpp"
 #include "GTestUtils.hpp"
 

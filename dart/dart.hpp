@@ -35,7 +35,6 @@
 #include "dart/common/common.hpp"
 #include "dart/math/math.hpp"
 #include "dart/collision/collision.hpp"
-#include "dart/constraint/constraint.hpp"
 #include "dart/optimization/optimization.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/simulation.hpp"

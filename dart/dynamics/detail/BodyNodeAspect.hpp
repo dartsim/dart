@@ -44,9 +44,6 @@ namespace dynamics {
 
 class Skeleton;
 
-const double DART_DEFAULT_FRICTION_COEFF = 1.0;
-const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
-
 namespace detail {
 
 //==============================================================================

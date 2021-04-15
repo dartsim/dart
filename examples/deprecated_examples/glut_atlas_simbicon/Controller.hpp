@@ -48,7 +48,7 @@ public:
   /// \brief Constructor
   Controller(
       dart::dynamics::SkeletonPtr _atlasRobot,
-      dart::constraint::ConstraintSolver* _collisionSolver);
+      dart::dynamics::ConstraintSolver* _collisionSolver);
 
   /// \brief Destructor
   virtual ~Controller();
@@ -104,7 +104,7 @@ protected:
   dart::dynamics::SkeletonPtr mAtlasRobot;
 
   /// \brief Conllision detector
-  dart::constraint::ConstraintSolver* mConstratinSolver;
+  dart::dynamics::ConstraintSolver* mConstratinSolver;
 
   /// \brief List of state machines
   std::vector<StateMachine*> mStateMachines;
@@ -169,13 +169,13 @@ private:
   dart::dynamics::BodyNode* _getRightFoot() const;
 
   /// \brief Weld joint constraint for pelvis harnessing
-  dart::constraint::WeldJointConstraintPtr mWeldJointConstraintPelvis;
+  dart::dynamics::WeldJointConstraintPtr mWeldJointConstraintPelvis;
 
   /// \brief Weld joint constraint for left foot harnessing
-  dart::constraint::WeldJointConstraintPtr mWeldJointConstraintLeftFoot;
+  dart::dynamics::WeldJointConstraintPtr mWeldJointConstraintLeftFoot;
 
   /// \brief Weld joint constraint for right foot harnessing
-  dart::constraint::WeldJointConstraintPtr mWeldJointConstraintRightFoot;
+  dart::dynamics::WeldJointConstraintPtr mWeldJointConstraintRightFoot;
 
   /// \brief Initial state of the robot
   dart::dynamics::Skeleton::Configuration mInitialState;

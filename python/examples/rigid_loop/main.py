@@ -44,7 +44,7 @@ def main():
 
     offset = [0, 0.025, 0]
     joint_pos = bd1.getTransform().multiply(offset)
-    constraint = dart.constraint.BallJointConstraint(bd1, bd2, joint_pos)
+    constraint = dart.dynamics.BallJointConstraint(bd1, bd2, joint_pos)
     constraint_solver = world.getConstraintSolver()
     constraint_solver.addConstraint(constraint)
 

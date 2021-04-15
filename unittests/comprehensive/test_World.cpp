@@ -43,10 +43,10 @@
 #if DART_HAVE_BULLET
 #  include "dart/collision/bullet/bullet.hpp"
 #endif
-#include "dart/constraint/BallJointConstraint.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
-#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/dynamics/BallJointConstraint.hpp"
+#include "dart/dynamics/BoxedLcpConstraintSolver.hpp"
+#include "dart/dynamics/DantzigBoxedLcpSolver.hpp"
+#include "dart/dynamics/PgsBoxedLcpSolver.hpp"
 #include "dart/simulation/World.hpp"
 
 using namespace dart;
@@ -364,8 +364,7 @@ simulation::WorldPtr createWorld()
   EXPECT_TRUE(bd2 != nullptr);
   const Eigen::Vector3d offset(0.0, 0.025, 0.0);
   const Eigen::Vector3d jointPos = bd1->getTransform() * offset;
-  auto cl
-      = std::make_shared<constraint::BallJointConstraint>(bd1, bd2, jointPos);
+  auto cl = std::make_shared<dynamics::BallJointConstraint>(bd1, bd2, jointPos);
   world->getConstraintSolver()->addConstraint(cl);
 
   return world;
@@ -378,8 +377,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
 
-  auto solver1 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>());
+  auto solver1 = std::make_unique<dynamics::BoxedLcpConstraintSolver>(
+      std::make_shared<dynamics::DantzigBoxedLcpSolver>());
   EXPECT_TRUE(solver1->getSkeletons().size() == 0);
   EXPECT_TRUE(solver1->getConstraints().size() == 0);
 
@@ -387,8 +386,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
 
-  auto solver2 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  auto solver2 = std::make_unique<dynamics::BoxedLcpConstraintSolver>(
+      std::make_shared<dynamics::PgsBoxedLcpSolver>());
   EXPECT_TRUE(solver2->getSkeletons().size() == 0);
   EXPECT_TRUE(solver2->getConstraints().size() == 0);
 
