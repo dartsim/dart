@@ -63,23 +63,6 @@ using EIGEN_V_VEC3D = std::vector<Eigen::Vector3d>;
 // Deprecated
 using EIGEN_VV_VEC3D = std::vector<std::vector<Eigen::Vector3d>>;
 
-#if EIGEN_VERSION_AT_LEAST(3, 2, 1) && EIGEN_VERSION_AT_MOST(3, 2, 8)
-
-// Deprecated in favor of dart::common::aligned_vector
-template <typename _Tp>
-using aligned_vector
-    = std::vector<_Tp, dart::common::detail::aligned_allocator_cpp11<_Tp>>;
-
-// Deprecated in favor of dart::common::aligned_map
-template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
-using aligned_map = std::map<
-    _Key,
-    _Tp,
-    _Compare,
-    dart::common::detail::aligned_allocator_cpp11<std::pair<const _Key, _Tp>>>;
-
-#else
-
 // Deprecated in favor of dart::common::aligned_vector
 template <typename _Tp>
 using aligned_vector = std::vector<_Tp, Eigen::aligned_allocator<_Tp>>;
@@ -91,8 +74,6 @@ using aligned_map = std::map<
     _Tp,
     _Compare,
     Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
-
-#endif
 
 // Deprecated in favor of dart::common::make_aligned_shared
 template <typename _Tp, typename... _Args>
