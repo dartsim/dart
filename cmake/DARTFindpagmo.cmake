@@ -60,7 +60,7 @@ if(TARGET Pagmo::pagmo)
     if(NOT TARGET NLOPT::nlopt)
       message(WARNING
         "The installed version of pagmo is built with nlopt, but nlopt is not "
-        "found. Please install nlopt to use dart-optimizer-pagmo."
+        "found. Please install nlopt to use dart-optimization-pagmo."
       )
       set(pagmo_FOUND FALSE)
     endif()
@@ -71,7 +71,7 @@ if(TARGET Pagmo::pagmo)
     if(NOT TARGET IPOPT::ipopt)
       message(WARNING
         "The installed version of pagmo is built with ipopt, but ipopt is not "
-        "found. Please install ipopt to use dart-optimizer-pagmo."
+        "found. Please install ipopt to use dart-optimization-pagmo."
       )
       set(pagmo_FOUND FALSE)
     endif()

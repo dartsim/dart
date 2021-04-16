@@ -42,7 +42,7 @@ void eigen_geometry(py::module& m);
 
 void dart_common(py::module& m);
 void dart_math(py::module& m);
-void dart_optimizer(py::module& m);
+void dart_optimization(py::module& m);
 void dart_dynamics(py::module& m);
 void dart_collision(py::module& m);
 void dart_constraint(py::module& m);
@@ -58,7 +58,7 @@ PYBIND11_MODULE(dartpy, m)
 
   dart_common(m);
   dart_math(m);
-  dart_optimizer(m);
+  dart_optimization(m);
   dart_dynamics(m);
   dart_collision(m);
   dart_constraint(m);

@@ -71,8 +71,8 @@ target_link_libraries(${pybind_module}
     dart-gui-osg
     ${PYTHON_LIBRARIES}
 )
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(${pybind_module} PUBLIC dart-optimizer-nlopt)
+if(TARGET dart-optimization-nlopt)
+  target_link_libraries(${pybind_module} PUBLIC dart-optimization-nlopt)
 endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)

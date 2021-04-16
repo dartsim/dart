@@ -49,7 +49,7 @@ def test_solve_for_free_joint():
     assert np.isclose(tf_actual, tf_expected).all()
 
 
-class FailingSolver(dart.optimizer.Solver):
+class FailingSolver(dart.optimization.Solver):
     def __init__(self, constant):
         super(FailingSolver, self).__init__()
         self.constant = constant
