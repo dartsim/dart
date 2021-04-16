@@ -42,9 +42,9 @@
 #include <iostream>
 #include <string>
 
-#include "dart/collision/CollisionDetector.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/CollisionDetector.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/dynamics/CylinderShape.hpp"

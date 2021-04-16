@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
 
 dart::dynamics::SkeletonPtr createGround();
 

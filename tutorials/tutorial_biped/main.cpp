@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/gui/glut/glut.hpp>
 #include <dart/io/io.hpp>
 
 const double default_speed_increment = 0.5;

@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/io/urdf/urdf.hpp>
 
 #include "MyWindow.hpp"
 

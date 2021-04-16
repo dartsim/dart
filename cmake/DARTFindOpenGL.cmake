@@ -11,7 +11,7 @@ cmake_policy(PUSH)
 # Stick to the legacy GL library until we need GLVND
 # (see: https://cmake.org/cmake/help/git-stage/policy/CMP0072.html)
 if(POLICY CMP0072)
-  cmake_policy(SET CMP0072 OLD)
+  cmake_policy(SET CMP0072 NEW)
 endif()
 
 # Use OpenGL config if available

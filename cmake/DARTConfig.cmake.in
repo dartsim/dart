@@ -1,4 +1,11 @@
-###############################################################################
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
+
 # CMake config file for DART
 #
 # This sets the following variables:
@@ -49,16 +56,16 @@ function(@PROJECT_NAME@_traverse_components output_variable)
         include("${component_include}")
 
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_INCLUDE_DIRS"
           ${@PROJECT_NAME@_${component}_INCLUDE_DIRS})
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEFINITIONS"
           ${@PROJECT_NAME@_${component}_DEFINITIONS})
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_LIBRARIES"
           ${@PROJECT_NAME@_${component}_LIBRARIES})
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEPENDENCIES"
           ${@PROJECT_NAME@_${component}_DEPENDENCIES})
 
         @PROJECT_NAME@_traverse_components("${output_variable}"
@@ -70,17 +77,17 @@ function(@PROJECT_NAME@_traverse_components output_variable)
         # transitive includes via INTERFACE_INCLUDE_DIRECTORIES.
         foreach(dependency ${@PROJECT_NAME@_${component}_DEPENDENCIES})
           set_property(DIRECTORY APPEND
-            PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
+            PROPERTY "@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_INCLUDE_DIRS"
             ${@PROJECT_NAME@_${dependency}_INCLUDE_DIRS})
           set_property(DIRECTORY APPEND
-            PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS"
+            PROPERTY "@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEFINITIONS"
             ${@PROJECT_NAME@_${dependency}_DEFINITIONS})
           # LIBRARIES is automatically inherited via INTERFACE_LINK_LIBRARIES.
         endforeach()
 
         list(APPEND output_components "${component}")
       else()
-        set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_FOUND" FALSE)
+        set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_FOUND" FALSE)
       endif()
     endif()
   endforeach()
@@ -108,33 +115,33 @@ endfunction()
 function(@PROJECT_NAME@_package_init)
   @PROJECT_NAME@_traverse_components(required_components "${ARGN}")
 
-  set(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
-  set(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
-  set(@PROJECT_NAME_UPPERCASE@_LIBRARIES)
+  set(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_INCLUDE_DIRS)
+  set(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_DEFINITIONS)
+  set(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_LIBRARIES)
 
   foreach(component ${ARGN})
-    @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_FOUND")
+    @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_FOUND")
 
-    if(@PROJECT_NAME_UPPERCASE@_${component}_FOUND)
-      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS")
-      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS")
-      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES")
-      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES")
+    if(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_FOUND)
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_INCLUDE_DIRS")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEFINITIONS")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_LIBRARIES")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEPENDENCIES")
 
-      list(APPEND @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS ${@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS})
-      list(APPEND @PROJECT_NAME_UPPERCASE@_DEFINITIONS ${@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS})
-      list(APPEND @PROJECT_NAME_UPPERCASE@_LIBRARIES ${@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES})
+      list(APPEND @PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_INCLUDE_DIRS ${@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_INCLUDE_DIRS})
+      list(APPEND @PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_DEFINITIONS ${@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEFINITIONS})
+      list(APPEND @PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_LIBRARIES ${@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_LIBRARIES})
     else()
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS")
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS")
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES")
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_INCLUDE_DIRS")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEFINITIONS")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_LIBRARIES")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_${component}_DEPENDENCIES")
     endif()
   endforeach()
 
-  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
-  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
-  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_LIBRARIES)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_INCLUDE_DIRS)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_DEFINITIONS)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_LIBRARIES)
 endfunction()
 
 #===============================================================================
@@ -143,18 +150,16 @@ endfunction()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
-# Default component: dart
-list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS dart)
-
 # Components
-if(@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS)
+if(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_FIND_COMPONENTS)
   set_and_check(@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")
-  set(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS
+  set(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_INCLUDE_DIRS
     ${@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS}
     @PACKAGE_INCLUDE_DIRS@
-    CACHE INTERNAL "")
+    CACHE INTERNAL ""
+  )
 
-  @PROJECT_NAME@_package_init(${@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS})
+  @PROJECT_NAME@_package_init(${@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_FIND_COMPONENTS})
 endif()
 
 list(REMOVE_AT CMAKE_MODULE_PATH -1)
@@ -164,7 +169,11 @@ list(REMOVE_AT CMAKE_MODULE_PATH -1)
 # STATUS and FATAL_ERROR messages.
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(@PROJECT_NAME_UPPERCASE@
-  FOUND_VAR @PROJECT_NAME_UPPERCASE@_FOUND
-  REQUIRED_VARS @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS @PROJECT_NAME_UPPERCASE@_LIBRARIES
-  HANDLE_COMPONENTS)
+find_package_handle_standard_args(@PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@
+  FOUND_VAR
+    @PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_FOUND
+  REQUIRED_VARS
+    @PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_INCLUDE_DIRS
+    @PROJECT_NAME_UPPERCASE@@DART_MAJOR_VERSION@_LIBRARIES
+  HANDLE_COMPONENTS
+)

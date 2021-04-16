@@ -53,14 +53,13 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/io/DartResourceRetriever.hpp"
-#include "dart/io/urdf/BackwardCompatibility.hpp"
 #include "dart/io/urdf/urdf_world_parser.hpp"
 #include "dart/simulation/World.hpp"
 
 namespace dart {
 namespace io {
 
-using ModelInterfacePtr = urdf_shared_ptr<urdf::ModelInterface>;
+using ModelInterfacePtr = std::shared_ptr<urdf::ModelInterface>;
 
 DartLoader::DartLoader()
   : mLocalRetriever(new common::LocalResourceRetriever),

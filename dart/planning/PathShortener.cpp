@@ -35,7 +35,7 @@
 #include <cstdio>
 #include <ctime>
 
-#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/CollisionDetector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/planning/RRT.hpp"
 #include "dart/simulation/World.hpp"

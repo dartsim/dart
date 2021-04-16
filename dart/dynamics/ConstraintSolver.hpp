@@ -37,8 +37,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionDetector.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/dynamics/CollisionDetector.hpp"
 #include "dart/dynamics/ConstrainedGroup.hpp"
 #include "dart/dynamics/ConstraintBase.hpp"
 #include "dart/dynamics/SmartPointer.hpp"

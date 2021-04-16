@@ -34,7 +34,6 @@
 #if DART_HAVE_NLOPT
 
 #  include <dart/dart.hpp>
-#  include <dart/optimization/nlopt/nlopt.hpp>
 #  include <pybind11/pybind11.h>
 #  include "eigen_pybind.h"
 

@@ -35,7 +35,6 @@
 #include <iostream>
 
 #include <dart/dart.hpp>
-#include <dart/gui/glut/glut.hpp>
 #include <dart/io/io.hpp>
 
 using namespace dart;

@@ -34,7 +34,6 @@
 #define EXAMPLES_FORWARDSIM_MYWINDOW_HPP_
 
 #include <dart/dart.hpp>
-#include <dart/gui/glut/glut.hpp>
 
 class MyWindow : public dart::gui::glut::SimWindow
 {

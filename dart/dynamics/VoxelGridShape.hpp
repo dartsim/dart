@@ -38,9 +38,9 @@
 #if DART_HAVE_OCTOMAP
 
 #  include <octomap/octomap.h>
-#  include "dart/collision/fcl/BackwardCompatibility.hpp"
 #  include "dart/dynamics/Frame.hpp"
 #  include "dart/dynamics/Shape.hpp"
+#  include "dart/dynamics/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 
