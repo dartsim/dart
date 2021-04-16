@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/RK4Integrator.hpp"
+#include "dart/math/RK4Integrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
 //==============================================================================
 RK4Integrator::RK4Integrator()
@@ -104,5 +104,5 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
       1.0 / 6.0 * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4), _dt);
 }
 
-} // namespace integration
+} // namespace math
 } // namespace dart

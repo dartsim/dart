@@ -42,7 +42,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/lcpsolver/Lemke.hpp"
+#include "dart/math/Lemke.hpp"
 
 namespace dart {
 namespace constraint {

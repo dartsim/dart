@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/lcpsolver/Lemke.hpp"
+#include "dart/math/Lemke.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -39,7 +39,7 @@
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
-namespace lcpsolver {
+namespace math {
 
 // double RandDouble(double _low, double _high) {
 //  double temp;
@@ -355,5 +355,5 @@ bool validate(
   return true;
 }
 
-} // namespace lcpsolver
+} // namespace math
 } // namespace dart

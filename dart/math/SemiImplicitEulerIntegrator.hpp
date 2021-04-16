@@ -33,10 +33,10 @@
 #ifndef DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
 #define DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
 
-#include "dart/integration/Integrator.hpp"
+#include "dart/math/Integrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
 /// \brief class SemiImplicitEulerIntegrator
 class SemiImplicitEulerIntegrator : public Integrator
@@ -58,7 +58,7 @@ public:
   void integrateVel(IntegrableSystem* _system, double _dt) override;
 };
 
-} // namespace integration
+} // namespace math
 } // namespace dart
 
 #endif // DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_

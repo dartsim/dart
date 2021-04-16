@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/SemiImplicitEulerIntegrator.hpp"
+#include "dart/math/SemiImplicitEulerIntegrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
 //==============================================================================
 SemiImplicitEulerIntegrator::SemiImplicitEulerIntegrator() : Integrator()
@@ -67,5 +67,5 @@ void SemiImplicitEulerIntegrator::integrateVel(
   _system->integrateGenVels(_system->evalGenAccs(), _dt);
 }
 
-} // namespace integration
+} // namespace math
 } // namespace dart

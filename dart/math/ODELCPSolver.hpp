@@ -30,30 +30,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/Integrator.hpp"
+#ifndef DART_LCPSOLVER_ODELCPSOLVER_HPP_
+#define DART_LCPSOLVER_ODELCPSOLVER_HPP_
+
+#include <Eigen/Dense>
 
 namespace dart {
-namespace integration {
+namespace math {
 
-//==============================================================================
-IntegrableSystem::IntegrableSystem()
+/// \brief
+class ODELCPSolver
 {
-}
+public:
+  /// \brief
+  ODELCPSolver();
 
-//==============================================================================
-IntegrableSystem::~IntegrableSystem()
-{
-}
+  /// \brief
+  virtual ~ODELCPSolver();
 
-//==============================================================================
-Integrator::Integrator()
-{
-}
+  /// \brief
+  bool Solve(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      Eigen::VectorXd* _x,
+      int numContacts,
+      double mu = 0,
+      int numDir = 0,
+      bool bUseODESolver = false);
 
-//==============================================================================
-Integrator::~Integrator()
-{
-}
+private:
+  /// \brief
+  void transferToODEFormulation(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      Eigen::MatrixXd* _AOut,
+      Eigen::VectorXd* _bOut,
+      int _numDir,
+      int _numContacts);
 
-} // namespace integration
+  /// \brief
+  void transferSolFromODEFormulation(
+      const Eigen::VectorXd& _x,
+      Eigen::VectorXd* _xOut,
+      int _numDir,
+      int _numContacts);
+
+  /// \brief
+  bool checkIfSolution(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      const Eigen::VectorXd& _x);
+};
+
+} // namespace math
 } // namespace dart
+
+#endif // DART_LCPSOLVER_ODELCPSOLVER_HPP_
