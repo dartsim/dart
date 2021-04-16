@@ -50,9 +50,9 @@
 #include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/Timer.hpp"
-#include "dart/constraint/SmartPointer.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 #include "dart/simulation/Recording.hpp"
 #include "dart/simulation/SmartPointer.hpp"
 
@@ -66,9 +66,9 @@ namespace dynamics {
 class Skeleton;
 } // namespace dynamics
 
-namespace constraint {
+namespace dynamics {
 class ConstraintSolver;
-} // namespace constraint
+} // namespace dynamics
 
 namespace collision {
 class CollisionResult;
@@ -238,13 +238,13 @@ public:
   ///
   /// Note that the internal properties of \c solver will be overwritten by this
   /// World.
-  void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
+  void setConstraintSolver(dynamics::UniqueConstraintSolverPtr solver);
 
   /// Get the constraint solver
-  constraint::ConstraintSolver* getConstraintSolver();
+  dynamics::ConstraintSolver* getConstraintSolver();
 
   /// Get the constraint solver
-  const constraint::ConstraintSolver* getConstraintSolver() const;
+  const dynamics::ConstraintSolver* getConstraintSolver() const;
 
   /// Bake simulated current state and store it into mRecording
   void bake();
@@ -309,7 +309,7 @@ protected:
   int mFrame;
 
   /// Constraint solver
-  std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
+  std::unique_ptr<dynamics::ConstraintSolver> mConstraintSolver;
 
   ///
   Recording* mRecording;

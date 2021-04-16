@@ -76,6 +76,18 @@ void Skeleton(py::module& sm);
 void InverseKinematics(py::module& sm);
 void Inertia(py::module& sm);
 
+void ConstraintBase(py::module& sm);
+void JointConstraint(py::module& sm);
+void JointLimitConstraint(py::module& sm);
+void JointCoulombFrictionConstraint(py::module& sm);
+
+void BoxedLcpSolver(py::module& sm);
+void DantzigBoxedLcpSolver(py::module& sm);
+void PgsBoxedLcpSolver(py::module& sm);
+
+void ConstraintSolver(py::module& sm);
+void BoxedLcpConstraintSolver(py::module& sm);
+
 void dart_dynamics(py::module& m)
 {
   auto sm = m.def_submodule("dynamics");
@@ -119,6 +131,18 @@ void dart_dynamics(py::module& m)
   InverseKinematics(sm);
 
   Inertia(sm);
+
+  ConstraintBase(sm);
+  JointConstraint(sm);
+  JointLimitConstraint(sm);
+  JointCoulombFrictionConstraint(sm);
+
+  BoxedLcpSolver(sm);
+  DantzigBoxedLcpSolver(sm);
+  PgsBoxedLcpSolver(sm);
+
+  ConstraintSolver(sm);
+  BoxedLcpConstraintSolver(sm);
 }
 
 } // namespace python

@@ -40,7 +40,7 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
-#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/dynamics/ConstraintSolver.hpp>
 #include <dart/simulation/World.hpp>
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>

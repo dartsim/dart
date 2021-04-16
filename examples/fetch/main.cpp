@@ -200,7 +200,7 @@ int main()
 
   // Reset the relative transform constraint of mocap object and fetch's EE
   auto weldJointConstraint
-      = std::dynamic_pointer_cast<constraint::WeldJointConstraint>(
+      = std::dynamic_pointer_cast<dynamics::WeldJointConstraint>(
           world->getConstraintSolver()->getConstraint(0));
   assert(weldJointConstraint);
   weldJointConstraint->setRelativeTransform(Eigen::Isometry3d::Identity());

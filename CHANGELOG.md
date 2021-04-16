@@ -8,6 +8,7 @@
   * Dropped supporting FCL < 0.5.0: [#1568](https://github.com/dartsim/dart/pull/1568)
   * Merged namespaces `lcpsolver` and `integration` into `math`.
   * Renamed namespace `optimizer` to `optimization`.
+  * Merged namespace `constraint` into `dynamics`.
 
 * GUI
 

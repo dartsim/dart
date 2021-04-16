@@ -252,7 +252,7 @@ protected:
   SkeletonPtr mPendulum;
 
   /// Pointer to the ball constraint that we will be turning on and off
-  dart::constraint::BallJointConstraint* mBallConstraint;
+  dart::dynamics::BallJointConstraint* mBallConstraint;
 
   /// Number of iterations before clearing a force entry
   std::vector<int> mForceCountDown;

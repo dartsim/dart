@@ -884,7 +884,7 @@ public:
     mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
         mHubo->getIK(true)->getObjective());
 
-    mBalance = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
+    mBalance = std::dynamic_pointer_cast<dart::dynamics::BalanceConstraint>(
         mHubo->getIK(true)->getProblem()->getEqConstraint(1));
 
     mOptimizationKey = 'r';
@@ -1034,7 +1034,7 @@ public:
 
         if (mBalance)
           mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+              dart::dynamics::BalanceConstraint::OPTIMIZE_BALANCE);
 
         return true;
       }
@@ -1049,7 +1049,7 @@ public:
 
         if (mBalance)
           mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::FROM_CENTROID);
+              dart::dynamics::BalanceConstraint::FROM_CENTROID);
 
         return true;
       }
@@ -1142,7 +1142,7 @@ protected:
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
-  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
+  std::shared_ptr<dart::dynamics::BalanceConstraint> mBalance;
 
   char mOptimizationKey;
 
@@ -1447,12 +1447,12 @@ void setupWholeBodySolver(const SkeletonPtr& hubo)
 
   hubo->getIK()->setObjective(objective);
 
-  std::shared_ptr<dart::constraint::BalanceConstraint> balance
-      = std::make_shared<dart::constraint::BalanceConstraint>(hubo->getIK());
+  std::shared_ptr<dart::dynamics::BalanceConstraint> balance
+      = std::make_shared<dart::dynamics::BalanceConstraint>(hubo->getIK());
   hubo->getIK()->getProblem()->addEqConstraint(balance);
 
-  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+  balance->setErrorMethod(dart::dynamics::BalanceConstraint::FROM_CENTROID);
+  balance->setBalanceMethod(dart::dynamics::BalanceConstraint::SHIFT_SUPPORT);
 
   solver->setNumMaxIterations(5);
 }

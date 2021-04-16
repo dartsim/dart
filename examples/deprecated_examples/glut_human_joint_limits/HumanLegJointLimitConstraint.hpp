@@ -40,7 +40,7 @@ DART_COMMON_MAKE_SHARED_WEAK(HumanLegJointLimitConstraint)
 
 /// HumanLegJointLimitConstraint handles joint position limits on human leg,
 /// representing range of motion of hip, knee and ankle joints.
-class HumanLegJointLimitConstraint : public dart::constraint::ConstraintBase
+class HumanLegJointLimitConstraint : public dart::dynamics::ConstraintBase
 {
 public:
   /// Constructor
@@ -85,8 +85,8 @@ public:
   // Friendship
   //----------------------------------------------------------------------------
 
-  friend class dart::constraint::ConstraintSolver;
-  friend class dart::constraint::ConstrainedGroup;
+  friend class dart::dynamics::ConstraintSolver;
+  friend class dart::dynamics::ConstrainedGroup;
 
 protected:
   //----------------------------------------------------------------------------
@@ -97,7 +97,7 @@ protected:
   void update() override;
 
   // Documentation inherited
-  void getInformation(dart::constraint::ConstraintInfo* lcp) override;
+  void getInformation(dart::dynamics::ConstraintInfo* lcp) override;
 
   // Documentation inherited
   void applyUnitImpulse(std::size_t index) override;

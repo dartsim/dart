@@ -39,7 +39,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/simulation/World.hpp"
 
 class CollisionGroupsTest : public testing::Test,

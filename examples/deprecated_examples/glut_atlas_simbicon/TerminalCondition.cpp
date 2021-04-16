@@ -41,7 +41,6 @@
 using namespace std;
 
 using namespace dart::dynamics;
-using namespace dart::constraint;
 
 //==============================================================================
 TerminalCondition::TerminalCondition(State* _state) : mState(_state)
