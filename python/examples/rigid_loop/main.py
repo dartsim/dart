@@ -13,7 +13,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 
 def main():
-    world = dart.utils.SkelParser.readWorld('dart://sample/skel/chain.skel');
+    world = dart.io.SkelParser.readWorld('dart://sample/skel/chain.skel');
     world.setGravity([0, -9.81, 0])
     world.setTimeStep(1.0/2000)
 

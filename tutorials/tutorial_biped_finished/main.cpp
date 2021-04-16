@@ -32,7 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/glut/glut.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 const double default_speed_increment = 0.5;
 
@@ -46,7 +46,7 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
 using namespace dart::gui::glut;
-using namespace dart::utils;
+using namespace dart::io;
 using namespace dart::math;
 
 class Controller

@@ -5,7 +5,7 @@ import numpy as np
 
 
 def test_ball_joint_constraint():
-    world = dart.utils.SkelParser.readWorld('dart://sample/skel/chain.skel')
+    world = dart.io.SkelParser.readWorld('dart://sample/skel/chain.skel')
     world.setGravity([0, -9.81, 0])
     world.setTimeStep(1.0/2000)
 

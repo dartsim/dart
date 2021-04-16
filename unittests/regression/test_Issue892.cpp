@@ -32,7 +32,7 @@
 
 #include <TestHelpers.hpp>
 #include <dart/dart.hpp>
-#include <dart/utils/urdf/DartLoader.hpp>
+#include <dart/io/urdf/DartLoader.hpp>
 #include <gtest/gtest.h>
 
 using namespace dart::collision;

@@ -215,11 +215,11 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the ``dart::utils::DartLoader`` class (pending upcoming changes to DART's
+by the ``dart::io::DartLoader`` class (pending upcoming changes to DART's
 loading system). First, create a loader:
 
 ```cpp
-dart::utils::DartLoader loader;
+dart::io::DartLoader loader;
 ```
 
 Note that many URDF files use ROS's ``package:`` scheme to specify the locations

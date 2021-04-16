@@ -41,11 +41,11 @@
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/io/SkelParser.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 //==============================================================================
 class ConstraintTest : public ::testing::Test
@@ -107,7 +107,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   using namespace dart::dynamics;
   using namespace dart::dynamics;
   using namespace dart::simulation;
-  using namespace dart::utils;
+  using namespace dart::io;
 
   //----------------------------------------------------------------------------
   // Settings

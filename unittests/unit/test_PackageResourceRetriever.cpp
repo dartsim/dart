@@ -32,14 +32,14 @@
 
 #include <gtest/gtest.h>
 #include "dart/config.hpp"
-#include "dart/utils/PackageResourceRetriever.hpp"
+#include "dart/io/PackageResourceRetriever.hpp"
 #include "TestHelpers.hpp"
 
 using dart::common::Resource;
 using dart::common::ResourcePtr;
 using dart::common::ResourceRetriever;
 using dart::common::Uri;
-using dart::utils::PackageResourceRetriever;
+using dart::io::PackageResourceRetriever;
 
 TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
 {
