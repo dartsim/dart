@@ -6,9 +6,11 @@
 
   * Increased required minimum versions to CMake 3.10.2 and C++17: [#1560](https://github.com/dartsim/dart/pull/1560)
   * Dropped supporting FCL < 0.5.0: [#1568](https://github.com/dartsim/dart/pull/1568)
-  * Merged namespaces `lcpsolver` and `integration` into `math`.
-  * Renamed namespace `optimizer` to `optimization`.
-  * Merged namespace `constraint` into `dynamics`.
+  * Merged namespaces `lcpsolver` and `integration` into `math`: [#1569](https://github.com/dartsim/dart/pull/1569)
+  * Renamed namespace `optimizer` to `optimization`: [#1570](https://github.com/dartsim/dart/pull/1570)
+  * Merged namespace `constraint` into `dynamics`: [#1571](https://github.com/dartsim/dart/pull/1571)
+  * Renamed namespace `utils` to `io: [#1572](https://github.com/dartsim/dart/pull/1572)
+  * Increased required minimum version of Eigen to 3.3.4: [#1573](https://github.com/dartsim/dart/pull/1573)
 
 * GUI
 
