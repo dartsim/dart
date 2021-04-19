@@ -4,7 +4,7 @@
 
 * Dynamics
 
-  * Fixed intertia calculation of CapsuleShape: [#1561](https://github.com/dartsim/dart/pull/1561)
+  * Fixed inertia calculation of CapsuleShape: [#1561](https://github.com/dartsim/dart/pull/1561)
 
 * GUI
 
