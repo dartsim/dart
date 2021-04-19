@@ -1,6 +1,6 @@
 ## DART 6
 
-### [DART 6.10.1 (2021-04-14)](https://github.com/dartsim/dart/milestone/65?closed=1)
+### [DART 6.10.1 (2021-04-19)](https://github.com/dartsim/dart/milestone/65?closed=1)
 
 * Dynamics
 
