@@ -33,9 +33,11 @@
 #ifndef DART_UNITTESTS_GTESTUTILS_HPP_
 #define DART_UNITTESTS_GTESTUTILS_HPP_
 
-#include <gtest/gtest.h>
+#include <tuple>
 
+#include <gtest/gtest.h>
 #include <Eigen/Dense>
+
 #include "dart/math/Geometry.hpp"
 #include "dart/math/MathTypes.hpp"
 
@@ -294,6 +296,43 @@ inline bool equals(
 
   return (norm < tol);
 }
+
+
+template<class T, class S>
+struct Case
+{
+    using type = T;
+
+    static std::string GetParam()
+    {
+        return S::str;
+    }
+};
+
+template<class TupleType, class TupleParam, std::size_t I>
+struct make_case
+{
+    static constexpr std::size_t N = std::tuple_size<TupleParam>::value;
+
+    using type = Case<typename std::tuple_element<I / N, TupleType >::type,
+                      typename std::tuple_element<I % N, TupleParam>::type>;
+};
+
+template <class T1, class T2, class Is>
+struct make_combinations;
+
+template <class TupleType, class TupleParam, std::size_t... Is>
+struct make_combinations<TupleType, TupleParam, std::index_sequence<Is...>>
+{
+    using tuples = std::tuple<typename make_case<TupleType, TupleParam, Is>::type...>;
+};
+
+template<class TupleTypes, class... Params>
+using Combinations_t = typename make_combinations
+                       <TupleTypes,
+                        std::tuple<Params...>,
+                        std::make_index_sequence<(std::tuple_size<TupleTypes>::value)*(sizeof...(Params))>>
+                     ::tuples;
 
 } // namespace test
 } // namespace dart

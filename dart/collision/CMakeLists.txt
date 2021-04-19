@@ -26,6 +26,8 @@ dart_add_component(
     common math
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
+  SUB_DIRECTORIES
+    detail fcl
   GENERATE_META_HEADER
   FORMAT_CODE
 )

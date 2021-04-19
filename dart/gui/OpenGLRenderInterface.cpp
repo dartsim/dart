@@ -45,7 +45,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/OpenGLRenderInterface.hpp"
-#include "dart/math/Icosphere.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj* quadObj;

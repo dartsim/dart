@@ -30,61 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-#include "dart/math/geometry/Icosphere.hpp"
-#include "dart/test/TestHelpers.hpp"
+#pragma once
 
-using namespace dart;
-using namespace math;
+#include "dart/collision/CollisionFilter.hpp"
+
+namespace dart {
+namespace collision2 {
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles)
+template <typename S>
+CollisionFilter<S>::~CollisionFilter()
 {
-  const double radius = 5.0;
+  // Do nothing
+}
 
-  for (auto i = 0; i < 8; ++i)
+//==============================================================================
+template <typename S>
+void CompositeCollisionFilter<S>::addCollisionFilter(
+    const CollisionFilter<S>* filter)
+{
+  // nullptr is not an allowed filter
+  if (!filter)
+    return;
+
+  mFilters.insert(filter);
+}
+
+//==============================================================================
+template <typename S>
+void CompositeCollisionFilter<S>::removeCollisionFilter(
+    const CollisionFilter<S>* filter)
+{
+  mFilters.erase(filter);
+}
+
+//==============================================================================
+template <typename S>
+void CompositeCollisionFilter<S>::removeAllCollisionFilters()
+{
+  mFilters.clear();
+}
+
+//==============================================================================
+template <typename S>
+bool CompositeCollisionFilter<S>::ignoresCollision(
+    const CollisionObject<S>* object1, const CollisionObject<S>* object2) const
+{
+  for (const auto* filter : mFilters)
   {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphered(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices)
-    {
-      EXPECT_DOUBLE_EQ(v.norm(), radius);
-    }
+    if (filter->ignoresCollision(object1, object2))
+      return true;
   }
+
+  return false;
 }
 
-//==============================================================================
-TEST(IcosphereTests, Constructor)
-{
-  auto s1 = Icosphered(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphered(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
-}
-
-//==============================================================================
-TEST(IcosphereTests, ComputeVolume)
-{
-  const double pi = constantsd::pi();
-  const double radius = 1;
-  auto computeVolume = [&](double radius) {
-    return 4.0 / 3.0 * pi * radius * radius * radius;
-  };
-
-  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
-  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
-  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
-  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
-  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
-}
+} // namespace collision2
+} // namespace dart

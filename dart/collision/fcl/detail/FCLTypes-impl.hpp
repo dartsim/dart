@@ -30,61 +30,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-#include "dart/math/geometry/Icosphere.hpp"
-#include "dart/test/TestHelpers.hpp"
+#pragma once
 
-using namespace dart;
-using namespace math;
+#include "dart/collision/fcl/Types.hpp"
+
+namespace dart {
+namespace collision2 {
+
+#if !FCL_VERSION_AT_LEAST(0, 6, 0)
+//==============================================================================
+template <typename S>
+dart::collision2::fcl::Vector3<S> FCLTypes<S>::convertVector3(
+    const math::Vector3<S>& vec)
+{
+  return dart::collision2::fcl::Vector3<S>(vec[0], vec[1], vec[2]);
+}
+#endif
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles)
+template <typename S>
+math::Vector3<S> FCLTypes<S>::convertVector3(
+    const dart::collision2::fcl::Vector3<S>& vec)
 {
-  const double radius = 5.0;
-
-  for (auto i = 0; i < 8; ++i)
-  {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphered(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices)
-    {
-      EXPECT_DOUBLE_EQ(v.norm(), radius);
-    }
-  }
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return vec;
+#else
+  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
+#endif
 }
 
 //==============================================================================
-TEST(IcosphereTests, Constructor)
+template <typename S>
+dart::collision2::fcl::Matrix3<S> FCLTypes<S>::convertMatrix3x3(
+    const math::Matrix3<S>& R)
 {
-  auto s1 = Icosphered(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphered(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return R;
+#else
+  return dart::collision2::fcl::Matrix3<S>(
+      R(0, 0),
+      R(0, 1),
+      R(0, 2),
+      R(1, 0),
+      R(1, 1),
+      R(1, 2),
+      R(2, 0),
+      R(2, 1),
+      R(2, 2));
+#endif
 }
 
 //==============================================================================
-TEST(IcosphereTests, ComputeVolume)
+template <typename S>
+dart::collision2::fcl::Transform3<S> FCLTypes<S>::convertTransform(
+    const math::Isometry3<S>& T)
 {
-  const double pi = constantsd::pi();
-  const double radius = 1;
-  auto computeVolume = [&](double radius) {
-    return 4.0 / 3.0 * pi * radius * radius * radius;
-  };
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return T;
+#else
+  dart::collision2::fcl::Transform3<S> trans;
 
-  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
-  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
-  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
-  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
-  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
+  trans.setTranslation(convertVector3(T.translation()));
+  trans.setRotation(convertMatrix3x3(T.linear()));
+
+  return trans;
+#endif
 }
+
+} // namespace collision2
+} // namespace dart

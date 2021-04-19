@@ -34,14 +34,14 @@
 
 #include <memory>
 
-#include "dart/math/Mesh.hpp"
+#include "dart/math/geometry/Mesh.hpp"
 
 namespace dart {
 namespace math {
 
 /// This class represents triangle meshes.
 template <typename S_>
-class TriMesh : public Mesh<S_>
+class TetraMesh : public Mesh<S_>
 {
 public:
   // Type aliases
@@ -49,16 +49,23 @@ public:
   using Base = Mesh<S>;
   using Index = typename Base::Index;
   using Vector3 = typename Base::Vector3;
+  using Vector4 = Eigen::Matrix<S, 4, 1>;
   using Triangle = Eigen::Matrix<Index, 3, 1>;
+  using Tetra = Eigen::Matrix<Index, 3, 1>;
   using Vertices = typename Base::Vertices;
   using Normals = typename Base::Normals;
   using Triangles = std::vector<Triangle>;
+  using Tetras = std::vector<Tetra>;
 
   /// Default constructor.
-  TriMesh();
+  TetraMesh();
 
   /// Destructor
-  ~TriMesh() override = default;
+  ~TetraMesh() override = default;
+
+  static const std::string& getStaticType();
+
+  const std::string& getType() const override;
 
   /// Sets vertices and triangles.
   void setTriangles(const Vertices& vertices, const Triangles& triangles);
@@ -82,16 +89,16 @@ public:
   void clear() override;
 
   /// Addition operator.
-  TriMesh operator+(const TriMesh& other) const;
+  TetraMesh operator+(const TetraMesh& other) const;
 
   /// Addition assignment operator.
-  TriMesh& operator+=(const TriMesh& other);
+  TetraMesh& operator+=(const TetraMesh& other);
 
   /// Generates a convex hull that encloses the trimesh.
   ///
   /// \param[in] optimize: (Optional) Whether to discard vertices that are not
   /// used in the convex hull.
-  std::shared_ptr<TriMesh<S>> generateConvexHull(bool optimize = true) const;
+  std::shared_ptr<TetraMesh<S>> generateConvexHull(bool optimize = true) const;
 
 protected:
   /// Computes triangle normals.
@@ -100,19 +107,22 @@ protected:
   /// Normalizes triangle normals.
   void normalizeTriangleNormals();
 
-  /// Triangle indices of the mesh.
+  /// Tetra indices of the mesh.
   Triangles mTriangles;
 
-  /// Triangle normals of the mesh.
-  Normals mTriangleNormals;
+  /// Tetra indices of the mesh.
+  Tetras mTetras;
+
+  /// Tetra normals of the mesh.
+  Normals mTetraNormals;
 };
 
-extern template class TriMesh<double>;
+extern template class TetraMesh<double>;
 
-using TriMeshf = TriMesh<float>;
-using TriMeshd = TriMesh<double>;
+using TetraMeshf = TetraMesh<float>;
+using TetraMeshd = TetraMesh<double>;
 
 } // namespace math
 } // namespace dart
 
-#include "dart/math/detail/TriMesh-impl.hpp"
+#include "dart/math/geometry/detail/TetraMesh-impl.hpp"

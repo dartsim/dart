@@ -30,61 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-#include "dart/math/geometry/Icosphere.hpp"
-#include "dart/test/TestHelpers.hpp"
+#pragma once
 
-using namespace dart;
-using namespace math;
+#include "dart/collision/CollisionGroup.hpp"
+
+#include <cassert>
+
+namespace dart {
+namespace collision2 {
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles)
+template <typename S>
+CollisionGroup<S>::CollisionGroup(CollisionDetector<S>* collisionDetector)
+  : mCollisionDetector(collisionDetector), mUpdateAutomatically(true)
 {
-  const double radius = 5.0;
-
-  for (auto i = 0; i < 8; ++i)
-  {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphered(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices)
-    {
-      EXPECT_DOUBLE_EQ(v.norm(), radius);
-    }
-  }
+  assert(mCollisionDetector);
 }
 
 //==============================================================================
-TEST(IcosphereTests, Constructor)
+template <typename S>
+CollisionDetector<S>* CollisionGroup<S>::getCollisionDetector()
 {
-  auto s1 = Icosphered(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphered(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
+  return mCollisionDetector;
 }
 
 //==============================================================================
-TEST(IcosphereTests, ComputeVolume)
+template <typename S>
+const CollisionDetector<S>* CollisionGroup<S>::getCollisionDetector() const
 {
-  const double pi = constantsd::pi();
-  const double radius = 1;
-  auto computeVolume = [&](double radius) {
-    return 4.0 / 3.0 * pi * radius * radius * radius;
-  };
-
-  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
-  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
-  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
-  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
-  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
+  return mCollisionDetector;
 }
+
+//==============================================================================
+template <typename S>
+template <typename GeometryType, typename... Args>
+CollisionObjectPtr<S> CollisionGroup<S>::createCollisionObject(Args&&... args)
+{
+  auto shape = std::make_shared<GeometryType>(std::forward<Args>(args)...);
+  return createCollisionObject(std::move(shape));
+}
+
+} // namespace collision2
+} // namespace dart

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/math/Mesh.hpp"
+#include "dart/math/geometry/Mesh.hpp"
 
 namespace dart {
 namespace math {
@@ -98,11 +98,11 @@ void Mesh<S>::translate(const Vector3& translation)
 }
 
 //==============================================================================
-template <typename S>
-Mesh<S> Mesh<S>::operator+(const Mesh& other) const
-{
-  return (Mesh(*this) += other);
-}
+// template <typename S>
+// Mesh<S> Mesh<S>::operator+(const Mesh& other) const
+//{
+//  return (Mesh(*this) += other);
+//}
 
 //==============================================================================
 template <typename S>

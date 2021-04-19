@@ -30,61 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-#include "dart/math/geometry/Icosphere.hpp"
-#include "dart/test/TestHelpers.hpp"
+#pragma once
 
-using namespace dart;
-using namespace math;
+#include "dart/collision/Contact.hpp"
+
+namespace dart {
+namespace collision2 {
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles)
+template <typename S>
+constexpr S Contact<S>::getNormalEpsilon()
 {
-  const double radius = 5.0;
-
-  for (auto i = 0; i < 8; ++i)
-  {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphered(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices)
-    {
-      EXPECT_DOUBLE_EQ(v.norm(), radius);
-    }
-  }
+  return 1e-6;
 }
 
 //==============================================================================
-TEST(IcosphereTests, Constructor)
+template <typename S>
+constexpr S Contact<S>::getNormalEpsilonSquared()
 {
-  auto s1 = Icosphered(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphered(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
+  return 1e-12;
 }
 
 //==============================================================================
-TEST(IcosphereTests, ComputeVolume)
+template <typename S>
+Contact<S>::Contact()
+  : point(math::Vector3<S>::Zero()),
+    normal(math::Vector3<S>::Zero()),
+    force(math::Vector3<S>::Zero()),
+    collisionObject1(nullptr),
+    collisionObject2(nullptr),
+    penetrationDepth(0),
+    triID1(0),
+    triID2(0),
+    userData(nullptr)
 {
-  const double pi = constantsd::pi();
-  const double radius = 1;
-  auto computeVolume = [&](double radius) {
-    return 4.0 / 3.0 * pi * radius * radius * radius;
-  };
-
-  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
-  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
-  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
-  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
-  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
+  // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
+  // Do nothing
 }
+
+//==============================================================================
+template <typename S>
+bool Contact<S>::isZeroNormal(const math::Vector3<S>& normal)
+{
+  if (normal.squaredNorm() < getNormalEpsilonSquared())
+    return true;
+  else
+    return false;
+}
+
+//==============================================================================
+template <typename S>
+bool Contact<S>::isNonZeroNormal(const math::Vector3<S>& normal)
+{
+  return !isZeroNormal(normal);
+}
+
+} // namespace collision2
+} // namespace dart

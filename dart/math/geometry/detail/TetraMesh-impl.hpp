@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/math/TriMesh.hpp"
+#include "dart/math/geometry/TetraMesh.hpp"
 
 #include <Eigen/Geometry>
 
@@ -43,14 +43,29 @@ namespace math {
 
 //==============================================================================
 template <typename S>
-TriMesh<S>::TriMesh()
+TetraMesh<S>::TetraMesh()
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-void TriMesh<S>::setTriangles(
+const std::string& TetraMesh<S>::getStaticType()
+{
+  static const std::string type("TetraMesh");
+  return type;
+}
+
+//==============================================================================
+template <typename S>
+const std::string& TetraMesh<S>::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+template <typename S>
+void TetraMesh<S>::setTriangles(
     const Vertices& vertices, const Triangles& triangles)
 {
   clear();
@@ -61,7 +76,7 @@ void TriMesh<S>::setTriangles(
 
 //==============================================================================
 template <typename S>
-void TriMesh<S>::computeVertexNormals()
+void TetraMesh<S>::computeVertexNormals()
 {
   computeTriangleNormals();
 
@@ -71,9 +86,9 @@ void TriMesh<S>::computeVertexNormals()
   for (auto i = 0u; i < mTriangles.size(); ++i)
   {
     auto& triangle = mTriangles[i];
-    this->mVertexNormals[triangle[0]] += mTriangleNormals[i];
-    this->mVertexNormals[triangle[1]] += mTriangleNormals[i];
-    this->mVertexNormals[triangle[2]] += mTriangleNormals[i];
+    this->mVertexNormals[triangle[0]] += mTetraNormals[i];
+    this->mVertexNormals[triangle[1]] += mTetraNormals[i];
+    this->mVertexNormals[triangle[2]] += mTetraNormals[i];
   }
 
   this->normalizeVertexNormals();
@@ -81,51 +96,51 @@ void TriMesh<S>::computeVertexNormals()
 
 //==============================================================================
 template <typename S>
-bool TriMesh<S>::hasTriangles() const
+bool TetraMesh<S>::hasTriangles() const
 {
   return !mTriangles.empty();
 }
 
 //==============================================================================
 template <typename S>
-bool TriMesh<S>::hasTriangleNormals() const
+bool TetraMesh<S>::hasTriangleNormals() const
 {
-  return hasTriangles() && mTriangles.size() == mTriangleNormals.size();
+  return hasTriangles() && mTriangles.size() == mTetraNormals.size();
 }
 
 //==============================================================================
 template <typename S>
-const typename TriMesh<S>::Triangles& TriMesh<S>::getTriangles() const
+const typename TetraMesh<S>::Triangles& TetraMesh<S>::getTriangles() const
 {
   return mTriangles;
 }
 
 //==============================================================================
 template <typename S>
-const typename TriMesh<S>::Normals& TriMesh<S>::getTriangleNormals() const
+const typename TetraMesh<S>::Normals& TetraMesh<S>::getTriangleNormals() const
 {
-  return mTriangleNormals;
+  return mTetraNormals;
 }
 
 //==============================================================================
 template <typename S>
-void TriMesh<S>::clear()
+void TetraMesh<S>::clear()
 {
   mTriangles.clear();
-  mTriangleNormals.clear();
+  mTetraNormals.clear();
   Base::clear();
 }
 
 //==============================================================================
 template <typename S>
-TriMesh<S> TriMesh<S>::operator+(const TriMesh& other) const
+TetraMesh<S> TetraMesh<S>::operator+(const TetraMesh& other) const
 {
-  return (TriMesh(*this) += other);
+  return (TetraMesh(*this) += other);
 }
 
 //==============================================================================
 template <typename S>
-TriMesh<S>& TriMesh<S>::operator+=(const TriMesh& other)
+TetraMesh<S>& TetraMesh<S>::operator+=(const TetraMesh& other)
 {
   if (other.isEmpty())
     return *this;
@@ -139,14 +154,14 @@ TriMesh<S>& TriMesh<S>::operator+=(const TriMesh& other)
   // triangle normals.
   if ((!hasTriangles() || hasTriangleNormals()) && other.hasTriangleNormals())
   {
-    mTriangleNormals.insert(
-        mTriangleNormals.end(),
-        other.mTriangleNormals.begin(),
-        other.mTriangleNormals.end());
+    mTetraNormals.insert(
+        mTetraNormals.end(),
+        other.mTetraNormals.begin(),
+        other.mTetraNormals.end());
   }
   else
   {
-    mTriangleNormals.clear();
+    mTetraNormals.clear();
   }
 
   const Triangle offset = Triangle::Constant(oldNumVertices);
@@ -161,14 +176,15 @@ TriMesh<S>& TriMesh<S>::operator+=(const TriMesh& other)
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<TriMesh<S>> TriMesh<S>::generateConvexHull(bool optimize) const
+std::shared_ptr<TetraMesh<S>> TetraMesh<S>::generateConvexHull(
+    bool optimize) const
 {
   auto triangles = Triangles();
   auto vertices = Vertices();
   std::tie(vertices, triangles)
       = computeConvexHull3D<S, Index>(this->mVertices, optimize);
 
-  auto mesh = std::make_shared<TriMesh<S>>();
+  auto mesh = std::make_shared<TetraMesh<S>>();
   mesh->setTriangles(vertices, triangles);
 
   return mesh;
@@ -176,9 +192,9 @@ std::shared_ptr<TriMesh<S>> TriMesh<S>::generateConvexHull(bool optimize) const
 
 //==============================================================================
 template <typename S>
-void TriMesh<S>::computeTriangleNormals()
+void TetraMesh<S>::computeTriangleNormals()
 {
-  mTriangleNormals.resize(mTriangles.size());
+  mTetraNormals.resize(mTriangles.size());
 
   for (auto i = 0u; i < mTriangles.size(); ++i)
   {
@@ -187,7 +203,7 @@ void TriMesh<S>::computeTriangleNormals()
         = this->mVertices[triangle[1]] - this->mVertices[triangle[0]];
     const Vector3 v02
         = this->mVertices[triangle[2]] - this->mVertices[triangle[0]];
-    mTriangleNormals[i] = v01.cross(v02);
+    mTetraNormals[i] = v01.cross(v02);
   }
 
   normalizeTriangleNormals();
@@ -195,9 +211,9 @@ void TriMesh<S>::computeTriangleNormals()
 
 //==============================================================================
 template <typename S>
-void TriMesh<S>::normalizeTriangleNormals()
+void TetraMesh<S>::normalizeTriangleNormals()
 {
-  for (auto& normal : mTriangleNormals)
+  for (auto& normal : mTetraNormals)
   {
     normal.normalize();
   }

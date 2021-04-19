@@ -34,72 +34,47 @@
 
 #include <vector>
 
-#include <Eigen/Core>
+#include "dart/collision/Contact.hpp"
 
 namespace dart {
-namespace math {
+namespace collision2 {
 
-/// Base class for meshes.
-template <typename S_>
-class Mesh
+template <typename S>
+class CollisionResult
 {
 public:
-  // Type aliases
-  using S = S_;
-  using Index = std::size_t;
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
-  using Vertices = std::vector<Vector3>;
-  using Normals = std::vector<Vector3>;
-  using Indices = std::vector<Index>;
+  /// Add one contact
+  void addContact(const Contact<S>& contact);
 
-  /// Destructor.
-  virtual ~Mesh();
+  /// Return number of contacts
+  std::size_t getNumContacts() const;
 
-  /// Returns true if the mesh contains vertices.
-  bool hasVertices() const;
+  /// Return the index-th contact
+  Contact<S>& getContact(std::size_t index);
 
-  /// Returns true if the mesh contains vertex normals.
-  bool hasVertexNormals() const;
+  /// Return (const) the index-th contact
+  const Contact<S>& getContact(std::size_t index) const;
 
-  /// Returns the vertices of the mesh.
-  const Vertices& getVertices() const;
+  /// Return contacts
+  const std::vector<Contact<S>>& getContacts() const;
 
-  /// Returns the vertex normals of the mesh.
-  const Normals& getVertexNormals() const;
+  /// Return binary collision result
+  bool isCollision() const;
 
-  /// Clears all the vertices and vertex normals.
-  virtual void clear();
+  /// Implicitly converts this CollisionResult to the value of isCollision()
+  operator bool() const;
 
-  /// Returns true if the mesh has no vertices.
-  bool isEmpty() const;
-
-  /// Translates the mesh vertices by adding \c translation to the vertices.
-  void translate(const Vector3& translation);
-
-  /// Addition operator.
-  Mesh operator+(const Mesh& other) const;
-
-  /// Addition assignment operator.
-  Mesh& operator+=(const Mesh& other);
+  /// Clear all the contacts
+  void clear();
 
 protected:
-  /// Default constructor.
-  Mesh();
-
-  /// Normalizes the vertex normals.
-  void normalizeVertexNormals();
-
-  /// Vertices of the mesh.
-  Vertices mVertices;
-
-  /// Vertex normals of the mesh.
-  Normals mVertexNormals;
+  /// List of contact information for each contact
+  std::vector<Contact<S>> mContacts;
 };
 
-using Meshf = Mesh<float>;
-using Meshd = Mesh<double>;
+extern template class CollisionResult<double>;
 
-} // namespace math
+} // namespace collision2
 } // namespace dart
 
-#include "dart/math/detail/Mesh-impl.hpp"
+#include "dart/collision/detail/CollisionResult-impl.hpp"

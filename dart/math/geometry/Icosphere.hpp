@@ -37,7 +37,7 @@
 
 #include <Eigen/Core>
 
-#include "dart/math/TriMesh.hpp"
+#include "dart/math/geometry/TriMesh.hpp"
 
 namespace dart {
 namespace math {
@@ -100,4 +100,4 @@ using Icosphered = Icosphere<double>;
 } // namespace math
 } // namespace dart
 
-#include "dart/math/detail/Icosphere-impl.hpp"
+#include "dart/math/geometry/detail/Icosphere-impl.hpp"

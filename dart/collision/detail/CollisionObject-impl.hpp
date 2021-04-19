@@ -30,61 +30,69 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-#include "dart/math/geometry/Icosphere.hpp"
-#include "dart/test/TestHelpers.hpp"
+#pragma once
 
-using namespace dart;
-using namespace math;
+#include "dart/collision/CollisionObject.hpp"
+
+#include <cassert>
+
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionGroup.hpp"
+
+namespace dart {
+namespace collision2 {
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles)
+template <typename S>
+CollisionObject<S>::CollisionObject()
 {
-  const double radius = 5.0;
-
-  for (auto i = 0; i < 8; ++i)
-  {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphered(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices)
-    {
-      EXPECT_DOUBLE_EQ(v.norm(), radius);
-    }
-  }
+  // Do nothing
 }
 
 //==============================================================================
-TEST(IcosphereTests, Constructor)
+template <typename S>
+CollisionObject<S>::~CollisionObject()
 {
-  auto s1 = Icosphered(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphered(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
+  // Do nothing
 }
 
 //==============================================================================
-TEST(IcosphereTests, ComputeVolume)
+template <typename S>
+CollisionDetector<S>* CollisionObject<S>::getCollisionDetector()
 {
-  const double pi = constantsd::pi();
-  const double radius = 1;
-  auto computeVolume = [&](double radius) {
-    return 4.0 / 3.0 * pi * radius * radius * radius;
-  };
-
-  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
-  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
-  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
-  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
-  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
+  return mCollisionGroup->getCollisionDetector();
 }
+
+//==============================================================================
+template <typename S>
+const CollisionDetector<S>* CollisionObject<S>::getCollisionDetector() const
+{
+  return mCollisionGroup->getCollisionDetector();
+}
+
+//==============================================================================
+template <typename S>
+const void* CollisionObject<S>::getUserData() const
+{
+  return mUserData;
+}
+
+//==============================================================================
+template <typename S>
+math::ConstGeometryPtr CollisionObject<S>::getShape() const
+{
+  return mShape;
+}
+
+//==============================================================================
+template <typename S>
+CollisionObject<S>::CollisionObject(
+    CollisionGroup<S>* collisionGroup, math::GeometryPtr shape)
+  : mCollisionGroup(collisionGroup), mShape(std::move(shape))
+{
+  assert(mCollisionGroup);
+  assert(mShape);
+}
+
+} // namespace collision2
+} // namespace dart

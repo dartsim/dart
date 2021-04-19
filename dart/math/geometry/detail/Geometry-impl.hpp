@@ -30,12 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/TriMesh.hpp"
+#pragma once
+
+#include "dart/math/geometry/Geometry.hpp"
 
 namespace dart {
 namespace math {
 
-template class TriMesh<double>;
+//==============================================================================
+template <typename GeometryType>
+bool Geometry::is() const
+{
+  return getType() == GeometryType::GetType();
+}
+
+//==============================================================================
+template <typename GeometryType>
+const GeometryType* Geometry::as() const
+{
+  if (!this->is<GeometryType>())
+  {
+    return nullptr;
+  }
+
+  return static_cast<const GeometryType*>(this);
+}
 
 } // namespace math
 } // namespace dart

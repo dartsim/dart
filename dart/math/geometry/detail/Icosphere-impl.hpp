@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/math/Icosphere.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 
 #include <array>
 

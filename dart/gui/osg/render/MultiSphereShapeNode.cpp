@@ -40,7 +40,7 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
-#include "dart/math/Icosphere.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 
 namespace dart {
 namespace gui {

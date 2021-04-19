@@ -30,61 +30,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+
 #include <gtest/gtest.h>
-#include "dart/math/geometry/Icosphere.hpp"
-#include "dart/test/TestHelpers.hpp"
+
+#include <dart/collision/collision.hpp>
 
 using namespace dart;
-using namespace math;
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles)
+class CollisionDetectorTest : public testing::Test,
+                              public testing::WithParamInterface<const char*>
 {
-  const double radius = 5.0;
+  // Define nothing
+};
 
-  for (auto i = 0; i < 8; ++i)
+//==============================================================================
+TEST_P(CollisionDetectorTest, Factory)
+{
+  const std::string engineName = GetParam();
+  if (engineName == "dart" || engineName == "ode" || engineName == "bullet")
   {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphered(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices)
-    {
-      EXPECT_DOUBLE_EQ(v.norm(), radius);
-    }
+    return;
   }
+#if !DART_HAVE_BULLET
+  if (engineName == "bullet")
+  {
+    return;
+  }
+#endif
+
+  auto cd = collision2::CollisionDetector<double>::create(GetParam());
+  ASSERT_TRUE(cd != nullptr);
+
+  EXPECT_NE(cd->createCollisionGroup(), nullptr);
 }
 
 //==============================================================================
-TEST(IcosphereTests, Constructor)
-{
-  auto s1 = Icosphered(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphered(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
-}
-
-//==============================================================================
-TEST(IcosphereTests, ComputeVolume)
-{
-  const double pi = constantsd::pi();
-  const double radius = 1;
-  auto computeVolume = [&](double radius) {
-    return 4.0 / 3.0 * pi * radius * radius * radius;
-  };
-
-  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
-  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
-  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
-  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
-  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
-}
+INSTANTIATE_TEST_CASE_P(
+    CollisionEngine,
+    CollisionDetectorTest,
+    testing::Values("dart", "fcl", "bullet", "ode"));
