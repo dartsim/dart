@@ -45,11 +45,11 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionOption.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/Timer.hpp"
+#include "dart/dynamics/CollisionOption.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SmartPointer.hpp"

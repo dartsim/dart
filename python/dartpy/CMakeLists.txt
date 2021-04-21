@@ -64,11 +64,14 @@ target_include_directories(${pybind_module}
 
 target_link_libraries(${pybind_module}
   PUBLIC
-    dart
-    dart-io
-    dart-io-urdf
-    dart-gui
-    dart-gui-osg
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-common
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-math
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-gui
     ${PYTHON_LIBRARIES}
 )
 if(TARGET dart-optimization-nlopt)

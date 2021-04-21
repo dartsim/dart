@@ -11,7 +11,7 @@ if(CMAKE_VERSION VERSION_LESS 3.12)
   set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 endif()
 
-find_package(OpenSceneGraph 3.0 QUIET
+find_package(OpenSceneGraph 3.2.3 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
 )
 
@@ -41,7 +41,7 @@ else()
       set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
     endif()
   endif()
-  message(STATUS "${warning_msg} -- we will skip dart-gui-osg\n"
+  message(STATUS "${warning_msg} -- we will skip the OpenSceneGraph support in dart-gui\n"
           "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
   return()
 endif()

@@ -34,7 +34,6 @@
 #define EXAMPLES_ATLASSIMBICON_MYWINDOW_HPP_
 
 #include <dart/dart.hpp>
-#include <dart/gui/glut/glut.hpp>
 
 #include "Controller.hpp"
 

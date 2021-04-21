@@ -34,8 +34,6 @@
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWORLDNODE_HPP_
 
 #include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
-#include <dart/io/io.hpp>
 
 #include "Controller.hpp"
 

@@ -31,8 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
-#include <dart/io/io.hpp>
 
 using namespace dart;
 

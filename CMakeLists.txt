@@ -3,10 +3,6 @@
 #===============================================================================
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
-project(dart)
-
-string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
-
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
 # suppress a warning in CMake 3.0 and above.
@@ -21,43 +17,13 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
-# Use DART_SOURCE/BINARY_DIR instead of CMAKE_SOURCE/BINARY_DIR to support the
-# case that DART is built as a sub-project in another project.
-set(DART_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-include(GNUInstallDirs)
-
-# Variables used in Components.cmake
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
-set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake")
-
-# Set relative location to install additional documentation (sample data,
-# examples, and tutorials)
-set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH
-  "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
-)
-
-set(CMAKE_DEBUG_POSTFIX "d")
-set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
-
-include(DARTMacros)
-
-# CMake component helper. It uses the following variables:
-# - LIBRARY_INSTALL_DIR
-# - CONFIG_INSTALL_DIR
-include(Components)
-initialize_component_helpers(${PROJECT_NAME})
-
-# System install paths on Windows
-if(WIN32)
-  set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix")
-endif()
-
 #===============================================================================
 # Project settings
 #===============================================================================
+
+project(dart)
+
+string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
 # Extract version numbers from package.xml
 file(READ package.xml PACKAGE_XML)
@@ -69,6 +35,40 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
+
+# Use DART_SOURCE/BINARY_DIR instead of CMAKE_SOURCE/BINARY_DIR to support the
+# case that DART is built as a sub-project in another project.
+set(DART_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+include(GNUInstallDirs)
+
+# Variables used in Components.cmake
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
+set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}${DART_MAJOR_VERSION}/cmake")
+
+# Set relative location to install additional documentation (sample data,
+# examples, and tutorials)
+set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH
+  "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}${DART_MAJOR_VERSION}"
+)
+
+set(CMAKE_DEBUG_POSTFIX "d")
+set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
+
+include(DARTMacros)
+
+# CMake component helper. It uses the following variables:
+# - LIBRARY_INSTALL_DIR
+# - CONFIG_INSTALL_DIR
+include(Components)
+initialize_component_helpers(${PROJECT_NAME}${DART_MAJOR_VERSION})
+
+# System install paths on Windows
+if(WIN32)
+  set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix")
+endif()
 
 #===============================================================================
 # Build options
@@ -90,7 +90,6 @@ endif()
 # errors.
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
-option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
@@ -103,6 +102,16 @@ option(DART_BUILD_DARTPY "Build dartpy (the python binding)" OFF)
 # See: https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
 option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
+
+option(DART_BUILD_COMP_common       "Build component 'common'"       ON)
+option(DART_BUILD_COMP_math         "Build component 'math'"         ON)
+option(DART_BUILD_COMP_optimization "Build component 'optimization'" ON)
+option(DART_BUILD_COMP_collision    "Build component 'collision'"    ON)
+option(DART_BUILD_COMP_dynamics     "Build component 'dynamics'"     ON)
+option(DART_BUILD_COMP_simulation   "Build component 'simulation'"   ON)
+option(DART_BUILD_COMP_io           "Build component 'io'"           ON)
+option(DART_BUILD_COMP_gui          "Build component 'gui'"          ON)
+option(DART_BUILD_COMP_planning     "Build component 'planning'"     ON)
 
 #===============================================================================
 # Print intro
@@ -178,7 +187,6 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase-")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
@@ -267,7 +275,6 @@ if(DART_VERBOSE)
   message(STATUS "Compiler version : ${CMAKE_CXX_COMPILER_VERSION}")
   message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
   message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-  message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
   message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
   message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
   if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
@@ -291,59 +298,51 @@ add_subdirectory(dart)
 
 set(DART_IN_SOURCE_BUILD TRUE)
 
-if(TARGET dart)
-
-  # Add a "tests" target to build unit tests.
-  enable_testing()
-  if(MSVC)
-    add_subdirectory(unittests)
-  else()
-    add_subdirectory(unittests EXCLUDE_FROM_ALL)
-  endif()
-
-  # Add example subdirectories and an "examples" target.
-  if(MSVC)
-    # add_subdirectory(examples)
-  else()
-    add_subdirectory(examples EXCLUDE_FROM_ALL)
-    get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
-    add_custom_target(examples DEPENDS ${examples})
-  endif()
-
-  if(DART_VERBOSE)
-    message(STATUS "")
-    message(STATUS "[ Examples ]")
-    foreach(example ${examples})
-      message(STATUS "Adding example: ${example}")
-    endforeach(example ${examples})
-  else(DART_VERBOSE)
-    list(LENGTH examples examples_length)
-    message(STATUS "Adding ${examples_length} examples")
-  endif(DART_VERBOSE)
-
-  # Add a "tutorials" target to build tutorials.
-  if(MSVC)
-    # add_subdirectory(tutorials)
-  else()
-    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
-    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-    add_custom_target(tutorials DEPENDS ${tutorials})
-  endif()
-
-  if(DART_VERBOSE)
-    message(STATUS "")
-    message(STATUS "[ Tutorials ]")
-    foreach(tutorial ${tutorials})
-      message(STATUS "Adding tutorial: ${tutorial}")
-    endforeach(tutorial ${tutorials})
-  else(DART_VERBOSE)
-    list(LENGTH tutorials tutorials_length)
-    message(STATUS "Adding ${tutorials_length} tutorials")
-  endif(DART_VERBOSE)
-
+# Add a "tests" target to build unit tests.
+enable_testing()
+if(MSVC)
+  add_subdirectory(tests)
+else()
+  add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
+# Add example subdirectories and an "examples" target.
+if(MSVC)
+  # add_subdirectory(examples)
+else()
+  add_subdirectory(examples EXCLUDE_FROM_ALL)
+  get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+  add_custom_target(examples DEPENDS ${examples})
+endif()
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Examples ]")
+  foreach(example ${examples})
+    message(STATUS "Adding example: ${example}")
+  endforeach(example ${examples})
+else(DART_VERBOSE)
+  list(LENGTH examples examples_length)
+  message(STATUS "Adding ${examples_length} examples")
+endif(DART_VERBOSE)
+# Add a "tutorials" target to build tutorials.
+if(MSVC)
+  # add_subdirectory(tutorials)
+else()
+  add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+  get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
+  add_custom_target(tutorials DEPENDS ${tutorials})
+endif()
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Tutorials ]")
+  foreach(tutorial ${tutorials})
+    message(STATUS "Adding tutorial: ${tutorial}")
+  endforeach(tutorial ${tutorials})
+else(DART_VERBOSE)
+  list(LENGTH tutorials tutorials_length)
+  message(STATUS "Adding ${tutorials_length} tutorials")
+endif(DART_VERBOSE)
 
-if (DART_BUILD_DARTPY)
+if(DART_BUILD_DARTPY)
   add_subdirectory(python)
 endif()
 
@@ -376,13 +375,13 @@ endif()
 # - PACKAGE_INCLUDE_INSTALL_DIR
 # - PACKAGE_INCLUDE_DIRS
 get_property(PACKAGE_INCLUDE_DIRS GLOBAL
-  PROPERTY "${PROJECT_NAME_UPPERCASE}_INCLUDE_DIRS")
+  PROPERTY "${PROJECT_NAME_UPPERCASE}${DART_MAJOR_VERSION}_INCLUDE_DIRS")
 
 # Generate the DART CMake Config and version files
 include(CMakePackageConfigHelpers)
 set(DART_CONFIG_IN ${DART_SOURCE_DIR}/cmake/${PROJECT_NAME_UPPERCASE}Config.cmake.in)
-set(DART_CONFIG_OUT ${DART_BINARY_DIR}/${PROJECT_NAME_UPPERCASE}Config.cmake)
-set(DART_VERSION_OUT ${DART_BINARY_DIR}/cmake/${PROJECT_NAME_UPPERCASE}ConfigVersion.cmake)
+set(DART_CONFIG_OUT ${DART_BINARY_DIR}/${PROJECT_NAME_UPPERCASE}${DART_MAJOR_VERSION}Config.cmake)
+set(DART_VERSION_OUT ${DART_BINARY_DIR}/cmake/${PROJECT_NAME_UPPERCASE}${DART_MAJOR_VERSION}ConfigVersion.cmake)
 if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_OUT})
   message(STATUS ${DART_VERSION_OUT})
@@ -405,7 +404,7 @@ install(
 
 # Generate the DART pkg-config
 set(PC_CONFIG_IN ${DART_SOURCE_DIR}/cmake/dart.pc.in)
-set(PC_CONFIG_OUT ${DART_BINARY_DIR}/cmake/dart.pc)
+set(PC_CONFIG_OUT ${DART_BINARY_DIR}/cmake/dart${DART_MAJOR_VERSION}.pc)
 set(PC_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 file(RELATIVE_PATH
   RELATIVE_PATH_TO_INSTALL_PREFIX
@@ -420,7 +419,7 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION ${PC_CONFIG_INSTALL_DIR})
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
 install(FILES package.xml DESTINATION
-  ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
+  ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}${DART_MAJOR_VERSION}
 )
 
 #===============================================================================
@@ -583,7 +582,7 @@ endif()
 #===============================================================================
 message(STATUS "")
 message(STATUS "Run 'make' to build all the components")
-message(STATUS "Run 'make tests' to build all the unittests")
+message(STATUS "Run 'make tests' to build all the test")
 message(STATUS "Run 'make examples' to build all the examples")
 message(STATUS "Run 'make tutorials' to build all the tutorials")
 message(STATUS "Run 'make view_docs' to see the API documentation")

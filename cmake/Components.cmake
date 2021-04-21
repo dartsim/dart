@@ -36,11 +36,11 @@ function(initialize_component_helpers package_name)
   define_property(GLOBAL PROPERTY "${package_name}_INCLUDE_DIRS"
     BRIEF_DOCS "Global include directories used by all components."
     FULL_DOCS "Global include directories used by all components."
-    )
+  )
   define_property(GLOBAL PROPERTY "${package_name}_COMPONENTS"
     BRIEF_DOCS "List all known ${package_name} components."
     FULL_DOCS "List all known ${package_name} components."
-    )
+  )
 endfunction(initialize_component_helpers)
 
 #==============================================================================
@@ -72,7 +72,7 @@ function(add_component package_name component)
   install(EXPORT "${target}"
     FILE "${package_name}_${component}Targets.cmake"
     DESTINATION "${CONFIG_INSTALL_DIR}"
-    )
+  )
   # TODO(JS): It would be nice if we could check if ${target} has at least one
   # dependency target.
 

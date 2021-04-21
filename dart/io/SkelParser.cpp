@@ -39,15 +39,13 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/CollisionObject.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -73,6 +71,8 @@
 #include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/dart/DARTCollisionDetector.hpp"
+#include "dart/dynamics/fcl/FCLCollisionDetector.hpp"
 #include "dart/io/CompositeResourceRetriever.hpp"
 #include "dart/io/DartResourceRetriever.hpp"
 #include "dart/io/XmlHelpers.hpp"

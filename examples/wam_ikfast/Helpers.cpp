@@ -34,8 +34,6 @@
 
 #include "Helpers.hpp"
 
-#include <dart/io/urdf/urdf.hpp>
-
 //==============================================================================
 dart::dynamics::SkeletonPtr createGround()
 {

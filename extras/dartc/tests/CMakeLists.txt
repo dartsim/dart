@@ -1,5 +1,13 @@
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest/include)
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest)
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
+
+include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/tests/gtest/include)
+include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/tests/gtest)
 
 function(dartc_add_test test_type target_name) # ARGN for source files
 

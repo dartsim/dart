@@ -1,46 +1,35 @@
-# Dependency checks
-dart_find_package(flann)
-dart_check_optional_package(FLANN "dart-planning" "flann" "1.9.2")
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
 
-# Add lz4 dependency explicitly. lz4 is a dependency of flann, but it's not
-# added to flann as the dependency.
-dart_find_package(lz4)
-dart_check_optional_package(lz4 "dart-planning" "lz4")
-
-# Print warning for use of deprecated component
-message(WARNING "The 'planning' component is deprecated and will be removed in DART 7.")
-
-# Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
-
-# Set local target name
-set(target_name ${PROJECT_NAME}-planning)
+# Set basic component settings
+set(project_name ${PROJECT_NAME})
 set(component_name planning)
 
-# Add target
-dart_add_library(${target_name} ${hdrs} ${srcs})
-target_link_libraries(${target_name} PUBLIC dart flann lz4)
-
-# Component
-add_component(${PROJECT_NAME} ${component_name})
-add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} flann lz4)
-
-## Generate header for this namespace
-dart_get_filename_components(header_names "planning headers" ${hdrs})
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/planning.hpp"
-  "dart/planning/"
-  ${header_names}
+# Add component
+dart_add_component(
+  PROJECT_NAME
+    ${PROJECT_NAME}
+  PROJECT_VERSION_MAJOR
+    ${DART_MAJOR_VERSION}
+  PROJECT_SOURCE_DIR
+    ${DART_SOURCE_DIR}
+  PROJECT_BINARY_DIR
+    ${DART_BINARY_DIR}
+  COMPONENT_NAME
+    ${component_name}
+  COMPONENT_DEPENDENCIES
+    common math optimization collision
+  COMPONENT_DEPENDENCY_PACKAGES
+    flann lz4
+  TARGET_LINK_LIBRARIES_PUBLIC
+    flann lz4
+  TARGET_COMPILE_FEATURES_PUBLIC
+    cxx_std_17
+  GENERATE_META_HEADER
+  FORMAT_CODE
 )
-
-## Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
-  DESTINATION include/dart/planning
-  COMPONENT headers
-)
-
-dart_format_add(${hdrs} ${srcs})

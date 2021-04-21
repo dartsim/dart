@@ -33,7 +33,6 @@
 #include <iostream>
 
 #include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
 
 #include "Helpers.hpp"
 #include "InputHandler.hpp"

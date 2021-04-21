@@ -34,15 +34,13 @@
 
 #include <algorithm>
 
-#include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/Contact.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/CollisionFilter.hpp"
+#include "dart/dynamics/CollisionGroup.hpp"
+#include "dart/dynamics/CollisionObject.hpp"
 #include "dart/dynamics/ConstrainedGroup.hpp"
+#include "dart/dynamics/Contact.hpp"
 #include "dart/dynamics/ContactConstraint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/JointCoulombFrictionConstraint.hpp"
@@ -53,6 +51,8 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftContactConstraint.hpp"
+#include "dart/dynamics/dart/DARTCollisionDetector.hpp"
+#include "dart/dynamics/fcl/FCLCollisionDetector.hpp"
 
 namespace dart {
 namespace dynamics {

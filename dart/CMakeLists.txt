@@ -1,4 +1,10 @@
-add_subdirectory(external)
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
 
 # Enable multi-threaded compilation.
 # We do this here and not in the root folder since the examples and the
@@ -9,29 +15,6 @@ endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
-
-#===============================================================================
-# Source directories
-#===============================================================================
-# common
-# math
-# optimization
-#   ipopt
-#   nlopt
-# dynamics
-# collision
-#   dart
-#   fcl
-#   bullet
-# simulation
-# io
-#   sdf
-#   urdf
-# gui
-#   glut
-#   osg
-#     render
-# planning
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -50,8 +33,21 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart-planning - {dart}, planning, [flann]
 
 #===============================================================================
-# Components - (dependency component), {dependency targets}
+# Components: (dependency component), {external dependency}, [optional external dependency]
 #===============================================================================
+#
+# external-imgui: OpenGL
+#
+# common: {Boost}, {Eigen3}
+# math: (common), {Boost}, {Eigen3}
+# optimization: (common), (math), {Boost}, {Eigen3}, [NLOPT], [IPOPT], [pagmo]
+# collision: <todo>
+# dynamics: (common), (math), (optimization), (collision), {assimp}, {octomap}, [Bullet], {fcl}, [ODE]
+# simulation: (common), (math), (optimization), (collision), (dynamics)
+# io: (common), (math), (optimization), (collision), (dynamics), (simulation), {tinyxml2}, [urdfdom]
+# gui: (external-imgui), (common), (math), (optimization), (collision), (dynamics), (simulation), (io), {OpenGL}, [GLUT], [OpenSceneGraph]
+# planning: (common), (math), (optimization), (collision), {flann}, {lz4}
+
 # dart - {dart}
 # optimization-ipopt - (dart), {dart-optimization-ipopt}
 # optimization-nlopt - (dart), {dart-optimization-nlopt}
@@ -63,27 +59,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # gui-osg - (gui), {dart-gui-osg}
 # planning - (dart), {dart-planning}
 
-# Component. This should be called before adding subdirectories.
-add_component(${PROJECT_NAME} dart)
+set(org_name dartsim)
+set(project_name ${PROJECT_NAME})
+set(project_version_major ${DART_MAJOR_VERSION})
 
-function(dart_add_core_headers)
-  dart_property_add(DART_CORE_HEADERS ${ARGN})
-endfunction(dart_add_core_headers)
-
-function(dart_add_core_sources)
-  dart_property_add(DART_CORE_SOURCES ${ARGN})
-endfunction(dart_add_core_sources)
-
-# Add subdirectories
-add_subdirectory(common)
-add_subdirectory(math)
-add_subdirectory(optimization)
-add_subdirectory(dynamics)
-add_subdirectory(collision)
-add_subdirectory(simulation)
-add_subdirectory(planning) # flann
-add_subdirectory(io) # tinyxml2, bullet
-add_subdirectory(gui) # opengl, glut, bullet
+set(include_base_path include/${org_name}/${project_name}${project_version_major})
+set(include_path ${include_base_path}/${project_name})
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
 set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
@@ -91,7 +72,25 @@ if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_HPP_OUT})
 endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION ${include_path})
+
+add_subdirectory(external)
+
+dart_add_project(
+  PROJECT_NAME ${PROJECT_NAME}
+  PROJECT_VERSION_MAJOR ${DART_MAJOR_VERSION}
+  COMPONENTS
+    common
+    math
+    optimization
+    collision
+    dynamics
+    simulation
+    io
+    gui
+    planning
+  GENERATE_META_HEADER
+)
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -103,93 +102,7 @@ if(DART_VERBOSE)
   endforeach()
 else()
   list(LENGTH components components_length)
-  message(STATUS "Adding ${components_length} components including "
-    "the default component 'dart'")
+  message(STATUS "Adding ${components_length} components")
 endif()
-
-# Set header and source files
-get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
-dart_add_core_headers(${dart_hpp})
-get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
-get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
-
-# Add target
-dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
-target_include_directories(dart BEFORE
-  PUBLIC
-    $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>
-)
-target_link_libraries(dart
-  PUBLIC
-    ${CMAKE_DL_LIBS}
-    assimp
-    Boost::boost
-    Boost::system
-    Boost::filesystem
-    ccd
-    Eigen3::Eigen
-    fcl
-  PRIVATE
-    ${PROJECT_NAME}-external-odelcpsolver
-)
-if (TARGET octomap)
-  target_link_libraries(dart PUBLIC octomap)
-endif()
-target_compile_features(dart PUBLIC cxx_std_17)
-
-# Build DART with all available SIMD instructions
-if(DART_ENABLE_SIMD)
-  if(MSVC)
-    target_compile_options(dart PUBLIC /arch:SSE2 /arch:AVX /arch:AVX2)
-    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
-    # enabled for x64 by default. The option will be ignored on x64 with a
-    # warning message. If anyone knows how to detect the system's architecture
-    # in CMake time, then I would gratefully apply these options differently
-    # depending on the architectures.
-  elseif(CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(dart PUBLIC -march=native)
-    if(GCC_VERSION VERSION_GREATER 7.0)
-      target_compile_options(dart PUBLIC -faligned-new)
-    endif()
-  elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    target_compile_options(dart PUBLIC -march=native -faligned-new)
-  endif()
-endif()
-
-#===============================================================================
-# CodeCov settings
-# Reference: https://github.com/codecov/example-cpp11-cmake
-#===============================================================================
-if(DART_CODECOV AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-    target_link_options(dart PUBLIC --coverage)
-  else()
-    target_link_libraries(dart PUBLIC --coverage)
-  endif()
-  target_compile_options(dart
-    PUBLIC
-      -O0        # no optimization
-      -g         # generate debug info
-      --coverage # sets all required flags
-  )
-endif()
-
-# Default component
-add_component_targets(${PROJECT_NAME} dart dart)
-add_component_dependencies(${PROJECT_NAME} dart)
-add_component_dependency_packages(${PROJECT_NAME} dart
-  Eigen3 ccd fcl assimp Boost octomap
-)
-
-if(MSVC)
-  set_target_properties(
-    ${target} PROPERTIES
-    STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
-  )
-endif()
-
-install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})

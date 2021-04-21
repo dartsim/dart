@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/gui/glut/glut.hpp>
 
 using namespace dart::dynamics;
 

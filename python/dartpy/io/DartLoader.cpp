@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/io/urdf/urdf.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;

@@ -42,9 +42,9 @@
 #include <string>
 #include <vector>
 
-#include "dart/collision/CollisionGroup.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxedLcpConstraintSolver.hpp"
+#include "dart/dynamics/CollisionGroup.hpp"
 #include "dart/dynamics/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/SemiImplicitEulerIntegrator.hpp"

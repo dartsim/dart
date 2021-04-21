@@ -11,7 +11,7 @@ target_link_libraries(dart-optimization-snopt dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimization_snopt headers" ${hdrs})
-dart_generate_include_header_file(
+dart_generate_meta_header(
   "${CMAKE_CURRENT_BINARY_DIR}/snopt.hpp"
   "dart/optimization/snopt/"
   ${header_names}

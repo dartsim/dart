@@ -35,7 +35,7 @@
 
 #include "dart/dynamics/ConstraintBase.hpp"
 
-#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/CollisionDetector.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {

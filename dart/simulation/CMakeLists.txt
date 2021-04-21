@@ -1,27 +1,33 @@
-# Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
-file(GLOB detail_hdrs "detail/*.hpp")
-file(GLOB detail_srcs "detail/*.cpp")
-dart_add_core_headers(${hdrs} ${detail_hdrs})
-dart_add_core_sources(${srcs} ${detail_srcs})
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
 
-# Generate header for this namespace
-dart_get_filename_components(header_names "simulation headers" ${hdrs})
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp"
-  "dart/simulation/"
-  ${header_names}
-)
+# Set basic component settings
+set(project_name ${PROJECT_NAME})
+set(component_name simulation)
 
-# Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp
-  DESTINATION include/dart/simulation
-  COMPONENT headers
-)
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/simulation/detail
-  COMPONENT headers
+# Add component
+dart_add_component(
+  PROJECT_NAME
+    ${PROJECT_NAME}
+  PROJECT_VERSION_MAJOR
+    ${DART_MAJOR_VERSION}
+  PROJECT_SOURCE_DIR
+    ${DART_SOURCE_DIR}
+  PROJECT_BINARY_DIR
+    ${DART_BINARY_DIR}
+  COMPONENT_NAME
+    ${component_name}
+  COMPONENT_DEPENDENCIES
+    common math optimization collision dynamics
+  TARGET_COMPILE_FEATURES_PUBLIC
+    cxx_std_17
+  SUB_DIRECTORIES
+    detail
+  GENERATE_META_HEADER
+  FORMAT_CODE
 )

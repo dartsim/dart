@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-// This preprocessor token should only be used by the unittest that is
+// This preprocessor token should only be used by the test that is
 // responsible for checking that the specialized routines are being used to
 // access specialized Aspects
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
