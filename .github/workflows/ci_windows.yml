@@ -25,7 +25,7 @@ jobs:
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
       VCPKG_ROOT: "C:/dartsim/vcpkg"
-      VCPKG_BUILD_TAG: v0.4.0-414bec0
+      VCPKG_BUILD_TAG: v0.3.1-2020.11-1
     steps:
       - name: Checkout
         uses: actions/checkout@v2
