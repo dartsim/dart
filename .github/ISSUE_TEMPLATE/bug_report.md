@@ -16,7 +16,7 @@ assignees: ''
 
 #### Environment
 > Select the following information.
-* DART version: [e.g., master, 6.8.3]
+* DART version: [e.g., main, 6.8.3]
 * OS name and version name(or number): [e.g., Ubuntu 18.04, macOS Catalina, Windows 10]
 * Compiler name and version number: [e.g., GCC 7.4.0, Clang 3.9.1]
 
@@ -39,4 +39,4 @@ assignees: ''
 
 #### Code to Reproduce
 > Please remember that with a working code it's easier to reproduce the bug and it's much faster to fix it.
-> It would be great to fork this repo and create a regression test using [this template](https://github.com/dartsim/dart/blob/master/test/regression/test_Issue000Template.cpp).
+> It would be great to fork this repo and create a regression test using [this template](https://github.com/dartsim/dart/blob/main/test/regression/test_Issue000Template.cpp).

@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -1030,7 +1030,7 @@ void SoftContactConstraint::updateFirstFrictionalDirection()
 
   // TODO(JS): Not implemented
   // Refer to:
-  // https://github.com/erwincoumans/bullet3/blob/master/src/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.cpp#L910
+  // https://github.com/erwincoumans/bullet3/blob/main/src/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.cpp#L910
   //  mFirstFrictionalDirection;
 }
 

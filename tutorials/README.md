@@ -4,12 +4,12 @@ The purpose of this set of tutorials is to provide a quick introduction to
 using DART. We designed many hands-on exercises to make the learning
 effective and fun. To follow along with this tutorial, first locate
 the tutorial code in the directory:
-[dart/tutorials](https://github.com/dartsim/dart/blob/master/tutorials).
+[dart/tutorials](https://github.com/dartsim/dart/blob/main/tutorials).
 For each of the four tutorials, we provide the skeleton code as the starting
 point (e.g. [tutorial_multi_pendulum.cpp]
-(https://github.com/dartsim/dart/blob/master/tutorials/
+(https://github.com/dartsim/dart/blob/main/tutorials/
 tutorial_multi_pendulum.cpp)) and the final code as the answer to the tutorial
-(e.g. [tutorial_multi_pendulum_finished.cpp](https://github.com/dartsim/dart/blob/master/tutorials/tutorial_multi_pendulum_finished.cpp)).
+(e.g. [tutorial_multi_pendulum_finished.cpp](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum_finished.cpp)).
 
 ## Build Each Example
 
