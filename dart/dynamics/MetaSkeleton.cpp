@@ -167,35 +167,35 @@ static void setAllValuesFromVector(
 template <double (DegreeOfFreedom::*getValue)() const>
 static Eigen::VectorXd getValuesFromVector(
     const MetaSkeleton* skel,
-    const std::vector<std::size_t>& _indices,
-    const std::string& _fname)
+    const std::vector<std::size_t>& indices,
+    const std::string& fname)
 {
-  Eigen::VectorXd values(_indices.size());
+  Eigen::VectorXd values(indices.size());
 
-  for (std::size_t i = 0; i < _indices.size(); ++i)
+  for (std::size_t i = 0; i < indices.size(); ++i)
   {
-    const DegreeOfFreedom* dof = skel->getDof(_indices[i]);
-    if (dof)
+    const std::size_t index = indices[i];
+    if (const DegreeOfFreedom* dof = skel->getDof(index))
     {
       values[i] = (dof->*getValue)();
     }
     else
     {
       values[i] = 0.0;
-      if (i < skel->getNumDofs())
+      if (index < skel->getNumDofs())
       {
-        dterr << "[MetaSkeleton::" << _fname << "] Requesting value for "
-              << "DegreeOfFreedom #" << _indices[i] << " ("
-              << "entry #" << i << " in _indices), but this index has expired! "
+        dterr << "[MetaSkeleton::" << fname << "] Requesting value for "
+              << "DegreeOfFreedom #" << index << " ("
+              << "entry #" << i << " in indices), but this index has expired! "
               << "ReferentialSkeletons should call update() after structural "
               << "changes have been made to the BodyNodes they refer to. The "
               << "return value for this entry will be zero.\n";
       }
       else
       {
-        dterr << "[MetaSkeleton::" << _fname << "] Requesting out of bounds "
-              << "DegreeOfFreedom #" << _indices[i] << " (entry #" << i
-              << " in _indices) for MetaSkeleton named [" << skel->getName()
+        dterr << "[MetaSkeleton::" << fname << "] Requesting out of bounds "
+              << "DegreeOfFreedom #" << index << " (entry #" << i
+              << " in indices) for MetaSkeleton named [" << skel->getName()
               << "] (" << skel << "). The max index is (" << skel->getNumDofs()
               << "). The return value for this entry will be zero.\n";
       }
