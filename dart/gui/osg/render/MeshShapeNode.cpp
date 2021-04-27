@@ -191,12 +191,6 @@ void MeshShapeNode::refresh()
   extractData(false);
 }
 
-std::ostream& operator<<(std::ostream& str, const aiColor4D& c)
-{
-  str << c[0] << "\t " << c[1] << "\t " << c[2] << "\t " << c[3];
-  return str;
-}
-
 //==============================================================================
 bool checkSpecularSanity(const aiColor4D& c)
 {

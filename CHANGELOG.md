@@ -2,7 +2,13 @@
 
 ### [DART 6.11.0 (TBD)](https://github.com/dartsim/dart/milestone/64?closed=1)
 
+* Math
 
+  * Added `Mesh`, `TriMesh`, and `Icosphere` classes: [#1579](https://github.com/dartsim/dart/pull/1579)
+
+* GUI
+
+  * Fixed incorrect MultiSphereConvexHull rendering: [#1579](https://github.com/dartsim/dart/pull/1579)
 
 ### [DART 6.10.1 (2021-04-19)](https://github.com/dartsim/dart/milestone/65?closed=1)
 

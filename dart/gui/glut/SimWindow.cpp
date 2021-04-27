@@ -484,7 +484,7 @@ void SimWindow::drawShape(
   {
     const auto* multiSphere
         = static_cast<const MultiSphereConvexHullShape*>(shape);
-    mRI->drawMultiSphere(multiSphere->getSpheres());
+    mRI->drawMultiSphereConvexHull(multiSphere->getSpheres(), 3u);
   }
   else if (shape->is<MeshShape>())
   {
