@@ -120,6 +120,13 @@ void RenderInterface::drawMultiSphere(
   // Do nothing
 }
 
+void RenderInterface::drawMultiSphereConvexHull(
+    const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/,
+    std::size_t /*subdivisions*/)
+{
+  // Do nothing
+}
+
 void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
 {
 }

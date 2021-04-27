@@ -1,3 +1,11 @@
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/main/LICENSE
+#
+# This file is provided under the "BSD-style" License
+
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 
 get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)

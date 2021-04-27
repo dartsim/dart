@@ -18,12 +18,30 @@
 
 ## DART 6
 
-### [DART 6.10.1 (2021-04-13)](https://github.com/dartsim/dart/milestone/65?closed=1)
+### [DART 6.11.0 (TBD)](https://github.com/dartsim/dart/milestone/64?closed=1)
+
+* Math
+
+  * Added `Mesh`, `TriMesh`, and `Icosphere` classes: [#1579](https://github.com/dartsim/dart/pull/1579)
+
+* GUI
+
+  * Fixed incorrect MultiSphereConvexHull rendering: [#1579](https://github.com/dartsim/dart/pull/1579)
+
+### [DART 6.10.1 (2021-04-19)](https://github.com/dartsim/dart/milestone/65?closed=1)
+
+* Dynamics
+
+  * Fixed inertia calculation of CapsuleShape: [#1561](https://github.com/dartsim/dart/pull/1561)
 
 * GUI
 
   * Changed to protect OpenGL attributes shared by ImGui and OSG: [#1558](https://github.com/dartsim/dart/pull/1558)
   * Changed to set backface culling by default: [#1559](https://github.com/dartsim/dart/pull/1559)
+
+* dartpy
+
+  * Added Python binding for BodyNode::getBodyForce(): [#1563](https://github.com/dartsim/dart/pull/1563)
 
 ### [DART 6.10.0 (2021-04-09)](https://github.com/dartsim/dart/milestone/58?closed=1)
 
