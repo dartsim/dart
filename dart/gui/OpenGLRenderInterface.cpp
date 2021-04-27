@@ -73,7 +73,7 @@ void OpenGLRenderInterface::initialize()
   glLoadIdentity();
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glCullFace(GL_FRONT);
+  glCullFace(GL_BACK);
   glDisable(GL_LIGHTING);
   glEnable(GL_DEPTH_TEST);
   // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
