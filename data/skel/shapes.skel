@@ -304,6 +304,10 @@
                                 <radius>0.075</radius>
                                 <position>0.075 0.0 0.0</position>
                             </sphere>
+                            <sphere>
+                                <radius>0.1</radius>
+                                <position>0 0.1 0</position>
+                            </sphere>
                         </multi_sphere>
                     </geometry>
                     <color>0.6 0.6 0.8</color>
@@ -319,6 +323,10 @@
                             <sphere>
                                 <radius>0.075</radius>
                                 <position>0.075 0.0 0.0</position>
+                            </sphere>
+                            <sphere>
+                                <radius>0.1</radius>
+                                <position>0 0.1 0</position>
                             </sphere>
                         </multi_sphere>
                     </geometry>

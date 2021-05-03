@@ -532,6 +532,22 @@ SupportPolygon computeConvexHull(const SupportPolygon& _points);
 SupportPolygon computeConvexHull(
     std::vector<std::size_t>& _originalIndices, const SupportPolygon& _points);
 
+/// Generates a 3D convex hull given vertices and indices.
+///
+/// \tparam S: The scalar type of the vertices.
+/// \tparam Index: The index type of the triangles.
+/// \param[in] vertices: The given vertices to generate a convex hull from.
+/// \param[in] optimize: (Optional) Whether to discard vertices that are not
+/// referred to in the resulted convex hull. The resulted indices will be
+/// updated accordingly.
+/// \return A tuple of the vertices and indices of the resulted convex hull.
+template <typename S = double, typename Index = std::size_t>
+std::tuple<
+    std::vector<Eigen::Matrix<S, 3, 1>>,
+    std::vector<Eigen::Matrix<Index, 3, 1>>>
+computeConvexHull3D(
+    const std::vector<Eigen::Matrix<S, 3, 1>>& vertices, bool optimize = true);
+
 /// Compute the centroid of a polygon, assuming the polygon is a convex hull
 Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull);
 
@@ -637,5 +653,7 @@ protected:
 
 } // namespace math
 } // namespace dart
+
+#include "dart/math/detail/Geometry-impl.hpp"
 
 #endif // DART_MATH_GEOMETRY_HPP_

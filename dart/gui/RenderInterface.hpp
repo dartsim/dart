@@ -106,10 +106,14 @@ public:
   virtual void scale(const Eigen::Vector3d& _scale);           // glScale
 
   virtual void drawSphere(double radius, int slices = 16, int stacks = 16);
+  DART_DEPRECATED(6.11)
   virtual void drawMultiSphere(
       const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
       int slices = 16,
       int stacks = 16);
+  virtual void drawMultiSphereConvexHull(
+      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+      std::size_t subdivisions);
   virtual void drawEllipsoid(const Eigen::Vector3d& _size);
   virtual void drawCube(const Eigen::Vector3d& _size);
   virtual void drawOpenCylinder(
