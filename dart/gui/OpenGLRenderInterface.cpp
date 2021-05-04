@@ -45,6 +45,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/OpenGLRenderInterface.hpp"
+#include "dart/math/Icosphere.hpp"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj* quadObj;
@@ -237,24 +238,46 @@ void OpenGLRenderInterface::drawMultiSphere(
     }
     glPopMatrix();
   }
+}
 
-  if (spheres.size() < 2u)
-    return;
-
-  // Draw all the possible open cylinders that connects a pair of spheres in the
-  // list.
-  //
-  // TODO(JS): This is a workaround. The correct solution would be drawing the
-  // convex hull for the spheres, but we don't have a function computing convex
-  // hull yet.
-  for (auto i = 0u; i < spheres.size() - 1u; ++i)
+void OpenGLRenderInterface::drawMultiSphereConvexHull(
+    const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+    std::size_t subdivisions)
+{
+  // Create meshes of sphere and combine them into a single mesh
+  auto mesh = math::TriMeshf();
+  for (const auto& sphere : spheres)
   {
-    for (auto j = i + 1u; j < spheres.size(); ++j)
+    const double& radius = sphere.first;
+    const Eigen::Vector3d& center = sphere.second;
+
+    auto icosphere = math::Icospheref(radius, subdivisions);
+    icosphere.translate(center.cast<float>());
+
+    mesh += icosphere;
+  }
+
+  // Create a convex hull from the combined mesh
+  auto convexHull = mesh.generateConvexHull();
+  convexHull->computeVertexNormals();
+  const auto& meshVertices = convexHull->getVertices();
+  const auto& meshNormals = convexHull->getVertexNormals();
+  const auto& meshTriangles = convexHull->getTriangles();
+  assert(meshVertices.size() == meshNormals.size());
+
+  // Draw the triangles of the convex hull
+  glBegin(GL_TRIANGLES);
+  for (const auto& triangle : meshTriangles)
+  {
+    for (auto i = 0u; i < 3; ++i)
     {
-      drawOpenCylinderConnectingTwoSpheres(
-          this, spheres[i], spheres[j], slices, stacks);
+      const auto& normal = meshNormals[triangle[i]];
+      const auto& vertex = meshVertices[triangle[i]];
+      glNormal3fv(normal.data());
+      glVertex3fv(vertex.data());
     }
   }
+  glEnd();
 }
 
 void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters)

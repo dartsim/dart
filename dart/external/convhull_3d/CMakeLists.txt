@@ -6,8 +6,12 @@
 #
 # This file is provided under the "BSD-style" License
 
-add_subdirectory(convhull_3d)
-add_subdirectory(imgui)
-add_subdirectory(ikfast)
-add_subdirectory(lodepng)
-add_subdirectory(odelcpsolver)
+# Search all header and source files
+file(GLOB hdrs "*.h")
+
+# Install
+install(
+  FILES ${hdrs}
+  DESTINATION include/dart/external/convhull_3d
+  COMPONENT headers
+)
