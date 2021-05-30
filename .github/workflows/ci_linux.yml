@@ -1,6 +1,6 @@
 # https://help.github.com/en/articles/workflow-syntax-for-github-actions
 
-name: CI Ubuntu
+name: CI Linux
 
 on:
   push:
@@ -15,13 +15,13 @@ on:
 
 jobs:
   # Linux distros on multiple architectures
-  ubuntu:
-    name: Ubuntu
+  linux:
+    name: Linux
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-focal, ubuntu-hirsute]
+        os: [ubuntu-focal, ubuntu-hirsute, archlinux]
         platform: [linux/amd64]
         build_type: [Release]
         codecov: [OFF]
