@@ -16,6 +16,10 @@
 
   * Upgraded ImGui to 1.82: [#1567](https://github.com/dartsim/dart/pull/1567)
 
+* dartpy
+
+  * Fix inconsistent detection of Python version in CMake and pybind11: [#1581](https://github.com/dartsim/dart/pull/1581)
+
 ## DART 6
 
 ### [DART 6.11.0 (TBD)](https://github.com/dartsim/dart/milestone/64?closed=1)

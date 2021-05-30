@@ -1,8 +1,42 @@
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/main/LICENSE
+#
+# This file is provided under the "BSD-style" License
+
 if(NOT DARTPY_PYTHON_VERSION)
   set(DARTPY_PYTHON_VERSION 3.4 CACHE STRING "Choose the target Python version (e.g., 3.4, 2.7)" FORCE)
 endif()
 
-find_package(PythonInterp ${DARTPY_PYTHON_VERSION} QUIET)
+# Find pybind11
+#
+# Need to set PYBIND11_PYTHON_VERSION before finding pybind11
+#
+# No need to explicitly call find_package(PythonLibs) nor find_package(PythonInterp) since the package is found when
+# calling find_package(pybind11)
+# See: https://pybind11.readthedocs.io/en/stable/faq.html#inconsistent-detection-of-python-version-in-cmake-and-pybind11
+set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
+find_package(pybind11 2.4.3 QUIET)
+if(NOT pybind11_FOUND)
+  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find pybind11 >= "
+    "2.4.3. Disabling dartpy."
+  )
+  return()
+endif()
+if(NOT PYTHONINTERP_FOUND)
+  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonInterp. "
+    "Disabling dartpy."
+  )
+  return()
+endif()
+if(NOT PYTHONLIBS_FOUND)
+  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonLibs. "
+    "Disabling dartpy."
+  )
+  return()
+endif()
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
   "from distutils.sysconfig import get_python_lib;\
   print(get_python_lib(plat_specific=True, prefix=''))"
@@ -11,31 +45,6 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 )
 if(NOT IS_ABSOLUTE PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
-endif()
-if(NOT PythonInterp_FOUND)
-  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonInterp. "
-    "Disabling dartpy."
-  )
-  return()
-endif()
-
-find_package(PythonLibs ${DARTPY_PYTHON_VERSION} QUIET)
-if(NOT PythonLibs_FOUND)
-  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonLibs. "
-    "Disabling dartpy."
-  )
-  return()
-endif()
-
-# Find pybind11
-# Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
-set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
-find_package(pybind11 2.2.0 QUIET)
-if(NOT pybind11_FOUND)
-  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find pybind11 >= "
-    "2.2.0. Disabling dartpy."
-  )
-  return()
 endif()
 
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
