@@ -1,6 +1,6 @@
 # https://help.github.com/en/articles/workflow-syntax-for-github-actions
 
-name: CI Ubuntu
+name: CI Arch Linux
 
 on:
   push:
@@ -11,33 +11,16 @@ on:
     - cron: "0 2 * * 0-6"
 
 jobs:
-  ubuntu:
-    name: Ubuntu
+  archlinux:
+    name: Arch Linux
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-focal, ubuntu-hirsute]
+        os: [archlinux]
         platform: [linux/amd64]
         build_type: [Release]
         codecov: [OFF]
-        include:
-          - os: ubuntu-bionic
-            platform: linux/amd64
-            build_type: Debug
-            codecov: ON
-          - os: ubuntu-bionic
-            platform: linux/amd64
-            build_type: Release
-            codecov: OFF
-          - os: ubuntu-bionic
-            platform: linux/arm64
-            build_type: Release
-            codecov: OFF
-          - os: ubuntu-bionic
-            platform: linux/ppc64le
-            build_type: Release
-            codecov: OFF
     env:
       # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
       DART_DEV_IMAGE: dartsim/dart-dev
