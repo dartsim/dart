@@ -12,6 +12,7 @@ on:
 
 jobs:
   archlinux:
+    name: Arch Linux
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
