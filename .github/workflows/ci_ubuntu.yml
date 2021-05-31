@@ -1,6 +1,6 @@
 # https://help.github.com/en/articles/workflow-syntax-for-github-actions
 
-name: CI Linux
+name: CI Ubuntu
 
 on:
   push:
@@ -14,14 +14,13 @@ on:
     - cron: "0 2 * * 0-6"
 
 jobs:
-  # Linux distros on multiple architectures
-  linux:
-    name: Linux
+  ubuntu:
+    name: Ubuntu
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-focal, ubuntu-hirsute, archlinux]
+        os: [ubuntu-focal, ubuntu-hirsute]
         platform: [linux/amd64]
         build_type: [Release]
         codecov: [OFF]
@@ -45,7 +44,7 @@ jobs:
     env:
       # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
       DART_DEV_IMAGE: dartsim/dart-dev
-      DOCKER_TAG: ${{ matrix.os }}-v6.10
+      DOCKER_TAG: ${{ matrix.os }}-v7.0
       PLATFORM: ${{ matrix.platform }}
       COMPILER: gcc
       BUILD_TYPE: ${{ matrix.build_type }}

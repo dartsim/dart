@@ -1,0 +1,55 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI Arch Linux
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  schedule:
+    # Run every day at 02:00
+    - cron: "0 2 * * 0-6"
+
+jobs:
+  archlinux:
+    name: Arch Linux
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [archlinux]
+        platform: [linux/amd64]
+        build_type: [Release]
+        codecov: [OFF]
+    env:
+      # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
+      DART_DEV_IMAGE: dartsim/dart-dev
+      DOCKER_TAG: ${{ matrix.os }}-v7.0
+      PLATFORM: ${{ matrix.platform }}
+      COMPILER: gcc
+      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_DARTPY: "${{ matrix.build_type == 'Debug' && 'OFF' || 'ON' }}"
+      CODECOV: ${{ matrix.codecov }}
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Pull dev container
+        run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
+      - name: Build
+        run: |
+          if [ "$CODECOV" = "ON" ]; then
+            ci_env=`bash <(curl -s https://codecov.io/env)`
+          fi
+          docker run \
+            $ci_env -e CI=true \
+            --platform $PLATFORM \
+            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+            --env-file ./.ci/docker/env.list \
+            $DART_DEV_IMAGE:$DOCKER_TAG \
+            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
