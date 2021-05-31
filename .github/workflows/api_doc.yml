@@ -9,7 +9,6 @@ on:
 
 jobs:
   deploy:
-    name: API Documentation
     runs-on: ubuntu-18.04
     env:
       DART_DEV_IMAGE: dartsim/dart-dev

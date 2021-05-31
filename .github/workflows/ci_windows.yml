@@ -12,7 +12,6 @@ on:
 
 jobs:
   windows:
-    name: Windows
     runs-on: windows-2019
     strategy:
       fail-fast: false
