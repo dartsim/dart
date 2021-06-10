@@ -58,9 +58,9 @@ double ContactConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
 ContactConstraint::ContactConstraint(
-    collision::Contact& contact, double timeStep)
-  : ContactConstraint(
-      contact, timeStep, DefaultContactSurfaceHandler().createParams(contact))
+    collision::Contact& contact, double timeStep) :
+    ContactConstraint(contact, timeStep,
+                      DefaultContactSurfaceHandler().createParams(contact, 1u))
 {
 }
 

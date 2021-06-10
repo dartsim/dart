@@ -506,6 +506,7 @@ void ConstraintSolver::updateConstraints()
   };
 
   std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
+  std::vector<collision::Contact*> contacts;
 
   // Create new contact constraints
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
@@ -548,26 +549,22 @@ void ConstraintSolver::updateConstraints()
       ++contactPairMap[std::make_pair(
           contact.collisionObject1, contact.collisionObject2)];
 
-      const auto params = mContactSurfaceHandler->createParams(contact);
-      mContactConstraints.push_back(
-          std::make_shared<ContactConstraint>(contact, mTimeStep, params));
+      contacts.push_back(&contact);
     }
   }
 
   // Add the new contact constraints to dynamic constraint list
-  for (const auto& contactConstraint : mContactConstraints)
+  for (auto* contact : contacts)
   {
-    // update the slip compliances of the contact constraints based on the
-    // number of contacts between the collision objects.
-    auto& contact = contactConstraint->getContact();
     std::size_t numContacts = 1;
     auto it = contactPairMap.find(
-        std::make_pair(contact.collisionObject1, contact.collisionObject2));
+        std::make_pair(contact->collisionObject1, contact->collisionObject2));
     if (it != contactPairMap.end())
       numContacts = it->second;
 
-    mContactSurfaceHandler->updateConstraint(
-        *contactConstraint, contact, numContacts);
+    auto contactConstraint = mContactSurfaceHandler->createConstraint(
+        *contact, numContacts, mTimeStep);
+    mContactConstraints.push_back(contactConstraint);
 
     contactConstraint->update();
 

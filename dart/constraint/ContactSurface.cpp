@@ -58,12 +58,32 @@ void ContactSurfaceHandler::setParent(ContactSurfaceHandlerPtr parent)
 }
 
 //==============================================================================
-ContactSurfaceParams constraint::DefaultContactSurfaceHandler::createParams(
-    const collision::Contact& contact) const
+ContactSurfaceParams ContactSurfaceHandler::createParams(
+    const collision::Contact& contact,
+    size_t numContactsOnCollisionObject) const
 {
-  ContactSurfaceParams params
-      = (this->mParent ? this->mParent->createParams(contact)
-                       : ContactSurfaceParams());
+  if (mParent != nullptr)
+    return mParent->createParams(contact, numContactsOnCollisionObject);
+  return {};
+}
+
+//==============================================================================
+ContactConstraintPtr ContactSurfaceHandler::createConstraint(
+    collision::Contact& contact,
+    size_t numContactsOnCollisionObject,
+    const double timeStep) const
+{
+  auto params = this->createParams(contact, numContactsOnCollisionObject);
+  return std::make_shared<ContactConstraint>(contact, timeStep, params);
+}
+
+//==============================================================================
+ContactSurfaceParams constraint::DefaultContactSurfaceHandler::createParams(
+    const collision::Contact& contact,
+    size_t numContactsOnCollisionObject) const
+{
+  ContactSurfaceParams params = ContactSurfaceHandler::createParams(
+      contact, numContactsOnCollisionObject);
 
   const auto* shapeNodeA = const_cast<dynamics::ShapeFrame*>(
                                contact.collisionObject1->getShapeFrame())
@@ -157,19 +177,22 @@ ContactSurfaceParams constraint::DefaultContactSurfaceHandler::createParams(
 }
 
 //==============================================================================
-void constraint::DefaultContactSurfaceHandler::updateConstraint(
-    ContactConstraint& constraint,
-    const collision::Contact& contact,
-    size_t numContactsOnCollisionObject) const
+ContactConstraintPtr DefaultContactSurfaceHandler::createConstraint(
+    collision::Contact& contact,
+    const size_t numContactsOnCollisionObject,
+    const double timeStep) const
 {
-  if (this->mParent)
-    this->mParent->updateConstraint(
-        constraint, contact, numContactsOnCollisionObject);
+  auto constraint = ContactSurfaceHandler::createConstraint(
+      contact, numContactsOnCollisionObject, timeStep);
 
-  constraint.setPrimarySlipCompliance(
-      constraint.getPrimarySlipCompliance() * numContactsOnCollisionObject);
-  constraint.setSecondarySlipCompliance(
-      constraint.getSecondarySlipCompliance() * numContactsOnCollisionObject);
+  constraint->setPrimarySlipCompliance(
+      constraint->getPrimarySlipCompliance() *
+      static_cast<double>(numContactsOnCollisionObject));
+  constraint->setSecondarySlipCompliance(
+      constraint->getSecondarySlipCompliance() *
+      static_cast<double>(numContactsOnCollisionObject));
+
+  return constraint;
 }
 
 //==============================================================================

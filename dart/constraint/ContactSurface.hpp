@@ -101,18 +101,19 @@ public:
 
   /// Create parameters of the contact constraint. This method should combine
   /// the collision properties of the two colliding bodies and write the
-  /// combined result in the returned object.
+  /// combined result in the returned object. It is also passed the total number
+  /// of contact points reported on the same collision body - that is useful
+  /// e.g. for normalization of forces by the number of contact points.
   virtual ContactSurfaceParams createParams(
-      const collision::Contact& contact) const = 0;
-
-  /// Called after the contact constrain object is constructed to allow
-  /// additional configuration. It is also passed the total number of contact
-  /// points reported on the same collision body - that is useful e.g. for
-  /// normalization of forces by the number of contact points.
-  virtual void updateConstraint(
-      ContactConstraint& constraint,
       const collision::Contact& contact,
-      size_t numContactsOnCollisionObject) const = 0;
+      size_t numContactsOnCollisionObject) const;
+
+  /// Create the constraint that represents contact between two collision
+  /// objects.
+  virtual ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      size_t numContactsOnCollisionObject,
+      double timeStep) const;
 
   /// Set the optional parent handler (ignored if parent.get() == this)
   void setParent(ContactSurfaceHandlerPtr parent);
@@ -132,13 +133,14 @@ class DefaultContactSurfaceHandler : public ContactSurfaceHandler
 public:
   // Documentation inherited
   ContactSurfaceParams createParams(
-      const collision::Contact& contact) const override;
-
-  // Documentation inherited
-  void updateConstraint(
-      ContactConstraint& constraint,
       const collision::Contact& contact,
       size_t numContactsOnCollisionObject) const override;
+
+  // Documentation inherited
+  ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      size_t numContactsOnCollisionObject,
+      double timeStep) const override;
 
 protected:
   static double computeFrictionCoefficient(
