@@ -193,6 +193,15 @@ public:
   /// automatically sets the previous handler as parent of the given handler.
   void setContactSurfaceHandler(ContactSurfaceHandlerPtr handler);
 
+  /// Remove the given contact surface handler. If it is not the last in the
+  /// chain of handlers, the neighbor handlers are automatically connected
+  /// when the given handler is removed. This function returns true when the
+  /// given handler was found. It returns false when the handler is not found.
+  /// The search procedure utilizes pointer equality (i.e. the shared pointers
+  /// have to point to the same address to be treated equal). Take special care
+  /// to make sure at least one handler is always available.
+  bool removeContactSurfaceHandler(const ContactSurfaceHandlerPtr& handler);
+
 protected:
   // TODO(JS): Docstring
   virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;

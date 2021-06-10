@@ -117,6 +117,8 @@ public:
   /// Set the optional parent handler (ignored if parent.get() == this)
   void setParent(ContactSurfaceHandlerPtr parent);
 
+  friend class dart::constraint::ConstraintSolver;
+
 protected:
   /// The optional parent handler
   ContactSurfaceHandlerPtr mParent;

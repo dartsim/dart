@@ -755,5 +755,34 @@ void ConstraintSolver::setContactSurfaceHandler(
   mContactSurfaceHandler = std::move(handler);
 }
 
+//==============================================================================
+bool ConstraintSolver::removeContactSurfaceHandler(
+    const ContactSurfaceHandlerPtr& handler)
+{
+  bool found = false;
+  ContactSurfaceHandlerPtr current = mContactSurfaceHandler;
+  ContactSurfaceHandlerPtr previous = nullptr;
+  while (current != nullptr)
+  {
+    if (current == handler)
+    {
+      if (previous != nullptr)
+        previous->mParent = current->mParent;
+      else
+        mContactSurfaceHandler = current->mParent;
+      found = true;
+      break;
+    }
+    previous = current;
+    current = current->mParent;
+  }
+
+  if (mContactSurfaceHandler == nullptr)
+    dterr << "No contact surface handler remained. This is an error. Add at "
+          << "least DefaultContactSurfaceHandler." << std::endl;
+
+  return found;
+}
+
 } // namespace constraint
 } // namespace dart
