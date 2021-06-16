@@ -4,7 +4,7 @@
 
 * GUI
 
-  * Use GLVND over the legacy OpenGL libraries
+  * Use GLVND over the legacy OpenGL libraries: [#1584](https://github.com/dartsim/dart/pull/1584)
 
 ### [DART 6.10.1 (2021-04-19)](https://github.com/dartsim/dart/milestone/65?closed=1)
 
