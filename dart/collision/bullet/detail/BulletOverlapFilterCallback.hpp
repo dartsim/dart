@@ -49,7 +49,9 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
   // Constructor
   explicit BulletOverlapFilterCallback(
-      const std::shared_ptr<CollisionFilter>& filter = nullptr);
+      const std::shared_ptr<CollisionFilter>& filter = nullptr,
+      CollisionGroup* group1 = nullptr,
+      CollisionGroup* group2 = nullptr);
 
   /// Returns true when pairs need collision
   bool needBroadphaseCollision(
@@ -63,6 +65,8 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
   mutable bool done;
 
   std::shared_ptr<CollisionFilter> filter;
+  const CollisionGroup* group1;
+  const CollisionGroup* group2;
 };
 
 } // namespace detail
