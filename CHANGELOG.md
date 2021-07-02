@@ -6,6 +6,10 @@
 
   * Added `Mesh`, `TriMesh`, and `Icosphere` classes: [#1579](https://github.com/dartsim/dart/pull/1579)
 
+* Collision
+
+  * Fixed incorrect group-group collision checking for BulletCollisionDetector: [#1585](https://github.com/dartsim/dart/pull/1585), [#717](https://github.com/dartsim/dart/issues/717)
+
 * GUI
 
   * Fixed incorrect MultiSphereConvexHull rendering: [#1579](https://github.com/dartsim/dart/pull/1579)

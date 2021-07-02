@@ -284,24 +284,12 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  static bool warned = false;
-  if (!warned)
-  {
-    dtwarn
-        << "[BulletCollisionDetector::collide] collide(group1, group2) "
-        << "supposed to check collisions of the objects in group1 against the "
-        << "objects in group2. However, the current implementation of this "
-        << "function checks for all the objects against each other of both "
-        << "group1 and group2, which is an incorrect behavior. This bug will "
-        << "be fixed in the next patch release. (see #717 for the details)\n";
-    warned = true;
-  }
-
+  // Create a new collision group, merging the two groups into
   mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
   auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback
-      = new detail::BulletOverlapFilterCallback(option.collisionFilter);
+  auto filterCallback = new detail::BulletOverlapFilterCallback(
+      option.collisionFilter, group1, group2);
   bulletPairCache->setOverlapFilterCallback(filterCallback);
 
   mGroupForFiltering->addShapeFramesOf(group1, group2);
