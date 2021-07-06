@@ -239,10 +239,7 @@ protected:
   std::vector<SoftContactConstraintPtr> mSoftContactConstraints;
 
   /// Joint limit constraints those are automatically created
-  std::vector<JointLimitConstraintPtr> mJointLimitConstraints;
-
-  /// Servo motor constraints those are automatically created
-  std::vector<ServoMotorConstraintPtr> mServoMotorConstraints;
+  std::vector<JointConstraintPtr> mJointConstraints;
 
   /// Mimic motor constraints those are automatically created
   std::vector<MimicMotorConstraintPtr> mMimicMotorConstraints;

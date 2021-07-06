@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2020, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,41 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#include <TestHelpers.hpp>
+#include <gtest/gtest.h>
 
-namespace py = pybind11;
+#include <dart/dart.hpp>
+#include <dart/utils/sdf/sdf.hpp>
 
-namespace dart {
-namespace python {
-
-void ConstraintBase(py::module& sm);
-void JointConstraint(py::module& sm);
-void JointCoulombFrictionConstraint(py::module& sm);
-void DynamicJointConstraint(py::module& sm);
-
-void BoxedLcpSolver(py::module& sm);
-void DantzigBoxedLcpSolver(py::module& sm);
-void PgsBoxedLcpSolver(py::module& sm);
-
-void ConstraintSolver(py::module& sm);
-void BoxedLcpConstraintSolver(py::module& sm);
-
-void dart_constraint(py::module& m)
+//========================================================================================
+TEST(Issue1583, ServoJointWithPositionLimits)
 {
-  auto sm = m.def_submodule("constraint");
+  const double pos_lb = -0.1;
+  const double pos_ub = +0.1;
+  const double vel_desired = 1;
 
-  ConstraintBase(sm);
-  JointConstraint(sm);
-  JointCoulombFrictionConstraint(sm);
-  DynamicJointConstraint(sm);
+  auto skel = dart::utils::SdfParser::readSkeleton(
+      "dart://sample/sdf/test/test_issue1583.model");
+  ASSERT_NE(skel, nullptr);
 
-  BoxedLcpSolver(sm);
-  DantzigBoxedLcpSolver(sm);
-  PgsBoxedLcpSolver(sm);
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(skel);
+  ASSERT_EQ(world->getNumSkeletons(), 1);
 
-  ConstraintSolver(sm);
-  BoxedLcpConstraintSolver(sm);
+  auto* joint = skel->getJoint("j1");
+  joint->setPositionLowerLimit(0, pos_lb);
+  joint->setPositionUpperLimit(0, pos_ub);
+  joint->setLimitEnforcement(true);
+  joint->setActuatorType(dart::dynamics::Joint::SERVO);
+
+  EXPECT_DOUBLE_EQ(0, joint->getPosition(0));
+  EXPECT_DOUBLE_EQ(0, joint->getVelocity(0));
+  EXPECT_DOUBLE_EQ(0, joint->getAcceleration(0));
+
+  for (std::size_t i = 0; i < 1000; ++i)
+  {
+    joint->setCommand(0, vel_desired);
+    world->step();
+
+    const double pos = joint->getPosition(0);
+    const double vel = joint->getVelocity(0);
+
+    EXPECT_LE(pos, pos_ub + 1e-6);
+    EXPECT_GE(pos, pos_lb - 1e-6);
+
+    if (std::abs(vel - vel_desired) > 1e-6)
+    {
+      EXPECT_NEAR(pos, pos_ub, 1e-2);
+    }
+  }
+
+  EXPECT_NEAR(pos_ub, joint->getPosition(0), 1e-2);
+  EXPECT_NEAR(0, joint->getVelocity(0), 1e-6);
 }
-
-} // namespace python
-} // namespace dart

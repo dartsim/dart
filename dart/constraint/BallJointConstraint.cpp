@@ -43,7 +43,7 @@ namespace constraint {
 //==============================================================================
 BallJointConstraint::BallJointConstraint(
     dynamics::BodyNode* _body, const Eigen::Vector3d& _jointPos)
-  : JointConstraint(_body),
+  : DynamicJointConstraint(_body),
     mOffset1(_body->getTransform().inverse() * _jointPos),
     mOffset2(_jointPos),
     mViolation(Eigen::Vector3d::Zero()),
@@ -65,7 +65,7 @@ BallJointConstraint::BallJointConstraint(
     dynamics::BodyNode* _body1,
     dynamics::BodyNode* _body2,
     const Eigen::Vector3d& _jointPos)
-  : JointConstraint(_body1, _body2),
+  : DynamicJointConstraint(_body1, _body2),
     mOffset1(_body1->getTransform().inverse() * _jointPos),
     mOffset2(_body2->getTransform().inverse() * _jointPos),
     mViolation(Eigen::Vector3d::Zero()),
