@@ -30,10 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_JOINTCONSTRAINT_HPP_
-#define DART_CONSTRAINT_JOINTCONSTRAINT_HPP_
-
-#include <Eigen/Dense>
+#ifndef DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
+#define DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 
 #include "dart/constraint/ConstraintBase.hpp"
 
@@ -41,29 +39,23 @@ namespace dart {
 
 namespace dynamics {
 class BodyNode;
-class Joint;
 } // namespace dynamics
 
 namespace constraint {
 
-// TODO(JS): Merge JointCoulombFrictionConstraint into this class
-
-/// JointConstraint handles multiple constraints that are defined in the joint
-/// space, such as joint position/velocity limits and servo motor.
-class JointConstraint : public ConstraintBase
+/// Base class for joint constraints that are being created or destructed during
+/// simulation.
+class DynamicJointConstraint : public ConstraintBase
 {
 public:
-  /// Constructor
-  explicit JointConstraint(dynamics::Joint* joint);
+  /// Contructor
+  explicit DynamicJointConstraint(dynamics::BodyNode* body);
+
+  /// Contructor
+  DynamicJointConstraint(dynamics::BodyNode* body1, dynamics::BodyNode* body2);
 
   /// Destructor
-  ~JointConstraint() override = default;
-
-  // Documentation inherited
-  const std::string& getType() const override;
-
-  /// Returns constraint type for this class.
-  static const std::string& getStaticType();
+  ~DynamicJointConstraint() override;
 
   //----------------------------------------------------------------------------
   // Property settings
@@ -93,72 +85,18 @@ public:
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
 
-  //----------------------------------------------------------------------------
-  // Friendship
-  //----------------------------------------------------------------------------
+  /// Get the first BodyNode that this constraint is associated with
+  dynamics::BodyNode* getBodyNode1() const;
 
-  friend class ConstraintSolver;
-  friend class ConstrainedGroup;
+  /// Get the second BodyNode that this constraint is associated with
+  dynamics::BodyNode* getBodyNode2() const;
 
 protected:
-  //----------------------------------------------------------------------------
-  // Constraint virtual functions
-  //----------------------------------------------------------------------------
+  /// First body node
+  dynamics::BodyNode* mBodyNode1;
 
-  // Documentation inherited
-  void update() override;
-
-  // Documentation inherited
-  void getInformation(ConstraintInfo* lcp) override;
-
-  // Documentation inherited
-  void applyUnitImpulse(std::size_t index) override;
-
-  // Documentation inherited
-  void getVelocityChange(double* delVel, bool withCfm) override;
-
-  // Documentation inherited
-  void excite() override;
-
-  // Documentation inherited
-  void unexcite() override;
-
-  // Documentation inherited
-  void applyImpulse(double* lambda) override;
-
-  // Documentation inherited
-  dynamics::SkeletonPtr getRootSkeleton() const override;
-
-  // Documentation inherited
-  bool isActive() const override;
-
-private:
-  /// The Joint that this constraint is associated with.
-  dynamics::Joint* mJoint;
-
-  /// The child BodyNode of the Joint that this constraint is associated with.
-  dynamics::BodyNode* mBodyNode;
-
-  /// Index of applied impulse
-  std::size_t mAppliedImpulseIndex;
-
-  /// Life time of constraint of each DOF.
-  Eigen::Matrix<std::size_t, 6, 1> mLifeTime;
-
-  /// Whether any of the joint contraint is active of each joint.
-  Eigen::Matrix<bool, 6, 1> mActive;
-
-  /// The desired delta velocity to satisfy the joint limit constraint.
-  Eigen::Matrix<double, 6, 1> mDesiredVelocityChange;
-
-  /// Constraint impulse of the previous step.
-  Eigen::Matrix<double, 6, 1> mOldX;
-
-  /// Upper limit of the constraint impulse.
-  Eigen::Matrix<double, 6, 1> mImpulseUpperBound;
-
-  /// Lower limit of the constraint impulse.
-  Eigen::Matrix<double, 6, 1> mImpulseLowerBound;
+  /// Second body node
+  dynamics::BodyNode* mBodyNode2;
 
   /// Global constraint error allowance
   static double mErrorAllowance;
@@ -179,4 +117,4 @@ private:
 } // namespace constraint
 } // namespace dart
 
-#endif // DART_CONSTRAINT_JOINTCONSTRAINT_HPP_
+#endif // DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_

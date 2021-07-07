@@ -35,7 +35,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/constraint/JointConstraint.hpp"
+#include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
@@ -43,7 +43,7 @@ namespace constraint {
 
 /// WeldJointConstraint represents weld joint constraint between a body and the
 /// world or between two bodies
-class WeldJointConstraint : public JointConstraint
+class WeldJointConstraint : public DynamicJointConstraint
 {
 public:
   /// Constructor that takes one body

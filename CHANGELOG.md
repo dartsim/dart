@@ -10,10 +10,18 @@
 
   * Fixed incorrect group-group collision checking for BulletCollisionDetector: [#1585](https://github.com/dartsim/dart/pull/1585), [#717](https://github.com/dartsim/dart/issues/717)
 
+* Dynamics
+
+  * Fixed servo motor doesn't respect joint position limits: [#1587](https://github.com/dartsim/dart/pull/1587)
+
 * GUI
 
   * Fixed incorrect MultiSphereConvexHull rendering: [#1579](https://github.com/dartsim/dart/pull/1579)
   * Use GLVND over the legacy OpenGL libraries: [#1584](https://github.com/dartsim/dart/pull/1584)
+
+* Build and testing
+
+  * Add DART_ prefix to macros to avoid potential conflicts: [#1586](https://github.com/dartsim/dart/pull/1586)
 
 ### [DART 6.10.1 (2021-04-19)](https://github.com/dartsim/dart/milestone/65?closed=1)
 

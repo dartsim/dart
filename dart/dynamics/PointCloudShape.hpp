@@ -97,10 +97,10 @@ public:
 
 #if HAVE_OCTOMAP
   /// Replaces points with \c pointCloud.
-  void setPoints(::octomap::Pointcloud& pointCloud);
+  void setPoints(const ::octomap::Pointcloud& pointCloud);
 
   /// Adds points from Octomap PointCloud.
-  void addPoints(::octomap::Pointcloud& pointCloud);
+  void addPoints(const ::octomap::Pointcloud& pointCloud);
 #endif
 
   /// Returns the list of points.

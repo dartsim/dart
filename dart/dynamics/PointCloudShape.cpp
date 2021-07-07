@@ -111,7 +111,7 @@ void PointCloudShape::setPoint(const std::vector<Eigen::Vector3d>& points)
 
 #if HAVE_OCTOMAP
 //==============================================================================
-void PointCloudShape::setPoints(octomap::Pointcloud& pointCloud)
+void PointCloudShape::setPoints(const ::octomap::Pointcloud& pointCloud)
 {
   mPoints.resize(pointCloud.size());
   for (auto i = 0u; i < mPoints.size(); ++i)
@@ -120,7 +120,7 @@ void PointCloudShape::setPoints(octomap::Pointcloud& pointCloud)
 }
 
 //==============================================================================
-void PointCloudShape::addPoints(octomap::Pointcloud& pointCloud)
+void PointCloudShape::addPoints(const ::octomap::Pointcloud& pointCloud)
 {
   mPoints.reserve(mPoints.size() + pointCloud.size());
   for (const auto& point : pointCloud)
