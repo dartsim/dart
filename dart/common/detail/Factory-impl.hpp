@@ -141,16 +141,8 @@ HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
   {
     dtwarn << "[Factory] Failed to create an object of '"
            << typeid(BaseT).name() << "' class with the key (type: '"
-           << typeid(KeyT).name() << "', value: " << key << "). Returning nullptr instead.\n";
+           << typeid(KeyT).name() << "'). Returning nullptr instead.\n";
     // TODO(JS): Print the key if the << operator is defined.
-
-#ifndef NDEBUG
-    dtwarn << "The registered keys are:";
-    for (const auto [key, creator] : mCreatorMap) {
-      (void)creator;
-      dtwarn << "- key: " << key << "\n";
-    }
-#endif
 
     return nullptr;
   }

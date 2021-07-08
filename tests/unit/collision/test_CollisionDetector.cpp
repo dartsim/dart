@@ -45,29 +45,29 @@ class CollisionDetectorTest : public testing::Test,
   // Define nothing
 };
 
-//==============================================================================
-TEST_P(CollisionDetectorTest, Factory)
-{
-  const std::string engineName = GetParam();
-  if (engineName == "dart" || engineName == "ode" || engineName == "bullet")
-  {
-    return;
-  }
-#if !DART_HAVE_BULLET
-  if (engineName == "bullet")
-  {
-    return;
-  }
-#endif
+////==============================================================================
+//TEST_P(CollisionDetectorTest, Factory)
+//{
+//  const std::string engineName = GetParam();
+//  if (engineName == "dart" || engineName == "ode" || engineName == "bullet")
+//  {
+//    return;
+//  }
+//#if !DART_HAVE_BULLET
+//  if (engineName == "bullet")
+//  {
+//    return;
+//  }
+//#endif
 
-  auto cd = collision2::CollisionDetector<double>::create(GetParam());
-  ASSERT_TRUE(cd != nullptr);
+//  auto cd = collision2::CollisionDetector<double>::create(GetParam());
+//  ASSERT_TRUE(cd != nullptr);
 
-  EXPECT_NE(cd->createCollisionGroup(), nullptr);
-}
+//  EXPECT_NE(cd->createCollisionGroup(), nullptr);
+//}
 
-//==============================================================================
-INSTANTIATE_TEST_CASE_P(
-    CollisionEngine,
-    CollisionDetectorTest,
-    testing::Values("dart", "fcl", "bullet", "ode"));
+////==============================================================================
+//INSTANTIATE_TEST_CASE_P(
+//    CollisionEngine,
+//    CollisionDetectorTest,
+//    testing::Values("dart", "fcl", "bullet", "ode"));
