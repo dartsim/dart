@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionGroup.hpp"
+#include "dart/collision/fcl/FclCollisionDetector.hpp"
 
 namespace dart {
 namespace collision2 {
 
 //==============================================================================
-template class FCLCollisionGroup<double>;
+template class FclCollisionDetector<double>;
 
 } // namespace collision2
 } // namespace dart

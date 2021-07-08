@@ -32,43 +32,15 @@
 
 #pragma once
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/BackwardCompatibility.hpp"
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
+#include "dart/common/SmartPointer.hpp"
+#include "dart/math/Types.hpp"
 
 namespace dart {
 namespace collision2 {
 
-class DARTCollisionObject : public CollisionObject
-{
-public:
-  const Eigen::Isometry3d& getTransform() const override;
-
-  /// Return FCL collision object
-  dart::collision2::dart::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const dart::collision2::dart::CollisionObject* getFCLCollisionObject() const;
-
-protected:
-  /// Constructor
-  DARTCollisionObject(
-      CollisionGroup* collisionGroup,
-      math::GeometryPtr shape,
-      const std::shared_ptr<dart::collision2::dart::CollisionGeometry>&
-          fclCollGeom);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  DARTCollisionObject(CollisionGroup* collisionGroup, math::GeometryPtr shape);
-
-  /// FCL collision object
-  std::unique_ptr<dart::collision2::dart::CollisionObject> mFCLCollisionObject;
-
-private:
-  friend class FCLCollisionDetector;
-};
+DART_DEFINE_CLASS_POINTERS_T1(FclCollisionDetector);
+DART_DEFINE_CLASS_POINTERS_T1(FclCollisionGroup);
 
 } // namespace collision2
 } // namespace dart

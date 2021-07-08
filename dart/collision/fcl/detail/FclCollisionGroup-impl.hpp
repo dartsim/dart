@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include "dart/collision/fcl/FCLCollisionGroup.hpp"
+#include "dart/collision/fcl/FclCollisionGroup.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/collision/fcl/FclCollisionDetector.hpp"
+#include "dart/collision/fcl/FclCollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/math/geometry/Sphere.hpp"
 
@@ -47,7 +47,7 @@ namespace collision2 {
 template <typename S>
 std::shared_ptr<fcl::CollisionGeometry<S>> createFCLCollisionGeometry(
     const math::ConstGeometryPtr& shape,
-    typename FCLCollisionDetector<S>::PrimitiveShape /*type*/)
+    typename FclCollisionDetector<S>::PrimitiveShape /*type*/)
 {
   fcl::CollisionGeometry<S>* geom = nullptr;
 
@@ -61,7 +61,7 @@ std::shared_ptr<fcl::CollisionGeometry<S>> createFCLCollisionGeometry(
 
 //==============================================================================
 template <typename S>
-FCLCollisionGroup<S>::FCLCollisionGroup(CollisionDetector<S>* collisionDetector)
+FclCollisionGroup<S>::FclCollisionGroup(CollisionDetector<S>* collisionDetector)
   : CollisionGroup<S>(collisionDetector),
     mBroadPhaseAlg(
         new dart::collision2::fcl::DynamicAABBTreeCollisionManager<S>())
@@ -71,7 +71,7 @@ FCLCollisionGroup<S>::FCLCollisionGroup(CollisionDetector<S>* collisionDetector)
 
 //==============================================================================
 template <typename S>
-CollisionObjectPtr<S> FCLCollisionGroup<S>::createCollisionObject(
+CollisionObjectPtr<S> FclCollisionGroup<S>::createCollisionObject(
     math::GeometryPtr shape)
 {
   if (!shape)
@@ -82,26 +82,33 @@ CollisionObjectPtr<S> FCLCollisionGroup<S>::createCollisionObject(
   }
 
   auto fclCollisionGeometry
-      = createFCLCollisionGeometry<S>(shape, FCLCollisionDetector<S>::MESH);
+      = createFCLCollisionGeometry<S>(shape, FclCollisionDetector<S>::MESH);
   // TODO(JS): Check if fclCollisionGeometry is nullptr
 
-  return std::shared_ptr<FCLCollisionObject<S>>(
-      new FCLCollisionObject<S>(this, std::move(shape), fclCollisionGeometry));
+  return std::shared_ptr<FclCollisionObject<S>>(
+      new FclCollisionObject<S>(this, std::move(shape), fclCollisionGeometry));
 }
 
 //==============================================================================
+// template <typename S>
+// FclCollisionDetector<S>* FclCollisionGroup<S>::getFclCollisionDetector()
+//{
+//  return static_cast<FclCollisionDetector<S>*>(this->mCollisionDetector);
+//}
+
+//==============================================================================
 template <typename S>
-FCLCollisionDetector<S>* FCLCollisionGroup<S>::getFCLCollisionDetector()
+FclCollisionDetector<S>* FclCollisionGroup<S>::getFclCollisionDetector()
 {
-  return static_cast<FCLCollisionDetector<S>*>(this->mCollisionDetector);
+  return static_cast<FclCollisionDetector<S>*>(this->mCollisionDetector);
 }
 
 //==============================================================================
 template <typename S>
-const FCLCollisionDetector<S>* FCLCollisionGroup<S>::getFCLCollisionDetector()
+const FclCollisionDetector<S>* FclCollisionGroup<S>::getFclCollisionDetector()
     const
 {
-  return static_cast<const FCLCollisionDetector<S>*>(this->mCollisionDetector);
+  return static_cast<const FclCollisionDetector<S>*>(this->mCollisionDetector);
 }
 
 ////==============================================================================
@@ -161,16 +168,16 @@ const FCLCollisionDetector<S>* FCLCollisionGroup<S>::getFCLCollisionDetector()
 
 //==============================================================================
 template <typename S>
-typename FCLCollisionGroup<S>::FCLCollisionManager*
-FCLCollisionGroup<S>::getFCLCollisionManager()
+typename FclCollisionGroup<S>::FCLCollisionManager*
+FclCollisionGroup<S>::getFCLCollisionManager()
 {
   return mBroadPhaseAlg.get();
 }
 
 //==============================================================================
 template <typename S>
-const typename FCLCollisionGroup<S>::FCLCollisionManager*
-FCLCollisionGroup<S>::getFCLCollisionManager() const
+const typename FclCollisionGroup<S>::FCLCollisionManager*
+FclCollisionGroup<S>::getFCLCollisionManager() const
 {
   return mBroadPhaseAlg.get();
 }

@@ -12,6 +12,14 @@
   * Renamed namespace `utils` to `io: [#1572](https://github.com/dartsim/dart/pull/1572)
   * Increased required minimum version of Eigen to 3.3.4: [#1573](https://github.com/dartsim/dart/pull/1573)
 
+* Migration Guide
+
+  * Use project-level or module-level headers rather than individual DART headers due to the header file restructuring
+
+* Developer Guide
+
+  * Prefer `#pragma once` over the header guards
+
 * GUI
 
   * Upgraded ImGui to 1.82: [#1567](https://github.com/dartsim/dart/pull/1567)

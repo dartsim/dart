@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/fcl/FclCollisionDetector.hpp"
 
 #include <assimp/scene.h>
 
@@ -56,8 +56,8 @@
 //#include "dart/dynamics/SphereShape.hpp"
 //#include "dart/dynamics/VoxelGridShape.hpp"
 //#include "dart/dynamics/fcl/BackwardCompatibility.hpp"
-#include "dart/collision/fcl/FCLCollisionGroup.hpp"
-#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/collision/fcl/FclCollisionGroup.hpp"
+#include "dart/collision/fcl/FclCollisionObject.hpp"
 //#include "dart/dynamics/fcl/tri_tri_intersection_test.hpp"
 
 namespace dart {
@@ -170,9 +170,9 @@ struct FCLCollisionCallbackData
   //  /// mResult is nullptr; otherwise the actual collision result is in
   //  mResult. bool foundCollision;
 
-  //  FCLCollisionDetector<S>::PrimitiveShape primitiveShapeType;
+  //  FclCollisionDetector<S>::PrimitiveShape primitiveShapeType;
 
-  //  FCLCollisionDetector<S>::ContactPointComputationMethod
+  //  FclCollisionDetector<S>::ContactPointComputationMethod
   //      contactPointComputationMethod;
 
   //  /// Whether the collision iteration can stop
@@ -190,10 +190,10 @@ struct FCLCollisionCallbackData
   //  FCLCollisionCallbackData(
   //      const CollisionOption& option,
   //      CollisionResult* result,
-  //      FCLCollisionDetector<S>::PrimitiveShape type =
-  //      FCLCollisionDetector<S>::MESH,
-  //      FCLCollisionDetector<S>::ContactPointComputationMethod method
-  //      = FCLCollisionDetector<S>::DART)
+  //      FclCollisionDetector<S>::PrimitiveShape type =
+  //      FclCollisionDetector<S>::MESH,
+  //      FclCollisionDetector<S>::ContactPointComputationMethod method
+  //      = FclCollisionDetector<S>::DART)
   //    : option(option),
   //      result(result),
   //      foundCollision(false),
@@ -623,37 +623,37 @@ struct FCLCollisionCallbackData
 
 //==============================================================================
 template <typename S>
-typename CollisionDetector<S>::template Registrar<FCLCollisionDetector<S>>
-    FCLCollisionDetector<S>::mRegistrar{
-        FCLCollisionDetector<S>::getStaticType(),
-        []() -> std::shared_ptr<FCLCollisionDetector<S>> {
-          return FCLCollisionDetector<S>::create();
+typename CollisionDetector<S>::template Registrar<FclCollisionDetector<S>>
+    FclCollisionDetector<S>::mRegistrar{
+        FclCollisionDetector<S>::getStaticType(),
+        []() -> std::shared_ptr<FclCollisionDetector<S>> {
+          return FclCollisionDetector<S>::create();
         }};
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<FCLCollisionDetector<S>> FCLCollisionDetector<S>::create()
+std::shared_ptr<FclCollisionDetector<S>> FclCollisionDetector<S>::create()
 {
-  return std::shared_ptr<FCLCollisionDetector>(new FCLCollisionDetector());
+  return std::shared_ptr<FclCollisionDetector>(new FclCollisionDetector());
 }
 
 //==============================================================================
 template <typename S>
-FCLCollisionDetector<S>::~FCLCollisionDetector()
+FclCollisionDetector<S>::~FclCollisionDetector()
 {
   assert(mShapeMap.empty());
 }
 
 //==============================================================================
 template <typename S>
-const std::string& FCLCollisionDetector<S>::getType() const
+const std::string& FclCollisionDetector<S>::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
 template <typename S>
-const std::string& FCLCollisionDetector<S>::getStaticType()
+const std::string& FclCollisionDetector<S>::getStaticType()
 {
   static const std::string type = "fcl";
   return type;
@@ -661,19 +661,19 @@ const std::string& FCLCollisionDetector<S>::getStaticType()
 
 //==============================================================================
 template <typename S>
-CollisionGroupPtr<S> FCLCollisionDetector<S>::createCollisionGroup()
+CollisionGroupPtr<S> FclCollisionDetector<S>::createCollisionGroup()
 {
-  return std::make_shared<FCLCollisionGroup<S>>(this);
+  return std::make_shared<FclCollisionGroup<S>>(this);
 }
 
 //==============================================================================
 template <typename S>
 static bool checkGroupValidity(
-    FCLCollisionDetector<S>* cd, CollisionGroup<S>* group)
+    FclCollisionDetector<S>* cd, CollisionGroup<S>* group)
 {
   if (cd != group->getCollisionDetector())
   {
-    dterr << "[FCLCollisionDetector<S>::collide] Attempting to check collision "
+    dterr << "[FclCollisionDetector<S>::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
 
@@ -686,7 +686,7 @@ static bool checkGroupValidity(
 //==============================================================================
 template <typename S>
 std::shared_ptr<fcl::CollisionGeometry<S>>
-FCLCollisionDetector<S>::createFCLCollisionGeometry(
+FclCollisionDetector<S>::createFCLCollisionGeometry(
     math::ConstGeometryPtr shape)
 {
   //  const std::size_t currentVersion = shape->getVersion();
@@ -716,9 +716,9 @@ FCLCollisionDetector<S>::createFCLCollisionGeometry(
 //==============================================================================
 template <typename S>
 std::shared_ptr<fcl::CollisionGeometry<S>>
-FCLCollisionDetector<S>::createFCLCollisionGeometryImpl(
+FclCollisionDetector<S>::createFCLCollisionGeometryImpl(
     const math::ConstGeometryPtr& shape,
-    FCLCollisionDetector<S>::PrimitiveShape type)
+    FclCollisionDetector<S>::PrimitiveShape type)
 {
   fcl::CollisionGeometry<S>* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -727,7 +727,7 @@ FCLCollisionDetector<S>::createFCLCollisionGeometryImpl(
   {
     const auto radius = sphere->getRadius();
 
-    if (FCLCollisionDetector<S>::PRIMITIVE == type)
+    if (FclCollisionDetector<S>::PRIMITIVE == type)
     {
       geom = new fcl::Sphere<S>(radius);
     }
@@ -742,7 +742,7 @@ FCLCollisionDetector<S>::createFCLCollisionGeometryImpl(
   }
   else
   {
-    dterr << "[FCLCollisionDetector<S>::createFCLCollisionGeometry] "
+    dterr << "[FclCollisionDetector<S>::createFCLCollisionGeometry] "
           << "Attempting to create an unsupported shape type [" << shapeType
           << "]. Creating a sphere with 0.1 radius "
           << "instead.\n";

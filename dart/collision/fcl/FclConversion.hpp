@@ -32,57 +32,36 @@
 
 #pragma once
 
-#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
-#include "dart/collision/fcl/Types.hpp"
+#include "dart/common/SmartPointer.hpp"
 #include "dart/math/Types.hpp"
 
 namespace dart {
 namespace collision2 {
 
-template <typename S_>
-class FCLCollisionObject : public CollisionObject<S_>
+template <typename S>
+class FclTypes
 {
 public:
-  // Type aliases
-  using S = S_;
+#if !FCL_VERSION_AT_LEAST(0, 6, 0)
+  /// Convert Eigen vector3 type to FCL vector3 type
+  static dart::collision2::fcl::Vector3<S> convertVector3(
+      const math::Vector3<S>& vec);
+#endif
+  /// Convert FCL vector3 type to Eigen vector3 type
+  static math::Vector3<S> convertVector3(
+      const dart::collision2::fcl::Vector3<S>& vec);
 
-  const math::Isometry3<S>& getTransform() const override;
+  /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
+  static dart::collision2::fcl::Matrix3<S> convertMatrix3x3(
+      const math::Matrix3<S>& R);
 
-  /// Return FCL collision object
-  dart::collision2::fcl::CollisionObject<S>* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const dart::collision2::fcl::CollisionObject<S>* getFCLCollisionObject()
-      const;
-
-protected:
-  /// Constructor
-  FCLCollisionObject(
-      CollisionGroup<S>* collisionGroup,
-      math::GeometryPtr shape,
-      const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
-          fclCollGeom);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  FCLCollisionObject(
-      CollisionGroup<S>* collisionGroup, math::GeometryPtr shape);
-
-  /// FCL collision object
-  std::unique_ptr<dart::collision2::fcl::CollisionObject<S>>
-      mFCLCollisionObject;
-
-private:
-  friend class FCLCollisionDetector<S>;
-  friend class FCLCollisionGroup<S>;
+  /// Convert FCL transformation type to Eigen transformation type
+  static dart::collision2::fcl::Transform3<S> convertTransform(
+      const math::Isometry3<S>& T);
 };
-
-extern template class FCLCollisionObject<double>;
 
 } // namespace collision2
 } // namespace dart
 
-#include "dart/collision/fcl/detail/FCLCollisionObject-impl.hpp"
+#include "dart/collision/fcl/detail/FclConversion-impl.hpp"

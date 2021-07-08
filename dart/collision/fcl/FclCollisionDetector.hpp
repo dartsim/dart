@@ -35,20 +35,20 @@
 #include <map>
 
 #include "dart/collision/CollisionDetector.hpp"
-#include "dart/collision/fcl/Types.hpp"
+#include "dart/collision/fcl/FclTypes.hpp"
 #include "dart/math/SmartPointer.hpp"
 
 namespace dart {
 namespace collision2 {
 
 template <typename S_>
-class FCLCollisionDetector : public CollisionDetector<S_>
+class FclCollisionDetector : public CollisionDetector<S_>
 {
 public:
   // Type aliases
   using S = S_;
 
-  static std::shared_ptr<FCLCollisionDetector> create();
+  static std::shared_ptr<FclCollisionDetector> create();
 
   /// Whether to use analytic collision checking for primitive shapes.
   ///
@@ -82,7 +82,7 @@ public:
   };
 
   /// Constructor
-  virtual ~FCLCollisionDetector();
+  virtual ~FclCollisionDetector();
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -95,7 +95,7 @@ public:
 
 protected:
   /// Constructor
-  FCLCollisionDetector() = default;
+  FclCollisionDetector() = default;
 
   /// Returns ::fcl::CollisionGeometry associated with give Shape. New
   /// ::fcl::CollisionGeome will be created if it hasn't created yet.
@@ -116,7 +116,7 @@ private:
 
   std::shared_ptr<fcl::CollisionGeometry<S>> createFCLCollisionGeometryImpl(
       const math::ConstGeometryPtr& shape,
-      FCLCollisionDetector::PrimitiveShape type);
+      FclCollisionDetector::PrimitiveShape type);
 
 private:
   using Base = CollisionDetector<S>;
@@ -126,12 +126,12 @@ private:
 
   PrimitiveShape mPrimitiveShapeType;
 
-  static typename Base::template Registrar<FCLCollisionDetector<S>> mRegistrar;
+  static typename Base::template Registrar<FclCollisionDetector<S>> mRegistrar;
 };
 
-extern template class FCLCollisionDetector<double>;
+extern template class FclCollisionDetector<double>;
 
 } // namespace collision2
 } // namespace dart
 
-#include "dart/collision/fcl/detail/FCLCollisionDetector-impl.hpp"
+#include "dart/collision/fcl/detail/FclCollisionDetector-impl.hpp"

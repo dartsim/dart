@@ -32,71 +32,57 @@
 
 #pragma once
 
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/collision/Types.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
-#include "dart/collision/fcl/Types.hpp"
+#include "dart/collision/fcl/FclTypes.hpp"
+#include "dart/math/Types.hpp"
 
 namespace dart {
 namespace collision2 {
 
 template <typename S_>
-class FCLCollisionGroup : public CollisionGroup<S_>
+class FclCollisionObject : public CollisionObject<S_>
 {
 public:
+  // Type aliases
   using S = S_;
-  using FCLCollisionManager
-      = dart::collision2::fcl::DynamicAABBTreeCollisionManager<S>;
 
-  friend class FCLCollisionDetector<S>;
+  const math::Isometry3<S>& getTransform() const override;
 
+  /// Return FCL collision object
+  dart::collision2::fcl::CollisionObject<S>* getFCLCollisionObject();
+
+  /// Return FCL collision object
+  const dart::collision2::fcl::CollisionObject<S>* getFCLCollisionObject()
+      const;
+
+protected:
   /// Constructor
-  FCLCollisionGroup(CollisionDetector<S>* collisionDetector);
+  FclCollisionObject(
+      CollisionGroup<S>* collisionGroup,
+      math::GeometryPtr shape,
+      const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
+          fclCollGeom);
 
-  /// Destructor
-  virtual ~FCLCollisionGroup() = default;
-
-  CollisionObjectPtr<S> createCollisionObject(math::GeometryPtr shape) override;
-
-protected:
-  FCLCollisionDetector<S>* getFCLCollisionDetector();
-  const FCLCollisionDetector<S>* getFCLCollisionDetector() const;
-
-  //  using CollisionGroup::updateEngineData;
-
-  //  // Documentation inherited
-  //  void initializeEngineData() override;
-
-  //  // Documentation inherited
-  //  void addCollisionObjectToEngine(CollisionObject* object) override;
-
-  //  // Documentation inherited
-  //  void addCollisionObjectsToEngine(
-  //      const std::vector<CollisionObject*>& collObjects) override;
-
-  //  // Documentation inherited
-  //  void removeCollisionObjectFromEngine(CollisionObject* object) override;
-
-  //  // Documentation inherited
-  //  void removeAllCollisionObjectsFromEngine() override;
-
-  //  // Documentation inherited
-  //  void updateCollisionGroupEngineData() override;
-
-  /// Return FCL collision manager that is also a broad-phase algorithm
-  FCLCollisionManager* getFCLCollisionManager();
-
-  /// Return FCL collision manager that is also a broad-phase algorithm
-  const FCLCollisionManager* getFCLCollisionManager() const;
+  // Documentation inherited
+  void updateEngineData() override;
 
 protected:
-  /// FCL broad-phase algorithm
-  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
+  FclCollisionObject(
+      CollisionGroup<S>* collisionGroup, math::GeometryPtr shape);
+
+  /// FCL collision object
+  std::unique_ptr<dart::collision2::fcl::CollisionObject<S>>
+      mFCLCollisionObject;
+
+private:
+  friend class FclCollisionDetector<S>;
+  friend class FclCollisionGroup<S>;
 };
 
-extern template class FCLCollisionGroup<double>;
+extern template class FclCollisionObject<double>;
 
 } // namespace collision2
 } // namespace dart
 
-#include "dart/collision/fcl/detail/FCLCollisionGroup-impl.hpp"
+#include "dart/collision/fcl/detail/FclCollisionObject-impl.hpp"

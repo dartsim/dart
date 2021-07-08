@@ -30,13 +30,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#pragma once
+
+#include "dart/collision/fcl/FclConversion.hpp"
 
 namespace dart {
 namespace collision2 {
 
+#if !FCL_VERSION_AT_LEAST(0, 6, 0)
 //==============================================================================
-template class FCLCollisionDetector<double>;
+template <typename S>
+dart::collision2::fcl::Vector3<S> FclTypes<S>::convertVector3(
+    const math::Vector3<S>& vec)
+{
+  return dart::collision2::fcl::Vector3<S>(vec[0], vec[1], vec[2]);
+}
+#endif
+
+//==============================================================================
+template <typename S>
+math::Vector3<S> FclTypes<S>::convertVector3(
+    const dart::collision2::fcl::Vector3<S>& vec)
+{
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return vec;
+#else
+  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
+#endif
+}
+
+//==============================================================================
+template <typename S>
+dart::collision2::fcl::Matrix3<S> FclTypes<S>::convertMatrix3x3(
+    const math::Matrix3<S>& R)
+{
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return R;
+#else
+  return dart::collision2::fcl::Matrix3<S>(
+      R(0, 0),
+      R(0, 1),
+      R(0, 2),
+      R(1, 0),
+      R(1, 1),
+      R(1, 2),
+      R(2, 0),
+      R(2, 1),
+      R(2, 2));
+#endif
+}
+
+//==============================================================================
+template <typename S>
+dart::collision2::fcl::Transform3<S> FclTypes<S>::convertTransform(
+    const math::Isometry3<S>& T)
+{
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return T;
+#else
+  dart::collision2::fcl::Transform3<S> trans;
+
+  trans.setTranslation(convertVector3(T.translation()));
+  trans.setRotation(convertMatrix3x3(T.linear()));
+
+  return trans;
+#endif
+}
 
 } // namespace collision2
 } // namespace dart

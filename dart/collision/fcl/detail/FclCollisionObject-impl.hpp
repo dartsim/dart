@@ -32,16 +32,16 @@
 
 #pragma once
 
-#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/collision/fcl/FclCollisionObject.hpp"
 
-#include "dart/collision/fcl/Types.hpp"
+#include "dart/collision/fcl/FclConversion.hpp"
 
 namespace dart {
 namespace collision2 {
 
 //==============================================================================
 template <typename S>
-const math::Isometry3<S>& FCLCollisionObject<S>::getTransform() const
+const math::Isometry3<S>& FclCollisionObject<S>::getTransform() const
 {
   static math::Isometry3<S> tf;
   return tf;
@@ -50,7 +50,7 @@ const math::Isometry3<S>& FCLCollisionObject<S>::getTransform() const
 //==============================================================================
 template <typename S>
 dart::collision2::fcl::CollisionObject<S>*
-FCLCollisionObject<S>::getFCLCollisionObject()
+FclCollisionObject<S>::getFCLCollisionObject()
 {
   return mFCLCollisionObject.get();
 }
@@ -58,14 +58,14 @@ FCLCollisionObject<S>::getFCLCollisionObject()
 //==============================================================================
 template <typename S>
 const dart::collision2::fcl::CollisionObject<S>*
-FCLCollisionObject<S>::getFCLCollisionObject() const
+FclCollisionObject<S>::getFCLCollisionObject() const
 {
   return mFCLCollisionObject.get();
 }
 
 //==============================================================================
 template <typename S>
-FCLCollisionObject<S>::FCLCollisionObject(
+FclCollisionObject<S>::FclCollisionObject(
     CollisionGroup<S>* collisionGroup,
     math::GeometryPtr shape,
     const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
@@ -80,7 +80,7 @@ FCLCollisionObject<S>::FCLCollisionObject(
 
 //==============================================================================
 template <typename S>
-void FCLCollisionObject<S>::updateEngineData()
+void FclCollisionObject<S>::updateEngineData()
 {
   //  using dart::dynamics::BodyNode;
   //  using dart::dynamics::Shape;
@@ -122,13 +122,13 @@ void FCLCollisionObject<S>::updateEngineData()
   //  }
 
   mFCLCollisionObject->setTransform(
-      FCLTypes<S>::convertTransform(getTransform()));
+      FclTypes<S>::convertTransform(getTransform()));
   mFCLCollisionObject->computeAABB();
 }
 
 //==============================================================================
 template <typename S>
-FCLCollisionObject<S>::FCLCollisionObject(
+FclCollisionObject<S>::FclCollisionObject(
     CollisionGroup<S>* collisionGroup, math::GeometryPtr shape)
   : CollisionObject<S>(collisionGroup, std::move(shape))
 {
