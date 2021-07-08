@@ -633,28 +633,28 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add active joint limit
-  for (auto& jointLimitConstraint : mJointConstraints)
+  for (auto& constraint : mJointConstraints)
   {
-    jointLimitConstraint->update();
+    constraint->update();
 
-    if (jointLimitConstraint->isActive())
-      mActiveConstraints.push_back(jointLimitConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 
-  for (auto& mimicMotorConstraint : mMimicMotorConstraints)
+  for (auto& constraint : mMimicMotorConstraints)
   {
-    mimicMotorConstraint->update();
+    constraint->update();
 
-    if (mimicMotorConstraint->isActive())
-      mActiveConstraints.push_back(mimicMotorConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 
-  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
+  for (auto& constraint : mJointCoulombFrictionConstraints)
   {
-    jointFrictionConstraint->update();
+    constraint->update();
 
-    if (jointFrictionConstraint->isActive())
-      mActiveConstraints.push_back(jointFrictionConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 }
 

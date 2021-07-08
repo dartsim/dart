@@ -49,7 +49,7 @@ void DynamicJointConstraint(py::module& m)
       .def_static(
           "setErrorAllowance",
           +[](double allowance) {
-            dart::constraint::DynamicJointConstraint::setErrorAllowance(
+            dart::dynamics::DynamicJointConstraint::setErrorAllowance(
                 allowance);
           },
           ::py::arg("allowance"))
