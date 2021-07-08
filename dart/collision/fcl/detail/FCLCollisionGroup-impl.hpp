@@ -47,16 +47,16 @@ namespace collision2 {
 template <typename S>
 std::shared_ptr<fcl::CollisionGeometry<S>> createFCLCollisionGeometry(
     const math::ConstGeometryPtr& shape,
-    typename FCLCollisionDetector<S>::PrimitiveShape type)
+    typename FCLCollisionDetector<S>::PrimitiveShape /*type*/)
 {
-  ::fcl::CollisionGeometry* geom = nullptr;
+  ::fcl::CollisionGeometry<S>* geom = nullptr;
 
   if (shape->is<math::Sphered>())
   {
     return nullptr;
   }
 
-  return std::shared_ptr<::fcl::CollisionGeometry>(geom);
+  return std::shared_ptr<::fcl::CollisionGeometry<S>>(geom);
 }
 
 //==============================================================================

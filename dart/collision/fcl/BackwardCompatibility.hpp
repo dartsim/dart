@@ -112,7 +112,6 @@ template <typename S>
 using Halfspace = ::fcl::Halfspace<S>;
 template <typename S>
 using Sphere = ::fcl::Sphere<S>;
-template <typename S>
 #  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 template <typename S>
 using OcTree = ::fcl::OcTree<S>;
