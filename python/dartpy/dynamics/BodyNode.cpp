@@ -1084,6 +1084,13 @@ void BodyNode(py::module& m)
             return self->getExternalForceGlobal();
           })
       .def(
+          "getBodyForce",
+          &dart::dynamics::BodyNode::getBodyForce,
+          "Get spatial body force transmitted from the parent joint. \n\nThe "
+          "spatial body force is transmitted to this BodyNode from the parent "
+          "body through the connecting joint. It is expressed in this "
+          "BodyNode's frame.")
+      .def(
           "isReactive",
           +[](const dart::dynamics::BodyNode* self)
               -> bool { return self->isReactive(); })

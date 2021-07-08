@@ -78,8 +78,8 @@ void Inertia(py::module& sm);
 
 void ConstraintBase(py::module& sm);
 void JointConstraint(py::module& sm);
-void JointLimitConstraint(py::module& sm);
 void JointCoulombFrictionConstraint(py::module& sm);
+void DynamicJointConstraint(py::module& sm);
 
 void BoxedLcpSolver(py::module& sm);
 void DantzigBoxedLcpSolver(py::module& sm);
@@ -134,8 +134,8 @@ void dart_dynamics(py::module& m)
 
   ConstraintBase(sm);
   JointConstraint(sm);
-  JointLimitConstraint(sm);
   JointCoulombFrictionConstraint(sm);
+  DynamicJointConstraint(sm);
 
   BoxedLcpSolver(sm);
   DantzigBoxedLcpSolver(sm);

@@ -43,8 +43,8 @@
 #include "dart/dynamics/Contact.hpp"
 #include "dart/dynamics/ContactConstraint.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/JointConstraint.hpp"
 #include "dart/dynamics/JointCoulombFrictionConstraint.hpp"
-#include "dart/dynamics/JointLimitConstraint.hpp"
 #include "dart/dynamics/LCPSolver.hpp"
 #include "dart/dynamics/MimicMotorConstraint.hpp"
 #include "dart/dynamics/ServoMotorConstraint.hpp"
@@ -588,8 +588,7 @@ void ConstraintSolver::updateConstraints()
   // Update automatic constraints: joint constraints
   //----------------------------------------------------------------------------
   // Destroy previous joint constraints
-  mJointLimitConstraints.clear();
-  mServoMotorConstraints.clear();
+  mJointConstraints.clear();
   mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
@@ -615,16 +614,10 @@ void ConstraintSolver::updateConstraints()
         }
       }
 
-      if (joint->areLimitsEnforced())
+      if (joint->areLimitsEnforced()
+          || joint->getActuatorType() == dynamics::Joint::SERVO)
       {
-        mJointLimitConstraints.push_back(
-            std::make_shared<JointLimitConstraint>(joint));
-      }
-
-      if (joint->getActuatorType() == dynamics::Joint::SERVO)
-      {
-        mServoMotorConstraints.push_back(
-            std::make_shared<ServoMotorConstraint>(joint));
+        mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
       if (joint->getActuatorType() == dynamics::Joint::MIMIC
@@ -640,36 +633,28 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add active joint limit
-  for (auto& jointLimitConstraint : mJointLimitConstraints)
+  for (auto& constraint : mJointConstraints)
   {
-    jointLimitConstraint->update();
+    constraint->update();
 
-    if (jointLimitConstraint->isActive())
-      mActiveConstraints.push_back(jointLimitConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 
-  for (auto& servoMotorConstraint : mServoMotorConstraints)
+  for (auto& constraint : mMimicMotorConstraints)
   {
-    servoMotorConstraint->update();
+    constraint->update();
 
-    if (servoMotorConstraint->isActive())
-      mActiveConstraints.push_back(servoMotorConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 
-  for (auto& mimicMotorConstraint : mMimicMotorConstraints)
+  for (auto& constraint : mJointCoulombFrictionConstraints)
   {
-    mimicMotorConstraint->update();
+    constraint->update();
 
-    if (mimicMotorConstraint->isActive())
-      mActiveConstraints.push_back(mimicMotorConstraint);
-  }
-
-  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
-  {
-    jointFrictionConstraint->update();
-
-    if (jointFrictionConstraint->isActive())
-      mActiveConstraints.push_back(jointFrictionConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 }
 

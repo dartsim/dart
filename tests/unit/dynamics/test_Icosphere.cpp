@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,47 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
-#define DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
+#include <gtest/gtest.h>
+#include "dart/math/Icosphere.hpp"
+#include "dart/test/TestHelpers.hpp"
 
-// Must be included before any Bullet headers.
-#include "dart/config.hpp"
+using namespace dart;
+using namespace math;
 
-#include <btBulletCollisionCommon.h>
-
-#include "dart/dynamics/CollisionOption.hpp"
-#include "dart/dynamics/CollisionResult.hpp"
-
-namespace dart {
-namespace collision {
-namespace detail {
-
-struct BulletOverlapFilterCallback : public btOverlapFilterCallback
+//==============================================================================
+TEST(IcosphereTests, NumOfVerticesAndTriangles)
 {
-  // Constructor
-  explicit BulletOverlapFilterCallback(
-      const std::shared_ptr<CollisionFilter>& filter = nullptr,
-      CollisionGroup* group1 = nullptr,
-      CollisionGroup* group2 = nullptr);
+  const double radius = 5.0;
 
-  /// Returns true when pairs need collision
-  bool needBroadphaseCollision(
-      btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const override;
+  for (auto i = 0; i < 8; ++i)
+  {
+    const auto subdivisions = i;
+    const auto icosphere = Icosphered(radius, subdivisions);
+    const auto& vertices = icosphere.getVertices();
+    const auto& triangles = icosphere.getTriangles();
 
-  /// True if at least one contact is found. This flag is used only when
-  /// mResult is nullptr; otherwise the actual collision result is in mResult.
-  bool foundCollision;
+    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
+    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
 
-  /// Whether the collision iteration can stop
-  mutable bool done;
+    for (const auto& v : vertices)
+    {
+      EXPECT_DOUBLE_EQ(v.norm(), radius);
+    }
+  }
+}
 
-  std::shared_ptr<CollisionFilter> filter;
-  const CollisionGroup* group1;
-  const CollisionGroup* group2;
-};
+//==============================================================================
+TEST(IcosphereTests, Constructor)
+{
+  auto s1 = Icosphered(1, 0);
+  EXPECT_FALSE(s1.isEmpty());
+  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
+  EXPECT_EQ(s1.getNumSubdivisions(), 0);
 
-} // namespace detail
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
+  auto s2 = Icosphered(2, 3);
+  EXPECT_FALSE(s2.isEmpty());
+  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
+  EXPECT_EQ(s2.getNumSubdivisions(), 3);
+}
