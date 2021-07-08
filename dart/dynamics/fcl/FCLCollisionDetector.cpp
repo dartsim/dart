@@ -1584,17 +1584,17 @@ int FFtest(
     fcl::Vector3* res2)
 {
   float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
-  SET(U0, r1);
-  SET(U1, r2);
-  SET(U2, r3);
-  SET(V0, R1);
-  SET(V1, R2);
-  SET(V2, R3);
+  DART_SET(U0, r1);
+  DART_SET(U1, r2);
+  DART_SET(U2, r3);
+  DART_SET(V0, R1);
+  DART_SET(V1, R2);
+  DART_SET(V2, R3);
 
   int contactResult = tri_tri_intersect(V0, V1, V2, U0, U1, U2, RES1, RES2);
 
-  SET((*res1), RES1);
-  SET((*res2), RES2);
+  DART_SET((*res1), RES1);
+  DART_SET((*res2), RES2);
 
   return contactResult;
 }

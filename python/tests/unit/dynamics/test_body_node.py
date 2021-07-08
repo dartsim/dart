@@ -11,6 +11,8 @@ def test_basic():
 
     for i in range(kr5.getNumBodyNodes()):
         body = kr5.getBodyNode(i)
+        body_force = body.getBodyForce()
+        assert body_force.size == 6
         bodyPtr = body.getBodyNodePtr()
         assert body == bodyPtr
         assert body.getName() == bodyPtr.getName()

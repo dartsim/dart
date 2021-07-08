@@ -42,7 +42,7 @@ namespace dynamics {
 
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
-  : JointConstraint(_body),
+  : DynamicJointConstraint(_body),
     mRelativeTransform(_body->getTransform()),
     mViolation(Eigen::Vector6d::Zero()),
     mJacobian1(Eigen::Matrix6d::Identity()),
@@ -61,7 +61,7 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(
     dynamics::BodyNode* _body1, dynamics::BodyNode* _body2)
-  : JointConstraint(_body1, _body2),
+  : DynamicJointConstraint(_body1, _body2),
     mRelativeTransform(
         _body2->getTransform().inverse() * _body1->getTransform()),
     mViolation(Eigen::Vector6d::Zero()),

@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,37 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
-#define DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
-
-#include <Eigen/Dense>
+#ifndef DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
+#define DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 
 #include "dart/dynamics/ConstraintBase.hpp"
 
 namespace dart {
-
 namespace dynamics {
+
 class BodyNode;
-class Joint;
-} // namespace dynamics
 
-namespace dynamics {
-
-/// JointLimitConstraint handles joint position and velocity limits
-class JointLimitConstraint : public ConstraintBase
+/// Base class for joint constraints that are being created or destructed during
+/// simulation.
+class DynamicJointConstraint : public ConstraintBase
 {
 public:
-  /// Constructor
-  explicit JointLimitConstraint(dynamics::Joint* joint);
+  /// Contructor
+  explicit DynamicJointConstraint(dynamics::BodyNode* body);
+
+  /// Contructor
+  DynamicJointConstraint(dynamics::BodyNode* body1, dynamics::BodyNode* body2);
 
   /// Destructor
-  ~JointLimitConstraint() override = default;
-
-  // Documentation inherited
-  const std::string& getType() const override;
-
-  /// Returns constraint type for this class.
-  static const std::string& getStaticType();
+  ~DynamicJointConstraint() override;
 
   //----------------------------------------------------------------------------
   // Property settings
@@ -90,78 +82,18 @@ public:
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
 
-  //----------------------------------------------------------------------------
-  // Friendship
-  //----------------------------------------------------------------------------
+  /// Get the first BodyNode that this constraint is associated with
+  dynamics::BodyNode* getBodyNode1() const;
 
-  friend class ConstraintSolver;
-  friend class ConstrainedGroup;
+  /// Get the second BodyNode that this constraint is associated with
+  dynamics::BodyNode* getBodyNode2() const;
 
 protected:
-  //----------------------------------------------------------------------------
-  // Constraint virtual functions
-  //----------------------------------------------------------------------------
+  /// First body node
+  dynamics::BodyNode* mBodyNode1;
 
-  // Documentation inherited
-  void update() override;
-
-  // Documentation inherited
-  void getInformation(ConstraintInfo* lcp) override;
-
-  // Documentation inherited
-  void applyUnitImpulse(std::size_t index) override;
-
-  // Documentation inherited
-  void getVelocityChange(double* delVel, bool withCfm) override;
-
-  // Documentation inherited
-  void excite() override;
-
-  // Documentation inherited
-  void unexcite() override;
-
-  // Documentation inherited
-  void applyImpulse(double* lambda) override;
-
-  // Documentation inherited
-  dynamics::SkeletonPtr getRootSkeleton() const override;
-
-  // Documentation inherited
-  bool isActive() const override;
-
-private:
-  /// The Joint that this constraint is associated with.
-  dynamics::Joint* mJoint;
-
-  /// The child BodyNode of the Joint that this constraint is associated with.
-  dynamics::BodyNode* mBodyNode;
-
-  /// Index of applied impulse
-  std::size_t mAppliedImpulseIndex;
-
-  /// Life time of constraint of each DOF.
-  Eigen::Matrix<std::size_t, 6, 1> mLifeTime;
-
-  /// Whether joint value exceeds the position limit.
-  Eigen::Matrix<bool, 6, 1> mIsPositionLimitViolated;
-
-  /// Whether joint value exceeds the velocity limit.
-  Eigen::Matrix<bool, 6, 1> mIsVelocityLimitViolated;
-
-  /// How much current joint values are exceeded from the limits.
-  Eigen::Matrix<double, 6, 1> mViolation;
-
-  /// The desired delta velocity to satisfy the joint limit constraint.
-  Eigen::Matrix<double, 6, 1> mNegativeVel;
-
-  /// Constraint impulse of the previous step.
-  Eigen::Matrix<double, 6, 1> mOldX;
-
-  /// Upper limit of the constraint impulse.
-  Eigen::Matrix<double, 6, 1> mUpperBound;
-
-  /// Lower limit of the constraint impulse.
-  Eigen::Matrix<double, 6, 1> mLowerBound;
+  /// Second body node
+  dynamics::BodyNode* mBodyNode2;
 
   /// Global constraint error allowance
   static double mErrorAllowance;
@@ -182,4 +114,4 @@ private:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
+#endif // DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
