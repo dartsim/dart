@@ -286,11 +286,11 @@ protected:
     // Compute the offset where the JointConstraint should be located
     Eigen::Vector3d offset = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
     offset = tail->getWorldTransform() * offset;
-    auto dynamics = std::make_shared<dart::dynamics::BallJointConstraint>(
+    auto constraint = std::make_shared<dart::dynamics::BallJointConstraint>(
         head, tail, offset);
 
-    mWorld->getConstraintSolver()->addConstraint(dynamics);
-    mJointConstraints.push_back(dynamics);
+    mWorld->getConstraintSolver()->addConstraint(constraint);
+    mJointConstraints.push_back(constraint);
   }
 
   /// Remove a Skeleton and get rid of the constraint that was associated with
@@ -302,10 +302,10 @@ protected:
       const dart::dynamics::DynamicJointConstraintPtr& constraint
           = mJointConstraints[i];
 
-      if (dynamics->getBodyNode1()->getSkeleton() == skel
-          || dynamics->getBodyNode2()->getSkeleton() == skel)
+      if (constraint->getBodyNode1()->getSkeleton() == skel
+          || constraint->getBodyNode2()->getSkeleton() == skel)
       {
-        mWorld->getConstraintSolver()->removeConstraint(dynamics);
+        mWorld->getConstraintSolver()->removeConstraint(constraint);
         mJointConstraints.erase(mJointConstraints.begin() + i);
         break; // There should only be one constraint per skeleton
       }
