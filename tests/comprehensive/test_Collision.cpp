@@ -375,17 +375,7 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(group1->collide(group3.get()));
   EXPECT_TRUE(group2->collide(group3.get()));
   EXPECT_TRUE(group23->collide());
-#if DART_HAVE_BULLET
-  if (cd->getType() == BulletCollisionDetector::getStaticType())
-  {
-    dtwarn << "Skipping group-group test for 'bullet' collision detector. "
-           << "Please see Issue #717 for the detail.\n";
-  }
-  else
-#endif
-  {
-    EXPECT_FALSE(group1->collide(group23.get()));
-  }
+  EXPECT_FALSE(group1->collide(group23.get()));
 }
 
 //==============================================================================

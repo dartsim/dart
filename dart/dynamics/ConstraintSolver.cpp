@@ -588,8 +588,7 @@ void ConstraintSolver::updateConstraints()
   // Update automatic constraints: joint constraints
   //----------------------------------------------------------------------------
   // Destroy previous joint constraints
-  mJointLimitConstraints.clear();
-  mServoMotorConstraints.clear();
+  mJointConstraints.clear();
   mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
@@ -615,16 +614,10 @@ void ConstraintSolver::updateConstraints()
         }
       }
 
-      if (joint->areLimitsEnforced())
+      if (joint->areLimitsEnforced()
+          || joint->getActuatorType() == dynamics::Joint::SERVO)
       {
-        mJointLimitConstraints.push_back(
-            std::make_shared<JointLimitConstraint>(joint));
-      }
-
-      if (joint->getActuatorType() == dynamics::Joint::SERVO)
-      {
-        mServoMotorConstraints.push_back(
-            std::make_shared<ServoMotorConstraint>(joint));
+        mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
       if (joint->getActuatorType() == dynamics::Joint::MIMIC
@@ -640,20 +633,12 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add active joint limit
-  for (auto& jointLimitConstraint : mJointLimitConstraints)
+  for (auto& jointLimitConstraint : mJointConstraints)
   {
     jointLimitConstraint->update();
 
     if (jointLimitConstraint->isActive())
       mActiveConstraints.push_back(jointLimitConstraint);
-  }
-
-  for (auto& servoMotorConstraint : mServoMotorConstraints)
-  {
-    servoMotorConstraint->update();
-
-    if (servoMotorConstraint->isActive())
-      mActiveConstraints.push_back(servoMotorConstraint);
   }
 
   for (auto& mimicMotorConstraint : mMimicMotorConstraints)

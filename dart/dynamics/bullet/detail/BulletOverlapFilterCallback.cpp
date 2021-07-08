@@ -41,8 +41,14 @@ namespace detail {
 
 //==============================================================================
 BulletOverlapFilterCallback::BulletOverlapFilterCallback(
-    const std::shared_ptr<CollisionFilter>& filter)
-  : foundCollision(false), done(false), filter(filter)
+    const std::shared_ptr<CollisionFilter>& filter,
+    CollisionGroup* group1,
+    CollisionGroup* group2)
+  : foundCollision(false),
+    done(false),
+    filter(filter),
+    group1(group1),
+    group2(group2)
 {
   // Do nothing
 }
@@ -65,7 +71,7 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
 
   bool collide = collide1 & collide2;
 
-  if (collide && filter)
+  if (collide)
   {
     auto object0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
     auto object1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
@@ -76,7 +82,23 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
     const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    return !filter->ignoresCollision(collObj0, collObj1);
+    // Filter out if the two ShapeFrames are in the same group
+    if (group1 && group2)
+    {
+      const dynamics::ShapeFrame* shapeFrame0 = collObj0->getShapeFrame();
+      const dynamics::ShapeFrame* shapeFrame1 = collObj1->getShapeFrame();
+      if (group1->hasShapeFrame(shapeFrame0)
+          && group1->hasShapeFrame(shapeFrame1))
+        return false;
+      if (group2->hasShapeFrame(shapeFrame0)
+          && group2->hasShapeFrame(shapeFrame1))
+        return false;
+    }
+
+    if (filter)
+    {
+      return !filter->ignoresCollision(collObj0, collObj1);
+    }
   }
 
   return collide;

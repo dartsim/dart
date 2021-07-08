@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="simple_joint_test">
+    <pose>10 10 2 0  0 0</pose>
+    <link name="base">
+      <inertial>
+        <mass>100</mass>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 -1.57 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+    <link name="bar">
+      <pose>0 0 -1 0 0 0</pose>
+      <inertial>
+        <mass>1</mass>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="j0" type="fixed">
+      <parent>world</parent>
+      <child>base</child>
+    </joint>
+    <joint name="j1" type="revolute">
+      <pose>0 0 1 0 0 0</pose>
+      <parent>base</parent>
+      <child>bar</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

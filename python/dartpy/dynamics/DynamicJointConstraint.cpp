@@ -39,57 +39,105 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void JointConstraint(py::module& m)
+void DynamicJointConstraint(py::module& m)
 {
   ::py::class_<
-      dart::dynamics::JointConstraint,
+      dart::dynamics::DynamicJointConstraint,
       dart::dynamics::ConstraintBase,
-      std::shared_ptr<dart::dynamics::JointConstraint>>(m, "JointConstraint")
-      .def(::py::init<dart::dynamics::Joint*>(), ::py::arg("joint"))
+      std::shared_ptr<dart::dynamics::DynamicJointConstraint>>(
+      m, "DynamicJointConstraint")
       .def_static(
           "setErrorAllowance",
           +[](double allowance) {
-            dart::dynamics::JointConstraint::setErrorAllowance(allowance);
+            dart::constraint::DynamicJointConstraint::setErrorAllowance(
+                allowance);
           },
           ::py::arg("allowance"))
       .def_static(
           "getErrorAllowance",
           +[]() -> double {
-            return dart::dynamics::JointConstraint::getErrorAllowance();
+            return dart::dynamics::DynamicJointConstraint::
+                getErrorAllowance();
           })
       .def_static(
           "setErrorReductionParameter",
           +[](double erp) {
-            dart::dynamics::JointConstraint::setErrorReductionParameter(erp);
+            dart::dynamics::DynamicJointConstraint::
+                setErrorReductionParameter(erp);
           },
           ::py::arg("erp"))
       .def_static(
           "getErrorReductionParameter",
           +[]() -> double {
-            return dart::dynamics::JointConstraint::
+            return dart::dynamics::DynamicJointConstraint::
                 getErrorReductionParameter();
           })
       .def_static(
           "setMaxErrorReductionVelocity",
           +[](double erv) {
-            dart::dynamics::JointConstraint::setMaxErrorReductionVelocity(erv);
+            dart::dynamics::DynamicJointConstraint::
+                setMaxErrorReductionVelocity(erv);
           },
           ::py::arg("erv"))
       .def_static(
           "getMaxErrorReductionVelocity",
           +[]() -> double {
-            return dart::dynamics::JointConstraint::
+            return dart::dynamics::DynamicJointConstraint::
                 getMaxErrorReductionVelocity();
           })
       .def_static(
           "setConstraintForceMixing",
           +[](double cfm) {
-            dart::dynamics::JointConstraint::setConstraintForceMixing(cfm);
+            dart::dynamics::DynamicJointConstraint::setConstraintForceMixing(
+                cfm);
           },
           ::py::arg("cfm"))
       .def_static("getConstraintForceMixing", +[]() -> double {
-        return dart::dynamics::JointConstraint::getConstraintForceMixing();
+        return dart::dynamics::DynamicJointConstraint::
+            getConstraintForceMixing();
       });
+
+  ::py::class_<
+      dart::dynamics::BallJointConstraint,
+      dart::dynamics::DynamicJointConstraint,
+      std::shared_ptr<dart::dynamics::BallJointConstraint>>(
+      m, "BallJointConstraint")
+      .def(
+          ::py::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
+          ::py::arg("body"),
+          ::py::arg("jointPos"))
+      .def(
+          ::py::init<
+              dart::dynamics::BodyNode*,
+              dart::dynamics::BodyNode*,
+              const Eigen::Vector3d&>(),
+          ::py::arg("body1"),
+          ::py::arg("body2"),
+          ::py::arg("jointPos"))
+      .def_static("getStaticType", +[]() -> std::string {
+        return dart::dynamics::BallJointConstraint::getStaticType();
+      });
+
+  ::py::class_<
+      dart::dynamics::WeldJointConstraint,
+      dart::dynamics::DynamicJointConstraint,
+      std::shared_ptr<dart::dynamics::WeldJointConstraint>>(
+      m, "WeldJointConstraint")
+      .def(::py::init<dart::dynamics::BodyNode*>(), ::py::arg("body"))
+      .def(
+          ::py::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
+          ::py::arg("body1"),
+          ::py::arg("body2"))
+      .def_static(
+          "getStaticType",
+          +[]() -> std::string {
+            return dart::dynamics::WeldJointConstraint::getStaticType();
+          })
+      .def(
+          "setRelativeTransform",
+          +[](dart::dynamics::WeldJointConstraint* self,
+              const Eigen::Isometry3d& tf) { self->setRelativeTransform(tf); },
+          ::py::arg("tf"));
 }
 
 } // namespace python
