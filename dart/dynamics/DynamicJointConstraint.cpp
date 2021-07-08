@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DynamicJointConstraint.hpp"
+#include "dart/dynamics/DynamicJointConstraint.hpp"
 
 #include <cassert>
 
@@ -42,7 +42,7 @@
 #define DART_CFM 1e-9
 
 namespace dart {
-namespace constraint {
+namespace dynamics {
 
 double DynamicJointConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double DynamicJointConstraint::mErrorReductionParameter = DART_ERP;
@@ -172,5 +172,5 @@ dynamics::BodyNode* DynamicJointConstraint::getBodyNode2() const
   return mBodyNode2;
 }
 
-} // namespace constraint
+} // namespace dynamics
 } // namespace dart

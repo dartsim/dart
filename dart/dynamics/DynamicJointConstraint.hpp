@@ -33,15 +33,12 @@
 #ifndef DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 
-#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/dynamics/ConstraintBase.hpp"
 
 namespace dart {
-
 namespace dynamics {
-class BodyNode;
-} // namespace dynamics
 
-namespace constraint {
+class BodyNode;
 
 /// Base class for joint constraints that are being created or destructed during
 /// simulation.
@@ -114,7 +111,7 @@ protected:
   static double mConstraintForceMixing;
 };
 
-} // namespace constraint
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_

@@ -56,14 +56,13 @@ void DynamicJointConstraint(py::module& m)
       .def_static(
           "getErrorAllowance",
           +[]() -> double {
-            return dart::dynamics::DynamicJointConstraint::
-                getErrorAllowance();
+            return dart::dynamics::DynamicJointConstraint::getErrorAllowance();
           })
       .def_static(
           "setErrorReductionParameter",
           +[](double erp) {
-            dart::dynamics::DynamicJointConstraint::
-                setErrorReductionParameter(erp);
+            dart::dynamics::DynamicJointConstraint::setErrorReductionParameter(
+                erp);
           },
           ::py::arg("erp"))
       .def_static(

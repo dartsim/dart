@@ -33,6 +33,7 @@
 #include "dart/dynamics/bullet/detail/BulletOverlapFilterCallback.hpp"
 
 #include "dart/dynamics/CollisionFilter.hpp"
+#include "dart/dynamics/CollisionGroup.hpp"
 #include "dart/dynamics/bullet/BulletCollisionObject.hpp"
 
 namespace dart {
