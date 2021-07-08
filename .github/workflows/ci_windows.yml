@@ -49,4 +49,4 @@ jobs:
             -DDART_VERBOSE=ON ^
             -DDART_SKIP_GLUT=ON
           cmake --build . --config %BUILD_TYPE% --target ALL_BUILD --parallel
-          ctest --output-on-fauilure -C %BUILD_TYPE%
+          ctest --rerun-failed --output-on-failure -C %BUILD_TYPE%
