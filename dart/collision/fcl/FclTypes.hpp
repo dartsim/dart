@@ -39,8 +39,8 @@
 namespace dart {
 namespace collision2 {
 
-DART_DEFINE_CLASS_POINTERS_T1(FclCollisionDetector);
-DART_DEFINE_CLASS_POINTERS_T1(FclCollisionGroup);
+DART_DEFINE_CLASS_POINTERS_T1(FclEngine);
+DART_DEFINE_CLASS_POINTERS_T1(FclGroup);
 
 } // namespace collision2
 } // namespace dart

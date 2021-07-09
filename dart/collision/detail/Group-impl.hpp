@@ -30,12 +30,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#pragma once
+
+#include "dart/collision/Group.hpp"
+
+#include <cassert>
+
+#include "dart/math/geometry/Sphere.hpp"
 
 namespace dart {
 namespace collision2 {
 
-template class CollisionObject<double>;
+//==============================================================================
+template <typename S>
+Group<S>::Group(Engine<S>* collisionDetector)
+  : mEngine(collisionDetector), mUpdateAutomatically(true)
+{
+  assert(mEngine);
+}
+
+//==============================================================================
+template <typename S>
+Engine<S>* Group<S>::getEngine()
+{
+  return mEngine;
+}
+
+//==============================================================================
+template <typename S>
+const Engine<S>* Group<S>::getEngine() const
+{
+  return mEngine;
+}
+
+//==============================================================================
+template <typename S>
+template <typename... Args>
+ObjectPtr<S> Group<S>::createSphereObject(Args&&... args)
+{
+  auto geometry
+      = std::make_shared<math::Sphere<S>>(std::forward<Args>(args)...);
+  return createObject(std::move(geometry));
+}
 
 } // namespace collision2
 } // namespace dart

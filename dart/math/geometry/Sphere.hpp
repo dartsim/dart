@@ -59,7 +59,7 @@ public:
   /// Constructor
   ///
   /// \param[in] radius: The radius of this sphere to set.
-  explicit Sphere(S radius);
+  explicit Sphere(S radius = 0.5);
 
   // Documentation inherited
   const std::string& getType() const override;

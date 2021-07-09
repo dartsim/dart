@@ -39,27 +39,25 @@
 namespace dart {
 namespace collision2 {
 
-template <typename S>
-class FclTypes
-{
-public:
 #if !FCL_VERSION_AT_LEAST(0, 6, 0)
-  /// Convert Eigen vector3 type to FCL vector3 type
-  static dart::collision2::fcl::Vector3<S> convertVector3(
-      const math::Vector3<S>& vec);
+/// Convert Eigen vector3 type to FCL vector3 type
+template <typename S>
+dart::collision2::fcl::Vector3<S> toVector3(const math::Vector3<S>& vec);
 #endif
-  /// Convert FCL vector3 type to Eigen vector3 type
-  static math::Vector3<S> convertVector3(
-      const dart::collision2::fcl::Vector3<S>& vec);
+/// Convert FCL vector3 type to Eigen vector3 type
+template <typename S>
+math::Vector3<S> toVector3(const dart::collision2::fcl::Vector3<S>& vec);
 
-  /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static dart::collision2::fcl::Matrix3<S> convertMatrix3x3(
-      const math::Matrix3<S>& R);
+/// Convert FCL matrix3x3 type to Eigen matrix3x3 type
+template <typename S>
+dart::collision2::fcl::Matrix3<S> toMatrix3x3(const math::Matrix3<S>& R);
 
-  /// Convert FCL transformation type to Eigen transformation type
-  static dart::collision2::fcl::Transform3<S> convertTransform(
-      const math::Isometry3<S>& T);
-};
+/// Convert FCL transformation type to Eigen transformation type
+template <typename S>
+dart::collision2::fcl::Transform3<S> toTransform(const math::Isometry3<S>& T);
+
+template <typename S>
+math::Isometry3<S> toIsometry3(const dart::collision2::fcl::Transform3<S>& T);
 
 } // namespace collision2
 } // namespace dart

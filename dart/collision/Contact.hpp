@@ -60,10 +60,10 @@ struct Contact
   math::Vector3<S> force;
 
   /// First colliding collision object
-  CollisionObject<S>* collisionObject1;
+  Object<S>* collisionObject1;
 
   /// Second colliding collision object
-  CollisionObject<S>* collisionObject2;
+  Object<S>* collisionObject2;
 
   /// Penetration depth
   S penetrationDepth;

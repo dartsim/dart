@@ -32,42 +32,74 @@
 
 #pragma once
 
-#include "dart/collision/CollisionGroup.hpp"
-
-#include <cassert>
+#include "dart/collision/Engine.hpp"
 
 namespace dart {
 namespace collision2 {
 
 //==============================================================================
 template <typename S>
-CollisionGroup<S>::CollisionGroup(CollisionDetector<S>* collisionDetector)
-  : mCollisionDetector(collisionDetector), mUpdateAutomatically(true)
+std::unordered_map<std::string, EnginePtr<S>> Engine<S>::mEngines;
+
+//==============================================================================
+template <typename S>
+EnginePtr<S> Engine<S>::create(const std::string& engineName)
 {
-  assert(mCollisionDetector);
+  const auto& result = mEngines.find(engineName);
+  if (result != mEngines.end())
+  {
+    return result->second;
+  }
+
+  auto factory = SingletonFactory::getSingletonPtr();
+  auto newEngine = factory->create(engineName);
+
+  if (!newEngine)
+  {
+    dtwarn << "Failed to create a collision detector with the given engine "
+           << "name '" << engineName << "'.\n";
+    return nullptr;
+  }
+
+  mEngines[engineName] = newEngine;
+
+  return newEngine;
 }
 
 //==============================================================================
 template <typename S>
-CollisionDetector<S>* CollisionGroup<S>::getCollisionDetector()
+Engine<S>::~Engine()
 {
-  return mCollisionDetector;
-}
-
-//==============================================================================
-template <typename S>
-const CollisionDetector<S>* CollisionGroup<S>::getCollisionDetector() const
-{
-  return mCollisionDetector;
+  // Do nothing
 }
 
 //==============================================================================
 template <typename S>
 template <typename GeometryType, typename... Args>
-CollisionObjectPtr<S> CollisionGroup<S>::createCollisionObject(Args&&... args)
+ObjectPtr<S> Engine<S>::createObject(Args&&... args)
 {
-  auto shape = std::make_shared<GeometryType>(std::forward<Args>(args)...);
-  return createCollisionObject(std::move(shape));
+  return getDefaultGroup()->template createObject<GeometryType>(
+      std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename S>
+template <typename... Args>
+ObjectPtr<S> Engine<S>::createSphereObject(Args&&... args)
+{
+  return getDefaultGroup()->createSphereObject(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename S>
+Group<S>* Engine<S>::getDefaultGroup()
+{
+  if (!mDefaultGroup)
+  {
+    mDefaultGroup = createGroup();
+  }
+
+  return mDefaultGroup.get();
 }
 
 } // namespace collision2

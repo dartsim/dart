@@ -30,13 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FclCollisionGroup.hpp"
+#include <gtest/gtest.h>
 
-namespace dart {
-namespace collision2 {
+#include <dart/collision/collision.hpp>
+#include <dart/math/math.hpp>
+
+using namespace dart;
 
 //==============================================================================
-template class FclCollisionGroup<double>;
+template <typename CollisionDetectorT>
+void testCollide(const CollisionDetectorT& cd)
+{
+  if (!cd)
+  {
+    return;
+  }
 
-} // namespace collision2
-} // namespace dart
+  auto sphere1 = cd->createSphereObject();
+  auto sphere2 = cd->createSphereObject();
+  ASSERT_TRUE(sphere1);
+  ASSERT_TRUE(sphere2);
+
+  sphere1->setTranslation(math::Vector3<double>(-1, 0, 0));
+  sphere2->setTranslation(math::Vector3<double>(1, 0, 0));
+  EXPECT_FALSE(collision2::collide(sphere1, sphere2));
+
+  sphere1->setTranslation(math::Vector3<double>(-0.25, 0, 0));
+  sphere2->setTranslation(math::Vector3<double>(0.25, 0, 0));
+  EXPECT_TRUE(collision2::collide(sphere1, sphere2));
+}
+
+//==============================================================================
+TEST(NarrowPhaseTest, Collide)
+{
+  testCollide(collision2::Engine<double>::create("fcl"));
+}

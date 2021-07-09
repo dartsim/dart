@@ -32,56 +32,81 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+#include <unordered_map>
+
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/Object.hpp"
 #include "dart/collision/Types.hpp"
-#include "dart/math/geometry/Geometry.hpp"
+#include "dart/common/Factory.hpp"
+#include "dart/math/SmartPointer.hpp"
 
 namespace dart {
 namespace collision2 {
 
 template <typename S_>
-class CollisionGroup
+class Engine
 {
 public:
   // Type aliases
   using S = S_;
 
+  /// Creates a new collision detector.
+  ///
+  /// @param[in] engineName: Name of the underlying collision detection engine
+  /// to create.
+  static EnginePtr<S> create(const std::string& engineName);
+
   /// Destructor
-  virtual ~CollisionGroup() = default;
+  virtual ~Engine();
 
-  /// Return collision detection engine associated with this CollisionGroup
-  CollisionDetector<S>* getCollisionDetector();
+  /// Returns collision detection engine type as a std::string.
+  virtual const std::string& getType() const = 0;
 
-  /// Return (const) collision detection engine associated with this
-  /// CollisionGroup
-  const CollisionDetector<S>* getCollisionDetector() const;
-
-  /// Creates a collision object.
-  virtual CollisionObjectPtr<S> createCollisionObject(math::GeometryPtr shape)
-      = 0;
+  /// Creates a collision group.
+  virtual GroupPtr<S> createGroup() = 0;
 
   template <typename GeometryType, typename... Args>
-  CollisionObjectPtr<S> createCollisionObject(Args&&... args);
+  ObjectPtr<S> createObject(Args&&... args);
 
+  template <typename... Args>
+  ObjectPtr<S> createSphereObject(Args&&... args);
+
+  // TODO(JS): Add options and results as parameters
+  virtual bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2) = 0;
+
+  // TODO(JS): Add distance() and raycast()
 protected:
-  /// Constructor
-  ///
-  /// @param[in] collisionDetector: Collision detector that created this group.
-  CollisionGroup(CollisionDetector<S>* collisionDetector);
+  template <typename Derived>
+  using Registrar = common::FactoryRegistrar<
+      std::string,
+      Engine<S>,
+      Derived,
+      std::shared_ptr<Engine<S>>>;
 
-  CollisionDetector<S>* mCollisionDetector;
+  //  class ObjectManager;
+  //  class ManagerForUnsharableObjects;
+  //  class ManagerForSharableObjects;
+
+  /// Constructor
+  Engine() = default;
 
 private:
-  /// Set this to true to have this CollisionGroup check for updates
-  /// automatically. Default is true.
-  bool mUpdateAutomatically;
+  using Factory = common::Factory<std::string, Engine, std::shared_ptr<Engine>>;
+
+  using SingletonFactory = common::Singleton<Factory>;
+
+  static std::unordered_map<std::string, EnginePtr<S>> mEngines;
+
+  Group<S>* getDefaultGroup();
+
+  GroupPtr<S> mDefaultGroup;
 };
 
-using CollisionGroupf = CollisionGroup<float>;
-using CollisionGroupd = CollisionGroup<double>;
-
-extern template class CollisionGroup<double>;
+extern template class Engine<double>;
 
 } // namespace collision2
 } // namespace dart
 
-#include "dart/collision/detail/CollisionGroup-impl.hpp"
+#include "dart/collision/detail/Engine-impl.hpp"

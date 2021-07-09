@@ -32,64 +32,66 @@
 
 #pragma once
 
-#include <Eigen/Geometry>
+#include "dart/collision/Object.hpp"
 
-#include "dart/collision/Types.hpp"
-#include "dart/math/SmartPointer.hpp"
+#include <cassert>
+
+#include "dart/collision/Engine.hpp"
+#include "dart/collision/Group.hpp"
 
 namespace dart {
 namespace collision2 {
 
-template <typename S_>
-class CollisionObject
+//==============================================================================
+template <typename S>
+Object<S>::Object()
 {
-public:
-  // Type aliases
-  using S = S_;
+  // Do nothing
+}
 
-  CollisionObject();
+//==============================================================================
+template <typename S>
+Object<S>::~Object()
+{
+  // Do nothing
+}
 
-  /// Destructor
-  virtual ~CollisionObject();
+//==============================================================================
+template <typename S>
+Engine<S>* Object<S>::getEngine()
+{
+  return mGroup->getEngine();
+}
 
-  /// Return collision detection engine associated with this CollisionObject
-  CollisionDetector<S>* getCollisionDetector();
+//==============================================================================
+template <typename S>
+const Engine<S>* Object<S>::getEngine() const
+{
+  return mGroup->getEngine();
+}
 
-  /// Return collision detection engine associated with this CollisionObject
-  const CollisionDetector<S>* getCollisionDetector() const;
+//==============================================================================
+template <typename S>
+const void* Object<S>::getUserData() const
+{
+  return mUserData;
+}
 
-  const void* getUserData() const;
+//==============================================================================
+template <typename S>
+math::ConstGeometryPtr Object<S>::getShape() const
+{
+  return mShape;
+}
 
-  /// Return the associated Shape
-  math::ConstGeometryPtr getShape() const;
-
-  /// Return the transformation of this CollisionObject in world coordinates
-  virtual const Eigen::Isometry3d& getTransform() const = 0;
-
-protected:
-  /// Contructor
-  CollisionObject(CollisionGroup<S>* mCollisionGroup, math::GeometryPtr shape);
-
-  /// Update the collision object of the collision detection engine. This
-  /// function will be called ahead of every collision checking by
-  /// CollisionGroup.
-  virtual void updateEngineData() = 0;
-
-protected:
-  /// Collision group
-  CollisionGroup<S>* mCollisionGroup;
-
-  const math::GeometryPtr mShape;
-
-  void* mUserData{nullptr};
-
-private:
-  friend class CollisionGroup<S>;
-};
-
-extern template class CollisionObject<double>;
+//==============================================================================
+template <typename S>
+Object<S>::Object(Group<S>* collisionGroup, math::GeometryPtr shape)
+  : mGroup(collisionGroup), mShape(std::move(shape))
+{
+  assert(mGroup);
+  assert(mShape);
+}
 
 } // namespace collision2
 } // namespace dart
-
-#include "dart/collision/detail/CollisionObject-impl.hpp"

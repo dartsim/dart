@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/collision/fcl/FclCollisionDetector.hpp"
+#include "dart/collision/fcl/FclEngine.hpp"
 
 #include <assimp/scene.h>
 
@@ -42,7 +42,7 @@
 #include "dart/math/geometry/Sphere.hpp"
 //#include "dart/dynamics/BoxShape.hpp"
 //#include "dart/dynamics/CollisionFilter.hpp"
-//#include "dart/dynamics/CollisionObject.hpp"
+//#include "dart/dynamics/Object.hpp"
 //#include "dart/dynamics/ConeShape.hpp"
 //#include "dart/dynamics/CylinderShape.hpp"
 //#include "dart/dynamics/DistanceFilter.hpp"
@@ -56,8 +56,8 @@
 //#include "dart/dynamics/SphereShape.hpp"
 //#include "dart/dynamics/VoxelGridShape.hpp"
 //#include "dart/dynamics/fcl/BackwardCompatibility.hpp"
-#include "dart/collision/fcl/FclCollisionGroup.hpp"
-#include "dart/collision/fcl/FclCollisionObject.hpp"
+#include "dart/collision/fcl/FclGroup.hpp"
+#include "dart/collision/fcl/FclObject.hpp"
 //#include "dart/dynamics/fcl/tri_tri_intersection_test.hpp"
 
 namespace dart {
@@ -170,9 +170,9 @@ struct FCLCollisionCallbackData
   //  /// mResult is nullptr; otherwise the actual collision result is in
   //  mResult. bool foundCollision;
 
-  //  FclCollisionDetector<S>::PrimitiveShape primitiveShapeType;
+  //  FclEngine<S>::PrimitiveShape primitiveShapeType;
 
-  //  FclCollisionDetector<S>::ContactPointComputationMethod
+  //  FclEngine<S>::ContactPointComputationMethod
   //      contactPointComputationMethod;
 
   //  /// Whether the collision iteration can stop
@@ -190,10 +190,10 @@ struct FCLCollisionCallbackData
   //  FCLCollisionCallbackData(
   //      const CollisionOption& option,
   //      CollisionResult* result,
-  //      FclCollisionDetector<S>::PrimitiveShape type =
-  //      FclCollisionDetector<S>::MESH,
-  //      FclCollisionDetector<S>::ContactPointComputationMethod method
-  //      = FclCollisionDetector<S>::DART)
+  //      FclEngine<S>::PrimitiveShape type =
+  //      FclEngine<S>::MESH,
+  //      FclEngine<S>::ContactPointComputationMethod method
+  //      = FclEngine<S>::DART)
   //    : option(option),
   //      result(result),
   //      foundCollision(false),
@@ -623,37 +623,34 @@ struct FCLCollisionCallbackData
 
 //==============================================================================
 template <typename S>
-typename CollisionDetector<S>::template Registrar<FclCollisionDetector<S>>
-    FclCollisionDetector<S>::mRegistrar{
-        FclCollisionDetector<S>::getStaticType(),
-        []() -> std::shared_ptr<FclCollisionDetector<S>> {
-          return FclCollisionDetector<S>::create();
-        }};
+typename Engine<S>::template Registrar<FclEngine<S>> FclEngine<S>::mRegistrar{
+    FclEngine<S>::getStaticType(),
+    []() -> std::shared_ptr<FclEngine<S>> { return FclEngine<S>::create(); }};
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<FclCollisionDetector<S>> FclCollisionDetector<S>::create()
+std::shared_ptr<FclEngine<S>> FclEngine<S>::create()
 {
-  return std::shared_ptr<FclCollisionDetector>(new FclCollisionDetector());
+  return std::shared_ptr<FclEngine>(new FclEngine());
 }
 
 //==============================================================================
 template <typename S>
-FclCollisionDetector<S>::~FclCollisionDetector()
+FclEngine<S>::~FclEngine()
 {
   assert(mShapeMap.empty());
 }
 
 //==============================================================================
 template <typename S>
-const std::string& FclCollisionDetector<S>::getType() const
+const std::string& FclEngine<S>::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
 template <typename S>
-const std::string& FclCollisionDetector<S>::getStaticType()
+const std::string& FclEngine<S>::getStaticType()
 {
   static const std::string type = "fcl";
   return type;
@@ -661,19 +658,57 @@ const std::string& FclCollisionDetector<S>::getStaticType()
 
 //==============================================================================
 template <typename S>
-CollisionGroupPtr<S> FclCollisionDetector<S>::createCollisionGroup()
+GroupPtr<S> FclEngine<S>::createGroup()
 {
-  return std::make_shared<FclCollisionGroup<S>>(this);
+  return std::make_shared<FclGroup<S>>(this);
 }
 
 //==============================================================================
 template <typename S>
-static bool checkGroupValidity(
-    FclCollisionDetector<S>* cd, CollisionGroup<S>* group)
+bool FclEngine<S>::collide(ObjectPtr<S> object1, ObjectPtr<S> object2)
 {
-  if (cd != group->getCollisionDetector())
+  auto derived1 = std::dynamic_pointer_cast<FclObject<S>>(object1);
+  if (!derived1)
   {
-    dterr << "[FclCollisionDetector<S>::collide] Attempting to check collision "
+    dterr << "Invalid object\n";
+    return false;
+  }
+
+  auto derived2 = std::dynamic_pointer_cast<FclObject<S>>(object2);
+  if (!derived2)
+  {
+    dterr << "Invalid object\n";
+    return false;
+  }
+
+  auto fclCollisionObject1 = derived1->getFclCollisionObject();
+  if (!fclCollisionObject1)
+  {
+    dterr << "Invalid object\n";
+    return false;
+  }
+
+  auto fclCollisionObject2 = derived2->getFclCollisionObject();
+  if (!fclCollisionObject2)
+  {
+    dterr << "Invalid object\n";
+    return false;
+  }
+
+  fcl::CollisionRequest<S> request;
+  fcl::CollisionResult<S> result;
+
+  return ::fcl::collide(
+      fclCollisionObject1, fclCollisionObject2, request, result);
+}
+
+//==============================================================================
+template <typename S>
+static bool checkGroupValidity(FclEngine<S>* cd, Group<S>* group)
+{
+  if (cd != group->getEngine())
+  {
+    dterr << "[FclEngine<S>::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
 
@@ -686,8 +721,7 @@ static bool checkGroupValidity(
 //==============================================================================
 template <typename S>
 std::shared_ptr<fcl::CollisionGeometry<S>>
-FclCollisionDetector<S>::createFCLCollisionGeometry(
-    math::ConstGeometryPtr shape)
+FclEngine<S>::createFCLCollisionGeometry(math::ConstGeometryPtr shape)
 {
   //  const std::size_t currentVersion = shape->getVersion();
 
@@ -716,9 +750,8 @@ FclCollisionDetector<S>::createFCLCollisionGeometry(
 //==============================================================================
 template <typename S>
 std::shared_ptr<fcl::CollisionGeometry<S>>
-FclCollisionDetector<S>::createFCLCollisionGeometryImpl(
-    const math::ConstGeometryPtr& shape,
-    FclCollisionDetector<S>::PrimitiveShape type)
+FclEngine<S>::createFCLCollisionGeometryImpl(
+    const math::ConstGeometryPtr& shape, FclEngine<S>::PrimitiveShape type)
 {
   fcl::CollisionGeometry<S>* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -727,7 +760,7 @@ FclCollisionDetector<S>::createFCLCollisionGeometryImpl(
   {
     const auto radius = sphere->getRadius();
 
-    if (FclCollisionDetector<S>::PRIMITIVE == type)
+    if (FclEngine<S>::PRIMITIVE == type)
     {
       geom = new fcl::Sphere<S>(radius);
     }
@@ -742,7 +775,7 @@ FclCollisionDetector<S>::createFCLCollisionGeometryImpl(
   }
   else
   {
-    dterr << "[FclCollisionDetector<S>::createFCLCollisionGeometry] "
+    dterr << "[FclEngine<S>::createFCLCollisionGeometry] "
           << "Attempting to create an unsupported shape type [" << shapeType
           << "]. Creating a sphere with 0.1 radius "
           << "instead.\n";

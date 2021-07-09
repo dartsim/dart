@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/Group.hpp"
 #include "dart/collision/Types.hpp"
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 #include "dart/collision/fcl/FclTypes.hpp"
@@ -41,47 +41,47 @@ namespace dart {
 namespace collision2 {
 
 template <typename S_>
-class FclCollisionGroup : public CollisionGroup<S_>
+class FclGroup : public Group<S_>
 {
 public:
   using S = S_;
   using FCLCollisionManager
       = dart::collision2::fcl::DynamicAABBTreeCollisionManager<S>;
 
-  friend class FclCollisionDetector<S>;
+  friend class FclEngine<S>;
 
   /// Constructor
-  FclCollisionGroup(CollisionDetector<S>* collisionDetector);
+  FclGroup(Engine<S>* collisionDetector);
 
   /// Destructor
-  virtual ~FclCollisionGroup() = default;
+  virtual ~FclGroup() = default;
 
-  CollisionObjectPtr<S> createCollisionObject(math::GeometryPtr shape) override;
+  ObjectPtr<S> createObject(math::GeometryPtr shape) override;
 
 protected:
-  FclCollisionDetector<S>* getFclCollisionDetector();
-  const FclCollisionDetector<S>* getFclCollisionDetector() const;
+  FclEngine<S>* getFclEngine();
+  const FclEngine<S>* getFclEngine() const;
 
-  //  using CollisionGroup::updateEngineData;
+  //  using Group::updateEngineData;
 
   //  // Documentation inherited
   //  void initializeEngineData() override;
 
   //  // Documentation inherited
-  //  void addCollisionObjectToEngine(CollisionObject* object) override;
+  //  void addObjectToEngine(Object* object) override;
 
   //  // Documentation inherited
-  //  void addCollisionObjectsToEngine(
-  //      const std::vector<CollisionObject*>& collObjects) override;
+  //  void addObjectsToEngine(
+  //      const std::vector<Object*>& collObjects) override;
 
   //  // Documentation inherited
-  //  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+  //  void removeObjectFromEngine(Object* object) override;
 
   //  // Documentation inherited
-  //  void removeAllCollisionObjectsFromEngine() override;
+  //  void removeAllObjectsFromEngine() override;
 
   //  // Documentation inherited
-  //  void updateCollisionGroupEngineData() override;
+  //  void updateGroupEngineData() override;
 
   /// Return FCL collision manager that is also a broad-phase algorithm
   FCLCollisionManager* getFCLCollisionManager();
@@ -94,9 +94,9 @@ protected:
   std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 };
 
-extern template class FclCollisionGroup<double>;
+extern template class FclGroup<double>;
 
 } // namespace collision2
 } // namespace dart
 
-#include "dart/collision/fcl/detail/FclCollisionGroup-impl.hpp"
+#include "dart/collision/fcl/detail/FclGroup-impl.hpp"

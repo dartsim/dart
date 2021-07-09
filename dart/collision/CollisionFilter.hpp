@@ -50,11 +50,10 @@ public:
   /// Destructor.
   virtual ~CollisionFilter();
 
-  /// Returns true if the given two CollisionObjects should be checked by the
+  /// Returns true if the given two Objects should be checked by the
   /// collision detector, false otherwise.
   virtual bool ignoresCollision(
-      const CollisionObject<S>* object1,
-      const CollisionObject<S>* object2) const = 0;
+      const Object<S>* object1, const Object<S>* object2) const = 0;
 };
 
 extern template class CollisionFilter<double>;
@@ -79,8 +78,7 @@ public:
 
   // Documentation inherited
   bool ignoresCollision(
-      const CollisionObject<S>* object1,
-      const CollisionObject<S>* object2) const override;
+      const Object<S>* object1, const Object<S>* object2) const override;
 
 protected:
   /// Collision filters

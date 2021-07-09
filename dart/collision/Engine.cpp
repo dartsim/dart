@@ -30,45 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/BackwardCompatibility.hpp"
+#include "dart/collision/Engine.hpp"
 
 namespace dart {
 namespace collision2 {
 
-class DartCollisionObject : public CollisionObject
-{
-public:
-  const Eigen::Isometry3d& getTransform() const override;
-
-  /// Return FCL collision object
-  dart::collision2::dart::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const dart::collision2::dart::CollisionObject* getFCLCollisionObject() const;
-
-protected:
-  /// Constructor
-  DartCollisionObject(
-      CollisionGroup* collisionGroup,
-      math::GeometryPtr shape,
-      const std::shared_ptr<dart::collision2::dart::CollisionGeometry>&
-          fclCollGeom);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  DartCollisionObject(CollisionGroup* collisionGroup, math::GeometryPtr shape);
-
-  /// FCL collision object
-  std::unique_ptr<dart::collision2::dart::CollisionObject> mFCLCollisionObject;
-
-private:
-  friend class FclCollisionDetector;
-};
+template class Engine<double>;
 
 } // namespace collision2
 } // namespace dart

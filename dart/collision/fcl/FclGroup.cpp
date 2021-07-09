@@ -30,69 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include "dart/collision/CollisionObject.hpp"
-
-#include <cassert>
-
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/fcl/FclGroup.hpp"
 
 namespace dart {
 namespace collision2 {
 
 //==============================================================================
-template <typename S>
-CollisionObject<S>::CollisionObject()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-CollisionObject<S>::~CollisionObject()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-CollisionDetector<S>* CollisionObject<S>::getCollisionDetector()
-{
-  return mCollisionGroup->getCollisionDetector();
-}
-
-//==============================================================================
-template <typename S>
-const CollisionDetector<S>* CollisionObject<S>::getCollisionDetector() const
-{
-  return mCollisionGroup->getCollisionDetector();
-}
-
-//==============================================================================
-template <typename S>
-const void* CollisionObject<S>::getUserData() const
-{
-  return mUserData;
-}
-
-//==============================================================================
-template <typename S>
-math::ConstGeometryPtr CollisionObject<S>::getShape() const
-{
-  return mShape;
-}
-
-//==============================================================================
-template <typename S>
-CollisionObject<S>::CollisionObject(
-    CollisionGroup<S>* collisionGroup, math::GeometryPtr shape)
-  : mCollisionGroup(collisionGroup), mShape(std::move(shape))
-{
-  assert(mCollisionGroup);
-  assert(mShape);
-}
+template class FclGroup<double>;
 
 } // namespace collision2
 } // namespace dart

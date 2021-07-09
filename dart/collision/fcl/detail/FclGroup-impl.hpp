@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include "dart/collision/fcl/FclCollisionGroup.hpp"
+#include "dart/collision/fcl/FclGroup.hpp"
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FclCollisionDetector.hpp"
-#include "dart/collision/fcl/FclCollisionObject.hpp"
+#include "dart/collision/Object.hpp"
+#include "dart/collision/fcl/FclEngine.hpp"
+#include "dart/collision/fcl/FclObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/math/geometry/Sphere.hpp"
 
@@ -45,15 +45,19 @@ namespace collision2 {
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<fcl::CollisionGeometry<S>> createFCLCollisionGeometry(
+std::shared_ptr<fcl::CollisionGeometry<S>> createFclCollisionGeometry(
     const math::ConstGeometryPtr& shape,
-    typename FclCollisionDetector<S>::PrimitiveShape /*type*/)
+    typename FclEngine<S>::PrimitiveShape /*type*/)
 {
   fcl::CollisionGeometry<S>* geom = nullptr;
 
-  if (shape->is<math::Sphered>())
+  if (auto sphere = shape->as<math::Sphered>())
   {
-    return nullptr;
+    geom = new fcl::Sphere<S>(sphere->getRadius());
+  }
+  else
+  {
+    dterr << "Unsupported geometry type: " << shape->getType() << "\n";
   }
 
   return std::shared_ptr<fcl::CollisionGeometry<S>>(geom);
@@ -61,8 +65,8 @@ std::shared_ptr<fcl::CollisionGeometry<S>> createFCLCollisionGeometry(
 
 //==============================================================================
 template <typename S>
-FclCollisionGroup<S>::FclCollisionGroup(CollisionDetector<S>* collisionDetector)
-  : CollisionGroup<S>(collisionDetector),
+FclGroup<S>::FclGroup(Engine<S>* collisionDetector)
+  : Group<S>(collisionDetector),
     mBroadPhaseAlg(
         new dart::collision2::fcl::DynamicAABBTreeCollisionManager<S>())
 {
@@ -71,8 +75,7 @@ FclCollisionGroup<S>::FclCollisionGroup(CollisionDetector<S>* collisionDetector)
 
 //==============================================================================
 template <typename S>
-CollisionObjectPtr<S> FclCollisionGroup<S>::createCollisionObject(
-    math::GeometryPtr shape)
+ObjectPtr<S> FclGroup<S>::createObject(math::GeometryPtr shape)
 {
   if (!shape)
   {
@@ -82,78 +85,81 @@ CollisionObjectPtr<S> FclCollisionGroup<S>::createCollisionObject(
   }
 
   auto fclCollisionGeometry
-      = createFCLCollisionGeometry<S>(shape, FclCollisionDetector<S>::MESH);
-  // TODO(JS): Check if fclCollisionGeometry is nullptr
+      = createFclCollisionGeometry<S>(shape, FclEngine<S>::MESH);
+  if (!fclCollisionGeometry)
+  {
+    dtwarn << "Failed to create FCL collision geometry.\n";
+    return nullptr;
+  }
 
-  return std::shared_ptr<FclCollisionObject<S>>(
-      new FclCollisionObject<S>(this, std::move(shape), fclCollisionGeometry));
+  return std::shared_ptr<FclObject<S>>(
+      new FclObject<S>(this, std::move(shape), fclCollisionGeometry));
 }
 
 //==============================================================================
 // template <typename S>
-// FclCollisionDetector<S>* FclCollisionGroup<S>::getFclCollisionDetector()
+// FclEngine<S>* FclGroup<S>::getFclEngine()
 //{
-//  return static_cast<FclCollisionDetector<S>*>(this->mCollisionDetector);
+//  return static_cast<FclEngine<S>*>(this->mEngine);
 //}
 
 //==============================================================================
 template <typename S>
-FclCollisionDetector<S>* FclCollisionGroup<S>::getFclCollisionDetector()
+FclEngine<S>* FclGroup<S>::getFclEngine()
 {
-  return static_cast<FclCollisionDetector<S>*>(this->mCollisionDetector);
+  return static_cast<FclEngine<S>*>(this->mEngine);
 }
 
 //==============================================================================
 template <typename S>
-const FclCollisionDetector<S>* FclCollisionGroup<S>::getFclCollisionDetector()
-    const
+const FclEngine<S>* FclGroup<S>::getFclEngine() const
 {
-  return static_cast<const FclCollisionDetector<S>*>(this->mCollisionDetector);
+  return static_cast<const FclEngine<S>*>(this->mEngine);
 }
 
 ////==============================================================================
-// void FCLCollisionGroup<S>::initializeEngineData()
+// void FCLGroup<S>::initializeEngineData()
 //{
 //  mBroadPhaseAlg->setup();
 //}
 
 ////==============================================================================
-// void FCLCollisionGroup<S>::addCollisionObjectToEngine(CollisionObject*
+// void FCLGroup<S>::addObjectToEngine(Object*
 // object)
 //{
-//  auto casted = static_cast<FCLCollisionObject*>(object);
-//  mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
+//  auto casted = static_cast<FCLObject*>(object);
+//  mBroadPhaseAlg->registerObject(casted->getFCLObject());
 
 //  initializeEngineData();
 //}
 
 ////==============================================================================
-// void FCLCollisionGroup<S>::addCollisionObjectsToEngine(
-//    const std::vector<CollisionObject*>& collObjects)
+// void FCLGroup<S>::addObjectsToEngine(
+//    const std::vector<Object*>& collObjects)
 //{
 //  for (auto collObj : collObjects)
 //  {
-//    auto casted = static_cast<FCLCollisionObject*>(collObj);
+//    auto casted = static_cast<FCLObject*>(collObj);
 
-//    mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
+//    mBroadPhaseAlg->registerObject(casted->getFCLObject());
 //  }
 
 //  initializeEngineData();
 //}
 
 ////==============================================================================
-// void FCLCollisionGroup<S>::removeCollisionObjectFromEngine(CollisionObject*
+// void FCLGroup<S>::removeObjectFromEngine(Object*
 // object)
 //{
-//  auto casted = static_cast<FCLCollisionObject*>(object);
+//  auto casted = static_cast<FCLObject*>(object);
 
-//  mBroadPhaseAlg->unregisterObject(casted->getFCLCollisionObject());
+//  mBroadPhaseAlg->unregisterObject(casted->getFCLObject());
 
 //  initializeEngineData();
 //}
 
 ////==============================================================================
-// void FCLCollisionGroup<S>::removeAllCollisionObjectsFromEngine()
+// void FCLGroup<S>::removeAllObjectsFromEngine()
 //{
 //  mBroadPhaseAlg->clear();
 
@@ -161,23 +167,22 @@ const FclCollisionDetector<S>* FclCollisionGroup<S>::getFclCollisionDetector()
 //}
 
 ////==============================================================================
-// void FCLCollisionGroup<S>::updateCollisionGroupEngineData()
+// void FCLGroup<S>::updateGroupEngineData()
 //{
 //  mBroadPhaseAlg->update();
 //}
 
 //==============================================================================
 template <typename S>
-typename FclCollisionGroup<S>::FCLCollisionManager*
-FclCollisionGroup<S>::getFCLCollisionManager()
+typename FclGroup<S>::FCLCollisionManager* FclGroup<S>::getFCLCollisionManager()
 {
   return mBroadPhaseAlg.get();
 }
 
 //==============================================================================
 template <typename S>
-const typename FclCollisionGroup<S>::FCLCollisionManager*
-FclCollisionGroup<S>::getFCLCollisionManager() const
+const typename FclGroup<S>::FCLCollisionManager*
+FclGroup<S>::getFCLCollisionManager() const
 {
   return mBroadPhaseAlg.get();
 }

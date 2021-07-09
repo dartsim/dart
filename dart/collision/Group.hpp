@@ -32,48 +32,55 @@
 
 #pragma once
 
-#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/Types.hpp"
+#include "dart/math/geometry/Geometry.hpp"
 
 namespace dart {
 namespace collision2 {
 
-//==============================================================================
-template <typename S>
-std::unordered_map<std::string, CollisionDetectorPtr<S>>
-    CollisionDetector<S>::mCollisionDetectors;
-
-//==============================================================================
-template <typename S>
-CollisionDetectorPtr<S> CollisionDetector<S>::create(
-    const std::string& engineName)
+template <typename S_>
+class Group
 {
-  const auto& result = mCollisionDetectors.find(engineName);
-  if (result != mCollisionDetectors.end())
-  {
-    return result->second;
-  }
+public:
+  // Type aliases
+  using S = S_;
 
-  auto factory = SingletonFactory::getSingletonPtr();
-  auto newCollisionDetector = factory->create(engineName);
+  /// Destructor
+  virtual ~Group() = default;
 
-  if (!newCollisionDetector)
-  {
-    dtwarn << "Failed to create a collision detector with the given engine "
-           << "name '" << engineName << "'.\n";
-    return nullptr;
-  }
+  /// Return collision detection engine associated with this Group
+  Engine<S>* getEngine();
 
-  mCollisionDetectors[engineName] = newCollisionDetector;
+  /// Return (const) collision detection engine associated with this
+  /// Group
+  const Engine<S>* getEngine() const;
 
-  return newCollisionDetector;
-}
+  /// Creates a collision object.
+  virtual ObjectPtr<S> createObject(math::GeometryPtr shape) = 0;
 
-//==============================================================================
-template <typename S>
-CollisionDetector<S>::~CollisionDetector()
-{
-  // Do nothing
-}
+  template <typename... Args>
+  ObjectPtr<S> createSphereObject(Args&&... args);
+
+protected:
+  /// Constructor
+  ///
+  /// @param[in] collisionDetector: Collision detector that created this group.
+  Group(Engine<S>* collisionDetector);
+
+  Engine<S>* mEngine;
+
+private:
+  /// Set this to true to have this Group check for updates
+  /// automatically. Default is true.
+  bool mUpdateAutomatically;
+};
+
+using Groupf = Group<float>;
+using Groupd = Group<double>;
+
+extern template class Group<double>;
 
 } // namespace collision2
 } // namespace dart
+
+#include "dart/collision/detail/Group-impl.hpp"

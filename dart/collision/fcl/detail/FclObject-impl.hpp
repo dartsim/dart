@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/collision/fcl/FclCollisionObject.hpp"
+#include "dart/collision/fcl/FclObject.hpp"
 
 #include "dart/collision/fcl/FclConversion.hpp"
 
@@ -41,46 +41,65 @@ namespace collision2 {
 
 //==============================================================================
 template <typename S>
-const math::Isometry3<S>& FclCollisionObject<S>::getTransform() const
+math::Isometry3<S> FclObject<S>::getTransform() const
 {
-  static math::Isometry3<S> tf;
-  return tf;
+  return toIsometry3(mFclCollisionObject->getTransform());
 }
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::CollisionObject<S>*
-FclCollisionObject<S>::getFCLCollisionObject()
+void FclObject<S>::setTransform(const math::Isometry3<S>& tf)
 {
-  return mFCLCollisionObject.get();
+  mFclCollisionObject->setTransform(toTransform(tf));
+}
+
+//==============================================================================
+template <typename S>
+math::Vector3<S> FclObject<S>::getTranslation() const
+{
+  return toVector3(mFclCollisionObject->getTranslation());
+}
+
+//==============================================================================
+template <typename S>
+void FclObject<S>::setTranslation(const math::Vector3<S>& pos)
+{
+  mFclCollisionObject->setTranslation(toVector3(pos));
+}
+
+//==============================================================================
+template <typename S>
+dart::collision2::fcl::CollisionObject<S>* FclObject<S>::getFclCollisionObject()
+{
+  return mFclCollisionObject.get();
 }
 
 //==============================================================================
 template <typename S>
 const dart::collision2::fcl::CollisionObject<S>*
-FclCollisionObject<S>::getFCLCollisionObject() const
+FclObject<S>::getFclCollisionObject() const
 {
-  return mFCLCollisionObject.get();
+  return mFclCollisionObject.get();
 }
 
 //==============================================================================
 template <typename S>
-FclCollisionObject<S>::FclCollisionObject(
-    CollisionGroup<S>* collisionGroup,
+FclObject<S>::FclObject(
+    Group<S>* collisionGroup,
     math::GeometryPtr shape,
     const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
         fclCollGeom)
-  : CollisionObject<S>(collisionGroup, shape),
-    mFCLCollisionObject(
+  : Object<S>(collisionGroup, shape),
+    mFclCollisionObject(
         new dart::collision2::fcl::CollisionObject<S>(fclCollGeom))
 {
   assert(fclCollGeom);
-  mFCLCollisionObject->setUserData(this);
+  mFclCollisionObject->setUserData(this);
 }
 
 //==============================================================================
 template <typename S>
-void FclCollisionObject<S>::updateEngineData()
+void FclObject<S>::updateEngineData()
 {
   //  using dart::dynamics::BodyNode;
   //  using dart::dynamics::Shape;
@@ -99,7 +118,7 @@ void FclCollisionObject<S>::updateEngineData()
   //    // TODO(JS): update function be called by somewhere out of here.
 
   //    auto collGeom = const_cast<dart::collision2::fcl::CollisionGeometry*>(
-  //        mFCLCollisionObject->collisionGeometry().get());
+  //        mFCLObject->collisionGeometry().get());
   //    assert(
   //        dynamic_cast<::fcl::BVHModel<dart::collision2::fcl::OBBRSS>*>(collGeom));
   //    auto bvhModel
@@ -121,16 +140,14 @@ void FclCollisionObject<S>::updateEngineData()
   //    bvhModel->endUpdateModel();
   //  }
 
-  mFCLCollisionObject->setTransform(
-      FclTypes<S>::convertTransform(getTransform()));
-  mFCLCollisionObject->computeAABB();
+  mFclCollisionObject->setTransform(toTransform(getTransform()));
+  mFclCollisionObject->computeAABB();
 }
 
 //==============================================================================
 template <typename S>
-FclCollisionObject<S>::FclCollisionObject(
-    CollisionGroup<S>* collisionGroup, math::GeometryPtr shape)
-  : CollisionObject<S>(collisionGroup, std::move(shape))
+FclObject<S>::FclObject(Group<S>* collisionGroup, math::GeometryPtr shape)
+  : Object<S>(collisionGroup, std::move(shape))
 {
   // Do nothing
 }

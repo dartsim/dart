@@ -30,13 +30,65 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FclCollisionObject.hpp"
+#pragma once
+
+#include "dart/collision/Object.hpp"
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
+#include "dart/collision/fcl/FclTypes.hpp"
+#include "dart/math/Types.hpp"
 
 namespace dart {
 namespace collision2 {
 
-//==============================================================================
-template class FclCollisionObject<double>;
+template <typename S_>
+class FclObject : public Object<S_>
+{
+public:
+  // Type aliases
+  using S = S_;
+
+  // Documentation inherited
+  math::Isometry3<S> getTransform() const override;
+
+  void setTransform(const math::Isometry3<S>& tf) override;
+
+  /// Return FCL collision object
+  dart::collision2::fcl::CollisionObject<S>* getFclCollisionObject();
+
+  /// Return FCL collision object
+  const dart::collision2::fcl::CollisionObject<S>* getFclCollisionObject()
+      const;
+
+  math::Vector3<S> getTranslation() const;
+
+  void setTranslation(const math::Vector3<S>& pos);
+
+protected:
+  /// Constructor
+  FclObject(
+      Group<S>* collisionGroup,
+      math::GeometryPtr shape,
+      const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
+          fclCollGeom);
+
+  // Documentation inherited
+  void updateEngineData() override;
+
+protected:
+  FclObject(Group<S>* collisionGroup, math::GeometryPtr shape);
+
+  /// FCL collision object
+  std::unique_ptr<dart::collision2::fcl::CollisionObject<S>>
+      mFclCollisionObject;
+
+private:
+  friend class FclEngine<S>;
+  friend class FclGroup<S>;
+};
+
+extern template class FclObject<double>;
 
 } // namespace collision2
 } // namespace dart
+
+#include "dart/collision/fcl/detail/FclObject-impl.hpp"

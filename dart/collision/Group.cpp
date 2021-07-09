@@ -30,73 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <memory>
-#include <string>
-#include <unordered_map>
-
-#include "dart/collision/CollisionOption.hpp"
-#include "dart/collision/Types.hpp"
-#include "dart/common/Factory.hpp"
-#include "dart/math/SmartPointer.hpp"
+#include "dart/collision/Group.hpp"
 
 namespace dart {
 namespace collision2 {
 
-template <typename S_>
-class CollisionDetector
-{
-public:
-  // Type aliases
-  using S = S_;
-
-  /// Creates a new collision detector.
-  ///
-  /// @param[in] engineName: Name of the underlying collision detection engine
-  /// to create.
-  static CollisionDetectorPtr<S> create(const std::string& engineName);
-
-  /// Destructor
-  virtual ~CollisionDetector();
-
-  /// Returns collision detection engine type as a std::string.
-  virtual const std::string& getType() const = 0;
-
-  /// Creates a collision group.
-  virtual CollisionGroupPtr<S> createCollisionGroup() = 0;
-
-  // TODO(JS): Add distance() and raycast()
-protected:
-  template <typename Derived>
-  using Registrar = common::FactoryRegistrar<
-      std::string,
-      CollisionDetector<S>,
-      Derived,
-      std::shared_ptr<CollisionDetector<S>>>;
-
-  //  class CollisionObjectManager;
-  //  class ManagerForUnsharableCollisionObjects;
-  //  class ManagerForSharableCollisionObjects;
-
-  /// Constructor
-  CollisionDetector() = default;
-
-private:
-  using Factory = common::Factory<
-      std::string,
-      CollisionDetector,
-      std::shared_ptr<CollisionDetector>>;
-
-  using SingletonFactory = common::Singleton<Factory>;
-
-  static std::unordered_map<std::string, CollisionDetectorPtr<S>>
-      mCollisionDetectors;
-};
-
-extern template class CollisionDetector<double>;
+template class Group<double>;
 
 } // namespace collision2
 } // namespace dart
-
-#include "dart/collision/detail/CollisionDetector-impl.hpp"

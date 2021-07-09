@@ -74,7 +74,7 @@ void CompositeCollisionFilter<S>::removeAllCollisionFilters()
 //==============================================================================
 template <typename S>
 bool CompositeCollisionFilter<S>::ignoresCollision(
-    const CollisionObject<S>* object1, const CollisionObject<S>* object2) const
+    const Object<S>* object1, const Object<S>* object2) const
 {
   for (const auto* filter : mFilters)
   {

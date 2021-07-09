@@ -32,57 +32,27 @@
 
 #pragma once
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/BackwardCompatibility.hpp"
-#include "dart/collision/fcl/FclTypes.hpp"
-#include "dart/math/Types.hpp"
+#include "dart/collision/NarrowPhaseInterface.hpp"
 
 namespace dart {
 namespace collision2 {
 
-template <typename S_>
-class FclCollisionObject : public CollisionObject<S_>
+//==============================================================================
+template <typename S>
+bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2)
 {
-public:
-  // Type aliases
-  using S = S_;
+  auto engine = object1->getEngine();
+  assert(engine);
 
-  const math::Isometry3<S>& getTransform() const override;
+  if (engine != object2->getEngine())
+  {
+    dterr << "Not allowed collision checking for objects created from "
+             "different engines\n";
+    return false;
+  }
 
-  /// Return FCL collision object
-  dart::collision2::fcl::CollisionObject<S>* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const dart::collision2::fcl::CollisionObject<S>* getFCLCollisionObject()
-      const;
-
-protected:
-  /// Constructor
-  FclCollisionObject(
-      CollisionGroup<S>* collisionGroup,
-      math::GeometryPtr shape,
-      const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
-          fclCollGeom);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  FclCollisionObject(
-      CollisionGroup<S>* collisionGroup, math::GeometryPtr shape);
-
-  /// FCL collision object
-  std::unique_ptr<dart::collision2::fcl::CollisionObject<S>>
-      mFCLCollisionObject;
-
-private:
-  friend class FclCollisionDetector<S>;
-  friend class FclCollisionGroup<S>;
-};
-
-extern template class FclCollisionObject<double>;
+  return engine->collide(object1, object2);
+}
 
 } // namespace collision2
 } // namespace dart
-
-#include "dart/collision/fcl/detail/FclCollisionObject-impl.hpp"

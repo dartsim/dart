@@ -34,7 +34,7 @@
 
 #include <map>
 
-#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/Engine.hpp"
 #include "dart/collision/fcl/FclTypes.hpp"
 #include "dart/math/SmartPointer.hpp"
 
@@ -42,13 +42,13 @@ namespace dart {
 namespace collision2 {
 
 template <typename S_>
-class FclCollisionDetector : public CollisionDetector<S_>
+class FclEngine : public Engine<S_>
 {
 public:
   // Type aliases
   using S = S_;
 
-  static std::shared_ptr<FclCollisionDetector> create();
+  static std::shared_ptr<FclEngine> create();
 
   /// Whether to use analytic collision checking for primitive shapes.
   ///
@@ -82,7 +82,7 @@ public:
   };
 
   /// Constructor
-  virtual ~FclCollisionDetector();
+  virtual ~FclEngine();
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -91,11 +91,14 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  CollisionGroupPtr<S> createCollisionGroup() override;
+  GroupPtr<S> createGroup() override;
+
+  // Documentation inherited
+  bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2) override;
 
 protected:
   /// Constructor
-  FclCollisionDetector() = default;
+  FclEngine() = default;
 
   /// Returns ::fcl::CollisionGeometry associated with give Shape. New
   /// ::fcl::CollisionGeome will be created if it hasn't created yet.
@@ -115,23 +118,22 @@ private:
   };
 
   std::shared_ptr<fcl::CollisionGeometry<S>> createFCLCollisionGeometryImpl(
-      const math::ConstGeometryPtr& shape,
-      FclCollisionDetector::PrimitiveShape type);
+      const math::ConstGeometryPtr& shape, FclEngine::PrimitiveShape type);
 
 private:
-  using Base = CollisionDetector<S>;
+  using Base = Engine<S>;
   using ShapeMap = std::map<math::ConstGeometryPtr, ShapeInfo>;
 
   ShapeMap mShapeMap;
 
   PrimitiveShape mPrimitiveShapeType;
 
-  static typename Base::template Registrar<FclCollisionDetector<S>> mRegistrar;
+  static typename Base::template Registrar<FclEngine<S>> mRegistrar;
 };
 
-extern template class FclCollisionDetector<double>;
+extern template class FclEngine<double>;
 
 } // namespace collision2
 } // namespace dart
 
-#include "dart/collision/fcl/detail/FclCollisionDetector-impl.hpp"
+#include "dart/collision/fcl/detail/FclEngine-impl.hpp"

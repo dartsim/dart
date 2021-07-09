@@ -30,12 +30,73 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionGroup.hpp"
+#pragma once
+
+#include <Eigen/Geometry>
+
+#include "dart/collision/Types.hpp"
+#include "dart/math/SmartPointer.hpp"
+#include "dart/math/Types.hpp"
 
 namespace dart {
 namespace collision2 {
 
-template class CollisionGroup<double>;
+template <typename S_>
+class Object
+{
+public:
+  // Type aliases
+  using S = S_;
+
+  Object();
+
+  /// Destructor
+  virtual ~Object();
+
+  /// Return collision detection engine associated with this Object
+  Engine<S>* getEngine();
+
+  /// Return collision detection engine associated with this Object
+  const Engine<S>* getEngine() const;
+
+  const void* getUserData() const;
+
+  /// Return the associated Shape
+  math::ConstGeometryPtr getShape() const;
+
+  /// Return the transformation of this Object in world coordinates
+  virtual math::Isometry3<S> getTransform() const = 0;
+
+  virtual void setTransform(const math::Isometry3<S>& tf) = 0;
+
+  virtual math::Vector3<S> getTranslation() const = 0;
+
+  virtual void setTranslation(const math::Vector3<S>& pos) = 0;
+
+protected:
+  /// Contructor
+  Object(Group<S>* mGroup, math::GeometryPtr shape);
+
+  /// Update the collision object of the collision detection engine. This
+  /// function will be called ahead of every collision checking by
+  /// Group.
+  virtual void updateEngineData() = 0;
+
+protected:
+  /// Collision group
+  Group<S>* mGroup;
+
+  const math::GeometryPtr mShape;
+
+  void* mUserData{nullptr};
+
+private:
+  friend class Group<S>;
+};
+
+extern template class Object<double>;
 
 } // namespace collision2
 } // namespace dart
+
+#include "dart/collision/detail/Object-impl.hpp"

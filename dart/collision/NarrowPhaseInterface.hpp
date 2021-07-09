@@ -30,44 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#pragma once
 
-#include <gtest/gtest.h>
+#include "dart/collision/Contact.hpp"
+#include "dart/collision/Object.hpp"
 
-#include <dart/collision/collision.hpp>
+namespace dart {
+namespace collision2 {
 
-using namespace dart;
+template <typename S>
+bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2);
 
-//==============================================================================
-class CollisionDetectorTest : public testing::Test,
-                              public testing::WithParamInterface<const char*>
-{
-  // Define nothing
-};
+} // namespace collision2
+} // namespace dart
 
-////==============================================================================
-// TEST_P(CollisionDetectorTest, Factory)
-//{
-//  const std::string engineName = GetParam();
-//  if (engineName == "dart" || engineName == "ode" || engineName == "bullet")
-//  {
-//    return;
-//  }
-//#if !DART_HAVE_BULLET
-//  if (engineName == "bullet")
-//  {
-//    return;
-//  }
-//#endif
-
-//  auto cd = collision2::CollisionDetector<double>::create(GetParam());
-//  ASSERT_TRUE(cd != nullptr);
-
-//  EXPECT_NE(cd->createCollisionGroup(), nullptr);
-//}
-
-////==============================================================================
-// INSTANTIATE_TEST_CASE_P(
-//    CollisionEngine,
-//    CollisionDetectorTest,
-//    testing::Values("dart", "fcl", "bullet", "ode"));
+#include "dart/collision/detail/NarrowPhaseInterface-impl.hpp"

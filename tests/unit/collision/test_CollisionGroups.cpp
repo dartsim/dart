@@ -38,38 +38,38 @@
 
 using namespace dart;
 
-//==============================================================================
-template <class T>
-class CollisionGroupsTest : public ::testing::Test
-{
-};
+// //==============================================================================
+// template <class T>
+// class CollisionGroupsTest : public ::testing::Test
+// {
+// };
 
-template <class T>
-struct Test;
+// template <class T>
+// struct Test;
 
-template <class... T>
-struct Test<std::tuple<T...>>
-{
-  using Types = ::testing::Types<T...>;
-};
+// template <class... T>
+// struct Test<std::tuple<T...>>
+// {
+//   using Types = ::testing::Types<T...>;
+// };
 
-//==============================================================================
-template <typename S>
-collision2::CollisionDetectorPtr<S> createCollisionDetector(
-    const std::string& name)
-{
-#if !DART_HAVE_BULLET
-  if (engineName == "bullet")
-  {
-    return nullptr;
-  }
-#endif
+// //==============================================================================
+// template <typename S>
+// collision2::CollisionDetectorPtr<S> createCollisionDetector(
+//     const std::string& name)
+// {
+// #if !DART_HAVE_BULLET
+//   if (engineName == "bullet")
+//   {
+//     return nullptr;
+//   }
+// #endif
 
-  auto cd = collision2::CollisionDetector<S>::create(name);
-  EXPECT_NE(cd, nullptr);
+//   auto cd = collision2::Engine<S>::create(name);
+//   EXPECT_NE(cd, nullptr);
 
-  return cd;
-}
+//   return cd;
+// }
 
 //==============================================================================
 // using TestTypes = Test<test::Combinations_t<

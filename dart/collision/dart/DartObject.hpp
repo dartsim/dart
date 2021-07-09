@@ -30,44 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#pragma once
 
-#include <gtest/gtest.h>
+#include "dart/collision/Object.hpp"
+#include "dart/collision/dart/BackwardCompatibility.hpp"
 
-#include <dart/collision/collision.hpp>
+namespace dart {
+namespace collision2 {
 
-using namespace dart;
-
-//==============================================================================
-class CollisionDetectorTest : public testing::Test,
-                              public testing::WithParamInterface<const char*>
+class DartObject : public Object
 {
-  // Define nothing
+public:
+  const Eigen::Isometry3d& getTransform() const override;
+
+  /// Return FCL collision object
+  dart::collision2::dart::Object* getFCLObject();
+
+  /// Return FCL collision object
+  const dart::collision2::dart::Object* getFCLObject() const;
+
+protected:
+  /// Constructor
+  DartObject(
+      Group* collisionGroup,
+      math::GeometryPtr shape,
+      const std::shared_ptr<dart::collision2::dart::CollisionGeometry>&
+          fclCollGeom);
+
+  // Documentation inherited
+  void updateEngineData() override;
+
+protected:
+  DartObject(Group* collisionGroup, math::GeometryPtr shape);
+
+  /// FCL collision object
+  std::unique_ptr<dart::collision2::dart::Object> mFCLObject;
+
+private:
+  friend class FclEngine;
 };
 
-////==============================================================================
-// TEST_P(CollisionDetectorTest, Factory)
-//{
-//  const std::string engineName = GetParam();
-//  if (engineName == "dart" || engineName == "ode" || engineName == "bullet")
-//  {
-//    return;
-//  }
-//#if !DART_HAVE_BULLET
-//  if (engineName == "bullet")
-//  {
-//    return;
-//  }
-//#endif
-
-//  auto cd = collision2::CollisionDetector<double>::create(GetParam());
-//  ASSERT_TRUE(cd != nullptr);
-
-//  EXPECT_NE(cd->createCollisionGroup(), nullptr);
-//}
-
-////==============================================================================
-// INSTANTIATE_TEST_CASE_P(
-//    CollisionEngine,
-//    CollisionDetectorTest,
-//    testing::Values("dart", "fcl", "bullet", "ode"));
+} // namespace collision2
+} // namespace dart

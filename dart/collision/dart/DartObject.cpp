@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DartCollisionObject.hpp"
+#include "dart/collision/dart/DartObject.hpp"
 
 #include "dart/collision/dart/Types.hpp"
 
@@ -38,40 +38,40 @@ namespace dart {
 namespace collision2 {
 
 //==============================================================================
-const Eigen::Isometry3d& FCLCollisionObject::getTransform() const
+const Eigen::Isometry3d& FCLObject::getTransform() const
 {
   static Eigen::Isometry3d tf;
   return tf;
 }
 
 //==============================================================================
-dart::collision2::dart::CollisionObject*
-FCLCollisionObject::getFCLCollisionObject()
+dart::collision2::dart::Object*
+FCLObject::getFCLObject()
 {
-  return mFCLCollisionObject.get();
+  return mFCLObject.get();
 }
 
 //==============================================================================
-const dart::collision2::dart::CollisionObject*
-FCLCollisionObject::getFCLCollisionObject() const
+const dart::collision2::dart::Object*
+FCLObject::getFCLObject() const
 {
-  return mFCLCollisionObject.get();
+  return mFCLObject.get();
 }
 
 //==============================================================================
-FCLCollisionObject::FCLCollisionObject(
-    CollisionGroup* collisionGroup,
+FCLObject::FCLObject(
+    Group* collisionGroup,
     math::GeometryPtr shape,
     const std::shared_ptr<dart::collision2::dart::CollisionGeometry>&
         dartCollGeom)
-  : CollisionObject(collisionGroup, shape),
-    mFCLCollisionObject(new dart::collision2::dart::CollisionObject(dartCollGeom))
+  : Object(collisionGroup, shape),
+    mFCLObject(new dart::collision2::dart::Object(dartCollGeom))
 {
-  mFCLCollisionObject->setUserData(this);
+  mFCLObject->setUserData(this);
 }
 
 //==============================================================================
-void FCLCollisionObject::updateEngineData()
+void FCLObject::updateEngineData()
 {
   //  using dart::dynamics::BodyNode;
   //  using dart::dynamics::Shape;
@@ -90,7 +90,7 @@ void FCLCollisionObject::updateEngineData()
   //    // TODO(JS): update function be called by somewhere out of here.
 
   //    auto collGeom = const_cast<dart::collision2::dart::CollisionGeometry*>(
-  //        mFCLCollisionObject->collisionGeometry().get());
+  //        mFCLObject->collisionGeometry().get());
   //    assert(
   //        dynamic_cast<::dart::BVHModel<dart::collision2::dart::OBBRSS>*>(collGeom));
   //    auto bvhModel
@@ -112,14 +112,14 @@ void FCLCollisionObject::updateEngineData()
   //    bvhModel->endUpdateModel();
   //  }
 
-  mFCLCollisionObject->setTransform(FCLTypes::convertTransform(getTransform()));
-  mFCLCollisionObject->computeAABB();
+  mFCLObject->setTransform(FCLTypes::convertTransform(getTransform()));
+  mFCLObject->computeAABB();
 }
 
 //==============================================================================
-FCLCollisionObject::FCLCollisionObject(
-    CollisionGroup* collisionGroup, math::GeometryPtr shape)
-  : CollisionObject(collisionGroup, std::move(shape))
+FCLObject::FCLObject(
+    Group* collisionGroup, math::GeometryPtr shape)
+  : Object(collisionGroup, std::move(shape))
 {
   // Do nothing
 }
