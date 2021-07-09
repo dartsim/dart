@@ -43,7 +43,7 @@ namespace collision2 {
 template <typename S>
 math::Isometry3<S> FclObject<S>::getTransform() const
 {
-  return toIsometry3(mFclCollisionObject->getTransform());
+  return toIsometry3<S>(mFclCollisionObject->getTransform());
 }
 
 //==============================================================================
@@ -57,14 +57,14 @@ void FclObject<S>::setTransform(const math::Isometry3<S>& tf)
 template <typename S>
 math::Vector3<S> FclObject<S>::getTranslation() const
 {
-  return toVector3(mFclCollisionObject->getTranslation());
+  return toVector3<S>(mFclCollisionObject->getTranslation());
 }
 
 //==============================================================================
 template <typename S>
 void FclObject<S>::setTranslation(const math::Vector3<S>& pos)
 {
-  mFclCollisionObject->setTranslation(toVector3(pos));
+  mFclCollisionObject->setTranslation(toVector3<S>(pos));
 }
 
 //==============================================================================
