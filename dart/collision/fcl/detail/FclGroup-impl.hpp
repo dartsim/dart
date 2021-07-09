@@ -45,30 +45,29 @@ namespace collision2 {
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<fcl::CollisionGeometry<S>> createFclCollisionGeometry(
+std::shared_ptr<FclCollisionGeometry<S>> createFclCollisionGeometry(
     const math::ConstGeometryPtr& shape,
     typename FclEngine<S>::PrimitiveShape /*type*/)
 {
-  fcl::CollisionGeometry<S>* geom = nullptr;
+  FclCollisionGeometry<S>* geom = nullptr;
 
   if (auto sphere = shape->as<math::Sphered>())
   {
-    geom = new fcl::Sphere<S>(sphere->getRadius());
+    geom = new FclSphere<S>(sphere->getRadius());
   }
   else
   {
     dterr << "Unsupported geometry type: " << shape->getType() << "\n";
   }
 
-  return std::shared_ptr<fcl::CollisionGeometry<S>>(geom);
+  return std::shared_ptr<FclCollisionGeometry<S>>(geom);
 }
 
 //==============================================================================
 template <typename S>
 FclGroup<S>::FclGroup(Engine<S>* collisionDetector)
   : Group<S>(collisionDetector),
-    mBroadPhaseAlg(
-        new dart::collision2::fcl::DynamicAABBTreeCollisionManager<S>())
+    mBroadPhaseAlg(new FclDynamicAABBTreeCollisionManager<S>())
 {
   // Do nothing
 }

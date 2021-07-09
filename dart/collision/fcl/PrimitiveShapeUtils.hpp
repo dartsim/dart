@@ -129,16 +129,16 @@ template <typename BV, typename S>
          {55, 56, 58}, {56, 49, 58}};
 
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
-  fcl::Vector3<S> p1, p2, p3;
+  FclVector3<S> p1, p2, p3;
   model->beginModel();
 
   for (int i = 0; i < 112; i++)
   {
-    p1 = fcl::Vector3<S>(
+    p1 = FclVector3<S>(
         v[f[i][0]][0] * sizeX, v[f[i][0]][1] * sizeY, v[f[i][0]][2] * sizeZ);
-    p2 = fcl::Vector3<S>(
+    p2 = FclVector3<S>(
         v[f[i][1]][0] * sizeX, v[f[i][1]][1] * sizeY, v[f[i][1]][2] * sizeZ);
-    p3 = fcl::Vector3<S>(
+    p3 = FclVector3<S>(
         v[f[i][2]][0] * sizeX, v[f[i][2]][1] * sizeY, v[f[i][2]][2] * sizeZ);
 
     model->addTriangle(p1, p2, p3);

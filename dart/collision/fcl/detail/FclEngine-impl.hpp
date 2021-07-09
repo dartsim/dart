@@ -695,8 +695,8 @@ bool FclEngine<S>::collide(ObjectPtr<S> object1, ObjectPtr<S> object2)
     return false;
   }
 
-  fcl::CollisionRequest<S> request;
-  fcl::CollisionResult<S> result;
+  FclCollisionRequest<S> request;
+  FclCollisionResult<S> result;
 
   return ::fcl::collide(
       fclCollisionObject1, fclCollisionObject2, request, result);
@@ -720,7 +720,7 @@ static bool checkGroupValidity(FclEngine<S>* cd, Group<S>* group)
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<fcl::CollisionGeometry<S>>
+std::shared_ptr<FclCollisionGeometry<S>>
 FclEngine<S>::createFCLCollisionGeometry(math::ConstGeometryPtr shape)
 {
   //  const std::size_t currentVersion = shape->getVersion();
@@ -749,11 +749,11 @@ FclEngine<S>::createFCLCollisionGeometry(math::ConstGeometryPtr shape)
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<fcl::CollisionGeometry<S>>
+std::shared_ptr<FclCollisionGeometry<S>>
 FclEngine<S>::createFCLCollisionGeometryImpl(
     const math::ConstGeometryPtr& shape, FclEngine<S>::PrimitiveShape type)
 {
-  fcl::CollisionGeometry<S>* geom = nullptr;
+  FclCollisionGeometry<S>* geom = nullptr;
   const auto& shapeType = shape->getType();
 
   if (auto sphere = shape->as<math::Sphered>())
@@ -762,14 +762,13 @@ FclEngine<S>::createFCLCollisionGeometryImpl(
 
     if (FclEngine<S>::PRIMITIVE == type)
     {
-      geom = new fcl::Sphere<S>(radius);
+      geom = new FclSphere<S>(radius);
     }
     else
     {
-      auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS<S>>();
-      auto fclSphere = ::fcl::Sphere(radius);
-      ::fcl::generateBVHModel(
-          *fclMesh, fclSphere, fcl::Transform3<S>(), 16, 16);
+      auto fclMesh = new ::fcl::BVHModel<FclOBBRSS<S>>();
+      auto fclSphere = FclSphere<S>(radius);
+      ::fcl::generateBVHModel(*fclMesh, fclSphere, FclTransform3<S>(), 16, 16);
       geom = fclMesh;
     }
   }
@@ -780,12 +779,12 @@ FclEngine<S>::createFCLCollisionGeometryImpl(
           << "]. Creating a sphere with 0.1 radius "
           << "instead.\n";
 
-    geom = new fcl::Sphere<S>(0.1);
+    geom = new FclSphere<S>(0.1);
   }
 
   assert(geom);
 
-  return std::shared_ptr<fcl::CollisionGeometry<S>>(geom);
+  return std::shared_ptr<FclCollisionGeometry<S>>(geom);
 }
 
 } // namespace collision2

@@ -39,30 +39,30 @@ namespace collision2 {
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Vector3<S> toFclVector3(const math::Vector3<S>& vec)
+FclVector3<S> toFclVector3(const math::Vector3<S>& vec)
 {
-  return dart::collision2::fcl::Vector3<S>(vec[0], vec[1], vec[2]);
+  return FclVector3<S>(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
 template <typename S>
-math::Vector3<S> toVector3(const dart::collision2::fcl::Vector3<S>& vec)
+math::Vector3<S> toVector3(const FclVector3<S>& vec)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return vec;
 #else
-  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
+  return math::Vector3<S>(vec[0], vec[1], vec[2]);
 #endif
 }
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Matrix3<S> toFclMatrix3x3(const math::Matrix3<S>& R)
+FclMatrix3<S> toFclMatrix3(const math::Matrix3<S>& R)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return R;
 #else
-  return dart::collision2::fcl::Matrix3<S>(
+  return FclMatrix3<S>(
       R(0, 0),
       R(0, 1),
       R(0, 2),
@@ -77,7 +77,7 @@ dart::collision2::fcl::Matrix3<S> toFclMatrix3x3(const math::Matrix3<S>& R)
 
 //==============================================================================
 template <typename S>
-math::Matrix3<S> toMatrix3x3(const dart::collision2::fcl::Matrix3<S>& R)
+math::Matrix3<S> toMatrix3(const FclMatrix3<S>& R)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return R;
@@ -91,15 +91,15 @@ math::Matrix3<S> toMatrix3x3(const dart::collision2::fcl::Matrix3<S>& R)
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Transform3<S> toFclTransform(const math::Isometry3<S>& T)
+FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T;
 #else
-  dart::collision2::fcl::Transform3<S> trans;
+  FclTransform3<S> trans;
 
   trans.setTranslation(toFclVector3<S>(T.translation()));
-  trans.setRotation(toFclMatrix3x3<S>(T.linear()));
+  trans.setRotation(toFclMatrix3<S>(T.linear()));
 
   return trans;
 #endif
@@ -107,15 +107,15 @@ dart::collision2::fcl::Transform3<S> toFclTransform(const math::Isometry3<S>& T)
 
 //==============================================================================
 template <typename S>
-math::Isometry3<S> toTransform(const dart::collision2::fcl::Transform3<S>& T)
+math::Isometry3<S> toTransform3(const FclTransform3<S>& T)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T;
 #else
-  math::Isometry3<S> trans;
+  math::Isometry3<S> trans = math::Isometry3<S>::Identity();
 
   trans.translation() = toVector3<S>(T.getTranslation());
-  trans.linear() = toMatrix3x3<S>(T.getRotation());
+  trans.linear() = toMatrix3<S>(T.getRotation());
 
   return trans;
 #endif

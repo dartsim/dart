@@ -98,7 +98,8 @@ build() {
     && cd $full_build_dir \
     $cleanup_command \
     && cmake $project_dir \
-    && make -j"
+    && make -j tests \
+    && ctest --output-on-failure"
 }
 
 # Run the selected routine

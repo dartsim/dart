@@ -43,14 +43,14 @@ namespace collision2 {
 template <typename S>
 math::Isometry3<S> FclObject<S>::getTransform() const
 {
-  return toTransform<S>(mFclCollisionObject->getTransform());
+  return toTransform3<S>(mFclCollisionObject->getTransform());
 }
 
 //==============================================================================
 template <typename S>
 void FclObject<S>::setTransform(const math::Isometry3<S>& tf)
 {
-  mFclCollisionObject->setTransform(toFclTransform<S>(tf));
+  mFclCollisionObject->setTransform(toFclTransform3<S>(tf));
 }
 
 //==============================================================================
@@ -69,15 +69,14 @@ void FclObject<S>::setTranslation(const math::Vector3<S>& pos)
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::CollisionObject<S>* FclObject<S>::getFclCollisionObject()
+FclCollisionObject<S>* FclObject<S>::getFclCollisionObject()
 {
   return mFclCollisionObject.get();
 }
 
 //==============================================================================
 template <typename S>
-const dart::collision2::fcl::CollisionObject<S>*
-FclObject<S>::getFclCollisionObject() const
+const FclCollisionObject<S>* FclObject<S>::getFclCollisionObject() const
 {
   return mFclCollisionObject.get();
 }
@@ -87,11 +86,9 @@ template <typename S>
 FclObject<S>::FclObject(
     Group<S>* collisionGroup,
     math::GeometryPtr shape,
-    const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
-        fclCollGeom)
+    const std::shared_ptr<FclCollisionGeometry<S>>& fclCollGeom)
   : Object<S>(collisionGroup, shape),
-    mFclCollisionObject(
-        new dart::collision2::fcl::CollisionObject<S>(fclCollGeom))
+    mFclCollisionObject(new FclCollisionObject<S>(fclCollGeom))
 {
   assert(fclCollGeom);
   mFclCollisionObject->setUserData(this);
@@ -117,30 +114,30 @@ void FclObject<S>::updateEngineData()
   //    const_cast<SoftMeshShape*>(softMeshShape)->update();
   //    // TODO(JS): update function be called by somewhere out of here.
 
-  //    auto collGeom = const_cast<dart::collision2::fcl::CollisionGeometry*>(
+  //    auto collGeom = const_cast<FclCollisionGeometry*>(
   //        mFCLObject->collisionGeometry().get());
   //    assert(
-  //        dynamic_cast<::fcl::BVHModel<dart::collision2::fcl::OBBRSS>*>(collGeom));
+  //        dynamic_cast<::fcl::BVHModel<FclOBBRSS>*>(collGeom));
   //    auto bvhModel
   //        =
-  //        static_cast<::fcl::BVHModel<dart::collision2::fcl::OBBRSS>*>(collGeom);
+  //        static_cast<::fcl::BVHModel<FclOBBRSS>*>(collGeom);
 
   //    bvhModel->beginUpdateModel();
   //    for (auto i = 0u; i < mesh->mNumFaces; ++i)
   //    {
-  //      dart::collision2::fcl::Vector3 vertices[3];
+  //      FclVector3 vertices[3];
   //      for (auto j = 0u; j < 3; ++j)
   //      {
   //        const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
   //        vertices[j]
-  //            = dart::collision2::fcl::Vector3(vertex.x, vertex.y, vertex.z);
+  //            = FclVector3(vertex.x, vertex.y, vertex.z);
   //      }
   //      bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
   //    }
   //    bvhModel->endUpdateModel();
   //  }
 
-  mFclCollisionObject->setTransform(toFclTransform(getTransform()));
+  mFclCollisionObject->setTransform(toFclTransform3(getTransform()));
   mFclCollisionObject->computeAABB();
 }
 

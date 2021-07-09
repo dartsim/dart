@@ -35,12 +35,11 @@
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
-namespace collision {
-namespace fcl {
+namespace collision2 {
 
 //==============================================================================
 template <typename S>
-S length(const dart::collision2::fcl::Vector3<S>& t)
+S length(const FclVector3<S>& t)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t.norm();
@@ -51,7 +50,7 @@ S length(const dart::collision2::fcl::Vector3<S>& t)
 
 //==============================================================================
 template <typename S>
-S length2(const dart::collision2::fcl::Vector3<S>& t)
+S length2(const FclVector3<S>& t)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t.squaredNorm();
@@ -62,8 +61,7 @@ S length2(const dart::collision2::fcl::Vector3<S>& t)
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Vector3<S> getTranslation(
-    const dart::collision2::fcl::Transform3<S>& T)
+FclVector3<S> getTranslation(const FclTransform3<S>& T)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T.translation();
@@ -74,9 +72,7 @@ dart::collision2::fcl::Vector3<S> getTranslation(
 
 //==============================================================================
 template <typename S>
-void setTranslation(
-    dart::collision2::fcl::Transform3<S>& T,
-    const dart::collision2::fcl::Vector3<S>& t)
+void setTranslation(FclTransform3<S>& T, const FclVector3<S>& t)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   T.translation() = t;
@@ -87,8 +83,7 @@ void setTranslation(
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Matrix3<S> getRotation(
-    const dart::collision2::fcl::Transform3<S>& T)
+FclMatrix3<S> getRotation(const FclTransform3<S>& T)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T.linear();
@@ -99,9 +94,7 @@ dart::collision2::fcl::Matrix3<S> getRotation(
 
 //==============================================================================
 template <typename S>
-void setRotation(
-    dart::collision2::fcl::Transform3<S>& T,
-    const dart::collision2::fcl::Matrix3<S>& R)
+void setRotation(FclTransform3<S>& T, const FclMatrix3<S>& R)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   T.linear() = R;
@@ -112,8 +105,7 @@ void setRotation(
 
 //==============================================================================
 template <typename S>
-void setEulerZYX(
-    dart::collision2::fcl::Matrix3<S>& rot, S eulerX, S eulerY, S eulerZ)
+void setEulerZYX(FclMatrix3<S>& rot, S eulerX, S eulerY, S eulerZ)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   S ci(cos(eulerX));
@@ -139,9 +131,7 @@ void setEulerZYX(
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Vector3<S> transform(
-    const dart::collision2::fcl::Transform3<S>& t,
-    const dart::collision2::fcl::Vector3<S>& v)
+FclVector3<S> transform(const FclTransform3<S>& t, const FclVector3<S>& v)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t * v;
@@ -150,6 +140,5 @@ dart::collision2::fcl::Vector3<S> transform(
 #endif
 }
 
-} // namespace fcl
-} // namespace collision
+} // namespace collision2
 } // namespace dart

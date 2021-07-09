@@ -45,8 +45,7 @@ class FclGroup : public Group<S_>
 {
 public:
   using S = S_;
-  using FCLCollisionManager
-      = dart::collision2::fcl::DynamicAABBTreeCollisionManager<S>;
+  using FCLCollisionManager = FclDynamicAABBTreeCollisionManager<S>;
 
   friend class FclEngine<S>;
 
