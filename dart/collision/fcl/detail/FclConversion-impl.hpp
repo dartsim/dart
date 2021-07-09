@@ -37,14 +37,12 @@
 namespace dart {
 namespace collision2 {
 
-#if !FCL_VERSION_AT_LEAST(0, 6, 0)
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Vector3<S> toVector3(const math::Vector3<S>& vec)
+dart::collision2::fcl::Vector3<S> toFclVector3(const math::Vector3<S>& vec)
 {
   return dart::collision2::fcl::Vector3<S>(vec[0], vec[1], vec[2]);
 }
-#endif
 
 //==============================================================================
 template <typename S>
@@ -59,7 +57,7 @@ math::Vector3<S> toVector3(const dart::collision2::fcl::Vector3<S>& vec)
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Matrix3<S> toMatrix3x3(const math::Matrix3<S>& R)
+dart::collision2::fcl::Matrix3<S> toFclMatrix3x3(const math::Matrix3<S>& R)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return R;
@@ -93,15 +91,15 @@ math::Matrix3<S> toMatrix3x3(const dart::collision2::fcl::Matrix3<S>& R)
 
 //==============================================================================
 template <typename S>
-dart::collision2::fcl::Transform3<S> toTransform(const math::Isometry3<S>& T)
+dart::collision2::fcl::Transform3<S> toFclTransform(const math::Isometry3<S>& T)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T;
 #else
   dart::collision2::fcl::Transform3<S> trans;
 
-  trans.setTranslation(toVector3<S>(T.translation()));
-  trans.setRotation(toMatrix3x3<S>(T.linear()));
+  trans.setTranslation(toFclVector3<S>(T.translation()));
+  trans.setRotation(toFclMatrix3x3<S>(T.linear()));
 
   return trans;
 #endif
@@ -109,7 +107,7 @@ dart::collision2::fcl::Transform3<S> toTransform(const math::Isometry3<S>& T)
 
 //==============================================================================
 template <typename S>
-math::Isometry3<S> toIsometry3(const dart::collision2::fcl::Transform3<S>& T)
+math::Isometry3<S> toTransform(const dart::collision2::fcl::Transform3<S>& T)
 {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T;

@@ -8,7 +8,7 @@ script_path="$(
 
 os=ubuntu-focal
 dart_version=v7.0
-build_rel_dir=.build
+build_dir_prefix=.build/
 project_dir=/opt/dart/
 cleanup_command=""
 use_dev_image=false
@@ -87,13 +87,15 @@ build() {
 
   docker pull $full_image_name
 
+  full_build_dir=$project_dir$build_dir_prefix$os-$dart_version
+
   docker run \
     -it \
     --volume $(pwd):$project_dir \
     -w $project_dir/ \
     $full_image_name /bin/bash -c \
-    "mkdir -p $project_dir$build_rel_dir \
-    && cd $project_dir$build_rel_dir \
+    "mkdir -p $full_build_dir \
+    && cd $full_build_dir \
     $cleanup_command \
     && cmake $project_dir \
     && make -j"

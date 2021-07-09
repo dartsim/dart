@@ -30,40 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include "dart/collision/fcl/BackwardCompatibility.hpp"
-#include "dart/common/SmartPointer.hpp"
-#include "dart/math/Types.hpp"
+#include <dart/collision/collision.hpp>
+#include <dart/math/math.hpp>
+#include <dart/test/GTestUtils.hpp>
 
-namespace dart {
-namespace collision2 {
+using namespace dart;
 
-/// Converts Eigen vector3 to FCL vector3
-template <typename S>
-dart::collision2::fcl::Vector3<S> toFclVector3(const math::Vector3<S>& vec);
+//==============================================================================
+template <typename T>
+struct FclConversion : public testing::Test {
+  using Type = T;
+};
 
-/// Converts FCL vector3 to Eigen vector3
-template <typename S>
-math::Vector3<S> toVector3(const dart::collision2::fcl::Vector3<S>& vec);
+//==============================================================================
+//using Types = testing::Types<double, float>;
 
-/// Converts Eigen matrix3x3 to FCL matrix3x3
-template <typename S>
-dart::collision2::fcl::Matrix3<S> toFclMatrix3x3(const math::Matrix3<S>& R);
+////==============================================================================
+//TYPED_TEST_SUITE(FclConversion, Types);
 
-/// Converts FCL matrix3x3 to Eigen matrix3x3
-template <typename S>
-math::Matrix3<S> toMatrix3x3(const dart::collision2::fcl::Matrix3<S>& R);
+////==============================================================================
+//TYPED_TEST(FclConversion, Constructor)
+//{
+// using S = typename TypeParam::type;
 
-/// Converts Eigen transform to FCL transform
-template <typename S>
-dart::collision2::fcl::Transform3<S> toFclTransform(const math::Isometry3<S>& T);
-
-/// Converts FCL transform to Eigen transform
-template <typename S>
-math::Isometry3<S> toTransform(const dart::collision2::fcl::Transform3<S>& T);
-
-} // namespace collision2
-} // namespace dart
-
-#include "dart/collision/fcl/detail/FclConversion-impl.hpp"
+//// collision2::toFcl
+//}
