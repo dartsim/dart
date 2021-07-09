@@ -1,0 +1,103 @@
+#!/bin/sh
+set -e
+
+script_path="$(
+  cd "$(dirname "$0")"
+  pwd -P
+)"
+
+os=ubuntu-focal
+dart_version=v7.0
+build_rel_dir=.build
+project_dir=/opt/dart/
+cleanup_command=""
+use_dev_image=false
+
+help() {
+  cat <<EOF
+  Usage: ${0##*/} <routine> [<options>...]
+
+  Routines:
+    build   Build DART and run its tests
+    launch  Launch Docker image for DART build
+
+  Options:
+    -o <name>     OS version. Available <name>: {ubuntu-bionic, ubuntu-focal (default), ubuntu-impish}
+    -v <version>  DART version. Available <version>: {v6.10, v7.0 (default)}
+    -c            Clean build. Empty the build directory before building.
+    --dev         Use Docker image for development rather than release image.
+EOF
+}
+
+if [ "$#" -lt 1 ]; then
+  help
+  exit
+else
+  routine=$1
+  shift
+fi
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -o)
+    os=$2
+    shift
+    ;;
+  -v)
+    dart_version=$2
+    shift
+    ;;
+  -c)
+    cleanup_command="&& rm -rf *"
+    ;;
+  --dev)
+    use_dev_image=true
+    ;;
+  *)
+    bash_command=$@
+    break
+    ;;
+  esac
+  shift
+done
+
+full_image_name_deploy=dartsim/dart:$os-$dart_version
+full_image_name_dev=dartsim/dart-dev:$os-$dart_version
+
+launch() {
+  if [ "$use_dev_image" = true ]; then
+    full_image_name=$full_image_name_dev
+  else
+    full_image_name=$full_image_name_deploy
+  fi
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --privileged \
+    --volume $(pwd):$project_dir \
+    -w $project_dir \
+    -t $full_image_name \
+    /bin/bash
+}
+
+build() {
+  full_image_name=$full_image_name_dev
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --volume $(pwd):$project_dir \
+    -w $project_dir/ \
+    $full_image_name /bin/bash -c \
+    "mkdir -p $project_dir$build_rel_dir \
+    && cd $project_dir$build_rel_dir \
+    $cleanup_command \
+    && cmake $project_dir \
+    && make -j"
+}
+
+# Run the selected routine
+"$routine"
