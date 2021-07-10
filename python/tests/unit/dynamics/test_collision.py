@@ -38,8 +38,8 @@ def collision_groups_tester(cd):
     simple_frame2.setTranslation([3, 0, 0])
     assert not group.collide()
 
-    option = dart.collision.CollisionOption()
-    result = dart.collision.CollisionResult()
+    option = dart.dynamics.CollisionOption()
+    result = dart.dynamics.CollisionResult()
 
     group.collide(option, result)
     assert not result.isCollision()
@@ -102,23 +102,23 @@ def collision_groups_tester(cd):
 
 
 def test_collision_groups():
-    cd = dart.collision.FCLCollisionDetector()
+    cd = dart.dynamics.FCLCollisionDetector()
     collision_groups_tester(cd)
 
-    cd = dart.collision.DARTCollisionDetector()
+    cd = dart.dynamics.DARTCollisionDetector()
     collision_groups_tester(cd)
 
     if hasattr(dart.collision, "BulletCollisionDetector"):
-        cd = dart.collision.BulletCollisionDetector()
+        cd = dart.dynamics.BulletCollisionDetector()
         collision_groups_tester(cd)
 
     if hasattr(dart.collision, "OdeCollisionDetector"):
-        cd = dart.collision.OdeCollisionDetector()
+        cd = dart.dynamics.OdeCollisionDetector()
         collision_groups_tester(cd)
 
 
 # TODO: Add more collision detectors
-@pytest.mark.parametrize("cd", [dart.collision.FCLCollisionDetector()])
+@pytest.mark.parametrize("cd", [dart.dynamics.FCLCollisionDetector()])
 def test_filter(cd):
     # Create two bodies skeleton. The two bodies are placed at the same position
     # with the same size shape so that they collide by default.
@@ -150,7 +150,7 @@ def test_filter(cd):
 
     # Create BodyNodeCollisionFilter
     option = constraint_solver.getCollisionOption()
-    body_node_filter = dart.collision.BodyNodeCollisionFilter()
+    body_node_filter = dart.dynamics.BodyNodeCollisionFilter()
     option.collisionFilter = body_node_filter
 
     skel.enableSelfCollisionCheck()
@@ -195,7 +195,7 @@ def test_filter(cd):
 
 
 def test_raycast():
-    cd = dart.collision.BulletCollisionDetector()
+    cd = dart.dynamics.BulletCollisionDetector()
 
     simple_frame = dart.dynamics.SimpleFrame()
     sphere = dart.dynamics.SphereShape(1)
@@ -205,13 +205,13 @@ def test_raycast():
     group.addShapeFrame(simple_frame)
     assert group.getNumShapeFrames() == 1
 
-    option = dart.collision.RaycastOption()
+    option = dart.dynamics.RaycastOption()
     option.mEnableAllHits = False
 
-    result = dart.collision.RaycastResult()
+    result = dart.dynamics.RaycastResult()
     assert not result.hasHit()
 
-    ray_hit = dart.collision.RayHit()
+    ray_hit = dart.dynamics.RayHit()
 
     result.clear()
     simple_frame.setTranslation(np.zeros(3))
