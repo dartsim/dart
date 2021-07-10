@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// PlaneShape represents infinite plane has normal and offset as properties.
-class PlaneShape : public Shape
-{
+class PlaneShape : public Shape {
 public:
   /// Constructor
   PlaneShape(const Eigen::Vector3d& _normal, double _offset);

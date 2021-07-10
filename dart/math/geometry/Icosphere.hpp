@@ -45,8 +45,7 @@ namespace math {
 /// The class Icosphere represents an icosphere where the subdivision and radius
 /// are configurable.
 template <typename S_>
-class Icosphere : public TriMesh<S_>
-{
+class Icosphere : public TriMesh<S_> {
 public:
   // Type aliases
   using S = S_;

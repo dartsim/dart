@@ -42,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ShadowTechnique(py::module& m)
-{
+void ShadowTechnique(py::module& m) {
   ::py::class_<
       ::osgShadow::ShadowTechnique,
       ::osg::ref_ptr<::osgShadow::ShadowTechnique>>(m, "ShadowTechnique");

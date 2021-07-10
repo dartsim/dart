@@ -34,16 +34,15 @@
 
 #if DART_HAVE_ODE
 
-#  include <dart/dynamics/dynamics.hpp>
-#  include <pybind11/pybind11.h>
+  #include <dart/dynamics/dynamics.hpp>
+  #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void OdeCollisionDetector(py::module& m)
-{
+void OdeCollisionDetector(py::module& m) {
   ::py::class_<
       dart::dynamics::OdeCollisionDetector,
       std::shared_ptr<dart::dynamics::OdeCollisionDetector>,
@@ -61,7 +60,9 @@ void OdeCollisionDetector(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::OdeCollisionDetector* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "createCollisionGroup",

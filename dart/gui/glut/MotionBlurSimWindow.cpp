@@ -26,40 +26,33 @@ namespace gui {
 namespace glut {
 
 //==============================================================================
-MotionBlurSimWindow::MotionBlurSimWindow() : SimWindow()
-{
+MotionBlurSimWindow::MotionBlurSimWindow() : SimWindow() {
   mMotionBlurFrequency = 1;
 }
 
 //==============================================================================
-MotionBlurSimWindow::~MotionBlurSimWindow()
-{
+MotionBlurSimWindow::~MotionBlurSimWindow() {
   // Do nothing
 }
 
 //==============================================================================
-void MotionBlurSimWindow::setMotionBlurQuality(int _val)
-{
+void MotionBlurSimWindow::setMotionBlurQuality(int _val) {
   int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
-  if (_val < 0)
-  {
+  if (_val < 0) {
     std::cout << "setMotionBlurQuality: input should be an int between 0-5, "
                  "Regard as 0"
               << std::endl;
     std::cout << "0: No motion blur, 5: Motion blur with highest quality"
               << std::endl;
     mMotionBlurFrequency = numIter;
-  }
-  else if (_val > 5)
-  {
+  } else if (_val > 5) {
     std::cout << "setMotionBlurQuality: input should be an int between 0-5, "
                  "Regard as 5"
               << std::endl;
     std::cout << "0: No motion blur, 5: Motion blur with highest quality"
               << std::endl;
     mMotionBlurFrequency = 1;
-  }
-  else if (_val == 0)
+  } else if (_val == 0)
     mMotionBlurFrequency = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
   else if (_val == 1)
     mMotionBlurFrequency = std::min(numIter, 16);
@@ -74,20 +67,15 @@ void MotionBlurSimWindow::setMotionBlurQuality(int _val)
 }
 
 //==============================================================================
-void MotionBlurSimWindow::render()
-{
+void MotionBlurSimWindow::render() {
   int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
   int numMotionBlurFrames = ceil(
       floor(mDisplayTimeout)
       / (mWorld->getTimeStep() * 1000 * mMotionBlurFrequency));
-  if (!mPlay && mSimulating)
-  {
-    for (int i = 0; i < numIter; i += mMotionBlurFrequency)
-    {
-      for (int j = 0; j < mMotionBlurFrequency; j++)
-      {
-        if (i + j < numIter)
-        {
+  if (!mPlay && mSimulating) {
+    for (int i = 0; i < numIter; i += mMotionBlurFrequency) {
+      for (int j = 0; j < mMotionBlurFrequency; j++) {
+        if (i + j < numIter) {
           timeStepping();
           mWorld->bake();
         }
@@ -111,14 +99,12 @@ void MotionBlurSimWindow::render()
       mTrackBall.applyGLRotation();
 
       // Draw world origin indicator
-      if (!mCapture)
-      {
+      if (!mCapture) {
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_TEXTURE_2D);
         glDisable(GL_LIGHTING);
         glLineWidth(2.0);
-        if (mRotate || mTranslate || mZooming)
-        {
+        if (mRotate || mTranslate || mZooming) {
           glColor3f(1.0f, 0.0f, 0.0f);
           glBegin(GL_LINES);
           glVertex3f(-0.1f, 0.0f, -0.0f);
@@ -145,19 +131,15 @@ void MotionBlurSimWindow::render()
       initLights();
       draw();
 
-      if (i == 0)
-      {
+      if (i == 0) {
         // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glAccum(GL_LOAD, 1 / float(numMotionBlurFrames));
-      }
-      else
-      {
+      } else {
         glAccum(GL_ACCUM, 1 / float(numMotionBlurFrames));
       }
     } // for loop
   }   // if simulating
-  else if (mWorld->getRecording()->getNumFrames() == 0)
-  {
+  else if (mWorld->getRecording()->getNumFrames() == 0) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(
@@ -175,14 +157,12 @@ void MotionBlurSimWindow::render()
     mTrackBall.applyGLRotation();
 
     // Draw world origin indicator
-    if (!mCapture)
-    {
+    if (!mCapture) {
       glEnable(GL_DEPTH_TEST);
       glDisable(GL_TEXTURE_2D);
       glDisable(GL_LIGHTING);
       glLineWidth(2.0);
-      if (mRotate || mTranslate || mZooming)
-      {
+      if (mRotate || mTranslate || mZooming) {
         glColor3f(1.0f, 0.0f, 0.0f);
         glBegin(GL_LINES);
         glVertex3f(-0.1f, 0.0f, -0.0f);
@@ -226,10 +206,8 @@ void MotionBlurSimWindow::render()
 }
 
 //==============================================================================
-void MotionBlurSimWindow::displayTimer(int _val)
-{
-  if (mPlay)
-  {
+void MotionBlurSimWindow::displayTimer(int _val) {
+  if (mPlay) {
     mPlayFrame += 16;
     if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
       mPlayFrame = 0;

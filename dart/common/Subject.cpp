@@ -31,20 +31,19 @@
  */
 
 #include "dart/common/Subject.hpp"
+
 #include "dart/common/Observer.hpp"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-Subject::~Subject()
-{
+Subject::~Subject() {
   sendDestructionNotification();
 }
 
 //==============================================================================
-void Subject::sendDestructionNotification() const
-{
+void Subject::sendDestructionNotification() const {
   std::set<Observer*>::iterator sub = mObservers.begin(),
                                 end = mObservers.end();
   while (sub != end)
@@ -54,8 +53,7 @@ void Subject::sendDestructionNotification() const
 }
 
 //==============================================================================
-void Subject::addObserver(Observer* _observer) const
-{
+void Subject::addObserver(Observer* _observer) const {
   if (nullptr == _observer)
     return;
 
@@ -67,8 +65,7 @@ void Subject::addObserver(Observer* _observer) const
 }
 
 //==============================================================================
-void Subject::removeObserver(Observer* _observer) const
-{
+void Subject::removeObserver(Observer* _observer) const {
   if (nullptr == _observer)
     return;
 

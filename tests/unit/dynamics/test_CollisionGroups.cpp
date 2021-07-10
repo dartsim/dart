@@ -32,31 +32,24 @@
 
 #include <iostream>
 
+#include <dart/dynamics/SphereShape.hpp>
 #include <gtest/gtest.h>
 
-#include <dart/dynamics/SphereShape.hpp>
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-
-#include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/simulation/World.hpp"
 
 class CollisionGroupsTest : public testing::Test,
-                            public testing::WithParamInterface<const char*>
-{
-};
+                            public testing::WithParamInterface<const char*> {};
 
-TEST_P(CollisionGroupsTest, SkeletonSubscription)
-{
-  if (!dart::dynamics::CollisionDetector::getFactory()->canCreate(GetParam()))
-  {
+TEST_P(CollisionGroupsTest, SkeletonSubscription) {
+  if (!dart::dynamics::CollisionDetector::getFactory()->canCreate(GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
-  }
-  else
-  {
+  } else {
     std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
               << std::endl;
   }
@@ -149,22 +142,17 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   EXPECT_FALSE(world->checkCollision());
 }
 
-TEST_P(CollisionGroupsTest, BodyNodeSubscription)
-{
-  if (!dart::dynamics::CollisionDetector::getFactory()->canCreate(GetParam()))
-  {
+TEST_P(CollisionGroupsTest, BodyNodeSubscription) {
+  if (!dart::dynamics::CollisionDetector::getFactory()->canCreate(GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
-  }
-  else
-  {
+  } else {
     std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
               << std::endl;
   }
 
-  auto cd
-      = dart::dynamics::CollisionDetector::getFactory()->create(GetParam());
+  auto cd = dart::dynamics::CollisionDetector::getFactory()->create(GetParam());
 
   auto group = cd->createCollisionGroup();
 

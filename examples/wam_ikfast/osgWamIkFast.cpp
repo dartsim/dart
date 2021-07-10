@@ -38,8 +38,7 @@
 #include "InputHandler.hpp"
 #include "WamWorld.hpp"
 
-int main()
-{
+int main() {
   // Create the world.
   dart::simulation::WorldPtr world(new dart::simulation::World);
 

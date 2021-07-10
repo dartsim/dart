@@ -36,52 +36,41 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
-class Controller
-{
+class Controller {
 public:
   Controller(
       const dart::dynamics::SkeletonPtr& _skel,
       dart::dynamics::ConstraintSolver* _collisionSolver,
       double _t);
-  virtual ~Controller()
-  {
+  virtual ~Controller() {
   }
 
-  Eigen::VectorXd getTorques()
-  {
+  Eigen::VectorXd getTorques() {
     return mTorques;
   }
-  double getTorque(int _index)
-  {
+  double getTorque(int _index) {
     return mTorques[_index];
   }
-  void setDesiredDof(int _index, double _val)
-  {
+  void setDesiredDof(int _index, double _val) {
     mDesiredDofs[_index] = _val;
   }
   void computeTorques(
       const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
-  dart::dynamics::SkeletonPtr getSkel()
-  {
+  dart::dynamics::SkeletonPtr getSkel() {
     return mSkel;
   }
-  Eigen::VectorXd getDesiredDofs()
-  {
+  Eigen::VectorXd getDesiredDofs() {
     return mDesiredDofs;
   }
-  Eigen::MatrixXd getKp()
-  {
+  Eigen::MatrixXd getKp() {
     return mKp;
   }
-  Eigen::MatrixXd getKd()
-  {
+  Eigen::MatrixXd getKd() {
     return mKd;
   }
-  void setConstrForces(const Eigen::VectorXd& _constrForce)
-  {
+  void setConstrForces(const Eigen::VectorXd& _constrForce) {
     mConstrForces = _constrForce;
   }
 

@@ -35,7 +35,9 @@
 
 #include <ctime>
 #include <vector>
+
 #include <Eigen/Dense>
+
 #include "dart/math/MathTypes.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,8 +47,7 @@ namespace io {
 
 #define C3D_REC_SIZE 512
 
-typedef struct c3d_head_t
-{
+typedef struct c3d_head_t {
   unsigned char prec_start;
   unsigned char key;
   short pnt_cnt;
@@ -61,23 +62,20 @@ typedef struct c3d_head_t
   short stuff[244];
 } c3d_head;
 
-typedef struct c3d_param_t
-{
+typedef struct c3d_param_t {
   unsigned char reserved[2];
   unsigned char pblocks;
   unsigned char ftype;
   char stuff[C3D_REC_SIZE - 4];
 } c3d_param;
 
-typedef struct c3d_frameSI_t
-{
+typedef struct c3d_frameSI_t {
   short x, y, z;
   unsigned char cam_byte;
   unsigned char residual;
 } c3d_frameSI;
 
-typedef struct c3d_frame_t
-{
+typedef struct c3d_frame_t {
   float x, y, z;
   float residual;
 } c3d_frame;

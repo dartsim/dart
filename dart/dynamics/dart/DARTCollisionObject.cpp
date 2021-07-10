@@ -39,16 +39,14 @@ namespace dynamics {
 DARTCollisionObject::DARTCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
-  : CollisionObject(collisionDetector, shapeFrame)
-{
+  : CollisionObject(collisionDetector, shapeFrame) {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionObject::updateEngineData()
-{
+void DARTCollisionObject::updateEngineData() {
   // Do nothing
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

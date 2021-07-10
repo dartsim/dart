@@ -40,8 +40,7 @@
 namespace dart {
 namespace dynamics {
 
-class OdeCollisionGroup : public CollisionGroup
-{
+class OdeCollisionGroup : public CollisionGroup {
 public:
   friend class OdeCollisionDetector;
 
@@ -81,7 +80,7 @@ protected:
   dSpaceID mSpaceId;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_

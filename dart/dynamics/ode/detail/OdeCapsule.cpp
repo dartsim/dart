@@ -41,17 +41,15 @@ namespace detail {
 //==============================================================================
 OdeCapsule::OdeCapsule(
     const OdeCollisionObject* parent, double radius, double height)
-  : OdeGeom(parent)
-{
+  : OdeGeom(parent) {
   mGeomId = dCreateCapsule(0, radius, height);
 }
 
 //==============================================================================
-OdeCapsule::~OdeCapsule()
-{
+OdeCapsule::~OdeCapsule() {
   dGeomDestroy(mGeomId);
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

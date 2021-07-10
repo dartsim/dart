@@ -42,36 +42,31 @@ namespace dynamics {
 
 //==============================================================================
 TranslationalJoint::Properties::Properties(const Base::Properties& _properties)
-  : Base::Properties(_properties)
-{
+  : Base::Properties(_properties) {
   // Do nothing
 }
 
 //==============================================================================
-TranslationalJoint::~TranslationalJoint()
-{
+TranslationalJoint::~TranslationalJoint() {
   // Do nothing
 }
 
 //==============================================================================
 Eigen::Matrix<double, 6, 3> TranslationalJoint::getRelativeJacobianStatic(
-    const Eigen::Vector3d& /*_positions*/) const
-{
+    const Eigen::Vector3d& /*_positions*/) const {
   // The Jacobian is always constant w.r.t. the generalized coordinates.
   return getRelativeJacobianStatic();
 }
 
 //==============================================================================
 TranslationalJoint::Properties
-TranslationalJoint::getTranslationalJointProperties() const
-{
+TranslationalJoint::getTranslationalJointProperties() const {
   return getGenericJointProperties();
 }
 
 //==============================================================================
 TranslationalJoint::TranslationalJoint(const Properties& properties)
-  : Base(properties)
-{
+  : Base(properties) {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createGenericJointAspect(properties);
@@ -79,33 +74,28 @@ TranslationalJoint::TranslationalJoint(const Properties& properties)
 }
 
 //==============================================================================
-Joint* TranslationalJoint::clone() const
-{
+Joint* TranslationalJoint::clone() const {
   return new TranslationalJoint(getTranslationalJointProperties());
 }
 
 //==============================================================================
-const std::string& TranslationalJoint::getType() const
-{
+const std::string& TranslationalJoint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& TranslationalJoint::getStaticType()
-{
+const std::string& TranslationalJoint::getStaticType() {
   static const std::string name = "TranslationalJoint";
   return name;
 }
 
 //==============================================================================
-bool TranslationalJoint::isCyclic(std::size_t /*_index*/) const
-{
+bool TranslationalJoint::isCyclic(std::size_t /*_index*/) const {
   return false;
 }
 
 //==============================================================================
-void TranslationalJoint::updateDegreeOfFreedomNames()
-{
+void TranslationalJoint::updateDegreeOfFreedomNames() {
   if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_x", false);
   if (!mDofs[1]->isNamePreserved())
@@ -115,8 +105,7 @@ void TranslationalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void TranslationalJoint::updateRelativeTransform() const
-{
+void TranslationalJoint::updateRelativeTransform() const {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
@@ -126,10 +115,8 @@ void TranslationalJoint::updateRelativeTransform() const
 }
 
 //==============================================================================
-void TranslationalJoint::updateRelativeJacobian(bool _mandatory) const
-{
-  if (_mandatory)
-  {
+void TranslationalJoint::updateRelativeJacobian(bool _mandatory) const {
+  if (_mandatory) {
     mJacobian.bottomRows<3>()
         = Joint::mAspectProperties.mT_ChildBodyToJoint.linear();
 
@@ -140,8 +127,7 @@ void TranslationalJoint::updateRelativeJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void TranslationalJoint::updateRelativeJacobianTimeDeriv() const
-{
+void TranslationalJoint::updateRelativeJacobianTimeDeriv() const {
   // Time derivative of translational joint is always zero
   assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));
 }

@@ -42,41 +42,35 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ScrewJoint::~ScrewJoint()
-{
+ScrewJoint::~ScrewJoint() {
   // Do nothing
 }
 
 //==============================================================================
-void ScrewJoint::setProperties(const Properties& _properties)
-{
+void ScrewJoint::setProperties(const Properties& _properties) {
   GenericJoint<math::R1Space>::setProperties(
       static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
 //==============================================================================
-void ScrewJoint::setProperties(const UniqueProperties& _properties)
-{
+void ScrewJoint::setProperties(const UniqueProperties& _properties) {
   setAspectProperties(_properties);
 }
 
 //==============================================================================
-void ScrewJoint::setAspectProperties(const AspectProperties& properties)
-{
+void ScrewJoint::setAspectProperties(const AspectProperties& properties) {
   setAxis(properties.mAxis);
   setPitch(properties.mPitch);
 }
 
 //==============================================================================
-ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
-{
+ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const {
   return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
-void ScrewJoint::copy(const ScrewJoint& _otherJoint)
-{
+void ScrewJoint::copy(const ScrewJoint& _otherJoint) {
   if (this == &_otherJoint)
     return;
 
@@ -84,8 +78,7 @@ void ScrewJoint::copy(const ScrewJoint& _otherJoint)
 }
 
 //==============================================================================
-void ScrewJoint::copy(const ScrewJoint* _otherJoint)
-{
+void ScrewJoint::copy(const ScrewJoint* _otherJoint) {
   if (nullptr == _otherJoint)
     return;
 
@@ -93,34 +86,29 @@ void ScrewJoint::copy(const ScrewJoint* _otherJoint)
 }
 
 //==============================================================================
-ScrewJoint& ScrewJoint::operator=(const ScrewJoint& _otherJoint)
-{
+ScrewJoint& ScrewJoint::operator=(const ScrewJoint& _otherJoint) {
   copy(_otherJoint);
   return *this;
 }
 
 //==============================================================================
-const std::string& ScrewJoint::getType() const
-{
+const std::string& ScrewJoint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& ScrewJoint::getStaticType()
-{
+const std::string& ScrewJoint::getStaticType() {
   static const std::string name = "ScrewJoint";
   return name;
 }
 
 //==============================================================================
-bool ScrewJoint::isCyclic(std::size_t /*_index*/) const
-{
+bool ScrewJoint::isCyclic(std::size_t /*_index*/) const {
   return false;
 }
 
 //==============================================================================
-void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
-{
+void ScrewJoint::setAxis(const Eigen::Vector3d& _axis) {
   if (_axis == mAspectProperties.mAxis)
     return;
 
@@ -131,14 +119,12 @@ void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& ScrewJoint::getAxis() const
-{
+const Eigen::Vector3d& ScrewJoint::getAxis() const {
   return mAspectProperties.mAxis;
 }
 
 //==============================================================================
-void ScrewJoint::setPitch(double _pitch)
-{
+void ScrewJoint::setPitch(double _pitch) {
   if (_pitch == mAspectProperties.mPitch)
     return;
 
@@ -149,16 +135,14 @@ void ScrewJoint::setPitch(double _pitch)
 }
 
 //==============================================================================
-double ScrewJoint::getPitch() const
-{
+double ScrewJoint::getPitch() const {
   return mAspectProperties.mPitch;
 }
 
 //==============================================================================
 GenericJoint<math::R1Space>::JacobianMatrix
 ScrewJoint::getRelativeJacobianStatic(
-    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
-{
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const {
   using namespace dart::math::suffixes;
 
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
@@ -175,8 +159,7 @@ ScrewJoint::getRelativeJacobianStatic(
 
 //==============================================================================
 ScrewJoint::ScrewJoint(const Properties& properties)
-  : detail::ScrewJointBase(properties)
-{
+  : detail::ScrewJointBase(properties) {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createScrewJointAspect(properties);
@@ -185,22 +168,19 @@ ScrewJoint::ScrewJoint(const Properties& properties)
 }
 
 //==============================================================================
-Joint* ScrewJoint::clone() const
-{
+Joint* ScrewJoint::clone() const {
   return new ScrewJoint(getScrewJointProperties());
 }
 
 //==============================================================================
-void ScrewJoint::updateDegreeOfFreedomNames()
-{
+void ScrewJoint::updateDegreeOfFreedomNames() {
   // Same name as the joint it belongs to.
   if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName, false);
 }
 
 //==============================================================================
-void ScrewJoint::updateRelativeTransform() const
-{
+void ScrewJoint::updateRelativeTransform() const {
   using namespace dart::math::suffixes;
 
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
@@ -213,15 +193,13 @@ void ScrewJoint::updateRelativeTransform() const
 }
 
 //==============================================================================
-void ScrewJoint::updateRelativeJacobian(bool _mandatory) const
-{
+void ScrewJoint::updateRelativeJacobian(bool _mandatory) const {
   if (_mandatory)
     mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void ScrewJoint::updateRelativeJacobianTimeDeriv() const
-{
+void ScrewJoint::updateRelativeJacobianTimeDeriv() const {
   // Time derivative of screw joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }

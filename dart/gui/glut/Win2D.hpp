@@ -40,8 +40,7 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class Win2D : public glut::Window
-{
+class Win2D : public glut::Window {
 public:
   /// \brief
   Win2D();

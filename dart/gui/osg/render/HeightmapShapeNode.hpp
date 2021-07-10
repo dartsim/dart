@@ -33,8 +33,6 @@
 #ifndef DART_GUI_OSG_RENDER_HEIGHTMAPSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_HEIGHTMAPSHAPENODE_HPP_
 
-#include "dart/config.hpp"
-
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -43,6 +41,7 @@
 #include <osg/MatrixTransform>
 #include <osg/ShapeDrawable>
 
+#include "dart/config.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
@@ -57,8 +56,7 @@ template <typename S>
 class HeightmapShapeGeode;
 
 template <typename S_>
-class HeightmapShapeNode : public ShapeNode, public ::osg::MatrixTransform
-{
+class HeightmapShapeNode : public ShapeNode, public ::osg::MatrixTransform {
 public:
   using S = S_;
 
@@ -79,8 +77,7 @@ protected:
 
 //==============================================================================
 template <typename S>
-class HeightmapShapeDrawable : public ::osg::Geometry
-{
+class HeightmapShapeDrawable : public ::osg::Geometry {
 public:
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
@@ -120,8 +117,7 @@ private:
 
 //==============================================================================
 template <typename S>
-class HeightmapShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class HeightmapShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   HeightmapShapeGeode(
       dynamics::HeightmapShape<S>* shape,
@@ -146,16 +142,14 @@ HeightmapShapeNode<S>::HeightmapShapeNode(
   : ShapeNode(shape, parent, this),
     mHeightmapShape(shape),
     mGeode(nullptr),
-    mHeightmapVersion(dynamics::INVALID_INDEX)
-{
+    mHeightmapVersion(dynamics::INVALID_INDEX) {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 }
 
 //==============================================================================
 template <typename S>
-void HeightmapShapeNode<S>::refresh()
-{
+void HeightmapShapeNode<S>::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
@@ -171,10 +165,8 @@ void HeightmapShapeNode<S>::refresh()
 
 //==============================================================================
 template <typename S>
-void HeightmapShapeNode<S>::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mGeode)
-  {
+void HeightmapShapeNode<S>::extractData(bool /*firstTime*/) {
+  if (nullptr == mGeode) {
     mGeode = new HeightmapShapeGeode<S>(
         mHeightmapShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -186,8 +178,7 @@ void HeightmapShapeNode<S>::extractData(bool /*firstTime*/)
 
 //==============================================================================
 template <typename S>
-HeightmapShapeNode<S>::~HeightmapShapeNode()
-{
+HeightmapShapeNode<S>::~HeightmapShapeNode() {
   // Do nothing
 }
 
@@ -200,8 +191,7 @@ HeightmapShapeGeode<S>::HeightmapShapeGeode(
   : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mParentNode(parentNode),
     mHeightmapShape(shape),
-    mDrawable(nullptr)
-{
+    mDrawable(nullptr) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -212,8 +202,7 @@ HeightmapShapeGeode<S>::HeightmapShapeGeode(
 
 //==============================================================================
 template <typename S>
-void HeightmapShapeGeode<S>::refresh()
-{
+void HeightmapShapeGeode<S>::refresh() {
   mUtilized = true;
 
   extractData();
@@ -221,10 +210,8 @@ void HeightmapShapeGeode<S>::refresh()
 
 //==============================================================================
 template <typename S>
-void HeightmapShapeGeode<S>::extractData()
-{
-  if (nullptr == mDrawable)
-  {
+void HeightmapShapeGeode<S>::extractData() {
+  if (nullptr == mDrawable) {
     mDrawable
         = new HeightmapShapeDrawable<S>(mHeightmapShape, mVisualAspect, this);
     addDrawable(mDrawable);
@@ -236,8 +223,7 @@ void HeightmapShapeGeode<S>::extractData()
 
 //==============================================================================
 template <typename S>
-HeightmapShapeGeode<S>::~HeightmapShapeGeode()
-{
+HeightmapShapeGeode<S>::~HeightmapShapeGeode() {
   // Do nothing
 }
 
@@ -247,8 +233,7 @@ HeightmapShapeDrawable<S>::HeightmapShapeDrawable(
     dynamics::HeightmapShape<S>* shape,
     dynamics::VisualAspect* visualAspect,
     HeightmapShapeGeode<S>* parent)
-  : mHeightmapShape(shape), mVisualAspect(visualAspect), mParent(parent)
-{
+  : mHeightmapShape(shape), mVisualAspect(visualAspect), mParent(parent) {
   static_assert(
       std::is_same<S, float>::value || std::is_same<S, double>::value,
       "Scalar type should be float or double");
@@ -275,15 +260,13 @@ template <typename S>
 Eigen::Matrix<S, 3, 1> getNormal(
     const Eigen::Matrix<S, 3, 1>& p1,
     const Eigen::Matrix<S, 3, 1>& p2,
-    const Eigen::Matrix<S, 3, 1>& p3)
-{
+    const Eigen::Matrix<S, 3, 1>& p3) {
   return (p2 - p1).cross(p3 - p1).normalized();
 }
 
 //==============================================================================
 inline ::osg::Vec3f getNormal(
-    const ::osg::Vec3f& p1, const ::osg::Vec3f& p2, const ::osg::Vec3f& p3)
-{
+    const ::osg::Vec3f& p1, const ::osg::Vec3f& p2, const ::osg::Vec3f& p3) {
   auto normal = (p2 - p1) ^ (p3 - p1);
   normal.normalize();
   return normal;
@@ -291,8 +274,7 @@ inline ::osg::Vec3f getNormal(
 
 //==============================================================================
 inline ::osg::Vec3d getNormal(
-    const ::osg::Vec3d& p1, const ::osg::Vec3d& p2, const ::osg::Vec3d& p3)
-{
+    const ::osg::Vec3d& p1, const ::osg::Vec3d& p2, const ::osg::Vec3d& p3) {
   auto normal = (p2 - p1) ^ (p3 - p1);
   normal.normalize();
   return normal;
@@ -305,8 +287,7 @@ void setVertices(
     typename HeightmapShapeDrawable<S>::Vec3Array& vertices,
     ::osg::DrawElementsUInt& faces,
     typename HeightmapShapeDrawable<S>::Vec3Array& normals,
-    typename HeightmapShapeDrawable<S>::Vector3 scale)
-{
+    typename HeightmapShapeDrawable<S>::Vector3 scale) {
   // Returns an index array for a GL_TRIANGLES heightmap
 
   const auto rows = heightmap.rows();
@@ -314,8 +295,7 @@ void setVertices(
 
   faces.clear();
   normals.clear();
-  if (rows < 2 || cols < 2)
-  {
+  if (rows < 2 || cols < 2) {
     vertices.clear();
     return;
   }
@@ -324,10 +304,8 @@ void setVertices(
 
   // Note that heightmap(i, j) represents the height value at (j, -i) in XY
   // coordinates.
-  for (auto i = 0; i < rows; ++i)
-  {
-    for (auto j = 0; j < cols; ++j)
-    {
+  for (auto i = 0; i < rows; ++i) {
+    for (auto j = 0; j < cols; ++j) {
       const auto index = cols * i + j;
       vertices[index].set(
           j * scale.x(), -(i * scale.y()), heightmap(i, j) * scale.z());
@@ -361,10 +339,8 @@ void setVertices(
 
   // For row-major matrix
   faces.reserve(6 * (rows - 1) * (cols - 1));
-  for (auto i = 1; i < rows; ++i)
-  {
-    for (auto j = 1; j < cols; ++j)
-    {
+  for (auto i = 1; i < rows; ++i) {
+    for (auto j = 1; j < cols; ++j) {
       // Indices for matrix
       const auto p1i = i - 1;
       const auto p1j = j - 1;
@@ -394,10 +370,8 @@ void setVertices(
   }
 
   normals.reserve(heightmap.size());
-  for (auto i = 0; i < rows; ++i)
-  {
-    for (auto j = 0; j < cols; ++j)
-    {
+  for (auto i = 0; i < rows; ++i) {
+    for (auto j = 0; j < cols; ++j) {
       // Indices for matrix
       const auto p2i = i - 1;
       const auto p2j = j;
@@ -443,8 +417,7 @@ void setVertices(
 
 //==============================================================================
 template <typename S>
-void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
-{
+void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/) {
   if (mHeightmapShape->getDataVariance() == dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else

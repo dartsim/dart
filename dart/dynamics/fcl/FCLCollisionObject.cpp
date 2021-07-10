@@ -41,15 +41,13 @@ namespace dynamics {
 
 //==============================================================================
 dart::dynamics::fcl::CollisionObject*
-FCLCollisionObject::getFCLCollisionObject()
-{
+FCLCollisionObject::getFCLCollisionObject() {
   return mFCLCollisionObject.get();
 }
 
 //==============================================================================
 const dart::dynamics::fcl::CollisionObject*
-FCLCollisionObject::getFCLCollisionObject() const
-{
+FCLCollisionObject::getFCLCollisionObject() const {
   return mFCLCollisionObject.get();
 }
 
@@ -59,14 +57,12 @@ FCLCollisionObject::FCLCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     const std::shared_ptr<dart::dynamics::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObject(new dart::dynamics::fcl::CollisionObject(fclCollGeom))
-{
+    mFCLCollisionObject(new dart::dynamics::fcl::CollisionObject(fclCollGeom)) {
   mFCLCollisionObject->setUserData(this);
 }
 
 //==============================================================================
-void FCLCollisionObject::updateEngineData()
-{
+void FCLCollisionObject::updateEngineData() {
   using dart::dynamics::BodyNode;
   using dart::dynamics::Shape;
   using dart::dynamics::SoftMeshShape;
@@ -74,8 +70,7 @@ void FCLCollisionObject::updateEngineData()
   auto shape = mShapeFrame->getShape().get();
 
   // Update soft-body's vertices
-  if (shape->getType() == dynamics::SoftMeshShape::getStaticType())
-  {
+  if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
     assert(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
@@ -91,11 +86,9 @@ void FCLCollisionObject::updateEngineData()
         = static_cast<::fcl::BVHModel<dart::dynamics::fcl::OBBRSS>*>(collGeom);
 
     bvhModel->beginUpdateModel();
-    for (auto i = 0u; i < mesh->mNumFaces; ++i)
-    {
+    for (auto i = 0u; i < mesh->mNumFaces; ++i) {
       dart::dynamics::fcl::Vector3 vertices[3];
-      for (auto j = 0u; j < 3; ++j)
-      {
+      for (auto j = 0u; j < 3; ++j) {
         const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
         vertices[j]
             = dart::dynamics::fcl::Vector3(vertex.x, vertex.y, vertex.z);
@@ -109,5 +102,5 @@ void FCLCollisionObject::updateEngineData()
   mFCLCollisionObject->computeAABB();
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

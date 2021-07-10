@@ -40,12 +40,10 @@ namespace MjcfParser {
 namespace detail {
 
 //==============================================================================
-Errors Size::read(tinyxml2::XMLElement* element)
-{
+Errors Size::read(tinyxml2::XMLElement* element) {
   Errors errors;
 
-  if (std::string(element->Name()) != "size")
-  {
+  if (std::string(element->Name()) != "size") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <size> from the provided element");
@@ -53,80 +51,67 @@ Errors Size::read(tinyxml2::XMLElement* element)
   }
 
   // mjmax
-  if (hasAttribute(element, "mjmax"))
-  {
+  if (hasAttribute(element, "mjmax")) {
     mMJMax = getAttributeInt(element, "mjmax");
   }
 
   // nconmax
-  if (hasAttribute(element, "nconmax"))
-  {
+  if (hasAttribute(element, "nconmax")) {
     mNConMax = getAttributeInt(element, "nconmax");
   }
 
   // nstack
-  if (hasAttribute(element, "nstack"))
-  {
+  if (hasAttribute(element, "nstack")) {
     mNStack = getAttributeInt(element, "nstack");
   }
 
   // nuserdata
-  if (hasAttribute(element, "nuserdata"))
-  {
+  if (hasAttribute(element, "nuserdata")) {
     mNUserData = getAttributeInt(element, "nuserdata");
   }
 
   // nkey
-  if (hasAttribute(element, "nkey"))
-  {
+  if (hasAttribute(element, "nkey")) {
     mNKey = getAttributeInt(element, "nkey");
   }
 
   // nuser_body
-  if (hasAttribute(element, "nuser_body"))
-  {
+  if (hasAttribute(element, "nuser_body")) {
     mNUserBody = getAttributeInt(element, "nuser_body");
   }
 
   // nuser_jnt
-  if (hasAttribute(element, "nuser_jnt"))
-  {
+  if (hasAttribute(element, "nuser_jnt")) {
     mNUserJnt = getAttributeInt(element, "nuser_jnt");
   }
 
   // nuser_geom
-  if (hasAttribute(element, "nuser_geom"))
-  {
+  if (hasAttribute(element, "nuser_geom")) {
     mNUserGeom = getAttributeInt(element, "nuser_geom");
   }
 
   // nuser_site
-  if (hasAttribute(element, "nuser_site"))
-  {
+  if (hasAttribute(element, "nuser_site")) {
     mNUserSite = getAttributeInt(element, "nuser_site");
   }
 
   // nuser_cam
-  if (hasAttribute(element, "nuser_cam"))
-  {
+  if (hasAttribute(element, "nuser_cam")) {
     mNUserCam = getAttributeInt(element, "nuser_cam");
   }
 
   // nuser_tendon
-  if (hasAttribute(element, "nuser_tendon"))
-  {
+  if (hasAttribute(element, "nuser_tendon")) {
     mNUserTendon = getAttributeInt(element, "nuser_tendon");
   }
 
   // nuser_actuator
-  if (hasAttribute(element, "nuser_actuator"))
-  {
+  if (hasAttribute(element, "nuser_actuator")) {
     mNUserActuator = getAttributeInt(element, "nuser_actuator");
   }
 
   // nuser_sensor
-  if (hasAttribute(element, "nuser_sensor"))
-  {
+  if (hasAttribute(element, "nuser_sensor")) {
     mNUserSensor = getAttributeInt(element, "nuser_sensor");
   }
 
@@ -134,80 +119,67 @@ Errors Size::read(tinyxml2::XMLElement* element)
 }
 
 //==============================================================================
-int Size::getMJMax() const
-{
+int Size::getMJMax() const {
   return mMJMax;
 }
 
 //==============================================================================
-int Size::getNConMax() const
-{
+int Size::getNConMax() const {
   return mNConMax;
 }
 
 //==============================================================================
-int Size::getNStack() const
-{
+int Size::getNStack() const {
   return mNStack;
 }
 
 //==============================================================================
-int Size::getNUserData() const
-{
+int Size::getNUserData() const {
   return mNUserData;
 }
 
 //==============================================================================
-int Size::getNKey() const
-{
+int Size::getNKey() const {
   return mNKey;
 }
 
 //==============================================================================
-int Size::getNUserBody() const
-{
+int Size::getNUserBody() const {
   return mNUserBody;
 }
 
 //==============================================================================
-int Size::getNUserJnt() const
-{
+int Size::getNUserJnt() const {
   return mNUserJnt;
 }
 
 //==============================================================================
-int Size::getNUserGeom() const
-{
+int Size::getNUserGeom() const {
   return mNUserGeom;
 }
 
 //==============================================================================
-int Size::getNUserSite() const
-{
+int Size::getNUserSite() const {
   return mNUserSite;
 }
 
 //==============================================================================
-int Size::getNUserCam() const
-{
+int Size::getNUserCam() const {
   return mNUserCam;
 }
 
 //==============================================================================
-int Size::getNUserTendon() const
-{
+int Size::getNUserTendon() const {
   return mNUserTendon;
 }
 
 //==============================================================================
-int Size::getNUserActuator() const
-{
+int Size::getNUserActuator() const {
   return mNUserActuator;
 }
 
 //==============================================================================
-int Size::getNUserSensor() const
-{
+int Size::getNUserSensor() const {
   return mNUserSensor;
 }
 

@@ -54,8 +54,7 @@ namespace osg {
 
 class ImGuiWidget;
 
-class ImGuiHandler : public osgGA::GUIEventHandler
-{
+class ImGuiHandler : public osgGA::GUIEventHandler {
 public:
   /// Constructor
   ImGuiHandler();

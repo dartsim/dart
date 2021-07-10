@@ -56,8 +56,7 @@ class osgAiNode;
 class MeshShapeGeode;
 class MeshShapeGeometry;
 
-class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
-{
+class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform {
 public:
   MeshShapeNode(
       std::shared_ptr<dart::dynamics::MeshShape> shape,

@@ -32,19 +32,18 @@
 
 #pragma once
 
-#include "dart/math/geometry/Geometry3.hpp"
-
 #include <vector>
 
 #include <Eigen/Core>
+
+#include "dart/math/geometry/Geometry3.hpp"
 
 namespace dart {
 namespace math {
 
 /// Base class for meshes.
 template <typename S_>
-class Mesh : public Geometry3<S_>
-{
+class Mesh : public Geometry3<S_> {
 public:
   // Type aliases
   using S = S_;

@@ -43,19 +43,16 @@ std::unordered_map<std::string, EnginePtr<S>> Engine<S>::m_engines;
 
 //==============================================================================
 template <typename S>
-EnginePtr<S> Engine<S>::create(const std::string& engine_name)
-{
+EnginePtr<S> Engine<S>::create(const std::string& engine_name) {
   const auto& result = m_engines.find(engine_name);
-  if (result != m_engines.end())
-  {
+  if (result != m_engines.end()) {
     return result->second;
   }
 
   auto factory = SingletonFactory::getSingletonPtr();
   auto newEngine = factory->create(engine_name);
 
-  if (!newEngine)
-  {
+  if (!newEngine) {
     dtwarn << "Failed to create a collision detector with the given engine "
            << "name '" << engine_name << "'.\n";
     return nullptr;
@@ -68,16 +65,14 @@ EnginePtr<S> Engine<S>::create(const std::string& engine_name)
 
 //==============================================================================
 template <typename S>
-Engine<S>::~Engine()
-{
+Engine<S>::~Engine() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
 template <typename GeometryType, typename... Args>
-ObjectPtr<S> Engine<S>::create_object(Args&&... args)
-{
+ObjectPtr<S> Engine<S>::create_object(Args&&... args) {
   return get_default_group()->template create_object<GeometryType>(
       std::forward<Args>(args)...);
 }
@@ -85,17 +80,14 @@ ObjectPtr<S> Engine<S>::create_object(Args&&... args)
 //==============================================================================
 template <typename S>
 template <typename... Args>
-ObjectPtr<S> Engine<S>::create_sphere_object(Args&&... args)
-{
+ObjectPtr<S> Engine<S>::create_sphere_object(Args&&... args) {
   return get_default_group()->create_sphere_object(std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S>
-Group<S>* Engine<S>::get_default_group()
-{
-  if (!m_default_group)
-  {
+Group<S>* Engine<S>::get_default_group() {
+  if (!m_default_group) {
     m_default_group = create_group();
   }
 

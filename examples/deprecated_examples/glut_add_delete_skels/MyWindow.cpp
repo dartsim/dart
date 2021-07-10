@@ -32,34 +32,28 @@
 
 #include "MyWindow.hpp"
 
-MyWindow::MyWindow() : SimWindow()
-{
+MyWindow::MyWindow() : SimWindow() {
 }
 
-MyWindow::~MyWindow()
-{
+MyWindow::~MyWindow() {
 }
 
-void MyWindow::drawWorld() const
-{
+void MyWindow::drawWorld() const {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   SimWindow::drawWorld();
 }
 
-void MyWindow::keyboard(unsigned char _key, int _x, int _y)
-{
-  switch (_key)
-  {
+void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
+  switch (_key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
         mPlay = false;
       break;
-    case 'q': // Spawn a cube
-    case 'Q':
-    { // Spawn a cube
+    case 'q':   // Spawn a cube
+    case 'Q': { // Spawn a cube
       Eigen::Vector3d position = Eigen::Vector3d(
           dart::math::Random::uniform(-1.0, 1.0),
           dart::math::Random::uniform(0.5, 1.0),
@@ -71,9 +65,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       spawnCube(position, size);
       break;
     }
-    case 'w': // Spawn a cube
-    case 'W':
-    { // Spawn a cube
+    case 'w':   // Spawn a cube
+    case 'W': { // Spawn a cube
       if (mWorld->getNumSkeletons() > 1)
         mWorld->removeSkeleton(
             mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
@@ -88,8 +81,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 void MyWindow::spawnCube(
     const Eigen::Vector3d& _position,
     const Eigen::Vector3d& _size,
-    double _mass)
-{
+    double _mass) {
   dart::dynamics::SkeletonPtr newCubeSkeleton
       = dart::dynamics::Skeleton::create();
 

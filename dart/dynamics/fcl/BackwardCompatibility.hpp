@@ -33,9 +33,9 @@
 #ifndef DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 #define DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 
-#include "dart/config.hpp"
-
 #include <Eigen/Dense>
+
+#include "dart/config.hpp"
 
 // clang-format off
 #define FCL_VERSION_AT_LEAST(x,y,z)                                            \
@@ -52,40 +52,40 @@
 
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
 
-#  include <fcl/math/geometry.h>
+  #include <fcl/math/geometry.h>
 
-#  include <fcl/geometry/bvh/BVH_model.h>
-#  include <fcl/geometry/geometric_shape_to_BVH_model.h>
-#  include <fcl/math/bv/OBBRSS.h>
-#  include <fcl/math/bv/utility.h>
-#  include <fcl/narrowphase/collision.h>
-#  include <fcl/narrowphase/collision_object.h>
-#  include <fcl/narrowphase/distance.h>
+  #include <fcl/geometry/bvh/BVH_model.h>
+  #include <fcl/geometry/geometric_shape_to_BVH_model.h>
+  #include <fcl/math/bv/OBBRSS.h>
+  #include <fcl/math/bv/utility.h>
+  #include <fcl/narrowphase/collision.h>
+  #include <fcl/narrowphase/collision_object.h>
+  #include <fcl/narrowphase/distance.h>
 
 #else
 
-#  include <fcl/math/matrix_3f.h>
-#  include <fcl/math/transform.h>
-#  include <fcl/math/vec_3f.h>
+  #include <fcl/math/matrix_3f.h>
+  #include <fcl/math/transform.h>
+  #include <fcl/math/vec_3f.h>
 
-#  include <fcl/BV/OBBRSS.h>
-#  include <fcl/BVH/BVH_model.h>
-#  include <fcl/shape/geometric_shape_to_BVH_model.h>
-#  include <fcl/collision.h>
-#  include <fcl/collision_data.h>
-#  include <fcl/collision_object.h>
-#  include <fcl/distance.h>
+  #include <fcl/BV/OBBRSS.h>
+  #include <fcl/BVH/BVH_model.h>
+  #include <fcl/shape/geometric_shape_to_BVH_model.h>
+  #include <fcl/collision.h>
+  #include <fcl/collision_data.h>
+  #include <fcl/collision_object.h>
+  #include <fcl/distance.h>
 
 #endif // FCL_VERSION_AT_LEAST(0,6,0)
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
 #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-#  if FCL_VERSION_AT_LEAST(0, 6, 0)
-#    include <fcl/geometry/octree/octree.h>
-#  else
-#    include <fcl/octree.h>
-#  endif // FCL_VERSION_AT_LEAST(0,6,0)
+  #if FCL_VERSION_AT_LEAST(0, 6, 0)
+    #include <fcl/geometry/octree/octree.h>
+  #else
+    #include <fcl/octree.h>
+  #endif // FCL_VERSION_AT_LEAST(0,6,0)
 #endif   // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
 namespace dart {
@@ -104,9 +104,9 @@ using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-#  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
-#  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;
@@ -129,9 +129,9 @@ using Cylinder = ::fcl::Cylinder;
 using Cone = ::fcl::Cone;
 using Halfspace = ::fcl::Halfspace;
 using Sphere = ::fcl::Sphere;
-#  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree;
-#  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject;
 using CollisionGeometry = ::fcl::CollisionGeometry;
@@ -160,8 +160,7 @@ dart::dynamics::fcl::Vector3 getTranslation(
 
 /// Sets translation component of a transform
 void setTranslation(
-    dart::dynamics::fcl::Transform3& T,
-    const dart::dynamics::fcl::Vector3& t);
+    dart::dynamics::fcl::Transform3& T, const dart::dynamics::fcl::Vector3& t);
 
 /// Returns rotation component of a transform
 dart::dynamics::fcl::Matrix3 getRotation(
@@ -169,8 +168,7 @@ dart::dynamics::fcl::Matrix3 getRotation(
 
 /// Sets rotation component of a transform
 void setRotation(
-    dart::dynamics::fcl::Transform3& T,
-    const dart::dynamics::fcl::Matrix3& R);
+    dart::dynamics::fcl::Transform3& T, const dart::dynamics::fcl::Matrix3& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
 void setEulerZYX(
@@ -185,7 +183,7 @@ dart::dynamics::fcl::Vector3 transform(
     const dart::dynamics::fcl::Vector3& v);
 
 } // namespace fcl
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_

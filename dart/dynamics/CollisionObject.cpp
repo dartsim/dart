@@ -39,32 +39,27 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
-{
+CollisionDetector* CollisionObject::getCollisionDetector() {
   return mCollisionDetector;
 }
 
 //==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
-{
+const CollisionDetector* CollisionObject::getCollisionDetector() const {
   return mCollisionDetector;
 }
 
 //==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
+const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const {
   return mShapeFrame;
 }
 
 //==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
+dynamics::ConstShapePtr CollisionObject::getShape() const {
   return mShapeFrame->getShape();
 }
 
 //==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
+const Eigen::Isometry3d& CollisionObject::getTransform() const {
   return mShapeFrame->getWorldTransform();
 }
 
@@ -72,11 +67,10 @@ const Eigen::Isometry3d& CollisionObject::getTransform() const
 CollisionObject::CollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector), mShapeFrame(shapeFrame)
-{
+  : mCollisionDetector(collisionDetector), mShapeFrame(shapeFrame) {
   assert(mCollisionDetector);
   assert(mShapeFrame);
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

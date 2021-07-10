@@ -39,8 +39,7 @@
 using namespace dart;
 using namespace dynamics;
 
-TEST(Subjects, Notifications)
-{
+TEST(Subjects, Notifications) {
   sub_ptr<Detachable> entity_ptr = new SimpleFrame(Frame::World(), "entity");
   sub_ptr<SimpleFrame> frame_ptr = new SimpleFrame(Frame::World(), "frame");
 
@@ -57,13 +56,11 @@ TEST(Subjects, Notifications)
   EXPECT_TRUE(frame_ptr.get() == nullptr);
 }
 
-Entity* getPointer(Entity* _ptr)
-{
+Entity* getPointer(Entity* _ptr) {
   return _ptr;
 }
 
-TEST(Subjects, ImplicitConversion)
-{
+TEST(Subjects, ImplicitConversion) {
   sub_ptr<Entity> entity_ptr = new SimpleFrame(Frame::World(), "entity");
 
   // This checks whether the sub_ptr class can successfully be implicitly

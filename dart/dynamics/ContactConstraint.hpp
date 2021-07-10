@@ -47,8 +47,7 @@ class Skeleton;
 namespace dynamics {
 
 /// ContactConstraint represents a contact constraint between two bodies
-class ContactConstraint : public ConstraintBase
-{
+class ContactConstraint : public ConstraintBase {
 public:
   /// Constructor
   ContactConstraint(dynamics::Contact& contact, double timeStep);

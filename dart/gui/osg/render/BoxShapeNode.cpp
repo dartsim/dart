@@ -45,8 +45,7 @@ namespace gui {
 namespace osg {
 namespace render {
 
-class BoxShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class BoxShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   BoxShapeGeode(
       const std::shared_ptr<dart::dynamics::BoxShape>& shape,
@@ -63,8 +62,7 @@ protected:
 };
 
 //==============================================================================
-class BoxShapeDrawable : public ::osg::ShapeDrawable
-{
+class BoxShapeDrawable : public ::osg::ShapeDrawable {
 public:
   BoxShapeDrawable(
       dart::dynamics::BoxShape* shape,
@@ -82,15 +80,13 @@ protected:
 //==============================================================================
 BoxShapeNode::BoxShapeNode(
     std::shared_ptr<dart::dynamics::BoxShape> shape, ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mBoxShape(shape), mGeode(nullptr)
-{
+  : ShapeNode(shape, parent, this), mBoxShape(shape), mGeode(nullptr) {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
-void BoxShapeNode::refresh()
-{
+void BoxShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -102,10 +98,8 @@ void BoxShapeNode::refresh()
 }
 
 //==============================================================================
-void BoxShapeNode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mGeode)
-  {
+void BoxShapeNode::extractData(bool /*firstTime*/) {
+  if (nullptr == mGeode) {
     mGeode = new BoxShapeGeode(mBoxShape, mParentShapeFrameNode);
     addChild(mGeode);
     return;
@@ -115,8 +109,7 @@ void BoxShapeNode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-BoxShapeNode::~BoxShapeNode()
-{
+BoxShapeNode::~BoxShapeNode() {
   // Do nothing
 }
 
@@ -126,8 +119,7 @@ BoxShapeGeode::BoxShapeGeode(
     ShapeFrameNode* parentShapeFrame)
   : ShapeNode(shape, parentShapeFrame, this),
     mBoxShape(shape),
-    mDrawable(nullptr)
-{
+    mDrawable(nullptr) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -136,18 +128,15 @@ BoxShapeGeode::BoxShapeGeode(
 }
 
 //==============================================================================
-void BoxShapeGeode::refresh()
-{
+void BoxShapeGeode::refresh() {
   mUtilized = true;
 
   extractData();
 }
 
 //==============================================================================
-void BoxShapeGeode::extractData()
-{
-  if (nullptr == mDrawable)
-  {
+void BoxShapeGeode::extractData() {
+  if (nullptr == mDrawable) {
     mDrawable = new BoxShapeDrawable(mBoxShape.get(), mVisualAspect);
     addDrawable(mDrawable);
     return;
@@ -157,30 +146,26 @@ void BoxShapeGeode::extractData()
 }
 
 //==============================================================================
-BoxShapeGeode::~BoxShapeGeode()
-{
+BoxShapeGeode::~BoxShapeGeode() {
   // Do nothing
 }
 
 //==============================================================================
 BoxShapeDrawable::BoxShapeDrawable(
     dart::dynamics::BoxShape* shape, dart::dynamics::VisualAspect* visualAspect)
-  : mBoxShape(shape), mVisualAspect(visualAspect)
-{
+  : mBoxShape(shape), mVisualAspect(visualAspect) {
   refresh(true);
 }
 
 //==============================================================================
-void BoxShapeDrawable::refresh(bool firstTime)
-{
+void BoxShapeDrawable::refresh(bool firstTime) {
   if (mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     const Eigen::Vector3d& d = mBoxShape->getSize();
     ::osg::ref_ptr<::osg::Box> osg_shape
         = new ::osg::Box(::osg::Vec3(0, 0, 0), d[0], d[1], d[2]);
@@ -189,15 +174,13 @@ void BoxShapeDrawable::refresh(bool firstTime)
   }
 
   if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 
 //==============================================================================
-BoxShapeDrawable::~BoxShapeDrawable()
-{
+BoxShapeDrawable::~BoxShapeDrawable() {
   // Do nothing
 }
 

@@ -42,8 +42,7 @@ void Subject(py::module& sm);
 void Uri(py::module& sm);
 void Composite(py::module& sm);
 
-void dart_common(py::module& m)
-{
+void dart_common(py::module& m) {
   auto sm = m.def_submodule("common");
 
   Observer(sm);

@@ -50,8 +50,7 @@ namespace render {
 class ConeShapeGeode;
 class ConeShapeDrawable;
 
-class ConeShapeNode : public ShapeNode, public ::osg::Group
-{
+class ConeShapeNode : public ShapeNode, public ::osg::Group {
 public:
   ConeShapeNode(
       std::shared_ptr<dart::dynamics::ConeShape> shape, ShapeFrameNode* parent);

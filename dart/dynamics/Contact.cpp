@@ -45,15 +45,13 @@ Contact::Contact()
     penetrationDepth(0),
     triID1(0),
     triID2(0),
-    userData(nullptr)
-{
+    userData(nullptr) {
   // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
   // Do nothing
 }
 
 //==============================================================================
-bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
-{
+bool Contact::isZeroNormal(const Eigen::Vector3d& normal) {
   if (normal.squaredNorm() < getNormalEpsilonSquared())
     return true;
   else
@@ -61,10 +59,9 @@ bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
 }
 
 //==============================================================================
-bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
-{
+bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal) {
   return !isZeroNormal(normal);
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

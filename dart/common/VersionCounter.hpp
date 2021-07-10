@@ -39,8 +39,7 @@ namespace dart {
 namespace common {
 
 /// VersionCounter is an interface for objects that count their versions
-class VersionCounter
-{
+class VersionCounter {
 public:
   /// Default constructor
   VersionCounter();

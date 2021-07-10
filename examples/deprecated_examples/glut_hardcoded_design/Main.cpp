@@ -44,8 +44,7 @@
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // Create Left Leg skeleton
   dart::dynamics::SkeletonPtr LeftLegSkel = dart::dynamics::Skeleton::create();
 

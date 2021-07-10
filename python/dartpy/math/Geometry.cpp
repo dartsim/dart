@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -58,8 +59,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Geometry(py::module& m)
-{
+void Geometry(py::module& m) {
   DARTPY_DEFINE_EULAERTOMATRIX(XYX);
   DARTPY_DEFINE_EULAERTOMATRIX(XYZ);
   DARTPY_DEFINE_EULAERTOMATRIX(XZX);

@@ -40,8 +40,7 @@
 namespace dart {
 namespace math {
 
-class Random final
-{
+class Random final {
 public:
   using GeneratorType = std::mt19937;
 

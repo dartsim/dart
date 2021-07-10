@@ -34,7 +34,6 @@
 #define DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
 
 #include "dart/dynamics/CollisionDetector.hpp"
-
 #include "dart/dynamics/CollisionGroup.hpp"
 
 namespace dart {
@@ -43,8 +42,7 @@ namespace dynamics {
 //==============================================================================
 template <typename... Args>
 std::unique_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
-    const Args&... args)
-{
+    const Args&... args) {
   auto group = createCollisionGroup();
 
   group->addShapeFramesOf(args...);
@@ -55,13 +53,12 @@ std::unique_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
 //==============================================================================
 template <typename... Args>
 std::shared_ptr<CollisionGroup>
-CollisionDetector::createCollisionGroupAsSharedPtr(const Args&... args)
-{
+CollisionDetector::createCollisionGroupAsSharedPtr(const Args&... args) {
   return std::shared_ptr<CollisionGroup>(
       createCollisionGroup(args...).release());
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_

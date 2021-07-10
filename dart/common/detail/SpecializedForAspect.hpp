@@ -47,8 +47,7 @@ namespace common {
 
 //==============================================================================
 template <class SpecAspect>
-SpecializedForAspect<SpecAspect>::SpecializedForAspect()
-{
+SpecializedForAspect<SpecAspect>::SpecializedForAspect() {
   mSpecAspectIterator
       = mAspectMap
             .insert(std::make_pair<std::type_index, std::unique_ptr<Aspect>>(
@@ -59,80 +58,70 @@ SpecializedForAspect<SpecAspect>::SpecializedForAspect()
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-bool SpecializedForAspect<SpecAspect>::has() const
-{
+bool SpecializedForAspect<SpecAspect>::has() const {
   return _has(type<T>());
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-T* SpecializedForAspect<SpecAspect>::get()
-{
+T* SpecializedForAspect<SpecAspect>::get() {
   return _get(type<T>());
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-const T* SpecializedForAspect<SpecAspect>::get() const
-{
+const T* SpecializedForAspect<SpecAspect>::get() const {
   return _get(type<T>());
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::set(const T* aspect)
-{
+void SpecializedForAspect<SpecAspect>::set(const T* aspect) {
   _set(type<T>(), aspect);
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::set(std::unique_ptr<T>&& aspect)
-{
+void SpecializedForAspect<SpecAspect>::set(std::unique_ptr<T>&& aspect) {
   _set(type<T>(), std::move(aspect));
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T, typename... Args>
-T* SpecializedForAspect<SpecAspect>::createAspect(Args&&... args)
-{
+T* SpecializedForAspect<SpecAspect>::createAspect(Args&&... args) {
   return _createAspect(type<T>(), std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::removeAspect()
-{
+void SpecializedForAspect<SpecAspect>::removeAspect() {
   _removeAspect(type<T>());
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-std::unique_ptr<T> SpecializedForAspect<SpecAspect>::releaseAspect()
-{
+std::unique_ptr<T> SpecializedForAspect<SpecAspect>::releaseAspect() {
   return _releaseAspect(type<T>());
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-constexpr bool SpecializedForAspect<SpecAspect>::isSpecializedFor()
-{
+constexpr bool SpecializedForAspect<SpecAspect>::isSpecializedFor() {
   return _isSpecializedFor(type<T>());
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-bool SpecializedForAspect<SpecAspect>::_has(type<T>) const
-{
+bool SpecializedForAspect<SpecAspect>::_has(type<T>) const {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -142,8 +131,7 @@ bool SpecializedForAspect<SpecAspect>::_has(type<T>) const
 
 //==============================================================================
 template <class SpecAspect>
-bool SpecializedForAspect<SpecAspect>::_has(type<SpecAspect>) const
-{
+bool SpecializedForAspect<SpecAspect>::_has(type<SpecAspect>) const {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -154,15 +142,13 @@ bool SpecializedForAspect<SpecAspect>::_has(type<SpecAspect>) const
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-T* SpecializedForAspect<SpecAspect>::_get(type<T>)
-{
+T* SpecializedForAspect<SpecAspect>::_get(type<T>) {
   return Composite::get<T>();
 }
 
 //==============================================================================
 template <class SpecAspect>
-SpecAspect* SpecializedForAspect<SpecAspect>::_get(type<SpecAspect>)
-{
+SpecAspect* SpecializedForAspect<SpecAspect>::_get(type<SpecAspect>) {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -173,15 +159,14 @@ SpecAspect* SpecializedForAspect<SpecAspect>::_get(type<SpecAspect>)
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-const T* SpecializedForAspect<SpecAspect>::_get(type<T>) const
-{
+const T* SpecializedForAspect<SpecAspect>::_get(type<T>) const {
   return Composite::get<T>();
 }
 
 //==============================================================================
 template <class SpecAspect>
-const SpecAspect* SpecializedForAspect<SpecAspect>::_get(type<SpecAspect>) const
-{
+const SpecAspect* SpecializedForAspect<SpecAspect>::_get(
+    type<SpecAspect>) const {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -192,27 +177,22 @@ const SpecAspect* SpecializedForAspect<SpecAspect>::_get(type<SpecAspect>) const
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::_set(type<T>, const T* aspect)
-{
+void SpecializedForAspect<SpecAspect>::_set(type<T>, const T* aspect) {
   Composite::set<T>(aspect);
 }
 
 //==============================================================================
 template <class SpecAspect>
 void SpecializedForAspect<SpecAspect>::_set(
-    type<SpecAspect>, const SpecAspect* aspect)
-{
+    type<SpecAspect>, const SpecAspect* aspect) {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
-  if (aspect)
-  {
+  if (aspect) {
     mSpecAspectIterator->second = aspect->cloneAspect();
     addToComposite(mSpecAspectIterator->second.get());
-  }
-  else
-  {
+  } else {
     mSpecAspectIterator->second = nullptr;
   }
 }
@@ -221,16 +201,14 @@ void SpecializedForAspect<SpecAspect>::_set(
 template <class SpecAspect>
 template <class T>
 void SpecializedForAspect<SpecAspect>::_set(
-    type<T>, std::unique_ptr<T>&& aspect)
-{
+    type<T>, std::unique_ptr<T>&& aspect) {
   Composite::set<T>(std::move(aspect));
 }
 
 //==============================================================================
 template <class SpecAspect>
 void SpecializedForAspect<SpecAspect>::_set(
-    type<SpecAspect>, std::unique_ptr<SpecAspect>&& aspect)
-{
+    type<SpecAspect>, std::unique_ptr<SpecAspect>&& aspect) {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -242,8 +220,7 @@ void SpecializedForAspect<SpecAspect>::_set(
 //==============================================================================
 template <class SpecAspect>
 template <class T, typename... Args>
-T* SpecializedForAspect<SpecAspect>::_createAspect(type<T>, Args&&... args)
-{
+T* SpecializedForAspect<SpecAspect>::_createAspect(type<T>, Args&&... args) {
   return Composite::createAspect<T>(std::forward<Args>(args)...);
 }
 
@@ -251,8 +228,7 @@ T* SpecializedForAspect<SpecAspect>::_createAspect(type<T>, Args&&... args)
 template <class SpecAspect>
 template <typename... Args>
 SpecAspect* SpecializedForAspect<SpecAspect>::_createAspect(
-    type<SpecAspect>, Args&&... args)
-{
+    type<SpecAspect>, Args&&... args) {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -267,15 +243,13 @@ SpecAspect* SpecializedForAspect<SpecAspect>::_createAspect(
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::_removeAspect(type<T>)
-{
+void SpecializedForAspect<SpecAspect>::_removeAspect(type<T>) {
   Composite::removeAspect<T>();
 }
 
 //==============================================================================
 template <class SpecAspect>
-void SpecializedForAspect<SpecAspect>::_removeAspect(type<SpecAspect>)
-{
+void SpecializedForAspect<SpecAspect>::_removeAspect(type<SpecAspect>) {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -289,16 +263,14 @@ void SpecializedForAspect<SpecAspect>::_removeAspect(type<SpecAspect>)
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-std::unique_ptr<T> SpecializedForAspect<SpecAspect>::_releaseAspect(type<T>)
-{
+std::unique_ptr<T> SpecializedForAspect<SpecAspect>::_releaseAspect(type<T>) {
   return Composite::releaseAspect<T>();
 }
 
 //==============================================================================
 template <class SpecAspect>
 std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_releaseAspect(
-    type<SpecAspect>)
-{
+    type<SpecAspect>) {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -315,16 +287,14 @@ std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_releaseAspect(
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(type<T>)
-{
+constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(type<T>) {
   return false;
 }
 
 //==============================================================================
 template <class SpecAspect>
 constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(
-    type<SpecAspect>)
-{
+    type<SpecAspect>) {
   return true;
 }
 

@@ -41,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Viewer(py::module& m)
-{
+void Viewer(py::module& m) {
   ::py::class_<osgViewer::View, ::osg::ref_ptr<osgViewer::View>>(m, "osgViewer")
       .def(::py::init<>())
       .def(
@@ -326,7 +325,8 @@ void Viewer(py::module& m)
       .def(
           "run",
           +[](dart::gui::osg::Viewer* self) -> int { return self->run(); })
-      .def("frame", +[](dart::gui::osg::Viewer* self) { self->frame(); })
+      .def(
+          "frame", +[](dart::gui::osg::Viewer* self) { self->frame(); })
       .def(
           "frame",
           +[](dart::gui::osg::Viewer* self,

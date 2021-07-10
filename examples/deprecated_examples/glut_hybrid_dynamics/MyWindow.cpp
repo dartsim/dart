@@ -33,18 +33,15 @@
 #include "MyWindow.hpp"
 
 //==============================================================================
-MyWindow::MyWindow() : SimWindow(), mHarnessOn(false)
-{
+MyWindow::MyWindow() : SimWindow(), mHarnessOn(false) {
 }
 
 //==============================================================================
-MyWindow::~MyWindow()
-{
+MyWindow::~MyWindow() {
 }
 
 //==============================================================================
-void MyWindow::timeStepping()
-{
+void MyWindow::timeStepping() {
   dart::dynamics::SkeletonPtr skel = mWorld->getSkeleton(1);
 
   std::size_t index0 = skel->getJoint("j_scapula_left")->getIndexInSkeleton(0);
@@ -67,8 +64,7 @@ void MyWindow::timeStepping()
 }
 
 //==============================================================================
-void MyWindow::drawWorld() const
-{
+void MyWindow::drawWorld() const {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -76,10 +72,8 @@ void MyWindow::drawWorld() const
 }
 
 //==============================================================================
-void MyWindow::keyboard(unsigned char _key, int _x, int _y)
-{
-  switch (_key)
-  {
+void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
+  switch (_key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
@@ -91,8 +85,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
         mSimulating = false;
       break;
     case '[': // step backward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame--;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
@@ -100,8 +93,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       }
       break;
     case ']': // step forwardward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame++;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
@@ -113,15 +105,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       break;
     case 'h':
       mHarnessOn = !mHarnessOn;
-      if (mHarnessOn)
-      {
+      if (mHarnessOn) {
         dart::dynamics::Joint* joint
             = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
         joint->setActuatorType(dart::dynamics::Joint::LOCKED);
         std::cout << "The pelvis is locked." << std::endl;
-      }
-      else
-      {
+      } else {
         dart::dynamics::Joint* joint
             = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
         joint->setActuatorType(dart::dynamics::Joint::PASSIVE);

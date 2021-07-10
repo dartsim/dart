@@ -45,18 +45,14 @@ namespace gui {
 namespace glut {
 
 SoftSimWindow::SoftSimWindow()
-  : SimWindow(), mShowPointMasses(false), mShowMeshs(true)
-{
+  : SimWindow(), mShowPointMasses(false), mShowMeshs(true) {
 }
 
-SoftSimWindow::~SoftSimWindow()
-{
+SoftSimWindow::~SoftSimWindow() {
 }
 
-void SoftSimWindow::keyboard(unsigned char key, int x, int y)
-{
-  switch (key)
-  {
+void SoftSimWindow::keyboard(unsigned char key, int x, int y) {
+  switch (key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)

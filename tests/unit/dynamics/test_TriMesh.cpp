@@ -31,6 +31,7 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "dart/math/geometry/TriMesh.hpp"
 #include "dart/test/TestHelpers.hpp"
 
@@ -38,8 +39,7 @@ using namespace dart;
 using namespace math;
 
 //==============================================================================
-TEST(TriMeshTests, DefaultConstructor)
-{
+TEST(TriMeshTests, DefaultConstructor) {
   auto mesh = TriMeshd();
   EXPECT_FALSE(mesh.hasTriangles());
   EXPECT_FALSE(mesh.hasTriangleNormals());
@@ -47,8 +47,7 @@ TEST(TriMeshTests, DefaultConstructor)
 }
 
 //==============================================================================
-TEST(TriMeshTests, SetTriangles)
-{
+TEST(TriMeshTests, SetTriangles) {
   auto mesh = TriMeshd();
   EXPECT_TRUE(mesh.isEmpty());
 
@@ -78,8 +77,7 @@ TEST(TriMeshTests, SetTriangles)
 }
 
 //==============================================================================
-TEST(TriMeshTests, Operators)
-{
+TEST(TriMeshTests, Operators) {
   auto mesh1 = TriMeshd();
   auto mesh2 = TriMeshd();
 
@@ -125,8 +123,7 @@ TEST(TriMeshTests, Operators)
 }
 
 //==============================================================================
-TEST(TriMeshTests, GenerateConvexHull)
-{
+TEST(TriMeshTests, GenerateConvexHull) {
   auto mesh = TriMeshd();
   EXPECT_TRUE(mesh.isEmpty());
 

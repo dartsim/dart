@@ -30,26 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
-
 #include "dart/dynamics/LineSegmentShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
 namespace osg {
 namespace render {
 
-class LineSegmentShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class LineSegmentShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   LineSegmentShapeGeode(
       std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
@@ -68,8 +67,7 @@ protected:
 };
 
 //==============================================================================
-class LineSegmentShapeDrawable : public ::osg::Geometry
-{
+class LineSegmentShapeDrawable : public ::osg::Geometry {
 public:
   LineSegmentShapeDrawable(
       dart::dynamics::LineSegmentShape* shape,
@@ -92,16 +90,14 @@ protected:
 LineSegmentShapeNode::LineSegmentShapeNode(
     std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
     ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mLineSegmentShape(shape), mGeode(nullptr)
-{
+  : ShapeNode(shape, parent, this), mLineSegmentShape(shape), mGeode(nullptr) {
   mNode = this;
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
-void LineSegmentShapeNode::refresh()
-{
+void LineSegmentShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -113,10 +109,8 @@ void LineSegmentShapeNode::refresh()
 }
 
 //==============================================================================
-void LineSegmentShapeNode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mGeode)
-  {
+void LineSegmentShapeNode::extractData(bool /*firstTime*/) {
+  if (nullptr == mGeode) {
     mGeode
         = new LineSegmentShapeGeode(mLineSegmentShape, mParentShapeFrameNode);
     addChild(mGeode);
@@ -127,8 +121,7 @@ void LineSegmentShapeNode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-LineSegmentShapeNode::~LineSegmentShapeNode()
-{
+LineSegmentShapeNode::~LineSegmentShapeNode() {
   // Do nothing
 }
 
@@ -139,8 +132,7 @@ LineSegmentShapeGeode::LineSegmentShapeGeode(
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
     mDrawable(nullptr),
-    mLineWidth(new ::osg::LineWidth)
-{
+    mLineWidth(new ::osg::LineWidth) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -150,26 +142,22 @@ LineSegmentShapeGeode::LineSegmentShapeGeode(
 }
 
 //==============================================================================
-void LineSegmentShapeGeode::refresh()
-{
+void LineSegmentShapeGeode::refresh() {
   mUtilized = true;
 
   extractData(false);
 }
 
 //==============================================================================
-void LineSegmentShapeGeode::extractData(bool firstTime)
-{
+void LineSegmentShapeGeode::extractData(bool firstTime) {
   if (mLineSegmentShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     mLineWidth->setWidth(mLineSegmentShape->getThickness());
     getOrCreateStateSet()->setAttributeAndModes(mLineWidth);
   }
 
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable
         = new LineSegmentShapeDrawable(mLineSegmentShape.get(), mVisualAspect);
     addDrawable(mDrawable);
@@ -180,8 +168,7 @@ void LineSegmentShapeGeode::extractData(bool firstTime)
 }
 
 //==============================================================================
-LineSegmentShapeGeode::~LineSegmentShapeGeode()
-{
+LineSegmentShapeGeode::~LineSegmentShapeGeode() {
   // Do nothing
 }
 
@@ -193,15 +180,13 @@ LineSegmentShapeDrawable::LineSegmentShapeDrawable(
     mVisualAspect(visualAspect),
     mVertices(new ::osg::Vec3Array),
     mColors(new ::osg::Vec4Array),
-    mElements(new ::osg::DrawElementsUInt(::osg::PrimitiveSet::LINES))
-{
+    mElements(new ::osg::DrawElementsUInt(::osg::PrimitiveSet::LINES)) {
   addPrimitiveSet(mElements);
   refresh(true);
 }
 
 //==============================================================================
-void LineSegmentShapeDrawable::refresh(bool firstTime)
-{
+void LineSegmentShapeDrawable::refresh(bool firstTime) {
   if (mLineSegmentShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
@@ -209,16 +194,14 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
 
   if (mLineSegmentShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_ELEMENTS)
-      || firstTime)
-  {
+      || firstTime) {
     const common::aligned_vector<Eigen::Vector2i>& connections
         = mLineSegmentShape->getConnections();
 
     mElements->clear();
     mElements->reserve(2 * connections.size());
 
-    for (std::size_t i = 0; i < connections.size(); ++i)
-    {
+    for (std::size_t i = 0; i < connections.size(); ++i) {
       const Eigen::Vector2i& c = connections[i];
       mElements->push_back(static_cast<unsigned int>(c[0]));
       mElements->push_back(static_cast<unsigned int>(c[1]));
@@ -230,9 +213,8 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   if (mLineSegmentShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_VERTICES)
       || mLineSegmentShape->checkDataVariance(
-             dart::dynamics::Shape::DYNAMIC_ELEMENTS)
-      || firstTime)
-  {
+          dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+      || firstTime) {
     const std::vector<Eigen::Vector3d>& vertices
         = mLineSegmentShape->getVertices();
 
@@ -246,8 +228,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   }
 
   if (mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     if (mColors->size() != 1)
       mColors->resize(1);
 
@@ -258,8 +239,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
 }
 
 //==============================================================================
-LineSegmentShapeDrawable::~LineSegmentShapeDrawable()
-{
+LineSegmentShapeDrawable::~LineSegmentShapeDrawable() {
   // Do nothing
 }
 

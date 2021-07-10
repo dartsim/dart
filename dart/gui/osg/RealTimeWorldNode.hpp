@@ -41,8 +41,7 @@ namespace dart {
 namespace gui {
 namespace osg {
 
-class RealTimeWorldNode : public WorldNode
-{
+class RealTimeWorldNode : public WorldNode {
 public:
   /// Construct a world node that will attempt to run a simulation with close
   /// to real-time playback. If a simulation is too computationally expensive,

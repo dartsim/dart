@@ -41,10 +41,13 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ImGuiWidget(py::module& m)
-{
+void ImGuiWidget(py::module& m) {
   ::pybind11::class_<dart::gui::osg::ImGuiWidget>(m, "ImGuiWidget")
-      .def("render", +[](dart::gui::osg::ImGuiWidget* self) { self->render(); })
+      .def(
+          "render",
+          +[](dart::gui::osg::ImGuiWidget* self) {
+            self->render();
+          })
       .def(
           "setVisible",
           +[](dart::gui::osg::ImGuiWidget* self, bool visible) {
@@ -53,12 +56,23 @@ void ImGuiWidget(py::module& m)
           ::pybind11::arg("visible"))
       .def(
           "toggleVisible",
-          +[](dart::gui::osg::ImGuiWidget* self) { self->toggleVisible(); })
-      .def("show", +[](dart::gui::osg::ImGuiWidget* self) { self->show(); })
-      .def("hide", +[](dart::gui::osg::ImGuiWidget* self) { self->hide(); })
-      .def("isVisible", +[](const dart::gui::osg::ImGuiWidget* self) -> bool {
-        return self->isVisible();
-      });
+          +[](dart::gui::osg::ImGuiWidget* self) {
+            self->toggleVisible();
+          })
+      .def(
+          "show",
+          +[](dart::gui::osg::ImGuiWidget* self) {
+            self->show();
+          })
+      .def(
+          "hide",
+          +[](dart::gui::osg::ImGuiWidget* self) {
+            self->hide();
+          })
+      .def(
+          "isVisible", +[](const dart::gui::osg::ImGuiWidget* self) -> bool {
+            return self->isVisible();
+          });
 }
 
 } // namespace python

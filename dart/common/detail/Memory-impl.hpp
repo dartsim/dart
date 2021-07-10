@@ -45,8 +45,7 @@ namespace common {
 
 //==============================================================================
 template <typename _Tp, typename... _Args>
-std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
-{
+std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args) {
   using _Tp_nc = typename std::remove_const<_Tp>::type;
 
   return std::allocate_shared<_Tp>(
@@ -55,8 +54,7 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 
 //==============================================================================
 template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args)
-{
+std::unique_ptr<T> make_unique(Args&&... args) {
   return std::make_unique<T>(std::forward<Args>(args)...);
 }
 

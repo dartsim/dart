@@ -39,60 +39,51 @@ namespace math {
 
 //==============================================================================
 template <typename S>
-Mesh<S>::~Mesh()
-{
+Mesh<S>::~Mesh() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-bool Mesh<S>::hasVertices() const
-{
+bool Mesh<S>::hasVertices() const {
   return !mVertices.empty();
 }
 
 //==============================================================================
 template <typename S>
-bool Mesh<S>::hasVertexNormals() const
-{
+bool Mesh<S>::hasVertexNormals() const {
   return hasVertices() && mVertices.size() == mVertexNormals.size();
 }
 
 //==============================================================================
 template <typename S>
-const typename Mesh<S>::Vertices& Mesh<S>::getVertices() const
-{
+const typename Mesh<S>::Vertices& Mesh<S>::getVertices() const {
   return this->mVertices;
 }
 
 //==============================================================================
 template <typename S>
-const typename Mesh<S>::Normals& Mesh<S>::getVertexNormals() const
-{
+const typename Mesh<S>::Normals& Mesh<S>::getVertexNormals() const {
   return this->mVertexNormals;
 }
 
 //==============================================================================
 template <typename S>
-void Mesh<S>::clear()
-{
+void Mesh<S>::clear() {
   mVertices.clear();
   mVertexNormals.clear();
 }
 
 //==============================================================================
 template <typename S>
-bool Mesh<S>::isEmpty() const
-{
+bool Mesh<S>::isEmpty() const {
   return !(this->hasVertices());
 }
 
 //==============================================================================
 template <typename S>
-void Mesh<S>::translate(const Vector3& translation)
-{
-  for (auto& vertex : mVertices)
-  {
+void Mesh<S>::translate(const Vector3& translation) {
+  for (auto& vertex : mVertices) {
     vertex += translation;
   }
 }
@@ -106,22 +97,18 @@ void Mesh<S>::translate(const Vector3& translation)
 
 //==============================================================================
 template <typename S>
-Mesh<S>& Mesh<S>::operator+=(const Mesh& other)
-{
+Mesh<S>& Mesh<S>::operator+=(const Mesh& other) {
   if (other.isEmpty())
     return *this;
 
   // Insert vertex normals if both meshes have normals. Otherwise, clean the
   // vertex normals.
-  if ((isEmpty() || hasVertexNormals()) && other.hasVertexNormals())
-  {
+  if ((isEmpty() || hasVertexNormals()) && other.hasVertexNormals()) {
     mVertexNormals.insert(
         mVertexNormals.end(),
         other.mVertexNormals.begin(),
         other.mVertexNormals.end());
-  }
-  else
-  {
+  } else {
     mVertexNormals.clear();
   }
 
@@ -134,17 +121,14 @@ Mesh<S>& Mesh<S>::operator+=(const Mesh& other)
 
 //==============================================================================
 template <typename S>
-Mesh<S>::Mesh()
-{
+Mesh<S>::Mesh() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-void Mesh<S>::normalizeVertexNormals()
-{
-  for (auto& normal : mVertexNormals)
-  {
+void Mesh<S>::normalizeVertexNormals() {
+  for (auto& normal : mVertexNormals) {
     normal.normalize();
   }
 }

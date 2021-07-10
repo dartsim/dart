@@ -44,12 +44,10 @@ namespace detail {
 Errors Joint::read(
     tinyxml2::XMLElement* element,
     const Defaults& defaults,
-    const JointAttributes& defaultAttributes)
-{
+    const JointAttributes& defaultAttributes) {
   Errors errors;
 
-  if (std::string(element->Name()) != "joint")
-  {
+  if (std::string(element->Name()) != "joint") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Joint> from the provided element");
@@ -57,23 +55,17 @@ Errors Joint::read(
   }
 
   // Initialize the attributes from proper default
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     const std::string className = getAttributeString(element, "class");
     const auto& defaultClass = defaults.getDefault(className);
-    if (defaultClass)
-    {
+    if (defaultClass) {
       mAttributes = defaultClass->getJointAttributes();
-    }
-    else
-    {
+    } else {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_INVALID,
           "Failed to find default with class name '" + className + "'"));
     }
-  }
-  else
-  {
+  } else {
     mAttributes = defaultAttributes;
   }
 
@@ -85,12 +77,10 @@ Errors Joint::read(
 }
 
 //==============================================================================
-Errors Joint::preprocess(const Compiler& /*compiler*/)
-{
+Errors Joint::preprocess(const Compiler& /*compiler*/) {
   Errors errors;
 
-  if (mAttributes.mName)
-  {
+  if (mAttributes.mName) {
     mName = *mAttributes.mName;
   }
 
@@ -105,30 +95,22 @@ Errors Joint::preprocess(const Compiler& /*compiler*/)
 }
 
 //==============================================================================
-Errors Joint::compile(const Compiler& /*compiler*/)
-{
+Errors Joint::compile(const Compiler& /*compiler*/) {
   Errors errors;
   return errors;
 }
 
 //==============================================================================
-Errors Joint::postprocess(const Body* parent, const Compiler& compiler)
-{
+Errors Joint::postprocess(const Body* parent, const Compiler& compiler) {
   Errors errors;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL)
-  {
+  if (compiler.getCoordinate() == Coordinate::LOCAL) {
     // Do nothing
-  }
-  else
-  {
-    if (parent != nullptr)
-    {
+  } else {
+    if (parent != nullptr) {
       mPos = parent->getWorldTransform().inverse() * mPos;
       mAxis = parent->getWorldTransform().linear().transpose() * mAxis;
-    }
-    else
-    {
+    } else {
       // Do nothing
     }
   }
@@ -137,50 +119,42 @@ Errors Joint::postprocess(const Body* parent, const Compiler& compiler)
 }
 
 //==============================================================================
-const std::string& Joint::getName() const
-{
+const std::string& Joint::getName() const {
   return mName;
 }
 
 //==============================================================================
-JointType Joint::getType() const
-{
+JointType Joint::getType() const {
   return mType;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Joint::getPos() const
-{
+const Eigen::Vector3d& Joint::getPos() const {
   return mPos;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Joint::getAxis() const
-{
+const Eigen::Vector3d& Joint::getAxis() const {
   return mAxis;
 }
 
 //==============================================================================
-bool Joint::isLimited() const
-{
+bool Joint::isLimited() const {
   return mLimited;
 }
 
 //==============================================================================
-const Eigen::Vector2d& Joint::getRange() const
-{
+const Eigen::Vector2d& Joint::getRange() const {
   return mRange;
 }
 
 //==============================================================================
-double Joint::getDamping() const
-{
+double Joint::getDamping() const {
   return mDamping;
 }
 
 //==============================================================================
-double Joint::getSpringRef() const
-{
+double Joint::getSpringRef() const {
   return mSpringRef;
 }
 

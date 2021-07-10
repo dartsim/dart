@@ -47,15 +47,12 @@ dynamics::ShapePtr createHeightmapShape(
     S xSize = S(2),
     S ySize = S(2),
     S zMin = S(0.0),
-    S zMax = S(0.1))
-{
+    S zMax = S(0.1)) {
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
   typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
-  for (auto i = 0u; i < yResolution; ++i)
-  {
-    for (auto j = 0u; j < xResolution; ++j)
-    {
+  for (auto i = 0u; i < yResolution; ++i) {
+    for (auto j = 0u; j < xResolution; ++j) {
       data(i, j) = math::Random::uniform(zMin, zMax);
     }
   }
@@ -75,8 +72,7 @@ dynamics::SimpleFramePtr createHeightmapFrame(
     S xSize = S(2),
     S ySize = S(2),
     S zMin = S(0.0),
-    S zMax = S(0.1))
-{
+    S zMax = S(0.1)) {
   auto terrainFrame = SimpleFrame::createShared(Frame::World());
   auto tf = terrainFrame->getRelativeTransform();
   tf.translation()[0] = -static_cast<double>(xSize) / 2.0;
@@ -93,18 +89,15 @@ dynamics::SimpleFramePtr createHeightmapFrame(
   return terrainFrame;
 }
 
-class HeightmapWorld : public gui::osg::WorldNode
-{
+class HeightmapWorld : public gui::osg::WorldNode {
 public:
   explicit HeightmapWorld(simulation::WorldPtr world)
-    : gui::osg::WorldNode(std::move(world))
-  {
+    : gui::osg::WorldNode(std::move(world)) {
     // Do nothing
   }
 
   // Triggered at the beginning of each simulation step
-  void customPreStep() override
-  {
+  void customPreStep() override {
     // Do nothing
   }
 
@@ -112,8 +105,7 @@ protected:
 };
 
 template <typename S>
-class HeightmapWidget : public dart::gui::osg::ImGuiWidget
-{
+class HeightmapWidget : public dart::gui::osg::ImGuiWidget {
 public:
   HeightmapWidget(
       dart::gui::osg::ImGuiViewer* viewer,
@@ -126,8 +118,7 @@ public:
       S ySize = S(2),
       S zMin = S(0.0),
       S zMax = S(0.1))
-    : mViewer(viewer), mNode(node), mTerrain(std::move(terrain)), mGrid(grid)
-  {
+    : mViewer(viewer), mNode(node), mTerrain(std::move(terrain)), mGrid(grid) {
     mXResolution = xResolution;
     mYResolution = yResolution;
     mXSize = xSize;
@@ -138,8 +129,7 @@ public:
     updateHeightmapShape();
   }
 
-  void updateHeightmapShape()
-  {
+  void updateHeightmapShape() {
     mTerrain->setShape(createHeightmapShape(
         mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
 
@@ -149,32 +139,27 @@ public:
     mTerrain->setRelativeTransform(tf);
   }
 
-  void render() override
-  {
+  void render() override {
     ImGui::SetNextWindowPos(ImVec2(10, 20));
     ImGui::SetNextWindowSize(ImVec2(360, 600));
     ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Point Cloud & Voxel Grid Demo",
             nullptr,
-            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar))
-    {
+            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar)) {
       // Early out if the window is collapsed, as an optimization.
       ImGui::End();
       return;
     }
 
     // Menu
-    if (ImGui::BeginMenuBar())
-    {
-      if (ImGui::BeginMenu("Menu"))
-      {
+    if (ImGui::BeginMenuBar()) {
+      if (ImGui::BeginMenu("Menu")) {
         if (ImGui::MenuItem("Exit"))
           mViewer->setDone(true);
         ImGui::EndMenu();
       }
-      if (ImGui::BeginMenu("Help"))
-      {
+      if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About DART"))
           mViewer->showAbout();
         ImGui::EndMenu();
@@ -186,19 +171,16 @@ public:
     ImGui::Spacing();
     ImGui::TextWrapped("TODO.");
 
-    if (ImGui::CollapsingHeader("Help"))
-    {
+    if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
       ImGui::Text("User Guid:\n");
       ImGui::Text("%s", mViewer->getInstructions().c_str());
       ImGui::PopTextWrapPos();
     }
 
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation())
-      {
+      if (mViewer->isAllowingSimulation()) {
         if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
           mViewer->simulate(true);
         ImGui::SameLine();
@@ -207,16 +189,14 @@ public:
       }
     }
 
-    if (mTerrain)
-    {
-      if (ImGui::CollapsingHeader("Heightmap", ImGuiTreeNodeFlags_DefaultOpen))
-      {
+    if (mTerrain) {
+      if (ImGui::CollapsingHeader(
+              "Heightmap", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Text("Terrain");
 
         auto aspect = mTerrain->getVisualAspect();
         bool display = !aspect->isHidden();
-        if (ImGui::Checkbox("Show##Terrain", &display))
-        {
+        if (ImGui::Checkbox("Show##Terrain", &display)) {
           if (display)
             aspect->show();
           else
@@ -228,26 +208,22 @@ public:
         assert(shape);
 
         int xResolution = static_cast<int>(mXResolution);
-        if (ImGui::InputInt("X Resolution", &xResolution, 5, 10))
-        {
+        if (ImGui::InputInt("X Resolution", &xResolution, 5, 10)) {
           if (xResolution < 5)
             xResolution = 5;
 
-          if (static_cast<int>(mXResolution) != xResolution)
-          {
+          if (static_cast<int>(mXResolution) != xResolution) {
             mXResolution = xResolution;
             updateHeightmapShape();
           }
         }
 
         int yResolution = static_cast<int>(mYResolution);
-        if (ImGui::InputInt("Y Resolution", &yResolution, 5, 10))
-        {
+        if (ImGui::InputInt("Y Resolution", &yResolution, 5, 10)) {
           if (yResolution < 5)
             yResolution = 5;
 
-          if (static_cast<int>(mYResolution) != yResolution)
-          {
+          if (static_cast<int>(mYResolution) != yResolution) {
             mYResolution = yResolution;
             updateHeightmapShape();
           }
@@ -255,16 +231,14 @@ public:
 
         ImGui::Separator();
 
-        if (ImGui::InputFloat("X Size", &mXSize, 0.1, 0.2))
-        {
+        if (ImGui::InputFloat("X Size", &mXSize, 0.1, 0.2)) {
           if (mXSize < 0.1)
             mXSize = 0.1;
 
           updateHeightmapShape();
         }
 
-        if (ImGui::InputFloat("Y Size", &mYSize, 0.1, 0.2))
-        {
+        if (ImGui::InputFloat("Y Size", &mYSize, 0.1, 0.2)) {
           if (mYSize < 0.1)
             mYSize = 0.1;
 
@@ -289,8 +263,7 @@ public:
         color[1] = static_cast<float>(visualColor[1]);
         color[2] = static_cast<float>(visualColor[2]);
         color[3] = static_cast<float>(visualColor[3]);
-        if (ImGui::ColorEdit4("Color##Heightmap", color))
-        {
+        if (ImGui::ColorEdit4("Color##Heightmap", color)) {
           visualColor[0] = static_cast<double>(color[0]);
           visualColor[1] = static_cast<double>(color[1]);
           visualColor[2] = static_cast<double>(color[2]);
@@ -300,21 +273,17 @@ public:
       }
     }
 
-    if (mGrid)
-    {
-      if (ImGui::CollapsingHeader("Grid", ImGuiTreeNodeFlags_None))
-      {
+    if (mGrid) {
+      if (ImGui::CollapsingHeader("Grid", ImGuiTreeNodeFlags_None)) {
         ImGui::Text("Grid");
 
         bool display = mGrid->isDisplayed();
         if (ImGui::Checkbox("Show##Grid", &display))
           mGrid->display(display);
 
-        if (display)
-        {
+        if (display) {
           int e = static_cast<int>(mGrid->getPlaneType());
-          if (mViewer->isAllowingSimulation())
-          {
+          if (mViewer->isAllowingSimulation()) {
             if (ImGui::RadioButton("XY-Plane", &e, 0))
               mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
             ImGui::SameLine();
@@ -340,8 +309,7 @@ public:
 
           static int cellCount;
           cellCount = static_cast<int>(mGrid->getNumCells());
-          if (ImGui::InputInt("Line Count", &cellCount, 1, 5))
-          {
+          if (ImGui::InputInt("Line Count", &cellCount, 1, 5)) {
             if (cellCount < 0)
               cellCount = 0;
             mGrid->setNumCells(static_cast<std::size_t>(cellCount));
@@ -349,8 +317,8 @@ public:
 
           static float cellStepSize;
           cellStepSize = static_cast<float>(mGrid->getMinorLineStepSize());
-          if (ImGui::InputFloat("Line Step Size", &cellStepSize, 0.001f, 0.1f))
-          {
+          if (ImGui::InputFloat(
+                  "Line Step Size", &cellStepSize, 0.001f, 0.1f)) {
             mGrid->setMinorLineStepSize(static_cast<double>(cellStepSize));
           }
 
@@ -358,8 +326,10 @@ public:
           minorLinesPerMajorLine
               = static_cast<int>(mGrid->getNumMinorLinesPerMajorLine());
           if (ImGui::InputInt(
-                  "Minor Lines per Major Line", &minorLinesPerMajorLine, 1, 5))
-          {
+                  "Minor Lines per Major Line",
+                  &minorLinesPerMajorLine,
+                  1,
+                  5)) {
             if (minorLinesPerMajorLine < 0)
               minorLinesPerMajorLine = 0;
             mGrid->setNumMinorLinesPerMajorLine(
@@ -369,16 +339,14 @@ public:
           static float axisLineWidth;
           axisLineWidth = mGrid->getAxisLineWidth();
           if (ImGui::InputFloat(
-                  "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f"))
-          {
+                  "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f")) {
             mGrid->setAxisLineWidth(axisLineWidth);
           }
 
           static float majorLineWidth;
           majorLineWidth = mGrid->getMajorLineWidth();
           if (ImGui::InputFloat(
-                  "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f"))
-          {
+                  "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f")) {
             mGrid->setMajorLineWidth(majorLineWidth);
           }
 
@@ -387,8 +355,7 @@ public:
           majorColor[0] = static_cast<float>(internalmajorColor.x());
           majorColor[1] = static_cast<float>(internalmajorColor.y());
           majorColor[2] = static_cast<float>(internalmajorColor.z());
-          if (ImGui::ColorEdit3("Major Line Color", majorColor))
-          {
+          if (ImGui::ColorEdit3("Major Line Color", majorColor)) {
             internalmajorColor[0] = static_cast<double>(majorColor[0]);
             internalmajorColor[1] = static_cast<double>(majorColor[1]);
             internalmajorColor[2] = static_cast<double>(majorColor[2]);
@@ -398,8 +365,7 @@ public:
           static float minorLineWidth;
           minorLineWidth = mGrid->getMinorLineWidth();
           if (ImGui::InputFloat(
-                  "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f"))
-          {
+                  "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f")) {
             mGrid->setMinorLineWidth(minorLineWidth);
           }
 
@@ -408,8 +374,7 @@ public:
           minorColor[0] = static_cast<float>(internalMinorColor.x());
           minorColor[1] = static_cast<float>(internalMinorColor.y());
           minorColor[2] = static_cast<float>(internalMinorColor.z());
-          if (ImGui::ColorEdit3("Minor Line Color", minorColor))
-          {
+          if (ImGui::ColorEdit3("Minor Line Color", minorColor)) {
             internalMinorColor[0] = static_cast<double>(minorColor[0]);
             internalMinorColor[1] = static_cast<double>(minorColor[1]);
             internalMinorColor[2] = static_cast<double>(minorColor[2]);
@@ -435,8 +400,7 @@ protected:
   float mZMax;
 };
 
-int main()
-{
+int main() {
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 

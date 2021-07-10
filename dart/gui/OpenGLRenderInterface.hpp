@@ -35,6 +35,7 @@
 
 #include <list>
 #include <vector>
+
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/RenderInterface.hpp"
 
@@ -48,19 +49,15 @@ class ShapeFrame;
 } // namespace dynamics
 
 namespace gui {
-class OpenGLRenderInterface : public RenderInterface
-{
-
+class OpenGLRenderInterface : public RenderInterface {
 public:
   OpenGLRenderInterface()
     : mViewportX(0.0),
       mViewportY(0.0),
       mViewportWidth(0.0),
-      mViewportHeight(0.0)
-  {
+      mViewportHeight(0.0) {
   }
-  virtual ~OpenGLRenderInterface()
-  {
+  virtual ~OpenGLRenderInterface() {
   }
 
   void initialize() override;

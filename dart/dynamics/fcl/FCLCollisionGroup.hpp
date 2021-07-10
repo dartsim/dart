@@ -42,8 +42,7 @@ namespace dynamics {
 class CollisionObject;
 class FCLCollisionObjectUserData;
 
-class FCLCollisionGroup : public CollisionGroup
-{
+class FCLCollisionGroup : public CollisionGroup {
 public:
   friend class FCLCollisionDetector;
 
@@ -89,7 +88,7 @@ protected:
   std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_

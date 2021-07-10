@@ -39,8 +39,7 @@ namespace detail {
 
 //==============================================================================
 FixedFrameProperties::FixedFrameProperties(const Eigen::Isometry3d& relativeTf)
-  : mRelativeTf(relativeTf)
-{
+  : mRelativeTf(relativeTf) {
   // Do nothing
 }
 
@@ -52,26 +51,22 @@ const Eigen::Vector6d FixedFrame::mZero = Eigen::Vector6d::Zero();
 //==============================================================================
 FixedFrame::FixedFrame(
     Frame* refFrame, const Eigen::Isometry3d& relativeTransform)
-  : Entity(refFrame, false), Frame(refFrame)
-{
+  : Entity(refFrame, false), Frame(refFrame) {
   createAspect<Aspect>(AspectProperties(relativeTransform));
 }
 
 //==============================================================================
-FixedFrame::~FixedFrame()
-{
+FixedFrame::~FixedFrame() {
   // Do nothing. The inherited destructors will do all the necessary cleanup.
 }
 
 //==============================================================================
-void FixedFrame::setAspectProperties(const AspectProperties& properties)
-{
+void FixedFrame::setAspectProperties(const AspectProperties& properties) {
   setRelativeTransform(properties.mRelativeTf);
 }
 
 //==============================================================================
-void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
-{
+void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform) {
   if (transform.matrix() == mAspectProperties.mRelativeTf.matrix())
     return;
 
@@ -81,44 +76,37 @@ void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
 }
 
 //==============================================================================
-const Eigen::Isometry3d& FixedFrame::getRelativeTransform() const
-{
+const Eigen::Isometry3d& FixedFrame::getRelativeTransform() const {
   return mAspectProperties.mRelativeTf;
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getRelativeSpatialVelocity() const
-{
+const Eigen::Vector6d& FixedFrame::getRelativeSpatialVelocity() const {
   return mZero;
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getRelativeSpatialAcceleration() const
-{
+const Eigen::Vector6d& FixedFrame::getRelativeSpatialAcceleration() const {
   return mZero;
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getPrimaryRelativeAcceleration() const
-{
+const Eigen::Vector6d& FixedFrame::getPrimaryRelativeAcceleration() const {
   return mZero;
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getPartialAcceleration() const
-{
+const Eigen::Vector6d& FixedFrame::getPartialAcceleration() const {
   return mZero;
 }
 
 //==============================================================================
-FixedFrame::FixedFrame() : FixedFrame(ConstructAbstract)
-{
+FixedFrame::FixedFrame() : FixedFrame(ConstructAbstract) {
   // Delegates to the abstract constructor
 }
 
 //==============================================================================
-FixedFrame::FixedFrame(ConstructAbstractTag)
-{
+FixedFrame::FixedFrame(ConstructAbstractTag) {
   dterr << "[FixedFrame::FixedFrame] Attempting to construct a pure abstract "
         << "FixedFrame object. This is not allowed!\n";
   assert(false);

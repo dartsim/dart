@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 template <typename BoxedLcpSolverT>
-bool BoxedLcpSolver::is() const
-{
+bool BoxedLcpSolver::is() const {
   return getType() == BoxedLcpSolverT::getStaticType();
 }
 

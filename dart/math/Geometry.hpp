@@ -214,8 +214,7 @@ Eigen::Matrix6d getAdTMatrix(const Eigen::Isometry3d& T);
 /// Adjoint mapping for dynamic size Jacobian
 template <typename Derived>
 typename Derived::PlainObject AdTJac(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
-{
+    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J) {
   // Check the number of rows is 6 at compile time
   EIGEN_STATIC_ASSERT(
       Derived::RowsAtCompileTime == 6,
@@ -233,8 +232,7 @@ typename Derived::PlainObject AdTJac(
 /// Adjoint mapping for fixed size Jacobian
 template <typename Derived>
 typename Derived::PlainObject AdTJacFixed(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
-{
+    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J) {
   // Check if _J is fixed size Jacobian
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
 
@@ -271,8 +269,7 @@ Eigen::Vector6d AdTLinear(
 /// \brief Change coordinate Frame of a Jacobian
 template <typename Derived>
 typename Derived::PlainObject AdRJac(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
-{
+    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J) {
   EIGEN_STATIC_ASSERT(
       Derived::RowsAtCompileTime == 6,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
@@ -289,8 +286,7 @@ typename Derived::PlainObject AdRJac(
 
 template <typename Derived>
 typename Derived::PlainObject AdRInvJac(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
-{
+    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J) {
   EIGEN_STATIC_ASSERT(
       Derived::RowsAtCompileTime == 6,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
@@ -308,8 +304,7 @@ typename Derived::PlainObject AdRInvJac(
 
 template <typename Derived>
 typename Derived::PlainObject adJac(
-    const Eigen::Vector6d& _V, const Eigen::MatrixBase<Derived>& _J)
-{
+    const Eigen::Vector6d& _V, const Eigen::MatrixBase<Derived>& _J) {
   EIGEN_STATIC_ASSERT(
       Derived::RowsAtCompileTime == 6,
       THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
@@ -332,8 +327,7 @@ Eigen::Vector6d AdInvT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);
 /// Adjoint mapping for dynamic size Jacobian
 template <typename Derived>
 typename Derived::PlainObject AdInvTJac(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
-{
+    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J) {
   // Check the number of rows is 6 at compile time
   EIGEN_STATIC_ASSERT(
       Derived::RowsAtCompileTime == 6,
@@ -351,8 +345,7 @@ typename Derived::PlainObject AdInvTJac(
 /// Adjoint mapping for fixed size Jacobian
 template <typename Derived>
 typename Derived::PlainObject AdInvTJacFixed(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
-{
+    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J) {
   // Check if _J is fixed size Jacobian
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
 
@@ -431,12 +424,7 @@ Eigen::Matrix3d parallelAxisTheorem(
     const Eigen::Vector3d& _comShift,
     double _mass);
 
-enum AxisType
-{
-  AXIS_X = 0,
-  AXIS_Y = 1,
-  AXIS_Z = 2
-};
+enum AxisType { AXIS_X = 0, AXIS_Y = 1, AXIS_Z = 2 };
 
 /// Compute a rotation matrix from a vector. One axis of the rotated coordinates
 /// by the rotation matrix matches the input axis where the axis is specified
@@ -467,20 +455,18 @@ bool verifyTransform(const Eigen::Isometry3d& _T);
 
 /// Compute the angle (in the range of -pi to +pi) which ignores any full
 /// rotations
-inline double wrapToPi(double angle)
-{
+inline double wrapToPi(double angle) {
   constexpr auto pi = constantsd::pi();
 
   return std::fmod(angle + pi, 2 * pi) - pi;
 }
 
 template <typename MatrixType, typename ReturnType>
-void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
-{
+void extractNullSpace(
+    const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS) {
   int rank = 0;
   // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
-  if (_SVD.nonzeroSingularValues() > 0)
-  {
+  if (_SVD.nonzeroSingularValues() > 0) {
     double thresh = std::max(
         _SVD.singularValues().coeff(0) * 1e-10,
         std::numeric_limits<double>::min());
@@ -495,8 +481,7 @@ void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
 }
 
 template <typename MatrixType, typename ReturnType>
-void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
-{
+void computeNullSpace(const MatrixType& _M, ReturnType& _NS) {
   Eigen::JacobiSVD<MatrixType> svd(_M, Eigen::ComputeFullV);
   extractNullSpace(svd, _NS);
 }
@@ -553,8 +538,7 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull);
 
 /// Intersection_t is returned by the computeIntersection() function to indicate
 /// whether there was a valid intersection between the two line segments
-enum IntersectionResult
-{
+enum IntersectionResult {
 
   INTERSECTING = 0, ///< An intersection was found
   PARALLEL,         ///< The line segments are parallel
@@ -602,45 +586,37 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
     const SupportPolygon& _support);
 
 // Represents a bounding box with minimum and maximum coordinates.
-class BoundingBox
-{
+class BoundingBox {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   BoundingBox();
   BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
 
-  inline const Eigen::Vector3d& getMin() const
-  {
+  inline const Eigen::Vector3d& getMin() const {
     return mMin;
   }
-  inline const Eigen::Vector3d& getMax() const
-  {
+  inline const Eigen::Vector3d& getMax() const {
     return mMax;
   }
 
-  inline void setMin(const Eigen::Vector3d& min)
-  {
+  inline void setMin(const Eigen::Vector3d& min) {
     mMin = min;
   }
-  inline void setMax(const Eigen::Vector3d& max)
-  {
+  inline void setMax(const Eigen::Vector3d& max) {
     mMax = max;
   }
 
   // \brief Centroid of the bounding box (i.e average of min and max)
-  inline Eigen::Vector3d computeCenter() const
-  {
+  inline Eigen::Vector3d computeCenter() const {
     return (mMax + mMin) * 0.5;
   }
   // \brief Coordinates of the maximum corner with respect to the centroid.
-  inline Eigen::Vector3d computeHalfExtents() const
-  {
+  inline Eigen::Vector3d computeHalfExtents() const {
     return (mMax - mMin) * 0.5;
   }
   // \brief Length of each of the sides of the bounding box.
-  inline Eigen::Vector3d computeFullExtents() const
-  {
+  inline Eigen::Vector3d computeFullExtents() const {
     return (mMax - mMin);
   }
 

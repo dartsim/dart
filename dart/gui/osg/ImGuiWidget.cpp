@@ -45,50 +45,42 @@ namespace gui {
 namespace osg {
 
 //==============================================================================
-ImGuiWidget::ImGuiWidget() : mIsVisible(true)
-{
+ImGuiWidget::ImGuiWidget() : mIsVisible(true) {
   // Do nothing
 }
 
 //==============================================================================
-ImGuiWidget::~ImGuiWidget()
-{
+ImGuiWidget::~ImGuiWidget() {
   // Do nothing
 }
 
 //==============================================================================
-void ImGuiWidget::setVisible(bool visible)
-{
+void ImGuiWidget::setVisible(bool visible) {
   mIsVisible = visible;
 }
 
 //==============================================================================
-void ImGuiWidget::toggleVisible()
-{
+void ImGuiWidget::toggleVisible() {
   mIsVisible ^= 1;
 }
 
 //==============================================================================
-void ImGuiWidget::show()
-{
+void ImGuiWidget::show() {
   mIsVisible = true;
 }
 
 //==============================================================================
-void ImGuiWidget::hide()
-{
+void ImGuiWidget::hide() {
   mIsVisible = false;
 }
 
 //==============================================================================
-bool ImGuiWidget::isVisible() const
-{
+bool ImGuiWidget::isVisible() const {
   return mIsVisible;
 }
 
 //==============================================================================
-void AboutWidget::render()
-{
+void AboutWidget::render() {
   ImGui::Begin("About DART", &mIsVisible, ImGuiWindowFlags_AlwaysAutoResize);
   // ImGui::Text("HIT %s", Version::asString().c_str());
   ImGui::Separator();

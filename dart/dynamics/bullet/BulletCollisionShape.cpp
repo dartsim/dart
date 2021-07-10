@@ -40,18 +40,16 @@ BulletCollisionShape::BulletCollisionShape(
     std::unique_ptr<btCollisionShape> collisionShape,
     const btTransform& relativeTransform)
   : mCollisionShape(std::move(collisionShape)),
-    mRelativeTransform(new btTransform(relativeTransform))
-{
+    mRelativeTransform(new btTransform(relativeTransform)) {
   // Do nothing
 }
 
 //==============================================================================
 BulletCollisionShape::BulletCollisionShape(
     std::unique_ptr<btCollisionShape> collisionShape)
-  : mCollisionShape(std::move(collisionShape)), mRelativeTransform(nullptr)
-{
+  : mCollisionShape(std::move(collisionShape)), mRelativeTransform(nullptr) {
   // Do nothing
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

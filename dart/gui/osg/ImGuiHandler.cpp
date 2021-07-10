@@ -43,10 +43,9 @@
 #include <osg/Camera>
 #include <osg/RenderInfo>
 
+#include "dart/common/Console.hpp"
 #include "dart/external/imgui/imgui.h"
 #include "dart/external/imgui/imgui_impl_opengl2.h"
-
-#include "dart/common/Console.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
 
 namespace dart {
@@ -60,8 +59,7 @@ namespace osg {
 // thant 511. It actually uses an array of 512 elements. However, OSG has
 // indices greater than that. So here I do a conversion for special keys between
 // ImGui and OSG.
-enum ConvertedKey : int
-{
+enum ConvertedKey : int {
   ConvertedKey_Tab = 257,
   ConvertedKey_Left,
   ConvertedKey_Right,
@@ -88,12 +86,10 @@ enum ConvertedKey : int
 //==============================================================================
 // Check for a special key and return the converted code (range [257, 511]) if
 // so. Otherwise returns -1
-int convertFromOSGKey(int key)
-{
+int convertFromOSGKey(int key) {
   using KeySymbol = osgGA::GUIEventAdapter::KeySymbol;
 
-  switch (key)
-  {
+  switch (key) {
     case KeySymbol::KEY_Tab:
       return ConvertedKey_Tab;
     case KeySymbol::KEY_Left:
@@ -142,15 +138,12 @@ int convertFromOSGKey(int key)
 }
 
 //==============================================================================
-struct ImGuiNewFrameCallback : public ::osg::Camera::DrawCallback
-{
-  ImGuiNewFrameCallback(ImGuiHandler* handler) : mHandler(handler)
-  {
+struct ImGuiNewFrameCallback : public ::osg::Camera::DrawCallback {
+  ImGuiNewFrameCallback(ImGuiHandler* handler) : mHandler(handler) {
     // Do nothing
   }
 
-  virtual void operator()(::osg::RenderInfo& renderInfo) const
-  {
+  virtual void operator()(::osg::RenderInfo& renderInfo) const {
     mHandler->newFrame(renderInfo);
   }
 
@@ -159,15 +152,12 @@ private:
 };
 
 //==============================================================================
-struct ImGuiDrawCallback : public ::osg::Camera::DrawCallback
-{
-  ImGuiDrawCallback(ImGuiHandler* handler) : mHandler(handler)
-  {
+struct ImGuiDrawCallback : public ::osg::Camera::DrawCallback {
+  ImGuiDrawCallback(ImGuiHandler* handler) : mHandler(handler) {
     // Do nothing
   }
 
-  virtual void operator()(::osg::RenderInfo& renderInfo) const
-  {
+  virtual void operator()(::osg::RenderInfo& renderInfo) const {
     mHandler->render(renderInfo);
   }
 
@@ -177,8 +167,7 @@ private:
 
 //==============================================================================
 ImGuiHandler::ImGuiHandler()
-  : mTime{0.0}, mMousePressed{false, false, false}, mMouseWheel{0.0f}
-{
+  : mTime{0.0}, mMousePressed{false, false, false}, mMouseWheel{0.0f} {
   ImGui::CreateContext();
 
   ImGui::StyleColorsDark();
@@ -210,14 +199,12 @@ ImGuiHandler::ImGuiHandler()
 }
 
 //==============================================================================
-ImGuiHandler::~ImGuiHandler()
-{
+ImGuiHandler::~ImGuiHandler() {
   // Do nothing
 }
 
 //==============================================================================
-void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
-{
+void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera) {
   if (nullptr == camera)
     return;
 
@@ -229,17 +216,14 @@ void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
 }
 
 //==============================================================================
-bool ImGuiHandler::hasWidget(const std::shared_ptr<ImGuiWidget>& widget) const
-{
+bool ImGuiHandler::hasWidget(const std::shared_ptr<ImGuiWidget>& widget) const {
   return std::find(mWidgets.begin(), mWidgets.end(), widget) != mWidgets.end();
 }
 
 //==============================================================================
 void ImGuiHandler::addWidget(
-    const std::shared_ptr<ImGuiWidget>& widget, bool visible)
-{
-  if (hasWidget(widget))
-  {
+    const std::shared_ptr<ImGuiWidget>& widget, bool visible) {
+  if (hasWidget(widget)) {
     dtwarn
         << "[ImGuiHandler::addWidget] Attempting to add existing widget to the "
            "viewer. Ignoring this action.";
@@ -251,10 +235,8 @@ void ImGuiHandler::addWidget(
 }
 
 //==============================================================================
-void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
-{
-  if (!hasWidget(widget))
-  {
+void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget) {
+  if (!hasWidget(widget)) {
     dtwarn << "[ImGuiHandler::removeWidget] Attempting to remove not existing "
               "widget from the viewer. Ignoring this action.\n";
     return;
@@ -265,8 +247,7 @@ void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
 }
 
 //==============================================================================
-void ImGuiHandler::removeAllWidget()
-{
+void ImGuiHandler::removeAllWidget() {
   mWidgets.clear();
 }
 
@@ -275,21 +256,17 @@ bool ImGuiHandler::handle(
     const osgGA::GUIEventAdapter& eventAdapter,
     osgGA::GUIActionAdapter& /*actionAdapter*/,
     ::osg::Object* /*object*/,
-    ::osg::NodeVisitor* /*nodeVisitor*/)
-{
+    ::osg::NodeVisitor* /*nodeVisitor*/) {
   auto& io = ImGui::GetIO();
   const auto wantCapureMouse = io.WantCaptureMouse;
   const auto wantCapureKeyboard = io.WantCaptureKeyboard;
 
-  switch (eventAdapter.getEventType())
-  {
-    case osgGA::GUIEventAdapter::KEYDOWN:
-    {
+  switch (eventAdapter.getEventType()) {
+    case osgGA::GUIEventAdapter::KEYDOWN: {
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
-      if (special_key > 0)
-      {
+      if (special_key > 0) {
         assert(special_key < 512 && "ImGui KeysDown is an array of 512");
         assert(
             special_key > 256
@@ -305,22 +282,18 @@ bool ImGuiHandler::handle(
                     || io.KeysDown[ConvertedKey_RightAlt];
         io.KeySuper = io.KeysDown[ConvertedKey_LeftSuper]
                       || io.KeysDown[ConvertedKey_RightSuper];
-      }
-      else if (0 < c && c < 0x10000)
-      {
+      } else if (0 < c && c < 0x10000) {
         io.KeysDown[c] = true;
         io.AddInputCharacter(static_cast<ImWchar>(c));
       }
 
       return wantCapureKeyboard;
     }
-    case osgGA::GUIEventAdapter::KEYUP:
-    {
+    case osgGA::GUIEventAdapter::KEYUP: {
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
-      if (special_key > 0)
-      {
+      if (special_key > 0) {
         assert(special_key < 512 && "ImGui KeysDown is an array of 512");
         assert(
             special_key > 256
@@ -336,39 +309,29 @@ bool ImGuiHandler::handle(
                     || io.KeysDown[ConvertedKey_RightAlt];
         io.KeySuper = io.KeysDown[ConvertedKey_LeftSuper]
                       || io.KeysDown[ConvertedKey_RightSuper];
-      }
-      else if (0 < c && c < 0x10000)
-      {
+      } else if (0 < c && c < 0x10000) {
         io.KeysDown[c] = false;
         io.AddInputCharacter(static_cast<ImWchar>(c));
       }
 
       return wantCapureKeyboard;
     }
-    case osgGA::GUIEventAdapter::PUSH:
-    {
+    case osgGA::GUIEventAdapter::PUSH: {
       io.MousePos
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
 
       if (eventAdapter.getButtonMask()
-          == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
-      {
+          == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
         mMousePressed[0] = true;
-      }
-      else if (
+      } else if (
           eventAdapter.getButtonMask()
-          == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
-      {
+          == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) {
         mMousePressed[1] = true;
-      }
-      else if (
+      } else if (
           eventAdapter.getButtonMask()
-          == osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
-      {
+          == osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) {
         mMousePressed[2] = true;
-      }
-      else
-      {
+      } else {
         // Shouldn't be reached to here. Mark left button by default.
         mMousePressed[0] = true;
       }
@@ -376,15 +339,13 @@ bool ImGuiHandler::handle(
       return wantCapureMouse;
     }
     case osgGA::GUIEventAdapter::DRAG:
-    case osgGA::GUIEventAdapter::MOVE:
-    {
+    case osgGA::GUIEventAdapter::MOVE: {
       io.MousePos
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
 
       return wantCapureMouse;
     }
-    case osgGA::GUIEventAdapter::RELEASE:
-    {
+    case osgGA::GUIEventAdapter::RELEASE: {
       // When a mouse button is released no button mask is set. So we mark all
       // the buttons are released.
       mMousePressed[0] = false;
@@ -393,12 +354,10 @@ bool ImGuiHandler::handle(
 
       return wantCapureMouse;
     }
-    case osgGA::GUIEventAdapter::SCROLL:
-    {
+    case osgGA::GUIEventAdapter::SCROLL: {
       constexpr float increment = 0.1f;
 
-      switch (eventAdapter.getScrollingMotion())
-      {
+      switch (eventAdapter.getScrollingMotion()) {
         case (osgGA::GUIEventAdapter::SCROLL_NONE):
           break;
         case (osgGA::GUIEventAdapter::SCROLL_LEFT):
@@ -418,16 +377,14 @@ bool ImGuiHandler::handle(
 
       return wantCapureMouse;
     }
-    default:
-    {
+    default: {
       return false;
     }
   }
 }
 
 //==============================================================================
-void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
-{
+void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo) {
   ImGui_ImplOpenGL2_NewFrame();
 
   auto& io = ImGui::GetIO();
@@ -454,10 +411,8 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 }
 
 //==============================================================================
-void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
-{
-  for (const auto& widget : mWidgets)
-  {
+void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/) {
+  for (const auto& widget : mWidgets) {
     if (widget->isVisible())
       widget->render();
   }

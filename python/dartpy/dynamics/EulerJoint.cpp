@@ -34,6 +34,7 @@
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "Joint.hpp"
 
 namespace py = pybind11;
@@ -41,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void EulerJoint(py::module& m)
-{
+void EulerJoint(py::module& m) {
   ::py::class_<dart::dynamics::EulerJoint::UniqueProperties>(
       m, "EulerJointUniqueProperties")
       .def(::py::init<>())
@@ -130,9 +130,10 @@ void EulerJoint(py::module& m)
               const dart::common::EmbedPropertiesOnTopOf<
                   dart::dynamics::EulerJoint,
                   dart::dynamics::detail::EulerJointUniqueProperties,
-                  dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<3>>>::AspectProperties&
-                  properties) { self->setAspectProperties(properties); },
+                  dart::dynamics::GenericJoint<dart::math::RealVectorSpace<
+                      3>>>::AspectProperties& properties) {
+            self->setAspectProperties(properties);
+          },
           ::py::arg("properties"))
       .def(
           "getEulerJointProperties",
@@ -156,7 +157,9 @@ void EulerJoint(py::module& m)
       .def(
           "isCyclic",
           +[](const dart::dynamics::EulerJoint* self,
-              std::size_t _index) -> bool { return self->isCyclic(_index); },
+              std::size_t _index) -> bool {
+            return self->isCyclic(_index);
+          },
           ::py::arg("index"))
       .def(
           "setAxisOrder",
@@ -169,7 +172,9 @@ void EulerJoint(py::module& m)
           "setAxisOrder",
           +[](dart::dynamics::EulerJoint* self,
               dart::dynamics::EulerJoint::AxisOrder _order,
-              bool _renameDofs) { self->setAxisOrder(_order, _renameDofs); },
+              bool _renameDofs) {
+            self->setAxisOrder(_order, _renameDofs);
+          },
           ::py::arg("order"),
           ::py::arg("renameDofs"))
       .def(

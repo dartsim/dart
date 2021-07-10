@@ -42,8 +42,7 @@ namespace signal {
 namespace detail {
 
 /// class ConnectionBodyBase
-class ConnectionBodyBase
-{
+class ConnectionBodyBase {
 public:
   /// Constructor
   ConnectionBodyBase() = default;
@@ -59,8 +58,7 @@ public:
 template <typename SignalType>
 class ConnectionBody final
   : public ConnectionBodyBase,
-    public std::enable_shared_from_this<ConnectionBody<SignalType>>
-{
+    public std::enable_shared_from_this<ConnectionBody<SignalType>> {
 public:
   using SlotType = typename SignalType::SlotType;
 
@@ -94,50 +92,45 @@ private:
 template <typename SignalType>
 ConnectionBody<SignalType>::ConnectionBody(
     SignalType& signal, const SlotType& _slot)
-  : ConnectionBodyBase(), mSignal(signal), mSlot(_slot)
-{
+  : ConnectionBodyBase(), mSignal(signal), mSlot(_slot) {
   // Do nothing
 }
 
 //==============================================================================
 template <typename SignalType>
 ConnectionBody<SignalType>::ConnectionBody(SignalType& signal, SlotType&& _slot)
-  : ConnectionBodyBase(), mSignal(signal), mSlot(std::forward<SlotType>(_slot))
-{
+  : ConnectionBodyBase(),
+    mSignal(signal),
+    mSlot(std::forward<SlotType>(_slot)) {
   // Do nothing
 }
 
 //==============================================================================
 template <typename SignalType>
-ConnectionBody<SignalType>::~ConnectionBody()
-{
+ConnectionBody<SignalType>::~ConnectionBody() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename SignalType>
-void ConnectionBody<SignalType>::disconnect()
-{
+void ConnectionBody<SignalType>::disconnect() {
   mSignal.disconnect(this->shared_from_this());
 }
 
 //==============================================================================
 template <typename SignalType>
 const typename ConnectionBody<SignalType>::SlotType&
-ConnectionBody<SignalType>::getSlot() const
-{
+ConnectionBody<SignalType>::getSlot() const {
   return mSlot;
 }
 
 /// DefaultCombiner -- return the last result
 template <typename T>
-struct DefaultCombiner
-{
+struct DefaultCombiner {
   typedef T result_type;
 
   template <typename InputIterator>
-  static T process(InputIterator first, InputIterator last)
-  {
+  static T process(InputIterator first, InputIterator last) {
     // If there are no slots to call, just return the
     // default-constructed value
     if (first == last)

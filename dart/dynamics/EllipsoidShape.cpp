@@ -39,45 +39,38 @@ namespace dynamics {
 
 //==============================================================================
 EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& diameters)
-  : Shape(ELLIPSOID)
-{
+  : Shape(ELLIPSOID) {
   setDiameters(diameters);
 }
 
 //==============================================================================
-EllipsoidShape::~EllipsoidShape()
-{
+EllipsoidShape::~EllipsoidShape() {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& EllipsoidShape::getType() const
-{
+const std::string& EllipsoidShape::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& EllipsoidShape::getStaticType()
-{
+const std::string& EllipsoidShape::getStaticType() {
   static const std::string type("EllipsoidShape");
   return type;
 }
 
 //==============================================================================
-void EllipsoidShape::setSize(const Eigen::Vector3d& diameters)
-{
+void EllipsoidShape::setSize(const Eigen::Vector3d& diameters) {
   setDiameters(diameters);
 }
 
 //==============================================================================
-const Eigen::Vector3d& EllipsoidShape::getSize() const
-{
+const Eigen::Vector3d& EllipsoidShape::getSize() const {
   return getDiameters();
 }
 
 //==============================================================================
-void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
-{
+void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters) {
   assert(diameters[0] > 0.0);
   assert(diameters[1] > 0.0);
   assert(diameters[2] > 0.0);
@@ -91,14 +84,12 @@ void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 }
 
 //==============================================================================
-const Eigen::Vector3d& EllipsoidShape::getDiameters() const
-{
+const Eigen::Vector3d& EllipsoidShape::getDiameters() const {
   return mDiameters;
 }
 
 //==============================================================================
-void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
-{
+void EllipsoidShape::setRadii(const Eigen::Vector3d& radii) {
   mDiameters = radii * 2.0;
 
   mIsBoundingBoxDirty = true;
@@ -108,14 +99,12 @@ void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
 }
 
 //==============================================================================
-const Eigen::Vector3d EllipsoidShape::getRadii() const
-{
+const Eigen::Vector3d EllipsoidShape::getRadii() const {
   return mDiameters / 2.0;
 }
 
 //==============================================================================
-double EllipsoidShape::computeVolume(const Eigen::Vector3d& diameters)
-{
+double EllipsoidShape::computeVolume(const Eigen::Vector3d& diameters) {
   // 4/3* Pi* a/2* b/2* c/2
   return math::constantsd::pi() * diameters[0] * diameters[1] * diameters[2]
          / 6.0;
@@ -123,8 +112,7 @@ double EllipsoidShape::computeVolume(const Eigen::Vector3d& diameters)
 
 //==============================================================================
 Eigen::Matrix3d EllipsoidShape::computeInertia(
-    const Eigen::Vector3d& diameters, double mass)
-{
+    const Eigen::Vector3d& diameters, double mass) {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
   const auto coeff = mass / 20.0;
@@ -140,14 +128,12 @@ Eigen::Matrix3d EllipsoidShape::computeInertia(
 }
 
 //==============================================================================
-Eigen::Matrix3d EllipsoidShape::computeInertia(double mass) const
-{
+Eigen::Matrix3d EllipsoidShape::computeInertia(double mass) const {
   return computeInertia(mDiameters, mass);
 }
 
 //==============================================================================
-bool EllipsoidShape::isSphere() const
-{
+bool EllipsoidShape::isSphere() const {
   if (mDiameters[0] == mDiameters[1] && mDiameters[1] == mDiameters[2])
     return true;
   else
@@ -155,16 +141,14 @@ bool EllipsoidShape::isSphere() const
 }
 
 //==============================================================================
-void EllipsoidShape::updateBoundingBox() const
-{
+void EllipsoidShape::updateBoundingBox() const {
   mBoundingBox.setMin(-mDiameters * 0.5);
   mBoundingBox.setMax(mDiameters * 0.5);
   mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
-void EllipsoidShape::updateVolume() const
-{
+void EllipsoidShape::updateVolume() const {
   mVolume = computeVolume(mDiameters);
   mIsVolumeDirty = false;
 }

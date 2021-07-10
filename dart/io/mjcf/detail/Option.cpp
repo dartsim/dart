@@ -40,12 +40,10 @@ namespace MjcfParser {
 namespace detail {
 
 //==============================================================================
-Errors Option::read(tinyxml2::XMLElement* element)
-{
+Errors Option::read(tinyxml2::XMLElement* element) {
   Errors errors;
 
-  if (std::string(element->Name()) != "option")
-  {
+  if (std::string(element->Name()) != "option") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <option> from the provided element");
@@ -53,68 +51,54 @@ Errors Option::read(tinyxml2::XMLElement* element)
   }
 
   // timestep
-  if (hasAttribute(element, "timestep"))
-  {
+  if (hasAttribute(element, "timestep")) {
     // TODO(JS): Error handling
     mTimestep = getAttributeDouble(element, "timestep");
   }
 
   // apirate
-  if (hasAttribute(element, "apirate"))
-  {
+  if (hasAttribute(element, "apirate")) {
     mApiRate = getAttributeDouble(element, "apirate");
   }
 
   // impratio
-  if (hasAttribute(element, "impratio"))
-  {
+  if (hasAttribute(element, "impratio")) {
     mImpRatio = getAttributeDouble(element, "impratio");
   }
 
   // gravity
-  if (hasAttribute(element, "gravity"))
-  {
+  if (hasAttribute(element, "gravity")) {
     mGravity = getAttributeVector3d(element, "gravity");
   }
 
   // wind
-  if (hasAttribute(element, "wind"))
-  {
+  if (hasAttribute(element, "wind")) {
     mWind = getAttributeVector3d(element, "wind");
   }
 
   // magnetic
-  if (hasAttribute(element, "magnetic"))
-  {
+  if (hasAttribute(element, "magnetic")) {
     mMagnetic = getAttributeVector3d(element, "magnetic");
   }
 
   // density
-  if (hasAttribute(element, "density"))
-  {
+  if (hasAttribute(element, "density")) {
     mDensity = getAttributeDouble(element, "density");
   }
 
   // viscosity
-  if (hasAttribute(element, "viscosity"))
-  {
+  if (hasAttribute(element, "viscosity")) {
     mViscosity = getAttributeDouble(element, "viscosity");
   }
 
   // integrator
-  if (hasAttribute(element, "integrator"))
-  {
+  if (hasAttribute(element, "integrator")) {
     const std::string integrator = getAttributeString(element, "integrator");
-    if (integrator == "Euler")
-    {
+    if (integrator == "Euler") {
       mIntegrator = Integrator::EULER;
-    }
-    else if (integrator == "RK4")
-    {
+    } else if (integrator == "RK4") {
       mIntegrator = Integrator::RK4;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'integrator': " + integrator);
@@ -123,23 +107,15 @@ Errors Option::read(tinyxml2::XMLElement* element)
   }
 
   // collision
-  if (hasAttribute(element, "collision"))
-  {
+  if (hasAttribute(element, "collision")) {
     const std::string collision = getAttributeString(element, "collision");
-    if (collision == "all")
-    {
+    if (collision == "all") {
       mCollision = CollisionType::ALL;
-    }
-    else if (collision == "predefined")
-    {
+    } else if (collision == "predefined") {
       mCollision = CollisionType::PREDEFINED;
-    }
-    else if (collision == "dynamic")
-    {
+    } else if (collision == "dynamic") {
       mCollision = CollisionType::DYNAMIC;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'collision': " + collision);
@@ -148,19 +124,13 @@ Errors Option::read(tinyxml2::XMLElement* element)
   }
 
   // cone
-  if (hasAttribute(element, "cone"))
-  {
+  if (hasAttribute(element, "cone")) {
     const std::string cone = getAttributeString(element, "cone");
-    if (cone == "pyramidal")
-    {
+    if (cone == "pyramidal") {
       mCone = ConeType::PYRAMIDAL;
-    }
-    else if (cone == "elliptic")
-    {
+    } else if (cone == "elliptic") {
       mCone = ConeType::ELLIPTIC;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'cone': " + cone);
@@ -169,23 +139,15 @@ Errors Option::read(tinyxml2::XMLElement* element)
   }
 
   // jacobian
-  if (hasAttribute(element, "jacobian"))
-  {
+  if (hasAttribute(element, "jacobian")) {
     const std::string jacobian = getAttributeString(element, "jacobian");
-    if (jacobian == "dense")
-    {
+    if (jacobian == "dense") {
       mJacobian = JacobianType::DENSE;
-    }
-    else if (jacobian == "sparse")
-    {
+    } else if (jacobian == "sparse") {
       mJacobian = JacobianType::SPARSE;
-    }
-    else if (jacobian == "auto")
-    {
+    } else if (jacobian == "auto") {
       mJacobian = JacobianType::AUTO;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'jacobian': " + jacobian);
@@ -194,23 +156,15 @@ Errors Option::read(tinyxml2::XMLElement* element)
   }
 
   // solver
-  if (hasAttribute(element, "solver"))
-  {
+  if (hasAttribute(element, "solver")) {
     const std::string solver = getAttributeString(element, "solver");
-    if (solver == "PGS")
-    {
+    if (solver == "PGS") {
       mSolver = SolverType::PGS;
-    }
-    else if (solver == "CG")
-    {
+    } else if (solver == "CG") {
       mSolver = SolverType::CG;
-    }
-    else if (solver == "Newton")
-    {
+    } else if (solver == "Newton") {
       mSolver = SolverType::NEWTON;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'solver': " + solver);
@@ -219,38 +173,32 @@ Errors Option::read(tinyxml2::XMLElement* element)
   }
 
   // iterations
-  if (hasAttribute(element, "iterations"))
-  {
+  if (hasAttribute(element, "iterations")) {
     mIterations = getAttributeInt(element, "iterations");
   }
 
   // tolerance
-  if (hasAttribute(element, "tolerance"))
-  {
+  if (hasAttribute(element, "tolerance")) {
     mTolerance = getAttributeDouble(element, "tolerance");
   }
 
   // noslip_iterations
-  if (hasAttribute(element, "noslip_iterations"))
-  {
+  if (hasAttribute(element, "noslip_iterations")) {
     mNoSlipTolerance = getAttributeInt(element, "noslip_iterations");
   }
 
   // noslip_tolerance
-  if (hasAttribute(element, "noslip_tolerance"))
-  {
+  if (hasAttribute(element, "noslip_tolerance")) {
     mNoSlipTolerance = getAttributeDouble(element, "noslip_tolerance");
   }
 
   // mpr_iterations
-  if (hasAttribute(element, "mpr_iterations"))
-  {
+  if (hasAttribute(element, "mpr_iterations")) {
     mMprIterations = getAttributeInt(element, "mpr_iterations");
   }
 
   // mpr_tolerance
-  if (hasAttribute(element, "mpr_tolerance"))
-  {
+  if (hasAttribute(element, "mpr_tolerance")) {
     mMprTolerance = getAttributeDouble(element, "mpr_tolerance");
   }
 
@@ -258,116 +206,97 @@ Errors Option::read(tinyxml2::XMLElement* element)
 }
 
 //==============================================================================
-double Option::getTimestep() const
-{
+double Option::getTimestep() const {
   return mTimestep;
 }
 
 //==============================================================================
-double Option::getApiRate() const
-{
+double Option::getApiRate() const {
   return mTimestep;
 }
 
 //==============================================================================
-double Option::getImpRatio() const
-{
+double Option::getImpRatio() const {
   return mTimestep;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Option::getGravity() const
-{
+const Eigen::Vector3d& Option::getGravity() const {
   return mGravity;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Option::getWind() const
-{
+const Eigen::Vector3d& Option::getWind() const {
   return mWind;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Option::getMagnetic() const
-{
+const Eigen::Vector3d& Option::getMagnetic() const {
   return mMagnetic;
 }
 
 //==============================================================================
-double Option::getDensity() const
-{
+double Option::getDensity() const {
   return mDensity;
 }
 
 //==============================================================================
-double Option::getViscosity() const
-{
+double Option::getViscosity() const {
   return mViscosity;
 }
 
 //==============================================================================
-Integrator Option::getIntegrator() const
-{
+Integrator Option::getIntegrator() const {
   return mIntegrator;
 }
 
 //==============================================================================
-CollisionType Option::getCollision() const
-{
+CollisionType Option::getCollision() const {
   return mCollision;
 }
 
 //==============================================================================
-ConeType Option::getCone() const
-{
+ConeType Option::getCone() const {
   return mCone;
 }
 
 //==============================================================================
-JacobianType Option::getJacobian() const
-{
+JacobianType Option::getJacobian() const {
   return mJacobian;
 }
 
 //==============================================================================
-SolverType Option::getSolver() const
-{
+SolverType Option::getSolver() const {
   return mSolver;
 }
 
 //==============================================================================
-int Option::getIterations() const
-{
+int Option::getIterations() const {
   return mIterations;
 }
 
 //==============================================================================
-double Option::getTolerance() const
-{
+double Option::getTolerance() const {
   return mTolerance;
 }
 
 //==============================================================================
-int Option::getNoSlipIterations() const
-{
+int Option::getNoSlipIterations() const {
   return mNoSlipIterations;
 }
 
 //==============================================================================
-double Option::getNoSlipTolerance() const
-{
+double Option::getNoSlipTolerance() const {
   return mNoSlipTolerance;
 }
 
 //==============================================================================
-int Option::getMprIterations() const
-{
+int Option::getMprIterations() const {
   return mMprIterations;
 }
 
 //==============================================================================
-double Option::getMprTolerance() const
-{
+double Option::getMprTolerance() const {
   return mMprTolerance;
 }
 

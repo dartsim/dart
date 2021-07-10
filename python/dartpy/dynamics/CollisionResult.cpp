@@ -39,8 +39,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void CollisionResult(py::module& m)
-{
+void CollisionResult(py::module& m) {
   ::py::class_<dart::dynamics::CollisionResult>(m, "CollisionResult")
       .def(::py::init<>())
       .def(
@@ -59,8 +58,10 @@ void CollisionResult(py::module& m)
           "Return number of contacts.")
       .def(
           "getContact",
-          +[](dart::dynamics::CollisionResult* self, std::size_t index)
-              -> dart::dynamics::Contact& { return self->getContact(index); },
+          +[](dart::dynamics::CollisionResult* self,
+              std::size_t index) -> dart::dynamics::Contact& {
+            return self->getContact(index);
+          },
           ::py::arg("index"),
           ::py::return_value_policy::reference,
           "Return the index-th contact.")
@@ -121,7 +122,9 @@ void CollisionResult(py::module& m)
           "Return binary collision result.")
       .def(
           "clear",
-          +[](dart::dynamics::CollisionResult* self) { self->clear(); },
+          +[](dart::dynamics::CollisionResult* self) {
+            self->clear();
+          },
           "Clear all the contacts.");
 }
 

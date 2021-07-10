@@ -42,8 +42,7 @@ namespace common {
 
 /// Declaration of the variadic template
 template <class... OtherSpecAspects>
-class SpecializedForAspect
-{
+class SpecializedForAspect {
 public:
   virtual ~SpecializedForAspect() = default;
 };
@@ -54,8 +53,7 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 
 template <class SpecAspect>
-class SpecializedForAspect<SpecAspect> : public virtual Composite
-{
+class SpecializedForAspect<SpecAspect> : public virtual Composite {
 public:
   /// Default Constructor
   SpecializedForAspect();
@@ -106,9 +104,7 @@ public:
 
 protected:
   template <class T>
-  struct type
-  {
-  };
+  struct type {};
 
   /// Redirect to Composite::has()
   template <class T>
@@ -193,8 +189,7 @@ template <class SpecAspect1, class... OtherSpecAspects>
 class SpecializedForAspect<SpecAspect1, OtherSpecAspects...>
   : public CompositeJoiner<
         Virtual<SpecializedForAspect<SpecAspect1> >,
-        Virtual<SpecializedForAspect<OtherSpecAspects...> > >
-{
+        Virtual<SpecializedForAspect<OtherSpecAspects...> > > {
 public:
   virtual ~SpecializedForAspect() = default;
 };

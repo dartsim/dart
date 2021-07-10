@@ -46,8 +46,7 @@ namespace detail {
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#mesh
-struct MeshAttributes final
-{
+struct MeshAttributes final {
   /// Name of the Asset
   common::optional<std::string> mName;
 

@@ -36,20 +36,19 @@
 #include <string>
 
 #ifdef _WIN32
-#  ifdef NOMINMAX
-#    include <windows.h>
-#  else
-#    define NOMINMAX
-#    include <windows.h>
-#    undef NOMINMAX
-#  endif
-typedef struct
-{
+  #ifdef NOMINMAX
+    #include <windows.h>
+  #else
+    #define NOMINMAX
+    #include <windows.h>
+    #undef NOMINMAX
+  #endif
+typedef struct {
   LARGE_INTEGER start;
   LARGE_INTEGER stop;
 } stopWatch;
 #else
-#  include <sys/time.h>
+  #include <sys/time.h>
 #endif
 
 namespace dart {
@@ -59,8 +58,7 @@ namespace common {
 ///
 /// This is a definition of mTimer class.
 /// For measure the time, gettimeofday() api is used
-class Timer
-{
+class Timer {
 public:
   /// \brief Default constructor
   explicit Timer(const std::string& _name = "Noname Timer");

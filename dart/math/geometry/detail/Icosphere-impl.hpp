@@ -32,19 +32,17 @@
 
 #pragma once
 
-#include "dart/math/geometry/Icosphere.hpp"
-
 #include <array>
 
 #include "dart/math/Constants.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 
 namespace dart {
 namespace math {
 
 //==============================================================================
 template <typename S>
-std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions)
-{
+std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions) {
   std::size_t numVertices = 12;
   for (auto i = 0u; i < subdivisions; ++i)
     numVertices += getNumEdges(i);
@@ -53,23 +51,20 @@ std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions)
 
 //==============================================================================
 template <typename S>
-std::size_t Icosphere<S>::getNumEdges(std::size_t subdivisions)
-{
+std::size_t Icosphere<S>::getNumEdges(std::size_t subdivisions) {
   return getNumTriangles(subdivisions) / 2 * 3;
 }
 
 //==============================================================================
 template <typename S>
-std::size_t Icosphere<S>::getNumTriangles(std::size_t subdivisions)
-{
+std::size_t Icosphere<S>::getNumTriangles(std::size_t subdivisions) {
   return 20 * std::pow(4, subdivisions);
 }
 
 //==============================================================================
 template <typename S>
 std::pair<typename Icosphere<S>::Vertices, typename Icosphere<S>::Triangles>
-Icosphere<S>::computeIcosahedron(S radius)
-{
+Icosphere<S>::computeIcosahedron(S radius) {
   constexpr S phi = constants<S>::phi();
   const S unitX = 1 / std::sqrt(1 + phi * phi);
   const S unitZ = unitX * phi;
@@ -102,8 +97,7 @@ Icosphere<S>::computeIcosahedron(S radius)
 //==============================================================================
 template <typename S>
 Icosphere<S>::Icosphere(S radius, std::size_t subdivisions)
-  : mRadius(radius), mSubdivisions(subdivisions)
-{
+  : mRadius(radius), mSubdivisions(subdivisions) {
   static_assert(
       std::is_floating_point<S>::value,
       "Scalar must be a floating point type.");
@@ -114,22 +108,19 @@ Icosphere<S>::Icosphere(S radius, std::size_t subdivisions)
 
 //==============================================================================
 template <typename S>
-S Icosphere<S>::getRadius() const
-{
+S Icosphere<S>::getRadius() const {
   return mRadius;
 }
 
 //==============================================================================
 template <typename S>
-std::size_t Icosphere<S>::getNumSubdivisions() const
-{
+std::size_t Icosphere<S>::getNumSubdivisions() const {
   return mSubdivisions;
 }
 
 //==============================================================================
 template <typename S>
-void Icosphere<S>::build()
-{
+void Icosphere<S>::build() {
   // Reference: https://schneide.blog/2016/07/15/generating-an-icosphere-in-c/
 
   // Create icosahedron
@@ -145,13 +136,10 @@ void Icosphere<S>::build()
 
   // Create a temporary array of faces that is used for subdivision
   std::vector<Triangle> tmpFaces;
-  if (mSubdivisions % 2)
-  {
+  if (mSubdivisions % 2) {
     this->mTriangles.reserve(getNumTriangles(mSubdivisions - 1));
     tmpFaces.reserve(getNumTriangles(mSubdivisions));
-  }
-  else
-  {
+  } else {
     this->mTriangles.reserve(getNumTriangles(mSubdivisions));
     tmpFaces.reserve(getNumTriangles(mSubdivisions - 1));
   }
@@ -163,8 +151,7 @@ void Icosphere<S>::build()
 
   // Subdivide icosahedron/icosphere iteratively. The key is to not duplicate
   // the newly created vertices and faces during each subdivision.
-  for (std::size_t i = 0; i < mSubdivisions; ++i)
-  {
+  for (std::size_t i = 0; i < mSubdivisions; ++i) {
     // Clear the array of faces that will store the faces of the subdivided
     // isosphere in this iteration. This is because the faces of the previous
     // isosphere are not reused.
@@ -173,13 +160,11 @@ void Icosphere<S>::build()
 
     // Iterate each face of the previous icosphere and divide the face into
     // four new faces.
-    for (std::size_t j = 0; j < (*currFaces).size(); ++j)
-    {
+    for (std::size_t j = 0; j < (*currFaces).size(); ++j) {
       const auto& outter = (*currFaces)[j];
 
       // Create vertices on the middle of edges if not already created.
-      for (std::size_t k = 0; k < 3; ++k)
-      {
+      for (std::size_t k = 0; k < 3; ++k) {
         auto indexA = outter[k];
         auto indexB = outter[(k + 1) % 3];
 
@@ -192,8 +177,7 @@ void Icosphere<S>::build()
         const auto result = midVertexIndices.insert(
             {{indexA, indexB}, this->mVertices.size()});
         const auto& inserted = result.second;
-        if (inserted)
-        {
+        if (inserted) {
           // Create a vertex on the middle of the edge where the length of the
           // vertex is equal to the radius of the icosphere.
           const auto& v1 = this->mVertices[indexA];

@@ -42,30 +42,26 @@ namespace detail {
 
 //==============================================================================
 template <class AspectT, typename StateT>
-void DefaultSetEmbeddedState(AspectT* aspect, const StateT& state)
-{
+void DefaultSetEmbeddedState(AspectT* aspect, const StateT& state) {
   aspect->getComposite()->setAspectState(state);
 }
 
 //==============================================================================
 template <class AspectT, typename StateT>
-const StateT& DefaultGetEmbeddedState(const AspectT* aspect)
-{
+const StateT& DefaultGetEmbeddedState(const AspectT* aspect) {
   return aspect->getComposite()->getAspectState();
 }
 
 //==============================================================================
 template <class AspectT, typename PropertiesT>
 void DefaultSetEmbeddedProperties(
-    AspectT* aspect, const PropertiesT& properties)
-{
+    AspectT* aspect, const PropertiesT& properties) {
   aspect->getComposite()->setAspectProperties(properties);
 }
 
 //==============================================================================
 template <class AspectT, typename PropertiesT>
-const PropertiesT& DefaultGetEmbeddedProperties(const AspectT* aspect)
-{
+const PropertiesT& DefaultGetEmbeddedProperties(const AspectT* aspect) {
   return aspect->getComposite()->getAspectProperties();
 }
 
@@ -79,8 +75,7 @@ template <
     = &DefaultSetEmbeddedState<DerivedT, StateT>,
     const StateT& (*getEmbeddedState)(const DerivedT*)
     = &DefaultGetEmbeddedState<DerivedT, StateT> >
-class EmbeddedStateAspect : public BaseT
-{
+class EmbeddedStateAspect : public BaseT {
 public:
   using Base = BaseT;
   using Derived = DerivedT;
@@ -91,10 +86,7 @@ public:
   constexpr static const State& (*GetEmbeddedState)(const Derived*)
       = getEmbeddedState;
 
-  enum DelegateTag
-  {
-    Delegate
-  };
+  enum DelegateTag { Delegate };
 
   EmbeddedStateAspect(const EmbeddedStateAspect&) = delete;
 
@@ -102,15 +94,13 @@ public:
 
   /// Used to identify constructor arguments that can be used as a State
   template <typename T>
-  struct ConvertIfState
-  {
+  struct ConvertIfState {
     using type = typename std::
         conditional<std::is_base_of<StateData, T>::value, StateData, T>::type;
   };
 
   /// Construct this Aspect without affecting the State.
-  EmbeddedStateAspect() : Base()
-  {
+  EmbeddedStateAspect() : Base() {
     // Do nothing
   }
 
@@ -132,24 +122,20 @@ public:
   template <typename T, typename... RemainingArgs>
   EmbeddedStateAspect(const T& arg1, RemainingArgs&&... remainingArgs)
     : EmbeddedStateAspect(
-          Delegate,
-          static_cast<const typename ConvertIfState<T>::type&>(arg1),
-          std::forward<RemainingArgs>(remainingArgs)...)
-  {
+        Delegate,
+        static_cast<const typename ConvertIfState<T>::type&>(arg1),
+        std::forward<RemainingArgs>(remainingArgs)...) {
     // Do nothing
   }
 
   // Documentation inherited
-  void setAspectState(const Aspect::State& state) override final
-  {
+  void setAspectState(const Aspect::State& state) override final {
     setState(static_cast<const State&>(state));
   }
 
   /// Set the State of this Aspect
-  void setState(const State& state)
-  {
-    if (this->hasComposite())
-    {
+  void setState(const State& state) {
+    if (this->hasComposite()) {
       SetEmbeddedState(static_cast<Derived*>(this), state);
       return;
     }
@@ -160,21 +146,17 @@ public:
   }
 
   // Documentation inherited
-  const Aspect::State* getAspectState() const override final
-  {
+  const Aspect::State* getAspectState() const override final {
     return &getState();
   }
 
   /// Get the State of this Aspect
-  const State& getState() const
-  {
-    if (this->hasComposite())
-    {
+  const State& getState() const {
+    if (this->hasComposite()) {
       return GetEmbeddedState(static_cast<const Derived*>(this));
     }
 
-    if (!mTemporaryState)
-    {
+    if (!mTemporaryState) {
       dterr << "[detail::EmbeddedStateAspect::getState] This Aspect is not in "
             << "a Composite, but it also does not have a temporary State "
             << "available. This should not happen! Please report this as a "
@@ -186,8 +168,7 @@ public:
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect() const override
-  {
+  std::unique_ptr<Aspect> cloneAspect() const override {
     return std::make_unique<Derived>(this->getState());
   }
 
@@ -198,8 +179,7 @@ protected:
   EmbeddedStateAspect(
       DelegateTag, const StateData& state, RemainingArgs&&... remainingArgs)
     : Base(std::forward<RemainingArgs>(remainingArgs)...),
-      mTemporaryState(std::make_unique<State>(state))
-  {
+      mTemporaryState(std::make_unique<State>(state)) {
     // Do nothing
   }
 
@@ -207,14 +187,12 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... BaseArgs>
   EmbeddedStateAspect(DelegateTag, BaseArgs&&... args)
-    : Base(std::forward<BaseArgs>(args)...)
-  {
+    : Base(std::forward<BaseArgs>(args)...) {
     // Do nothing
   }
 
   /// Pass the temporary State of this Aspect into the new Composite
-  void setComposite(Composite* newComposite) override
-  {
+  void setComposite(Composite* newComposite) override {
     assert(nullptr == this->getComposite());
 
     Base::setComposite(newComposite);
@@ -225,8 +203,7 @@ protected:
   }
 
   /// Save the embedded State of this Composite before we remove the Aspect
-  void loseComposite(Composite* oldComposite) override
-  {
+  void loseComposite(Composite* oldComposite) override {
     mTemporaryState = std::make_unique<State>(
         GetEmbeddedState(static_cast<const Derived*>(this)));
     Base::loseComposite(oldComposite);
@@ -249,13 +226,9 @@ template <
     = &DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
     const PropertiesT& (*getEmbeddedProperties)(const DerivedT*)
     = &DefaultGetEmbeddedProperties<DerivedT, PropertiesT> >
-class EmbeddedPropertiesAspect : public BaseT
-{
+class EmbeddedPropertiesAspect : public BaseT {
 protected:
-  enum DelegateTag
-  {
-    Delegate
-  };
+  enum DelegateTag { Delegate };
 
 public:
   using Base = BaseT;
@@ -273,8 +246,7 @@ public:
 
   /// Used to identify constructor arguments that can be used as Properties
   template <typename T>
-  struct ConvertIfProperties
-  {
+  struct ConvertIfProperties {
     using type = typename std::conditional<
         std::is_base_of<PropertiesData, T>::value,
         PropertiesData,
@@ -282,8 +254,7 @@ public:
   };
 
   /// Construct this Aspect without affecting the Properties.
-  EmbeddedPropertiesAspect() : Base()
-  {
+  EmbeddedPropertiesAspect() : Base() {
     // Do nothing
   }
 
@@ -305,24 +276,21 @@ public:
   template <typename T, typename... RemainingArgs>
   EmbeddedPropertiesAspect(const T& arg1, RemainingArgs&&... remainingArgs)
     : EmbeddedPropertiesAspect(
-          Delegate,
-          static_cast<const typename ConvertIfProperties<T>::type&>(arg1),
-          std::forward<RemainingArgs>(remainingArgs)...)
-  {
+        Delegate,
+        static_cast<const typename ConvertIfProperties<T>::type&>(arg1),
+        std::forward<RemainingArgs>(remainingArgs)...) {
     // Do nothing
   }
 
   // Documentation inherited
-  void setAspectProperties(const Aspect::Properties& properties) override final
-  {
+  void setAspectProperties(
+      const Aspect::Properties& properties) override final {
     setProperties(static_cast<const Properties&>(properties));
   }
 
   // Documentation inherited
-  void setProperties(const Properties& properties)
-  {
-    if (this->hasComposite())
-    {
+  void setProperties(const Properties& properties) {
+    if (this->hasComposite()) {
       SetEmbeddedProperties(static_cast<Derived*>(this), properties);
       return;
     }
@@ -333,21 +301,17 @@ public:
   }
 
   // Documentation inherited
-  const Aspect::Properties* getAspectProperties() const override final
-  {
+  const Aspect::Properties* getAspectProperties() const override final {
     return &getProperties();
   }
 
   // Documentation inherited
-  const Properties& getProperties() const
-  {
-    if (this->hasComposite())
-    {
+  const Properties& getProperties() const {
+    if (this->hasComposite()) {
       return GetEmbeddedProperties(static_cast<const Derived*>(this));
     }
 
-    if (!mTemporaryProperties)
-    {
+    if (!mTemporaryProperties) {
       dterr << "[detail::EmbeddedPropertiesAspect::getProperties] This Aspect "
             << "is not in a Composite, but it also does not have temporary "
             << "Properties available. This should not happen! Please report "
@@ -358,8 +322,7 @@ public:
     return *mTemporaryProperties;
   }
 
-  std::unique_ptr<Aspect> cloneAspect() const override
-  {
+  std::unique_ptr<Aspect> cloneAspect() const override {
     return std::make_unique<Derived>(this->getProperties());
   }
 
@@ -372,8 +335,7 @@ protected:
       const PropertiesData& properties,
       RemainingArgs&&... remainingArgs)
     : Base(std::forward<RemainingArgs>(remainingArgs)...),
-      mTemporaryProperties(std::make_unique<Properties>(properties))
-  {
+      mTemporaryProperties(std::make_unique<Properties>(properties)) {
     // Do nothing
   }
 
@@ -381,14 +343,12 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... BaseArgs>
   EmbeddedPropertiesAspect(DelegateTag, BaseArgs&&... args)
-    : Base(std::forward<BaseArgs>(args)...)
-  {
+    : Base(std::forward<BaseArgs>(args)...) {
     // Do nothing
   }
 
   /// Pass the temporary Properties of this Aspect into the new Composite
-  void setComposite(Composite* newComposite) override
-  {
+  void setComposite(Composite* newComposite) override {
     assert(nullptr == this->getComposite());
 
     Base::setComposite(newComposite);
@@ -400,8 +360,7 @@ protected:
   }
 
   /// Save the embedded Properties of this Composite before we remove the Aspect
-  void loseComposite(Composite* oldComposite) override
-  {
+  void loseComposite(Composite* oldComposite) override {
     mTemporaryProperties = std::make_unique<Properties>(
         GetEmbeddedProperties(static_cast<Derived*>(this)));
     Base::loseComposite(oldComposite);

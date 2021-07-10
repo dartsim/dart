@@ -41,8 +41,7 @@ namespace collision {
 
 //==============================================================================
 template <typename BV, typename S>
-::fcl::BVHModel<BV>* createEllipsoid(S sizeX, S sizeY, S sizeZ)
-{
+::fcl::BVHModel<BV>* createEllipsoid(S sizeX, S sizeY, S sizeZ) {
   S v[59][3] = {{0, 0, 0},
                 {0.135299, -0.461940, -0.135299},
                 {0.000000, -0.461940, -0.191342},
@@ -132,8 +131,7 @@ template <typename BV, typename S>
   FclVector3<S> p1, p2, p3;
   model->beginModel();
 
-  for (int i = 0; i < 112; i++)
-  {
+  for (int i = 0; i < 112; i++) {
     p1 = FclVector3<S>(
         v[f[i][0]][0] * sizeX, v[f[i][0]][1] * sizeY, v[f[i][0]][2] * sizeZ);
     p2 = FclVector3<S>(

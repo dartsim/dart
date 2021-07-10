@@ -42,8 +42,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class OdeMesh : public OdeGeom
-{
+class OdeMesh : public OdeGeom {
 public:
   /// Constructor
   OdeMesh(
@@ -77,7 +76,7 @@ private:
 };
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_

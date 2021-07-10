@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void PgsBoxedLcpSolver(py::module& m)
-{
+void PgsBoxedLcpSolver(py::module& m) {
   ::py::class_<dart::dynamics::PgsBoxedLcpSolver::Option>(
       m, "PgsBoxedLcpSolverOption")
       .def(::py::init<>())
@@ -91,7 +90,9 @@ void PgsBoxedLcpSolver(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::PgsBoxedLcpSolver* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "solve",

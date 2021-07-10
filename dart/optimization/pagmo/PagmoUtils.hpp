@@ -34,13 +34,13 @@
 #define DART_OPTIMIZATION_PAGMO_PAGMOUTILS_HPP_
 
 #include <pagmo/pagmo.hpp>
+
 #include "dart/optimization/MultiObjectiveSolver.hpp"
 
 namespace dart {
 namespace optimization {
 
-class PagmoTypes
-{
+class PagmoTypes {
 public:
   static std::vector<double> convertVector(const Eigen::VectorXd& v);
 

@@ -37,8 +37,7 @@
 namespace dart {
 namespace math {
 
-class Geometry2 : public Geometry
-{
+class Geometry2 : public Geometry {
 public:
 private:
 };

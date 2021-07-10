@@ -37,95 +37,81 @@ namespace dynamics {
 
 //==============================================================================
 PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
-  : Shape(PLANE), mNormal(_normal.normalized()), mOffset(_offset)
-{
+  : Shape(PLANE), mNormal(_normal.normalized()), mOffset(_offset) {
 }
 
 //==============================================================================
 PlaneShape::PlaneShape(
     const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point)
-  : Shape(), mNormal(_normal.normalized()), mOffset(mNormal.dot(_point))
-{
+  : Shape(), mNormal(_normal.normalized()), mOffset(mNormal.dot(_point)) {
 }
 
 //==============================================================================
-const std::string& PlaneShape::getType() const
-{
+const std::string& PlaneShape::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PlaneShape::getStaticType()
-{
+const std::string& PlaneShape::getStaticType() {
   static const std::string type("PlaneShape");
   return type;
 }
 
 //==============================================================================
-Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
-{
+Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const {
   return Eigen::Matrix3d::Zero();
 }
 
 //==============================================================================
-void PlaneShape::setNormal(const Eigen::Vector3d& _normal)
-{
+void PlaneShape::setNormal(const Eigen::Vector3d& _normal) {
   mNormal = _normal.normalized();
 
   incrementVersion();
 }
 
 //==============================================================================
-const Eigen::Vector3d& PlaneShape::getNormal() const
-{
+const Eigen::Vector3d& PlaneShape::getNormal() const {
   return mNormal;
 }
 
 //==============================================================================
-void PlaneShape::setOffset(double _offset)
-{
+void PlaneShape::setOffset(double _offset) {
   mOffset = _offset;
 
   incrementVersion();
 }
 
 //==============================================================================
-double PlaneShape::getOffset() const
-{
+double PlaneShape::getOffset() const {
   return mOffset;
 }
 
 //==============================================================================
 void PlaneShape::setNormalAndOffset(
-    const Eigen::Vector3d& _normal, double _offset)
-{
+    const Eigen::Vector3d& _normal, double _offset) {
   setNormal(_normal);
   setOffset(_offset);
 }
 
 //==============================================================================
 void PlaneShape::setNormalAndPoint(
-    const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point)
-{
+    const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point) {
   setNormal(_normal);
   setOffset(mNormal.dot(_point));
 }
 
 //==============================================================================
-double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const
-{
+double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const {
   return std::abs(computeSignedDistance(_point));
 }
 
 //==============================================================================
-double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
-{
+double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const {
   return mNormal.dot(_point) - mOffset;
 }
 
 //==============================================================================
-void PlaneShape::updateBoundingBox() const
-{
+void PlaneShape::updateBoundingBox() const {
   mBoundingBox.setMin(
       Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity()));
   mBoundingBox.setMax(
@@ -135,8 +121,7 @@ void PlaneShape::updateBoundingBox() const
 }
 
 //==============================================================================
-void PlaneShape::updateVolume() const
-{
+void PlaneShape::updateVolume() const {
   mVolume = 0.0;
   mIsVolumeDirty = false;
 }

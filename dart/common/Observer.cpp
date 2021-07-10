@@ -31,14 +31,14 @@
  */
 
 #include "dart/common/Observer.hpp"
+
 #include "dart/common/Subject.hpp"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-Observer::~Observer()
-{
+Observer::~Observer() {
   std::set<const Subject*>::iterator it = mSubjects.begin(),
                                      end = mSubjects.end();
   while (it != end)
@@ -48,21 +48,18 @@ Observer::~Observer()
 }
 
 //==============================================================================
-void Observer::receiveDestructionNotification(const Subject* _subject)
-{
+void Observer::receiveDestructionNotification(const Subject* _subject) {
   removeSubject(_subject);
   handleDestructionNotification(_subject);
 }
 
 //==============================================================================
-void Observer::handleDestructionNotification(const Subject*)
-{
+void Observer::handleDestructionNotification(const Subject*) {
   // Do nothing
 }
 
 //==============================================================================
-void Observer::addSubject(const Subject* _subject)
-{
+void Observer::addSubject(const Subject* _subject) {
   if (nullptr == _subject)
     return;
 
@@ -74,8 +71,7 @@ void Observer::addSubject(const Subject* _subject)
 }
 
 //==============================================================================
-void Observer::removeSubject(const Subject* _subject)
-{
+void Observer::removeSubject(const Subject* _subject) {
   if (nullptr == _subject)
     return;
 
@@ -87,8 +83,7 @@ void Observer::removeSubject(const Subject* _subject)
 }
 
 //==============================================================================
-void Observer::removeAllSubjects()
-{
+void Observer::removeAllSubjects() {
   std::set<const Subject*>::iterator it = mSubjects.begin(),
                                      end = mSubjects.end();
 

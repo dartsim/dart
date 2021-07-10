@@ -42,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Shape(py::module& m)
-{
+void Shape(py::module& m) {
   auto shape
       = ::py::class_<
             dart::dynamics::Shape,
@@ -64,8 +63,10 @@ void Shape(py::module& m)
                 ::py::return_value_policy::reference_internal)
             .def(
                 "computeInertia",
-                +[](const dart::dynamics::Shape* self, double mass)
-                    -> Eigen::Matrix3d { return self->computeInertia(mass); },
+                +[](const dart::dynamics::Shape* self,
+                    double mass) -> Eigen::Matrix3d {
+                  return self->computeInertia(mass);
+                },
                 ::py::arg("mass"))
             .def(
                 "computeInertiaFromDensity",
@@ -123,7 +124,9 @@ void Shape(py::module& m)
                 ::py::arg("type"))
             .def(
                 "refreshData",
-                +[](dart::dynamics::Shape* self) { self->refreshData(); })
+                +[](dart::dynamics::Shape* self) {
+                  self->refreshData();
+                })
             .def(
                 "notifyAlphaUpdated",
                 +[](dart::dynamics::Shape* self, double alpha) {
@@ -205,8 +208,10 @@ void Shape(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "computeInertia",
-          +[](const dart::dynamics::BoxShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::BoxShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -266,8 +271,10 @@ void Shape(py::module& m)
           ::py::arg("height"))
       .def(
           "computeInertia",
-          +[](const dart::dynamics::ConeShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::ConeShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -324,7 +331,11 @@ void Shape(py::module& m)
             return self->getType();
           },
           ::py::return_value_policy::reference_internal)
-      .def("update", +[](dart::dynamics::MeshShape* self) { self->update(); })
+      .def(
+          "update",
+          +[](dart::dynamics::MeshShape* self) {
+            self->update();
+          })
       .def(
           "notifyAlphaUpdated",
           +[](dart::dynamics::MeshShape* self, double alpha) {
@@ -341,7 +352,9 @@ void Shape(py::module& m)
           "setMesh",
           +[](dart::dynamics::MeshShape* self,
               const aiScene* mesh,
-              const std::string& path) { self->setMesh(mesh, path); },
+              const std::string& path) {
+            self->setMesh(mesh, path);
+          },
           ::py::arg("mesh"),
           ::py::arg("path"))
       .def(
@@ -359,7 +372,9 @@ void Shape(py::module& m)
           "setMesh",
           +[](dart::dynamics::MeshShape* self,
               const aiScene* mesh,
-              const dart::common::Uri& path) { self->setMesh(mesh, path); },
+              const dart::common::Uri& path) {
+            self->setMesh(mesh, path);
+          },
           ::py::arg("mesh"),
           ::py::arg("path"))
       .def(
@@ -381,7 +396,9 @@ void Shape(py::module& m)
       .def(
           "getMeshUri2",
           +[](const dart::dynamics::MeshShape* self)
-              -> const dart::common::Uri& { return self->getMeshUri2(); },
+              -> const dart::common::Uri& {
+            return self->getMeshUri2();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "getMeshPath",
@@ -444,8 +461,10 @@ void Shape(py::module& m)
           ::py::arg("index"))
       .def(
           "computeInertia",
-          +[](const dart::dynamics::MeshShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::MeshShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -514,12 +533,16 @@ void Shape(py::module& m)
       .def(
           "getTail",
           +[](const dart::dynamics::ArrowShape* self)
-              -> const Eigen::Vector3d& { return self->getTail(); },
+              -> const Eigen::Vector3d& {
+            return self->getTail();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "getHead",
           +[](const dart::dynamics::ArrowShape* self)
-              -> const Eigen::Vector3d& { return self->getHead(); },
+              -> const Eigen::Vector3d& {
+            return self->getHead();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "setProperties",
@@ -625,18 +648,24 @@ void Shape(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "computeInertia",
-          +[](const dart::dynamics::PlaneShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::PlaneShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def(
           "setNormal",
           +[](dart::dynamics::PlaneShape* self,
-              const Eigen::Vector3d& _normal) { self->setNormal(_normal); },
+              const Eigen::Vector3d& _normal) {
+            self->setNormal(_normal);
+          },
           ::py::arg("normal"))
       .def(
           "getNormal",
           +[](const dart::dynamics::PlaneShape* self)
-              -> const Eigen::Vector3d& { return self->getNormal(); },
+              -> const Eigen::Vector3d& {
+            return self->getNormal();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "setOffset",
@@ -653,7 +682,9 @@ void Shape(py::module& m)
           "setNormalAndOffset",
           +[](dart::dynamics::PlaneShape* self,
               const Eigen::Vector3d& _normal,
-              double _offset) { self->setNormalAndOffset(_normal, _offset); },
+              double _offset) {
+            self->setNormalAndOffset(_normal, _offset);
+          },
           ::py::arg("normal"),
           ::py::arg("offset"))
       .def(
@@ -695,12 +726,16 @@ void Shape(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::PointCloudShape* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "computeInertia",
-          +[](const dart::dynamics::PointCloudShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::PointCloudShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def(
           "reserve",
@@ -868,8 +903,10 @@ void Shape(py::module& m)
           })
       .def(
           "computeInertia",
-          +[](const dart::dynamics::SphereShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::SphereShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -929,8 +966,10 @@ void Shape(py::module& m)
           ::py::arg("height"))
       .def(
           "computeInertia",
-          +[](const dart::dynamics::CapsuleShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::CapsuleShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -993,8 +1032,10 @@ void Shape(py::module& m)
           ::py::arg("height"))
       .def(
           "computeInertia",
-          +[](const dart::dynamics::CylinderShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::CylinderShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -1034,11 +1075,15 @@ void Shape(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "update",
-          +[](dart::dynamics::SoftMeshShape* self) { self->update(); })
+          +[](dart::dynamics::SoftMeshShape* self) {
+            self->update();
+          })
       .def(
           "computeInertia",
-          +[](const dart::dynamics::SoftMeshShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::SoftMeshShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -1055,7 +1100,9 @@ void Shape(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::EllipsoidShape* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "setDiameters",
@@ -1067,21 +1114,29 @@ void Shape(py::module& m)
       .def(
           "getDiameters",
           +[](const dart::dynamics::EllipsoidShape* self)
-              -> const Eigen::Vector3d& { return self->getDiameters(); },
+              -> const Eigen::Vector3d& {
+            return self->getDiameters();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "setRadii",
           +[](dart::dynamics::EllipsoidShape* self,
-              const Eigen::Vector3d& radii) { self->setRadii(radii); },
+              const Eigen::Vector3d& radii) {
+            self->setRadii(radii);
+          },
           ::py::arg("radii"))
       .def(
           "getRadii",
           +[](const dart::dynamics::EllipsoidShape* self)
-              -> const Eigen::Vector3d { return self->getRadii(); })
+              -> const Eigen::Vector3d {
+            return self->getRadii();
+          })
       .def(
           "computeInertia",
-          +[](const dart::dynamics::EllipsoidShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::EllipsoidShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def(
           "isSphere",
@@ -1128,7 +1183,9 @@ void Shape(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::LineSegmentShape* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "setThickness",
@@ -1143,8 +1200,10 @@ void Shape(py::module& m)
           })
       .def(
           "addVertex",
-          +[](dart::dynamics::LineSegmentShape* self, const Eigen::Vector3d& _v)
-              -> std::size_t { return self->addVertex(_v); },
+          +[](dart::dynamics::LineSegmentShape* self,
+              const Eigen::Vector3d& _v) -> std::size_t {
+            return self->addVertex(_v);
+          },
           ::py::arg("v"))
       .def(
           "addVertex",
@@ -1165,20 +1224,26 @@ void Shape(py::module& m)
           "setVertex",
           +[](dart::dynamics::LineSegmentShape* self,
               std::size_t _idx,
-              const Eigen::Vector3d& _v) { self->setVertex(_idx, _v); },
+              const Eigen::Vector3d& _v) {
+            self->setVertex(_idx, _v);
+          },
           ::py::arg("idx"),
           ::py::arg("v"))
       .def(
           "getVertex",
-          +[](const dart::dynamics::LineSegmentShape* self, std::size_t _idx)
-              -> const Eigen::Vector3d& { return self->getVertex(_idx); },
+          +[](const dart::dynamics::LineSegmentShape* self,
+              std::size_t _idx) -> const Eigen::Vector3d& {
+            return self->getVertex(_idx);
+          },
           ::py::return_value_policy::reference_internal,
           ::py::arg("idx"))
       .def(
           "addConnection",
           +[](dart::dynamics::LineSegmentShape* self,
               std::size_t _idx1,
-              std::size_t _idx2) { self->addConnection(_idx1, _idx2); },
+              std::size_t _idx2) {
+            self->addConnection(_idx1, _idx2);
+          },
           ::py::arg("idx1"),
           ::py::arg("idx2"))
       .def(
@@ -1199,8 +1264,10 @@ void Shape(py::module& m)
           ::py::arg("connectionIdx"))
       .def(
           "computeInertia",
-          +[](const dart::dynamics::LineSegmentShape* self, double mass)
-              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          +[](const dart::dynamics::LineSegmentShape* self,
+              double mass) -> Eigen::Matrix3d {
+            return self->computeInertia(mass);
+          },
           ::py::arg("mass"))
       .def_static(
           "getStaticType",
@@ -1221,19 +1288,25 @@ void Shape(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::MultiSphereConvexHullShape* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "addSpheres",
           +[](dart::dynamics::MultiSphereConvexHullShape* self,
               const dart::dynamics::MultiSphereConvexHullShape::Spheres&
-                  spheres) { self->addSpheres(spheres); },
+                  spheres) {
+            self->addSpheres(spheres);
+          },
           ::py::arg("spheres"))
       .def(
           "addSphere",
           +[](dart::dynamics::MultiSphereConvexHullShape* self,
               const dart::dynamics::MultiSphereConvexHullShape::Sphere&
-                  sphere) { self->addSphere(sphere); },
+                  sphere) {
+            self->addSphere(sphere);
+          },
           ::py::arg("sphere"))
       .def(
           "addSphere",
@@ -1252,7 +1325,9 @@ void Shape(py::module& m)
       .def(
           "getNumSpheres",
           +[](const dart::dynamics::MultiSphereConvexHullShape* self)
-              -> std::size_t { return self->getNumSpheres(); })
+              -> std::size_t {
+            return self->getNumSpheres();
+          })
       .def(
           "computeInertia",
           +[](const dart::dynamics::MultiSphereConvexHullShape* self,

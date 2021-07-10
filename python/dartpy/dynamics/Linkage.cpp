@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Linkage(py::module& m)
-{
+void Linkage(py::module& m) {
   ::py::class_<
       dart::dynamics::Linkage,
       dart::dynamics::ReferentialSkeleton,
@@ -64,7 +64,9 @@ void Linkage(py::module& m)
       .def(
           "cloneLinkage",
           +[](const dart::dynamics::Linkage* self)
-              -> dart::dynamics::LinkagePtr { return self->cloneLinkage(); })
+              -> dart::dynamics::LinkagePtr {
+            return self->cloneLinkage();
+          })
       .def(
           "cloneLinkage",
           +[](const dart::dynamics::Linkage* self,
@@ -86,10 +88,13 @@ void Linkage(py::module& m)
           })
       .def(
           "reassemble",
-          +[](dart::dynamics::Linkage* self) { self->reassemble(); })
-      .def("satisfyCriteria", +[](dart::dynamics::Linkage* self) {
-        self->satisfyCriteria();
-      });
+          +[](dart::dynamics::Linkage* self) {
+            self->reassemble();
+          })
+      .def(
+          "satisfyCriteria", +[](dart::dynamics::Linkage* self) {
+            self->satisfyCriteria();
+          });
 
   ::py::class_<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
       .def(

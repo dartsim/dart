@@ -48,18 +48,15 @@
 
 using namespace dart::common;
 
-struct EmbeddedStateData
-{
+struct EmbeddedStateData {
   double d;
   int i;
 
-  EmbeddedStateData() : d(0.0), i(0)
-  {
+  EmbeddedStateData() : d(0.0), i(0) {
     // Do nothing
   }
 
-  bool operator==(const EmbeddedStateData& other) const
-  {
+  bool operator==(const EmbeddedStateData& other) const {
     if (other.d != d)
       return false;
 
@@ -69,28 +66,22 @@ struct EmbeddedStateData
     return true;
   }
 
-  bool operator!=(const EmbeddedStateData& other) const
-  {
+  bool operator!=(const EmbeddedStateData& other) const {
     return !(*this == other);
   }
 };
 
-struct SecondEmbeddedStateData
-{
-};
+struct SecondEmbeddedStateData {};
 
-struct EmbeddedPropertiesData
-{
+struct EmbeddedPropertiesData {
   bool b;
   float f;
 
-  EmbeddedPropertiesData() : b(false), f(0.0)
-  {
+  EmbeddedPropertiesData() : b(false), f(0.0) {
     // Do nothing
   }
 
-  bool operator==(const EmbeddedPropertiesData& other) const
-  {
+  bool operator==(const EmbeddedPropertiesData& other) const {
     if (other.b != b)
       return false;
 
@@ -100,43 +91,35 @@ struct EmbeddedPropertiesData
     return true;
   }
 
-  bool operator!=(const EmbeddedPropertiesData& other) const
-  {
+  bool operator!=(const EmbeddedPropertiesData& other) const {
     return !(*this == other);
   }
 };
 
-struct SecondEmbeddedPropertiesData
-{
-};
+struct SecondEmbeddedPropertiesData {};
 
 class EmbeddedStateComposite
-  : public EmbedState<EmbeddedStateComposite, EmbeddedStateData>
-{
+  : public EmbedState<EmbeddedStateComposite, EmbeddedStateData> {
 public:
-  EmbeddedStateComposite(const EmbeddedStateData& state = EmbeddedStateData())
-  {
+  EmbeddedStateComposite(const EmbeddedStateData& state = EmbeddedStateData()) {
     createAspect<Aspect>(static_cast<const Aspect::StateData&>(state));
   }
 
-  void setAspectState(const AspectState& state)
-  {
+  void setAspectState(const AspectState& state) {
     mAspectState = state;
   }
 };
 
-class EmbeddedPropertiesComposite
-  : public EmbedProperties<EmbeddedPropertiesComposite, EmbeddedPropertiesData>
-{
+class EmbeddedPropertiesComposite : public EmbedProperties<
+                                        EmbeddedPropertiesComposite,
+                                        EmbeddedPropertiesData> {
 public:
   EmbeddedPropertiesComposite(
-      const EmbeddedPropertiesData& properties = EmbeddedPropertiesData())
-  {
+      const EmbeddedPropertiesData& properties = EmbeddedPropertiesData()) {
     createAspect<Aspect>(properties);
   }
 
-  void setAspectProperties(const AspectProperties& properties)
-  {
+  void setAspectProperties(const AspectProperties& properties) {
     mAspectProperties = properties;
   }
 };
@@ -145,21 +128,17 @@ class EmbeddedStateAndPropertiesComposite
   : public EmbedStateAndProperties<
         EmbeddedStateAndPropertiesComposite,
         EmbeddedStateData,
-        EmbeddedPropertiesData>
-{
+        EmbeddedPropertiesData> {
 public:
-  EmbeddedStateAndPropertiesComposite()
-  {
+  EmbeddedStateAndPropertiesComposite() {
     createAspect<Aspect>();
   }
 
-  void setAspectState(const AspectState& state)
-  {
+  void setAspectState(const AspectState& state) {
     mAspectState = state;
   }
 
-  void setAspectProperties(const AspectProperties& properties)
-  {
+  void setAspectProperties(const AspectProperties& properties) {
     mAspectProperties = properties;
   }
 };
@@ -167,16 +146,13 @@ public:
 class InheritAndEmbedStateComposite : public EmbedStateOnTopOf<
                                           InheritAndEmbedStateComposite,
                                           SecondEmbeddedStateData,
-                                          EmbeddedStateComposite>
-{
+                                          EmbeddedStateComposite> {
 public:
-  InheritAndEmbedStateComposite()
-  {
+  InheritAndEmbedStateComposite() {
     createAspect<Aspect>();
   }
 
-  void setAspectState(const AspectState& state)
-  {
+  void setAspectState(const AspectState& state) {
     mAspectState = state;
   }
 };
@@ -185,16 +161,13 @@ class InheritAndEmbedPropertiesComposite
   : public EmbedPropertiesOnTopOf<
         InheritAndEmbedPropertiesComposite,
         SecondEmbeddedPropertiesData,
-        EmbeddedPropertiesComposite>
-{
+        EmbeddedPropertiesComposite> {
 public:
-  InheritAndEmbedPropertiesComposite()
-  {
+  InheritAndEmbedPropertiesComposite() {
     createAspect<Aspect>();
   }
 
-  void setAspectProperties(const AspectProperties& properties)
-  {
+  void setAspectProperties(const AspectProperties& properties) {
     mAspectProperties = properties;
   }
 };
@@ -204,74 +177,60 @@ class InheritAndEmbedStateAndPropertiesComposite
         InheritAndEmbedStateAndPropertiesComposite,
         SecondEmbeddedStateData,
         SecondEmbeddedPropertiesData,
-        EmbeddedStateAndPropertiesComposite>
-{
+        EmbeddedStateAndPropertiesComposite> {
 public:
-  InheritAndEmbedStateAndPropertiesComposite()
-  {
+  InheritAndEmbedStateAndPropertiesComposite() {
     createAspect<Aspect>();
   }
 
-  void setAspectState(const AspectState& state)
-  {
+  void setAspectState(const AspectState& state) {
     mAspectState = state;
   }
 
-  void setAspectProperties(const AspectProperties& properties)
-  {
+  void setAspectProperties(const AspectProperties& properties) {
     mAspectProperties = properties;
   }
 };
 
 // Testing the creation of an Aspect using the AspectWithState template class
 class StateAspectTest
-  : public dart::common::AspectWithState<StateAspectTest, dart::common::Empty>
-{
+  : public dart::common::AspectWithState<StateAspectTest, dart::common::Empty> {
 public:
   StateAspectTest(const StateData& state = StateData())
-    : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(state)
-  {
+    : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(
+        state) {
   }
 };
 
-class GenericAspect : public Aspect, public Subject
-{
+class GenericAspect : public Aspect, public Subject {
 public:
-  GenericAspect() : Aspect()
-  {
+  GenericAspect() : Aspect() {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect() const override final
-  {
+  std::unique_ptr<Aspect> cloneAspect() const override final {
     return std::make_unique<GenericAspect>();
   }
 };
 
-class SpecializedAspect : public Aspect, public Subject
-{
+class SpecializedAspect : public Aspect, public Subject {
 public:
-  SpecializedAspect() : Aspect()
-  {
+  SpecializedAspect() : Aspect() {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect() const override final
-  {
+  std::unique_ptr<Aspect> cloneAspect() const override final {
     return std::make_unique<SpecializedAspect>();
   }
 };
 
 template <typename T>
-class StatefulAspect : public Aspect, public Subject
-{
+class StatefulAspect : public Aspect, public Subject {
 public:
-  struct Data
-  {
+  struct Data {
     T val;
 
-    Data(const T& someVal = 0) : val(someVal)
-    {
+    Data(const T& someVal = 0) : val(someVal) {
       // Do nothing
     }
   };
@@ -279,55 +238,45 @@ public:
   using State = Aspect::MakeState<Data>;
   using Properties = Aspect::MakeProperties<Data>;
 
-  StatefulAspect() : Aspect()
-  {
+  StatefulAspect() : Aspect() {
     // Do nothing
   }
 
   StatefulAspect(const StatefulAspect& other)
-    : Aspect(), mState(other.mState), mProperties(other.mProperties)
-  {
+    : Aspect(), mState(other.mState), mProperties(other.mProperties) {
     // Do nothing
   }
 
-  StatefulAspect(const T& state) : Aspect(), mState(state)
-  {
+  StatefulAspect(const T& state) : Aspect(), mState(state) {
     // Do nothing
   }
 
   StatefulAspect(const T& state, const T& properties)
-    : Aspect(), mState(state), mProperties(properties)
-  {
+    : Aspect(), mState(state), mProperties(properties) {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect() const override final
-  {
+  std::unique_ptr<Aspect> cloneAspect() const override final {
     return std::make_unique<StatefulAspect>(*this);
   }
 
-  void setAspectState(const Aspect::State& otherState) override
-  {
+  void setAspectState(const Aspect::State& otherState) override {
     mState.copy(otherState);
   }
 
-  const Aspect::State* getAspectState() const override
-  {
+  const Aspect::State* getAspectState() const override {
     return &mState;
   }
 
-  void setAspectProperties(const Aspect::Properties& someProperties) override
-  {
+  void setAspectProperties(const Aspect::Properties& someProperties) override {
     mProperties.copy(someProperties);
   }
 
-  const Aspect::Properties* getAspectProperties() const override
-  {
+  const Aspect::Properties* getAspectProperties() const override {
     return &mProperties;
   }
 
-  void randomize()
-  {
+  void randomize() {
     mState.val = dart::math::Random::uniform<T>(0, 100);
     mProperties.val = dart::math::Random::uniform<T>(0, 100);
   }
@@ -343,12 +292,9 @@ typedef StatefulAspect<char> CharAspect;
 typedef StatefulAspect<int> IntAspect;
 
 class CustomSpecializedComposite
-  : public SpecializedForAspect<SpecializedAspect>
-{
-};
+  : public SpecializedForAspect<SpecializedAspect> {};
 
-TEST(Aspect, Generic)
-{
+TEST(Aspect, Generic) {
   Composite comp;
 
   EXPECT_TRUE(comp.get<GenericAspect>() == nullptr);
@@ -372,8 +318,7 @@ TEST(Aspect, Generic)
   EXPECT_TRUE(nullptr == aspect);
 }
 
-TEST(Aspect, Specialized)
-{
+TEST(Aspect, Specialized) {
   usedSpecializedAspectAccess = false;
   CustomSpecializedComposite comp;
 
@@ -435,8 +380,7 @@ TEST(Aspect, Specialized)
   usedSpecializedAspectAccess = false;
 }
 
-TEST(Aspect, Releasing)
-{
+TEST(Aspect, Releasing) {
   Composite sender;
   CustomSpecializedComposite receiver;
 
@@ -556,15 +500,12 @@ TEST(Aspect, Releasing)
 }
 
 template <class AspectT>
-void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
-{
+void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom) {
   std::size_t counter = 0;
-  while (aspect->mState.val == differentFrom->mState.val)
-  {
+  while (aspect->mState.val == differentFrom->mState.val) {
     aspect->randomize();
     ++counter;
-    if (counter > 10)
-    {
+    if (counter > 10) {
       dtwarn
           << "[testAspect::makeStatesDifferent] Randomization failed to make "
           << "the states different after " << counter << " attempts!\n";
@@ -574,15 +515,12 @@ void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
 }
 
 template <class AspectT>
-void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
-{
+void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom) {
   std::size_t counter = 0;
-  while (aspect->mProperties.val == differentFrom->mProperties.val)
-  {
+  while (aspect->mProperties.val == differentFrom->mProperties.val) {
     aspect->randomize();
     ++counter;
-    if (counter > 10)
-    {
+    if (counter > 10) {
       dtwarn << "[testAspect::makePropertiesDifferent] Randomization failed to "
              << "make the states different after " << counter << " attempts!\n";
       break;
@@ -590,8 +528,7 @@ void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
   }
 }
 
-TEST(Aspect, StateAndProperties)
-{
+TEST(Aspect, StateAndProperties) {
   Composite comp1;
   comp1.createAspect<DoubleAspect>();
   comp1.createAspect<FloatAspect>();
@@ -723,8 +660,7 @@ TEST(Aspect, StateAndProperties)
   EXPECT_FALSE(c_properties_2.has<IntAspect>());
 }
 
-TEST(Aspect, Construction)
-{
+TEST(Aspect, Construction) {
   Composite comp;
 
   comp.createAspect<DoubleAspect>();
@@ -741,8 +677,7 @@ TEST(Aspect, Construction)
   EXPECT_EQ(comp.get<DoubleAspect>()->mProperties.val, p);
 }
 
-TEST(Aspect, Joints)
-{
+TEST(Aspect, Joints) {
   usedSpecializedAspectAccess = false;
 
   dart::dynamics::SkeletonPtr skel = Skeleton::create();
@@ -807,8 +742,7 @@ TEST(Aspect, Joints)
   universal->getGenericJointAspect(true);
 }
 
-TEST(Aspect, BodyNodes)
-{
+TEST(Aspect, BodyNodes) {
   SkeletonPtr skel = Skeleton::create();
 
   BodyNode* bn
@@ -827,8 +761,7 @@ TEST(Aspect, BodyNodes)
   EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::DynamicsAspect>(), 1u);
 }
 
-TEST(Aspect, Duplication)
-{
+TEST(Aspect, Duplication) {
   Composite comp1, comp2;
 
   comp1.createAspect<DoubleAspect>();
@@ -869,8 +802,7 @@ TEST(Aspect, Duplication)
   EXPECT_EQ(state.IntAspect::State::val, 456);
 }
 
-TEST(Aspect, Embedded)
-{
+TEST(Aspect, Embedded) {
   EmbeddedStateComposite s;
   EXPECT_TRUE(s.has<EmbeddedStateComposite::Aspect>());
   EXPECT_TRUE(s.get<EmbeddedStateComposite::Aspect>() != nullptr);

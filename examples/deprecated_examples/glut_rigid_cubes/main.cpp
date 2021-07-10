@@ -37,12 +37,10 @@
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // Create and initialize the world
   auto world = dart::io::SkelParser::readWorld("dart://sample/skel/cubes.skel");
-  if (!world)
-  {
+  if (!world) {
     dterr << "Failed to load world.\n";
     exit(EXIT_FAILURE);
   }

@@ -38,26 +38,22 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-void LCPSolver::setTimeStep(double _timeStep)
-{
+void LCPSolver::setTimeStep(double _timeStep) {
   assert(_timeStep > 0.0);
   mTimeStep = _timeStep;
 }
 
 //==============================================================================
-double LCPSolver::getTimeStep() const
-{
+double LCPSolver::getTimeStep() const {
   return mTimeStep;
 }
 
 //==============================================================================
-LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep)
-{
+LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep) {
 }
 
 //==============================================================================
-LCPSolver::~LCPSolver()
-{
+LCPSolver::~LCPSolver() {
 }
 
 } // namespace dynamics

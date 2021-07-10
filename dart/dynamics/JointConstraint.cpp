@@ -58,8 +58,7 @@ JointConstraint::JointConstraint(dynamics::Joint* joint)
   : ConstraintBase(),
     mJoint(joint),
     mBodyNode(joint->getChildBodyNode()),
-    mAppliedImpulseIndex(0)
-{
+    mAppliedImpulseIndex(0) {
   assert(joint);
   assert(mBodyNode);
   mLifeTime.setZero();
@@ -67,24 +66,20 @@ JointConstraint::JointConstraint(dynamics::Joint* joint)
 }
 
 //==============================================================================
-const std::string& JointConstraint::getType() const
-{
+const std::string& JointConstraint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& JointConstraint::getStaticType()
-{
+const std::string& JointConstraint::getStaticType() {
   static const std::string name = "JointConstraint";
   return name;
 }
 
 //==============================================================================
-void JointConstraint::setErrorAllowance(double allowance)
-{
+void JointConstraint::setErrorAllowance(double allowance) {
   // Clamp error reduction parameter if it is out of the range
-  if (allowance < 0.0)
-  {
+  if (allowance < 0.0) {
     dtwarn << "Error reduction parameter [" << allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -95,23 +90,19 @@ void JointConstraint::setErrorAllowance(double allowance)
 }
 
 //==============================================================================
-double JointConstraint::getErrorAllowance()
-{
+double JointConstraint::getErrorAllowance() {
   return mErrorAllowance;
 }
 
 //==============================================================================
-void JointConstraint::setErrorReductionParameter(double erp)
-{
+void JointConstraint::setErrorReductionParameter(double erp) {
   // Clamp error reduction parameter if it is out of the range [0, 1]
-  if (erp < 0.0)
-  {
+  if (erp < 0.0) {
     dtwarn << "Error reduction parameter [" << erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mErrorReductionParameter = 0.0;
   }
-  if (erp > 1.0)
-  {
+  if (erp > 1.0) {
     dtwarn << "Error reduction parameter [" << erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
     mErrorReductionParameter = 1.0;
@@ -121,17 +112,14 @@ void JointConstraint::setErrorReductionParameter(double erp)
 }
 
 //==============================================================================
-double JointConstraint::getErrorReductionParameter()
-{
+double JointConstraint::getErrorReductionParameter() {
   return mErrorReductionParameter;
 }
 
 //==============================================================================
-void JointConstraint::setMaxErrorReductionVelocity(double erv)
-{
+void JointConstraint::setMaxErrorReductionVelocity(double erv) {
   // Clamp maximum error reduction velocity if it is out of the range
-  if (erv < 0.0)
-  {
+  if (erv < 0.0) {
     dtwarn << "Maximum error reduction velocity [" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -142,17 +130,14 @@ void JointConstraint::setMaxErrorReductionVelocity(double erv)
 }
 
 //==============================================================================
-double JointConstraint::getMaxErrorReductionVelocity()
-{
+double JointConstraint::getMaxErrorReductionVelocity() {
   return mMaxErrorReductionVelocity;
 }
 
 //==============================================================================
-void JointConstraint::setConstraintForceMixing(double cfm)
-{
+void JointConstraint::setConstraintForceMixing(double cfm) {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9)
-  {
+  if (cfm < 1e-9) {
     dtwarn << "Constraint force mixing parameter [" << cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
@@ -163,14 +148,12 @@ void JointConstraint::setConstraintForceMixing(double cfm)
 }
 
 //==============================================================================
-double JointConstraint::getConstraintForceMixing()
-{
+double JointConstraint::getConstraintForceMixing() {
   return mConstraintForceMixing;
 }
 
 //==============================================================================
-void JointConstraint::update()
-{
+void JointConstraint::update() {
   // Reset dimension
   mDim = 0;
 
@@ -202,8 +185,7 @@ void JointConstraint::update()
 
   mActive.setConstant(false);
 
-  for (int i = 0; i < dof; ++i)
-  {
+  for (int i = 0; i < dof; ++i) {
     assert(positionLowerLimits[i] <= positionUpperLimits[i]);
     assert(velocityLowerLimits[i] <= velocityUpperLimits[i]);
 
@@ -214,14 +196,12 @@ void JointConstraint::update()
         = (positionUpperLimits[i] - positions[i]) / timeStep;
 
     // Joint position and velocity constraint check
-    if (mJoint->areLimitsEnforced())
-    {
+    if (mJoint->areLimitsEnforced()) {
       const double A1 = positions[i] - positionLowerLimits[i];
       const double B1 = A1 + mErrorAllowance;
       const double A2 = positions[i] - positionUpperLimits[i];
       const double B2 = A2 - mErrorAllowance;
-      if (B1 < 0)
-      {
+      if (B1 < 0) {
         // The current position is lower than the lower bound.
         //
         //    pos            LB                               UB
@@ -249,21 +229,16 @@ void JointConstraint::update()
         mImpulseLowerBound[i] = 0.0;
         mImpulseUpperBound[i] = static_cast<double>(dInfinity);
 
-        if (mActive[i])
-        {
+        if (mActive[i]) {
           ++(mLifeTime[i]);
-        }
-        else
-        {
+        } else {
           mActive[i] = true;
           mLifeTime[i] = 0;
         }
 
         ++mDim;
         continue;
-      }
-      else if (0 < B2)
-      {
+      } else if (0 < B2) {
         // The current position is greater than the upper bound.
         //
         //    LB                               UB            pos
@@ -291,12 +266,9 @@ void JointConstraint::update()
         mImpulseLowerBound[i] = -static_cast<double>(dInfinity);
         mImpulseUpperBound[i] = 0.0;
 
-        if (mActive[i])
-        {
+        if (mActive[i]) {
           ++(mLifeTime[i]);
-        }
-        else
-        {
+        } else {
           mActive[i] = true;
           mLifeTime[i] = 0;
         }
@@ -308,18 +280,14 @@ void JointConstraint::update()
       // Check lower velocity bound
       const double vel_lb = std::max(velocityLowerLimits[i], vel_to_pos_lb);
       const double vel_lb_error = velocities[i] - vel_lb;
-      if (vel_lb_error < 0.0)
-      {
+      if (vel_lb_error < 0.0) {
         mDesiredVelocityChange[i] = -vel_lb_error;
         mImpulseLowerBound[i] = 0.0;
         mImpulseUpperBound[i] = static_cast<double>(dInfinity);
 
-        if (mActive[i])
-        {
+        if (mActive[i]) {
           ++(mLifeTime[i]);
-        }
-        else
-        {
+        } else {
           mActive[i] = true;
           mLifeTime[i] = 0;
         }
@@ -331,18 +299,14 @@ void JointConstraint::update()
       // Check upper velocity bound
       const double vel_ub = std::min(velocityUpperLimits[i], vel_to_pos_ub);
       const double vel_ub_error = velocities[i] - vel_ub;
-      if (vel_ub_error > 0.0)
-      {
+      if (vel_ub_error > 0.0) {
         mDesiredVelocityChange[i] = -vel_ub_error;
         mImpulseLowerBound[i] = -static_cast<double>(dInfinity);
         mImpulseUpperBound[i] = 0.0;
 
-        if (mActive[i])
-        {
+        if (mActive[i]) {
           ++(mLifeTime[i]);
-        }
-        else
-        {
+        } else {
           mActive[i] = true;
           mLifeTime[i] = 0;
         }
@@ -353,8 +317,7 @@ void JointConstraint::update()
     }
 
     // Servo motor constraint check
-    if (mJoint->getActuatorType() == dynamics::Joint::SERVO)
-    {
+    if (mJoint->getActuatorType() == dynamics::Joint::SERVO) {
       // The desired velocity shouldn't be out of the velocity limits
       double desired_velocity = math::clip(
           mJoint->getCommand(static_cast<std::size_t>(i)),
@@ -367,8 +330,7 @@ void JointConstraint::update()
 
       mDesiredVelocityChange[i] = desired_velocity - velocities[i];
 
-      if (mDesiredVelocityChange[i] != 0.0)
-      {
+      if (mDesiredVelocityChange[i] != 0.0) {
         // Note that we are computing impulse but not force
         mImpulseUpperBound[i]
             = mJoint->getForceUpperLimit(static_cast<std::size_t>(i))
@@ -377,12 +339,9 @@ void JointConstraint::update()
             = mJoint->getForceLowerLimit(static_cast<std::size_t>(i))
               * timeStep;
 
-        if (mActive[i])
-        {
+        if (mActive[i]) {
           ++(mLifeTime[i]);
-        }
-        else
-        {
+        } else {
           mActive[i] = true;
           mLifeTime[i] = 0;
         }
@@ -394,12 +353,10 @@ void JointConstraint::update()
 }
 
 //==============================================================================
-void JointConstraint::getInformation(ConstraintInfo* lcp)
-{
+void JointConstraint::getInformation(ConstraintInfo* lcp) {
   std::size_t index = 0;
   const int dof = static_cast<int>(mJoint->getNumDofs());
-  for (int i = 0; i < dof; ++i)
-  {
+  for (int i = 0; i < dof; ++i) {
     assert(lcp->w[index] == 0.0);
 
     lcp->b[index] = mDesiredVelocityChange[i];
@@ -419,23 +376,19 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
 }
 
 //==============================================================================
-void JointConstraint::applyUnitImpulse(std::size_t index)
-{
+void JointConstraint::applyUnitImpulse(std::size_t index) {
   assert(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
-    if (!mActive[static_cast<int>(i)])
-    {
+  for (std::size_t i = 0; i < dof; ++i) {
+    if (!mActive[static_cast<int>(i)]) {
       continue;
     }
 
-    if (localIndex == index)
-    {
+    if (localIndex == index) {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
       skeleton->updateBiasImpulse(mBodyNode);
@@ -450,16 +403,13 @@ void JointConstraint::applyUnitImpulse(std::size_t index)
 }
 
 //==============================================================================
-void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
-{
+void JointConstraint::getVelocityChange(double* delVel, bool withCfm) {
   assert(delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
-    if (!mActive[static_cast<int>(i)])
-    {
+  for (std::size_t i = 0; i < dof; ++i) {
+    if (!mActive[static_cast<int>(i)]) {
       continue;
     }
 
@@ -473,8 +423,7 @@ void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // varaible in ODE
-  if (withCfm)
-  {
+  if (withCfm) {
     delVel[mAppliedImpulseIndex]
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
@@ -483,26 +432,21 @@ void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
 }
 
 //==============================================================================
-void JointConstraint::excite()
-{
+void JointConstraint::excite() {
   mJoint->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
-void JointConstraint::unexcite()
-{
+void JointConstraint::unexcite() {
   mJoint->getSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
-void JointConstraint::applyImpulse(double* lambda)
-{
+void JointConstraint::applyImpulse(double* lambda) {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
-    if (!mActive[static_cast<int>(i)])
-    {
+  for (std::size_t i = 0; i < dof; ++i) {
+    if (!mActive[static_cast<int>(i)]) {
       continue;
     }
 
@@ -516,14 +460,12 @@ void JointConstraint::applyImpulse(double* lambda)
 }
 
 //==============================================================================
-dynamics::SkeletonPtr JointConstraint::getRootSkeleton() const
-{
+dynamics::SkeletonPtr JointConstraint::getRootSkeleton() const {
   return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================
-bool JointConstraint::isActive() const
-{
+bool JointConstraint::isActive() const {
   return mActive.array().any();
 }
 

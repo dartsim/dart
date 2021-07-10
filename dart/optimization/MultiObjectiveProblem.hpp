@@ -43,8 +43,7 @@
 namespace dart {
 namespace optimization {
 
-class MultiObjectiveProblem
-{
+class MultiObjectiveProblem {
 public:
   /// Constructor
   explicit MultiObjectiveProblem(std::size_t dim, std::size_t integerDim = 0u);

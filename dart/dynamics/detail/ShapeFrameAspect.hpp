@@ -48,8 +48,7 @@ class ShapeFrame;
 
 namespace detail {
 
-struct VisualAspectProperties
-{
+struct VisualAspectProperties {
   /// Color for the primitive shape
   Eigen::Vector4d mRGBA;
 
@@ -74,8 +73,7 @@ struct VisualAspectProperties
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct CollisionAspectProperties
-{
+struct CollisionAspectProperties {
   /// This object is collidable if true
   bool mCollidable;
 
@@ -86,8 +84,7 @@ struct CollisionAspectProperties
   virtual ~CollisionAspectProperties() = default;
 };
 
-struct DynamicsAspectProperties
-{
+struct DynamicsAspectProperties {
   /// Primary coefficient of friction
   double mFrictionCoeff;
 
@@ -143,8 +140,7 @@ struct DynamicsAspectProperties
   virtual ~DynamicsAspectProperties() = default;
 };
 
-struct ShapeFrameProperties
-{
+struct ShapeFrameProperties {
   /// Pointer to a shape
   ShapePtr mShape;
 

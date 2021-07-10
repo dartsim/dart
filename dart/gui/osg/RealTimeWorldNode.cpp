@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/RealTimeWorldNode.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -50,63 +51,53 @@ RealTimeWorldNode::RealTimeWorldNode(
     mTargetSimTimeLapse(targetRealTimeFactor * mTargetRealTimeLapse),
     mLastRealTimeFactor(0.0),
     mLowestRealTimeFactor(std::numeric_limits<double>::infinity()),
-    mHighestRealTimeFactor(0.0)
-{
+    mHighestRealTimeFactor(0.0) {
   // Do nothing
 }
 
 //==============================================================================
-void RealTimeWorldNode::setTargetFrequency(double targetFrequency)
-{
+void RealTimeWorldNode::setTargetFrequency(double targetFrequency) {
   const double targetRTF = mTargetSimTimeLapse / mTargetRealTimeLapse;
   mTargetRealTimeLapse = 1.0 / targetFrequency;
   mTargetSimTimeLapse = targetRTF * mTargetRealTimeLapse;
 }
 
 //==============================================================================
-double RealTimeWorldNode::getTargetFrequency() const
-{
+double RealTimeWorldNode::getTargetFrequency() const {
   return 1.0 / mTargetRealTimeLapse;
 }
 
 //==============================================================================
-void RealTimeWorldNode::setTargetRealTimeFactor(double targetRTF)
-{
+void RealTimeWorldNode::setTargetRealTimeFactor(double targetRTF) {
   mTargetSimTimeLapse = targetRTF * mTargetRealTimeLapse;
 }
 
 //==============================================================================
-double RealTimeWorldNode::getTargetRealTimeFactor() const
-{
+double RealTimeWorldNode::getTargetRealTimeFactor() const {
   return mTargetSimTimeLapse / mTargetRealTimeLapse;
 }
 
 //==============================================================================
-double RealTimeWorldNode::getLastRealTimeFactor() const
-{
+double RealTimeWorldNode::getLastRealTimeFactor() const {
   return mLastRealTimeFactor;
 }
 
 //==============================================================================
-double RealTimeWorldNode::getLowestRealTimeFactor() const
-{
+double RealTimeWorldNode::getLowestRealTimeFactor() const {
   return mLowestRealTimeFactor;
 }
 
 //==============================================================================
-double RealTimeWorldNode::getHighestRealTimeFactor() const
-{
+double RealTimeWorldNode::getHighestRealTimeFactor() const {
   return mHighestRealTimeFactor;
 }
 
 //==============================================================================
-void RealTimeWorldNode::refresh()
-{
+void RealTimeWorldNode::refresh() {
   customPreRefresh();
   clearChildUtilizationFlags();
 
-  if (mNumStepsPerCycle != 1)
-  {
+  if (mNumStepsPerCycle != 1) {
     dtwarn << "[RealTimeWorldNode] The number of steps per cycle has been set "
            << "to [" << mNumStepsPerCycle << "], but this value is ignored by "
            << "the RealTimeWorldNode::refresh() function. Use the function "
@@ -115,10 +106,8 @@ void RealTimeWorldNode::refresh()
     mNumStepsPerCycle = 1;
   }
 
-  if (mWorld && mSimulating)
-  {
-    if (mFirstRefresh)
-    {
+  if (mWorld && mSimulating) {
+    if (mFirstRefresh) {
       mRefreshTimer.setStartTick();
       mFirstRefresh = false;
     }
@@ -126,13 +115,11 @@ void RealTimeWorldNode::refresh()
     const double startSimTime = mWorld->getTime();
     const double simTimeStep = mWorld->getTimeStep();
 
-    while (mRefreshTimer.time_s() < mTargetRealTimeLapse)
-    {
+    while (mRefreshTimer.time_s() < mTargetRealTimeLapse) {
       const double nextSimTimeLapse
           = mWorld->getTime() - startSimTime + simTimeStep;
 
-      if (nextSimTimeLapse <= mTargetSimTimeLapse)
-      {
+      if (nextSimTimeLapse <= mTargetSimTimeLapse) {
         customPreStep();
         mWorld->step();
         customPostStep();
@@ -147,9 +134,7 @@ void RealTimeWorldNode::refresh()
         = std::max(mLastRealTimeFactor, mHighestRealTimeFactor);
 
     mRefreshTimer.setStartTick();
-  }
-  else
-  {
+  } else {
     mFirstRefresh = true;
   }
 

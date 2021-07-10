@@ -50,8 +50,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Worldbody final
-{
+class Worldbody final {
 public:
   /// Default constructor
   Worldbody() = default;

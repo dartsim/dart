@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,17 +41,20 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Random(py::module& m)
-{
+void Random(py::module& m) {
   ::py::class_<dart::math::Random>(m, "Random")
       .def(::py::init<>())
       .def_static(
           "setSeed",
-          +[](unsigned int seed) { dart::math::Random::setSeed(seed); },
+          +[](unsigned int seed) {
+            dart::math::Random::setSeed(seed);
+          },
           ::py::arg("seed"))
       .def_static(
           "getSeed",
-          +[]() -> unsigned int { return dart::math::Random::getSeed(); })
+          +[]() -> unsigned int {
+            return dart::math::Random::getSeed();
+          })
       .def_static(
           "uniform",
           +[](double min, double max) -> double {

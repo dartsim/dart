@@ -48,8 +48,7 @@ namespace glut {
 class GraphWindow;
 
 /// \brief
-class SimWindow : public Win3D
-{
+class SimWindow : public Win3D {
 public:
   /// \brief
   SimWindow();

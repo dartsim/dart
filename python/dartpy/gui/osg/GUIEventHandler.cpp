@@ -41,35 +41,30 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-class GUIEventHandlerNoRef : public osgGA::GUIEventHandler
-{
+class GUIEventHandlerNoRef : public osgGA::GUIEventHandler {
 public:
   using GUIEventHandler::handle;
 
   virtual bool handle(
-      const osgGA::GUIEventAdapter* /*ea*/, osgGA::GUIActionAdapter* /*aa*/)
-  {
+      const osgGA::GUIEventAdapter* /*ea*/, osgGA::GUIActionAdapter* /*aa*/) {
     return true;
   }
 
 protected:
   bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override
-  {
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override {
     return handle(&ea, &aa);
   }
 };
 
-class PyGUIEventHandler final : public GUIEventHandlerNoRef
-{
+class PyGUIEventHandler final : public GUIEventHandlerNoRef {
 public:
   // Inherit the constructors
   using GUIEventHandlerNoRef::GUIEventHandler;
 
   // Trampoline for virtual function
   bool handle(
-      const osgGA::GUIEventAdapter* ea, osgGA::GUIActionAdapter* aa) override
-  {
+      const osgGA::GUIEventAdapter* ea, osgGA::GUIActionAdapter* aa) override {
     PYBIND11_OVERLOAD(
         bool,                 // Return type
         GUIEventHandlerNoRef, // Parent class
@@ -79,8 +74,7 @@ public:
   }
 };
 
-void GUIEventHandler(py::module& m)
-{
+void GUIEventHandler(py::module& m) {
   auto ea = ::py::class_<
                 osgGA::GUIEventAdapter,
                 ::osg::ref_ptr<osgGA::GUIEventAdapter>>(m, "GUIEventAdapter")
@@ -91,9 +85,10 @@ void GUIEventHandler(py::module& m)
                         -> osgGA::GUIEventAdapter::EventType {
                       return self->getEventType();
                     })
-                .def("getKey", +[](const osgGA::GUIEventAdapter* self) -> int {
-                  return self->getKey();
-                });
+                .def(
+                    "getKey", +[](const osgGA::GUIEventAdapter* self) -> int {
+                      return self->getKey();
+                    });
 
 #define DARTPY_DEFINE_ENUM_MOUSE_BUTTON_MASK(val)                              \
   .value(#val, osgGA::GUIEventAdapter::MouseButtonMask::val)

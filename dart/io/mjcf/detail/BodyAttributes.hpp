@@ -52,8 +52,7 @@ class Size;
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#body
-struct BodyAttributes final
-{
+struct BodyAttributes final {
   /// Name of the body.
   common::optional<std::string> mName;
 

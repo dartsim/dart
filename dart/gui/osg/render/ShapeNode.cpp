@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/render/ShapeNode.hpp"
+
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 
@@ -46,76 +47,64 @@ ShapeNode::ShapeNode(
   : mShape(std::move(shape)),
     mParentShapeFrameNode(parentNode),
     mNode(node),
-    mUtilized(true)
-{
+    mUtilized(true) {
   mShapeFrame = mParentShapeFrameNode->getShapeFrame();
   mVisualAspect = mShapeFrame->getVisualAspect();
   assert(mVisualAspect);
 }
 
 //==============================================================================
-ShapeNode::~ShapeNode()
-{
+ShapeNode::~ShapeNode() {
   // Do nothing
 }
 
 //==============================================================================
-const std::shared_ptr<dart::dynamics::Shape>& ShapeNode::getShape() const
-{
+const std::shared_ptr<dart::dynamics::Shape>& ShapeNode::getShape() const {
   return mShape;
 }
 
 //==============================================================================
-const dart::dynamics::ShapeFrame* ShapeNode::getShapeFrame() const
-{
+const dart::dynamics::ShapeFrame* ShapeNode::getShapeFrame() const {
   return mShapeFrame;
 }
 
 //==============================================================================
-dart::dynamics::VisualAspect* ShapeNode::getVisualAspect()
-{
+dart::dynamics::VisualAspect* ShapeNode::getVisualAspect() {
   return mVisualAspect;
 }
 
 //==============================================================================
-const dart::dynamics::VisualAspect* ShapeNode::getVisualAspect() const
-{
+const dart::dynamics::VisualAspect* ShapeNode::getVisualAspect() const {
   return mVisualAspect;
 }
 
 //==============================================================================
-::osg::Node* ShapeNode::getNode()
-{
+::osg::Node* ShapeNode::getNode() {
   return mNode;
 }
 
 //==============================================================================
-const ::osg::Node* ShapeNode::getNode() const
-{
+const ::osg::Node* ShapeNode::getNode() const {
   return mNode;
 }
 
 //==============================================================================
-ShapeFrameNode* ShapeNode::getParentShapeFrameNode()
-{
+ShapeFrameNode* ShapeNode::getParentShapeFrameNode() {
   return mParentShapeFrameNode;
 }
 
 //==============================================================================
-const ShapeFrameNode* ShapeNode::getParentShapeFrameNode() const
-{
+const ShapeFrameNode* ShapeNode::getParentShapeFrameNode() const {
   return mParentShapeFrameNode;
 }
 
 //==============================================================================
-bool ShapeNode::wasUtilized() const
-{
+bool ShapeNode::wasUtilized() const {
   return mUtilized;
 }
 
 //==============================================================================
-void ShapeNode::clearUtilization()
-{
+void ShapeNode::clearUtilization() {
   mUtilized = false;
 }
 

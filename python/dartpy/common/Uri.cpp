@@ -38,15 +38,16 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Uri(py::module& m)
-{
+void Uri(py::module& m) {
   ::py::class_<dart::common::Uri>(m, "Uri")
       .def(::py::init<>())
       .def(::py::init<const std::string&>(), ::py::arg("input"))
       .def(::py::init<const char*>(), ::py::arg("input"))
       .def(
           "clear",
-          +[](dart::common::Uri* self) -> void { return self->clear(); })
+          +[](dart::common::Uri* self) -> void {
+            return self->clear();
+          })
       .def(
           "fromString",
           +[](dart::common::Uri* self, const std::string& _input) -> bool {
@@ -87,8 +88,11 @@ void Uri(py::module& m)
           ::py::arg("strict"))
       .def(
           "fromRelativeUri",
-          +[](dart::common::Uri* self, const char* _base, const char* _relative)
-              -> bool { return self->fromRelativeUri(_base, _relative); },
+          +[](dart::common::Uri* self,
+              const char* _base,
+              const char* _relative) -> bool {
+            return self->fromRelativeUri(_base, _relative);
+          },
           ::py::arg("base"),
           ::py::arg("relative"))
       .def(

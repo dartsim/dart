@@ -45,21 +45,18 @@ namespace io {
 
 //==============================================================================
 FileInfoDof::FileInfoDof(dynamics::Skeleton* _skel, double _fps)
-  : mSkel(_skel), mFPS(_fps), mNumFrames(0)
-{
+  : mSkel(_skel), mFPS(_fps), mNumFrames(0) {
   std::strcpy(mFileName, "");
 }
 
 //==============================================================================
-FileInfoDof::~FileInfoDof()
-{
+FileInfoDof::~FileInfoDof() {
   mDofs.clear();
   mNumFrames = 0;
 }
 
 //==============================================================================
-bool FileInfoDof::loadFile(const char* _fName)
-{
+bool FileInfoDof::loadFile(const char* _fName) {
   std::ifstream inFile(_fName);
   if (inFile.fail() == 1)
     return false;
@@ -86,11 +83,9 @@ bool FileInfoDof::loadFile(const char* _fName)
   // dof names
   for (std::size_t i = 0; i < nDof; i++)
     inFile >> buffer;
-  for (std::size_t j = 0; j < mNumFrames; j++)
-  {
+  for (std::size_t j = 0; j < mNumFrames; j++) {
     mDofs[j].resize(nDof);
-    for (std::size_t i = 0; i < nDof; i++)
-    {
+    for (std::size_t i = 0; i < nDof; i++) {
       double val;
       inFile >> val;
       mDofs[j][i] = val;
@@ -116,8 +111,7 @@ bool FileInfoDof::saveFile(
     const char* _fName,
     std::size_t _start,
     std::size_t _end,
-    double /*_sampleRate*/)
-{
+    double /*_sampleRate*/) {
   if (_end < _start)
     return false;
 
@@ -132,8 +126,7 @@ bool FileInfoDof::saveFile(
   outFile << "frames = " << last - first + 1
           << " dofs = " << mSkel->getNumDofs() << std::endl;
 
-  for (std::size_t i = 0; i < mSkel->getNumDofs(); i++)
-  {
+  for (std::size_t i = 0; i < mSkel->getNumDofs(); i++) {
     const dynamics::DegreeOfFreedom* dof = mSkel->getDof(i);
     const dynamics::Joint* joint = dof->getJoint();
     const std::size_t localIndex = dof->getIndexInJoint();
@@ -143,8 +136,7 @@ bool FileInfoDof::saveFile(
 
   outFile << std::endl;
 
-  for (std::size_t i = first; i <= last; i++)
-  {
+  for (std::size_t i = first; i <= last; i++) {
     for (std::size_t j = 0; j < mSkel->getNumDofs(); j++)
       outFile << mDofs[i][j] << ' ';
     outFile << std::endl;
@@ -162,46 +154,39 @@ bool FileInfoDof::saveFile(
 }
 
 //==============================================================================
-void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
-{
+void FileInfoDof::addDof(const Eigen::VectorXd& _dofs) {
   mDofs.push_back(_dofs);
   mNumFrames++;
 }
 
 //==============================================================================
-double FileInfoDof::getDofAt(std::size_t _frame, std::size_t _id) const
-{
+double FileInfoDof::getDofAt(std::size_t _frame, std::size_t _id) const {
   assert(_frame < mNumFrames);
   return mDofs.at(_frame)[_id];
 }
 
 //==============================================================================
-Eigen::VectorXd FileInfoDof::getPoseAtFrame(int _frame) const
-{
+Eigen::VectorXd FileInfoDof::getPoseAtFrame(int _frame) const {
   return mDofs.at(_frame);
 }
 
 //==============================================================================
-void FileInfoDof::setFPS(double _fps)
-{
+void FileInfoDof::setFPS(double _fps) {
   mFPS = _fps;
 }
 
 //==============================================================================
-double FileInfoDof::getFPS() const
-{
+double FileInfoDof::getFPS() const {
   return mFPS;
 }
 
 //==============================================================================
-int FileInfoDof::getNumFrames() const
-{
+int FileInfoDof::getNumFrames() const {
   return mNumFrames;
 }
 
 //==============================================================================
-dynamics::Skeleton* FileInfoDof::getSkel() const
-{
+dynamics::Skeleton* FileInfoDof::getSkel() const {
   return mSkel;
 }
 

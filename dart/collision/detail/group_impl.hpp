@@ -32,10 +32,9 @@
 
 #pragma once
 
-#include "dart/collision/group.hpp"
-
 #include <cassert>
 
+#include "dart/collision/group.hpp"
 #include "dart/math/geometry/Sphere.hpp"
 
 namespace dart {
@@ -44,30 +43,26 @@ namespace collision {
 //==============================================================================
 template <typename S>
 Group<S>::Group(Engine<S>* engine)
-  : m_engine(engine), m_update_automatically(true)
-{
+  : m_engine(engine), m_update_automatically(true) {
   assert(m_engine);
 }
 
 //==============================================================================
 template <typename S>
-Engine<S>* Group<S>::get_mutable_engine()
-{
+Engine<S>* Group<S>::get_mutable_engine() {
   return m_engine;
 }
 
 //==============================================================================
 template <typename S>
-const Engine<S>* Group<S>::get_engine() const
-{
+const Engine<S>* Group<S>::get_engine() const {
   return m_engine;
 }
 
 //==============================================================================
 template <typename S>
 template <typename... Args>
-ObjectPtr<S> Group<S>::create_sphere_object(Args&&... args)
-{
+ObjectPtr<S> Group<S>::create_sphere_object(Args&&... args) {
   auto geometry
       = std::make_shared<math::Sphere<S>>(std::forward<Args>(args)...);
   return create_object(std::move(geometry));

@@ -34,8 +34,7 @@
 
 using namespace dart::dynamics;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   dart::simulation::WorldPtr myWorld(new dart::simulation::World);
 
   Eigen::Isometry3d tf1(Eigen::Isometry3d::Identity());

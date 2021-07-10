@@ -40,8 +40,7 @@ namespace dynamics {
 
 class DARTCollisionObject;
 
-class DARTCollisionGroup : public CollisionGroup
-{
+class DARTCollisionGroup : public CollisionGroup {
 public:
   friend class DARTCollisionDetector;
 
@@ -76,7 +75,7 @@ protected:
   std::vector<CollisionObject*> mCollisionObjects;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_

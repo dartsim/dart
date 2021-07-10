@@ -41,8 +41,7 @@ namespace dynamics {
 //==============================================================================
 bool BodyNodeDistanceFilter::needDistance(
     const dynamics::CollisionObject* object1,
-    const dynamics::CollisionObject* object2) const
-{
+    const dynamics::CollisionObject* object2) const {
   if (object1 == object2)
     return false;
 
@@ -59,15 +58,13 @@ bool BodyNodeDistanceFilter::needDistance(
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
     return false;
 
-  if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton())
-  {
+  if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton()) {
     auto skeleton = bodyNode1->getSkeleton();
 
     if (!skeleton->isEnabledSelfCollisionCheck())
       return false;
 
-    if (!skeleton->isEnabledAdjacentBodyCheck())
-    {
+    if (!skeleton->isEnabledAdjacentBodyCheck()) {
       if (areAdjacentBodies(bodyNode1, bodyNode2))
         return false;
     }
@@ -79,11 +76,9 @@ bool BodyNodeDistanceFilter::needDistance(
 //==============================================================================
 bool BodyNodeDistanceFilter::areAdjacentBodies(
     const dynamics::BodyNode* bodyNode1,
-    const dynamics::BodyNode* bodyNode2) const
-{
+    const dynamics::BodyNode* bodyNode2) const {
   if ((bodyNode1->getParentBodyNode() == bodyNode2)
-      || (bodyNode2->getParentBodyNode() == bodyNode1))
-  {
+      || (bodyNode2->getParentBodyNode() == bodyNode1)) {
     assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
     return true;
   }
@@ -91,5 +86,5 @@ bool BodyNodeDistanceFilter::areAdjacentBodies(
   return false;
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

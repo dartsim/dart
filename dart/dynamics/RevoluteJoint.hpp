@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class RevoluteJoint
-class RevoluteJoint : public detail::RevoluteJointBase
-{
+class RevoluteJoint : public detail::RevoluteJointBase {
 public:
   friend class Skeleton;
   using UniqueProperties = detail::RevoluteJointUniqueProperties;

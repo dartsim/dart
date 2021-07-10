@@ -33,16 +33,15 @@
 #ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 
-#include "dart/dynamics/ConstraintBase.hpp"
-
 #include "dart/dynamics/CollisionDetector.hpp"
+#include "dart/dynamics/ConstraintBase.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
 
 namespace dynamics {
 class SoftCollisionInfo;
-} // namespace collision
+} // namespace dynamics
 
 namespace dynamics {
 class BodyNode;
@@ -54,8 +53,7 @@ class Skeleton;
 namespace dynamics {
 
 /// SoftContactConstraint represents a contact constraint between two bodies
-class SoftContactConstraint : public ConstraintBase
-{
+class SoftContactConstraint : public ConstraintBase {
 public:
   /// Constructor
   SoftContactConstraint(dynamics::Contact& _contact, double _timeStep);

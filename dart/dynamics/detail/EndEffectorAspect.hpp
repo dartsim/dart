@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
 
 #include <Eigen/Geometry>
+
 #include "dart/common/SpecializedForAspect.hpp"
 #include "dart/dynamics/CompositeNode.hpp"
 
@@ -46,8 +47,7 @@ class Support;
 namespace detail {
 
 //==============================================================================
-struct EndEffectorProperties
-{
+struct EndEffectorProperties {
   /// The default relative transform for the EndEffector. If the relative
   /// transform of the EndEffector is ever changed, you can call
   /// resetRelativeTransform() to return the relative transform to this one.
@@ -61,14 +61,12 @@ struct EndEffectorProperties
 };
 
 //==============================================================================
-struct SupportStateData
-{
+struct SupportStateData {
   /// Whether or not this EndEffector is currently being used to support the
   /// weight of the robot.
   bool mActive;
 
-  inline SupportStateData(bool active = false) : mActive(active)
-  {
+  inline SupportStateData(bool active = false) : mActive(active) {
   }
 
   // To get byte-aligned Eigen vectors
@@ -76,8 +74,7 @@ struct SupportStateData
 };
 
 //==============================================================================
-struct SupportPropertiesData
-{
+struct SupportPropertiesData {
   /// A set of points representing the support polygon that can be provided by
   /// the EndEffector. These points must be defined relative to the EndEffector
   /// frame.
@@ -85,8 +82,7 @@ struct SupportPropertiesData
 
   inline SupportPropertiesData(
       const math::SupportGeometry& geometry = math::SupportGeometry())
-    : mGeometry(geometry)
-  {
+    : mGeometry(geometry) {
   }
 
   // To get byte-aligned Eigen vectors

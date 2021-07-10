@@ -32,7 +32,6 @@
 
 #include <dart/dart.hpp>
 #include <dart/simulation/World.hpp>
-
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
@@ -41,8 +40,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void World(py::module& m)
-{
+void World(py::module& m) {
   ::py::class_<
       dart::simulation::World,
       std::shared_ptr<dart::simulation::World>>(m, "World")
@@ -65,8 +63,10 @@ void World(py::module& m)
           })
       .def(
           "setName",
-          +[](dart::simulation::World* self, const std::string& _newName)
-              -> const std::string& { return self->setName(_newName); },
+          +[](dart::simulation::World* self,
+              const std::string& _newName) -> const std::string& {
+            return self->setName(_newName);
+          },
           ::py::return_value_policy::reference_internal,
           ::py::arg("newName"))
       .def(
@@ -77,8 +77,10 @@ void World(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "setGravity",
-          +[](dart::simulation::World* self, const Eigen::Vector3d& _gravity)
-              -> void { return self->setGravity(_gravity); },
+          +[](dart::simulation::World* self,
+              const Eigen::Vector3d& _gravity) -> void {
+            return self->setGravity(_gravity);
+          },
           ::py::arg("gravity"))
       .def(
           "getGravity",
@@ -217,10 +219,14 @@ void World(py::module& m)
           })
       .def(
           "reset",
-          +[](dart::simulation::World* self) -> void { return self->reset(); })
+          +[](dart::simulation::World* self) -> void {
+            return self->reset();
+          })
       .def(
           "step",
-          +[](dart::simulation::World* self) -> void { return self->step(); })
+          +[](dart::simulation::World* self) -> void {
+            return self->step();
+          })
       .def(
           "step",
           +[](dart::simulation::World* self, bool _resetCommand) -> void {
@@ -251,7 +257,9 @@ void World(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "bake",
-          +[](dart::simulation::World* self) -> void { return self->bake(); })
+          +[](dart::simulation::World* self) -> void {
+            return self->bake();
+          })
       .def_readonly("onNameChanged", &dart::simulation::World::onNameChanged);
 }
 

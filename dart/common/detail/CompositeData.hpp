@@ -33,12 +33,12 @@
 #ifndef DART_COMMON_DETAIL_COMPOSITEDATA_HPP_
 #define DART_COMMON_DETAIL_COMPOSITEDATA_HPP_
 
-#include <Eigen/Core>
-
 #include <map>
 #include <typeindex>
 #include <typeinfo>
 #include <unordered_set>
+
+#include <Eigen/Core>
 
 #include "dart/common/Aspect.hpp"
 
@@ -50,8 +50,7 @@ namespace detail {
 // This default template definition will be called when AspectOrComposite is
 // an Aspect.
 template <class AspectOrComposite, bool isAspect>
-struct GetAspectImpl
-{
+struct GetAspectImpl {
   using Type = AspectOrComposite;
 };
 
@@ -59,8 +58,7 @@ struct GetAspectImpl
 // This template specialization will be called when AspectOrComposite is not
 // an Aspect (and is presumably a composite that defines a nested Aspect type).
 template <class AspectOrComposite>
-struct GetAspectImpl<AspectOrComposite, false>
-{
+struct GetAspectImpl<AspectOrComposite, false> {
   // If you get a compiler error that leads you here, then you are trying to
   // ask for the Aspect of an object that is not associated with any Aspect.
   // That means it does not define a nested Aspect type (such as how
@@ -74,8 +72,7 @@ struct GetAspectImpl<AspectOrComposite, false>
 
 //==============================================================================
 template <class AspectT>
-struct GetAspect
-{
+struct GetAspect {
   using Type =
       typename GetAspectImpl<AspectT, std::is_base_of<Aspect, AspectT>::value>::
           Type;
@@ -83,15 +80,13 @@ struct GetAspect
 
 //==============================================================================
 template <class AspectT>
-struct GetState
-{
+struct GetState {
   using Type = typename GetAspect<AspectT>::Type::State;
 };
 
 //==============================================================================
 template <class AspectT>
-struct GetProperties
-{
+struct GetProperties {
   using Type = typename GetAspect<AspectT>::Type::Properties;
 };
 
@@ -103,14 +98,12 @@ using CompositePropertiesMap
 
 //==============================================================================
 template <typename MapType, template <class> class GetData>
-class CompositeData : public CloneableMap<MapType>
-{
+class CompositeData : public CloneableMap<MapType> {
 public:
   /// Forwarding constructor
   template <typename... Args>
   CompositeData(Args&&... args)
-    : CloneableMap<MapType>(std::forward<Args>(args)...)
-  {
+    : CloneableMap<MapType>(std::forward<Args>(args)...) {
     // Do nothing
   }
 
@@ -118,8 +111,7 @@ public:
 
   /// Create (or replace) a piece of data in this
   template <class AspectT, typename... Args>
-  typename GetData<AspectT>::Type& create(Args&&... args)
-  {
+  typename GetData<AspectT>::Type& create(Args&&... args) {
     using Data = typename GetData<AspectT>::Type;
     using AspectType = typename GetAspect<AspectT>::Type;
     using DataType = typename GetData<Aspect>::Type;
@@ -130,8 +122,7 @@ public:
   }
 
   template <class AspectT>
-  typename GetData<AspectT>::Type* get()
-  {
+  typename GetData<AspectT>::Type* get() {
     using Data = typename GetData<AspectT>::Type;
     using AspectType = typename GetAspect<AspectT>::Type;
 
@@ -143,14 +134,12 @@ public:
   }
 
   template <class AspectT>
-  const typename GetData<AspectT>::Type* get() const
-  {
+  const typename GetData<AspectT>::Type* get() const {
     return const_cast<CompositeData<MapType, GetData>*>(this)->get<AspectT>();
   }
 
   template <class AspectT, typename... Args>
-  typename GetData<AspectT>::Type& getOrCreate(Args&&... args)
-  {
+  typename GetData<AspectT>::Type& getOrCreate(Args&&... args) {
     using Data = typename GetData<AspectT>::Type;
     using AspectType = typename GetAspect<AspectT>::Type;
 
@@ -166,8 +155,7 @@ public:
   }
 
   template <class AspectT>
-  bool has() const
-  {
+  bool has() const {
     return (get<AspectT>() != nullptr);
   }
 };
@@ -180,28 +168,25 @@ using CompositeProperties
 //==============================================================================
 template <
     class CompositeType,
-    template <class> class GetData,
+    template <class>
+    class GetData,
     typename... Aspects>
-class ComposeData
-{
+class ComposeData {
 public:
   ComposeData() = default;
 
-  ComposeData(const CompositeType&)
-  {
+  ComposeData(const CompositeType&) {
     // Do nothing
   }
 
   virtual ~ComposeData() = default;
 
-  void setFrom(const CompositeType&)
-  {
+  void setFrom(const CompositeType&) {
     // Do nothing
   }
 
 protected:
-  void _addData(CompositeType&) const
-  {
+  void _addData(CompositeType&) const {
     // Do nothing
   }
 };
@@ -209,18 +194,15 @@ protected:
 //==============================================================================
 template <
     class CompositeType,
-    template <class> class GetData,
+    template <class>
+    class GetData,
     class AspectT,
     typename... Remainder>
 struct ComposeData<CompositeType, GetData, AspectT, Remainder...>
   : public GetData<AspectT>::Type,
-    public ComposeData<CompositeType, GetData, Remainder...>
-{
+    public ComposeData<CompositeType, GetData, Remainder...> {
 public:
-  enum DelegateTag
-  {
-    Delegate
-  };
+  enum DelegateTag { Delegate };
 
   using ThisClass = ComposeData<CompositeType, GetData, AspectT, Remainder...>;
   using Base = typename GetData<AspectT>::Type;
@@ -228,8 +210,7 @@ public:
   using AspectType = typename GetAspect<AspectT>::Type;
 
   template <typename Arg>
-  struct ConvertIfData
-  {
+  struct ConvertIfData {
     using Type = typename std::conditional<
         std::is_base_of<typename Base::Data, Arg>::value,
         typename Base::Data,
@@ -237,8 +218,7 @@ public:
   };
 
   template <typename Arg>
-  struct ConvertIfComposite
-  {
+  struct ConvertIfComposite {
     using Type = typename std::conditional<
         std::is_base_of<CompositeType, Arg>::value,
         CompositeType,
@@ -257,24 +237,21 @@ public:
   template <typename Arg1, typename... Args>
   ComposeData(const Arg1& arg1, const Args&... args)
     : ComposeData(
-          Delegate,
-          static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1),
-          args...)
-  {
+        Delegate,
+        static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1),
+        args...) {
     // This constructor delegates
   }
 
   /// Grab relevant data out of a composite object
   ComposeData(const CompositeType& composite)
-    : ComposeData<CompositeType, GetData, Remainder...>(composite)
-  {
+    : ComposeData<CompositeType, GetData, Remainder...>(composite) {
     _setBaseFrom(composite);
   }
 
   template <typename... Aspects>
   ComposeData(const ComposeData<CompositeType, GetData, Aspects...>& composite)
-    : ComposeData(static_cast<const CompositeType&>(composite))
-  {
+    : ComposeData(static_cast<const CompositeType&>(composite)) {
     // This is a delegating constructor. If we get passed another ComposeData
     // object, then we convert it into a composite to ensure that we grab all
     // of its aspects.
@@ -284,27 +261,23 @@ public:
   // it will get deleted when it reaches the last base constructor, preventing
   // any higher level constructors from calling _setBaseFrom(~) on it.
   ComposeData(CompositeType&& composite)
-    : ComposeData(static_cast<const CompositeType&>(composite))
-  {
+    : ComposeData(static_cast<const CompositeType&>(composite)) {
     // This is a delegating constructor
   }
 
-  operator CompositeType() const
-  {
+  operator CompositeType() const {
     CompositeType composite;
     _addData(composite);
 
     return composite;
   }
 
-  void setFrom(const CompositeType& composite)
-  {
+  void setFrom(const CompositeType& composite) {
     _setBaseFrom(composite);
     ComposeData<CompositeType, GetData, Remainder...>::setFrom(composite);
   }
 
-  ComposeData& operator=(const CompositeType& composite)
-  {
+  ComposeData& operator=(const CompositeType& composite) {
     setFrom(composite);
     return *this;
   }
@@ -314,64 +287,54 @@ public:
   /// the arguments that get passed in. It will simply ignore all the arguments
   /// silently.
   template <typename... Args>
-  void copy(const Args&... args)
-  {
+  void copy(const Args&... args) {
     _findData(args...);
   }
 
 protected:
   template <typename... Args>
   ComposeData(DelegateTag, const Args&... args)
-    : ComposeData<CompositeType, GetData, Remainder...>(args...)
-  {
+    : ComposeData<CompositeType, GetData, Remainder...>(args...) {
     // Pass all the arguments along to the next base class
   }
 
   template <typename... Args>
   ComposeData(DelegateTag, const Data& arg1, const Args&... args)
-    : Base(arg1), ComposeData<CompositeType, GetData, Remainder...>(args...)
-  {
+    : Base(arg1), ComposeData<CompositeType, GetData, Remainder...>(args...) {
     // Peel off the first argument and then pass along the rest
   }
 
-  void _setBaseFrom(const CompositeType& composite)
-  {
+  void _setBaseFrom(const CompositeType& composite) {
     const Base* data = composite.template get<AspectType>();
     if (data)
       static_cast<Base&>(*this) = *data;
   }
 
-  void _addData(CompositeType& composite) const
-  {
+  void _addData(CompositeType& composite) const {
     composite.template create<AspectType>(static_cast<const Base&>(*this));
     ComposeData<CompositeType, GetData, Remainder...>::_addData(composite);
   }
 
-  void _findData()
-  {
+  void _findData() {
     // Do nothing
   }
 
   template <typename Arg1, typename... Args>
-  void _findData(const Arg1& arg1, const Args&... args)
-  {
+  void _findData(const Arg1& arg1, const Args&... args) {
     _attemptToUse(static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1));
     _findData(args...);
   }
 
   template <typename Arg>
-  void _attemptToUse(const Arg&)
-  {
+  void _attemptToUse(const Arg&) {
     // Do nothing
   }
 
-  void _attemptToUse(const typename Base::Data& data)
-  {
+  void _attemptToUse(const typename Base::Data& data) {
     static_cast<Base&>(*this) = data;
   }
 
-  void _attemptToUse(const CompositeType& composite)
-  {
+  void _attemptToUse(const CompositeType& composite) {
     _setBaseFrom(composite);
   }
 };

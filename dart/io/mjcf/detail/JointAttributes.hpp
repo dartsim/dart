@@ -45,8 +45,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-struct JointAttributes final
-{
+struct JointAttributes final {
   common::optional<std::string> mName;
 
   JointType mType{JointType::HINGE};

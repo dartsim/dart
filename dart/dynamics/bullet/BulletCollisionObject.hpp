@@ -34,10 +34,9 @@
 #define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
 
+#include "dart/config.hpp"
 #include "dart/dynamics/CollisionObject.hpp"
 #include "dart/dynamics/bullet/BulletCollisionShape.hpp"
 
@@ -46,8 +45,7 @@ namespace dynamics {
 
 class CollisionObject;
 
-class BulletCollisionObject : public CollisionObject
-{
+class BulletCollisionObject : public CollisionObject {
 public:
   friend class BulletCollisionDetector;
 
@@ -73,7 +71,7 @@ protected:
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_

@@ -34,6 +34,7 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <vector>
+
 #include "dart/dynamics/CollisionDetector.hpp"
 
 namespace dart {
@@ -41,8 +42,7 @@ namespace dynamics {
 
 class DARTCollisionObject;
 
-class DARTCollisionDetector : public CollisionDetector
-{
+class DARTCollisionDetector : public CollisionDetector {
 public:
   using CollisionDetector::createCollisionGroup;
 
@@ -102,7 +102,7 @@ private:
   static Registrar<DARTCollisionDetector> mRegistrar;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_

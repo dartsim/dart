@@ -38,15 +38,16 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void BoxedLcpSolver(py::module& m)
-{
+void BoxedLcpSolver(py::module& m) {
   ::py::class_<
       dart::dynamics::BoxedLcpSolver,
       std::shared_ptr<dart::dynamics::BoxedLcpSolver>>(m, "BoxedLcpSolver")
       .def(
           "getType",
           +[](const dart::dynamics::BoxedLcpSolver* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "solve",
@@ -58,7 +59,9 @@ void BoxedLcpSolver(py::module& m)
               int nub,
               double* lo,
               double* hi,
-              int* findex) { self->solve(n, A, x, b, nub, lo, hi, findex); },
+              int* findex) {
+            self->solve(n, A, x, b, nub, lo, hi, findex);
+          },
           ::py::arg("n"),
           ::py::arg("A"),
           ::py::arg("x"),

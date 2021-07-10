@@ -36,14 +36,14 @@
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
 #include <assimp/cfileio.h>
+
 #include "dart/common/Resource.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
-{
+class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem {
 public:
   explicit AssimpInputResourceRetrieverAdaptor(
       const common::ResourceRetrieverPtr& _resourceRetriever);
@@ -81,8 +81,7 @@ private:
   common::ResourceRetrieverPtr mResourceRetriever;
 };
 
-class AssimpInputResourceAdaptor : public Assimp::IOStream
-{
+class AssimpInputResourceAdaptor : public Assimp::IOStream {
 public:
   explicit AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
   virtual ~AssimpInputResourceAdaptor();

@@ -45,8 +45,8 @@ namespace optimization {
 
 //==============================================================================
 template <typename T>
-static T getVectorObjectIfAvailable(std::size_t idx, const std::vector<T>& vec)
-{
+static T getVectorObjectIfAvailable(
+    std::size_t idx, const std::vector<T>& vec) {
   // TODO: Should we have an out-of-bounds assertion or throw here?
   if (idx < vec.size())
     return vec[idx];
@@ -56,15 +56,13 @@ static T getVectorObjectIfAvailable(std::size_t idx, const std::vector<T>& vec)
 
 //==============================================================================
 MultiObjectiveProblem::MultiObjectiveProblem(
-    std::size_t dim, std::size_t integerDim)
-{
+    std::size_t dim, std::size_t integerDim) {
   setSolutionDimension(dim, integerDim);
 }
 
 //==============================================================================
 void MultiObjectiveProblem::setSolutionDimension(
-    std::size_t dim, std::size_t integerDim)
-{
+    std::size_t dim, std::size_t integerDim) {
   if (dim == mDimension && integerDim == mIntegerDimension)
     return;
 
@@ -79,84 +77,71 @@ void MultiObjectiveProblem::setSolutionDimension(
 }
 
 //==============================================================================
-std::size_t MultiObjectiveProblem::getSolutionDimension() const
-{
+std::size_t MultiObjectiveProblem::getSolutionDimension() const {
   return mDimension;
 }
 
 //==============================================================================
-std::size_t MultiObjectiveProblem::getDoubleDimension() const
-{
+std::size_t MultiObjectiveProblem::getDoubleDimension() const {
   return getSolutionDimension() - getIntegerDimension();
 }
 
 //==============================================================================
-void MultiObjectiveProblem::setIntegerDimension(std::size_t dim)
-{
+void MultiObjectiveProblem::setIntegerDimension(std::size_t dim) {
   mIntegerDimension = dim;
 }
 
 //==============================================================================
-std::size_t MultiObjectiveProblem::getIntegerDimension() const
-{
+std::size_t MultiObjectiveProblem::getIntegerDimension() const {
   return mIntegerDimension;
 }
 
 //==============================================================================
-void MultiObjectiveProblem::setLowerBounds(const Eigen::VectorXd& lb)
-{
+void MultiObjectiveProblem::setLowerBounds(const Eigen::VectorXd& lb) {
   assert(static_cast<std::size_t>(lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = lb;
 }
 
 //==============================================================================
-const Eigen::VectorXd& MultiObjectiveProblem::getLowerBounds() const
-{
+const Eigen::VectorXd& MultiObjectiveProblem::getLowerBounds() const {
   return mLowerBounds;
 }
 
 //==============================================================================
-void MultiObjectiveProblem::setUpperBounds(const Eigen::VectorXd& ub)
-{
+void MultiObjectiveProblem::setUpperBounds(const Eigen::VectorXd& ub) {
   assert(static_cast<std::size_t>(ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = ub;
 }
 
 //==============================================================================
-const Eigen::VectorXd& MultiObjectiveProblem::getUpperBounds() const
-{
+const Eigen::VectorXd& MultiObjectiveProblem::getUpperBounds() const {
   return mUpperBounds;
 }
 
 //==============================================================================
-std::size_t MultiObjectiveProblem::getEqConstraintDimension() const
-{
+std::size_t MultiObjectiveProblem::getEqConstraintDimension() const {
   return 0u;
 }
 
 //==============================================================================
-std::size_t MultiObjectiveProblem::getIneqConstraintDimension() const
-{
+std::size_t MultiObjectiveProblem::getIneqConstraintDimension() const {
   return 0u;
 }
 
 //==============================================================================
 Eigen::VectorXd MultiObjectiveProblem::evaluateEqConstraints(
-    const Eigen::VectorXd& /*x*/) const
-{
+    const Eigen::VectorXd& /*x*/) const {
   return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================
 Eigen::VectorXd MultiObjectiveProblem::evaluateIneqConstraints(
-    const Eigen::VectorXd& /*x*/) const
-{
+    const Eigen::VectorXd& /*x*/) const {
   return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================
-std::size_t MultiObjectiveProblem::getFitnessDimension() const
-{
+std::size_t MultiObjectiveProblem::getFitnessDimension() const {
   const std::size_t objDim = getObjectiveDimension();
   const std::size_t eqDim = getEqConstraintDimension();
   const std::size_t ineqDim = getIneqConstraintDimension();
@@ -166,8 +151,7 @@ std::size_t MultiObjectiveProblem::getFitnessDimension() const
 
 //==============================================================================
 Eigen::VectorXd MultiObjectiveProblem::evaluateFitness(
-    const Eigen::VectorXd& x) const
-{
+    const Eigen::VectorXd& x) const {
   const int objDim = static_cast<int>(getObjectiveDimension());
   const int eqDim = static_cast<int>(getEqConstraintDimension());
   const int ineqDim = static_cast<int>(getIneqConstraintDimension());
@@ -183,8 +167,7 @@ Eigen::VectorXd MultiObjectiveProblem::evaluateFitness(
 }
 
 //==============================================================================
-std::ostream& MultiObjectiveProblem::print(std::ostream& os) const
-{
+std::ostream& MultiObjectiveProblem::print(std::ostream& os) const {
   os << "MultiObjectiveProblem\n";
   os << "\tParameter dimension:\t" << getSolutionDimension() << "\n";
 

@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class RevoluteJoint
-class PrismaticJoint : public detail::PrismaticJointBase
-{
+class PrismaticJoint : public detail::PrismaticJointBase {
 public:
   friend class Skeleton;
   using Base = detail::PrismaticJointBase;

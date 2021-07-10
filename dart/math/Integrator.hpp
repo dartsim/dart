@@ -41,8 +41,7 @@ namespace dart {
 namespace math {
 
 /// \brief Any class that uses an integrator should implement this interface
-class IntegrableSystem
-{
+class IntegrableSystem {
 public:
   /// \brief Constructor
   IntegrableSystem();
@@ -78,8 +77,7 @@ public:
 // TODO(kasiu): Consider templating the class (which currently only works on
 // arbitrarily-sized vectors of doubles)
 /// \brief class Integrator
-class Integrator
-{
+class Integrator {
 public:
   /// \brief Constructor
   Integrator();

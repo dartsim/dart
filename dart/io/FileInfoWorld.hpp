@@ -42,8 +42,7 @@ class Recording;
 namespace io {
 
 /// \brief class FileInfoWorld
-class FileInfoWorld
-{
+class FileInfoWorld {
 public:
   /// \brief Constructor
   FileInfoWorld();

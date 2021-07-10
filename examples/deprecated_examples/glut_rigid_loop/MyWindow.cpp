@@ -32,15 +32,13 @@
 
 #include "MyWindow.hpp"
 
-void MyWindow::timeStepping()
-{
+void MyWindow::timeStepping() {
   Eigen::VectorXd damping = computeDamping();
   mWorld->getSkeleton(0)->setForces(damping);
   mWorld->step();
 }
 
-Eigen::VectorXd MyWindow::computeDamping()
-{
+Eigen::VectorXd MyWindow::computeDamping() {
   int nDof = mWorld->getSkeleton(0)->getNumDofs();
   // add damping to each joint; twist-dof has smaller damping
   Eigen::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();

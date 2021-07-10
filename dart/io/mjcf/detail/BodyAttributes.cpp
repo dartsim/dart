@@ -45,12 +45,10 @@ namespace detail {
 Errors appendBodyAttributes(
     BodyAttributes& attributes,
     tinyxml2::XMLElement* element,
-    const common::optional<Size>& size)
-{
+    const common::optional<Size>& size) {
   Errors errors;
 
-  if (std::string(element->Name()) != "body")
-  {
+  if (std::string(element->Name()) != "body") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Body> from the provided element");
@@ -58,20 +56,17 @@ Errors appendBodyAttributes(
   }
 
   // name
-  if (hasAttribute(element, "name"))
-  {
+  if (hasAttribute(element, "name")) {
     attributes.mName = getAttributeString(element, "name");
   }
 
   // mocap
-  if (hasAttribute(element, "mocap"))
-  {
+  if (hasAttribute(element, "mocap")) {
     attributes.mMocap = getAttributeBool(element, "mocap");
   }
 
   // pos
-  if (hasAttribute(element, "pos"))
-  {
+  if (hasAttribute(element, "pos")) {
     attributes.mPos = getAttributeVector3d(element, "pos");
   }
 
@@ -81,8 +76,7 @@ Errors appendBodyAttributes(
       errors.end(), orientationErrors.begin(), orientationErrors.end());
 
   // quat
-  if (hasAttribute(element, "quat"))
-  {
+  if (hasAttribute(element, "quat")) {
     const Eigen::Vector4d vec4d = getAttributeVector4d(element, "quat");
     attributes.mQuat.w() = vec4d[0];
     attributes.mQuat.x() = vec4d[1];
@@ -91,34 +85,28 @@ Errors appendBodyAttributes(
   }
 
   // axisangle
-  if (hasAttribute(element, "axisangle"))
-  {
+  if (hasAttribute(element, "axisangle")) {
     attributes.mAxisAngle = getAttributeVector4d(element, "axisangle");
   }
 
   // euler
-  if (hasAttribute(element, "euler"))
-  {
+  if (hasAttribute(element, "euler")) {
     attributes.mEuler = getAttributeVector3d(element, "euler");
   }
 
   // xyaxes
-  if (hasAttribute(element, "xyaxes"))
-  {
+  if (hasAttribute(element, "xyaxes")) {
     attributes.mXYAxes = getAttributeVector6d(element, "xyaxes");
   }
 
   // zaxis
-  if (hasAttribute(element, "zaxis"))
-  {
+  if (hasAttribute(element, "zaxis")) {
     attributes.mZAxis = getAttributeVector3d(element, "zaxis");
   }
 
   // user
-  if (hasAttribute(element, "user"))
-  {
-    if (not size)
-    {
+  if (hasAttribute(element, "user")) {
+    if (not size) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Attempt to parse 'user' attribute of <body> when <size> is missing");
@@ -127,8 +115,7 @@ Errors appendBodyAttributes(
 
     const Eigen::VectorXd user = getAttributeVectorXd(element, "user");
 
-    if (user.size() != size->getNUserBody())
-    {
+    if (user.size() != size->getNUserBody()) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "The size of 'user' is different from <size nuser_body="
@@ -137,9 +124,7 @@ Errors appendBodyAttributes(
     }
 
     attributes.mUser = user;
-  }
-  else
-  {
+  } else {
     if (size)
       attributes.mUser.setZero(size->getNUserBody());
     else
@@ -147,8 +132,7 @@ Errors appendBodyAttributes(
   }
 
   // Read <inertial>
-  if (hasElement(element, "inertial"))
-  {
+  if (hasElement(element, "inertial")) {
     auto inertialElement = getElement(element, "inertial");
     assert(inertialElement);
     attributes.mInertial = Inertial();

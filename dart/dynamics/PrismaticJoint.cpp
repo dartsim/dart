@@ -42,40 +42,34 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PrismaticJoint::~PrismaticJoint()
-{
+PrismaticJoint::~PrismaticJoint() {
   // Do nothing
 }
 
 //==============================================================================
-void PrismaticJoint::setProperties(const Properties& _properties)
-{
+void PrismaticJoint::setProperties(const Properties& _properties) {
   GenericJoint<math::R1Space>::setProperties(
       static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
 //==============================================================================
-void PrismaticJoint::setProperties(const UniqueProperties& _properties)
-{
+void PrismaticJoint::setProperties(const UniqueProperties& _properties) {
   setAspectProperties(_properties);
 }
 
 //==============================================================================
-void PrismaticJoint::setAspectProperties(const AspectProperties& properties)
-{
+void PrismaticJoint::setAspectProperties(const AspectProperties& properties) {
   setAxis(properties.mAxis);
 }
 
 //==============================================================================
-PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
-{
+PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const {
   return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
-void PrismaticJoint::copy(const PrismaticJoint& _otherJoint)
-{
+void PrismaticJoint::copy(const PrismaticJoint& _otherJoint) {
   if (this == &_otherJoint)
     return;
 
@@ -83,8 +77,7 @@ void PrismaticJoint::copy(const PrismaticJoint& _otherJoint)
 }
 
 //==============================================================================
-void PrismaticJoint::copy(const PrismaticJoint* _otherJoint)
-{
+void PrismaticJoint::copy(const PrismaticJoint* _otherJoint) {
   if (nullptr == _otherJoint)
     return;
 
@@ -92,34 +85,29 @@ void PrismaticJoint::copy(const PrismaticJoint* _otherJoint)
 }
 
 //==============================================================================
-PrismaticJoint& PrismaticJoint::operator=(const PrismaticJoint& _otherJoint)
-{
+PrismaticJoint& PrismaticJoint::operator=(const PrismaticJoint& _otherJoint) {
   copy(_otherJoint);
   return *this;
 }
 
 //==============================================================================
-const std::string& PrismaticJoint::getType() const
-{
+const std::string& PrismaticJoint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PrismaticJoint::getStaticType()
-{
+const std::string& PrismaticJoint::getStaticType() {
   static const std::string name = "PrismaticJoint";
   return name;
 }
 
 //==============================================================================
-bool PrismaticJoint::isCyclic(std::size_t /*_index*/) const
-{
+bool PrismaticJoint::isCyclic(std::size_t /*_index*/) const {
   return false;
 }
 
 //==============================================================================
-void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
-{
+void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis) {
   if (_axis == mAspectProperties.mAxis)
     return;
 
@@ -130,16 +118,14 @@ void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& PrismaticJoint::getAxis() const
-{
+const Eigen::Vector3d& PrismaticJoint::getAxis() const {
   return mAspectProperties.mAxis;
 }
 
 //==============================================================================
 GenericJoint<math::R1Space>::JacobianMatrix
 PrismaticJoint::getRelativeJacobianStatic(
-    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
-{
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const {
   GenericJoint<math::R1Space>::JacobianMatrix jacobian = math::AdTLinear(
       Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
@@ -151,8 +137,7 @@ PrismaticJoint::getRelativeJacobianStatic(
 
 //==============================================================================
 PrismaticJoint::PrismaticJoint(const Properties& properties)
-  : detail::PrismaticJointBase(properties)
-{
+  : detail::PrismaticJointBase(properties) {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createPrismaticJointAspect(properties);
@@ -161,22 +146,19 @@ PrismaticJoint::PrismaticJoint(const Properties& properties)
 }
 
 //==============================================================================
-Joint* PrismaticJoint::clone() const
-{
+Joint* PrismaticJoint::clone() const {
   return new PrismaticJoint(getPrismaticJointProperties());
 }
 
 //==============================================================================
-void PrismaticJoint::updateDegreeOfFreedomNames()
-{
+void PrismaticJoint::updateDegreeOfFreedomNames() {
   // Same name as the joint it belongs to.
   if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName, false);
 }
 
 //==============================================================================
-void PrismaticJoint::updateRelativeTransform() const
-{
+void PrismaticJoint::updateRelativeTransform() const {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
@@ -186,15 +168,13 @@ void PrismaticJoint::updateRelativeTransform() const
 }
 
 //==============================================================================
-void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const
-{
+void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const {
   if (_mandatory)
     mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void PrismaticJoint::updateRelativeJacobianTimeDeriv() const
-{
+void PrismaticJoint::updateRelativeJacobianTimeDeriv() const {
   // Time derivative of prismatic joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }

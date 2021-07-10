@@ -34,12 +34,11 @@
 
 #include <iostream>
 
-#include "dart/external/odelcpsolver/lcp.h"
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 
 #define DART_CFM 1e-9
 
@@ -53,8 +52,7 @@ ServoMotorConstraint::ServoMotorConstraint(dynamics::Joint* joint)
   : ConstraintBase(),
     mJoint(joint),
     mBodyNode(joint->getChildBodyNode()),
-    mAppliedImpulseIndex(0)
-{
+    mAppliedImpulseIndex(0) {
   assert(joint);
   assert(mBodyNode);
 
@@ -74,29 +72,24 @@ ServoMotorConstraint::ServoMotorConstraint(dynamics::Joint* joint)
 }
 
 //==============================================================================
-ServoMotorConstraint::~ServoMotorConstraint()
-{
+ServoMotorConstraint::~ServoMotorConstraint() {
 }
 
 //==============================================================================
-const std::string& ServoMotorConstraint::getType() const
-{
+const std::string& ServoMotorConstraint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& ServoMotorConstraint::getStaticType()
-{
+const std::string& ServoMotorConstraint::getStaticType() {
   static const std::string name = "ServoMotorConstraint";
   return name;
 }
 
 //==============================================================================
-void ServoMotorConstraint::setConstraintForceMixing(double cfm)
-{
+void ServoMotorConstraint::setConstraintForceMixing(double cfm) {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9)
-  {
+  if (cfm < 1e-9) {
     dtwarn << "[ServoMotorConstraint::setConstraintForceMixing] "
            << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. "
@@ -108,24 +101,20 @@ void ServoMotorConstraint::setConstraintForceMixing(double cfm)
 }
 
 //==============================================================================
-double ServoMotorConstraint::getConstraintForceMixing()
-{
+double ServoMotorConstraint::getConstraintForceMixing() {
   return mConstraintForceMixing;
 }
 
 //==============================================================================
-void ServoMotorConstraint::update()
-{
+void ServoMotorConstraint::update() {
   // Reset dimention
   mDim = 0;
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     mNegativeVelocityError[i] = mJoint->getCommand(i) - mJoint->getVelocity(i);
 
-    if (mNegativeVelocityError[i] != 0.0)
-    {
+    if (mNegativeVelocityError[i] != 0.0) {
       double timeStep = mJoint->getSkeleton()->getTimeStep();
       // TODO: There are multiple ways to get time step (or its inverse).
       //   - ContactConstraint get it from the constructor parameter
@@ -139,32 +128,25 @@ void ServoMotorConstraint::update()
       mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
       mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
 
-      if (mActive[i])
-      {
+      if (mActive[i]) {
         ++(mLifeTime[i]);
-      }
-      else
-      {
+      } else {
         mActive[i] = true;
         mLifeTime[i] = 0;
       }
 
       ++mDim;
-    }
-    else
-    {
+    } else {
       mActive[i] = false;
     }
   }
 }
 
 //==============================================================================
-void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
-{
+void ServoMotorConstraint::getInformation(ConstraintInfo* lcp) {
   std::size_t index = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -186,21 +168,18 @@ void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
 }
 
 //==============================================================================
-void ServoMotorConstraint::applyUnitImpulse(std::size_t index)
-{
+void ServoMotorConstraint::applyUnitImpulse(std::size_t index) {
   assert(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
-    if (localIndex == index)
-    {
+    if (localIndex == index) {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
       skeleton->updateBiasImpulse(mBodyNode);
@@ -215,14 +194,12 @@ void ServoMotorConstraint::applyUnitImpulse(std::size_t index)
 }
 
 //==============================================================================
-void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
-{
+void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm) {
   assert(delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -236,8 +213,7 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // varaible in ODE
-  if (withCfm)
-  {
+  if (withCfm) {
     delVel[mAppliedImpulseIndex]
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
@@ -246,24 +222,20 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 }
 
 //==============================================================================
-void ServoMotorConstraint::excite()
-{
+void ServoMotorConstraint::excite() {
   mJoint->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
-void ServoMotorConstraint::unexcite()
-{
+void ServoMotorConstraint::unexcite() {
   mJoint->getSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
-void ServoMotorConstraint::applyImpulse(double* lambda)
-{
+void ServoMotorConstraint::applyImpulse(double* lambda) {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -278,14 +250,12 @@ void ServoMotorConstraint::applyImpulse(double* lambda)
 }
 
 //==============================================================================
-dynamics::SkeletonPtr ServoMotorConstraint::getRootSkeleton() const
-{
+dynamics::SkeletonPtr ServoMotorConstraint::getRootSkeleton() const {
   return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================
-bool ServoMotorConstraint::isActive() const
-{
+bool ServoMotorConstraint::isActive() const {
   // Since we are not allowed to set the joint actuator type per each
   // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
   if (mJoint->getActuatorType() == dynamics::Joint::SERVO)

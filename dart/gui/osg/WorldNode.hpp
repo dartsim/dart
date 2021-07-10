@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <unordered_map>
+
 #include <osg/Group>
 #include <osgShadow/ShadowTechnique>
 
@@ -61,8 +62,7 @@ class EntityNode;
 class Viewer;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
-class WorldNode : public ::osg::Group
-{
+class WorldNode : public ::osg::Group {
 public:
   friend class Viewer;
 

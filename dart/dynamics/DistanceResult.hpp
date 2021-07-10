@@ -43,8 +43,7 @@ class ShapeFrame;
 
 namespace dynamics {
 
-struct DistanceResult
-{
+struct DistanceResult {
   /// Minimum \b singed distance between the checked Shape pairs.
   ///
   /// If no shape pair was checked (the collision group was empty or all pairs
@@ -117,7 +116,7 @@ struct DistanceResult
   bool isMinDistanceClamped() const;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DISTANCE_RESULT_HPP_

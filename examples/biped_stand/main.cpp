@@ -35,16 +35,14 @@
 using namespace dart;
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
-{
+class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode {
 public:
   CustomWorldNode(
       dart::simulation::WorldPtr world,
       dart::dynamics::SkeletonPtr biped,
       ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
     : dart::gui::osg::RealTimeWorldNode(std::move(world), std::move(shadow)),
-      mBiped(std::move(biped))
-  {
+      mBiped(std::move(biped)) {
     mLeftHeel = mBiped->getBodyNode("h_heel_left");
 
     mLeftFoot[0] = mBiped->getDof("j_heel_left_1")->getIndexInSkeleton();
@@ -65,8 +63,7 @@ public:
     mDesiredDofs = mBiped->getPositions();
 
     // using SPD results in simple Kp coefficients
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
@@ -78,22 +75,19 @@ public:
     mPreOffset = 0.0;
   }
 
-  void customPreRefresh()
-  {
+  void customPreRefresh() {
     // Use this function to execute custom code before each time that the
     // window is rendered. This function can be deleted if it does not need
     // to be used.
   }
 
-  void customPostRefresh()
-  {
+  void customPostRefresh() {
     // Use this function to execute custom code after each time that the
     // window is rendered. This function can be deleted if it does not need
     // to be used.
   }
 
-  void customPreStep()
-  {
+  void customPreStep() {
     const Eigen::VectorXd dof = mBiped->getPositions();
     const Eigen::VectorXd dofVel = mBiped->getVelocities();
     const Eigen::VectorXd constrForces = mBiped->getConstraintForces();
@@ -116,8 +110,7 @@ public:
         = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
 
     double offset = com[0] - cop[0];
-    if (offset < 0.1 && offset > 0.0)
-    {
+    if (offset < 0.1 && offset > 0.0) {
       double k1 = 200.0;
       double k2 = 100.0;
       double kd = 10.0;
@@ -126,9 +119,7 @@ public:
       mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
       mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
       mPreOffset = offset;
-    }
-    else if (offset > -0.2 && offset < -0.05)
-    {
+    } else if (offset > -0.2 && offset < -0.05) {
       double k1 = 2000.0;
       double k2 = 100.0;
       double kd = 100.0;
@@ -140,8 +131,7 @@ public:
     }
 
     // Just to make sure no illegal torque is used
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
       mTorques[i] = 0.0;
     }
 
@@ -150,8 +140,7 @@ public:
     mFrame++;
   }
 
-  void customPostStep()
-  {
+  void customPostStep() {
     // Use this function to execute custom code after each simulation time
     // step is performed. This function can be deleted if it does not need
     // to be used.
@@ -173,59 +162,39 @@ protected:
 };
 
 //==============================================================================
-class CustomEventHandler : public osgGA::GUIEventHandler
-{
+class CustomEventHandler : public osgGA::GUIEventHandler {
 public:
-  CustomEventHandler(/*Pass in any necessary arguments*/)
-  {
+  CustomEventHandler(/*Pass in any necessary arguments*/) {
     // Set up the customized event handler
   }
 
   bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == 'q')
-      {
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == 'q') {
         std::cout << "Lowercase q pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == 'Q')
-      {
+      } else if (ea.getKey() == 'Q') {
         std::cout << "Capital Q pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
         std::cout << "Left arrow key pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
         std::cout << "Right arrow key pressed" << std::endl;
         return true;
       }
-    }
-    else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP)
-    {
-      if (ea.getKey() == 'q')
-      {
+    } else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP) {
+      if (ea.getKey() == 'q') {
         std::cout << "Lowercase q released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == 'Q')
-      {
+      } else if (ea.getKey() == 'Q') {
         std::cout << "Capital Q released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
         std::cout << "Left arrow key released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
         std::cout << "Right arrow key released" << std::endl;
         return true;
       }
@@ -240,8 +209,7 @@ public:
 };
 
 //==============================================================================
-int main()
-{
+int main() {
   // Create a world and add the rigid body
   auto world
       = dart::io::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");

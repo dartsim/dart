@@ -52,13 +52,11 @@ const double delta_damping = 1.0;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
-class MyWindow : public dart::gui::glut::SimWindow
-{
+class MyWindow : public dart::gui::glut::SimWindow {
 public:
   /// Constructor
   MyWindow(WorldPtr world)
-    : mBallConstraint(nullptr), mPositiveSign(true), mBodyForce(false)
-  {
+    : mBallConstraint(nullptr), mPositiveSign(true), mBodyForce(false) {
     setWorld(world);
 
     // Find the Skeleton named "pendulum" within the World
@@ -78,33 +76,26 @@ public:
         dart::Color::Orange(1.0)));
   }
 
-  void changeDirection()
-  {
+  void changeDirection() {
     mPositiveSign = !mPositiveSign;
-    if (mPositiveSign)
-    {
+    if (mPositiveSign) {
       mArrow->setPositions(
           Eigen::Vector3d(-default_height, 0.0, default_height / 2.0),
           Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0));
-    }
-    else
-    {
+    } else {
       mArrow->setPositions(
           Eigen::Vector3d(default_height, 0.0, default_height / 2.0),
           Eigen::Vector3d(default_width / 2.0, 0.0, default_height / 2.0));
     }
   }
 
-  void applyForce(std::size_t index)
-  {
+  void applyForce(std::size_t index) {
     if (index < mForceCountDown.size())
       mForceCountDown[index] = default_countdown;
   }
 
-  void changeRestPosition(double delta)
-  {
-    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
-    {
+  void changeRestPosition(double delta) {
+    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double q0 = dof->getRestPosition() + delta;
 
@@ -122,10 +113,8 @@ public:
     mPendulum->getDof(2)->setRestPosition(0.0);
   }
 
-  void changeStiffness(double delta)
-  {
-    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
-    {
+  void changeStiffness(double delta) {
+    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double stiffness = dof->getSpringStiffness() + delta;
       if (stiffness < 0.0)
@@ -134,10 +123,8 @@ public:
     }
   }
 
-  void changeDamping(double delta)
-  {
-    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
-    {
+  void changeDamping(double delta) {
+    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double damping = dof->getDampingCoefficient() + delta;
       if (damping < 0.0)
@@ -147,8 +134,7 @@ public:
   }
 
   /// Add a constraint to attach the final link to the world
-  void addConstraint()
-  {
+  void addConstraint() {
     // Get the last body in the pendulum
     BodyNode* tip = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
 
@@ -161,17 +147,14 @@ public:
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
-  void removeConstraint()
-  {
+  void removeConstraint() {
     mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
     mBallConstraint = nullptr;
   }
 
   /// Handle keyboard input
-  void keyboard(unsigned char key, int x, int y) override
-  {
-    switch (key)
-    {
+  void keyboard(unsigned char key, int x, int y) override {
+    switch (key) {
       case '-':
         changeDirection();
         break;
@@ -228,8 +211,7 @@ public:
         changeDamping(-delta_damping);
         break;
 
-      case 'r':
-      {
+      case 'r': {
         if (mBallConstraint)
           removeConstraint();
         else
@@ -246,11 +228,9 @@ public:
     }
   }
 
-  void timeStepping() override
-  {
+  void timeStepping() override {
     // Reset all the shapes to be Blue
-    for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
-    {
+    for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
       BodyNode* bn = mPendulum->getBodyNode(i);
       auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
       for (std::size_t j = 0; j < 2; ++j)
@@ -259,20 +239,16 @@ public:
       // If we have three visualization shapes, that means the arrow is
       // attached. We should remove it in case this body is no longer
       // experiencing a force
-      if (visualShapeNodes.size() == 3u)
-      {
+      if (visualShapeNodes.size() == 3u) {
         assert(visualShapeNodes[2]->getShape() == mArrow);
         visualShapeNodes[2]->remove();
       }
     }
 
-    if (!mBodyForce)
-    {
+    if (!mBodyForce) {
       // Apply joint torques based on user input, and color the Joint shape red
-      for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
-      {
-        if (mForceCountDown[i] > 0)
-        {
+      for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
+        if (mForceCountDown[i] > 0) {
           DegreeOfFreedom* dof = mPendulum->getDof(i);
           dof->setForce(mPositiveSign ? default_torque : -default_torque);
 
@@ -283,21 +259,16 @@ public:
           --mForceCountDown[i];
         }
       }
-    }
-    else
-    {
+    } else {
       // Apply body forces based on user input, and color the body shape red
-      for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
-      {
-        if (mForceCountDown[i] > 0)
-        {
+      for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
+        if (mForceCountDown[i] > 0) {
           BodyNode* bn = mPendulum->getBodyNode(i);
 
           Eigen::Vector3d force = default_force * Eigen::Vector3d::UnitX();
           Eigen::Vector3d location(
               -default_width / 2.0, 0.0, default_height / 2.0);
-          if (!mPositiveSign)
-          {
+          if (!mPositiveSign) {
             force = -force;
             location[0] = -location[0];
           }
@@ -337,8 +308,7 @@ protected:
   bool mBodyForce;
 };
 
-void setGeometry(const BodyNodePtr& bn)
-{
+void setGeometry(const BodyNodePtr& bn) {
   // Create a BoxShape to be used for both visualization and collision checking
   std::shared_ptr<BoxShape> box(new BoxShape(
       Eigen::Vector3d(default_width, default_depth, default_height)));
@@ -359,8 +329,7 @@ void setGeometry(const BodyNodePtr& bn)
   bn->setLocalCOM(center);
 }
 
-BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
-{
+BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name) {
   BallJoint::Properties properties;
   properties.mName = name + "_joint";
   properties.mRestPositions = Eigen::Vector3d::Constant(default_rest_position);
@@ -387,8 +356,7 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
 }
 
 BodyNode* addBody(
-    const SkeletonPtr& pendulum, BodyNode* parent, const std::string& name)
-{
+    const SkeletonPtr& pendulum, BodyNode* parent, const std::string& name) {
   // Set up the properties for the Joint
   RevoluteJoint::Properties properties;
   properties.mName = name + "_joint";
@@ -425,8 +393,7 @@ BodyNode* addBody(
   return bn;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // Create an empty Skeleton with the name "pendulum"
   SkeletonPtr pendulum = Skeleton::create("pendulum");
 

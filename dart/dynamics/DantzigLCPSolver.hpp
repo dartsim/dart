@@ -46,8 +46,7 @@ namespace dynamics {
 ///
 /// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
 /// algorithm
-class DantzigLCPSolver : public LCPSolver
-{
+class DantzigLCPSolver : public LCPSolver {
 public:
   /// Constructor
   explicit DantzigLCPSolver(double _timestep);

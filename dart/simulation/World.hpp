@@ -72,7 +72,7 @@ class ConstraintSolver;
 
 namespace dynamics {
 class CollisionResult;
-} // namespace collision
+} // namespace dynamics
 
 namespace simulation {
 
@@ -80,8 +80,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class World : public virtual common::Subject
-{
+class World : public virtual common::Subject {
 public:
   using NameChangedSignal = common::Signal<void(
       const std::string& _oldName, const std::string& _newName)>;

@@ -36,18 +36,15 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-RK4Integrator::RK4Integrator()
-{
+RK4Integrator::RK4Integrator() {
 }
 
 //==============================================================================
-RK4Integrator::~RK4Integrator()
-{
+RK4Integrator::~RK4Integrator() {
 }
 
 //==============================================================================
-void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
-{
+void RK4Integrator::integrate(IntegrableSystem* _system, double _dt) {
   //----------------------------------------------------------------------------
   // compute ddq1
   q1 = _system->getConfigs();

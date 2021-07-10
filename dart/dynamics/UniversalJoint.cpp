@@ -41,41 +41,35 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-UniversalJoint::~UniversalJoint()
-{
+UniversalJoint::~UniversalJoint() {
   // Do nothing
 }
 
 //==============================================================================
-void UniversalJoint::setProperties(const Properties& _properties)
-{
+void UniversalJoint::setProperties(const Properties& _properties) {
   GenericJoint<math::R2Space>::setProperties(
       static_cast<const GenericJoint<math::R2Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
 //==============================================================================
-void UniversalJoint::setProperties(const UniqueProperties& _properties)
-{
+void UniversalJoint::setProperties(const UniqueProperties& _properties) {
   setAspectProperties(_properties);
 }
 
 //==============================================================================
-void UniversalJoint::setAspectProperties(const AspectProperties& properties)
-{
+void UniversalJoint::setAspectProperties(const AspectProperties& properties) {
   setAxis1(properties.mAxis[0]);
   setAxis2(properties.mAxis[1]);
 }
 
 //==============================================================================
-UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
-{
+UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const {
   return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
-void UniversalJoint::copy(const UniversalJoint& _otherJoint)
-{
+void UniversalJoint::copy(const UniversalJoint& _otherJoint) {
   if (this == &_otherJoint)
     return;
 
@@ -83,8 +77,7 @@ void UniversalJoint::copy(const UniversalJoint& _otherJoint)
 }
 
 //==============================================================================
-void UniversalJoint::copy(const UniversalJoint* _otherJoint)
-{
+void UniversalJoint::copy(const UniversalJoint* _otherJoint) {
   if (nullptr == _otherJoint)
     return;
 
@@ -92,63 +85,54 @@ void UniversalJoint::copy(const UniversalJoint* _otherJoint)
 }
 
 //==============================================================================
-UniversalJoint& UniversalJoint::operator=(const UniversalJoint& _otherJoint)
-{
+UniversalJoint& UniversalJoint::operator=(const UniversalJoint& _otherJoint) {
   copy(_otherJoint);
   return *this;
 }
 
 //==============================================================================
-const std::string& UniversalJoint::getType() const
-{
+const std::string& UniversalJoint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& UniversalJoint::getStaticType()
-{
+const std::string& UniversalJoint::getStaticType() {
   static const std::string name = "UniversalJoint";
   return name;
 }
 
 //==============================================================================
-bool UniversalJoint::isCyclic(std::size_t _index) const
-{
+bool UniversalJoint::isCyclic(std::size_t _index) const {
   return !hasPositionLimit(_index);
 }
 
 //==============================================================================
-void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
-{
+void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis) {
   mAspectProperties.mAxis[0] = _axis;
   Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 
 //==============================================================================
-void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
-{
+void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis) {
   mAspectProperties.mAxis[1] = _axis;
   Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 
 //==============================================================================
-const Eigen::Vector3d& UniversalJoint::getAxis1() const
-{
+const Eigen::Vector3d& UniversalJoint::getAxis1() const {
   return mAspectProperties.mAxis[0];
 }
 
 //==============================================================================
-const Eigen::Vector3d& UniversalJoint::getAxis2() const
-{
+const Eigen::Vector3d& UniversalJoint::getAxis2() const {
   return mAspectProperties.mAxis[1];
 }
 
 //==============================================================================
 Eigen::Matrix<double, 6, 2> UniversalJoint::getRelativeJacobianStatic(
-    const Eigen::Vector2d& _positions) const
-{
+    const Eigen::Vector2d& _positions) const {
   Eigen::Matrix<double, 6, 2> J;
   J.col(0) = math::AdTAngular(
       Joint::mAspectProperties.mT_ChildBodyToJoint
@@ -162,8 +146,7 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getRelativeJacobianStatic(
 
 //==============================================================================
 UniversalJoint::UniversalJoint(const Properties& properties)
-  : detail::UniversalJointBase(properties)
-{
+  : detail::UniversalJointBase(properties) {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createUniversalJointAspect(properties);
@@ -172,14 +155,12 @@ UniversalJoint::UniversalJoint(const Properties& properties)
 }
 
 //==============================================================================
-Joint* UniversalJoint::clone() const
-{
+Joint* UniversalJoint::clone() const {
   return new UniversalJoint(getUniversalJointProperties());
 }
 
 //==============================================================================
-void UniversalJoint::updateDegreeOfFreedomNames()
-{
+void UniversalJoint::updateDegreeOfFreedomNames() {
   if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_1", false);
   if (!mDofs[1]->isNamePreserved())
@@ -187,8 +168,7 @@ void UniversalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void UniversalJoint::updateRelativeTransform() const
-{
+void UniversalJoint::updateRelativeTransform() const {
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::AngleAxisd(positions[0], getAxis1())
@@ -198,14 +178,12 @@ void UniversalJoint::updateRelativeTransform() const
 }
 
 //==============================================================================
-void UniversalJoint::updateRelativeJacobian(bool) const
-{
+void UniversalJoint::updateRelativeJacobian(bool) const {
   mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void UniversalJoint::updateRelativeJacobianTimeDeriv() const
-{
+void UniversalJoint::updateRelativeJacobianTimeDeriv() const {
   Eigen::Vector6d tmpV1
       = getRelativeJacobianStatic().col(1) * getVelocitiesStatic()[1];
 

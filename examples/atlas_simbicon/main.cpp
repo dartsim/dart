@@ -36,8 +36,7 @@
 #include "AtlasSimbiconWidget.hpp"
 #include "AtlasSimbiconWorldNode.hpp"
 
-int main()
-{
+int main() {
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 

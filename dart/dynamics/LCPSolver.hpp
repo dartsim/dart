@@ -41,8 +41,7 @@ class ConstrainedGroup;
 /// \deprecated This header has been deprecated in DART 6.7.
 ///
 /// LCPSolver
-class LCPSolver
-{
+class LCPSolver {
 public:
   /// Solve constriant impulses for a constrained group
   virtual void solve(ConstrainedGroup* _group) = 0;

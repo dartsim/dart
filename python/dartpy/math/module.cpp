@@ -40,8 +40,7 @@ namespace python {
 void Random(py::module& sm);
 void Geometry(py::module& sm);
 
-void dart_math(py::module& m)
-{
+void dart_math(py::module& m) {
   auto sm = m.def_submodule("math");
 
   Random(sm);

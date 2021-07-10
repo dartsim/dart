@@ -34,8 +34,7 @@
 
 class WamWorld;
 
-class InputHandler : public ::osgGA::GUIEventHandler
-{
+class InputHandler : public ::osgGA::GUIEventHandler {
 public:
   InputHandler(
       dart::gui::osg::Viewer* viewer,

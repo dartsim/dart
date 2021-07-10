@@ -45,8 +45,7 @@ namespace dynamics {
 /// PgsBoxedLcpSolver.hpp intead.
 ///
 /// PGSLCPSolver
-class PGSLCPSolver : public LCPSolver
-{
+class PGSLCPSolver : public LCPSolver {
 public:
   /// Constructor
   explicit PGSLCPSolver(double _timestep);
@@ -79,8 +78,7 @@ private:
 #endif
 };
 
-struct PGSOption
-{
+struct PGSOption {
   int itermax;
   double sor_w;
   double eps_ea;

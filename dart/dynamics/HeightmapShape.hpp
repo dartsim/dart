@@ -43,8 +43,7 @@ namespace dynamics {
 /// \tparam S_ Data type used for height map. At this point, only double and
 /// float are supported. Short and char can be added at a later point.
 template <typename S_>
-class HeightmapShape : public Shape
-{
+class HeightmapShape : public Shape {
 public:
   using S = S_;
 

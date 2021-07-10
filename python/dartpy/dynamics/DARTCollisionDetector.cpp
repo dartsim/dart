@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DARTCollisionDetector(py::module& m)
-{
+void DARTCollisionDetector(py::module& m) {
   ::py::class_<
       dart::dynamics::DARTCollisionDetector,
       std::shared_ptr<dart::dynamics::DARTCollisionDetector>,
@@ -57,7 +56,9 @@ void DARTCollisionDetector(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::DARTCollisionDetector* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "createCollisionGroup",

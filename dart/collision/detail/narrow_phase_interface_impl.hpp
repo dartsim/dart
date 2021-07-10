@@ -39,13 +39,11 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2)
-{
+bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2) {
   auto engine = object1->get_mutable_engine();
   assert(engine);
 
-  if (engine != object2->get_mutable_engine())
-  {
+  if (engine != object2->get_mutable_engine()) {
     dterr << "Not allowed collision checking for objects created from "
              "different engines\n";
     return false;

@@ -35,6 +35,7 @@
 
 #include <string>
 #include <vector>
+
 #include <Eigen/Core>
 
 #include "dart/common/Composite.hpp"
@@ -57,8 +58,7 @@ class Frame;
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Entity : public virtual common::Subject
-{
+class Entity : public virtual common::Subject {
 public:
   friend class Frame;
 
@@ -152,19 +152,13 @@ public:
 protected:
   /// Used when constructing a Frame class, because the Frame constructor will
   /// take care of setting up the parameters you pass into it
-  enum ConstructFrameTag
-  {
-    ConstructFrame
-  };
+  enum ConstructFrameTag { ConstructFrame };
 
   explicit Entity(ConstructFrameTag);
 
   /// Used when constructing a pure abstract class, because calling the Entity
   /// constructor is just a formality
-  enum ConstructAbstractTag
-  {
-    ConstructAbstract
-  };
+  enum ConstructAbstractTag { ConstructAbstract };
 
   explicit Entity(ConstructAbstractTag);
 
@@ -234,8 +228,7 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 /// The Detachable class is a special case of the Entity base class. Detachable
 /// allows the Entity's reference Frame to be changed arbitrarily by the user.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Detachable : public virtual Entity
-{
+class Detachable : public virtual Entity {
 public:
   /// Constructor
   explicit Detachable(Frame* _refFrame, bool _quiet);

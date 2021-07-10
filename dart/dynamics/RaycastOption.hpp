@@ -39,8 +39,7 @@
 namespace dart {
 namespace dynamics {
 
-struct RaycastOption
-{
+struct RaycastOption {
   /// Constructor
   RaycastOption(bool enableAllHits = false, bool sortByClosest = false);
 
@@ -51,7 +50,7 @@ struct RaycastOption
   // TODO(JS): Add filter
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_RAYCASTOPTION_HPP_

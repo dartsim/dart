@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ConstraintSolver(py::module& m)
-{
+void ConstraintSolver(py::module& m) {
   ::py::class_<
       dart::dynamics::ConstraintSolver,
       std::shared_ptr<dart::dynamics::ConstraintSolver>>(m, "ConstraintSolver")
@@ -183,9 +182,10 @@ void ConstraintSolver(py::module& m)
           },
           "Returns collision option that is used for collision checkings in "
           "this ConstraintSolver to generate contact constraints.")
-      .def("solve", +[](dart::dynamics::ConstraintSolver* self) {
-        self->solve();
-      });
+      .def(
+          "solve", +[](dart::dynamics::ConstraintSolver* self) {
+            self->solve();
+          });
 }
 
 } // namespace python

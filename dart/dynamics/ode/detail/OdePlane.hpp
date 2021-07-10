@@ -41,8 +41,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class OdePlane : public OdeGeom
-{
+class OdePlane : public OdeGeom {
 public:
   /// Constructor
   OdePlane(
@@ -61,7 +60,7 @@ public:
 };
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_DETAIL_ODEPLANE_HPP_

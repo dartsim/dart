@@ -39,22 +39,19 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-void CollisionResult<S>::add_contact(const Contact<S>& contact)
-{
+void CollisionResult<S>::add_contact(const Contact<S>& contact) {
   m_contacts.push_back(contact);
 }
 
 //==============================================================================
 template <typename S>
-std::size_t CollisionResult<S>::get_num_contacts() const
-{
+std::size_t CollisionResult<S>::get_num_contacts() const {
   return m_contacts.size();
 }
 
 //==============================================================================
 template <typename S>
-Contact<S>& CollisionResult<S>::get_mutable_contact(int index)
-{
+Contact<S>& CollisionResult<S>::get_mutable_contact(int index) {
   assert(0 <= index && static_cast<std::size_t>(index) < m_contacts.size());
 
   return m_contacts[index];
@@ -62,8 +59,7 @@ Contact<S>& CollisionResult<S>::get_mutable_contact(int index)
 
 //==============================================================================
 template <typename S>
-const Contact<S>& CollisionResult<S>::get_contact(int index) const
-{
+const Contact<S>& CollisionResult<S>::get_contact(int index) const {
   assert(0 <= index && static_cast<std::size_t>(index) < m_contacts.size());
 
   return m_contacts[index];
@@ -71,29 +67,25 @@ const Contact<S>& CollisionResult<S>::get_contact(int index) const
 
 //==============================================================================
 template <typename S>
-const std::vector<Contact<S>>& CollisionResult<S>::get_contacts() const
-{
+const std::vector<Contact<S>>& CollisionResult<S>::get_contacts() const {
   return m_contacts;
 }
 
 //==============================================================================
 template <typename S>
-bool CollisionResult<S>::is_collision() const
-{
+bool CollisionResult<S>::is_collision() const {
   return !m_contacts.empty();
 }
 
 //==============================================================================
 template <typename S>
-CollisionResult<S>::operator bool() const
-{
+CollisionResult<S>::operator bool() const {
   return is_collision();
 }
 
 //==============================================================================
 template <typename S>
-void CollisionResult<S>::clear()
-{
+void CollisionResult<S>::clear() {
   m_contacts.clear();
 }
 

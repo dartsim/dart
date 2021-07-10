@@ -48,8 +48,7 @@ namespace detail {
 
 class Body;
 
-class Joint final
-{
+class Joint final {
 public:
   Joint() = default;
 

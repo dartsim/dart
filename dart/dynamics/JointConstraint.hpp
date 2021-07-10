@@ -50,8 +50,7 @@ namespace dynamics {
 
 /// JointConstraint handles multiple constraints that are defined in the joint
 /// space, such as joint position/velocity limits and servo motor.
-class JointConstraint : public ConstraintBase
-{
+class JointConstraint : public ConstraintBase {
 public:
   /// Constructor
   explicit JointConstraint(dynamics::Joint* joint);

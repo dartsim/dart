@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class EulerJoint
-class EulerJoint : public detail::EulerJointBase
-{
+class EulerJoint : public detail::EulerJointBase {
 public:
   friend class Skeleton;
   using AxisOrder = detail::AxisOrder;
@@ -103,10 +102,8 @@ public:
   /// axis ordering.
   template <typename RotationType>
   static Eigen::Vector3d convertToPositions(
-      const RotationType& _rotation, AxisOrder _ordering)
-  {
-    switch (_ordering)
-    {
+      const RotationType& _rotation, AxisOrder _ordering) {
+    switch (_ordering) {
       case AxisOrder::XYZ:
         return math::matrixToEulerXYZ(_rotation);
       case AxisOrder::ZYX:
@@ -122,8 +119,7 @@ public:
   /// AxisOrder) which will use the AxisOrder belonging to the joint instance
   /// that it gets called on.
   template <typename RotationType>
-  Eigen::Vector3d convertToPositions(const RotationType& _rotation) const
-  {
+  Eigen::Vector3d convertToPositions(const RotationType& _rotation) const {
     return convertToPositions(_rotation, getAxisOrder());
   }
 

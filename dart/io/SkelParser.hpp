@@ -34,6 +34,7 @@
 #define DART_IO_SKELPARSER_HPP_
 
 #include <string>
+
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/simulation/World.hpp"

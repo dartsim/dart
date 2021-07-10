@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void FreeJoint(py::module& m)
-{
+void FreeJoint(py::module& m) {
   ::py::class_<
       dart::dynamics::FreeJoint::Properties,
       dart::dynamics::GenericJoint<math::SE3Space>::Properties>(
@@ -71,7 +71,9 @@ void FreeJoint(py::module& m)
       .def(
           "isCyclic",
           +[](const dart::dynamics::FreeJoint* self,
-              std::size_t _index) -> bool { return self->isCyclic(_index); },
+              std::size_t _index) -> bool {
+            return self->isCyclic(_index);
+          },
           ::py::arg("index"))
       .def(
           "setSpatialMotion",

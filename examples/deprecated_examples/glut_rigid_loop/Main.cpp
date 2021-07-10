@@ -40,8 +40,7 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld

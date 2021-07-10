@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_DETAIL_SINGLETON_HPP_
 #define DART_COMMON_DETAIL_SINGLETON_HPP_
 
-#include "dart/common/Singleton.hpp"
-
 #include <utility>
+
+#include "dart/common/Singleton.hpp"
 
 namespace dart {
 namespace common {
@@ -47,13 +47,11 @@ T* Singleton<T>::mInstance = nullptr;
 //==============================================================================
 template <typename T>
 template <typename... Args>
-T& Singleton<T>::getSingleton(Args... _args)
-{
+T& Singleton<T>::getSingleton(Args... _args) {
   // http://stackoverflow.com/questions/1008019/c-singleton-design-pattern
 
   // Guaranteed to be destroyed and instantiated on first use.
-  if (mInstance == nullptr)
-  {
+  if (mInstance == nullptr) {
     static T instance(std::forward<Args>(_args)...);
     mInstance = &instance;
   }
@@ -64,8 +62,7 @@ T& Singleton<T>::getSingleton(Args... _args)
 //==============================================================================
 template <typename T>
 template <typename... Args>
-T* Singleton<T>::getSingletonPtr(Args... _args)
-{
+T* Singleton<T>::getSingletonPtr(Args... _args) {
   return &getSingleton(std::forward<Args>(_args)...);
 }
 

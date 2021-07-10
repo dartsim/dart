@@ -47,8 +47,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Compiler final
-{
+class Compiler final {
 public:
   Compiler() = default;
 

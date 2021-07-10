@@ -34,6 +34,7 @@
 #define DART_COLLISION_RAYCASTRESULT_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 namespace dart {
@@ -41,8 +42,7 @@ namespace dynamics {
 
 class CollisionObject;
 
-struct RayHit
-{
+struct RayHit {
   /// The collision object the ray hit
   const CollisionObject* mCollisionObject;
 
@@ -59,8 +59,7 @@ struct RayHit
   RayHit();
 };
 
-struct RaycastResult
-{
+struct RaycastResult {
   /// Clear the result
   void clear();
 
@@ -73,7 +72,7 @@ struct RaycastResult
   RaycastResult();
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_RAYCASTRESULT_HPP_

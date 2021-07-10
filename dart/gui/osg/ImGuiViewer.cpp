@@ -43,8 +43,7 @@ namespace osg {
 ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
   : Viewer(clearColor),
     mImGuiHandler(new ImGuiHandler()),
-    mAboutWidget(new AboutWidget())
-{
+    mAboutWidget(new AboutWidget()) {
   mImGuiHandler->setCameraCallbacks(getCamera());
   mImGuiHandler->addWidget(mAboutWidget, false);
 
@@ -52,32 +51,27 @@ ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
 }
 
 //==============================================================================
-ImGuiViewer::~ImGuiViewer()
-{
+ImGuiViewer::~ImGuiViewer() {
   // Do nothing
 }
 
 //==============================================================================
-ImGuiHandler* ImGuiViewer::getImGuiHandler()
-{
+ImGuiHandler* ImGuiViewer::getImGuiHandler() {
   return mImGuiHandler.get();
 }
 
 //==============================================================================
-const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
-{
+const ImGuiHandler* ImGuiViewer::getImGuiHandler() const {
   return mImGuiHandler.get();
 }
 
 //==============================================================================
-void ImGuiViewer::showAbout()
-{
+void ImGuiViewer::showAbout() {
   mAboutWidget->show();
 }
 
 //==============================================================================
-void ImGuiViewer::hideAbout()
-{
+void ImGuiViewer::hideAbout() {
   mAboutWidget->hide();
 }
 

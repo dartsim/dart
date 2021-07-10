@@ -36,35 +36,30 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-Connection::Connection()
-{
+Connection::Connection() {
   // Do nothing
 }
 
 //==============================================================================
 Connection::Connection(const Connection& _other)
-  : mWeakConnectionBody(_other.mWeakConnectionBody)
-{
+  : mWeakConnectionBody(_other.mWeakConnectionBody) {
   // Do nothing
 }
 
 //==============================================================================
 Connection::Connection(Connection&& _other)
-  : mWeakConnectionBody(std::move(_other.mWeakConnectionBody))
-{
+  : mWeakConnectionBody(std::move(_other.mWeakConnectionBody)) {
   // Do nothing
 }
 
 //==============================================================================
-Connection& Connection::operator=(const Connection& _other)
-{
+Connection& Connection::operator=(const Connection& _other) {
   mWeakConnectionBody = _other.mWeakConnectionBody;
   return *this;
 }
 
 //==============================================================================
-Connection& Connection::operator=(Connection&& _other)
-{
+Connection& Connection::operator=(Connection&& _other) {
   mWeakConnectionBody = std::move(_other.mWeakConnectionBody);
   return *this;
 }
@@ -72,55 +67,47 @@ Connection& Connection::operator=(Connection&& _other)
 //==============================================================================
 Connection::Connection(
     const std::weak_ptr<signal::detail::ConnectionBodyBase>& _connectionBody)
-  : mWeakConnectionBody(_connectionBody)
-{
+  : mWeakConnectionBody(_connectionBody) {
   // Do nothing
 }
 
 //==============================================================================
 Connection::Connection(
     std::weak_ptr<signal::detail::ConnectionBodyBase>&& _connectionBody)
-  : mWeakConnectionBody(std::move(_connectionBody))
-{
+  : mWeakConnectionBody(std::move(_connectionBody)) {
   // Do nothing
 }
 
 //==============================================================================
-Connection::~Connection()
-{
+Connection::~Connection() {
   // Do nothing
 }
 
 //==============================================================================
-bool Connection::isConnected() const
-{
+bool Connection::isConnected() const {
   return !mWeakConnectionBody.expired();
 }
 
 //==============================================================================
-void Connection::disconnect() const
-{
+void Connection::disconnect() const {
   if (auto connectionBody = mWeakConnectionBody.lock())
     connectionBody->disconnect();
 }
 
 //==============================================================================
 ScopedConnection::ScopedConnection(const Connection& _other)
-  : Connection(_other)
-{
+  : Connection(_other) {
   // Do nothing
 }
 
 //==============================================================================
 ScopedConnection::ScopedConnection(Connection&& _other)
-  : Connection(std::move(_other))
-{
+  : Connection(std::move(_other)) {
   // Do nothing
 }
 
 //==============================================================================
-ScopedConnection::~ScopedConnection()
-{
+ScopedConnection::~ScopedConnection() {
   disconnect();
 }
 

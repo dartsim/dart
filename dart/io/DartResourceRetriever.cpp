@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/config.hpp"
@@ -44,8 +45,7 @@ namespace io {
 
 //==============================================================================
 DartResourceRetriever::DartResourceRetriever()
-  : mLocalRetriever(std::make_shared<common::LocalResourceRetriever>())
-{
+  : mLocalRetriever(std::make_shared<common::LocalResourceRetriever>()) {
   // 1. Search the local build directory
   addDataDirectory(DART_DATA_LOCAL_PATH);
 
@@ -62,16 +62,13 @@ DartResourceRetriever::DartResourceRetriever()
 }
 
 //==============================================================================
-bool DartResourceRetriever::exists(const common::Uri& uri)
-{
+bool DartResourceRetriever::exists(const common::Uri& uri) {
   std::string relativePath;
   if (!resolveDataUri(uri, relativePath))
     return false;
 
-  if (uri.mAuthority.get() == "sample")
-  {
-    for (const auto& dataPath : mDataDirectories)
-    {
+  if (uri.mAuthority.get() == "sample") {
+    for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
@@ -83,9 +80,7 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
              << "data path. For example:\n"
              << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
     }
-  }
-  else
-  {
+  } else {
     if (mLocalRetriever->exists(uri))
       return true;
   }
@@ -94,16 +89,13 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
 }
 
 //==============================================================================
-common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
-{
+common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri) {
   std::string relativePath;
   if (!resolveDataUri(uri, relativePath))
     return nullptr;
 
-  if (uri.mAuthority.get() == "sample")
-  {
-    for (const auto& dataPath : mDataDirectories)
-    {
+  if (uri.mAuthority.get() == "sample") {
+    for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
@@ -115,9 +107,7 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
            << "'. Please make sure you set the environment variable for DART "
            << "data path. For example:\n"
            << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
-  }
-  else
-  {
+  } else {
     if (const auto resource = mLocalRetriever->retrieve(uri))
       return resource;
   }
@@ -126,16 +116,13 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
 }
 
 //==============================================================================
-std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
-{
+std::string DartResourceRetriever::getFilePath(const common::Uri& uri) {
   std::string relativePath;
   if (!resolveDataUri(uri, relativePath))
     return "";
 
-  if (uri.mAuthority.get() == "sample")
-  {
-    for (const auto& dataPath : mDataDirectories)
-    {
+  if (uri.mAuthority.get() == "sample") {
+    for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
@@ -150,9 +137,7 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
            << "'. Please make sure you set the environment variable for "
            << "DART data path. For example:\n"
            << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
-  }
-  else
-  {
+  } else {
     const auto path = mLocalRetriever->getFilePath(uri);
 
     // path is empty if the file specified by fileUri doesn't exist.
@@ -164,16 +149,12 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
 }
 
 //==============================================================================
-void DartResourceRetriever::addDataDirectory(const std::string& dataDirectory)
-{
+void DartResourceRetriever::addDataDirectory(const std::string& dataDirectory) {
   // Strip a trailing slash.
   std::string normalizedDataDirectory;
-  if (!dataDirectory.empty() && dataDirectory.back() == '/')
-  {
+  if (!dataDirectory.empty() && dataDirectory.back() == '/') {
     normalizedDataDirectory = dataDirectory.substr(0, dataDirectory.size() - 1);
-  }
-  else
-  {
+  } else {
     normalizedDataDirectory = dataDirectory;
   }
 
@@ -182,13 +163,11 @@ void DartResourceRetriever::addDataDirectory(const std::string& dataDirectory)
 
 //==============================================================================
 bool DartResourceRetriever::resolveDataUri(
-    const common::Uri& uri, std::string& relativePath) const
-{
+    const common::Uri& uri, std::string& relativePath) const {
   if (uri.mScheme.get_value_or("dart") != "dart")
     return false;
 
-  if (!uri.mPath)
-  {
+  if (!uri.mPath) {
     dtwarn << "[DartResourceRetriever::resolveDataUri] Failed extracting"
               " relative path from URI '"
            << uri.toString() << "'.\n";

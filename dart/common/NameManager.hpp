@@ -58,8 +58,7 @@ namespace common {
 /// bodyNode->setName(name);
 /// \endcode
 template <typename T>
-class NameManager
-{
+class NameManager {
 public:
   /// Constructor
   NameManager(

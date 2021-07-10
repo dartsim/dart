@@ -37,18 +37,18 @@
 
 #if DART_OS_LINUX || DART_OS_MACOS
 
-#  include <dlfcn.h>
-#  define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
-#  define DYNLIB_GETSYM(a, b) dlsym(a, b)
-#  define DYNLIB_UNLOAD(a) dlclose(a)
+  #include <dlfcn.h>
+  #define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
+  #define DYNLIB_GETSYM(a, b) dlsym(a, b)
+  #define DYNLIB_UNLOAD(a) dlclose(a)
 
 #elif DART_OS_WINDOWS
 
-#  define WIN32_LEAN_AND_MEAN
-// We can not use LOAD_WITH_ALTERED_SEARCH_PATH with relative paths
-#  define DYNLIB_LOAD(a) LoadLibraryEx(a, nullptr, 0)
-#  define DYNLIB_GETSYM(a, b) GetProcAddress(a, b)
-#  define DYNLIB_UNLOAD(a) !FreeLibrary(a)
+  #define WIN32_LEAN_AND_MEAN
+  // We can not use LOAD_WITH_ALTERED_SEARCH_PATH with relative paths
+  #define DYNLIB_LOAD(a) LoadLibraryEx(a, nullptr, 0)
+  #define DYNLIB_GETSYM(a, b) GetProcAddress(a, b)
+  #define DYNLIB_UNLOAD(a) !FreeLibrary(a)
 
 #endif
 
@@ -57,80 +57,68 @@ namespace common {
 
 //==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibrary::create(
-    const boost::filesystem::path& path)
-{
+    const boost::filesystem::path& path) {
   return create(path.string());
 }
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
-{
+std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path) {
   return detail::SharedLibraryManager::getSingleton().load(path);
 }
 
 //==============================================================================
 SharedLibrary::SharedLibrary(
     ProtectedConstructionTag, const boost::filesystem::path& canonicalPath)
-  : SharedLibrary(ProtectedConstruction, canonicalPath.string())
-{
+  : SharedLibrary(ProtectedConstruction, canonicalPath.string()) {
   // Do nothing
 }
 
 //==============================================================================
 SharedLibrary::SharedLibrary(
     ProtectedConstructionTag, const std::string& canonicalPath)
-  : mCanonicalPath(canonicalPath), mPath(canonicalPath), mInstance(nullptr)
-{
+  : mCanonicalPath(canonicalPath), mPath(canonicalPath), mInstance(nullptr) {
   mInstance = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.c_str()));
 
-  if (!mInstance)
-  {
+  if (!mInstance) {
     dterr << "[SharedLibrary::load] Failed to load dynamic library '"
           << canonicalPath << "': " << getLastError() << "\n";
   }
 }
 
 //==============================================================================
-SharedLibrary::~SharedLibrary()
-{
+SharedLibrary::~SharedLibrary() {
   if (!isValid())
     return;
 
-  if (DYNLIB_UNLOAD(mInstance))
-  {
+  if (DYNLIB_UNLOAD(mInstance)) {
     dterr << "[SharedLibrary::~SharedLibrary] Failed to unload library '"
           << mPath << "': " << getLastError() << "\n";
   }
 }
 
 //==============================================================================
-const boost::filesystem::path& SharedLibrary::getCanonicalPath() const
-{
+const boost::filesystem::path& SharedLibrary::getCanonicalPath() const {
   return mCanonicalPath;
 }
 
 //==============================================================================
-const std::string& SharedLibrary::path() const
-{
+const std::string& SharedLibrary::path() const {
   return mPath;
 }
 
 //==============================================================================
-bool SharedLibrary::isValid() const
-{
+bool SharedLibrary::isValid() const {
   return (mInstance != nullptr);
 }
 
 //==============================================================================
-void* SharedLibrary::getSymbol(const std::string& symbolName) const
-{
+void* SharedLibrary::getSymbol(const std::string& symbolName) const {
   if (!isValid())
     return nullptr;
 
   auto symbol = DYNLIB_GETSYM(mInstance, symbolName.c_str());
 
-  if (!symbol)
-  {
+  if (!symbol) {
     dtwarn << "[SharedLibrary::getSymbol] Failed to load a symbol '"
            << symbolName << "'.\n";
     return nullptr;
@@ -140,8 +128,7 @@ void* SharedLibrary::getSymbol(const std::string& symbolName) const
 }
 
 //==============================================================================
-std::string SharedLibrary::getLastError() const
-{
+std::string SharedLibrary::getLastError() const {
 #if DART_OS_LINUX || DART_OS_MACOS
   return std::string(dlerror());
 #elif DART_OS_WINDOWS

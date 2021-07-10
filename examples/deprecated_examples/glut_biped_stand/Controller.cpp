@@ -32,8 +32,7 @@
 
 #include "Controller.hpp"
 
-Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
-{
+Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t) {
   mSkel = _skel;
   mLeftHeel = _skel->getBodyNode("h_heel_left");
 
@@ -55,8 +54,7 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
   mDesiredDofs = mSkel->getPositions();
 
   // using SPD results in simple Kp coefficients
-  for (int i = 0; i < 6; i++)
-  {
+  for (int i = 0; i < 6; i++) {
     mKp(i, i) = 0.0;
     mKd(i, i) = 0.0;
   }
@@ -68,27 +66,22 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
   mPreOffset = 0.0;
 }
 
-Controller::~Controller()
-{
+Controller::~Controller() {
 }
 
-Eigen::VectorXd Controller::getTorques()
-{
+Eigen::VectorXd Controller::getTorques() {
   return mTorques;
 }
 
-double Controller::getTorque(int _index)
-{
+double Controller::getTorque(int _index) {
   return mTorques[_index];
 }
 
-void Controller::setDesiredDof(int _index, double _val)
-{
+void Controller::setDesiredDof(int _index, double _val) {
   mDesiredDofs[_index] = _val;
 }
 
-void Controller::computeTorques()
-{
+void Controller::computeTorques() {
   Eigen::VectorXd _dof = mSkel->getPositions();
   Eigen::VectorXd _dofVel = mSkel->getVelocities();
   Eigen::VectorXd constrForces = mSkel->getConstraintForces();
@@ -108,8 +101,7 @@ void Controller::computeTorques()
   Eigen::Vector3d cop = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
 
   double offset = com[0] - cop[0];
-  if (offset < 0.1 && offset > 0.0)
-  {
+  if (offset < 0.1 && offset > 0.0) {
     double k1 = 200.0;
     double k2 = 100.0;
     double kd = 10.0;
@@ -118,9 +110,7 @@ void Controller::computeTorques()
     mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
     mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
     mPreOffset = offset;
-  }
-  else if (offset > -0.2 && offset < -0.05)
-  {
+  } else if (offset > -0.2 && offset < -0.05) {
     double k1 = 2000.0;
     double k2 = 100.0;
     double kd = 100.0;
@@ -132,29 +122,24 @@ void Controller::computeTorques()
   }
 
   // Just to make sure no illegal torque is used
-  for (int i = 0; i < 6; i++)
-  {
+  for (int i = 0; i < 6; i++) {
     mTorques[i] = 0.0;
   }
   mFrame++;
 }
 
-dart::dynamics::MetaSkeletonPtr Controller::getSkel()
-{
+dart::dynamics::MetaSkeletonPtr Controller::getSkel() {
   return mSkel;
 }
 
-Eigen::VectorXd Controller::getDesiredDofs()
-{
+Eigen::VectorXd Controller::getDesiredDofs() {
   return mDesiredDofs;
 }
 
-Eigen::MatrixXd Controller::getKp()
-{
+Eigen::MatrixXd Controller::getKp() {
   return mKp;
 }
 
-Eigen::MatrixXd Controller::getKd()
-{
+Eigen::MatrixXd Controller::getKd() {
   return mKd;
 }

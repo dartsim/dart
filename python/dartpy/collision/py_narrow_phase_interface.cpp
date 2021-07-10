@@ -38,11 +38,13 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void py_narrow_phase_interface(py::module& m)
-{
-  m.def("collide", [](collision::ObjectPtr<double> object1, collision::ObjectPtr<double> object2) -> bool {
-    return collision::collide(std::move(object1), std::move(object2));
-  });
+void py_narrow_phase_interface(py::module& m) {
+  m.def(
+      "collide",
+      [](collision::ObjectPtr<double> object1,
+         collision::ObjectPtr<double> object2) -> bool {
+        return collision::collide(std::move(object1), std::move(object2));
+      });
 }
 
 } // namespace python

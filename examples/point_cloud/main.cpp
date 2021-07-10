@@ -42,11 +42,9 @@ using namespace dart::math;
 
 static const std::string& robotName = "KR5";
 
-class PointCloudWorld : public gui::osg::RealTimeWorldNode
-{
+class PointCloudWorld : public gui::osg::RealTimeWorldNode {
 public:
-  enum PointSamplingMode
-  {
+  enum PointSamplingMode {
     SAMPLE_ON_ROBOT = 0,
     SAMPLE_IN_BOX = 1,
   };
@@ -55,8 +53,7 @@ public:
       simulation::WorldPtr world, dynamics::SkeletonPtr robot)
     : gui::osg::RealTimeWorldNode(std::move(world)),
       mSampleingMode(SAMPLE_ON_ROBOT),
-      mRobot(std::move(robot))
-  {
+      mRobot(std::move(robot)) {
     auto pointCloudFrame = mWorld->getSimpleFrame("point cloud");
     auto voxelGridFrame = mWorld->getSimpleFrame("voxel");
 
@@ -73,19 +70,16 @@ public:
     assert(mVoxelGridShape);
   }
 
-  void setPointSamplingMode(PointSamplingMode mode)
-  {
+  void setPointSamplingMode(PointSamplingMode mode) {
     mSampleingMode = mode;
   }
 
-  PointSamplingMode getPointSamplingMode() const
-  {
+  PointSamplingMode getPointSamplingMode() const {
     return mSampleingMode;
   }
 
   // Triggered at the beginning of each simulation step
-  void customPreStep() override
-  {
+  void customPreStep() override {
     if (!mRobot)
       return;
 
@@ -100,8 +94,7 @@ public:
     // Generate point cloud from robot meshes
     octomap::Pointcloud pointCloud;
     auto numPoints = 500u;
-    switch (mSampleingMode)
-    {
+    switch (mSampleingMode) {
       case SAMPLE_ON_ROBOT:
         pointCloud = generatePointCloudOnRobot(numPoints);
         break;
@@ -139,46 +132,38 @@ public:
     mVoxelGridShape->updateOccupancy(pointCloud, sensorPos);
   }
 
-  dynamics::VisualAspect* getPointCloudVisualAspect()
-  {
+  dynamics::VisualAspect* getPointCloudVisualAspect() {
     return mPointCloudVisualAspect;
   }
 
-  dynamics::VisualAspect* getVoxelGridVisualAspect()
-  {
+  dynamics::VisualAspect* getVoxelGridVisualAspect() {
     return mVoxelGridVisualAspect;
   }
 
-  void setUpdate(bool update)
-  {
+  void setUpdate(bool update) {
     mUpdate = update;
   }
 
-  bool getUpdate() const
-  {
+  bool getUpdate() const {
     return mUpdate;
   }
 
-  std::shared_ptr<dynamics::PointCloudShape> getPointCloudShape()
-  {
+  std::shared_ptr<dynamics::PointCloudShape> getPointCloudShape() {
     return mPointCloudShape;
   }
 
-  std::shared_ptr<const dynamics::PointCloudShape> getPointCloudShape() const
-  {
+  std::shared_ptr<const dynamics::PointCloudShape> getPointCloudShape() const {
     return mPointCloudShape;
   }
 
 protected:
-  octomap::Pointcloud generatePointCloudOnRobot(std::size_t numPoints)
-  {
+  octomap::Pointcloud generatePointCloudOnRobot(std::size_t numPoints) {
     octomap::Pointcloud pointCloud;
     pointCloud.reserve(numPoints);
 
     const auto numBodies = mRobot->getNumBodyNodes();
     assert(numBodies > 0);
-    while (true)
-    {
+    while (true) {
       const auto bodyIndex
           = math::Random::uniform<std::size_t>(0, numBodies - 1);
       auto body = mRobot->getBodyNode(bodyIndex);
@@ -229,13 +214,11 @@ protected:
   octomap::Pointcloud generatePointCloudInBox(
       std::size_t numPoints,
       const Eigen::Vector3d& min = Eigen::Vector3d::Constant(-0.5),
-      const Eigen::Vector3d& max = Eigen::Vector3d::Constant(0.5))
-  {
+      const Eigen::Vector3d& max = Eigen::Vector3d::Constant(0.5)) {
     octomap::Pointcloud pointCloud;
     pointCloud.reserve(numPoints);
 
-    for (auto i = 0u; i < numPoints; ++i)
-    {
+    for (auto i = 0u; i < numPoints; ++i) {
       const Eigen::Vector3d point = math::Random::uniform(min, max);
       pointCloud.push_back(
           static_cast<float>(point.x()),
@@ -247,13 +230,11 @@ protected:
   }
 
   std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
-  generatePointCloudColors(const octomap::Pointcloud& pointCloud)
-  {
+  generatePointCloudColors(const octomap::Pointcloud& pointCloud) {
     const auto& points = mPointCloudShape->getPoints();
     double minZ = std::numeric_limits<double>::max();
     double maxZ = std::numeric_limits<double>::min();
-    for (const auto& point : points)
-    {
+    for (const auto& point : points) {
       minZ = std::min(minZ, point.z());
       maxZ = std::max(maxZ, point.z());
     }
@@ -263,8 +244,7 @@ protected:
     std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
         colors;
     colors.reserve(pointCloud.size());
-    for (const auto& point : pointCloud)
-    {
+    for (const auto& point : pointCloud) {
       float r
           = (point.z() - static_cast<float>(minZ)) / static_cast<float>(diffZ);
       float g = 0.0f;
@@ -291,44 +271,37 @@ protected:
   bool mUpdate{true};
 };
 
-class PointCloudWidget : public dart::gui::osg::ImGuiWidget
-{
+class PointCloudWidget : public dart::gui::osg::ImGuiWidget {
 public:
   PointCloudWidget(
       dart::gui::osg::ImGuiViewer* viewer,
       PointCloudWorld* node,
       gui::osg::GridVisual* grid)
-    : mViewer(viewer), mNode(node), mGrid(grid)
-  {
+    : mViewer(viewer), mNode(node), mGrid(grid) {
     // Do nothing
   }
 
-  void render() override
-  {
+  void render() override {
     ImGui::SetNextWindowPos(ImVec2(10, 20));
     ImGui::SetNextWindowSize(ImVec2(360, 600));
     ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Point Cloud & Voxel Grid Demo",
             nullptr,
-            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar))
-    {
+            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar)) {
       // Early out if the window is collapsed, as an optimization.
       ImGui::End();
       return;
     }
 
     // Menu
-    if (ImGui::BeginMenuBar())
-    {
-      if (ImGui::BeginMenu("Menu"))
-      {
+    if (ImGui::BeginMenuBar()) {
+      if (ImGui::BeginMenu("Menu")) {
         if (ImGui::MenuItem("Exit"))
           mViewer->setDone(true);
         ImGui::EndMenu();
       }
-      if (ImGui::BeginMenu("Help"))
-      {
+      if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About DART"))
           mViewer->showAbout();
         ImGui::EndMenu();
@@ -344,19 +317,16 @@ public:
         "The moving red sphere represents the sensor origin that generates the "
         "point cloud.");
 
-    if (ImGui::CollapsingHeader("Help"))
-    {
+    if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
       ImGui::Text("User Guid:\n");
       ImGui::Text("%s", mViewer->getInstructions().c_str());
       ImGui::PopTextWrapPos();
     }
 
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation())
-      {
+      if (mViewer->isAllowingSimulation()) {
         if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
           mViewer->simulate(true);
         ImGui::SameLine();
@@ -382,22 +352,18 @@ public:
         mNode->setPointSamplingMode(PointCloudWorld::SAMPLE_IN_BOX);
     }
 
-    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-      if (mViewer->isAllowingSimulation())
-      {
+    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (mViewer->isAllowingSimulation()) {
         // Point cloud settings
         bool pcShow = !mNode->getPointCloudVisualAspect()->isHidden();
-        if (ImGui::Checkbox("Point Cloud", &pcShow))
-        {
+        if (ImGui::Checkbox("Point Cloud", &pcShow)) {
           if (pcShow)
             mNode->getPointCloudVisualAspect()->show();
           else
             mNode->getPointCloudVisualAspect()->hide();
         }
 
-        if (pcShow)
-        {
+        if (pcShow) {
           auto pointCloudShape = mNode->getPointCloudShape();
 
           const char* colorModeItems[]
@@ -407,26 +373,19 @@ public:
                   "Color Mode",
                   &colorMode,
                   colorModeItems,
-                  IM_ARRAYSIZE(colorModeItems)))
-          {
-            if (colorMode == 0)
-            {
+                  IM_ARRAYSIZE(colorModeItems))) {
+            if (colorMode == 0) {
               pointCloudShape->setColorMode(
                   dynamics::PointCloudShape::USE_SHAPE_COLOR);
-            }
-            else if (colorMode == 1)
-            {
+            } else if (colorMode == 1) {
               pointCloudShape->setColorMode(
                   dynamics::PointCloudShape::BIND_OVERALL);
-            }
-            else if (colorMode == 2)
-            {
+            } else if (colorMode == 2) {
               pointCloudShape->setColorMode(
                   dynamics::PointCloudShape::BIND_PER_POINT);
             }
           }
-          if (colorMode == 0)
-          {
+          if (colorMode == 0) {
             auto visual = mNode->getPointCloudVisualAspect();
             Eigen::Vector4d rgba = visual->getRGBA();
             float color_rbga[4];
@@ -434,8 +393,7 @@ public:
             color_rbga[1] = static_cast<float>(rgba[1]);
             color_rbga[2] = static_cast<float>(rgba[2]);
             color_rbga[3] = static_cast<float>(rgba[3]);
-            if (ImGui::ColorEdit4("Color", color_rbga))
-            {
+            if (ImGui::ColorEdit4("Color", color_rbga)) {
               rgba[0] = static_cast<double>(color_rbga[0]);
               rgba[1] = static_cast<double>(color_rbga[1]);
               rgba[2] = static_cast<double>(color_rbga[2]);
@@ -451,25 +409,17 @@ public:
                   "Point Shape Type",
                   &pointShapeType,
                   pointShapeTypeItems,
-                  IM_ARRAYSIZE(pointShapeTypeItems)))
-          {
-            if (pointShapeType == 0)
-            {
+                  IM_ARRAYSIZE(pointShapeTypeItems))) {
+            if (pointShapeType == 0) {
               pointCloudShape->setPointShapeType(
                   dynamics::PointCloudShape::BOX);
-            }
-            else if (pointShapeType == 1)
-            {
+            } else if (pointShapeType == 1) {
               pointCloudShape->setPointShapeType(
                   dynamics::PointCloudShape::BILLBOARD_SQUARE);
-            }
-            else if (pointShapeType == 2)
-            {
+            } else if (pointShapeType == 2) {
               pointCloudShape->setPointShapeType(
                   dynamics::PointCloudShape::BILLBOARD_CIRCLE);
-            }
-            else if (pointShapeType == 3)
-            {
+            } else if (pointShapeType == 3) {
               pointCloudShape->setPointShapeType(
                   dynamics::PointCloudShape::POINT);
             }
@@ -478,8 +428,7 @@ public:
           float visualSize
               = static_cast<float>(pointCloudShape->getVisualSize());
           if (ImGui::InputFloat(
-                  "Visual Size", &visualSize, 0.01f, 0.02f, "%.2f"))
-          {
+                  "Visual Size", &visualSize, 0.01f, 0.02f, "%.2f")) {
             if (visualSize < 0.01f)
               visualSize = 0.01f;
             pointCloudShape->setVisualSize(static_cast<double>(visualSize));
@@ -490,15 +439,13 @@ public:
 
         // Voxel settings
         bool vgShow = !mNode->getVoxelGridVisualAspect()->isHidden();
-        if (ImGui::Checkbox("Voxel Grid", &vgShow))
-        {
+        if (ImGui::Checkbox("Voxel Grid", &vgShow)) {
           if (vgShow)
             mNode->getVoxelGridVisualAspect()->show();
           else
             mNode->getVoxelGridVisualAspect()->hide();
         }
-        if (vgShow)
-        {
+        if (vgShow) {
           auto visual = mNode->getVoxelGridVisualAspect();
           Eigen::Vector4d rgba = visual->getRGBA();
           float color_rbga[4];
@@ -506,8 +453,7 @@ public:
           color_rbga[1] = static_cast<float>(rgba[1]);
           color_rbga[2] = static_cast<float>(rgba[2]);
           color_rbga[3] = static_cast<float>(rgba[3]);
-          if (ImGui::ColorEdit4("Voxel grid color", color_rbga))
-          {
+          if (ImGui::ColorEdit4("Voxel grid color", color_rbga)) {
             rgba[0] = static_cast<double>(color_rbga[0]);
             rgba[1] = static_cast<double>(color_rbga[1]);
             rgba[2] = static_cast<double>(color_rbga[2]);
@@ -517,8 +463,7 @@ public:
         }
       }
 
-      if (ImGui::CollapsingHeader("Grid", ImGuiTreeNodeFlags_None))
-      {
+      if (ImGui::CollapsingHeader("Grid", ImGuiTreeNodeFlags_None)) {
         assert(mGrid);
         ImGui::Text("Grid");
 
@@ -526,11 +471,9 @@ public:
         if (ImGui::Checkbox("Show", &display))
           mGrid->display(display);
 
-        if (display)
-        {
+        if (display) {
           int e = static_cast<int>(mGrid->getPlaneType());
-          if (mViewer->isAllowingSimulation())
-          {
+          if (mViewer->isAllowingSimulation()) {
             if (ImGui::RadioButton("XY-Plane", &e, 0))
               mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
             ImGui::SameLine();
@@ -556,8 +499,7 @@ public:
 
           static int cellCount;
           cellCount = static_cast<int>(mGrid->getNumCells());
-          if (ImGui::InputInt("Line Count", &cellCount, 1, 5))
-          {
+          if (ImGui::InputInt("Line Count", &cellCount, 1, 5)) {
             if (cellCount < 0)
               cellCount = 0;
             mGrid->setNumCells(static_cast<std::size_t>(cellCount));
@@ -565,8 +507,8 @@ public:
 
           static float cellStepSize;
           cellStepSize = static_cast<float>(mGrid->getMinorLineStepSize());
-          if (ImGui::InputFloat("Line Step Size", &cellStepSize, 0.001f, 0.1f))
-          {
+          if (ImGui::InputFloat(
+                  "Line Step Size", &cellStepSize, 0.001f, 0.1f)) {
             mGrid->setMinorLineStepSize(static_cast<double>(cellStepSize));
           }
 
@@ -574,8 +516,10 @@ public:
           minorLinesPerMajorLine
               = static_cast<int>(mGrid->getNumMinorLinesPerMajorLine());
           if (ImGui::InputInt(
-                  "Minor Lines per Major Line", &minorLinesPerMajorLine, 1, 5))
-          {
+                  "Minor Lines per Major Line",
+                  &minorLinesPerMajorLine,
+                  1,
+                  5)) {
             if (minorLinesPerMajorLine < 0)
               minorLinesPerMajorLine = 0;
             mGrid->setNumMinorLinesPerMajorLine(
@@ -585,16 +529,14 @@ public:
           static float axisLineWidth;
           axisLineWidth = mGrid->getAxisLineWidth();
           if (ImGui::InputFloat(
-                  "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f"))
-          {
+                  "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f")) {
             mGrid->setAxisLineWidth(axisLineWidth);
           }
 
           static float majorLineWidth;
           majorLineWidth = mGrid->getMajorLineWidth();
           if (ImGui::InputFloat(
-                  "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f"))
-          {
+                  "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f")) {
             mGrid->setMajorLineWidth(majorLineWidth);
           }
 
@@ -603,8 +545,7 @@ public:
           majorColor[0] = static_cast<float>(internalmajorColor.x());
           majorColor[1] = static_cast<float>(internalmajorColor.y());
           majorColor[2] = static_cast<float>(internalmajorColor.z());
-          if (ImGui::ColorEdit3("Major Line Color", majorColor))
-          {
+          if (ImGui::ColorEdit3("Major Line Color", majorColor)) {
             internalmajorColor[0] = static_cast<double>(majorColor[0]);
             internalmajorColor[1] = static_cast<double>(majorColor[1]);
             internalmajorColor[2] = static_cast<double>(majorColor[2]);
@@ -614,8 +555,7 @@ public:
           static float minorLineWidth;
           minorLineWidth = mGrid->getMinorLineWidth();
           if (ImGui::InputFloat(
-                  "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f"))
-          {
+                  "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f")) {
             mGrid->setMinorLineWidth(minorLineWidth);
           }
 
@@ -624,8 +564,7 @@ public:
           minorColor[0] = static_cast<float>(internalMinorColor.x());
           minorColor[1] = static_cast<float>(internalMinorColor.y());
           minorColor[2] = static_cast<float>(internalMinorColor.z());
-          if (ImGui::ColorEdit3("Minor Line Color", minorColor))
-          {
+          if (ImGui::ColorEdit3("Minor Line Color", minorColor)) {
             internalMinorColor[0] = static_cast<double>(minorColor[0]);
             internalMinorColor[1] = static_cast<double>(minorColor[1]);
             internalMinorColor[2] = static_cast<double>(minorColor[2]);
@@ -644,8 +583,7 @@ protected:
   osg::ref_ptr<gui::osg::GridVisual> mGrid;
 };
 
-dynamics::SkeletonPtr createRobot(const std::string& name)
-{
+dynamics::SkeletonPtr createRobot(const std::string& name) {
   auto urdfParser = dart::io::DartLoader();
 
   // Load the robot
@@ -661,8 +599,7 @@ dynamics::SkeletonPtr createRobot(const std::string& name)
   return robot;
 }
 
-dynamics::SkeletonPtr createGround()
-{
+dynamics::SkeletonPtr createGround() {
   auto urdfParser = dart::io::DartLoader();
 
   auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
@@ -678,8 +615,7 @@ dynamics::SkeletonPtr createGround()
   return ground;
 }
 
-dynamics::SimpleFramePtr createVoxelFrame(double resolution = 0.01)
-{
+dynamics::SimpleFramePtr createVoxelFrame(double resolution = 0.01) {
   auto voxelShape
       = ::std::make_shared<dart::dynamics::VoxelGridShape>(resolution);
   auto voxelFrame = ::dart::dynamics::SimpleFrame::createShared(
@@ -692,8 +628,7 @@ dynamics::SimpleFramePtr createVoxelFrame(double resolution = 0.01)
   return voxelFrame;
 }
 
-dynamics::SimpleFramePtr createPointCloudFrame()
-{
+dynamics::SimpleFramePtr createPointCloudFrame() {
   auto pointCloudShape
       = ::std::make_shared<::dart::dynamics::PointCloudShape>();
   pointCloudShape->setPointShapeType(::dart::dynamics::PointCloudShape::BOX);
@@ -707,8 +642,7 @@ dynamics::SimpleFramePtr createPointCloudFrame()
   return pointCloudFrame;
 }
 
-dynamics::SimpleFramePtr createSensorFrame()
-{
+dynamics::SimpleFramePtr createSensorFrame() {
   auto sphereShape = ::std::make_shared<dart::dynamics::SphereShape>(0.05);
   auto sensorFrame = ::dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());
@@ -720,8 +654,7 @@ dynamics::SimpleFramePtr createSensorFrame()
   return sensorFrame;
 }
 
-int main()
-{
+int main() {
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 

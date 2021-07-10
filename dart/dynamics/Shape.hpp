@@ -50,15 +50,13 @@ namespace dynamics {
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Shape : public virtual common::Subject,
-              public virtual common::VersionCounter
-{
+              public virtual common::VersionCounter {
 public:
   using VersionChangedSignal
       = common::Signal<void(Shape* shape, std::size_t version)>;
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  enum ShapeType
-  {
+  enum ShapeType {
     SPHERE,
     BOX,
     ELLIPSOID,
@@ -78,8 +76,7 @@ public:
 
   /// DataVariance can be used by renderers to determine whether it should
   /// expect data for this shape to change during each update.
-  enum DataVariance
-  {
+  enum DataVariance {
     STATIC = 0, /// No data will ever change
     DYNAMIC_TRANSFORM
     = 1 << 1, /// The relative transform of the Shape might change

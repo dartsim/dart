@@ -37,8 +37,7 @@
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   using namespace dart;
   using namespace dynamics;
   using namespace simulation;

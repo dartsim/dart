@@ -34,12 +34,10 @@
 #define EXAMPLES_OPERATIONALSPACECONTROL_CONTROLLER_HPP_
 
 #include <Eigen/Eigen>
-
 #include <dart/dart.hpp>
 
 /// \brief Operational space controller for 6-dof manipulator
-class Controller
-{
+class Controller {
 public:
   /// \brief Constructor
   Controller(

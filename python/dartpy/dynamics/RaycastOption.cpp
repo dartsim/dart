@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void RaycastOption(py::module& m)
-{
+void RaycastOption(py::module& m) {
   ::py::class_<dart::dynamics::RaycastOption>(m, "RaycastOption")
       .def(::py::init<>())
       .def(::py::init<bool>(), ::py::arg("enableAllHits"))

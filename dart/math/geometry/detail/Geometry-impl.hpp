@@ -39,17 +39,14 @@ namespace math {
 
 //==============================================================================
 template <typename GeometryType>
-bool Geometry::is() const
-{
+bool Geometry::is() const {
   return getType() == GeometryType::GetType();
 }
 
 //==============================================================================
 template <typename GeometryType>
-const GeometryType* Geometry::as() const
-{
-  if (!this->is<GeometryType>())
-  {
+const GeometryType* Geometry::as() const {
+  if (!this->is<GeometryType>()) {
     return nullptr;
   }
 

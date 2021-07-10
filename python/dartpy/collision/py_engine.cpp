@@ -39,19 +39,12 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void py_engine(py::module& m)
-{
-  ::py::class_<
-      collision::Engined,
-      std::shared_ptr<collision::Engined>>(
+void py_engine(py::module& m) {
+  ::py::class_<collision::Engined, std::shared_ptr<collision::Engined>>(
       m, "Engine")
-      .def(
-          "get_type",
-          &collision::Engined::get_type)
-      .def(
-          "create_sphere_object",
-        [](collision::Engined* self) {
-          return self->create_sphere_object();
+      .def("get_type", &collision::Engined::get_type)
+      .def("create_sphere_object", [](collision::Engined* self) {
+        return self->create_sphere_object();
       });
 }
 

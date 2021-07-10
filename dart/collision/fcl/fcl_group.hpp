@@ -32,17 +32,16 @@
 
 #pragma once
 
-#include "dart/collision/group.hpp"
-#include "dart/collision/types.hpp"
 #include "dart/collision/fcl/backward_compatibility.hpp"
 #include "dart/collision/fcl/fcl_types.hpp"
+#include "dart/collision/group.hpp"
+#include "dart/collision/types.hpp"
 
 namespace dart {
 namespace collision {
 
 template <typename S_>
-class FclGroup : public Group<S_>
-{
+class FclGroup : public Group<S_> {
 public:
   using S = S_;
   using FCLCollisionManager = FclDynamicAABBTreeCollisionManager<S>;

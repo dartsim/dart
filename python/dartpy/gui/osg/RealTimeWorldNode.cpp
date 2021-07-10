@@ -40,15 +40,13 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-class PyRealTimeWorldNodeNode : public dart::gui::osg::RealTimeWorldNode
-{
+class PyRealTimeWorldNodeNode : public dart::gui::osg::RealTimeWorldNode {
 public:
   // Inherit the constructors
   using RealTimeWorldNode::RealTimeWorldNode;
 
   // Trampoline for virtual function
-  void refresh() override
-  {
+  void refresh() override {
     PYBIND11_OVERLOAD(
         void,              // Return type
         RealTimeWorldNode, // Parent class
@@ -57,8 +55,7 @@ public:
   }
 
   // Trampoline for virtual function
-  void customPreRefresh() override
-  {
+  void customPreRefresh() override {
     PYBIND11_OVERLOAD(
         void,              // Return type
         RealTimeWorldNode, // Parent class
@@ -67,8 +64,7 @@ public:
   }
 
   // Trampoline for virtual function
-  void customPostRefresh() override
-  {
+  void customPostRefresh() override {
     PYBIND11_OVERLOAD(
         void,              // Return type
         RealTimeWorldNode, // Parent class
@@ -77,8 +73,7 @@ public:
   }
 
   // Trampoline for virtual function
-  void customPreStep() override
-  {
+  void customPreStep() override {
     PYBIND11_OVERLOAD(
         void,              // Return type
         RealTimeWorldNode, // Parent class
@@ -87,8 +82,7 @@ public:
   }
 
   // Trampoline for virtual function
-  void customPostStep() override
-  {
+  void customPostStep() override {
     PYBIND11_OVERLOAD(
         void,              // Return type
         RealTimeWorldNode, // Parent class
@@ -97,8 +91,7 @@ public:
   }
 };
 
-void RealTimeWorldNode(py::module& m)
-{
+void RealTimeWorldNode(py::module& m) {
   ::py::class_<
       dart::gui::osg::RealTimeWorldNode,
       dart::gui::osg::WorldNode,
@@ -169,9 +162,10 @@ void RealTimeWorldNode(py::module& m)
           +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
             return self->getHighestRealTimeFactor();
           })
-      .def("refresh", +[](dart::gui::osg::RealTimeWorldNode* self) {
-        self->refresh();
-      });
+      .def(
+          "refresh", +[](dart::gui::osg::RealTimeWorldNode* self) {
+            self->refresh();
+          });
 }
 
 } // namespace python

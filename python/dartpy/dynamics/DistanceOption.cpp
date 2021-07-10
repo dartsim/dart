@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DistanceOption(py::module& m)
-{
+void DistanceOption(py::module& m) {
   ::py::class_<dart::dynamics::DistanceOption>(m, "DistanceOption")
       .def(::py::init<>())
       .def(::py::init<bool>(), ::py::arg("enableNearestPoints"))

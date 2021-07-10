@@ -31,23 +31,22 @@
  */
 
 #include "dart/common/VersionCounter.hpp"
-#include "dart/common/Console.hpp"
 
 #include <cassert>
 #include <iostream>
+
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-VersionCounter::VersionCounter() : mVersion(0), mDependent(nullptr)
-{
+VersionCounter::VersionCounter() : mVersion(0), mDependent(nullptr) {
   // Do nothing
 }
 
 //==============================================================================
-std::size_t VersionCounter::incrementVersion()
-{
+std::size_t VersionCounter::incrementVersion() {
   ++mVersion;
   if (mDependent)
     mDependent->incrementVersion();
@@ -56,25 +55,20 @@ std::size_t VersionCounter::incrementVersion()
 }
 
 //==============================================================================
-std::size_t VersionCounter::getVersion() const
-{
+std::size_t VersionCounter::getVersion() const {
   return mVersion;
 }
 
 //==============================================================================
-void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
-{
+void VersionCounter::setVersionDependentObject(VersionCounter* dependent) {
   VersionCounter* next = dependent;
-  do
-  {
-    if (next == this)
-    {
+  do {
+    if (next == this) {
       dterr
           << "[VersionCounter::setVersionDependentObject] Attempting to "
           << "create a circular version dependency with the following loop:\n";
       next = dependent;
-      while (next != this)
-      {
+      while (next != this) {
         std::cerr << " -- " << next << "\n";
         next = next->mDependent;
       }

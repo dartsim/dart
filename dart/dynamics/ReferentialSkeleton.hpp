@@ -44,8 +44,7 @@ namespace dynamics {
 
 /// ReferentialSkeleton is a base class used to implement Linkage, Group, and
 /// other classes that are used to reference subsections of Skeletons.
-class ReferentialSkeleton : public MetaSkeleton
-{
+class ReferentialSkeleton : public MetaSkeleton {
 public:
   /// Remove copy operator
   /// TODO(MXG): Consider allowing this
@@ -447,8 +446,7 @@ protected:
 
   /// A simple struct that contains the indexing of a BodyNode and its parent
   /// DegreesOfFreedom
-  struct IndexMap
-  {
+  struct IndexMap {
     /// Index of the BodyNode
     std::size_t mBodyNodeIndex;
 

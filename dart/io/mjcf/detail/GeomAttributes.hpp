@@ -34,7 +34,6 @@
 #define DART_IO_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 
 #include <Eigen/Core>
-
 #include <tinyxml2.h>
 
 #include "dart/common/Optional.hpp"
@@ -49,8 +48,7 @@ namespace detail {
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#geom
-struct GeomAttributes final
-{
+struct GeomAttributes final {
   /// Name of the geom
   common::optional<std::string> mName;
 

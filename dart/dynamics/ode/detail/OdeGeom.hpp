@@ -42,8 +42,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class OdeGeom
-{
+class OdeGeom {
 public:
   struct GeomUserData;
 
@@ -77,7 +76,7 @@ protected:
 };
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_

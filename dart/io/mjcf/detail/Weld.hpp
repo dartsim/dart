@@ -44,8 +44,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Weld final
-{
+class Weld final {
 public:
   Weld() = default;
 

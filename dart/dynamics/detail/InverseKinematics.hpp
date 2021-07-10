@@ -42,8 +42,7 @@ namespace dynamics {
 
 //==============================================================================
 template <class IKErrorMethod, typename... Args>
-IKErrorMethod& InverseKinematics::setErrorMethod(Args&&... args)
-{
+IKErrorMethod& InverseKinematics::setErrorMethod(Args&&... args) {
   IKErrorMethod* newMethod
       = new IKErrorMethod(this, std::forward<Args>(args)...);
   mErrorMethod = std::unique_ptr<ErrorMethod>(newMethod);
@@ -52,8 +51,7 @@ IKErrorMethod& InverseKinematics::setErrorMethod(Args&&... args)
 
 //==============================================================================
 template <class IKGradientMethod, typename... Args>
-IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
-{
+IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args) {
   IKGradientMethod* newMethod
       = new IKGradientMethod(this, std::forward<Args>(args)...);
   mGradientMethod = std::unique_ptr<GradientMethod>(newMethod);
@@ -67,8 +65,7 @@ IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
 
 //==============================================================================
 template <class DegreeOfFreedomT>
-void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
-{
+void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs) {
   std::vector<std::size_t> indices;
   indices.reserve(_dofs.size());
   for (const DegreeOfFreedomT* dof : _dofs)

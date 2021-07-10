@@ -42,10 +42,8 @@
 namespace dart {
 namespace io {
 
-float convertDecToFloat(char _bytes[4])
-{
-  union
-  {
+float convertDecToFloat(char _bytes[4]) {
+  union {
     char theChars[4];
     float theFloat;
   } p;
@@ -58,8 +56,7 @@ float convertDecToFloat(char _bytes[4])
   return p.theFloat;
 }
 
-void convertFloatToDec(float _f, char* _bytes)
-{
+void convertFloatToDec(float _f, char* _bytes) {
   char* p = (char*)&_f;
   _bytes[0] = p[2];
   _bytes[1] = p[3];
@@ -74,8 +71,7 @@ bool loadC3DFile(
     std::vector<std::vector<Eigen::Vector3d>>& _pointData,
     int* _nFrame,
     int* _nMarker,
-    double* _freq)
-{
+    double* _freq) {
   char buf[C3D_REC_SIZE];
   FILE* file;
   Eigen::Vector3d v;
@@ -89,18 +85,15 @@ bool loadC3DFile(
     return false;
 
   // get the header
-  if (!fread(buf, C3D_REC_SIZE, 1, file))
-  {
+  if (!fread(buf, C3D_REC_SIZE, 1, file)) {
     fclose(file);
     return false;
   }
   memcpy(&hdr, buf, sizeof(hdr));
 
   // get number format
-  if (hdr.rec_start > 2)
-  {
-    if (!fread(buf, C3D_REC_SIZE, 1, file))
-    {
+  if (hdr.rec_start > 2) {
+    if (!fread(buf, C3D_REC_SIZE, 1, file)) {
       fclose(file);
       return false;
     }
@@ -110,8 +103,7 @@ bool loadC3DFile(
   }
 
   // convert if in dec format
-  if (bDecFmt)
-  {
+  if (bDecFmt) {
     hdr.freq = convertDecToFloat((char*)&hdr.freq);
     hdr.scale = convertDecToFloat((char*)&hdr.scale);
   }
@@ -127,10 +119,8 @@ bool loadC3DFile(
   float pntScale = (hdr.scale < 0) ? 1 : hdr.scale;
 
   // eat parameter records
-  for (int i = 3; i < hdr.rec_start; i++)
-  {
-    if (!fread(buf, C3D_REC_SIZE, 1, file))
-    {
+  for (int i = 3; i < hdr.rec_start; i++) {
+    if (!fread(buf, C3D_REC_SIZE, 1, file)) {
       fclose(file);
       return false;
     }
@@ -147,21 +137,16 @@ bool loadC3DFile(
     iRecSize
         = sizeof(c3d_frameSI) + (hdr.a_channels * hdr.a_frames * sizeof(short));
 
-  for (int i = 0; i < numFrames; i++)
-  {
+  for (int i = 0; i < numFrames; i++) {
     _pointData[i].resize(numMarkers);
-    for (int j = 0; j < numMarkers; j++)
-    {
-      if (!fread(buf, iRecSize, 1, file))
-      {
+    for (int j = 0; j < numMarkers; j++) {
+      if (!fread(buf, iRecSize, 1, file)) {
         fclose(file);
         return false;
       }
-      if (c3dScale < 0)
-      {
+      if (c3dScale < 0) {
         memcpy(&frame, buf, sizeof(frame));
-        if (bDecFmt)
-        {
+        if (bDecFmt) {
           frame.y = convertDecToFloat((char*)&frame.y);
           frame.z = convertDecToFloat((char*)&frame.z);
           frame.x = convertDecToFloat((char*)&frame.x);
@@ -169,12 +154,9 @@ bool loadC3DFile(
         v[0] = frame.y / 1000.0;
         v[1] = frame.z / 1000.0;
         v[2] = frame.x / 1000.0;
-      }
-      else
-      {
+      } else {
         memcpy(&frameSI, buf, sizeof(frameSI));
-        if (bDecFmt)
-        {
+        if (bDecFmt) {
           frameSI.y = (short)convertDecToFloat((char*)&frameSI.y);
           frameSI.z = (short)convertDecToFloat((char*)&frameSI.z);
           frameSI.x = (short)convertDecToFloat((char*)&frameSI.x);
@@ -200,8 +182,7 @@ bool saveC3DFile(
     std::vector<std::vector<Eigen::Vector3d>>& _pointData,
     int _nFrame,
     int _nMarker,
-    double _freq)
-{
+    double _freq) {
   FILE* file;
   Eigen::Vector3d v;
   c3d_head hdr;
@@ -235,10 +216,8 @@ bool saveC3DFile(
 
   // write the data
   frame.residual = 0;
-  for (int i = 0; i < _nFrame; i++)
-  {
-    for (int j = 0; j < _nMarker; j++)
-    {
+  for (int i = 0; i < _nFrame; i++) {
+    for (int j = 0; j < _nMarker; j++) {
       // data is in meters, so put it into millimeters
       v = _pointData[i][j] * 1000.0;
       frame.x = (float)v[2];

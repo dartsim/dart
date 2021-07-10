@@ -39,15 +39,13 @@ namespace dart {
 namespace python {
 
 template <class CollisionFilterBase = dart::dynamics::CollisionFilter>
-class PyCollisionFilter : public CollisionFilterBase
-{
+class PyCollisionFilter : public CollisionFilterBase {
 public:
   using CollisionFilterBase::CollisionFilterBase; // Inherit constructors
 
   bool ignoresCollision(
       const dart::dynamics::CollisionObject* object1,
-      const dart::dynamics::CollisionObject* object2) const override
-  {
+      const dart::dynamics::CollisionObject* object2) const override {
     PYBIND11_OVERLOAD_PURE(
         bool,
         CollisionFilterBase,
@@ -59,8 +57,7 @@ public:
   }
 };
 
-void CollisionFilter(py::module& m)
-{
+void CollisionFilter(py::module& m) {
   ::py::class_<
       dart::dynamics::CollisionFilter,
       PyCollisionFilter<>,

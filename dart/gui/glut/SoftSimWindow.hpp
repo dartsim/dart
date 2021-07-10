@@ -40,8 +40,7 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class SoftSimWindow : public SimWindow
-{
+class SoftSimWindow : public SimWindow {
 public:
   /// \brief
   SoftSimWindow();

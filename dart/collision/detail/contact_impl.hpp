@@ -39,15 +39,13 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-constexpr S Contact<S>::get_normal_epsilon()
-{
+constexpr S Contact<S>::get_normal_epsilon() {
   return 1e-6;
 }
 
 //==============================================================================
 template <typename S>
-constexpr S Contact<S>::get_normal_epsilon_squared()
-{
+constexpr S Contact<S>::get_normal_epsilon_squared() {
   return 1e-12;
 }
 
@@ -59,16 +57,14 @@ Contact<S>::Contact()
     force(math::Vector3<S>::Zero()),
     collision_object1(nullptr),
     collision_object2(nullptr),
-    depth(0)
-{
+    depth(0) {
   // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-bool Contact<S>::is_zero_normal(const math::Vector3<S>& normal)
-{
+bool Contact<S>::is_zero_normal(const math::Vector3<S>& normal) {
   if (normal.squaredNorm() < get_normal_epsilon_squared())
     return true;
   else
@@ -77,8 +73,7 @@ bool Contact<S>::is_zero_normal(const math::Vector3<S>& normal)
 
 //==============================================================================
 template <typename S>
-bool Contact<S>::is_non_zero_normal(const math::Vector3<S>& normal)
-{
+bool Contact<S>::is_non_zero_normal(const math::Vector3<S>& normal) {
   return !is_zero_normal(normal);
 }
 

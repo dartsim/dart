@@ -46,10 +46,8 @@
 namespace std {
 
 template <>
-struct hash<boost::filesystem::path>
-{
-  size_t operator()(const boost::filesystem::path& p) const
-  {
+struct hash<boost::filesystem::path> {
+  size_t operator()(const boost::filesystem::path& p) const {
     return boost::filesystem::hash_value(p);
   }
 };
@@ -63,8 +61,7 @@ class SharedLibrary;
 
 namespace detail {
 
-class SharedLibraryManager final : public Singleton<SharedLibraryManager>
-{
+class SharedLibraryManager final : public Singleton<SharedLibraryManager> {
 public:
   /// Loads the shared library with the specified path.
   ///

@@ -36,7 +36,6 @@
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/common/Subject.hpp"
-
 #include "dart/gui/osg/DefaultEventHandler.hpp"
 
 namespace dart {
@@ -47,13 +46,11 @@ class DefaultEventHandler;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class MouseEventHandler : public virtual dart::common::Subject,
-                          public virtual dart::common::Observer
-{
+                          public virtual dart::common::Observer {
 public:
   friend class DefaultEventHandler;
 
-  inline MouseEventHandler() : mEventHandler(nullptr)
-  {
+  inline MouseEventHandler() : mEventHandler(nullptr) {
   }
 
   /// Overload this function to set behavior that will get triggered during a
@@ -61,8 +58,7 @@ public:
   virtual void update() = 0;
 
 protected:
-  void handleDestructionNotification(const Subject* _subject) override
-  {
+  void handleDestructionNotification(const Subject* _subject) override {
     if (mEventHandler == _subject)
       delete this;
   }

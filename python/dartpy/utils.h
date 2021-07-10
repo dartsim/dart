@@ -35,7 +35,5 @@
 #include <pybind11/pybind11.h>
 
 namespace dart {
-namespace python {
-
-} // namespace python
+namespace python {} // namespace python
 } // namespace dart

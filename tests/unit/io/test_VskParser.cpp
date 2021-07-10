@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "dart/test/TestHelpers.hpp"
 
 #include "dart/config.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
@@ -41,6 +41,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/io/VskParser.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;
@@ -49,8 +50,7 @@ using namespace simulation;
 using namespace io;
 
 //==============================================================================
-TEST(VskParser, EmptySkeleton)
-{
+TEST(VskParser, EmptySkeleton) {
   WorldPtr world = World::create();
   EXPECT_TRUE(world != nullptr);
 
@@ -65,8 +65,7 @@ TEST(VskParser, EmptySkeleton)
 }
 
 //==============================================================================
-TEST(VskParser, LoadFromFileURI)
-{
+TEST(VskParser, LoadFromFileURI) {
   const std::string prefix = "file://" DART_DATA_LOCAL_PATH "vsk/";
 
   EXPECT_EQ(VskParser::readSkeleton(prefix + "test/empty.vsk"), nullptr);
@@ -75,8 +74,7 @@ TEST(VskParser, LoadFromFileURI)
 }
 
 //==============================================================================
-TEST(VskParser, SingleStepSimulations)
-{
+TEST(VskParser, SingleStepSimulations) {
   WorldPtr world = World::create();
   EXPECT_NE(world, nullptr);
 

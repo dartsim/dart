@@ -38,8 +38,7 @@
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::io::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");

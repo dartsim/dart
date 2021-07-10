@@ -39,8 +39,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void JointConstraint(py::module& m)
-{
+void JointConstraint(py::module& m) {
   ::py::class_<
       dart::dynamics::JointConstraint,
       dart::dynamics::ConstraintBase,
@@ -87,9 +86,10 @@ void JointConstraint(py::module& m)
             dart::dynamics::JointConstraint::setConstraintForceMixing(cfm);
           },
           ::py::arg("cfm"))
-      .def_static("getConstraintForceMixing", +[]() -> double {
-        return dart::dynamics::JointConstraint::getConstraintForceMixing();
-      });
+      .def_static(
+          "getConstraintForceMixing", +[]() -> double {
+            return dart::dynamics::JointConstraint::getConstraintForceMixing();
+          });
 }
 
 } // namespace python

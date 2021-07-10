@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/optimization/GradientDescentSolver.hpp"
+
 #include <iostream>
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/optimization/GradientDescentSolver.hpp"
 #include "dart/optimization/Problem.hpp"
 
 namespace dart {
@@ -60,8 +61,7 @@ GradientDescentSolver::UniqueProperties::UniqueProperties(
     mMaxRandomizationStep(_maxRandomizationStep),
     mDefaultConstraintWeight(_defaultConstraintWeight),
     mEqConstraintWeights(_eqConstraintWeights),
-    mIneqConstraintWeights(_ineqConstraintWeights)
-{
+    mIneqConstraintWeights(_ineqConstraintWeights) {
   // Do nothing
 }
 
@@ -69,8 +69,8 @@ GradientDescentSolver::UniqueProperties::UniqueProperties(
 GradientDescentSolver::Properties::Properties(
     const Solver::Properties& _solverProperties,
     const UniqueProperties& _descentProperties)
-  : Solver::Properties(_solverProperties), UniqueProperties(_descentProperties)
-{
+  : Solver::Properties(_solverProperties),
+    UniqueProperties(_descentProperties) {
   // Do nothing
 }
 
@@ -92,26 +92,22 @@ GradientDescentSolver::GradientDescentSolver(std::shared_ptr<Problem> _problem)
   : Solver(_problem),
     mRD(),
     mMT(mRD()),
-    mDistribution(0.0, std::nextafter(1.0, 2.0))
-{
+    mDistribution(0.0, std::nextafter(1.0, 2.0)) {
   // Do nothing
 }
 
 //==============================================================================
-GradientDescentSolver::~GradientDescentSolver()
-{
+GradientDescentSolver::~GradientDescentSolver() {
   // Do nothing
 }
 
 //==============================================================================
-bool GradientDescentSolver::solve()
-{
+bool GradientDescentSolver::solve() {
   bool minimized = false;
   bool satisfied = false;
 
   std::shared_ptr<Problem> problem = mProperties.mProblem;
-  if (nullptr == problem)
-  {
+  if (nullptr == problem) {
     dtwarn << "[GradientDescentSolver::solve] Attempting to solve a nullptr "
            << "problem! We will return false.\n";
     return false;
@@ -121,8 +117,7 @@ bool GradientDescentSolver::solve()
   double gamma = mGradientP.mStepSize;
   std::size_t dim = problem->getDimension();
 
-  if (dim == 0)
-  {
+  if (dim == 0) {
     problem->setOptimalSolution(Eigen::VectorXd());
     problem->setOptimumValue(0.0);
     return true;
@@ -140,18 +135,15 @@ bool GradientDescentSolver::solve()
 
   mLastNumIterations = 0;
   std::size_t attemptCount = 0;
-  do
-  {
+  do {
     std::size_t stepCount = 0;
-    do
-    {
+    do {
       ++mLastNumIterations;
 
       // Perturb the configuration if we have reached an iteration where we are
       // supposed to perturb it.
       if (mGradientP.mPerturbationStep > 0 && stepCount > 0
-          && stepCount % mGradientP.mPerturbationStep == 0)
-      {
+          && stepCount % mGradientP.mPerturbationStep == 0) {
         dx = x; // Seed the configuration randomizer with the current
                 // configuration
         randomizeConfiguration(dx);
@@ -164,16 +156,14 @@ bool GradientDescentSolver::solve()
 
       // Check if the equality constraints are satsified
       satisfied = true;
-      for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
-      {
+      for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
         mEqConstraintCostCache[i] = problem->getEqConstraint(i)->eval(x);
         if (std::abs(mEqConstraintCostCache[i]) > tol)
           satisfied = false;
       }
 
       // Check if the inequality constraints are satisfied
-      for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
-      {
+      for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
         mIneqConstraintCostCache[i] = problem->getIneqConstraint(i)->eval(x);
         if (mIneqConstraintCostCache[i] > std::abs(tol))
           satisfied = false;
@@ -187,8 +177,8 @@ bool GradientDescentSolver::solve()
       const FunctionPtr& objective = problem->getObjective();
       if (objective)
         objective->evalGradient(x, dxMap);
-      for (int i = 0; i < static_cast<int>(problem->getNumEqConstraints()); ++i)
-      {
+      for (int i = 0; i < static_cast<int>(problem->getNumEqConstraints());
+           ++i) {
         if (std::abs(mEqConstraintCostCache[i]) < tol)
           continue;
 
@@ -208,8 +198,7 @@ bool GradientDescentSolver::solve()
       }
 
       for (int i = 0; i < static_cast<int>(problem->getNumIneqConstraints());
-           ++i)
-      {
+           ++i) {
         if (mIneqConstraintCostCache[i] < tol)
           continue;
 
@@ -237,8 +226,7 @@ bool GradientDescentSolver::solve()
 
       if (nullptr != mProperties.mOutStream
           && mProperties.mIterationsPerPrint > 0
-          && stepCount % mProperties.mIterationsPerPrint == 0)
-      {
+          && stepCount % mProperties.mIterationsPerPrint == 0) {
         *mProperties.mOutStream
             << "[GradientDescentSolver] Progress (attempt #" << attemptCount
             << " | iteration #" << stepCount << ")\n"
@@ -255,20 +243,16 @@ bool GradientDescentSolver::solve()
 
     } while (!minimized || !satisfied);
 
-    if (!minimized || !satisfied)
-    {
+    if (!minimized || !satisfied) {
       ++attemptCount;
 
       if (mGradientP.mMaxAttempts > 0
           && attemptCount >= mGradientP.mMaxAttempts)
         break;
 
-      if (attemptCount - 1 < problem->getSeeds().size())
-      {
+      if (attemptCount - 1 < problem->getSeeds().size()) {
         x = problem->getSeed(attemptCount - 1);
-      }
-      else
-      {
+      } else {
         randomizeConfiguration(x);
       }
     }
@@ -286,34 +270,29 @@ bool GradientDescentSolver::solve()
 }
 
 //==============================================================================
-Eigen::VectorXd GradientDescentSolver::getLastConfiguration() const
-{
+Eigen::VectorXd GradientDescentSolver::getLastConfiguration() const {
   return mLastConfig;
 }
 
 //==============================================================================
-std::string GradientDescentSolver::getType() const
-{
+std::string GradientDescentSolver::getType() const {
   return Type;
 }
 
 //==============================================================================
-std::shared_ptr<Solver> GradientDescentSolver::clone() const
-{
+std::shared_ptr<Solver> GradientDescentSolver::clone() const {
   return std::make_shared<GradientDescentSolver>(
       getGradientDescentProperties());
 }
 
 //==============================================================================
-void GradientDescentSolver::setProperties(const Properties& _properties)
-{
+void GradientDescentSolver::setProperties(const Properties& _properties) {
   Solver::setProperties(_properties);
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
 //==============================================================================
-void GradientDescentSolver::setProperties(const UniqueProperties& _properties)
-{
+void GradientDescentSolver::setProperties(const UniqueProperties& _properties) {
   setStepSize(_properties.mStepSize);
   setMaxAttempts(_properties.mMaxAttempts);
   setPerturbationStep(_properties.mPerturbationStep);
@@ -324,14 +303,12 @@ void GradientDescentSolver::setProperties(const UniqueProperties& _properties)
 
 //==============================================================================
 GradientDescentSolver::Properties
-GradientDescentSolver::getGradientDescentProperties() const
-{
+GradientDescentSolver::getGradientDescentProperties() const {
   return GradientDescentSolver::Properties(getSolverProperties(), mGradientP);
 }
 
 //==============================================================================
-void GradientDescentSolver::copy(const GradientDescentSolver& _other)
-{
+void GradientDescentSolver::copy(const GradientDescentSolver& _other) {
   if (this == &_other)
     return;
 
@@ -340,112 +317,94 @@ void GradientDescentSolver::copy(const GradientDescentSolver& _other)
 
 //==============================================================================
 GradientDescentSolver& GradientDescentSolver::operator=(
-    const GradientDescentSolver& _other)
-{
+    const GradientDescentSolver& _other) {
   copy(_other);
   return *this;
 }
 
 //==============================================================================
-void GradientDescentSolver::setStepSize(double _newMultiplier)
-{
+void GradientDescentSolver::setStepSize(double _newMultiplier) {
   mGradientP.mStepSize = _newMultiplier;
 }
 
 //==============================================================================
-double GradientDescentSolver::getStepSize() const
-{
+double GradientDescentSolver::getStepSize() const {
   return mGradientP.mStepSize;
 }
 
 //==============================================================================
-void GradientDescentSolver::setMaxAttempts(std::size_t _maxAttempts)
-{
+void GradientDescentSolver::setMaxAttempts(std::size_t _maxAttempts) {
   mGradientP.mMaxAttempts = _maxAttempts;
 }
 
 //==============================================================================
-std::size_t GradientDescentSolver::getMaxAttempts() const
-{
+std::size_t GradientDescentSolver::getMaxAttempts() const {
   return mGradientP.mMaxAttempts;
 }
 
 //==============================================================================
-void GradientDescentSolver::setPerturbationStep(std::size_t _step)
-{
+void GradientDescentSolver::setPerturbationStep(std::size_t _step) {
   mGradientP.mPerturbationStep = _step;
 }
 
 //==============================================================================
-std::size_t GradientDescentSolver::getPerturbationStep() const
-{
+std::size_t GradientDescentSolver::getPerturbationStep() const {
   return mGradientP.mPerturbationStep;
 }
 
 //==============================================================================
-void GradientDescentSolver::setMaxPerturbationFactor(double _factor)
-{
+void GradientDescentSolver::setMaxPerturbationFactor(double _factor) {
   mGradientP.mMaxPerturbationFactor = _factor;
 }
 
 //==============================================================================
-double GradientDescentSolver::getMaxPerturbationFactor() const
-{
+double GradientDescentSolver::getMaxPerturbationFactor() const {
   return mGradientP.mMaxPerturbationFactor;
 }
 
 //==============================================================================
-void GradientDescentSolver::setDefaultConstraintWeight(double _newDefault)
-{
+void GradientDescentSolver::setDefaultConstraintWeight(double _newDefault) {
   mGradientP.mDefaultConstraintWeight = _newDefault;
 }
 
 //==============================================================================
-double GradientDescentSolver::getDefaultConstraintWeight() const
-{
+double GradientDescentSolver::getDefaultConstraintWeight() const {
   return mGradientP.mDefaultConstraintWeight;
 }
 
 //==============================================================================
-Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights()
-{
+Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights() {
   return mGradientP.mEqConstraintWeights;
 }
 
 //==============================================================================
-const Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights() const
-{
+const Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights() const {
   return mGradientP.mEqConstraintWeights;
 }
 
 //==============================================================================
-Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights()
-{
+Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights() {
   return mGradientP.mIneqConstraintWeights;
 }
 
 //==============================================================================
-const Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights() const
-{
+const Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights() const {
   return mGradientP.mIneqConstraintWeights;
 }
 
 //==============================================================================
-void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
-{
+void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x) {
   if (nullptr == mProperties.mProblem)
     return;
 
   if (_x.size() < static_cast<int>(mProperties.mProblem->getDimension()))
     _x = Eigen::VectorXd::Zero(mProperties.mProblem->getDimension());
 
-  for (int i = 0; i < _x.size(); ++i)
-  {
+  for (int i = 0; i < _x.size(); ++i) {
     double lower = mProperties.mProblem->getLowerBounds()[i];
     double upper = mProperties.mProblem->getUpperBounds()[i];
     double step = upper - lower;
-    if (step > mGradientP.mMaxRandomizationStep)
-    {
+    if (step > mGradientP.mMaxRandomizationStep) {
       step = 2 * mGradientP.mMaxRandomizationStep;
       lower = _x[i] - step / 2.0;
     }
@@ -455,13 +414,11 @@ void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
 }
 
 //==============================================================================
-void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
-{
+void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x) {
   if (nullptr == mProperties.mProblem)
     return;
 
-  if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension()))
-  {
+  if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension())) {
     dterr << "[GradientDescentSolver::clampToBoundary] Mismatch between "
           << "configuration size [" << _x.size() << "] and the dimension of "
           << "the Problem [" << mProperties.mProblem->getDimension() << "]\n";
@@ -472,8 +429,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
   assert(mProperties.mProblem->getLowerBounds().size() == _x.size());
   assert(mProperties.mProblem->getUpperBounds().size() == _x.size());
 
-  for (int i = 0; i < _x.size(); ++i)
-  {
+  for (int i = 0; i < _x.size(); ++i) {
     _x[i] = math::clip(
         _x[i],
         mProperties.mProblem->getLowerBounds()[i],
@@ -482,8 +438,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 }
 
 //==============================================================================
-std::size_t GradientDescentSolver::getLastNumIterations() const
-{
+std::size_t GradientDescentSolver::getLastNumIterations() const {
   return mLastNumIterations;
 }
 

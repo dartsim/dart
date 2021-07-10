@@ -38,8 +38,7 @@
 #include "Controller.hpp"
 
 /// \brief class MyWindow
-class MyWindow : public dart::gui::glut::SimWindow
-{
+class MyWindow : public dart::gui::glut::SimWindow {
 public:
   /// \brief Constructor
   explicit MyWindow(Controller* _controller);

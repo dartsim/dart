@@ -49,8 +49,7 @@ namespace common {
 /// would be beneficial to have constant-time access to those Aspect types. To
 /// get constant-time access to specific Aspect types, you can use the templated
 /// class SpecializedForAspect.
-class Composite
-{
+class Composite {
 public:
   using State = detail::CompositeState;
   using Properties = detail::CompositeProperties;

@@ -43,8 +43,7 @@ namespace common {
 /// ever destroyed, the sub_ptr class will start pointing to a nullptr. You can
 /// check the return of sub_ptr::valid() to see if the pointer is still valid.
 template <class T>
-class sub_ptr : public Observer
-{
+class sub_ptr : public Observer {
 public:
   /// Default constructor
   sub_ptr();

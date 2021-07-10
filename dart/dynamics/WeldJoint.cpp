@@ -42,45 +42,38 @@ namespace dynamics {
 
 //==============================================================================
 WeldJoint::Properties::Properties(const Joint::Properties& _properties)
-  : ZeroDofJoint::Properties(_properties)
-{
+  : ZeroDofJoint::Properties(_properties) {
   // Do nothing
 }
 
 //==============================================================================
-WeldJoint::~WeldJoint()
-{
+WeldJoint::~WeldJoint() {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& WeldJoint::getType() const
-{
+const std::string& WeldJoint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& WeldJoint::getStaticType()
-{
+const std::string& WeldJoint::getStaticType() {
   static const std::string name = "WeldJoint";
   return name;
 }
 
 //==============================================================================
-bool WeldJoint::isCyclic(std::size_t /*_index*/) const
-{
+bool WeldJoint::isCyclic(std::size_t /*_index*/) const {
   return false;
 }
 
 //==============================================================================
-WeldJoint::Properties WeldJoint::getWeldJointProperties() const
-{
+WeldJoint::Properties WeldJoint::getWeldJointProperties() const {
   return getZeroDofJointProperties();
 }
 
 //==============================================================================
-void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
-{
+void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) {
   Joint::setTransformFromParentBodyNode(_T);
 
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -88,8 +81,7 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
-{
+void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) {
   Joint::setTransformFromChildBodyNode(_T);
 
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -97,54 +89,46 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-WeldJoint::WeldJoint(const Properties& properties)
-{
+WeldJoint::WeldJoint(const Properties& properties) {
   // Inherited Aspects must be created in the final joint class or else we
   // get pure virtual function calls
   createJointAspect(properties);
 }
 
 //==============================================================================
-Joint* WeldJoint::clone() const
-{
+Joint* WeldJoint::clone() const {
   return new WeldJoint(getWeldJointProperties());
 }
 
 //==============================================================================
-void WeldJoint::updateRelativeTransform() const
-{
+void WeldJoint::updateRelativeTransform() const {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateRelativeSpatialVelocity() const
-{
+void WeldJoint::updateRelativeSpatialVelocity() const {
   // Do nothing
   // Should we have mSpatialVelocity.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateRelativeSpatialAcceleration() const
-{
+void WeldJoint::updateRelativeSpatialAcceleration() const {
   // Do nothing
   // Should we have mSpatialAcceleration.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateRelativePrimaryAcceleration() const
-{
+void WeldJoint::updateRelativePrimaryAcceleration() const {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateRelativeJacobian(bool) const
-{
+void WeldJoint::updateRelativeJacobian(bool) const {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateRelativeJacobianTimeDeriv() const
-{
+void WeldJoint::updateRelativeJacobianTimeDeriv() const {
   // Do nothing
 }
 

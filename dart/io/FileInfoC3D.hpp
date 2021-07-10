@@ -34,6 +34,7 @@
 #define DART_IO_FILEINFOC3D_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 #include "dart/math/MathTypes.hpp"
@@ -41,34 +42,26 @@
 namespace dart {
 namespace io {
 
-class FileInfoC3D
-{
-
+class FileInfoC3D {
 public:
   FileInfoC3D();
-  virtual ~FileInfoC3D()
-  {
+  virtual ~FileInfoC3D() {
   }
 
-  inline int getNumMarkers() const
-  {
+  inline int getNumMarkers() const {
     return mNumMarkers;
   }
-  inline int getNumFrames() const
-  {
+  inline int getNumFrames() const {
     return mNumFrames;
   }
-  inline double getFPS() const
-  {
+  inline double getFPS() const {
     return mFPS;
   }
 
-  inline Eigen::Vector3d getDataAt(int _frame, int _idx) const
-  {
+  inline Eigen::Vector3d getDataAt(int _frame, int _idx) const {
     return mData.at(_frame).at(_idx);
   } ///< Note: not checking index range
-  inline void addData(const std::vector<Eigen::Vector3d>& _data)
-  {
+  inline void addData(const std::vector<Eigen::Vector3d>& _data) {
     mData.push_back(_data);
   }
 

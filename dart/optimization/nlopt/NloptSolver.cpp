@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <memory>
-
 #include "dart/optimization/nlopt/NloptSolver.hpp"
+
+#include <memory>
 
 #include <Eigen/Dense>
 
@@ -47,23 +47,20 @@ namespace optimization {
 //==============================================================================
 NloptSolver::NloptSolver(
     const Solver::Properties& properties, nlopt::algorithm alg)
-  : NloptSolver(properties, convertAlgorithm(alg))
-{
+  : NloptSolver(properties, convertAlgorithm(alg)) {
   // Do nothing
 }
 
 //==============================================================================
 NloptSolver::NloptSolver(
     const Solver::Properties& properties, NloptSolver::Algorithm alg)
-  : Solver(properties), mOpt(nullptr), mAlg(convertAlgorithm(alg)), mMinF(0.0)
-{
+  : Solver(properties), mOpt(nullptr), mAlg(convertAlgorithm(alg)), mMinF(0.0) {
   // Do nothing
 }
 
 //==============================================================================
 NloptSolver::NloptSolver(std::shared_ptr<Problem> problem, nlopt::algorithm alg)
-  : NloptSolver(std::move(problem), convertAlgorithm(alg))
-{
+  : NloptSolver(std::move(problem), convertAlgorithm(alg)) {
   // Do nothing
 }
 
@@ -73,26 +70,22 @@ NloptSolver::NloptSolver(
   : Solver(std::move(problem)),
     mOpt(nullptr),
     mAlg(convertAlgorithm(alg)),
-    mMinF(0.0)
-{
+    mMinF(0.0) {
   // Do nothing
 }
 
 //==============================================================================
-NloptSolver::~NloptSolver()
-{
+NloptSolver::~NloptSolver() {
   // Do nothing
 }
 
 //==============================================================================
-static std::vector<double> convertToStd(const Eigen::VectorXd& v)
-{
+static std::vector<double> convertToStd(const Eigen::VectorXd& v) {
   return std::vector<double>(v.data(), v.data() + v.size());
 }
 
 //==============================================================================
-static Eigen::VectorXd convertToEigen(const std::vector<double>& v)
-{
+static Eigen::VectorXd convertToEigen(const std::vector<double>& v) {
   Eigen::VectorXd result(v.size());
   for (std::size_t i = 0; i < v.size(); ++i)
     result[static_cast<Eigen::Index>(i)] = v[i];
@@ -101,17 +94,13 @@ static Eigen::VectorXd convertToEigen(const std::vector<double>& v)
 }
 
 //==============================================================================
-bool NloptSolver::solve()
-{
+bool NloptSolver::solve() {
   // Allocate a new nlopt::opt structure if needed
   std::size_t dimension = mProperties.mProblem->getDimension();
   if (nullptr == mOpt || mOpt->get_dimension() != dimension
-      || mOpt->get_algorithm() != mAlg)
-  {
+      || mOpt->get_algorithm() != mAlg) {
     mOpt = std::make_unique<nlopt::opt>(mAlg, dimension);
-  }
-  else
-  {
+  } else {
     mOpt->remove_equality_constraints();
     mOpt->remove_inequality_constraints();
   }
@@ -127,24 +116,18 @@ bool NloptSolver::solve()
   mOpt->set_min_objective(
       NloptSolver::_nlopt_func, problem->getObjective().get());
 
-  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
     FunctionPtr fn = problem->getEqConstraint(i);
-    try
-    {
+    try {
       mOpt->add_equality_constraint(
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
-    }
-    catch (const std::invalid_argument& e)
-    {
+    } catch (const std::invalid_argument& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an equality constraint to an Nlopt solver. "
             << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
             << "] (" << mAlg << ") supports equality constraints!\n";
       assert(false);
-    }
-    catch (const std::exception& e)
-    {
+    } catch (const std::exception& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an equality constraint to the Nlopt solver. "
             << "This might be a bug in DART; please report this!\n";
@@ -152,24 +135,18 @@ bool NloptSolver::solve()
     }
   }
 
-  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
     FunctionPtr fn = problem->getIneqConstraint(i);
-    try
-    {
+    try {
       mOpt->add_inequality_constraint(
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
-    }
-    catch (const std::invalid_argument& e)
-    {
+    } catch (const std::invalid_argument& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an inequality constraint to an Nlopt solver. "
             << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
             << "] (" << mAlg << ") supports inequality constraints!\n";
       assert(false);
-    }
-    catch (const std::exception& e)
-    {
+    } catch (const std::exception& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an inequality constraint to the Nlopt solver. "
             << "This might be a bug in DART; please report this!\n";
@@ -193,58 +170,49 @@ bool NloptSolver::solve()
 }
 
 //==============================================================================
-Eigen::VectorXd NloptSolver::getLastConfiguration() const
-{
+Eigen::VectorXd NloptSolver::getLastConfiguration() const {
   return convertToEigen(mX);
 }
 
 //==============================================================================
-std::string NloptSolver::getType() const
-{
+std::string NloptSolver::getType() const {
   return "NloptSolver";
 }
 
 //==============================================================================
-std::shared_ptr<Solver> NloptSolver::clone() const
-{
+std::shared_ptr<Solver> NloptSolver::clone() const {
   return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm2());
 }
 
 //==============================================================================
-void NloptSolver::copy(const NloptSolver& other)
-{
+void NloptSolver::copy(const NloptSolver& other) {
   setProperties(other.getSolverProperties());
   setAlgorithm(other.getAlgorithm2());
 }
 
 //==============================================================================
-NloptSolver& NloptSolver::operator=(const NloptSolver& other)
-{
+NloptSolver& NloptSolver::operator=(const NloptSolver& other) {
   copy(other);
   return *this;
 }
 
 //==============================================================================
-void NloptSolver::setAlgorithm(nlopt::algorithm alg)
-{
+void NloptSolver::setAlgorithm(nlopt::algorithm alg) {
   setAlgorithm(convertAlgorithm(alg));
 }
 
 //==============================================================================
-void NloptSolver::setAlgorithm(NloptSolver::Algorithm alg)
-{
+void NloptSolver::setAlgorithm(NloptSolver::Algorithm alg) {
   mAlg = convertAlgorithm(alg);
 }
 
 //==============================================================================
-nlopt::algorithm NloptSolver::getAlgorithm() const
-{
+nlopt::algorithm NloptSolver::getAlgorithm() const {
   return convertAlgorithm(getAlgorithm2());
 }
 
 //==============================================================================
-NloptSolver::Algorithm NloptSolver::getAlgorithm2() const
-{
+NloptSolver::Algorithm NloptSolver::getAlgorithm2() const {
   return convertAlgorithm(mAlg);
 }
 
@@ -259,10 +227,9 @@ NloptSolver::Algorithm NloptSolver::getAlgorithm2() const
     return alg_name;
 
 //==============================================================================
-nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
-{
-  switch (algorithm)
-  {
+nlopt::algorithm NloptSolver::convertAlgorithm(
+    NloptSolver::Algorithm algorithm) {
+  switch (algorithm) {
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(GN_DIRECT)
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(GN_DIRECT_L)
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(GN_DIRECT_L_RAND)
@@ -314,10 +281,9 @@ nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
 }
 
 //==============================================================================
-NloptSolver::Algorithm NloptSolver::convertAlgorithm(nlopt::algorithm algorithm)
-{
-  switch (algorithm)
-  {
+NloptSolver::Algorithm NloptSolver::convertAlgorithm(
+    nlopt::algorithm algorithm) {
+  switch (algorithm) {
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT)
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L)
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L_RAND)
@@ -371,14 +337,12 @@ NloptSolver::Algorithm NloptSolver::convertAlgorithm(nlopt::algorithm algorithm)
 
 //==============================================================================
 double NloptSolver::_nlopt_func(
-    unsigned n, const double* x, double* gradient, void* func_data)
-{
+    unsigned n, const double* x, double* gradient, void* func_data) {
   Function* fn = static_cast<Function*>(func_data);
 
   Eigen::Map<const Eigen::VectorXd> mapX(x, n);
 
-  if (gradient)
-  {
+  if (gradient) {
     Eigen::Map<Eigen::VectorXd> grad(gradient, n);
     fn->evalGradient(mapX, grad);
   }
@@ -393,8 +357,7 @@ void NloptSolver::_nlopt_mfunc(
     unsigned n,
     const double* x,
     double* gradient,
-    void* func_data)
-{
+    void* func_data) {
   Eigen::Map<const Eigen::VectorXd> mapX(x, n);
   Eigen::Map<Eigen::VectorXd> f(result, m);
   Eigen::Map<Eigen::MatrixXd> grad(gradient, 0, 0);

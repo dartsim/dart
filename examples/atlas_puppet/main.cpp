@@ -40,8 +40,7 @@ using namespace dart::math;
 
 const double display_elevation = 0.05;
 
-class RelaxedPosture : public dart::optimization::Function
-{
+class RelaxedPosture : public dart::optimization::Function {
 public:
   RelaxedPosture(
       const Eigen::VectorXd& idealPosture,
@@ -53,12 +52,10 @@ public:
       mIdeal(idealPosture),
       mLower(lower),
       mUpper(upper),
-      mWeights(weights)
-  {
+      mWeights(weights) {
     int dofs = mIdeal.size();
     if (mLower.size() != dofs || mWeights.size() != dofs
-        || mUpper.size() != dofs)
-    {
+        || mUpper.size() != dofs) {
       dterr << "[RelaxedPose::RelaxedPose] Dimension mismatch:\n"
             << "  ideal:   " << mIdeal.size() << "\n"
             << "  lower:   " << mLower.size() << "\n"
@@ -68,15 +65,13 @@ public:
     mResultVector.setZero(dofs);
   }
 
-  double eval(const Eigen::VectorXd& _x) override
-  {
+  double eval(const Eigen::VectorXd& _x) override {
     computeResultVector(_x);
     return 0.5 * mResultVector.dot(mResultVector);
   }
 
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
-  {
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override {
     computeResultVector(_x);
 
     _grad.setZero();
@@ -85,26 +80,20 @@ public:
       _grad[i] = mResultVector[i];
   }
 
-  void computeResultVector(const Eigen::VectorXd& _x)
-  {
+  void computeResultVector(const Eigen::VectorXd& _x) {
     mResultVector.setZero();
 
-    if (enforceIdealPosture)
-    {
+    if (enforceIdealPosture) {
       // Try to get the robot into the best possible posture
-      for (int i = 0; i < _x.size(); ++i)
-      {
+      for (int i = 0; i < _x.size(); ++i) {
         if (mIdeal.size() <= i)
           break;
 
         mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
       }
-    }
-    else
-    {
+    } else {
       // Only adjust the posture if it is really bad
-      for (int i = 0; i < _x.size(); ++i)
-      {
+      for (int i = 0; i < _x.size(); ++i) {
         if (mIdeal.size() <= i)
           break;
 
@@ -130,11 +119,9 @@ protected:
   Eigen::VectorXd mWeights;
 };
 
-class TeleoperationWorld : public dart::gui::osg::WorldNode
-{
+class TeleoperationWorld : public dart::gui::osg::WorldNode {
 public:
-  enum MoveEnum_t
-  {
+  enum MoveEnum_t {
     MOVE_Q = 0,
     MOVE_W,
     MOVE_E,
@@ -152,32 +139,26 @@ public:
       mAtlas(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
-      r_foot(_robot->getEndEffector("r_foot"))
-  {
+      r_foot(_robot->getEndEffector("r_foot")) {
     mMoveComponents.resize(NUM_MOVE, false);
     mAnyMovement = false;
   }
 
-  void setMovement(const std::vector<bool>& moveComponents)
-  {
+  void setMovement(const std::vector<bool>& moveComponents) {
     mMoveComponents = moveComponents;
 
     mAnyMovement = false;
 
-    for (bool move : mMoveComponents)
-    {
-      if (move)
-      {
+    for (bool move : mMoveComponents) {
+      if (move) {
         mAnyMovement = true;
         break;
       }
     }
   }
 
-  void customPreRefresh() override
-  {
-    if (mAnyMovement)
-    {
+  void customPreRefresh() override {
+    if (mAnyMovement) {
       Eigen::Isometry3d old_tf = mAtlas->getBodyNode(0)->getWorldTransform();
       Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
       Eigen::Vector3d forward = old_tf.linear().col(0);
@@ -237,8 +218,7 @@ public:
     else
       iter = 0;
 
-    if (iter == 1000)
-    {
+    if (iter == 1000) {
       std::cout << "Failing!" << std::endl;
     }
   }
@@ -257,26 +237,22 @@ protected:
   bool mAnyMovement;
 };
 
-class InputHandler : public ::osgGA::GUIEventHandler
-{
+class InputHandler : public ::osgGA::GUIEventHandler {
 public:
   InputHandler(
       dart::gui::osg::Viewer* viewer,
       TeleoperationWorld* teleop,
       const SkeletonPtr& atlas,
       const WorldPtr& world)
-    : mViewer(viewer), mTeleop(teleop), mAtlas(atlas), mWorld(world)
-  {
+    : mViewer(viewer), mTeleop(teleop), mAtlas(atlas), mWorld(world) {
     initialize();
   }
 
-  void initialize()
-  {
+  void initialize() {
     mRestConfig = mAtlas->getPositions();
 
     mLegs.reserve(12);
-    for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i)
-    {
+    for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
       if (mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_")
         mLegs.push_back(mAtlas->getDof(i)->getIndexInSkeleton());
     }
@@ -285,11 +261,9 @@ public:
     mLegs.push_back(mAtlas->getDof("rootJoint_rot_y")->getIndexInSkeleton());
     mLegs.push_back(mAtlas->getDof("rootJoint_pos_z")->getIndexInSkeleton());
 
-    for (std::size_t i = 0; i < mAtlas->getNumEndEffectors(); ++i)
-    {
+    for (std::size_t i = 0; i < mAtlas->getNumEndEffectors(); ++i) {
       const InverseKinematicsPtr ik = mAtlas->getEndEffector(i)->getIK();
-      if (ik)
-      {
+      if (ik) {
         mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
         mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
         mConstraintActive.push_back(false);
@@ -309,17 +283,13 @@ public:
   }
 
   virtual bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (nullptr == mAtlas)
-    {
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override {
+    if (nullptr == mAtlas) {
       return false;
     }
 
-    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType())
-    {
-      if (ea.getKey() == 'p')
-      {
+    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
+      if (ea.getKey() == 'p') {
         for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i)
           std::cout << mAtlas->getDof(i)->getName() << ": "
                     << mAtlas->getDof(i)->getPosition() << std::endl;
@@ -327,34 +297,27 @@ public:
         return true;
       }
 
-      if (ea.getKey() == 't')
-      {
+      if (ea.getKey() == 't') {
         // Reset all the positions except for x, y, and yaw
-        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i)
-        {
+        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
           if (i < 2 || 4 < i)
             mAtlas->getDof(i)->setPosition(mRestConfig[i]);
         }
         return true;
       }
 
-      if ('1' <= ea.getKey() && ea.getKey() <= '9')
-      {
+      if ('1' <= ea.getKey() && ea.getKey() <= '9') {
         std::size_t index = ea.getKey() - '1';
-        if (index < mConstraintActive.size())
-        {
+        if (index < mConstraintActive.size()) {
           EndEffector* ee = mAtlas->getEndEffector(mEndEffectorIndex[index]);
           const InverseKinematicsPtr& ik = ee->getIK();
-          if (ik && mConstraintActive[index])
-          {
+          if (ik && mConstraintActive[index]) {
             mConstraintActive[index] = false;
 
             ik->getErrorMethod().setBounds(mDefaultBounds[index]);
             ik->getTarget()->setRelativeTransform(mDefaultTargetTf[index]);
             mWorld->removeSimpleFrame(ik->getTarget());
-          }
-          else if (ik)
-          {
+          } else if (ik) {
             mConstraintActive[index] = true;
 
             // Use the standard default bounds instead of our custom default
@@ -367,22 +330,19 @@ public:
         return true;
       }
 
-      if ('x' == ea.getKey())
-      {
+      if ('x' == ea.getKey()) {
         EndEffector* ee = mAtlas->getEndEffector("l_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
 
-      if ('c' == ea.getKey())
-      {
+      if ('c' == ea.getKey()) {
         EndEffector* ee = mAtlas->getEndEffector("r_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
           mMoveComponents[TeleoperationWorld::MOVE_W] = true;
           break;
@@ -409,8 +369,7 @@ public:
           break;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'a':
         case 's':
@@ -418,15 +377,13 @@ public:
         case 'q':
         case 'e':
         case 'f':
-        case 'z':
-        {
+        case 'z': {
           mTeleop->setMovement(mMoveComponents);
           return true;
         }
       }
 
-      if (mOptimizationKey == ea.getKey())
-      {
+      if (mOptimizationKey == ea.getKey()) {
         if (mPosture)
           mPosture->enforceIdealPosture = true;
 
@@ -438,10 +395,8 @@ public:
       }
     }
 
-    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType())
-    {
-      if (ea.getKey() == mOptimizationKey)
-      {
+    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType()) {
+      if (ea.getKey() == mOptimizationKey) {
         if (mPosture)
           mPosture->enforceIdealPosture = false;
 
@@ -452,8 +407,7 @@ public:
         return true;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
           mMoveComponents[TeleoperationWorld::MOVE_W] = false;
           break;
@@ -480,8 +434,7 @@ public:
           break;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'a':
         case 's':
@@ -489,8 +442,7 @@ public:
         case 'q':
         case 'e':
         case 'f':
-        case 'z':
-        {
+        case 'z': {
           mTeleop->setMovement(mMoveComponents);
           return true;
         }
@@ -530,8 +482,7 @@ protected:
   std::vector<bool> mMoveComponents;
 };
 
-SkeletonPtr createGround()
-{
+SkeletonPtr createGround() {
   // Create a Skeleton to represent the ground
   SkeletonPtr ground = Skeleton::create("ground");
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -553,8 +504,7 @@ SkeletonPtr createGround()
   return ground;
 }
 
-SkeletonPtr createAtlas()
-{
+SkeletonPtr createAtlas() {
   // Parse in the atlas model
   DartLoader urdf;
   SkeletonPtr atlas
@@ -576,8 +526,7 @@ SkeletonPtr createAtlas()
   return atlas;
 }
 
-void setupStartConfiguration(const SkeletonPtr& atlas)
-{
+void setupStartConfiguration(const SkeletonPtr& atlas) {
   // Squat with the right leg
   atlas->getDof("r_leg_hpy")->setPosition(-45.0 * constantsd::pi() / 180.0);
   atlas->getDof("r_leg_kny")->setPosition(90.0 * constantsd::pi() / 180.0);
@@ -607,8 +556,7 @@ void setupStartConfiguration(const SkeletonPtr& atlas)
       ->setPositionLowerLimit(10 * constantsd::pi() / 180.0);
 }
 
-void setupEndEffectors(const SkeletonPtr& atlas)
-{
+void setupEndEffectors(const SkeletonPtr& atlas) {
   // Apply very small weights to the gradient of the root joint in order to
   // encourage the arms to use arm joints instead of only moving around the root
   // joint
@@ -787,8 +735,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
 }
 
-void setupWholeBodySolver(const SkeletonPtr& atlas)
-{
+void setupWholeBodySolver(const SkeletonPtr& atlas) {
   // The default
   std::shared_ptr<dart::optimization::GradientDescentSolver> solver
       = std::dynamic_pointer_cast<dart::optimization::GradientDescentSolver>(
@@ -869,14 +816,12 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
 }
 
 void enableDragAndDrops(
-    dart::gui::osg::Viewer& viewer, const SkeletonPtr& atlas)
-{
+    dart::gui::osg::Viewer& viewer, const SkeletonPtr& atlas) {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
 
-  for (std::size_t i = 0; i < atlas->getNumEndEffectors(); ++i)
-  {
+  for (std::size_t i = 0; i < atlas->getNumEndEffectors(); ++i) {
     EndEffector* ee = atlas->getEndEffector(i);
     if (!ee->getIK())
       continue;
@@ -889,8 +834,7 @@ void enableDragAndDrops(
   }
 }
 
-int main()
-{
+int main() {
   WorldPtr world = World::create();
 
   SkeletonPtr atlas = createAtlas();

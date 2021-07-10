@@ -36,13 +36,11 @@
 #include <cstdarg>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
 #include "Controller.hpp"
 
-class MyWindow : public dart::gui::glut::SimWindow
-{
+class MyWindow : public dart::gui::glut::SimWindow {
 public:
   MyWindow();
   virtual ~MyWindow();

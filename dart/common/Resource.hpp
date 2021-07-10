@@ -45,12 +45,10 @@ namespace common {
 /// It is expected that each \a ResourceRetriever will provide a concrete /
 /// instantiation of the Resource class. This interface exposes an similar API
 /// to that of the the standard C file manipulation functions.
-class Resource
-{
+class Resource {
 public:
   /// \brief Position to seek relative to.
-  enum SeekType
-  {
+  enum SeekType {
     SEEKTYPE_CUR, ///< Current position.
     SEEKTYPE_END, ///< End of file.
     SEEKTYPE_SET  ///< Begining of file.

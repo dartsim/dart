@@ -36,6 +36,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
 #include "dart/common/Observer.hpp"
 #include "dart/dynamics/CollisionOption.hpp"
 #include "dart/dynamics/CollisionResult.hpp"
@@ -48,8 +49,7 @@
 namespace dart {
 namespace dynamics {
 
-class CollisionGroup
-{
+class CollisionGroup {
 public:
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
@@ -341,8 +341,7 @@ protected:
   /// enables us to keep track of when a ShapeFrame has changed and therefore
   /// when the object needs to be updated. It also remembers what sources
   /// instructed this object to belong to this group.
-  struct ObjectInfo final
-  {
+  struct ObjectInfo final {
     /// The ShapeFrame for this object
     const dynamics::ShapeFrame* mFrame;
 
@@ -394,8 +393,7 @@ private:
   /// deallocated, and then a new ShapeFrame is allocated in the memory address
   /// of the old one. This can lead to invalid memory accesses if we neglect to
   /// correctly clean up our references to deleted ShapeFrames.
-  class ShapeFrameObserver final : public common::Observer
-  {
+  class ShapeFrameObserver final : public common::Observer {
   public:
     /// Add a shape frame to this observer
     void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
@@ -442,8 +440,7 @@ private:
   /// CollisionGroup is subscribed to, alongside the last version number of that
   /// source, as known by this CollisionGroup.
   template <typename Source, typename Child = void>
-  struct CollisionSource
-  {
+  struct CollisionSource {
     /// The source of ShapeFrames
     Source mSource;
 
@@ -455,8 +452,7 @@ private:
 
     /// This is information pertaining to a child of the source. In the current
     /// implementation, this only gets used by SkeletonSources.
-    struct ChildInfo
-    {
+    struct ChildInfo {
       /// Last known version of this child
       std::size_t mLastKnownVersion;
 
@@ -465,8 +461,8 @@ private:
 
       /// A constructor that simply accepts a last known version number. Shape
       /// frames can be added later.
-      explicit ChildInfo(const std::size_t version) : mLastKnownVersion(version)
-      {
+      explicit ChildInfo(const std::size_t version)
+        : mLastKnownVersion(version) {
         // Do nothing
       }
     };
@@ -477,8 +473,7 @@ private:
 
     /// Constructor
     CollisionSource(const Source& source, std::size_t lastKnownVersion)
-      : mSource(source), mLastKnownVersion(lastKnownVersion)
-    {
+      : mSource(source), mLastKnownVersion(lastKnownVersion) {
       // Do nothing
     }
   };
@@ -516,7 +511,7 @@ private:
   ShapeFrameObserver mObserver;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #include "dart/dynamics/detail/CollisionGroup.hpp"

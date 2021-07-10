@@ -30,18 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/external/lodepng/lodepng.h"
 #include "dart/gui/glut/Window.hpp"
 
-#include "dart/external/lodepng/lodepng.h"
-
 #ifdef _WIN32
-#  include <direct.h>
-#  include <sys/stat.h>
-#  include <sys/types.h>
+  #include <direct.h>
+  #include <sys/stat.h>
+  #include <sys/types.h>
 #else
-#  include <dirent.h>
-#  include <sys/stat.h>
-#  include <sys/types.h>
+  #include <dirent.h>
+  #include <sys/stat.h>
+  #include <sys/types.h>
 #endif
 #include <cstdio>
 #include <iostream>
@@ -59,8 +58,7 @@ namespace glut {
 std::vector<Window*> Window::mWindows;
 std::vector<int> Window::mWinIDs;
 
-Window::Window()
-{
+Window::Window() {
   mWinWidth = 0;
   mWinHeight = 0;
   mMouseX = 0;
@@ -76,13 +74,11 @@ Window::Window()
   mRI = nullptr;
 }
 
-Window::~Window()
-{
+Window::~Window() {
   delete mRI;
 }
 
-void Window::initWindow(int _w, int _h, const char* _name)
-{
+void Window::initWindow(int _w, int _h, const char* _name) {
   mWindows.push_back(this);
 
   mWinWidth = _w;
@@ -118,65 +114,53 @@ void Window::initWindow(int _w, int _h, const char* _name)
   // Note: We book the timer id 0 for the main rendering purpose.
 }
 
-void Window::reshape(int _w, int _h)
-{
+void Window::reshape(int _w, int _h) {
   current()->mScreenshotTemp = std::vector<unsigned char>(_w * _h * 4);
   current()->mScreenshotTemp2 = std::vector<unsigned char>(_w * _h * 4);
   current()->resize(_w, _h);
 }
 
-void Window::keyEvent(unsigned char _key, int _x, int _y)
-{
+void Window::keyEvent(unsigned char _key, int _x, int _y) {
   current()->keyboard(_key, _x, _y);
 }
 
-void Window::specKeyEvent(int _key, int _x, int _y)
-{
+void Window::specKeyEvent(int _key, int _x, int _y) {
   current()->specKey(_key, _x, _y);
 }
 
-void Window::mouseClick(int _button, int _state, int _x, int _y)
-{
+void Window::mouseClick(int _button, int _state, int _x, int _y) {
   current()->click(_button, _state, _x, _y);
 }
 
-void Window::mouseDrag(int _x, int _y)
-{
+void Window::mouseDrag(int _x, int _y) {
   current()->drag(_x, _y);
 }
 
-void Window::mouseMove(int _x, int _y)
-{
+void Window::mouseMove(int _x, int _y) {
   current()->move(_x, _y);
 }
 
-void Window::refresh()
-{
+void Window::refresh() {
   current()->render();
 }
 
-void Window::refreshTimer(int _val)
-{
+void Window::refreshTimer(int _val) {
   current()->displayTimer(_val);
 }
 
-void Window::displayTimer(int _val)
-{
+void Window::displayTimer(int _val) {
   glutPostRedisplay();
   glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
-void Window::simTimer(int /*_val*/)
-{
+void Window::simTimer(int /*_val*/) {
 }
 
-void Window::runTimer(int _val)
-{
+void Window::runTimer(int _val) {
   current()->simTimer(_val);
 }
 
-bool Window::screenshot()
-{
+bool Window::screenshot() {
   static int count = 0;
   const char directory[8] = "frames";
   const char fileBase[8] = "Capture";
@@ -187,8 +171,8 @@ bool Window::screenshot()
   Stat buff;
 
 #ifdef _WIN32
-#  define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
-#  define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
+  #define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
+  #define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
   if (stat(directory, &buff) != 0)
     _mkdir(directory);
 #else
@@ -196,8 +180,7 @@ bool Window::screenshot()
     mkdir(directory, 0777);
 #endif
 
-  if (!S_ISDIR(buff.st_mode))
-  {
+  if (!S_ISDIR(buff.st_mode)) {
     dtwarn << "[Window::screenshot] 'frames' is not a directory, "
            << "cannot write a screenshot\n";
     return false;
@@ -229,8 +212,7 @@ bool Window::screenshot()
   glReadPixels(0, 0, tw, th, GL_RGBA, GL_UNSIGNED_BYTE, &mScreenshotTemp[0]);
 
   // reverse temp2 temp1
-  for (int row = 0; row < th; row++)
-  {
+  for (int row = 0; row < th; row++) {
     memcpy(
         &mScreenshotTemp2[row * tw * 4],
         &mScreenshotTemp[(th - row - 1) * tw * 4],
@@ -240,26 +222,20 @@ bool Window::screenshot()
   unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
 
   // if there's an error, display it
-  if (result)
-  {
+  if (result) {
     std::cout << "lodepng error " << result << ": "
               << lodepng_error_text(result) << std::endl;
     return false;
-  }
-  else
-  {
+  } else {
     std::cout << "wrote screenshot " << fileName << "\n";
     return true;
   }
 }
 
-inline Window* Window::current()
-{
+inline Window* Window::current() {
   int id = glutGetWindow();
-  for (unsigned int i = 0; i < mWinIDs.size(); i++)
-  {
-    if (mWinIDs.at(i) == id)
-    {
+  for (unsigned int i = 0; i < mWinIDs.size(); i++) {
+    if (mWinIDs.at(i) == id) {
       return mWindows.at(i);
     }
   }
@@ -267,25 +243,20 @@ inline Window* Window::current()
   exit(0);
 }
 
-void Window::keyboard(unsigned char /*_key*/, int /*_x*/, int /*_y*/)
-{
+void Window::keyboard(unsigned char /*_key*/, int /*_x*/, int /*_y*/) {
   // TODO(JS): Is 2d point information necessary for keyboard event?
 }
 
-void Window::specKey(int /*_key*/, int /*_x*/, int /*_y*/)
-{
+void Window::specKey(int /*_key*/, int /*_x*/, int /*_y*/) {
 }
 
-void Window::click(int /*_button*/, int /*_state*/, int /*_x*/, int /*_y*/)
-{
+void Window::click(int /*_button*/, int /*_state*/, int /*_x*/, int /*_y*/) {
 }
 
-void Window::drag(int /*_x*/, int /*_y*/)
-{
+void Window::drag(int /*_x*/, int /*_y*/) {
 }
 
-void Window::move(int /*_x*/, int /*_y*/)
-{
+void Window::move(int /*_x*/, int /*_y*/) {
 }
 
 } // namespace glut

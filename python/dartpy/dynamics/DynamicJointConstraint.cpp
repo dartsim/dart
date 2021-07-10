@@ -39,8 +39,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DynamicJointConstraint(py::module& m)
-{
+void DynamicJointConstraint(py::module& m) {
   ::py::class_<
       dart::dynamics::DynamicJointConstraint,
       dart::dynamics::ConstraintBase,
@@ -91,10 +90,11 @@ void DynamicJointConstraint(py::module& m)
                 cfm);
           },
           ::py::arg("cfm"))
-      .def_static("getConstraintForceMixing", +[]() -> double {
-        return dart::dynamics::DynamicJointConstraint::
-            getConstraintForceMixing();
-      });
+      .def_static(
+          "getConstraintForceMixing", +[]() -> double {
+            return dart::dynamics::DynamicJointConstraint::
+                getConstraintForceMixing();
+          });
 
   ::py::class_<
       dart::dynamics::BallJointConstraint,
@@ -113,9 +113,10 @@ void DynamicJointConstraint(py::module& m)
           ::py::arg("body1"),
           ::py::arg("body2"),
           ::py::arg("jointPos"))
-      .def_static("getStaticType", +[]() -> std::string {
-        return dart::dynamics::BallJointConstraint::getStaticType();
-      });
+      .def_static(
+          "getStaticType", +[]() -> std::string {
+            return dart::dynamics::BallJointConstraint::getStaticType();
+          });
 
   ::py::class_<
       dart::dynamics::WeldJointConstraint,
@@ -135,7 +136,9 @@ void DynamicJointConstraint(py::module& m)
       .def(
           "setRelativeTransform",
           +[](dart::dynamics::WeldJointConstraint* self,
-              const Eigen::Isometry3d& tf) { self->setRelativeTransform(tf); },
+              const Eigen::Isometry3d& tf) {
+            self->setRelativeTransform(tf);
+          },
           ::py::arg("tf"));
 }
 

@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DantzigBoxedLcpSolver(py::module& m)
-{
+void DantzigBoxedLcpSolver(py::module& m) {
   ::py::class_<
       dart::dynamics::DantzigBoxedLcpSolver,
       dart::dynamics::BoxedLcpSolver,
@@ -48,7 +47,9 @@ void DantzigBoxedLcpSolver(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::DantzigBoxedLcpSolver* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "solve",

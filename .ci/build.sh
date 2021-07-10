@@ -32,6 +32,16 @@ if [ -z "$BUILD_DIR" ]; then
   BUILD_DIR=$PWD
 fi
 
+if [ -z "$CHECK_FORMAT" ]; then
+  echo "Info: Environment variable CHECK_FORMAT is unset. Using OFF by default."
+  CHECK_FORMAT=OFF
+fi
+
+if [ -z "$NUM_CORES" ]; then
+  echo "Info: Environment variable NUM_CORES is unset. Using MAX by default."
+  NUM_CORES=MAX
+fi
+
 if [ -f /etc/os-release ]; then
   # freedesktop.org and systemd
   . /etc/os-release
@@ -74,17 +84,12 @@ else
   num_available_threads=1
   echo "$OSTYPE is not supported to detect the number of logical CPU cores."
 fi
-num_threads=$num_available_threads
-while getopts ":j:" opt; do
-  case $opt in
-  j)
-    num_threads="$OPTARG"
-    ;;
-  \?)
-    echo "Invalid option -$OPTARG" >&2
-    ;;
-  esac
-done
+
+if [ "$NUM_CORES" = "MAX" ]; then
+  num_threads=$num_available_threads
+else
+  num_threads=$NUM_CORES
+fi
 
 # Set compilers
 if [ "$COMPILER" = "gcc" ]; then
@@ -129,7 +134,7 @@ cmake .. \
   ${install_prefix_option}
 
 # Check format
-if [ "$OSTYPE" = "linux-gnu" ] && [ $(lsb_release -sc) = "bionic" ]; then
+if [ "$CHECK_FORMAT" = "ON" ]; then
   make check-format
 fi
 

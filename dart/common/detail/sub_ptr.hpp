@@ -40,73 +40,63 @@ namespace common {
 
 //==============================================================================
 template <class T>
-sub_ptr<T>::sub_ptr() : mT(nullptr), mSubjectBase(nullptr)
-{
+sub_ptr<T>::sub_ptr() : mT(nullptr), mSubjectBase(nullptr) {
   // Do nothing
 }
 
 //==============================================================================
 template <class T>
-sub_ptr<T>::sub_ptr(T* _ptr) : mT(nullptr), mSubjectBase(nullptr)
-{
+sub_ptr<T>::sub_ptr(T* _ptr) : mT(nullptr), mSubjectBase(nullptr) {
   set(_ptr);
 }
 
 //==============================================================================
 template <class T>
-sub_ptr<T>::sub_ptr(const sub_ptr& other) : mT(nullptr), mSubjectBase(nullptr)
-{
+sub_ptr<T>::sub_ptr(const sub_ptr& other) : mT(nullptr), mSubjectBase(nullptr) {
   set(other.get());
 }
 
 //==============================================================================
 template <class T>
-sub_ptr<T>& sub_ptr<T>::operator=(const sub_ptr<T>& _sp)
-{
+sub_ptr<T>& sub_ptr<T>::operator=(const sub_ptr<T>& _sp) {
   set(_sp.get());
   return *this;
 }
 
 //==============================================================================
 template <class T>
-sub_ptr<T>& sub_ptr<T>::operator=(T* _ptr)
-{
+sub_ptr<T>& sub_ptr<T>::operator=(T* _ptr) {
   set(_ptr);
   return *this;
 }
 
 //==============================================================================
 template <class T>
-sub_ptr<T>::operator T*() const
-{
+sub_ptr<T>::operator T*() const {
   return mT;
 }
 
 //==============================================================================
 template <class T>
-T& sub_ptr<T>::operator*() const
-{
+T& sub_ptr<T>::operator*() const {
   return *mT;
 }
 
 //==============================================================================
 template <class T>
-T* sub_ptr<T>::operator->() const
-{
+T* sub_ptr<T>::operator->() const {
   return mT;
 }
 
 //==============================================================================
 template <class T>
-T* sub_ptr<T>::get() const
-{
+T* sub_ptr<T>::get() const {
   return mT;
 }
 
 //==============================================================================
 template <class T>
-void sub_ptr<T>::set(T* _ptr)
-{
+void sub_ptr<T>::set(T* _ptr) {
   if (mT == _ptr)
     return;
 
@@ -118,17 +108,14 @@ void sub_ptr<T>::set(T* _ptr)
 
 //==============================================================================
 template <class T>
-bool sub_ptr<T>::valid()
-{
+bool sub_ptr<T>::valid() {
   return mT != nullptr;
 }
 
 //==============================================================================
 template <class T>
-void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
-{
-  if (_subject == mSubjectBase)
-  {
+void sub_ptr<T>::handleDestructionNotification(const Subject* _subject) {
+  if (_subject == mSubjectBase) {
     mT = nullptr;
     mSubjectBase = nullptr;
   }

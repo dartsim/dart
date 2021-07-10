@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/CapsuleShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/CapsuleShapeNode.hpp"
-
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -46,8 +46,7 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-class CapsuleShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class CapsuleShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   CapsuleShapeGeode(
       dart::dynamics::CapsuleShape* shape,
@@ -65,8 +64,7 @@ protected:
 };
 
 //==============================================================================
-class CapsuleShapeDrawable : public ::osg::ShapeDrawable
-{
+class CapsuleShapeDrawable : public ::osg::ShapeDrawable {
 public:
   CapsuleShapeDrawable(
       dart::dynamics::CapsuleShape* shape,
@@ -87,15 +85,13 @@ protected:
 //==============================================================================
 CapsuleShapeNode::CapsuleShapeNode(
     std::shared_ptr<dart::dynamics::CapsuleShape> shape, ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mCapsuleShape(shape), mGeode(nullptr)
-{
+  : ShapeNode(shape, parent, this), mCapsuleShape(shape), mGeode(nullptr) {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
-void CapsuleShapeNode::refresh()
-{
+void CapsuleShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -107,10 +103,8 @@ void CapsuleShapeNode::refresh()
 }
 
 //==============================================================================
-void CapsuleShapeNode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mGeode)
-  {
+void CapsuleShapeNode::extractData(bool /*firstTime*/) {
+  if (nullptr == mGeode) {
     mGeode = new CapsuleShapeGeode(
         mCapsuleShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -121,8 +115,7 @@ void CapsuleShapeNode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-CapsuleShapeNode::~CapsuleShapeNode()
-{
+CapsuleShapeNode::~CapsuleShapeNode() {
   // Do nothing
 }
 
@@ -133,8 +126,7 @@ CapsuleShapeGeode::CapsuleShapeGeode(
     CapsuleShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parent, this),
     mCapsuleShape(shape),
-    mDrawable(nullptr)
-{
+    mDrawable(nullptr) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -143,18 +135,15 @@ CapsuleShapeGeode::CapsuleShapeGeode(
 }
 
 //==============================================================================
-void CapsuleShapeGeode::refresh()
-{
+void CapsuleShapeGeode::refresh() {
   mUtilized = true;
 
   extractData();
 }
 
 //==============================================================================
-void CapsuleShapeGeode::extractData()
-{
-  if (nullptr == mDrawable)
-  {
+void CapsuleShapeGeode::extractData() {
+  if (nullptr == mDrawable) {
     mDrawable = new CapsuleShapeDrawable(mCapsuleShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
@@ -164,8 +153,7 @@ void CapsuleShapeGeode::extractData()
 }
 
 //==============================================================================
-CapsuleShapeGeode::~CapsuleShapeGeode()
-{
+CapsuleShapeGeode::~CapsuleShapeGeode() {
   // Do nothing
 }
 
@@ -174,22 +162,19 @@ CapsuleShapeDrawable::CapsuleShapeDrawable(
     dart::dynamics::CapsuleShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     CapsuleShapeGeode* parent)
-  : mCapsuleShape(shape), mVisualAspect(visualAspect), mParent(parent)
-{
+  : mCapsuleShape(shape), mVisualAspect(visualAspect), mParent(parent) {
   refresh(true);
 }
 
 //==============================================================================
-void CapsuleShapeDrawable::refresh(bool firstTime)
-{
+void CapsuleShapeDrawable::refresh(bool firstTime) {
   if (mCapsuleShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mCapsuleShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     double R = mCapsuleShape->getRadius();
     double h = mCapsuleShape->getHeight();
     ::osg::ref_ptr<::osg::Capsule> osg_shape
@@ -199,15 +184,13 @@ void CapsuleShapeDrawable::refresh(bool firstTime)
   }
 
   if (mCapsuleShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 
 //==============================================================================
-CapsuleShapeDrawable::~CapsuleShapeDrawable()
-{
+CapsuleShapeDrawable::~CapsuleShapeDrawable() {
   // Do nothing
 }
 

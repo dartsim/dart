@@ -30,19 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.hpp"
-
 #include <iostream>
 
 #include <dart/dart.hpp>
 #include <dart/io/io.hpp>
 
+#include "MyWindow.hpp"
+
 using namespace dart;
 using namespace dynamics;
 using namespace simulation;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld

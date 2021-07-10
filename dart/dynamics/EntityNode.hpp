@@ -42,8 +42,7 @@ namespace dynamics {
 template <class Base>
 class EntityNode
   : public detail::
-        EntityNodeBase<Base, std::is_base_of<common::Composite, Base>::value>
-{
+        EntityNodeBase<Base, std::is_base_of<common::Composite, Base>::value> {
 public:
   using NameAspect = typename detail::EntityNodeAspectBase<Base>::Aspect;
 
@@ -52,8 +51,7 @@ public:
   EntityNode(Args&&... args)
     : detail::
           EntityNodeBase<Base, std::is_base_of<common::Composite, Base>::value>(
-              std::forward<Args>(args)...)
-  {
+              std::forward<Args>(args)...) {
     this->template createAspect<NameAspect>();
   }
 

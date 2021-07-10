@@ -44,8 +44,7 @@ void py_object(py::module& m);
 void py_collision_option(py::module& m);
 void py_narrow_phase_interface(py::module& m);
 
-void dart_collision(py::module& m)
-{
+void dart_collision(py::module& m) {
   auto sm = m.def_submodule("collision");
 
   py_engine(sm);

@@ -44,8 +44,7 @@ JointType* Skeleton::moveBodyNodeTree(
     BodyNode* _bodyNode,
     const SkeletonPtr& _newSkeleton,
     BodyNode* _parentNode,
-    const typename JointType::Properties& _joint)
-{
+    const typename JointType::Properties& _joint) {
   JointType* parentJoint = new JointType(_joint);
 
   if (moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode))
@@ -64,8 +63,7 @@ std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
     const SkeletonPtr& _newSkeleton,
     BodyNode* _parentNode,
     const typename JointType::Properties& _joint,
-    bool _recursive) const
-{
+    bool _recursive) const {
   JointType* parentJoint = new JointType(_joint);
   std::pair<Joint*, BodyNode*> root = cloneBodyNodeTree(
       parentJoint, _bodyNode, _newSkeleton, _parentNode, _recursive);
@@ -77,8 +75,7 @@ template <class JointType, class NodeType>
 std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
     BodyNode* _parent,
     const typename JointType::Properties& _jointProperties,
-    const typename NodeType::Properties& _bodyProperties)
-{
+    const typename NodeType::Properties& _bodyProperties) {
   JointType* joint = new JointType(_jointProperties);
   NodeType* node = new NodeType(_parent, joint, _bodyProperties);
   registerBodyNode(node);

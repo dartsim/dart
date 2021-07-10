@@ -54,8 +54,7 @@ class PointCloudShapeBillboardGeode;
 class PointNode;
 class PointNodes;
 
-class PointCloudShapeNode : public ShapeNode, public ::osg::Group
-{
+class PointCloudShapeNode : public ShapeNode, public ::osg::Group {
 public:
   PointCloudShapeNode(
       std::shared_ptr<dart::dynamics::PointCloudShape> shape,

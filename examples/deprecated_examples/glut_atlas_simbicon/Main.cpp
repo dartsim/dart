@@ -45,8 +45,7 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::io;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // Create empty soft world
   WorldPtr myWorld = World::create();
 

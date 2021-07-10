@@ -39,18 +39,16 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-constexpr double Contact::getNormalEpsilon()
-{
+constexpr double Contact::getNormalEpsilon() {
   return 1e-6;
 }
 
 //==============================================================================
-constexpr double Contact::getNormalEpsilonSquared()
-{
+constexpr double Contact::getNormalEpsilonSquared() {
   return 1e-12;
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_

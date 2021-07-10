@@ -54,8 +54,7 @@ namespace dynamics {
 /// so-called "diamond problem". Because of that, the Entity's constructor will
 /// be called directly by the most derived class's constructor.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Frame : public virtual Entity
-{
+class Frame : public virtual Entity {
 public:
   friend class Entity;
   friend class WorldFrame;
@@ -265,10 +264,7 @@ public:
 protected:
   /// Used when constructing a pure abstract class, because calling the Frame
   /// constructor is just a formality
-  enum ConstructAbstractTag
-  {
-    ConstructAbstract
-  };
+  enum ConstructAbstractTag { ConstructAbstract };
 
   /// Constructor for typical usage
   explicit Frame(Frame* _refFrame);
@@ -293,10 +289,7 @@ protected:
 
 private:
   /// Used when constructing the World
-  enum ConstructWorldTag
-  {
-    ConstructWorld
-  };
+  enum ConstructWorldTag { ConstructWorld };
 
   /// Constructor only to be used by the WorldFrame class
   explicit Frame(ConstructWorldTag);
@@ -340,8 +333,7 @@ public:
 /// singleton World Frame. This class cannot be instantiated directly: you must
 /// use the Frame::World() function to access it. Only one World Frame exists
 /// in any application.
-class WorldFrame : public Frame
-{
+class WorldFrame : public Frame {
 public:
   friend class Frame;
 

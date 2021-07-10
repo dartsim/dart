@@ -49,15 +49,13 @@ BulletOverlapFilterCallback::BulletOverlapFilterCallback(
     done(false),
     filter(filter),
     group1(group1),
-    group2(group2)
-{
+    group2(group2) {
   // Do nothing
 }
 
 //==============================================================================
 bool BulletOverlapFilterCallback::needBroadphaseCollision(
-    btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const
-{
+    btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const {
   if (done)
     return false;
 
@@ -72,8 +70,7 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
 
   bool collide = collide1 & collide2;
 
-  if (collide)
-  {
+  if (collide) {
     auto object0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
     auto object1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
 
@@ -84,8 +81,7 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
     // Filter out if the two ShapeFrames are in the same group
-    if (group1 && group2)
-    {
+    if (group1 && group2) {
       const dynamics::ShapeFrame* shapeFrame0 = collObj0->getShapeFrame();
       const dynamics::ShapeFrame* shapeFrame1 = collObj1->getShapeFrame();
       if (group1->hasShapeFrame(shapeFrame0)
@@ -96,8 +92,7 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
         return false;
     }
 
-    if (filter)
-    {
+    if (filter) {
       return !filter->ignoresCollision(collObj0, collObj1);
     }
   }
@@ -106,5 +101,5 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

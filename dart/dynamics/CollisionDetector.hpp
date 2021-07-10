@@ -53,8 +53,8 @@ namespace dynamics {
 
 class CollisionObject;
 
-class CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
-{
+class CollisionDetector
+  : public std::enable_shared_from_this<CollisionDetector> {
 public:
   friend class CollisionObject;
   friend class CollisionGroup;
@@ -210,8 +210,7 @@ protected:
 };
 
 //==============================================================================
-class CollisionDetector::CollisionObjectManager
-{
+class CollisionDetector::CollisionObjectManager {
 public:
   /// Constructor
   CollisionObjectManager(CollisionDetector* cd);
@@ -234,8 +233,7 @@ protected:
 
 //==============================================================================
 class CollisionDetector::ManagerForUnsharableCollisionObjects final
-  : public CollisionDetector::CollisionObjectManager
-{
+  : public CollisionDetector::CollisionObjectManager {
 public:
   /// Constructor
   ManagerForUnsharableCollisionObjects(CollisionDetector* cd);
@@ -247,8 +245,7 @@ public:
 private:
   /// This deleter is responsible for deleting CollisionObject and removing it
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
-  struct CollisionObjectDeleter final
-  {
+  struct CollisionObjectDeleter final {
     ManagerForUnsharableCollisionObjects* mCollisionObjectManager;
 
     CollisionObjectDeleter(ManagerForUnsharableCollisionObjects* mgr);
@@ -261,8 +258,7 @@ private:
 
 //==============================================================================
 class CollisionDetector::ManagerForSharableCollisionObjects final
-  : public CollisionDetector::CollisionObjectManager
-{
+  : public CollisionDetector::CollisionObjectManager {
 public:
   /// Constructor
   ManagerForSharableCollisionObjects(CollisionDetector* cd);
@@ -277,8 +273,7 @@ public:
 private:
   /// This deleter is responsible for deleting CollisionObject and removing it
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
-  struct CollisionObjectDeleter final
-  {
+  struct CollisionObjectDeleter final {
     ManagerForSharableCollisionObjects* mCollisionObjectManager;
 
     CollisionObjectDeleter(ManagerForSharableCollisionObjects* mgr);
@@ -294,7 +289,7 @@ private:
   CollisionObjectMap mCollisionObjectMap;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #include "dart/dynamics/detail/CollisionDetector.hpp"

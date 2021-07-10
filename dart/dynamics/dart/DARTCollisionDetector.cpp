@@ -74,42 +74,36 @@ DARTCollisionDetector::Registrar<DARTCollisionDetector>
         }};
 
 //==============================================================================
-std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
-{
+std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create() {
   return std::shared_ptr<DARTCollisionDetector>(new DARTCollisionDetector());
 }
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-DARTCollisionDetector::cloneWithoutCollisionObjects() const
-{
+DARTCollisionDetector::cloneWithoutCollisionObjects() const {
   return DARTCollisionDetector::create();
 }
 
 //==============================================================================
-const std::string& DARTCollisionDetector::getType() const
-{
+const std::string& DARTCollisionDetector::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& DARTCollisionDetector::getStaticType()
-{
+const std::string& DARTCollisionDetector::getStaticType() {
   static const std::string type = "dart";
   return type;
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup()
-{
+std::unique_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup() {
   return std::make_unique<DARTCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
-static bool checkGroupValidity(DARTCollisionDetector* cd, CollisionGroup* group)
-{
-  if (cd != group->getCollisionDetector().get())
-  {
+static bool checkGroupValidity(
+    DARTCollisionDetector* cd, CollisionGroup* group) {
+  if (cd != group->getCollisionDetector().get()) {
     dterr << "[DARTCollisionDetector::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
@@ -124,8 +118,7 @@ static bool checkGroupValidity(DARTCollisionDetector* cd, CollisionGroup* group)
 bool DARTCollisionDetector::collide(
     CollisionGroup* group,
     const CollisionOption& option,
-    CollisionResult* result)
-{
+    CollisionResult* result) {
   if (result)
     result->clear();
 
@@ -144,12 +137,10 @@ bool DARTCollisionDetector::collide(
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (auto i = 0u; i < objects.size() - 1; ++i)
-  {
+  for (auto i = 0u; i < objects.size() - 1; ++i) {
     auto* collObj1 = objects[i];
 
-    for (auto j = i + 1u; j < objects.size(); ++j)
-    {
+    for (auto j = i + 1u; j < objects.size(); ++j) {
       auto* collObj2 = objects[j];
 
       if (filter && filter->ignoresCollision(collObj1, collObj2))
@@ -157,13 +148,10 @@ bool DARTCollisionDetector::collide(
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (result)
-      {
+      if (result) {
         if (result->getNumContacts() >= option.maxNumContacts)
           return true;
-      }
-      else
-      {
+      } else {
         // If no result is passed, stop checking when the first contact is found
         if (collisionFound)
           return true;
@@ -180,8 +168,7 @@ bool DARTCollisionDetector::collide(
     CollisionGroup* group1,
     CollisionGroup* group2,
     const CollisionOption& option,
-    CollisionResult* result)
-{
+    CollisionResult* result) {
   if (result)
     result->clear();
 
@@ -206,12 +193,10 @@ bool DARTCollisionDetector::collide(
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (auto i = 0u; i < objects1.size(); ++i)
-  {
+  for (auto i = 0u; i < objects1.size(); ++i) {
     auto* collObj1 = objects1[i];
 
-    for (auto j = 0u; j < objects2.size(); ++j)
-    {
+    for (auto j = 0u; j < objects2.size(); ++j) {
       auto* collObj2 = objects2[j];
 
       if (filter && filter->ignoresCollision(collObj1, collObj2))
@@ -219,13 +204,10 @@ bool DARTCollisionDetector::collide(
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (result)
-      {
+      if (result) {
         if (result->getNumContacts() >= option.maxNumContacts)
           return true;
-      }
-      else
-      {
+      } else {
         // If no result is passed, stop checking when the first contact is found
         if (collisionFound)
           return true;
@@ -241,8 +223,7 @@ bool DARTCollisionDetector::collide(
 double DARTCollisionDetector::distance(
     CollisionGroup* /*group*/,
     const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
-{
+    DistanceResult* /*result*/) {
   dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
          << "not support (signed) distance queries. Returning 0.0.\n";
 
@@ -254,8 +235,7 @@ double DARTCollisionDetector::distance(
     CollisionGroup* /*group1*/,
     CollisionGroup* /*group2*/,
     const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
-{
+    DistanceResult* /*result*/) {
   dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
          << "not support (signed) distance queries. Returning 0.0.\n";
 
@@ -263,14 +243,12 @@ double DARTCollisionDetector::distance(
 }
 
 //==============================================================================
-DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
-{
+DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector() {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
 //==============================================================================
-void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
-{
+void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame) {
   if (!shapeFrame)
     return;
 
@@ -283,8 +261,7 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
   if (shapeType == dynamics::BoxShape::getStaticType())
     return;
 
-  if (shapeType == dynamics::EllipsoidShape::getStaticType())
-  {
+  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
     const auto& ellipsoid
         = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
 
@@ -302,8 +279,7 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 
 //==============================================================================
 std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
-{
+    const dynamics::ShapeFrame* shapeFrame) {
   warnUnsupportedShapeType(shapeFrame);
 
   return std::unique_ptr<DARTCollisionObject>(
@@ -311,8 +287,8 @@ std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-void DARTCollisionDetector::refreshCollisionObject(CollisionObject* /*object*/)
-{
+void DARTCollisionDetector::refreshCollisionObject(
+    CollisionObject* /*object*/) {
   // Do nothing
 }
 
@@ -323,8 +299,7 @@ bool checkPair(
     CollisionObject* o1,
     CollisionObject* o2,
     const CollisionOption& option,
-    CollisionResult* result)
-{
+    CollisionResult* result) {
   CollisionResult pairResult;
 
   // Perform narrow-phase detection
@@ -341,8 +316,7 @@ bool checkPair(
 
 //==============================================================================
 bool isClose(
-    const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2, double tol)
-{
+    const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2, double tol) {
   return (pos1 - pos2).norm() < tol;
 }
 
@@ -352,22 +326,18 @@ void postProcess(
     CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& totalResult,
-    const CollisionResult& pairResult)
-{
+    const CollisionResult& pairResult) {
   if (!pairResult.isCollision())
     return;
 
   // Don't add repeated points
   const auto tol = 3.0e-12;
 
-  for (auto pairContact : pairResult.getContacts())
-  {
+  for (auto pairContact : pairResult.getContacts()) {
     auto foundClose = false;
 
-    for (auto totalContact : totalResult.getContacts())
-    {
-      if (isClose(pairContact.point, totalContact.point, tol))
-      {
+    for (auto totalContact : totalResult.getContacts()) {
+      if (isClose(pairContact.point, totalContact.point, tol)) {
         foundClose = true;
         break;
       }
@@ -388,5 +358,5 @@ void postProcess(
 
 } // anonymous namespace
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

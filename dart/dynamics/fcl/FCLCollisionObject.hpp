@@ -39,8 +39,7 @@
 namespace dart {
 namespace dynamics {
 
-class FCLCollisionObject : public CollisionObject
-{
+class FCLCollisionObject : public CollisionObject {
 public:
   friend class FCLCollisionDetector;
 
@@ -66,7 +65,7 @@ protected:
   std::unique_ptr<dart::dynamics::fcl::CollisionObject> mFCLCollisionObject;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_

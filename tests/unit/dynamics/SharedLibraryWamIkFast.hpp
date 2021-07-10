@@ -36,8 +36,7 @@
 #include "dart/common/SharedLibrary.hpp"
 #include "dart/dynamics/IkFast.hpp"
 
-class SharedLibraryWamIkFast : public dart::dynamics::IkFast
-{
+class SharedLibraryWamIkFast : public dart::dynamics::IkFast {
 public:
   SharedLibraryWamIkFast(
       dart::dynamics::InverseKinematics* ik,

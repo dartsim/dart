@@ -30,36 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <osgViewer/Viewer>
-
 #include <dart/dart.hpp>
+#include <osgViewer/Viewer>
 
 using namespace dart::dynamics;
 
-class RecordingWorld : public dart::gui::osg::RealTimeWorldNode
-{
+class RecordingWorld : public dart::gui::osg::RealTimeWorldNode {
 public:
   RecordingWorld(const dart::simulation::WorldPtr& world)
-    : dart::gui::osg::RealTimeWorldNode(world)
-  {
+    : dart::gui::osg::RealTimeWorldNode(world) {
     grabTimeSlice();
     mCurrentIndex = 0;
   }
 
-  void grabTimeSlice()
-  {
+  void grabTimeSlice() {
     TimeSlice slice;
     slice.reserve(mWorld->getNumSkeletons());
 
-    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
-    {
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
       State state;
       state.mConfig = skeleton->getConfiguration();
       state.mAspectStates.reserve(skeleton->getNumBodyNodes());
 
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j)
-      {
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
         BodyNode* bn = skeleton->getBodyNode(j);
         state.mAspectStates.push_back(bn->getCompositeState());
       }
@@ -70,8 +64,7 @@ public:
     mHistory.push_back(slice);
   }
 
-  void customPostStep() override
-  {
+  void customPostStep() override {
     if (mCurrentIndex < mHistory.size() - 1)
       mHistory.resize(mCurrentIndex + 1);
 
@@ -79,8 +72,7 @@ public:
     ++mCurrentIndex;
   }
 
-  void moveTo(std::size_t index)
-  {
+  void moveTo(std::size_t index) {
     mViewer->simulate(false);
 
     if (mHistory.empty())
@@ -92,15 +84,13 @@ public:
     std::cout << "Moving to time step #" << index << std::endl;
 
     const TimeSlice& slice = mHistory[index];
-    for (std::size_t i = 0; i < slice.size(); ++i)
-    {
+    for (std::size_t i = 0; i < slice.size(); ++i) {
       const State& state = slice[i];
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
 
       skeleton->setConfiguration(state.mConfig);
 
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j)
-      {
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
         BodyNode* bn = skeleton->getBodyNode(j);
         bn->setCompositeState(state.mAspectStates[j]);
       }
@@ -109,29 +99,24 @@ public:
     mCurrentIndex = index;
   }
 
-  void moveForward(int delta)
-  {
+  void moveForward(int delta) {
     moveTo(mCurrentIndex + delta);
   }
 
-  void moveBackward(int delta)
-  {
+  void moveBackward(int delta) {
     if (mCurrentIndex > 0)
       moveTo(mCurrentIndex - delta);
   }
 
-  void restart()
-  {
+  void restart() {
     moveTo(0);
   }
 
-  void moveToEnd()
-  {
+  void moveToEnd() {
     moveTo(mHistory.size() - 1);
   }
 
-  struct State
-  {
+  struct State {
     Skeleton::Configuration mConfig;
     std::vector<dart::common::Composite::State> mAspectStates;
   };
@@ -144,54 +129,44 @@ public:
   std::size_t mCurrentIndex;
 };
 
-class RecordingEventHandler : public osgGA::GUIEventHandler
-{
+class RecordingEventHandler : public osgGA::GUIEventHandler {
 public:
-  RecordingEventHandler(RecordingWorld* rec) : mRecWorld(rec)
-  {
+  RecordingEventHandler(RecordingWorld* rec) : mRecWorld(rec) {
     // Do nothing
   }
 
   virtual bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override {
     if (!mRecWorld)
       return false;
 
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == '[')
-      {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == '[') {
         mRecWorld->moveBackward(1);
         return true;
       }
 
-      if (ea.getKey() == ']')
-      {
+      if (ea.getKey() == ']') {
         mRecWorld->moveForward(1);
         return true;
       }
 
-      if (ea.getKey() == '{')
-      {
+      if (ea.getKey() == '{') {
         mRecWorld->moveBackward(10);
         return true;
       }
 
-      if (ea.getKey() == '}')
-      {
+      if (ea.getKey() == '}') {
         mRecWorld->moveForward(10);
         return true;
       }
 
-      if (ea.getKey() == 'r')
-      {
+      if (ea.getKey() == 'r') {
         mRecWorld->restart();
         return true;
       }
 
-      if (ea.getKey() == '\\')
-      {
+      if (ea.getKey() == '\\') {
         mRecWorld->moveToEnd();
         return true;
       }
@@ -203,8 +178,7 @@ public:
   RecordingWorld* mRecWorld;
 };
 
-int main()
-{
+int main() {
   using namespace dart::dynamics;
 
   dart::simulation::WorldPtr world

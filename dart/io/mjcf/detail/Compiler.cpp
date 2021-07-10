@@ -42,37 +42,31 @@ namespace MjcfParser {
 namespace detail {
 
 //==============================================================================
-void Compiler::setBaseUri(const common::Uri& baseUri)
-{
+void Compiler::setBaseUri(const common::Uri& baseUri) {
   mBaseUri = baseUri;
 }
 
 //==============================================================================
-const common::Uri& Compiler::getBaseUri() const
-{
+const common::Uri& Compiler::getBaseUri() const {
   return mBaseUri;
 }
 
 //==============================================================================
 void Compiler::setResourceRetriever(
-    const common::ResourceRetrieverPtr& retriever)
-{
+    const common::ResourceRetrieverPtr& retriever) {
   mRetriever = retriever;
 }
 
 //==============================================================================
-common::ResourceRetrieverPtr Compiler::getResourceRetriever() const
-{
+common::ResourceRetrieverPtr Compiler::getResourceRetriever() const {
   return mRetriever;
 }
 
 //==============================================================================
-Errors Compiler::read(tinyxml2::XMLElement* element)
-{
+Errors Compiler::read(tinyxml2::XMLElement* element) {
   Errors errors;
 
-  if (std::string(element->Name()) != "compiler")
-  {
+  if (std::string(element->Name()) != "compiler") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <compiler> from the provided element");
@@ -80,49 +74,38 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // boundmass
-  if (hasAttribute(element, "boundmass"))
-  {
+  if (hasAttribute(element, "boundmass")) {
     mBoundMass = getAttributeDouble(element, "boundmass");
   }
 
   // boundinertia
-  if (hasAttribute(element, "boundinertia"))
-  {
+  if (hasAttribute(element, "boundinertia")) {
     mBoundInertia = getAttributeDouble(element, "boundinertia");
   }
 
   // settotalmass
-  if (hasAttribute(element, "settotalmass"))
-  {
+  if (hasAttribute(element, "settotalmass")) {
     mSetTotalMass = getAttributeDouble(element, "settotalmass");
   }
 
   // balanceinertia
-  if (hasAttribute(element, "balanceinertia"))
-  {
+  if (hasAttribute(element, "balanceinertia")) {
     mBalanceInertia = getAttributeBool(element, "balanceinertia");
   }
 
   // strippath
-  if (hasAttribute(element, "strippath"))
-  {
+  if (hasAttribute(element, "strippath")) {
     mStripPath = getAttributeBool(element, "strippath");
   }
 
   // coordinate
-  if (hasAttribute(element, "coordinate"))
-  {
+  if (hasAttribute(element, "coordinate")) {
     const std::string coordiante = getAttributeString(element, "coordinate");
-    if (coordiante == "local")
-    {
+    if (coordiante == "local") {
       mCoordinate = Coordinate::LOCAL;
-    }
-    else if (coordiante == "global")
-    {
+    } else if (coordiante == "global") {
       mCoordinate = Coordinate::GLOBAL;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'coordinate': " + coordiante);
@@ -131,19 +114,13 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // angle
-  if (hasAttribute(element, "angle"))
-  {
+  if (hasAttribute(element, "angle")) {
     const std::string angle = getAttributeString(element, "angle");
-    if (angle == "degree")
-    {
+    if (angle == "degree") {
       mAngle = Angle::DEGREE;
-    }
-    else if (angle == "radian")
-    {
+    } else if (angle == "radian") {
       mAngle = Angle::RADIAN;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'angle': " + angle);
@@ -152,89 +129,72 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // fitaabb
-  if (hasAttribute(element, "fitaabb"))
-  {
+  if (hasAttribute(element, "fitaabb")) {
     mFitAabb = getAttributeBool(element, "fitaabb");
   }
-  if (mFitAabb)
-  {
+  if (mFitAabb) {
     dtwarn << "[MjcfParser] 'fitaabb' attribute is set to true, but DART does "
            << "not support this feature yet.\n";
   }
 
   // eulerseq
-  if (hasAttribute(element, "eulerseq"))
-  {
+  if (hasAttribute(element, "eulerseq")) {
     mEulerSeq = getAttributeString(element, "eulerseq");
   }
 
   // meshdir
-  if (hasAttribute(element, "meshdir"))
-  {
+  if (hasAttribute(element, "meshdir")) {
     mMeshDir = getAttributeString(element, "meshdir");
   }
 
   // texturedir
-  if (hasAttribute(element, "texturedir"))
-  {
+  if (hasAttribute(element, "texturedir")) {
     mTextureDir = getAttributeString(element, "texturedir");
   }
 
   // discardvisual
-  if (hasAttribute(element, "discardvisual"))
-  {
+  if (hasAttribute(element, "discardvisual")) {
     mDiscardVisual = getAttributeBool(element, "discardvisual");
   }
 
   // convexhull
-  if (hasAttribute(element, "convexhull"))
-  {
+  if (hasAttribute(element, "convexhull")) {
     mConvexHull = getAttributeBool(element, "convexhull");
   }
 
   // userthread
-  if (hasAttribute(element, "userthread"))
-  {
+  if (hasAttribute(element, "userthread")) {
     mUserThread = getAttributeBool(element, "userthread");
   }
 
   // fusestatic
-  if (hasAttribute(element, "fusestatic"))
-  {
+  if (hasAttribute(element, "fusestatic")) {
     mFuseStatic = getAttributeBool(element, "fusestatic");
   }
 
   // inertiafromgeom
-  if (hasAttribute(element, "inertiafromgeom"))
-  {
+  if (hasAttribute(element, "inertiafromgeom")) {
     const std::string inertiafromgeom
         = getAttributeString(element, "inertiafromgeom");
-    if (inertiafromgeom == "false")
-    {
+    if (inertiafromgeom == "false") {
 #if DART_OS_WINDOWS
       mInertiaFromGeom = InertiaFromGeom::IFG_FALSE;
 #else
       mInertiaFromGeom = InertiaFromGeom::FALSE;
 #endif
-    }
-    else if (inertiafromgeom == "true")
-    {
+    } else if (inertiafromgeom == "true") {
 #if DART_OS_WINDOWS
       mInertiaFromGeom = InertiaFromGeom::IFG_TRUE;
 #else
       mInertiaFromGeom = InertiaFromGeom::TRUE;
 #endif
-    }
-    else if (inertiafromgeom == "auto")
-    {
+    } else if (inertiafromgeom == "auto") {
 #if DART_OS_WINDOWS
       mInertiaFromGeom = InertiaFromGeom::IFG_AUTO;
 #else
       mInertiaFromGeom = InertiaFromGeom::AUTO;
 #endif
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'inertiafromgeom': " + inertiafromgeom);
@@ -243,8 +203,7 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // inertiagrouprange
-  if (hasAttribute(element, "inertiagrouprange"))
-  {
+  if (hasAttribute(element, "inertiagrouprange")) {
     mInertiaGroupRange = getAttributeVector2i(element, "inertiagrouprange");
   }
 
@@ -252,104 +211,87 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
 }
 
 //==============================================================================
-double Compiler::getBoundInertia() const
-{
+double Compiler::getBoundInertia() const {
   return mBoundInertia;
 }
 
 //==============================================================================
-double Compiler::getSetTotalMass() const
-{
+double Compiler::getSetTotalMass() const {
   return mSetTotalMass;
 }
 
 //==============================================================================
-bool Compiler::getBalanceInertia() const
-{
+bool Compiler::getBalanceInertia() const {
   return mBalanceInertia;
 }
 
 //==============================================================================
-bool Compiler::getStripPath() const
-{
+bool Compiler::getStripPath() const {
   return mStripPath;
 }
 
 //==============================================================================
-double Compiler::getBoundMass() const
-{
+double Compiler::getBoundMass() const {
   return mBoundMass;
 }
 
 //==============================================================================
-Coordinate Compiler::getCoordinate() const
-{
+Coordinate Compiler::getCoordinate() const {
   return mCoordinate;
 }
 
 //==============================================================================
-Angle Compiler::getAngle() const
-{
+Angle Compiler::getAngle() const {
   return mAngle;
 }
 
 //==============================================================================
-bool Compiler::getFitAabb() const
-{
+bool Compiler::getFitAabb() const {
   return mFitAabb;
 }
 
 //==============================================================================
-const std::string& Compiler::getEulerSeq() const
-{
+const std::string& Compiler::getEulerSeq() const {
   return mEulerSeq;
 }
 
 //==============================================================================
-const std::string& Compiler::getMeshDir() const
-{
+const std::string& Compiler::getMeshDir() const {
   return mMeshDir;
 }
 
 //==============================================================================
-const std::string& Compiler::getTextureDir() const
-{
+const std::string& Compiler::getTextureDir() const {
   return mTextureDir;
 }
 
 //==============================================================================
-bool Compiler::getDiscardVisual() const
-{
+bool Compiler::getDiscardVisual() const {
   return mDiscardVisual;
 }
 
 //==============================================================================
-bool Compiler::getConvexHull() const
-{
+bool Compiler::getConvexHull() const {
   return mConvexHull;
 }
 
 //==============================================================================
-bool Compiler::getUserThread() const
-{
+bool Compiler::getUserThread() const {
   return mUserThread;
 }
 
 //==============================================================================
-bool Compiler::getFuseStatic() const
-{
+bool Compiler::getFuseStatic() const {
   return mFuseStatic;
 }
 
 //==============================================================================
-InertiaFromGeom Compiler::getInertiaFromGeom() const
-{
+InertiaFromGeom Compiler::getInertiaFromGeom() const {
   return mInertiaFromGeom;
 }
 
 //==============================================================================
-const Eigen::Vector2i& Compiler::getInertiaGroupRange() const
-{
+const Eigen::Vector2i& Compiler::getInertiaGroupRange() const {
   return mInertiaGroupRange;
 }
 

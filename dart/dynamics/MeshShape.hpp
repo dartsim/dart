@@ -43,11 +43,9 @@
 namespace dart {
 namespace dynamics {
 
-class MeshShape : public Shape
-{
+class MeshShape : public Shape {
 public:
-  enum ColorMode
-  {
+  enum ColorMode {
     MATERIAL_COLOR = 0, ///< Use the colors specified by the Mesh's material
     COLOR_INDEX,        ///< Use the colors specified by aiMesh::mColor
     SHAPE_COLOR,        ///< Use the color specified by the visual aspect
@@ -56,8 +54,7 @@ public:
   /// Alpha mode to specify how the alpha of this mesh should be determined. The
   /// final alpha value is affected by ColorMode and visual aspect that holds
   /// this mesh.
-  enum AlphaMode
-  {
+  enum AlphaMode {
     /// Blend alphas of visual aspect and mesh. This is the default.
     /// - MATERIAL_COLOR: Blend the alpha of visual aspect and the alpha values
     ///                   of the mesh materials.

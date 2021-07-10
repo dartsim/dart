@@ -46,15 +46,10 @@ namespace detail {
 
 //==============================================================================
 /// Axis order
-enum class AxisOrder : int
-{
-  ZYX = 0,
-  XYZ = 1
-};
+enum class AxisOrder : int { ZYX = 0, XYZ = 1 };
 
 //==============================================================================
-struct EulerJointUniqueProperties
-{
+struct EulerJointUniqueProperties {
   /// Euler angle order
   AxisOrder mAxisOrder;
 
@@ -66,8 +61,7 @@ struct EulerJointUniqueProperties
 
 //==============================================================================
 struct EulerJointProperties : GenericJoint<math::R3Space>::Properties,
-                              EulerJointUniqueProperties
-{
+                              EulerJointUniqueProperties {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(EulerJointProperties)
 
   /// Composed constructor

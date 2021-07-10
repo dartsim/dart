@@ -41,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ImGuiViewer(py::module& m)
-{
+void ImGuiViewer(py::module& m) {
   ::py::class_<
       dart::gui::osg::ImGuiViewer,
       dart::gui::osg::Viewer,
@@ -63,10 +62,13 @@ void ImGuiViewer(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "showAbout",
-          +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
-      .def("hideAbout", +[](dart::gui::osg::ImGuiViewer* self) {
-        self->hideAbout();
-      });
+          +[](dart::gui::osg::ImGuiViewer* self) {
+            self->showAbout();
+          })
+      .def(
+          "hideAbout", +[](dart::gui::osg::ImGuiViewer* self) {
+            self->hideAbout();
+          });
 }
 
 } // namespace python

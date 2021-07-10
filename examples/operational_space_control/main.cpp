@@ -36,12 +36,10 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
 
-class OperationalSpaceControlWorld : public dart::gui::osg::WorldNode
-{
+class OperationalSpaceControlWorld : public dart::gui::osg::WorldNode {
 public:
   OperationalSpaceControlWorld(dart::simulation::WorldPtr _world)
-    : dart::gui::osg::WorldNode(_world)
-  {
+    : dart::gui::osg::WorldNode(_world) {
     // Extract the relevant pointers
     mRobot = mWorld->getSkeleton(0);
     mEndEffector = mRobot->getBodyNode(mRobot->getNumBodyNodes() - 1);
@@ -57,8 +55,7 @@ public:
       mKd(i, i) = 5.0;
 
     // Set joint properties
-    for (std::size_t i = 0; i < mRobot->getNumJoints(); ++i)
-    {
+    for (std::size_t i = 0; i < mRobot->getNumJoints(); ++i) {
       mRobot->getJoint(i)->setLimitEnforcement(false);
       mRobot->getJoint(i)->setDampingCoefficient(0, 0.5);
     }
@@ -79,8 +76,7 @@ public:
   }
 
   // Triggered at the beginning of each simulation step
-  void customPreStep() override
-  {
+  void customPreStep() override {
     Eigen::MatrixXd M = mRobot->getMassMatrix();
 
     LinearJacobian J = mEndEffector->getLinearJacobian(mOffset);
@@ -112,10 +108,8 @@ public:
 
 protected:
   // Triggered when this node gets added to the Viewer
-  void setupViewer() override
-  {
-    if (mViewer)
-    {
+  void setupViewer() override {
+    if (mViewer) {
       dnd = mViewer->enableDragAndDrop(mTarget.get());
       dnd->setObstructable(false);
       mViewer->addInstructionText(
@@ -140,38 +134,31 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class ConstraintEventHandler : public ::osgGA::GUIEventHandler
-{
+class ConstraintEventHandler : public ::osgGA::GUIEventHandler {
 public:
-  ConstraintEventHandler(dart::gui::osg::DragAndDrop* dnd = nullptr) : mDnD(dnd)
-  {
+  ConstraintEventHandler(dart::gui::osg::DragAndDrop* dnd = nullptr)
+    : mDnD(dnd) {
     clearConstraints();
     if (mDnD)
       mDnD->unconstrain();
   }
 
-  void clearConstraints()
-  {
+  void clearConstraints() {
     for (std::size_t i = 0; i < 3; ++i)
       mConstrained[i] = false;
   }
 
   virtual bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (nullptr == mDnD)
-    {
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override {
+    if (nullptr == mDnD) {
       clearConstraints();
       return false;
     }
 
     bool handled = false;
-    switch (ea.getEventType())
-    {
-      case ::osgGA::GUIEventAdapter::KEYDOWN:
-      {
-        switch (ea.getKey())
-        {
+    switch (ea.getEventType()) {
+      case ::osgGA::GUIEventAdapter::KEYDOWN: {
+        switch (ea.getKey()) {
           case '1':
             mConstrained[0] = true;
             handled = true;
@@ -188,10 +175,8 @@ public:
         break;
       }
 
-      case ::osgGA::GUIEventAdapter::KEYUP:
-      {
-        switch (ea.getKey())
-        {
+      case ::osgGA::GUIEventAdapter::KEYUP: {
+        switch (ea.getKey()) {
           case '1':
             mConstrained[0] = false;
             handled = true;
@@ -220,21 +205,16 @@ public:
       if (mConstrained[i])
         ++constraintDofs;
 
-    if (constraintDofs == 0 || constraintDofs == 3)
-    {
+    if (constraintDofs == 0 || constraintDofs == 3) {
       mDnD->unconstrain();
-    }
-    else if (constraintDofs == 1)
-    {
+    } else if (constraintDofs == 1) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
       for (std::size_t i = 0; i < 3; ++i)
         if (mConstrained[i])
           v[i] = 1.0;
 
       mDnD->constrainToLine(v);
-    }
-    else if (constraintDofs == 2)
-    {
+    } else if (constraintDofs == 2) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
       for (std::size_t i = 0; i < 3; ++i)
         if (!mConstrained[i])
@@ -251,22 +231,17 @@ public:
   dart::sub_ptr<dart::gui::osg::DragAndDrop> mDnD;
 };
 
-class ShadowEventHandler : public osgGA::GUIEventHandler
-{
+class ShadowEventHandler : public osgGA::GUIEventHandler {
 public:
   ShadowEventHandler(
       OperationalSpaceControlWorld* node, dart::gui::osg::Viewer* viewer)
-    : mNode(node), mViewer(viewer)
-  {
+    : mNode(node), mViewer(viewer) {
   }
 
   bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == 's' || ea.getKey() == 'S')
-      {
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == 's' || ea.getKey() == 'S') {
         if (mNode->isShadowed())
           mNode->setShadowTechnique(nullptr);
         else
@@ -288,8 +263,7 @@ protected:
   dart::gui::osg::Viewer* mViewer;
 };
 
-int main()
-{
+int main() {
   dart::simulation::WorldPtr world(new dart::simulation::World);
   dart::io::DartLoader loader;
 

@@ -31,28 +31,25 @@
  */
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include "dart/dynamics/bullet/BulletTypes.hpp"
+
+#include "dart/config.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Eigen::Vector3d convertVector3(const btVector3& _vec)
-{
+Eigen::Vector3d convertVector3(const btVector3& _vec) {
   return Eigen::Vector3d(_vec.x(), _vec.y(), _vec.z());
 }
 
 //==============================================================================
-btVector3 convertVector3(const Eigen::Vector3d& _vec)
-{
+btVector3 convertVector3(const Eigen::Vector3d& _vec) {
   return btVector3(_vec.x(), _vec.y(), _vec.z());
 }
 
 //==============================================================================
-btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R)
-{
+btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R) {
   // clang-format off
   return btMatrix3x3(_R(0, 0), _R(0, 1), _R(0, 2),
                      _R(1, 0), _R(1, 1), _R(1, 2),
@@ -61,13 +58,12 @@ btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R)
 }
 
 //==============================================================================
-btTransform convertTransform(const Eigen::Isometry3d& _T)
-{
+btTransform convertTransform(const Eigen::Isometry3d& _T) {
   btTransform trans;
   trans.setOrigin(convertVector3(_T.translation()));
   trans.setBasis(convertMatrix3x3(_T.linear()));
   return trans;
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

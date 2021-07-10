@@ -41,92 +41,78 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-void CollisionResult::addContact(const Contact& contact)
-{
+void CollisionResult::addContact(const Contact& contact) {
   mContacts.push_back(contact);
   addObject(contact.collisionObject1);
   addObject(contact.collisionObject2);
 }
 
 //==============================================================================
-std::size_t CollisionResult::getNumContacts() const
-{
+std::size_t CollisionResult::getNumContacts() const {
   return mContacts.size();
 }
 
 //==============================================================================
-Contact& CollisionResult::getContact(std::size_t index)
-{
+Contact& CollisionResult::getContact(std::size_t index) {
   assert(index < mContacts.size());
 
   return mContacts[index];
 }
 
 //==============================================================================
-const Contact& CollisionResult::getContact(std::size_t index) const
-{
+const Contact& CollisionResult::getContact(std::size_t index) const {
   assert(index < mContacts.size());
 
   return mContacts[index];
 }
 
 //==============================================================================
-const std::vector<Contact>& CollisionResult::getContacts() const
-{
+const std::vector<Contact>& CollisionResult::getContacts() const {
   return mContacts;
 }
 
 //==============================================================================
 const std::unordered_set<const dynamics::BodyNode*>&
-CollisionResult::getCollidingBodyNodes() const
-{
+CollisionResult::getCollidingBodyNodes() const {
   return mCollidingBodyNodes;
 }
 
 //==============================================================================
 const std::unordered_set<const dynamics::ShapeFrame*>&
-CollisionResult::getCollidingShapeFrames() const
-{
+CollisionResult::getCollidingShapeFrames() const {
   return mCollidingShapeFrames;
 }
 
 //==============================================================================
-bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const
-{
+bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const {
   return (mCollidingBodyNodes.find(bn) != mCollidingBodyNodes.end());
 }
 
 //==============================================================================
-bool CollisionResult::inCollision(const dynamics::ShapeFrame* frame) const
-{
+bool CollisionResult::inCollision(const dynamics::ShapeFrame* frame) const {
   return (mCollidingShapeFrames.find(frame) != mCollidingShapeFrames.end());
 }
 
 //==============================================================================
-bool CollisionResult::isCollision() const
-{
+bool CollisionResult::isCollision() const {
   return !mContacts.empty();
 }
 
 //==============================================================================
-CollisionResult::operator bool() const
-{
+CollisionResult::operator bool() const {
   return isCollision();
 }
 
 //==============================================================================
-void CollisionResult::clear()
-{
+void CollisionResult::clear() {
   mContacts.clear();
   mCollidingShapeFrames.clear();
   mCollidingBodyNodes.clear();
 }
 
 //==============================================================================
-void CollisionResult::addObject(CollisionObject* object)
-{
-  if (!object)
-  {
+void CollisionResult::addObject(CollisionObject* object) {
+  if (!object) {
     dterr << "[CollisionResult::addObject] Attempting to add a collision with "
           << "a nullptr object to a CollisionResult instance. This is not "
           << "allowed. Please report this as a bug!\n";
@@ -137,12 +123,11 @@ void CollisionResult::addObject(CollisionObject* object)
   const dynamics::ShapeFrame* frame = object->getShapeFrame();
   mCollidingShapeFrames.insert(frame);
 
-  if (frame->isShapeNode())
-  {
+  if (frame->isShapeNode()) {
     const dynamics::ShapeNode* node = frame->asShapeNode();
     mCollidingBodyNodes.insert(node->getBodyNodePtr());
   }
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

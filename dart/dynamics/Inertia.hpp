@@ -40,12 +40,10 @@
 namespace dart {
 namespace dynamics {
 
-class Inertia
-{
+class Inertia {
 public:
   /// Enumeration for minimal inertia parameters
-  enum Param
-  {
+  enum Param {
 
     // Overall mass
     MASS = 0,

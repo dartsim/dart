@@ -32,42 +32,37 @@
 
 #pragma once
 
-#include "dart/math/geometry/TetraMesh.hpp"
-
 #include <Eigen/Geometry>
 
 #include "dart/math/Geometry.hpp"
+#include "dart/math/geometry/TetraMesh.hpp"
 
 namespace dart {
 namespace math {
 
 //==============================================================================
 template <typename S>
-TetraMesh<S>::TetraMesh()
-{
+TetraMesh<S>::TetraMesh() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-const std::string& TetraMesh<S>::getStaticType()
-{
+const std::string& TetraMesh<S>::getStaticType() {
   static const std::string type("TetraMesh");
   return type;
 }
 
 //==============================================================================
 template <typename S>
-const std::string& TetraMesh<S>::getType() const
-{
+const std::string& TetraMesh<S>::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
 template <typename S>
 void TetraMesh<S>::setTriangles(
-    const Vertices& vertices, const Triangles& triangles)
-{
+    const Vertices& vertices, const Triangles& triangles) {
   clear();
 
   this->mVertices = vertices;
@@ -76,15 +71,13 @@ void TetraMesh<S>::setTriangles(
 
 //==============================================================================
 template <typename S>
-void TetraMesh<S>::computeVertexNormals()
-{
+void TetraMesh<S>::computeVertexNormals() {
   computeTriangleNormals();
 
   this->mVertexNormals.clear();
   this->mVertexNormals.resize(this->mVertices.size(), Vector3::Zero());
 
-  for (auto i = 0u; i < mTriangles.size(); ++i)
-  {
+  for (auto i = 0u; i < mTriangles.size(); ++i) {
     auto& triangle = mTriangles[i];
     this->mVertexNormals[triangle[0]] += mTetraNormals[i];
     this->mVertexNormals[triangle[1]] += mTetraNormals[i];
@@ -96,36 +89,31 @@ void TetraMesh<S>::computeVertexNormals()
 
 //==============================================================================
 template <typename S>
-bool TetraMesh<S>::hasTriangles() const
-{
+bool TetraMesh<S>::hasTriangles() const {
   return !mTriangles.empty();
 }
 
 //==============================================================================
 template <typename S>
-bool TetraMesh<S>::hasTriangleNormals() const
-{
+bool TetraMesh<S>::hasTriangleNormals() const {
   return hasTriangles() && mTriangles.size() == mTetraNormals.size();
 }
 
 //==============================================================================
 template <typename S>
-const typename TetraMesh<S>::Triangles& TetraMesh<S>::getTriangles() const
-{
+const typename TetraMesh<S>::Triangles& TetraMesh<S>::getTriangles() const {
   return mTriangles;
 }
 
 //==============================================================================
 template <typename S>
-const typename TetraMesh<S>::Normals& TetraMesh<S>::getTriangleNormals() const
-{
+const typename TetraMesh<S>::Normals& TetraMesh<S>::getTriangleNormals() const {
   return mTetraNormals;
 }
 
 //==============================================================================
 template <typename S>
-void TetraMesh<S>::clear()
-{
+void TetraMesh<S>::clear() {
   mTriangles.clear();
   mTetraNormals.clear();
   Base::clear();
@@ -133,15 +121,13 @@ void TetraMesh<S>::clear()
 
 //==============================================================================
 template <typename S>
-TetraMesh<S> TetraMesh<S>::operator+(const TetraMesh& other) const
-{
+TetraMesh<S> TetraMesh<S>::operator+(const TetraMesh& other) const {
   return (TetraMesh(*this) += other);
 }
 
 //==============================================================================
 template <typename S>
-TetraMesh<S>& TetraMesh<S>::operator+=(const TetraMesh& other)
-{
+TetraMesh<S>& TetraMesh<S>::operator+=(const TetraMesh& other) {
   if (other.isEmpty())
     return *this;
 
@@ -152,22 +138,18 @@ TetraMesh<S>& TetraMesh<S>::operator+=(const TetraMesh& other)
 
   // Insert triangle normals if both meshes have normals. Otherwise, clean the
   // triangle normals.
-  if ((!hasTriangles() || hasTriangleNormals()) && other.hasTriangleNormals())
-  {
+  if ((!hasTriangles() || hasTriangleNormals()) && other.hasTriangleNormals()) {
     mTetraNormals.insert(
         mTetraNormals.end(),
         other.mTetraNormals.begin(),
         other.mTetraNormals.end());
-  }
-  else
-  {
+  } else {
     mTetraNormals.clear();
   }
 
   const Triangle offset = Triangle::Constant(oldNumVertices);
   mTriangles.resize(mTriangles.size() + other.mTriangles.size());
-  for (auto i = 0u; i < other.mTriangles.size(); ++i)
-  {
+  for (auto i = 0u; i < other.mTriangles.size(); ++i) {
     mTriangles[i + oldNumTriangles] = other.mTriangles[i] + offset;
   }
 
@@ -177,8 +159,7 @@ TetraMesh<S>& TetraMesh<S>::operator+=(const TetraMesh& other)
 //==============================================================================
 template <typename S>
 std::shared_ptr<TetraMesh<S>> TetraMesh<S>::generateConvexHull(
-    bool optimize) const
-{
+    bool optimize) const {
   auto triangles = Triangles();
   auto vertices = Vertices();
   std::tie(vertices, triangles)
@@ -192,12 +173,10 @@ std::shared_ptr<TetraMesh<S>> TetraMesh<S>::generateConvexHull(
 
 //==============================================================================
 template <typename S>
-void TetraMesh<S>::computeTriangleNormals()
-{
+void TetraMesh<S>::computeTriangleNormals() {
   mTetraNormals.resize(mTriangles.size());
 
-  for (auto i = 0u; i < mTriangles.size(); ++i)
-  {
+  for (auto i = 0u; i < mTriangles.size(); ++i) {
     auto& triangle = mTriangles[i];
     const Vector3 v01
         = this->mVertices[triangle[1]] - this->mVertices[triangle[0]];
@@ -211,10 +190,8 @@ void TetraMesh<S>::computeTriangleNormals()
 
 //==============================================================================
 template <typename S>
-void TetraMesh<S>::normalizeTriangleNormals()
-{
-  for (auto& normal : mTetraNormals)
-  {
+void TetraMesh<S>::normalizeTriangleNormals() {
+  for (auto& normal : mTetraNormals) {
     normal.normalize();
   }
 }

@@ -39,8 +39,7 @@ namespace python {
 
 void dart_gui_osg(py::module& m);
 
-void dart_gui(py::module& m)
-{
+void dart_gui(py::module& m) {
   auto sm = m.def_submodule("gui");
 
   dart_gui_osg(sm);

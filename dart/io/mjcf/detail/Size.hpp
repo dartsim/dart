@@ -42,8 +42,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Size final
-{
+class Size final {
 public:
   Size() = default;
 

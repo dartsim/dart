@@ -34,12 +34,11 @@
 
 #include <iostream>
 
-#include "dart/external/odelcpsolver/lcp.h"
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 
 #define DART_CFM 1e-9
 
@@ -60,8 +59,7 @@ MimicMotorConstraint::MimicMotorConstraint(
     mMultiplier(multiplier),
     mOffset(offset),
     mBodyNode(joint->getChildBodyNode()),
-    mAppliedImpulseIndex(0)
-{
+    mAppliedImpulseIndex(0) {
   assert(joint);
   assert(mimicJoint);
   assert(mBodyNode);
@@ -83,30 +81,25 @@ MimicMotorConstraint::MimicMotorConstraint(
 }
 
 //==============================================================================
-MimicMotorConstraint::~MimicMotorConstraint()
-{
+MimicMotorConstraint::~MimicMotorConstraint() {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& MimicMotorConstraint::getType() const
-{
+const std::string& MimicMotorConstraint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& MimicMotorConstraint::getStaticType()
-{
+const std::string& MimicMotorConstraint::getStaticType() {
   static const std::string name = "MimicMotorConstraint";
   return name;
 }
 
 //==============================================================================
-void MimicMotorConstraint::setConstraintForceMixing(double cfm)
-{
+void MimicMotorConstraint::setConstraintForceMixing(double cfm) {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9)
-  {
+  if (cfm < 1e-9) {
     dtwarn << "[MimicMotorConstraint::setConstraintForceMixing] "
            << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. "
@@ -118,20 +111,17 @@ void MimicMotorConstraint::setConstraintForceMixing(double cfm)
 }
 
 //==============================================================================
-double MimicMotorConstraint::getConstraintForceMixing()
-{
+double MimicMotorConstraint::getConstraintForceMixing() {
   return mConstraintForceMixing;
 }
 
 //==============================================================================
-void MimicMotorConstraint::update()
-{
+void MimicMotorConstraint::update() {
   // Reset dimention
   mDim = 0;
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     double timeStep = mJoint->getSkeleton()->getTimeStep();
     double qError = mMimicJoint->getPosition(i) * mMultiplier + mOffset
                     - mJoint->getPosition(i);
@@ -142,38 +132,30 @@ void MimicMotorConstraint::update()
 
     mNegativeVelocityError[i] = desiredVelocity - mJoint->getVelocity(i);
 
-    if (mNegativeVelocityError[i] != 0.0)
-    {
+    if (mNegativeVelocityError[i] != 0.0) {
       // Note that we are computing impulse not force
       mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
       mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
 
-      if (mActive[i])
-      {
+      if (mActive[i]) {
         ++(mLifeTime[i]);
-      }
-      else
-      {
+      } else {
         mActive[i] = true;
         mLifeTime[i] = 0;
       }
 
       ++mDim;
-    }
-    else
-    {
+    } else {
       mActive[i] = false;
     }
   }
 }
 
 //==============================================================================
-void MimicMotorConstraint::getInformation(ConstraintInfo* lcp)
-{
+void MimicMotorConstraint::getInformation(ConstraintInfo* lcp) {
   std::size_t index = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -195,21 +177,18 @@ void MimicMotorConstraint::getInformation(ConstraintInfo* lcp)
 }
 
 //==============================================================================
-void MimicMotorConstraint::applyUnitImpulse(std::size_t index)
-{
+void MimicMotorConstraint::applyUnitImpulse(std::size_t index) {
   assert(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
-    if (localIndex == index)
-    {
+    if (localIndex == index) {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
       skeleton->updateBiasImpulse(mBodyNode);
@@ -224,14 +203,12 @@ void MimicMotorConstraint::applyUnitImpulse(std::size_t index)
 }
 
 //==============================================================================
-void MimicMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
-{
+void MimicMotorConstraint::getVelocityChange(double* delVel, bool withCfm) {
   assert(delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -245,8 +222,7 @@ void MimicMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // varaible in ODE
-  if (withCfm)
-  {
+  if (withCfm) {
     delVel[mAppliedImpulseIndex]
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
@@ -255,24 +231,20 @@ void MimicMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 }
 
 //==============================================================================
-void MimicMotorConstraint::excite()
-{
+void MimicMotorConstraint::excite() {
   mJoint->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
-void MimicMotorConstraint::unexcite()
-{
+void MimicMotorConstraint::unexcite() {
   mJoint->getSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
-void MimicMotorConstraint::applyImpulse(double* lambda)
-{
+void MimicMotorConstraint::applyImpulse(double* lambda) {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -287,14 +259,12 @@ void MimicMotorConstraint::applyImpulse(double* lambda)
 }
 
 //==============================================================================
-dynamics::SkeletonPtr MimicMotorConstraint::getRootSkeleton() const
-{
+dynamics::SkeletonPtr MimicMotorConstraint::getRootSkeleton() const {
   return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================
-bool MimicMotorConstraint::isActive() const
-{
+bool MimicMotorConstraint::isActive() const {
   // Since we are not allowed to set the joint actuator type per each
   // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
   if (mJoint->getActuatorType() == dynamics::Joint::MIMIC)

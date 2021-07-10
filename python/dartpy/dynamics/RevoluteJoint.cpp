@@ -34,6 +34,7 @@
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "Joint.hpp"
 
 namespace py = pybind11;
@@ -41,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void RevoluteJoint(py::module& m)
-{
+void RevoluteJoint(py::module& m) {
   ::py::class_<dart::dynamics::RevoluteJoint::UniqueProperties>(
       m, "RevoluteJointUniqueProperties")
       .def(::py::init<>())
@@ -117,7 +117,9 @@ void RevoluteJoint(py::module& m)
           "setProperties",
           +[](dart::dynamics::RevoluteJoint* self,
               const dart::dynamics::RevoluteJoint::UniqueProperties&
-                  _properties) { self->setProperties(_properties); },
+                  _properties) {
+            self->setProperties(_properties);
+          },
           ::py::arg("properties"))
       .def(
           "setAspectProperties",
@@ -125,9 +127,10 @@ void RevoluteJoint(py::module& m)
               const dart::common::EmbedPropertiesOnTopOf<
                   dart::dynamics::RevoluteJoint,
                   dart::dynamics::detail::RevoluteJointUniqueProperties,
-                  dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<1>>>::AspectProperties&
-                  properties) { self->setAspectProperties(properties); },
+                  dart::dynamics::GenericJoint<dart::math::RealVectorSpace<
+                      1>>>::AspectProperties& properties) {
+            self->setAspectProperties(properties);
+          },
           ::py::arg("properties"))
       .def(
           "getRevoluteJointProperties",
@@ -151,17 +154,23 @@ void RevoluteJoint(py::module& m)
       .def(
           "isCyclic",
           +[](const dart::dynamics::RevoluteJoint* self,
-              std::size_t _index) -> bool { return self->isCyclic(_index); },
+              std::size_t _index) -> bool {
+            return self->isCyclic(_index);
+          },
           ::py::arg("index"))
       .def(
           "setAxis",
           +[](dart::dynamics::RevoluteJoint* self,
-              const Eigen::Vector3d& _axis) { self->setAxis(_axis); },
+              const Eigen::Vector3d& _axis) {
+            self->setAxis(_axis);
+          },
           ::py::arg("axis"))
       .def(
           "getAxis",
           +[](const dart::dynamics::RevoluteJoint* self)
-              -> const Eigen::Vector3d& { return self->getAxis(); },
+              -> const Eigen::Vector3d& {
+            return self->getAxis();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "getRelativeJacobianStatic",

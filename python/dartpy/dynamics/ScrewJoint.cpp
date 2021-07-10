@@ -34,6 +34,7 @@
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "Joint.hpp"
 
 namespace py = pybind11;
@@ -41,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ScrewJoint(py::module& m)
-{
+void ScrewJoint(py::module& m) {
   ::py::class_<dart::dynamics::ScrewJoint::UniqueProperties>(
       m, "ScrewJointUniqueProperties")
       .def(::py::init<>())
@@ -134,9 +134,10 @@ void ScrewJoint(py::module& m)
               const dart::common::EmbedPropertiesOnTopOf<
                   dart::dynamics::ScrewJoint,
                   dart::dynamics::detail::ScrewJointUniqueProperties,
-                  dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<1>>>::AspectProperties&
-                  properties) { self->setAspectProperties(properties); },
+                  dart::dynamics::GenericJoint<dart::math::RealVectorSpace<
+                      1>>>::AspectProperties& properties) {
+            self->setAspectProperties(properties);
+          },
           ::py::arg("properties"))
       .def(
           "getScrewJointProperties",
@@ -160,7 +161,9 @@ void ScrewJoint(py::module& m)
       .def(
           "isCyclic",
           +[](const dart::dynamics::ScrewJoint* self,
-              std::size_t _index) -> bool { return self->isCyclic(_index); },
+              std::size_t _index) -> bool {
+            return self->isCyclic(_index);
+          },
           ::py::arg("index"))
       .def(
           "setAxis",
@@ -171,7 +174,9 @@ void ScrewJoint(py::module& m)
       .def(
           "getAxis",
           +[](const dart::dynamics::ScrewJoint* self)
-              -> const Eigen::Vector3d& { return self->getAxis(); },
+              -> const Eigen::Vector3d& {
+            return self->getAxis();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "setPitch",

@@ -41,8 +41,7 @@ namespace math {
 
 /// This class represents triangle meshes.
 template <typename S_>
-class TetraMesh : public Mesh<S_>
-{
+class TetraMesh : public Mesh<S_> {
 public:
   // Type aliases
   using S = S_;

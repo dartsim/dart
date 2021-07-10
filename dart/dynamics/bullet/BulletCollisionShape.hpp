@@ -36,15 +36,14 @@
 #include <memory>
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
+
+#include "dart/config.hpp"
 
 namespace dart {
 namespace dynamics {
 
-struct BulletCollisionShape
-{
+struct BulletCollisionShape {
   std::unique_ptr<btCollisionShape> mCollisionShape;
 
   /// Relative transform of the shape to the collision object
@@ -59,7 +58,7 @@ struct BulletCollisionShape
   explicit BulletCollisionShape(std::unique_ptr<btCollisionShape> collShape);
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_BULLET_BULLETCOLLISIONSHAPE_HPP_

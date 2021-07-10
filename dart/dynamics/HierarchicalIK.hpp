@@ -60,8 +60,7 @@ typedef std::vector<std::vector<std::shared_ptr<InverseKinematics> > >
 /// put into the IK modules' Problems. Any additional constraints or objectives
 /// that you want the HierarchicalIK to solve should be put directly into the
 /// HierarchicalIK's Problem.
-class HierarchicalIK : public common::Subject
-{
+class HierarchicalIK : public common::Subject {
 public:
   /// Virtual destructor
   virtual ~HierarchicalIK() = default;
@@ -131,8 +130,7 @@ public:
   /// then it will be properly cloned whenever the HierarchicalIK module that it
   /// belongs to gets cloned. Any Function classes in the Problem that do not
   /// inherit HierarchicalIK::Function will just be copied over by reference.
-  class Function
-  {
+  class Function {
   public:
     /// Enable this function to be cloned to a new IK module.
     virtual optimization::FunctionPtr clone(
@@ -229,8 +227,7 @@ protected:
   /// HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the objective of the module's Problem to an HierarchicalIK::Objective.
-  class Objective final : public Function, public optimization::Function
-  {
+  class Objective final : public Function, public optimization::Function {
   public:
     /// Constructor
     Objective(const std::shared_ptr<HierarchicalIK>& _ik);
@@ -262,8 +259,7 @@ protected:
   /// of this HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the constraint of the module's Problem to an HierarchicalIK::Constraint.
-  class Constraint final : public Function, public optimization::Function
-  {
+  class Constraint final : public Function, public optimization::Function {
   public:
     /// Constructor
     Constraint(const std::shared_ptr<HierarchicalIK>& _ik);
@@ -347,8 +343,7 @@ public:
 /// The CompositeIK class allows you to specify an arbitrary hierarchy of
 /// InverseKinematics modules for a single Skeleton. Simply add in each IK
 /// module that should be used.
-class CompositeIK : public HierarchicalIK
-{
+class CompositeIK : public HierarchicalIK {
 public:
   typedef std::unordered_set<std::shared_ptr<InverseKinematics> > ModuleSet;
   typedef std::unordered_set<std::shared_ptr<const InverseKinematics> >
@@ -390,8 +385,7 @@ protected:
 /// The WholeBodyIK class provides an interface for simultaneously solving all
 /// the IK constraints of all BodyNodes and EndEffectors belonging to a single
 /// Skeleton.
-class WholeBodyIK : public HierarchicalIK
-{
+class WholeBodyIK : public HierarchicalIK {
 public:
   /// Create a WholeBodyIK
   static std::shared_ptr<WholeBodyIK> create(const SkeletonPtr& _skel);

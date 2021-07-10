@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "dart/test/TestHelpers.hpp"
 
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -40,6 +40,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/io/sdf/SdfParser.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;
@@ -48,8 +49,7 @@ using namespace simulation;
 using namespace io;
 
 //==============================================================================
-TEST(SdfParser, SDFSingleBodyWithoutJoint)
-{
+TEST(SdfParser, SDFSingleBodyWithoutJoint) {
   // Regression test for #444
   WorldPtr world = SdfParser::readWorld(
       "dart://sample/sdf/test/single_bodynode_skeleton.world");
@@ -71,8 +71,7 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 }
 
 //==============================================================================
-TEST(SdfParser, SDFJointProperties)
-{
+TEST(SdfParser, SDFJointProperties) {
   WorldPtr world = SdfParser::readWorld(
       "dart://sample/sdf/test/test_skeleton_joint.world");
   EXPECT_TRUE(world != nullptr);
@@ -93,16 +92,12 @@ TEST(SdfParser, SDFJointProperties)
     EXPECT_NEAR(joint->getSpringStiffness(idx), 3, epsilon);
   };
 
-  for (auto& joint : skel->getJoints())
-  {
+  for (auto& joint : skel->getJoints()) {
     if (joint->getType() == PrismaticJoint::getStaticType()
         || joint->getType() == RevoluteJoint::getStaticType()
-        || joint->getType() == ScrewJoint::getStaticType())
-    {
+        || joint->getType() == ScrewJoint::getStaticType()) {
       testProperties(joint, 0);
-    }
-    else if (joint->getType() == UniversalJoint::getStaticType())
-    {
+    } else if (joint->getType() == UniversalJoint::getStaticType()) {
       testProperties(joint, 0);
       testProperties(joint, 1);
     }
@@ -110,8 +105,7 @@ TEST(SdfParser, SDFJointProperties)
 }
 
 //==============================================================================
-TEST(SdfParser, ParsingSDFFiles)
-{
+TEST(SdfParser, ParsingSDFFiles) {
   const auto numSteps = 10u;
 
   // Create a list of sdf files to test with where the sdf files contains World
@@ -127,8 +121,7 @@ TEST(SdfParser, ParsingSDFFiles)
   for (const auto& worldFile : worldFiles)
     worlds.push_back(SdfParser::readWorld(worldFile));
 
-  for (auto world : worlds)
-  {
+  for (auto world : worlds) {
     EXPECT_TRUE(nullptr != world);
 
     for (auto i = 0u; i < numSteps; ++i)
@@ -147,8 +140,7 @@ TEST(SdfParser, ParsingSDFFiles)
   for (const auto& skeletonFile : skeletonFiles)
     skeletons.push_back(SdfParser::readSkeleton(skeletonFile));
 
-  for (auto skeleton : skeletons)
-  {
+  for (auto skeleton : skeletons) {
     EXPECT_TRUE(nullptr != skeleton);
 
     world->addSkeleton(skeleton);
@@ -160,17 +152,14 @@ TEST(SdfParser, ParsingSDFFiles)
 }
 
 //==============================================================================
-TEST(SdfParser, ReadMaterial)
-{
+TEST(SdfParser, ReadMaterial) {
   std::string sdf_filename = "dart://sample/sdf/quad.sdf";
   SkeletonPtr skeleton = SdfParser::readSkeleton(sdf_filename);
   EXPECT_TRUE(nullptr != skeleton);
   auto bodynode = skeleton->getBodyNode(0);
 
-  for (auto shapenode : bodynode->getShapeNodes())
-  {
-    if (shapenode->has<dart::dynamics::VisualAspect>())
-    {
+  for (auto shapenode : bodynode->getShapeNodes()) {
+    if (shapenode->has<dart::dynamics::VisualAspect>()) {
       Eigen::Vector4d color = shapenode->getVisualAspect()->getRGBA();
       Eigen::Vector4d expected_color(0.5, 0.6, 0.8, 1.0);
       double diff = (color - expected_color).norm();

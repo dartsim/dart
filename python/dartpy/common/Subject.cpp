@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Subject(py::module& m)
-{
+void Subject(py::module& m) {
   ::py::class_<dart::common::Subject, std::shared_ptr<dart::common::Subject>>(
       m, "Subject");
 }

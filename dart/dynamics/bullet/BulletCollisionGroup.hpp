@@ -34,17 +34,15 @@
 #define DART_COLLISION_BULLET_BULLETCOLLISIONGROUP_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
 
+#include "dart/config.hpp"
 #include "dart/dynamics/CollisionGroup.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class BulletCollisionGroup : public CollisionGroup
-{
+class BulletCollisionGroup : public CollisionGroup {
 public:
   friend class BulletCollisionDetector;
 
@@ -96,7 +94,7 @@ protected:
   std::unique_ptr<btCollisionWorld> mBulletCollisionWorld;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_BULLET_BULLETCOLLISIONGROUP_HPP_

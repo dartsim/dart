@@ -30,19 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
 #include <dart/collision/collision.hpp>
 #include <dart/math/math.hpp>
+#include <gtest/gtest.h>
 
 using namespace dart;
 
 //==============================================================================
 template <typename EngineT>
-void test_collide(const EngineT& engine)
-{
-  if (!engine)
-  {
+void test_collide(const EngineT& engine) {
+  if (!engine) {
     return;
   }
 
@@ -61,7 +58,6 @@ void test_collide(const EngineT& engine)
 }
 
 //==============================================================================
-TEST(NarrowPhaseTest, Collide)
-{
+TEST(NarrowPhaseTest, Collide) {
   test_collide(collision::Engine<double>::create("fcl"));
 }

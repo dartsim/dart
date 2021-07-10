@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void JacobianNode(py::module& m)
-{
+void JacobianNode(py::module& m) {
   ::py::class_<
       dart::dynamics::JacobianNode,
       dart::dynamics::Frame,
@@ -68,7 +68,9 @@ void JacobianNode(py::module& m)
           })
       .def(
           "clearIK",
-          +[](dart::dynamics::JacobianNode* self) { self->clearIK(); })
+          +[](dart::dynamics::JacobianNode* self) {
+            self->clearIK();
+          })
       .def(
           "dependsOn",
           +[](const dart::dynamics::JacobianNode* self,
@@ -273,10 +275,13 @@ void JacobianNode(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "dirtyJacobian",
-          +[](dart::dynamics::JacobianNode* self) { self->dirtyJacobian(); })
-      .def("dirtyJacobianDeriv", +[](dart::dynamics::JacobianNode* self) {
-        self->dirtyJacobianDeriv();
-      });
+          +[](dart::dynamics::JacobianNode* self) {
+            self->dirtyJacobian();
+          })
+      .def(
+          "dirtyJacobianDeriv", +[](dart::dynamics::JacobianNode* self) {
+            self->dirtyJacobianDeriv();
+          });
 }
 
 } // namespace python

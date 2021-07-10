@@ -34,6 +34,7 @@
 #define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
 
 #include <Eigen/Dense>
+
 #include "dart/dynamics/CollisionObject.hpp"
 
 namespace dart {
@@ -41,8 +42,7 @@ namespace dynamics {
 
 class CollisionObject;
 
-class DARTCollisionObject : public CollisionObject
-{
+class DARTCollisionObject : public CollisionObject {
 public:
   friend class DARTCollisionDetector;
 
@@ -56,7 +56,7 @@ protected:
   void updateEngineData() override;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_

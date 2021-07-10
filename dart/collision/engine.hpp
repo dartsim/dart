@@ -46,8 +46,7 @@ namespace dart {
 namespace collision {
 
 template <typename S_>
-class Engine
-{
+class Engine {
 public:
   // Type aliases
   using S = S_;
@@ -113,13 +112,16 @@ extern template class Engine<double>;
 } // namespace collision
 } // namespace dart
 
-#define DART_REGISTER_ENGINE_IN_HEADER(engine_type)                           \
+#define DART_REGISTER_ENGINE_IN_HEADER(engine_type)                            \
   static typename Engine<S>::template Registrar<engine_type> m_registrar
 
-#define DART_REGISTER_ENGINE_OUT_HEADER(engine_type)                      \
+#define DART_REGISTER_ENGINE_OUT_HEADER(engine_type)                           \
   template <typename S>                                                        \
-  typename Engine<S>::template Registrar<engine_type> engine_type::m_registrar{\
-    engine_type::GetStaticType(),                                              \
-  []() -> std::shared_ptr<engine_type> { return engine_type::Create(); }}
+  typename Engine<S>::template Registrar<engine_type>                          \
+      engine_type::m_registrar {                                               \
+    engine_type::GetStaticType(), []() -> std::shared_ptr<engine_type> {       \
+      return engine_type::Create();                                            \
+    }                                                                          \
+  }
 
 #include "dart/collision/detail/engine_impl.hpp"

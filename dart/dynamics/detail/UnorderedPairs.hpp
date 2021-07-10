@@ -41,8 +41,7 @@ namespace dynamics {
 namespace detail {
 
 template <class T>
-class UnorderedPairs
-{
+class UnorderedPairs {
 public:
   /// Adds a pair to this container.
   void addPair(const T* left, const T* right);
@@ -67,8 +66,7 @@ private:
 
 //==============================================================================
 template <class T>
-void UnorderedPairs<T>::addPair(const T* left, const T* right)
-{
+void UnorderedPairs<T>::addPair(const T* left, const T* right) {
   if (!left || !right)
     return;
 
@@ -92,8 +90,7 @@ void UnorderedPairs<T>::addPair(const T* left, const T* right)
 
 //==============================================================================
 template <class T>
-void UnorderedPairs<T>::removePair(const T* left, const T* right)
-{
+void UnorderedPairs<T>::removePair(const T* left, const T* right) {
   if (!left || !right)
     return;
 
@@ -106,8 +103,7 @@ void UnorderedPairs<T>::removePair(const T* left, const T* right)
   // Remove the pair only when it already exists
   const auto resultLeft = mList.find(bodyNodeLess);
   const bool foundLeft = (resultLeft != mList.end());
-  if (foundLeft)
-  {
+  if (foundLeft) {
     auto& associatedRights = resultLeft->second;
     associatedRights.erase(bodyNodeGreater);
 
@@ -118,15 +114,13 @@ void UnorderedPairs<T>::removePair(const T* left, const T* right)
 
 //==============================================================================
 template <class T>
-void UnorderedPairs<T>::removeAllPairs()
-{
+void UnorderedPairs<T>::removeAllPairs() {
   mList.clear();
 }
 
 //==============================================================================
 template <class T>
-bool UnorderedPairs<T>::contains(const T* left, const T* right) const
-{
+bool UnorderedPairs<T>::contains(const T* left, const T* right) const {
   const auto* less = left;
   const auto* greater = right;
 
@@ -135,8 +129,7 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
 
   const auto resultLeft = mList.find(less);
   const bool foundLeft = (resultLeft != mList.end());
-  if (foundLeft)
-  {
+  if (foundLeft) {
     auto& associatedRights = resultLeft->second;
 
     const auto resultRight = associatedRights.find(greater);
@@ -149,7 +142,7 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_

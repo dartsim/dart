@@ -48,8 +48,7 @@ namespace detail {
 
 //==============================================================================
 template <class ConfigSpaceT>
-struct GenericJointState
-{
+struct GenericJointState {
   constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
   using Vector = typename ConfigSpaceT::Vector;
@@ -84,8 +83,7 @@ struct GenericJointState
 
 //==============================================================================
 template <class ConfigSpaceT>
-struct GenericJointUniqueProperties
-{
+struct GenericJointUniqueProperties {
   constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
   using Vector = typename ConfigSpaceT::Vector;
@@ -187,8 +185,7 @@ public:
 //==============================================================================
 template <class ConfigSpaceT>
 struct GenericJointProperties : Joint::Properties,
-                                GenericJointUniqueProperties<ConfigSpaceT>
-{
+                                GenericJointUniqueProperties<ConfigSpaceT> {
   GenericJointProperties(
       const Joint::Properties& jointProperties = Joint::Properties(),
       const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties
@@ -226,8 +223,7 @@ GenericJointState<ConfigSpaceT>::GenericJointState(
     mVelocities(velocities),
     mAccelerations(accelerations),
     mForces(forces),
-    mCommands(commands)
-{
+    mCommands(commands) {
   // Do nothing
 }
 
@@ -261,10 +257,8 @@ GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
     mSpringStiffnesses(springStiffness),
     mRestPositions(restPosition),
     mDampingCoefficients(dampingCoefficient),
-    mFrictions(coulombFrictions)
-{
-  for (auto i = 0u; i < NumDofs; ++i)
-  {
+    mFrictions(coulombFrictions) {
+  for (auto i = 0u; i < NumDofs; ++i) {
     mPreserveDofNames[i] = false;
     mDofNames[i] = std::string();
   }
@@ -287,10 +281,8 @@ GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
     mSpringStiffnesses(_other.mSpringStiffnesses),
     mRestPositions(_other.mRestPositions),
     mDampingCoefficients(_other.mDampingCoefficients),
-    mFrictions(_other.mFrictions)
-{
-  for (auto i = 0u; i < NumDofs; ++i)
-  {
+    mFrictions(_other.mFrictions) {
+  for (auto i = 0u; i < NumDofs; ++i) {
     mPreserveDofNames[i] = _other.mPreserveDofNames[i];
     mDofNames[i] = _other.mDofNames[i];
   }
@@ -300,10 +292,8 @@ GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
 template <class ConfigSpaceT>
 GenericJointUniqueProperties<ConfigSpaceT>&
 GenericJointUniqueProperties<ConfigSpaceT>::operator=(
-    const GenericJointUniqueProperties& other)
-{
-  if (this != &other)
-  {
+    const GenericJointUniqueProperties& other) {
+  if (this != &other) {
     mPositionLowerLimits = other.mPositionLowerLimits;
     mPositionUpperLimits = other.mPositionUpperLimits;
     mInitialPositions = other.mInitialPositions;
@@ -319,8 +309,7 @@ GenericJointUniqueProperties<ConfigSpaceT>::operator=(
     mDampingCoefficients = other.mDampingCoefficients;
     mFrictions = other.mFrictions;
 
-    for (auto i = 0u; i < NumDofs; ++i)
-    {
+    for (auto i = 0u; i < NumDofs; ++i) {
       mPreserveDofNames[i] = other.mPreserveDofNames[i];
       mDofNames[i] = other.mDofNames[i];
     }
@@ -334,8 +323,7 @@ GenericJointProperties<ConfigSpaceT>::GenericJointProperties(
     const Joint::Properties& jointProperties,
     const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties)
   : Joint::Properties(jointProperties),
-    GenericJointUniqueProperties<ConfigSpaceT>(genericProperties)
-{
+    GenericJointUniqueProperties<ConfigSpaceT>(genericProperties) {
   // Do nothing
 }
 

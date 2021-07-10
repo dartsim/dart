@@ -57,8 +57,7 @@ template <class CompositeT, typename StateT, typename PropertiesT>
 class ProxyStateAndPropertiesAspect : public detail::ProxyPropertiesAspect<
                                           ProxyStateAspect<CompositeT, StateT>,
                                           CompositeT,
-                                          PropertiesT>
-{
+                                          PropertiesT> {
 public:
   using State = StateT;
   using Properties = PropertiesT;
@@ -75,14 +74,12 @@ public:
   // Forwarding constructor
   template <typename... Args>
   ProxyStateAndPropertiesAspect(Args&&... args)
-    : Base(std::forward<Args>(args)...)
-  {
+    : Base(std::forward<Args>(args)...) {
     // Do nothing
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect() const override
-  {
+  std::unique_ptr<Aspect> cloneAspect() const override {
     return std::make_unique<ProxyStateAndPropertiesAspect>();
   }
 };

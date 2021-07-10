@@ -62,8 +62,7 @@ static detail::OdeGeom* createOdeGeom(
     OdeCollisionObject* collObj, const dynamics::ShapeFrame* shapeFrame);
 
 //==============================================================================
-OdeCollisionObject::~OdeCollisionObject()
-{
+OdeCollisionObject::~OdeCollisionObject() {
   if (mBodyId)
     dBodyDestroy(mBodyId);
 }
@@ -74,8 +73,7 @@ OdeCollisionObject::OdeCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
   : CollisionObject(collisionDetector, shapeFrame),
     mOdeGeom(nullptr),
-    mBodyId(nullptr)
-{
+    mBodyId(nullptr) {
   // Create detail::OdeGeom according to the shape type.
   // The geometry may have a transform assigned to it which is to
   // be treated as relative transform to the main body.
@@ -84,8 +82,7 @@ OdeCollisionObject::OdeCollisionObject(
   const auto geomId = mOdeGeom->getOdeGeomId();
   assert(geomId);
 
-  if (mOdeGeom->isPlaceable())
-  {
+  if (mOdeGeom->isPlaceable()) {
     // if the geometry already has a pose, it is to be considered
     // a constant relative pose to the body.
     // Get the geometry pose to ensure this offset is set correctly.
@@ -108,8 +105,7 @@ OdeCollisionObject::OdeCollisionObject(
 }
 
 //==============================================================================
-OdeCollisionObject& OdeCollisionObject::operator=(OdeCollisionObject&& other)
-{
+OdeCollisionObject& OdeCollisionObject::operator=(OdeCollisionObject&& other) {
   // This should only be used for refreshing the collision objects, so the
   // detector and the shape frame should never need to change
   assert(mCollisionDetector == other.mCollisionDetector);
@@ -129,8 +125,7 @@ OdeCollisionObject& OdeCollisionObject::operator=(OdeCollisionObject&& other)
 }
 
 //==============================================================================
-void OdeCollisionObject::updateEngineData()
-{
+void OdeCollisionObject::updateEngineData() {
   mOdeGeom->updateEngineData();
 
   // If body id is nullptr, this object is immobile. Immobile geom doesn't need
@@ -155,21 +150,18 @@ void OdeCollisionObject::updateEngineData()
 }
 
 //==============================================================================
-dBodyID OdeCollisionObject::getOdeBodyId() const
-{
+dBodyID OdeCollisionObject::getOdeBodyId() const {
   return mBodyId;
 }
 
 //==============================================================================
-dGeomID OdeCollisionObject::getOdeGeomId() const
-{
+dGeomID OdeCollisionObject::getOdeGeomId() const {
   return mOdeGeom->getOdeGeomId();
 }
 
 //==============================================================================
 detail::OdeGeom* createOdeGeom(
-    OdeCollisionObject* collObj, const dynamics::ShapeFrame* shapeFrame)
-{
+    OdeCollisionObject* collObj, const dynamics::ShapeFrame* shapeFrame) {
   using dynamics::BoxShape;
   using dynamics::CapsuleShape;
   using dynamics::CylinderShape;
@@ -185,64 +177,47 @@ detail::OdeGeom* createOdeGeom(
   detail::OdeGeom* geom = nullptr;
   const auto shape = shapeFrame->getShape().get();
 
-  if (shape->is<SphereShape>())
-  {
+  if (shape->is<SphereShape>()) {
     const auto sphere = static_cast<const SphereShape*>(shape);
     const auto radius = sphere->getRadius();
 
     geom = new detail::OdeSphere(collObj, radius);
-  }
-  else if (shape->is<BoxShape>())
-  {
+  } else if (shape->is<BoxShape>()) {
     const auto box = static_cast<const BoxShape*>(shape);
     const Eigen::Vector3d& size = box->getSize();
 
     geom = new detail::OdeBox(collObj, size);
-  }
-  else if (shape->is<CapsuleShape>())
-  {
+  } else if (shape->is<CapsuleShape>()) {
     const auto capsule = static_cast<const CapsuleShape*>(shape);
     const auto radius = capsule->getRadius();
     const auto height = capsule->getHeight();
 
     geom = new detail::OdeCapsule(collObj, radius, height);
-  }
-  else if (shape->is<CylinderShape>())
-  {
+  } else if (shape->is<CylinderShape>()) {
     const auto cylinder = static_cast<const CylinderShape*>(shape);
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
     geom = new detail::OdeCylinder(collObj, radius, height);
-  }
-  else if (shape->is<PlaneShape>())
-  {
+  } else if (shape->is<PlaneShape>()) {
     const auto plane = static_cast<const PlaneShape*>(shape);
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
     geom = new detail::OdePlane(collObj, normal, offset);
-  }
-  else if (shape->is<MeshShape>())
-  {
+  } else if (shape->is<MeshShape>()) {
     auto shapeMesh = static_cast<const MeshShape*>(shape);
     const Eigen::Vector3d& scale = shapeMesh->getScale();
     auto aiScene = shapeMesh->getMesh();
 
     geom = new detail::OdeMesh(collObj, aiScene, scale);
-  }
-  else if (shape->is<HeightmapShapef>())
-  {
+  } else if (shape->is<HeightmapShapef>()) {
     auto heightMap = static_cast<const HeightmapShapef*>(shape);
     geom = new detail::OdeHeightmapf(collObj, heightMap);
-  }
-  else if (shape->is<HeightmapShaped>())
-  {
+  } else if (shape->is<HeightmapShaped>()) {
     auto heightMap = static_cast<const HeightmapShaped*>(shape);
     geom = new detail::OdeHeightmapd(collObj, heightMap);
-  }
-  else
-  {
+  } else {
     dterr << "[OdeCollisionDetector] Attempting to create an unsupported shape "
           << "type '" << shape->getType() << "'. Creating a sphere with 0.01 "
           << "radius instead.\n";
@@ -259,5 +234,5 @@ detail::OdeGeom* createOdeGeom(
   return geom;
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
