@@ -681,13 +681,13 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
-static std::shared_ptr<collision::CollisionDetector>
+static std::shared_ptr<dynamics::CollisionDetector>
 createFclMeshCollisionDetector()
 {
-  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
-  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+  auto cd = dynamics::CollisionDetector::getFactory()->create("fcl");
+  auto fcl = std::static_pointer_cast<dynamics::FCLCollisionDetector>(cd);
+  fcl->setPrimitiveShapeType(dynamics::FCLCollisionDetector::MESH);
+  fcl->setContactPointComputationMethod(dynamics::FCLCollisionDetector::DART);
 
   return fcl;
 }
@@ -730,7 +730,7 @@ simulation::WorldPtr readWorld(
     }
 
     // Collision detector
-    std::shared_ptr<collision::CollisionDetector> collision_detector;
+    std::shared_ptr<dynamics::CollisionDetector> collision_detector;
 
     if (hasElement(physicsElement, "collision_detector"))
     {
@@ -743,17 +743,17 @@ simulation::WorldPtr readWorld(
       else if (cdType == "fcl")
       {
         collision_detector
-            = collision::CollisionDetector::getFactory()->create("fcl");
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+            = dynamics::CollisionDetector::getFactory()->create("fcl");
+        auto cd = std::static_pointer_cast<dynamics::FCLCollisionDetector>(
             collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+        cd->setPrimitiveShapeType(dynamics::FCLCollisionDetector::PRIMITIVE);
         cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
+            dynamics::FCLCollisionDetector::DART);
       }
       else
       {
         collision_detector
-            = collision::CollisionDetector::getFactory()->create(cdType);
+            = dynamics::CollisionDetector::getFactory()->create(cdType);
       }
 
       if (!collision_detector)

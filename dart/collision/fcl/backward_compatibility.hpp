@@ -88,7 +88,7 @@
 #endif   // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
 // Geometric fundamentals
@@ -214,7 +214,7 @@ void setEulerZYX(FclMatrix3<S>& rot, S eulerX, S eulerY, S eulerZ);
 template <typename S>
 FclVector3<S> transform(const FclTransform3<S>& t, const FclVector3<S>& v);
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/fcl/detail/backward_compatibility_impl.hpp"

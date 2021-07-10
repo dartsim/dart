@@ -36,7 +36,7 @@
 #include "dart/math/geometry/Geometry.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S_>
 class Group
@@ -80,7 +80,7 @@ using Groupd = Group<double>;
 
 extern template class Group<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/detail/group_impl.hpp"

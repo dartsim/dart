@@ -36,7 +36,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 CollisionDetector* CollisionObject::getCollisionDetector()

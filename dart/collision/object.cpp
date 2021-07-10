@@ -33,9 +33,9 @@
 #include "dart/collision/object.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template class Object<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

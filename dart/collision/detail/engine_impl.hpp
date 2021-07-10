@@ -35,7 +35,7 @@
 #include "dart/collision/engine.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -102,5 +102,5 @@ Group<S>* Engine<S>::get_default_group()
   return m_default_group.get();
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

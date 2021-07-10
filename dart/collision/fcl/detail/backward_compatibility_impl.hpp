@@ -35,7 +35,7 @@
 #include "dart/collision/fcl/backward_compatibility.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -140,5 +140,5 @@ FclVector3<S> transform(const FclTransform3<S>& t, const FclVector3<S>& v)
 #endif
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

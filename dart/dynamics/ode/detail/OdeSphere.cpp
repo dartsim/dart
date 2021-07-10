@@ -35,7 +35,7 @@
 #include "dart/dynamics/SphereShape.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 //==============================================================================

@@ -37,7 +37,7 @@
 #include "dart/collision/fcl/fcl_conversion.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -149,5 +149,5 @@ FclObject<S>::FclObject(Group<S>* collisionGroup, math::GeometryPtr shape)
   // Do nothing
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

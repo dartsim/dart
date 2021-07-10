@@ -33,7 +33,7 @@
 #include "dart/dynamics/DistanceOption.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 DistanceOption::DistanceOption(

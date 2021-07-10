@@ -36,7 +36,7 @@
 #include "dart/collision/dart/BackwardCompatibility.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 class DartObject : public Object
 {
@@ -44,17 +44,17 @@ public:
   const Eigen::Isometry3d& getTransform() const override;
 
   /// Return FCL collision object
-  dart::collision2::dart::Object* getFCLObject();
+  dart::collision::dart::Object* getFCLObject();
 
   /// Return FCL collision object
-  const dart::collision2::dart::Object* getFCLObject() const;
+  const dart::collision::dart::Object* getFCLObject() const;
 
 protected:
   /// Constructor
   DartObject(
       Group* collisionGroup,
       math::GeometryPtr shape,
-      const std::shared_ptr<dart::collision2::dart::CollisionGeometry>&
+      const std::shared_ptr<dart::collision::dart::CollisionGeometry>&
           fclCollGeom);
 
   // Documentation inherited
@@ -64,11 +64,11 @@ protected:
   DartObject(Group* collisionGroup, math::GeometryPtr shape);
 
   /// FCL collision object
-  std::unique_ptr<dart::collision2::dart::Object> mFCLObject;
+  std::unique_ptr<dart::collision::dart::Object> mFCLObject;
 
 private:
   friend class FclEngine;
 };
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

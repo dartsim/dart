@@ -61,18 +61,18 @@ using namespace dynamics;
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double timeStep)
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+  : mCollisionDetector(dynamics::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
-    mCollisionOption(collision::CollisionOption(
-        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
+    mCollisionOption(dynamics::CollisionOption(
+        true, 1000u, std::make_shared<dynamics::BodyNodeCollisionFilter>())),
     mTimeStep(timeStep)
 {
   assert(timeStep > 0.0);
 
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+  auto cd = std::static_pointer_cast<dynamics::FCLCollisionDetector>(
       mCollisionDetector);
 
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  cd->setPrimitiveShapeType(dynamics::FCLCollisionDetector::MESH);
   // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
   // incorrect contact point computation.
   // (see: https://github.com/flexible-collision-library/fcl/issues/106)
@@ -80,16 +80,16 @@ ConstraintSolver::ConstraintSolver(double timeStep)
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver()
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+  : mCollisionDetector(dynamics::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
-    mCollisionOption(collision::CollisionOption(
-        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
+    mCollisionOption(dynamics::CollisionOption(
+        true, 1000u, std::make_shared<dynamics::BodyNodeCollisionFilter>())),
     mTimeStep(0.001)
 {
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+  auto cd = std::static_pointer_cast<dynamics::FCLCollisionDetector>(
       mCollisionDetector);
 
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  cd->setPrimitiveShapeType(dynamics::FCLCollisionDetector::MESH);
   // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
   // incorrect contact point computation.
   // (see: https://github.com/flexible-collision-library/fcl/issues/106)
@@ -261,15 +261,15 @@ double ConstraintSolver::getTimeStep() const
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-    collision::CollisionDetector* collisionDetector)
+    dynamics::CollisionDetector* collisionDetector)
 {
   setCollisionDetector(
-      std::unique_ptr<collision::CollisionDetector>(collisionDetector));
+      std::unique_ptr<dynamics::CollisionDetector>(collisionDetector));
 }
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-    const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
+    const std::shared_ptr<dynamics::CollisionDetector>& collisionDetector)
 {
   if (!collisionDetector)
   {
@@ -291,50 +291,50 @@ void ConstraintSolver::setCollisionDetector(
 }
 
 //==============================================================================
-collision::CollisionDetectorPtr ConstraintSolver::getCollisionDetector()
+dynamics::CollisionDetectorPtr ConstraintSolver::getCollisionDetector()
 {
   return mCollisionDetector;
 }
 
 //==============================================================================
-collision::ConstCollisionDetectorPtr ConstraintSolver::getCollisionDetector()
+dynamics::ConstCollisionDetectorPtr ConstraintSolver::getCollisionDetector()
     const
 {
   return mCollisionDetector;
 }
 
 //==============================================================================
-collision::CollisionGroupPtr ConstraintSolver::getCollisionGroup()
+dynamics::CollisionGroupPtr ConstraintSolver::getCollisionGroup()
 {
   return mCollisionGroup;
 }
 
 //==============================================================================
-collision::ConstCollisionGroupPtr ConstraintSolver::getCollisionGroup() const
+dynamics::ConstCollisionGroupPtr ConstraintSolver::getCollisionGroup() const
 {
   return mCollisionGroup;
 }
 
 //==============================================================================
-collision::CollisionOption& ConstraintSolver::getCollisionOption()
+dynamics::CollisionOption& ConstraintSolver::getCollisionOption()
 {
   return mCollisionOption;
 }
 
 //==============================================================================
-const collision::CollisionOption& ConstraintSolver::getCollisionOption() const
+const dynamics::CollisionOption& ConstraintSolver::getCollisionOption() const
 {
   return mCollisionOption;
 }
 
 //==============================================================================
-collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
+dynamics::CollisionResult& ConstraintSolver::getLastCollisionResult()
 {
   return mCollisionResult;
 }
 
 //==============================================================================
-const collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
+const dynamics::CollisionResult& ConstraintSolver::getLastCollisionResult()
     const
 {
   return mCollisionResult;
@@ -482,7 +482,7 @@ void ConstraintSolver::updateConstraints()
 
   // Create a mapping of contact pairs to the number of contacts between them
   using ContactPair
-      = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+      = std::pair<dynamics::CollisionObject*, dynamics::CollisionObject*>;
 
   // Compare contact pairs while ignoring their order in the pair.
   struct ContactPairCompare
@@ -508,7 +508,7 @@ void ConstraintSolver::updateConstraints()
   {
     auto& contact = mCollisionResult.getContact(i);
 
-    if (collision::Contact::isZeroNormal(contact.normal))
+    if (dynamics::Contact::isZeroNormal(contact.normal))
     {
       // Skip this contact. This is because we assume that a contact with
       // zero-length normal is invalid.
@@ -722,7 +722,7 @@ void ConstraintSolver::solveConstrainedGroups()
 }
 
 //==============================================================================
-bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
+bool ConstraintSolver::isSoftContact(const dynamics::Contact& contact) const
 {
   auto* shapeNode1 = contact.collisionObject1->getShapeFrame()->asShapeNode();
   auto* shapeNode2 = contact.collisionObject2->getShapeFrame()->asShapeNode();

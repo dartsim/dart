@@ -63,7 +63,7 @@
 #include "dart/dynamics/bullet/detail/BulletOverlapFilterCallback.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 namespace {
 
@@ -106,8 +106,8 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 BulletCollisionDetector::Registrar<BulletCollisionDetector>
     BulletCollisionDetector::mRegistrar{
         BulletCollisionDetector::getStaticType(),
-        []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
-          return dart::collision::BulletCollisionDetector::create();
+        []() -> std::shared_ptr<dart::dynamics::BulletCollisionDetector> {
+          return dart::dynamics::BulletCollisionDetector::create();
         }};
 
 //==============================================================================

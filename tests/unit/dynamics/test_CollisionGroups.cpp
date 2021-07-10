@@ -49,7 +49,7 @@ class CollisionGroupsTest : public testing::Test,
 
 TEST_P(CollisionGroupsTest, SkeletonSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
+  if (!dart::dynamics::CollisionDetector::getFactory()->canCreate(GetParam()))
   {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
@@ -65,7 +65,7 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   // subscribe to them.
   dart::simulation::WorldPtr world = dart::simulation::World::create();
   world->getConstraintSolver()->setCollisionDetector(
-      dart::collision::CollisionDetector::getFactory()->create(GetParam()));
+      dart::dynamics::CollisionDetector::getFactory()->create(GetParam()));
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
@@ -101,7 +101,7 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   // Now we'll change the properties of one the box shape so that there should
   // no longer be any collisions.
   boxShape->setSize(Eigen::Vector3d::Constant(0.2));
-  dart::collision::CollisionResult result2;
+  dart::dynamics::CollisionResult result2;
   EXPECT_FALSE(world->checkCollision());
 
   // Now we'll replace one of the boxes with a large one, so that a collision
@@ -151,7 +151,7 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
 
 TEST_P(CollisionGroupsTest, BodyNodeSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
+  if (!dart::dynamics::CollisionDetector::getFactory()->canCreate(GetParam()))
   {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
@@ -164,7 +164,7 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   }
 
   auto cd
-      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+      = dart::dynamics::CollisionDetector::getFactory()->create(GetParam());
 
   auto group = cd->createCollisionGroup();
 

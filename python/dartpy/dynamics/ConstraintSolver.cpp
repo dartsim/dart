@@ -138,7 +138,7 @@ void ConstraintSolver(py::module& m)
       .def(
           "setCollisionDetector",
           +[](dart::dynamics::ConstraintSolver* self,
-              const std::shared_ptr<dart::collision::CollisionDetector>&
+              const std::shared_ptr<dart::dynamics::CollisionDetector>&
                   collisionDetector) {
             self->setCollisionDetector(collisionDetector);
           },
@@ -146,31 +146,31 @@ void ConstraintSolver(py::module& m)
       .def(
           "getCollisionDetector",
           +[](dart::dynamics::ConstraintSolver* self)
-              -> dart::collision::CollisionDetectorPtr {
+              -> dart::dynamics::CollisionDetectorPtr {
             return self->getCollisionDetector();
           })
       .def(
           "getCollisionDetector",
           +[](const dart::dynamics::ConstraintSolver* self)
-              -> dart::collision::ConstCollisionDetectorPtr {
+              -> dart::dynamics::ConstCollisionDetectorPtr {
             return self->getCollisionDetector();
           })
       .def(
           "getCollisionGroup",
           +[](dart::dynamics::ConstraintSolver* self)
-              -> dart::collision::CollisionGroupPtr {
+              -> dart::dynamics::CollisionGroupPtr {
             return self->getCollisionGroup();
           })
       .def(
           "getCollisionGroup",
           +[](const dart::dynamics::ConstraintSolver* self)
-              -> dart::collision::ConstCollisionGroupPtr {
+              -> dart::dynamics::ConstCollisionGroupPtr {
             return self->getCollisionGroup();
           })
       .def(
           "getCollisionOption",
           +[](dart::dynamics::ConstraintSolver* self)
-              -> dart::collision::CollisionOption& {
+              -> dart::dynamics::CollisionOption& {
             return self->getCollisionOption();
           },
           "Returns collision option that is used for collision checkings in "
@@ -178,7 +178,7 @@ void ConstraintSolver(py::module& m)
       .def(
           "getCollisionOption",
           +[](const dart::dynamics::ConstraintSolver* self)
-              -> const dart::collision::CollisionOption& {
+              -> const dart::dynamics::CollisionOption& {
             return self->getCollisionOption();
           },
           "Returns collision option that is used for collision checkings in "

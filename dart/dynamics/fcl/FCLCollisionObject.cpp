@@ -37,17 +37,17 @@
 #include "dart/dynamics/fcl/FCLTypes.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
-dart::collision::fcl::CollisionObject*
+dart::dynamics::fcl::CollisionObject*
 FCLCollisionObject::getFCLCollisionObject()
 {
   return mFCLCollisionObject.get();
 }
 
 //==============================================================================
-const dart::collision::fcl::CollisionObject*
+const dart::dynamics::fcl::CollisionObject*
 FCLCollisionObject::getFCLCollisionObject() const
 {
   return mFCLCollisionObject.get();
@@ -57,9 +57,9 @@ FCLCollisionObject::getFCLCollisionObject() const
 FCLCollisionObject::FCLCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    const std::shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
+    const std::shared_ptr<dart::dynamics::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom))
+    mFCLCollisionObject(new dart::dynamics::fcl::CollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(this);
 }
@@ -83,22 +83,22 @@ void FCLCollisionObject::updateEngineData()
     const_cast<SoftMeshShape*>(softMeshShape)->update();
     // TODO(JS): update function be called by somewhere out of here.
 
-    auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
+    auto collGeom = const_cast<dart::dynamics::fcl::CollisionGeometry*>(
         mFCLCollisionObject->collisionGeometry().get());
     assert(
-        dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
+        dynamic_cast<::fcl::BVHModel<dart::dynamics::fcl::OBBRSS>*>(collGeom));
     auto bvhModel
-        = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
+        = static_cast<::fcl::BVHModel<dart::dynamics::fcl::OBBRSS>*>(collGeom);
 
     bvhModel->beginUpdateModel();
     for (auto i = 0u; i < mesh->mNumFaces; ++i)
     {
-      dart::collision::fcl::Vector3 vertices[3];
+      dart::dynamics::fcl::Vector3 vertices[3];
       for (auto j = 0u; j < 3; ++j)
       {
         const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
         vertices[j]
-            = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
+            = dart::dynamics::fcl::Vector3(vertex.x, vertex.y, vertex.z);
       }
       bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
     }

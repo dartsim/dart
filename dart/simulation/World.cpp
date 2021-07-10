@@ -529,7 +529,7 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
 //==============================================================================
 bool World::checkCollision(bool checkAllCollisions)
 {
-  collision::CollisionOption option;
+  dynamics::CollisionOption option;
 
   if (checkAllCollisions)
     option.maxNumContacts = 1e+3;
@@ -541,14 +541,14 @@ bool World::checkCollision(bool checkAllCollisions)
 
 //==============================================================================
 bool World::checkCollision(
-    const collision::CollisionOption& option,
-    collision::CollisionResult* result)
+    const dynamics::CollisionOption& option,
+    dynamics::CollisionResult* result)
 {
   return mConstraintSolver->getCollisionGroup()->collide(option, result);
 }
 
 //==============================================================================
-const collision::CollisionResult& World::getLastCollisionResult() const
+const dynamics::CollisionResult& World::getLastCollisionResult() const
 {
   return mConstraintSolver->getLastCollisionResult();
 }

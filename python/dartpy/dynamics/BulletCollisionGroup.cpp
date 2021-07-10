@@ -30,25 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-#include <pybind11/pybind11.h>
+#include <dart/config.hpp>
+
+#if DART_HAVE_BULLET
+
+#  include <dart/dynamics/dynamics.hpp>
+#  include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void FCLCollisionGroup(py::module& m)
+void BulletCollisionGroup(py::module& m)
 {
   ::py::class_<
-      dart::collision::FCLCollisionGroup,
-      dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::FCLCollisionGroup> >(
-      m, "FCLCollisionGroup")
+      dart::dynamics::BulletCollisionGroup,
+      dart::dynamics::CollisionGroup,
+      std::shared_ptr<dart::dynamics::BulletCollisionGroup>>(
+      m, "BulletCollisionGroup")
       .def(
-          ::py::init<const dart::collision::CollisionDetectorPtr&>(),
+          ::py::init<const dart::dynamics::CollisionDetectorPtr&>(),
           ::py::arg("collisionDetector"));
 }
 
 } // namespace python
 } // namespace dart
+
+#endif // DART_HAVE_BULLET

@@ -33,10 +33,10 @@
 #include "dart/collision/contact.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template struct Contact<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

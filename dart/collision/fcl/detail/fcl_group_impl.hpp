@@ -41,7 +41,7 @@
 #include "dart/math/geometry/Sphere.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -124,5 +124,5 @@ FclGroup<S>::get_fcl_collision_manager() const
   return m_broad_phase_alg.get();
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

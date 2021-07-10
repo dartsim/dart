@@ -31,6 +31,7 @@
  */
 
 #include <dart/dart.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -38,45 +39,36 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void CollisionObject(py::module& m)
+void DistanceResult(py::module& m)
 {
-  ::py::class_<dart::collision::CollisionObject>(m, "CollisionObject")
+  ::py::class_<dart::dynamics::DistanceResult>(m, "DistanceResult")
+      .def(::py::init<>())
       .def(
-          "getCollisionDetector",
-          +[](dart::collision::CollisionObject* self)
-              -> dart::collision::CollisionDetector* {
-            return self->getCollisionDetector();
-          },
-          ::py::return_value_policy::reference_internal,
-          "Return collision detection engine associated with this "
-          "CollisionObject.")
+          "clear",
+          +[](dart::dynamics::DistanceResult* self) { self->clear(); })
       .def(
-          "getCollisionDetector",
-          +[](const dart::collision::CollisionObject* self)
-              -> const dart::collision::CollisionDetector* {
-            return self->getCollisionDetector();
-          },
-          ::py::return_value_policy::reference_internal,
-          "Return collision detection engine associated with this "
-          "CollisionObject.")
+          "found",
+          +[](const dart::dynamics::DistanceResult* self) -> bool {
+            return self->found();
+          })
       .def(
-          "getShapeFrame",
-          +[](const dart::collision::CollisionObject* self)
-              -> const dynamics::ShapeFrame* { return self->getShapeFrame(); },
-          ::py::return_value_policy::reference_internal,
-          "Return the associated ShapeFrame.")
-      .def(
-          "getShape",
-          +[](const dart::collision::CollisionObject* self)
-              -> dart::dynamics::ConstShapePtr { return self->getShape(); },
-          "Return the associated Shape.")
-      .def(
-          "getTransform",
-          +[](const dart::collision::CollisionObject* self)
-              -> const Eigen::Isometry3d& { return self->getTransform(); },
-          ::py::return_value_policy::reference_internal,
-          "Return the transformation of this CollisionObject in world "
-          "coordinates.");
+          "isMinDistanceClamped",
+          +[](const dart::dynamics::DistanceResult* self) -> bool {
+            return self->isMinDistanceClamped();
+          })
+      .def_readwrite(
+          "minDistance", &dart::dynamics::DistanceResult::minDistance)
+      .def_readwrite(
+          "unclampedMinDistance",
+          &dart::dynamics::DistanceResult::unclampedMinDistance)
+      .def_readwrite(
+          "shapeFrame1", &dart::dynamics::DistanceResult::shapeFrame1)
+      .def_readwrite(
+          "shapeFrame2", &dart::dynamics::DistanceResult::shapeFrame2)
+      .def_readwrite(
+          "nearestPoint1", &dart::dynamics::DistanceResult::nearestPoint1)
+      .def_readwrite(
+          "nearestPoint2", &dart::dynamics::DistanceResult::nearestPoint2);
 }
 
 } // namespace python

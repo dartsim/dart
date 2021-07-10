@@ -33,9 +33,9 @@
 #include "dart/collision/group.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template class Group<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

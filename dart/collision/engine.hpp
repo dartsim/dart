@@ -43,7 +43,7 @@
 #include "dart/math/SmartPointer.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S_>
 class Engine
@@ -110,7 +110,7 @@ using Engined = Engine<double>;
 
 extern template class Engine<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #define DART_REGISTER_ENGINE_IN_HEADER(engine_type)                           \

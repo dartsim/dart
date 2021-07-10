@@ -35,7 +35,7 @@
 #include "dart/collision/collision_option.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -50,5 +50,5 @@ CollisionOption<S>::CollisionOption(
   // Do nothing
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

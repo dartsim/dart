@@ -30,42 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOPTION_HPP_
-#define DART_COLLISION_COLLISIONOPTION_HPP_
+#include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 
-#include <cstddef>
-#include <memory>
+#include "dart/dart.hpp"
+
+namespace py = pybind11;
 
 namespace dart {
-namespace dynamics {
+namespace python {
 
-class CollisionFilter;
-
-struct CollisionOption
+void py_object(py::module& m)
 {
+  ::py::class_<
+      collision::Objectd,
+      std::shared_ptr<collision::Objectd>>(
+      m, "Object")
+      .def(
+          "set_position",
+          &collision::Objectd::set_position);
+}
 
-  /// Flag whether the collision detector computes contact information (contact
-  /// point, normal, and penetration depth). If it is set to false, only the
-  /// result of that which pairs are colliding will be stored in the
-  /// CollisionResult without the contact information.
-  bool enableContact;
-
-  /// Maximum number of contacts to detect. Once the contacts are found up to
-  /// this number, the collision checking will terminate at that moment. Set
-  /// this to 1 for binary check.
-  std::size_t maxNumContacts;
-
-  /// CollisionFilter
-  std::shared_ptr<CollisionFilter> collisionFilter;
-
-  /// Constructor
-  CollisionOption(
-      bool enableContact = true,
-      std::size_t maxNumContacts = 1000u,
-      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
-};
-
-} // namespace collision
+} // namespace python
 } // namespace dart
-
-#endif // DART_COLLISION_COLLISIONOPTION_HPP_

@@ -57,7 +57,7 @@
 #include "dart/dynamics/fcl/tri_tri_intersection_test.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 namespace {
 

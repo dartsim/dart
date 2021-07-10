@@ -42,13 +42,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/common/Uri.hpp"
-#include "dart/dynamics/CollisionDetector.hpp"
-#include "dart/dynamics/ConstraintSolver.hpp"
-#include "dart/dynamics/dynamics.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dart.hpp"
 #include "dart/test/GTestUtils.hpp"
 
 using namespace Eigen;

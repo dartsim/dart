@@ -38,24 +38,11 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void py_collision_option(py::module& m)
+void py_narrow_phase_interface(py::module& m)
 {
-  ::py::class_<collision2::CollisionOption<double>>(m, "CollisionOption")
-      .def(
-          ::py::init<
-              bool,
-              int,
-              const std::shared_ptr<collision2::CollisionFilter<double>>&>(),
-          ::py::arg("enable_contact") = true,
-          ::py::arg("max_num_contacts") = 1000,
-          ::py::arg("collision_filter") = nullptr)
-      .def_readwrite(
-          "enable_contact", &collision2::CollisionOption<double>::enable_contact)
-      .def_readwrite(
-          "max_num_contacts", &collision2::CollisionOption<double>::max_num_contacts)
-      .def_readwrite(
-          "collision_filter",
-          &collision2::CollisionOption<double>::collision_filter);
+  m.def("collide", [](collision::ObjectPtr<double> object1, collision::ObjectPtr<double> object2) -> bool {
+    return collision::collide(std::move(object1), std::move(object2));
+  });
 }
 
 } // namespace python

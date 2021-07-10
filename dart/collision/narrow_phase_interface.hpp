@@ -36,12 +36,12 @@
 #include "dart/collision/object.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S>
 bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2);
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/detail/narrow_phase_interface_impl.hpp"

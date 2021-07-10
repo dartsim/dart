@@ -39,7 +39,7 @@
 #include "dart/math/geometry/Sphere.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -73,5 +73,5 @@ ObjectPtr<S> Group<S>::create_sphere_object(Args&&... args)
   return create_object(std::move(geometry));
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

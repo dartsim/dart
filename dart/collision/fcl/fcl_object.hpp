@@ -38,7 +38,7 @@
 #include "dart/math/Types.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S_>
 class FclObject : public Object<S_>
@@ -88,7 +88,7 @@ private:
 
 extern template class FclObject<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/fcl/detail/fcl_object_impl.hpp"

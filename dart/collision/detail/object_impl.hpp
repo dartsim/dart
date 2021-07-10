@@ -40,7 +40,7 @@
 #include "dart/collision/group.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -93,5 +93,5 @@ Object<S>::Object(Group<S>* collisionGroup, math::GeometryPtr shape)
   assert(m_geometry);
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

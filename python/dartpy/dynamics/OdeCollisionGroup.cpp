@@ -45,12 +45,12 @@ namespace python {
 void OdeCollisionGroup(py::module& m)
 {
   ::py::class_<
-      dart::collision::OdeCollisionGroup,
-      dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::OdeCollisionGroup>>(
+      dart::dynamics::OdeCollisionGroup,
+      dart::dynamics::CollisionGroup,
+      std::shared_ptr<dart::dynamics::OdeCollisionGroup>>(
       m, "OdeCollisionGroup")
       .def(
-          ::py::init<const dart::collision::CollisionDetectorPtr&>(),
+          ::py::init<const dart::dynamics::CollisionDetectorPtr&>(),
           ::py::arg("collisionDetector"));
 }
 

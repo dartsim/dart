@@ -37,7 +37,7 @@
 #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class FCLCollisionObject : public CollisionObject
 {
@@ -45,17 +45,17 @@ public:
   friend class FCLCollisionDetector;
 
   /// Return FCL collision object
-  dart::collision::fcl::CollisionObject* getFCLCollisionObject();
+  dart::dynamics::fcl::CollisionObject* getFCLCollisionObject();
 
   /// Return FCL collision object
-  const dart::collision::fcl::CollisionObject* getFCLCollisionObject() const;
+  const dart::dynamics::fcl::CollisionObject* getFCLCollisionObject() const;
 
 protected:
   /// Constructor
   FCLCollisionObject(
       CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame,
-      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
+      const std::shared_ptr<dart::dynamics::fcl::CollisionGeometry>&
           fclCollGeom);
 
   // Documentation inherited
@@ -63,7 +63,7 @@ protected:
 
 protected:
   /// FCL collision object
-  std::unique_ptr<dart::collision::fcl::CollisionObject> mFCLCollisionObject;
+  std::unique_ptr<dart::dynamics::fcl::CollisionObject> mFCLCollisionObject;
 };
 
 } // namespace collision

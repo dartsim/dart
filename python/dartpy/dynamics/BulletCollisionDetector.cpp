@@ -42,16 +42,39 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void BulletCollisionGroup(py::module& m)
+void BulletCollisionDetector(py::module& m)
 {
   ::py::class_<
-      dart::collision::BulletCollisionGroup,
-      dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::BulletCollisionGroup>>(
-      m, "BulletCollisionGroup")
+      dart::dynamics::BulletCollisionDetector,
+      std::shared_ptr<dart::dynamics::BulletCollisionDetector>,
+      dart::dynamics::CollisionDetector>(m, "BulletCollisionDetector")
+      .def(::py::init(
+          +[]() -> std::shared_ptr<dart::dynamics::BulletCollisionDetector> {
+            return dart::dynamics::BulletCollisionDetector::create();
+          }))
       .def(
-          ::py::init<const dart::collision::CollisionDetectorPtr&>(),
-          ::py::arg("collisionDetector"));
+          "cloneWithoutCollisionObjects",
+          +[](const dart::dynamics::BulletCollisionDetector* self)
+              -> std::shared_ptr<dart::dynamics::CollisionDetector> {
+            return self->cloneWithoutCollisionObjects();
+          })
+      .def(
+          "getType",
+          +[](const dart::dynamics::BulletCollisionDetector* self)
+              -> const std::string& { return self->getType(); },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "createCollisionGroup",
+          +[](dart::dynamics::BulletCollisionDetector* self)
+              -> std::shared_ptr<dart::dynamics::CollisionGroup> {
+            return self->createCollisionGroupAsSharedPtr();
+          })
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::BulletCollisionDetector::getStaticType();
+          },
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python

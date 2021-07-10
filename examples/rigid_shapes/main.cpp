@@ -43,7 +43,7 @@ int main()
   // Use bullet collision detector for capsule and multi-sphere-convex-hull
   // shapes
   world->getConstraintSolver()->setCollisionDetector(
-      collision::BulletCollisionDetector::create());
+      dynamics::BulletCollisionDetector::create());
 
   // Wrap a WorldNode around it
   ::osg::ref_ptr<gui::osg::RealTimeWorldNode> node

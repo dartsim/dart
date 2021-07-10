@@ -83,15 +83,6 @@ target_link_libraries(${pybind_module}
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-gui
     ${PYTHON_LIBRARIES}
 )
-if(TARGET dart-optimization-nlopt)
-  target_link_libraries(${pybind_module} PUBLIC dart-optimization-nlopt)
-endif()
-if(TARGET dart-collision-bullet)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)
-endif()
-if(TARGET dart-collision-ode)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
-endif()
 
 # Remove debug postfix for dartpy
 set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")

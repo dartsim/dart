@@ -38,29 +38,30 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void CollisionDetector(py::module& m)
+void CollisionOption(py::module& m)
 {
-  ::py::class_<
-      dart::collision::CollisionDetector,
-      std::shared_ptr<dart::collision::CollisionDetector> >(
-      m, "CollisionDetector")
+  ::py::class_<dart::dynamics::CollisionOption>(m, "CollisionOption")
+      .def(::py::init<>())
+      .def(::py::init<bool>(), ::py::arg("enableContact"))
       .def(
-          "cloneWithoutCollisionObjects",
-          +[](dart::collision::CollisionDetector* self)
-              -> std::shared_ptr<dart::collision::CollisionDetector> {
-            return self->cloneWithoutCollisionObjects();
-          })
+          ::py::init<bool, std::size_t>(),
+          ::py::arg("enableContact"),
+          ::py::arg("maxNumContacts"))
       .def(
-          "getType",
-          +[](const dart::collision::CollisionDetector* self)
-              -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "createCollisionGroup",
-          +[](dart::collision::CollisionDetector* self)
-              -> std::shared_ptr<dart::collision::CollisionGroup> {
-            return self->createCollisionGroupAsSharedPtr();
-          });
+          ::py::init<
+              bool,
+              std::size_t,
+              const std::shared_ptr<dart::dynamics::CollisionFilter>&>(),
+          ::py::arg("enableContact"),
+          ::py::arg("maxNumContacts"),
+          ::py::arg("collisionFilter"))
+      .def_readwrite(
+          "enableContact", &dart::dynamics::CollisionOption::enableContact)
+      .def_readwrite(
+          "maxNumContacts", &dart::dynamics::CollisionOption::maxNumContacts)
+      .def_readwrite(
+          "collisionFilter",
+          &dart::dynamics::CollisionOption::collisionFilter);
 }
 
 } // namespace python

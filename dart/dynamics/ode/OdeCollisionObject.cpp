@@ -55,7 +55,7 @@
 #include "dart/dynamics/ode/detail/OdeSphere.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 static detail::OdeGeom* createOdeGeom(

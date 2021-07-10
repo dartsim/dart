@@ -57,14 +57,14 @@ TYPED_TEST(FclConversion, Vector)
   using S = typename TestFixture::Type;
 
   const math::Vector3<S> vec3 = math::Vector3<S>::Random();
-  collision2::FclVector3<S> fclVec3;
+  collision::FclVector3<S> fclVec3;
   for (auto i = 0; i < 3; ++i)
   {
     fclVec3[i] = vec3[i];
   }
 
-  EXPECT_VECTOR3S_EQ(fclVec3, collision2::toFclVector3<S>(vec3));
-  EXPECT_VECTOR3S_EQ(vec3, collision2::toVector3<S>(fclVec3));
+  EXPECT_VECTOR3S_EQ(fclVec3, collision::toFclVector3<S>(vec3));
+  EXPECT_VECTOR3S_EQ(vec3, collision::toVector3<S>(fclVec3));
 }
 
 //==============================================================================
@@ -73,7 +73,7 @@ TYPED_TEST(FclConversion, Matrix)
   using S = typename TestFixture::Type;
 
   const math::Matrix3<S> mat3 = math::Matrix3<S>::Random();
-  collision2::FclMatrix3<S> fclMat3;
+  collision::FclMatrix3<S> fclMat3;
   for (auto i = 0; i < 3; ++i)
   {
     for (auto j = 0; j < 3; ++j)
@@ -82,8 +82,8 @@ TYPED_TEST(FclConversion, Matrix)
     }
   }
 
-  EXPECT_MATRIX3S_EQ(fclMat3, collision2::toFclMatrix3<S>(mat3));
-  EXPECT_MATRIX3S_EQ(mat3, collision2::toMatrix3<S>(fclMat3));
+  EXPECT_MATRIX3S_EQ(fclMat3, collision::toFclMatrix3<S>(mat3));
+  EXPECT_MATRIX3S_EQ(mat3, collision::toMatrix3<S>(fclMat3));
 }
 
 //==============================================================================
@@ -96,5 +96,5 @@ TYPED_TEST(FclConversion, Transform)
   tf3.translation() = math::Vector3<S>::Random();
 
   EXPECT_TRANSFORM3S_EQ(
-      tf3, collision2::toTransform3<S>(collision2::toFclTransform3<S>(tf3)));
+      tf3, collision::toTransform3<S>(collision::toFclTransform3<S>(tf3)));
 }

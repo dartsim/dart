@@ -33,10 +33,10 @@
 #include "dart/collision/fcl/fcl_engine.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template class FclEngine<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

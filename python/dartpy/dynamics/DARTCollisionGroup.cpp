@@ -31,7 +31,6 @@
  */
 
 #include <dart/dart.hpp>
-#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -39,36 +38,16 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DistanceResult(py::module& m)
+void DARTCollisionGroup(py::module& m)
 {
-  ::py::class_<dart::collision::DistanceResult>(m, "DistanceResult")
-      .def(::py::init<>())
+  ::py::class_<
+      dart::dynamics::DARTCollisionGroup,
+      dart::dynamics::CollisionGroup,
+      std::shared_ptr<dart::dynamics::DARTCollisionGroup>>(
+      m, "DARTCollisionGroup")
       .def(
-          "clear",
-          +[](dart::collision::DistanceResult* self) { self->clear(); })
-      .def(
-          "found",
-          +[](const dart::collision::DistanceResult* self) -> bool {
-            return self->found();
-          })
-      .def(
-          "isMinDistanceClamped",
-          +[](const dart::collision::DistanceResult* self) -> bool {
-            return self->isMinDistanceClamped();
-          })
-      .def_readwrite(
-          "minDistance", &dart::collision::DistanceResult::minDistance)
-      .def_readwrite(
-          "unclampedMinDistance",
-          &dart::collision::DistanceResult::unclampedMinDistance)
-      .def_readwrite(
-          "shapeFrame1", &dart::collision::DistanceResult::shapeFrame1)
-      .def_readwrite(
-          "shapeFrame2", &dart::collision::DistanceResult::shapeFrame2)
-      .def_readwrite(
-          "nearestPoint1", &dart::collision::DistanceResult::nearestPoint1)
-      .def_readwrite(
-          "nearestPoint2", &dart::collision::DistanceResult::nearestPoint2);
+          ::py::init<const dart::dynamics::CollisionDetectorPtr&>(),
+          ::py::arg("collisionDetector"));
 }
 
 } // namespace python

@@ -33,9 +33,9 @@
 #include "dart/collision/narrow_phase_interface.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

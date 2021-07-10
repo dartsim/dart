@@ -41,7 +41,7 @@
 #include <btBulletCollisionCommon.h>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 struct BulletCollisionShape
 {

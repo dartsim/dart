@@ -35,7 +35,7 @@
 #include "dart/collision/collision_result.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -97,5 +97,5 @@ void CollisionResult<S>::clear()
   m_contacts.clear();
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

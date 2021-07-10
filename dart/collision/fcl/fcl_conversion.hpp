@@ -36,7 +36,7 @@
 #include "dart/math/Types.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 /// Converts Eigen vector3 to FCL vector3
 template <typename S>
@@ -62,7 +62,7 @@ FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T);
 template <typename S>
 math::Isometry3<S> toTransform3(const FclTransform3<S>& T);
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/fcl/detail/fcl_conversion_impl.hpp"

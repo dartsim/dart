@@ -35,7 +35,7 @@
 #include "dart/collision/narrow_phase_interface.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -54,5 +54,5 @@ bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2)
   return engine->collide(object1, object2);
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

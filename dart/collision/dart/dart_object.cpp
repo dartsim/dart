@@ -35,7 +35,7 @@
 #include "dart/collision/dart/Types.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 const Eigen::Isometry3d& FCLObject::getTransform() const
@@ -45,14 +45,14 @@ const Eigen::Isometry3d& FCLObject::getTransform() const
 }
 
 //==============================================================================
-dart::collision2::dart::Object*
+dart::collision::dart::Object*
 FCLObject::getFCLObject()
 {
   return mFCLObject.get();
 }
 
 //==============================================================================
-const dart::collision2::dart::Object*
+const dart::collision::dart::Object*
 FCLObject::getFCLObject() const
 {
   return mFCLObject.get();
@@ -62,10 +62,10 @@ FCLObject::getFCLObject() const
 FCLObject::FCLObject(
     Group* collisionGroup,
     math::GeometryPtr shape,
-    const std::shared_ptr<dart::collision2::dart::CollisionGeometry>&
+    const std::shared_ptr<dart::collision::dart::CollisionGeometry>&
         dartCollGeom)
   : Object(collisionGroup, shape),
-    mFCLObject(new dart::collision2::dart::Object(dartCollGeom))
+    mFCLObject(new dart::collision::dart::Object(dartCollGeom))
 {
   mFCLObject->setUserData(this);
 }
@@ -89,23 +89,23 @@ void FCLObject::updateEngineData()
   //    const_cast<SoftMeshShape*>(softMeshShape)->update();
   //    // TODO(JS): update function be called by somewhere out of here.
 
-  //    auto collGeom = const_cast<dart::collision2::dart::CollisionGeometry*>(
+  //    auto collGeom = const_cast<dart::collision::dart::CollisionGeometry*>(
   //        mFCLObject->collisionGeometry().get());
   //    assert(
-  //        dynamic_cast<::dart::BVHModel<dart::collision2::dart::OBBRSS>*>(collGeom));
+  //        dynamic_cast<::dart::BVHModel<dart::collision::dart::OBBRSS>*>(collGeom));
   //    auto bvhModel
   //        =
-  //        static_cast<::dart::BVHModel<dart::collision2::dart::OBBRSS>*>(collGeom);
+  //        static_cast<::dart::BVHModel<dart::collision::dart::OBBRSS>*>(collGeom);
 
   //    bvhModel->beginUpdateModel();
   //    for (auto i = 0u; i < mesh->mNumFaces; ++i)
   //    {
-  //      dart::collision2::dart::Vector3 vertices[3];
+  //      dart::collision::dart::Vector3 vertices[3];
   //      for (auto j = 0u; j < 3; ++j)
   //      {
   //        const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
   //        vertices[j]
-  //            = dart::collision2::dart::Vector3(vertex.x, vertex.y, vertex.z);
+  //            = dart::collision::dart::Vector3(vertex.x, vertex.y, vertex.z);
   //      }
   //      bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
   //    }
@@ -124,5 +124,5 @@ FCLObject::FCLObject(
   // Do nothing
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

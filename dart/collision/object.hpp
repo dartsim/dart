@@ -39,7 +39,7 @@
 #include "dart/math/Types.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 /// Collision object
 template <typename S_>
@@ -106,7 +106,7 @@ using Objectd = Object<double>;
 
 extern template class Object<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/detail/object_impl.hpp"

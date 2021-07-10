@@ -30,54 +30,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-
-#if DART_HAVE_BULLET
-
-#  include <dart/dynamics/dynamics.hpp>
-#  include <pybind11/pybind11.h>
+#include <dart/dart.hpp>
+#include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void BulletCollisionDetector(py::module& m)
+void DistanceOption(py::module& m)
 {
-  ::py::class_<
-      dart::collision::BulletCollisionDetector,
-      std::shared_ptr<dart::collision::BulletCollisionDetector>,
-      dart::collision::CollisionDetector>(m, "BulletCollisionDetector")
-      .def(::py::init(
-          +[]() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
-            return dart::collision::BulletCollisionDetector::create();
-          }))
+  ::py::class_<dart::dynamics::DistanceOption>(m, "DistanceOption")
+      .def(::py::init<>())
+      .def(::py::init<bool>(), ::py::arg("enableNearestPoints"))
       .def(
-          "cloneWithoutCollisionObjects",
-          +[](const dart::collision::BulletCollisionDetector* self)
-              -> std::shared_ptr<dart::collision::CollisionDetector> {
-            return self->cloneWithoutCollisionObjects();
-          })
+          ::py::init<bool, double>(),
+          ::py::arg("enableNearestPoints"),
+          ::py::arg("distanceLowerBound"))
       .def(
-          "getType",
-          +[](const dart::collision::BulletCollisionDetector* self)
-              -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "createCollisionGroup",
-          +[](dart::collision::BulletCollisionDetector* self)
-              -> std::shared_ptr<dart::collision::CollisionGroup> {
-            return self->createCollisionGroupAsSharedPtr();
-          })
-      .def_static(
-          "getStaticType",
-          +[]() -> const std::string& {
-            return dart::collision::BulletCollisionDetector::getStaticType();
-          },
-          ::py::return_value_policy::reference_internal);
+          ::py::init<
+              bool,
+              double,
+              const std::shared_ptr<dart::dynamics::DistanceFilter>&>(),
+          ::py::arg("enableNearestPoints"),
+          ::py::arg("distanceLowerBound"),
+          ::py::arg("distanceFilter"))
+      .def_readwrite(
+          "enableNearestPoints",
+          &dart::dynamics::DistanceOption::enableNearestPoints)
+      .def_readwrite(
+          "distanceLowerBound",
+          &dart::dynamics::DistanceOption::distanceLowerBound)
+      .def_readwrite(
+          "distanceFilter", &dart::dynamics::DistanceOption::distanceFilter);
 }
 
 } // namespace python
 } // namespace dart
-
-#endif // DART_HAVE_BULLET

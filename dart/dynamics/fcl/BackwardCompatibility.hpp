@@ -89,7 +89,7 @@
 #endif   // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace fcl {
 
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
@@ -149,40 +149,40 @@ using Ellipsoid = ::fcl::Ellipsoid;
 #endif
 
 /// Returns norm of a 3-dim vector
-double length(const dart::collision::fcl::Vector3& t);
+double length(const dart::dynamics::fcl::Vector3& t);
 
 /// Returns squared norm of a 3-dim vector
-double length2(const dart::collision::fcl::Vector3& t);
+double length2(const dart::dynamics::fcl::Vector3& t);
 
 /// Returns translation component of a transform
-dart::collision::fcl::Vector3 getTranslation(
-    const dart::collision::fcl::Transform3& T);
+dart::dynamics::fcl::Vector3 getTranslation(
+    const dart::dynamics::fcl::Transform3& T);
 
 /// Sets translation component of a transform
 void setTranslation(
-    dart::collision::fcl::Transform3& T,
-    const dart::collision::fcl::Vector3& t);
+    dart::dynamics::fcl::Transform3& T,
+    const dart::dynamics::fcl::Vector3& t);
 
 /// Returns rotation component of a transform
-dart::collision::fcl::Matrix3 getRotation(
-    const dart::collision::fcl::Transform3& T);
+dart::dynamics::fcl::Matrix3 getRotation(
+    const dart::dynamics::fcl::Transform3& T);
 
 /// Sets rotation component of a transform
 void setRotation(
-    dart::collision::fcl::Transform3& T,
-    const dart::collision::fcl::Matrix3& R);
+    dart::dynamics::fcl::Transform3& T,
+    const dart::dynamics::fcl::Matrix3& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
 void setEulerZYX(
-    dart::collision::fcl::Matrix3& rot,
+    dart::dynamics::fcl::Matrix3& rot,
     double eulerX,
     double eulerY,
     double eulerZ);
 
 /// Transforms a 3-dim vector by a transform and returns the result
-dart::collision::fcl::Vector3 transform(
-    const dart::collision::fcl::Transform3& t,
-    const dart::collision::fcl::Vector3& v);
+dart::dynamics::fcl::Vector3 transform(
+    const dart::dynamics::fcl::Transform3& t,
+    const dart::dynamics::fcl::Vector3& v);
 
 } // namespace fcl
 } // namespace collision

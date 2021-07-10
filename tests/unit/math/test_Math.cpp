@@ -44,8 +44,6 @@
 using namespace dart;
 using namespace common;
 using namespace math;
-using namespace dynamics;
-using namespace simulation;
 
 #define MATH_TOL 0.000001
 #define MATH_EPS 0.000001
@@ -88,7 +86,7 @@ EIGEN_DONT_INLINE void inv(const T& a, T& b)
 }
 
 EIGEN_DONT_INLINE
-Isometry3d Inv2(const Isometry3d& I)
+Eigen::Isometry3d Inv2(const Eigen::Isometry3d& I)
 {
   Eigen::Isometry3d ret;
 
@@ -118,7 +116,7 @@ EIGEN_DONT_INLINE void inv_se3(const T& a, T& b)
 }
 
 EIGEN_DONT_INLINE
-void concatenate(const Affine3d& A1, const Affine3d& A2, Affine3d& res)
+void concatenate(const Eigen::Affine3d& A1, const Eigen::Affine3d& A2, Eigen::Affine3d& res)
 {
   res(0, 0) = A1(0, 0) * A2(0, 0) + A1(0, 1) * A2(1, 0) + A1(0, 2) * A2(2, 0);
   res(1, 0) = A1(1, 0) * A2(0, 0) + A1(1, 1) * A2(1, 0) + A1(1, 2) * A2(2, 0);
@@ -174,8 +172,8 @@ void concatenate2(const Affine3d& A1, const Affine3d& A2, Affine3d& res)
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 1> Ad_Affine3d_1(
-    const Affine3d& T, const Matrix<double, 6, 1>& s)
+Eigen::Matrix<double, 6, 1> Ad_Affine3d_1(
+    const Eigen::Affine3d& T, const Eigen::Matrix<double, 6, 1>& s)
 {
   //--------------------------------------------------------------------------
   // w' = R * w
@@ -188,7 +186,7 @@ Matrix<double, 6, 1> Ad_Affine3d_1(
                   T.data()[2] * s.data()[0] + T.data()[6] * s.data()[1]
                       + T.data()[10] * s.data()[2]};
 
-  Matrix<double, 6, 1> ret;
+  Eigen::Matrix<double, 6, 1> ret;
 
   ret << Rw[0], Rw[1], Rw[2],
       T.data()[13] * Rw[2] - T.data()[14] * Rw[1] + T.data()[0] * s.data()[3]
@@ -202,8 +200,8 @@ Matrix<double, 6, 1> Ad_Affine3d_1(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 1> Ad_Affine3d_2(
-    const Affine3d& T, const Matrix<double, 6, 1>& s)
+Eigen::Matrix<double, 6, 1> Ad_Affine3d_2(
+    const Eigen::Affine3d& T, const Eigen::Matrix<double, 6, 1>& s)
 {
   //--------------------------------------------------------------------------
   // w' = R * w
@@ -213,7 +211,7 @@ Matrix<double, 6, 1> Ad_Affine3d_2(
                   T(1, 0) * s[0] + T(1, 1) * s[1] + T(1, 2) * s[2],
                   T(2, 0) * s[0] + T(2, 1) * s[1] + T(2, 2) * s[2]};
 
-  Matrix<double, 6, 1> ret;
+  Eigen::Matrix<double, 6, 1> ret;
 
   ret << Rw[0], Rw[1], Rw[2],
       T(1, 3) * Rw[2] - T(2, 3) * Rw[1] + T(0, 0) * s[3] + T(0, 1) * s[4]
@@ -227,15 +225,15 @@ Matrix<double, 6, 1> Ad_Affine3d_2(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 1> Ad_Affine3d_3(
-    const Affine3d& T, const Matrix<double, 6, 1>& s)
+Eigen::Matrix<double, 6, 1> Ad_Affine3d_3(
+    const Eigen::Affine3d& T, const Eigen::Matrix<double, 6, 1>& s)
 {
   //--------------------------------------------------------------------------
   // w' = R * w
   // v' = r x R * w + R * v
   //--------------------------------------------------------------------------
 
-  Matrix<double, 6, 1> ret;
+  Eigen::Matrix<double, 6, 1> ret;
 
   ret.topLeftCorner<3, 1>() = T.linear() * s.topLeftCorner<3, 1>();
   ret.bottomLeftCorner<3, 1>()
@@ -246,8 +244,8 @@ Matrix<double, 6, 1> Ad_Affine3d_3(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 1> Ad_Isometry3d(
-    const Isometry3d& T, const Matrix<double, 6, 1>& s)
+Eigen::Matrix<double, 6, 1> Ad_Isometry3d(
+    const Eigen::Isometry3d& T, const Eigen::Matrix<double, 6, 1>& s)
 {
   //--------------------------------------------------------------------------
   // w' = R * w
@@ -257,7 +255,7 @@ Matrix<double, 6, 1> Ad_Isometry3d(
                   T(1, 0) * s[0] + T(1, 1) * s[1] + T(1, 2) * s[2],
                   T(2, 0) * s[0] + T(2, 1) * s[1] + T(2, 2) * s[2]};
 
-  Matrix<double, 6, 1> ret;
+  Eigen::Matrix<double, 6, 1> ret;
 
   ret << Rw[0], Rw[1], Rw[2],
       T(1, 3) * Rw[2] - T(2, 3) * Rw[1] + T(0, 0) * s[3] + T(0, 1) * s[4]
@@ -271,8 +269,8 @@ Matrix<double, 6, 1> Ad_Isometry3d(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 1> Ad_Matrix4d(
-    const Matrix4d& T, const Matrix<double, 6, 1>& s)
+Eigen::Matrix<double, 6, 1> Ad_Matrix4d(
+    const Eigen::Matrix4d& T, const Eigen::Matrix<double, 6, 1>& s)
 {
   //--------------------------------------------------------------------------
   // w' = R * w
@@ -282,7 +280,7 @@ Matrix<double, 6, 1> Ad_Matrix4d(
                   T(1, 0) * s[0] + T(1, 1) * s[1] + T(1, 2) * s[2],
                   T(2, 0) * s[0] + T(2, 1) * s[1] + T(2, 2) * s[2]};
 
-  Matrix<double, 6, 1> ret;
+  Eigen::Matrix<double, 6, 1> ret;
 
   ret << Rw[0], Rw[1], Rw[2],
       T(1, 3) * Rw[2] - T(2, 3) * Rw[1] + T(0, 0) * s[3] + T(0, 1) * s[4]
@@ -296,12 +294,12 @@ Matrix<double, 6, 1> Ad_Matrix4d(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 6> Transform_Affine3d(
-    const Affine3d& T, const Matrix<double, 6, 6>& AI)
+Eigen::Matrix<double, 6, 6> Transform_Affine3d(
+    const Eigen::Affine3d& T, const Eigen::Matrix<double, 6, 6>& AI)
 {
   // operation count: multiplication = 186, addition = 117, subtract = 21
 
-  Matrix<double, 6, 6> ret;
+  Eigen::Matrix<double, 6, 6> ret;
 
   double d0 = AI(0, 3) + T(2, 3) * AI(3, 4) - T(1, 3) * AI(3, 5);
   double d1 = AI(1, 3) - T(2, 3) * AI(3, 3) + T(0, 3) * AI(3, 5);
@@ -381,12 +379,12 @@ Matrix<double, 6, 6> Transform_Affine3d(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 6> Transform_Isometry3d(
-    const Isometry3d& T, const Matrix<double, 6, 6>& AI)
+Eigen::Matrix<double, 6, 6> Transform_Isometry3d(
+    const Eigen::Isometry3d& T, const Eigen::Matrix<double, 6, 6>& AI)
 {
   // operation count: multiplication = 186, addition = 117, subtract = 21
 
-  Matrix<double, 6, 6> ret;
+  Eigen::Matrix<double, 6, 6> ret;
 
   double d0 = AI(0, 3) + T(2, 3) * AI(3, 4) - T(1, 3) * AI(3, 5);
   double d1 = AI(1, 3) - T(2, 3) * AI(3, 3) + T(0, 3) * AI(3, 5);
@@ -466,12 +464,12 @@ Matrix<double, 6, 6> Transform_Isometry3d(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 6> Transform_Isometry3d_2(
-    const Isometry3d& T, const Matrix<double, 6, 6>& AI)
+Eigen::Matrix<double, 6, 6> Transform_Isometry3d_2(
+    const Eigen::Isometry3d& T, const Eigen::Matrix<double, 6, 6>& AI)
 {
   // operation count: multiplication = 186, addition = 117, subtract = 21
 
-  Matrix<double, 6, 6> ret;
+  Eigen::Matrix<double, 6, 6> ret;
 
   double d0 = AI(0, 3) + T(2, 3) * AI(3, 4) - T(1, 3) * AI(3, 5);
   double d1 = AI(1, 3) - T(2, 3) * AI(3, 3) + T(0, 3) * AI(3, 5);
@@ -564,12 +562,12 @@ Matrix<double, 6, 6> Transform_Isometry3d_2(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 6> Transform_Isometry3d_3(
-    const Isometry3d& T, const Matrix<double, 6, 6>& AI)
+Eigen::Matrix<double, 6, 6> Transform_Isometry3d_3(
+    const Eigen::Isometry3d& T, const Eigen::Matrix<double, 6, 6>& AI)
 {
   // operation count: multiplication = 186, addition = 117, subtract = 21
 
-  Matrix<double, 6, 6> ret;
+  Eigen::Matrix<double, 6, 6> ret;
 
   double d0 = AI(0, 3) + T(2, 3) * AI(3, 4) - T(1, 3) * AI(3, 5);
   double d1 = AI(1, 3) - T(2, 3) * AI(3, 3) + T(0, 3) * AI(3, 5);
@@ -647,12 +645,12 @@ Matrix<double, 6, 6> Transform_Isometry3d_3(
 }
 
 EIGEN_DONT_INLINE
-Matrix<double, 6, 6> Transform_Matrix4d(
-    const Matrix4d& T, const Matrix<double, 6, 6>& AI)
+Eigen::Matrix<double, 6, 6> Transform_Matrix4d(
+    const Eigen::Matrix4d& T, const Eigen::Matrix<double, 6, 6>& AI)
 {
   // operation count: multiplication = 186, addition = 117, subtract = 21
 
-  Matrix<double, 6, 6> ret;
+  Eigen::Matrix<double, 6, 6> ret;
 
   double d0 = AI(0, 3) + T(2, 3) * AI(3, 4) - T(1, 3) * AI(3, 5);
   double d1 = AI(1, 3) - T(2, 3) * AI(3, 3) + T(0, 3) * AI(3, 5);
@@ -735,21 +733,21 @@ TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
 {
   const int iterations = 100000;
 
-  Affine3d A1
-      = Translation3d(0.1, 0.2, 0.3)
-        * AngleAxisd(0.5, Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
-  Matrix<double, 6, 6> a1 = Matrix<double, 6, 6>::Identity();
-  Matrix<double, 6, 6> a2;
+  Eigen::Affine3d A1
+      = Eigen::Translation3d(0.1, 0.2, 0.3)
+        * Eigen::AngleAxisd(0.5, Eigen::Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
+  Eigen::Matrix<double, 6, 6> a1 = Eigen::Matrix<double, 6, 6>::Identity();
+  Eigen::Matrix<double, 6, 6> a2;
 
-  Isometry3d I1;
+  Eigen::Isometry3d I1;
   I1.matrix() = A1.matrix();
-  Matrix<double, 6, 6> i1 = Matrix<double, 6, 6>::Identity();
-  Matrix<double, 6, 6> i2;
+  Eigen::Matrix<double, 6, 6> i1 = Eigen::Matrix<double, 6, 6>::Identity();
+  Eigen::Matrix<double, 6, 6> i2;
 
-  Matrix4d M1;
+  Eigen::Matrix4d M1;
   M1 = A1.matrix();
-  Matrix<double, 6, 6> m1 = Matrix<double, 6, 6>::Identity();
-  Matrix<double, 6, 6> m2;
+  Eigen::Matrix<double, 6, 6> m1 = Eigen::Matrix<double, 6, 6>::Identity();
+  Eigen::Matrix<double, 6, 6> m2;
 
   clock_t start = clock();
   for (int i = 0; i < iterations; i++)
@@ -801,31 +799,31 @@ TEST(MATH, ADJOINT_MAPPING)
 {
   const int iterations = 10000;
 
-  Affine3d A1
-      = Translation3d(0.1, 0.2, 0.3)
-        * AngleAxisd(0.5, Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
-  Matrix<double, 6, 1> a1, a2;
+  Eigen::Affine3d A1
+      = Eigen::Translation3d(0.1, 0.2, 0.3)
+        * Eigen::AngleAxisd(0.5, Eigen::Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
+  Eigen::Matrix<double, 6, 1> a1, a2;
   a1 << 1, 2, 3, 4, 5, 6;
 
-  Affine3d A2
-      = Translation3d(0.1, 0.2, 0.3)
-        * AngleAxisd(0.5, Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
-  Matrix<double, 6, 1> a3, a4;
+  Eigen::Affine3d A2
+      = Eigen::Translation3d(0.1, 0.2, 0.3)
+        * Eigen::AngleAxisd(0.5, Eigen::Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
+  Eigen::Matrix<double, 6, 1> a3, a4;
   a3 << 1, 2, 3, 4, 5, 6;
 
   // Affine3d A3 = Translation3d(0.1, 0.2, 0.3) * AngleAxisd(0.5, Vector3d(1.0 /
   // sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
-  Matrix<double, 6, 1> a5, a6;
+  Eigen::Matrix<double, 6, 1> a5, a6;
   a5 << 1, 2, 3, 4, 5, 6;
 
-  Isometry3d I1;
+  Eigen::Isometry3d I1;
   I1.matrix() = A1.matrix();
-  Matrix<double, 6, 1> i1, i2;
+  Eigen::Matrix<double, 6, 1> i1, i2;
   i1 << 1, 2, 3, 4, 5, 6;
 
-  Matrix4d M1;
+  Eigen::Matrix4d M1;
   M1 = A1.matrix();
-  Matrix<double, 6, 1> m1, m2;
+  Eigen::Matrix<double, 6, 1> m1, m2;
   m1 << 1, 2, 3, 4, 5, 6;
 
   clock_t start = clock();
@@ -1357,10 +1355,10 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
 #endif
   int m = 3;
 
-  Vector6d t = Vector6d::Random();
-  Isometry3d T = expMap(t);
-  Jacobian dynamicJ = Jacobian::Random(6, m);
-  Matrix<double, 6, 3> fixedJ = dynamicJ; // Matrix<double, 6, 3>::Random();
+  Eigen::Vector6d t = Eigen::Vector6d::Random();
+  Eigen::Isometry3d T = expMap(t);
+  math::Jacobian dynamicJ = math::Jacobian::Random(6, m);
+  Eigen::Matrix<double, 6, 3> fixedJ = dynamicJ; // Matrix<double, 6, 3>::Random();
 
   // Test1: verify the results
   for (int i = 0; i < testCount; ++i)

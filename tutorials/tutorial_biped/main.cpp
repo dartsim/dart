@@ -308,10 +308,10 @@ int main(int argc, char* argv[])
   WorldPtr world = std::make_shared<World>();
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet"))
+  if (dart::dynamics::CollisionDetector::getFactory()->canCreate("bullet"))
   {
     world->getConstraintSolver()->setCollisionDetector(
-        dart::collision::CollisionDetector::getFactory()->create("bullet"));
+        dart::dynamics::CollisionDetector::getFactory()->create("bullet"));
   }
 
   world->addSkeleton(floor);

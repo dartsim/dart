@@ -33,11 +33,11 @@
 #include "dart/collision/collision_filter.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template class CollisionFilter<double>;
 
 template class CompositeCollisionFilter<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

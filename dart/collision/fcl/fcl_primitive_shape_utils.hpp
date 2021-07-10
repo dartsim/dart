@@ -37,7 +37,7 @@
 #include "dart/collision/fcl/backward_compatibility.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename BV, typename S>
@@ -149,5 +149,5 @@ template <typename BV, typename S>
   return model;
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

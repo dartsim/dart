@@ -149,6 +149,9 @@ public:
   /// \param[out] out A description of out
   int example_method(int a, int b, int* out) const;
 
+  // Use int for index over unsigend int or std::size_t
+  const Element& get_element(int index) const;
+
 private:
   std::unique_ptr<util::RNG> m_example_member; // Member variables are prefixed with "m_"
 };
@@ -196,10 +199,12 @@ int ExampleClass::example_interface_function() const {
 }
 
 //==============================================================================
-int ExampleClass::exampleMethod(int a, int b, int* out) const {
+int ExampleClass::example_method(int a, int b, int* out) const {
   int result = a + b;
-  if (out)
+  // Enclose with curly braces even for single line
+  if (out) {
     *out = result;
+  }
   return result;
 }
 

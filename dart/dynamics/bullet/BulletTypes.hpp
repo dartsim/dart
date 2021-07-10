@@ -40,7 +40,7 @@
 #include <btBulletCollisionCommon.h>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 /// @brief Convert Bullet vector3 type to Eigen vector3 type
 Eigen::Vector3d convertVector3(const btVector3& _vec);

@@ -44,7 +44,7 @@
 #include "dart/dynamics/bullet/BulletCollisionShape.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class BulletCollisionDetector : public CollisionDetector
 {

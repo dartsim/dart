@@ -38,7 +38,7 @@
 #include "dart/dynamics/CollisionGroup.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 template <typename... Args>

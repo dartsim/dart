@@ -35,10 +35,10 @@
 #include "dart/common/SmartPointer.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 DART_DEFINE_CLASS_POINTERS_T1(FclEngine);
 DART_DEFINE_CLASS_POINTERS_T1(FclGroup);
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

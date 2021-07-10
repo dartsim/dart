@@ -40,7 +40,7 @@
 #include "dart/collision/fcl/backward_compatibility.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S_>
 class FclEngine : public Engine<S_>
@@ -118,9 +118,12 @@ private:
 
 DART_REGISTER_ENGINE_OUT_HEADER(FclEngine<S>);
 
+using FclEnginef = FclEngine<float>;
+using FclEngined = FclEngine<double>;
+
 extern template class FclEngine<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/fcl/detail/fcl_engine_impl.hpp"

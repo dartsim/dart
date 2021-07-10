@@ -309,10 +309,10 @@ TEST(World, ValidatingClones)
     // Set non default collision detector
 #if DART_HAVE_BULLET
     worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::BulletCollisionDetector::create());
+        dynamics::BulletCollisionDetector::create());
 #else
     worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
+        dynamics::DARTCollisionDetector::create());
 #endif
   }
 

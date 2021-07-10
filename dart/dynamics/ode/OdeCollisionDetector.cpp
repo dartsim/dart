@@ -50,7 +50,7 @@
 #include "dart/dynamics/ode/OdeTypes.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 namespace {
 
@@ -102,8 +102,8 @@ struct OdeCollisionCallbackData
 OdeCollisionDetector::Registrar<OdeCollisionDetector>
     OdeCollisionDetector::mRegistrar{
         OdeCollisionDetector::getStaticType(),
-        []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
-          return dart::collision::OdeCollisionDetector::create();
+        []() -> std::shared_ptr<dart::dynamics::OdeCollisionDetector> {
+          return dart::dynamics::OdeCollisionDetector::create();
         }};
 
 //==============================================================================

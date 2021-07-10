@@ -30,42 +30,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOPTION_HPP_
-#define DART_COLLISION_COLLISIONOPTION_HPP_
+#include <dart/dart.hpp>
+#include <pybind11/pybind11.h>
 
-#include <cstddef>
-#include <memory>
+namespace py = pybind11;
 
 namespace dart {
-namespace dynamics {
+namespace python {
 
-class CollisionFilter;
-
-struct CollisionOption
+void DARTCollisionDetector(py::module& m)
 {
+  ::py::class_<
+      dart::dynamics::DARTCollisionDetector,
+      std::shared_ptr<dart::dynamics::DARTCollisionDetector>,
+      dart::dynamics::CollisionDetector>(m, "DARTCollisionDetector")
+      .def(::py::init(
+          +[]() -> std::shared_ptr<dart::dynamics::DARTCollisionDetector> {
+            return dart::dynamics::DARTCollisionDetector::create();
+          }))
+      .def(
+          "cloneWithoutCollisionObjects",
+          +[](const dart::dynamics::DARTCollisionDetector* self)
+              -> std::shared_ptr<dart::dynamics::CollisionDetector> {
+            return self->cloneWithoutCollisionObjects();
+          })
+      .def(
+          "getType",
+          +[](const dart::dynamics::DARTCollisionDetector* self)
+              -> const std::string& { return self->getType(); },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "createCollisionGroup",
+          +[](dart::dynamics::DARTCollisionDetector* self)
+              -> std::shared_ptr<dart::dynamics::CollisionGroup> {
+            return self->createCollisionGroupAsSharedPtr();
+          })
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::dynamics::DARTCollisionDetector::getStaticType();
+          },
+          ::py::return_value_policy::reference_internal);
+}
 
-  /// Flag whether the collision detector computes contact information (contact
-  /// point, normal, and penetration depth). If it is set to false, only the
-  /// result of that which pairs are colliding will be stored in the
-  /// CollisionResult without the contact information.
-  bool enableContact;
-
-  /// Maximum number of contacts to detect. Once the contacts are found up to
-  /// this number, the collision checking will terminate at that moment. Set
-  /// this to 1 for binary check.
-  std::size_t maxNumContacts;
-
-  /// CollisionFilter
-  std::shared_ptr<CollisionFilter> collisionFilter;
-
-  /// Constructor
-  CollisionOption(
-      bool enableContact = true,
-      std::size_t maxNumContacts = 1000u,
-      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
-};
-
-} // namespace collision
+} // namespace python
 } // namespace dart
-
-#endif // DART_COLLISION_COLLISIONOPTION_HPP_

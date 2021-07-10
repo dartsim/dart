@@ -37,7 +37,7 @@
 #include "dart/collision/contact.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S_>
 class CollisionResult
@@ -76,7 +76,7 @@ protected:
 
 extern template class CollisionResult<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/detail/collision_result_impl.hpp"

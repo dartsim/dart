@@ -38,7 +38,7 @@
 #include "dart/collision/fcl/fcl_types.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S_>
 class FclGroup : public Group<S_>
@@ -75,7 +75,7 @@ protected:
 
 extern template class FclGroup<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/fcl/detail/fcl_group_impl.hpp"

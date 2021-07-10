@@ -102,7 +102,7 @@ build() {
     && ctest --output-on-failure \
     && make -j examples \
     && make -j tutorials \
-    && make -j8 dartpy \
+    && make -j dartpy \
     && make pytest"
 }
 

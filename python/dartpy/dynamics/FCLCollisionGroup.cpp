@@ -30,54 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-
-#if DART_HAVE_ODE
-
-#  include <dart/dynamics/dynamics.hpp>
-#  include <pybind11/pybind11.h>
+#include <dart/dart.hpp>
+#include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void OdeCollisionDetector(py::module& m)
+void FCLCollisionGroup(py::module& m)
 {
   ::py::class_<
-      dart::collision::OdeCollisionDetector,
-      std::shared_ptr<dart::collision::OdeCollisionDetector>,
-      dart::collision::CollisionDetector>(m, "OdeCollisionDetector")
-      .def(::py::init(
-          +[]() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
-            return dart::collision::OdeCollisionDetector::create();
-          }))
+      dart::dynamics::FCLCollisionGroup,
+      dart::dynamics::CollisionGroup,
+      std::shared_ptr<dart::dynamics::FCLCollisionGroup> >(
+      m, "FCLCollisionGroup")
       .def(
-          "cloneWithoutCollisionObjects",
-          +[](const dart::collision::OdeCollisionDetector* self)
-              -> std::shared_ptr<dart::collision::CollisionDetector> {
-            return self->cloneWithoutCollisionObjects();
-          })
-      .def(
-          "getType",
-          +[](const dart::collision::OdeCollisionDetector* self)
-              -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "createCollisionGroup",
-          +[](dart::collision::OdeCollisionDetector* self)
-              -> std::shared_ptr<dart::collision::CollisionGroup> {
-            return self->createCollisionGroupAsSharedPtr();
-          })
-      .def_static(
-          "getStaticType",
-          +[]() -> const std::string& {
-            return dart::collision::OdeCollisionDetector::getStaticType();
-          },
-          ::py::return_value_policy::reference_internal);
+          ::py::init<const dart::dynamics::CollisionDetectorPtr&>(),
+          ::py::arg("collisionDetector"));
 }
 
 } // namespace python
 } // namespace dart
-
-#endif // DART_HAVE_ODE

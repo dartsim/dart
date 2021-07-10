@@ -51,7 +51,7 @@ class ContactConstraint : public ConstraintBase
 {
 public:
   /// Constructor
-  ContactConstraint(collision::Contact& contact, double timeStep);
+  ContactConstraint(dynamics::Contact& contact, double timeStep);
 
   /// Destructor
   ~ContactConstraint() override = default;
@@ -185,7 +185,7 @@ private:
   void setSecondarySlipCompliance(double slip);
 
   /// Get contact object associated witht this constraint
-  const collision::Contact& getContact() const;
+  const dynamics::Contact& getContact() const;
 
 private:
   /// Time step
@@ -198,7 +198,7 @@ private:
   dynamics::BodyNode* mBodyNodeB;
 
   /// Contact between mBodyNode1 and mBodyNode2
-  collision::Contact& mContact;
+  dynamics::Contact& mContact;
 
   /// First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;

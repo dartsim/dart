@@ -33,7 +33,7 @@
 #include "dart/dynamics/bullet/BulletCollisionShape.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 BulletCollisionShape::BulletCollisionShape(

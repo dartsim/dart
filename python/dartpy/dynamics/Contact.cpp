@@ -31,6 +31,7 @@
  */
 
 #include <dart/dart.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -38,31 +39,44 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DistanceOption(py::module& m)
+void Contact(py::module& m)
 {
-  ::py::class_<dart::collision::DistanceOption>(m, "DistanceOption")
+  ::py::class_<dart::dynamics::Contact>(m, "Contact")
       .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableNearestPoints"))
-      .def(
-          ::py::init<bool, double>(),
-          ::py::arg("enableNearestPoints"),
-          ::py::arg("distanceLowerBound"))
-      .def(
-          ::py::init<
-              bool,
-              double,
-              const std::shared_ptr<dart::collision::DistanceFilter>&>(),
-          ::py::arg("enableNearestPoints"),
-          ::py::arg("distanceLowerBound"),
-          ::py::arg("distanceFilter"))
+      .def_static(
+          "getNormalEpsilon",
+          +[]() -> double {
+            return dart::dynamics::Contact::getNormalEpsilon();
+          })
+      .def_static(
+          "getNormalEpsilonSquared",
+          +[]() -> double {
+            return dart::dynamics::Contact::getNormalEpsilonSquared();
+          })
+      .def_static(
+          "isZeroNormal",
+          +[](const Eigen::Vector3d& normal) -> bool {
+            return dart::dynamics::Contact::isZeroNormal(normal);
+          },
+          ::py::arg("normal"))
+      .def_static(
+          "isNonZeroNormal",
+          +[](const Eigen::Vector3d& normal) -> bool {
+            return dart::dynamics::Contact::isNonZeroNormal(normal);
+          },
+          ::py::arg("normal"))
+      .def_readwrite("point", &dart::dynamics::Contact::point)
+      .def_readwrite("normal", &dart::dynamics::Contact::normal)
+      .def_readwrite("force", &dart::dynamics::Contact::force)
       .def_readwrite(
-          "enableNearestPoints",
-          &dart::collision::DistanceOption::enableNearestPoints)
+          "collisionObject1", &dart::dynamics::Contact::collisionObject1)
       .def_readwrite(
-          "distanceLowerBound",
-          &dart::collision::DistanceOption::distanceLowerBound)
+          "collisionObject2", &dart::dynamics::Contact::collisionObject2)
       .def_readwrite(
-          "distanceFilter", &dart::collision::DistanceOption::distanceFilter);
+          "penetrationDepth", &dart::dynamics::Contact::penetrationDepth)
+      .def_readwrite("triID1", &dart::dynamics::Contact::triID1)
+      .def_readwrite("triID2", &dart::dynamics::Contact::triID2)
+      .def_readwrite("userData", &dart::dynamics::Contact::userData);
 }
 
 } // namespace python

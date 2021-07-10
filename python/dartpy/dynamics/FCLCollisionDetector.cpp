@@ -42,84 +42,84 @@ void FCLCollisionDetector(py::module& m)
 {
   auto fclCollisionDetector
       = ::py::class_<
-            dart::collision::FCLCollisionDetector,
-            std::shared_ptr<dart::collision::FCLCollisionDetector>,
-            dart::collision::CollisionDetector>(m, "FCLCollisionDetector")
+            dart::dynamics::FCLCollisionDetector,
+            std::shared_ptr<dart::dynamics::FCLCollisionDetector>,
+            dart::dynamics::CollisionDetector>(m, "FCLCollisionDetector")
             .def(::py::init(
                 +[]()
-                    -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
-                  return dart::collision::FCLCollisionDetector::create();
+                    -> std::shared_ptr<dart::dynamics::FCLCollisionDetector> {
+                  return dart::dynamics::FCLCollisionDetector::create();
                 }))
             .def(
                 "cloneWithoutCollisionObjects",
-                +[](dart::collision::FCLCollisionDetector* self)
-                    -> std::shared_ptr<dart::collision::CollisionDetector> {
+                +[](dart::dynamics::FCLCollisionDetector* self)
+                    -> std::shared_ptr<dart::dynamics::CollisionDetector> {
                   return self->cloneWithoutCollisionObjects();
                 })
             .def(
                 "getType",
-                +[](const dart::collision::FCLCollisionDetector* self)
+                +[](const dart::dynamics::FCLCollisionDetector* self)
                     -> const std::string& { return self->getType(); },
                 ::py::return_value_policy::reference_internal)
             .def(
                 "createCollisionGroup",
-                +[](dart::collision::FCLCollisionDetector* self)
-                    -> std::shared_ptr<dart::collision::CollisionGroup> {
+                +[](dart::dynamics::FCLCollisionDetector* self)
+                    -> std::shared_ptr<dart::dynamics::CollisionGroup> {
                   return self->createCollisionGroup();
                 })
             .def(
                 "setPrimitiveShapeType",
-                +[](dart::collision::FCLCollisionDetector* self,
-                    dart::collision::FCLCollisionDetector::PrimitiveShape
+                +[](dart::dynamics::FCLCollisionDetector* self,
+                    dart::dynamics::FCLCollisionDetector::PrimitiveShape
                         type) { self->setPrimitiveShapeType(type); },
                 ::py::arg("type"))
             .def(
                 "getPrimitiveShapeType",
-                +[](const dart::collision::FCLCollisionDetector* self)
-                    -> dart::collision::FCLCollisionDetector::PrimitiveShape {
+                +[](const dart::dynamics::FCLCollisionDetector* self)
+                    -> dart::dynamics::FCLCollisionDetector::PrimitiveShape {
                   return self->getPrimitiveShapeType();
                 })
             .def(
                 "setContactPointComputationMethod",
-                +[](dart::collision::FCLCollisionDetector* self,
-                    dart::collision::FCLCollisionDetector::
+                +[](dart::dynamics::FCLCollisionDetector* self,
+                    dart::dynamics::FCLCollisionDetector::
                         ContactPointComputationMethod method) {
                   self->setContactPointComputationMethod(method);
                 },
                 ::py::arg("method"))
             .def(
                 "getContactPointComputationMethod",
-                +[](const dart::collision::FCLCollisionDetector* self)
-                    -> dart::collision::FCLCollisionDetector::
+                +[](const dart::dynamics::FCLCollisionDetector* self)
+                    -> dart::dynamics::FCLCollisionDetector::
                         ContactPointComputationMethod {
                           return self->getContactPointComputationMethod();
                         })
             .def_static(
                 "getStaticType",
                 +[]() -> const std::string& {
-                  return dart::collision::FCLCollisionDetector::getStaticType();
+                  return dart::dynamics::FCLCollisionDetector::getStaticType();
                 },
                 ::py::return_value_policy::reference_internal);
 
-  ::py::enum_<dart::collision::FCLCollisionDetector::PrimitiveShape>(
+  ::py::enum_<dart::dynamics::FCLCollisionDetector::PrimitiveShape>(
       fclCollisionDetector, "PrimitiveShape")
       .value(
           "PRIMITIVE",
-          dart::collision::FCLCollisionDetector::PrimitiveShape::PRIMITIVE)
+          dart::dynamics::FCLCollisionDetector::PrimitiveShape::PRIMITIVE)
       .value(
-          "MESH", dart::collision::FCLCollisionDetector::PrimitiveShape::MESH)
+          "MESH", dart::dynamics::FCLCollisionDetector::PrimitiveShape::MESH)
       .export_values();
 
   ::py::enum_<
-      dart::collision::FCLCollisionDetector::ContactPointComputationMethod>(
+      dart::dynamics::FCLCollisionDetector::ContactPointComputationMethod>(
       fclCollisionDetector, "ContactPointComputationMethod")
       .value(
           "FCL",
-          dart::collision::FCLCollisionDetector::ContactPointComputationMethod::
+          dart::dynamics::FCLCollisionDetector::ContactPointComputationMethod::
               FCL)
       .value(
           "DART",
-          dart::collision::FCLCollisionDetector::ContactPointComputationMethod::
+          dart::dynamics::FCLCollisionDetector::ContactPointComputationMethod::
               DART)
       .export_values();
 }

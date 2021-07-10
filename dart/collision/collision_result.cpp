@@ -33,9 +33,9 @@
 #include "dart/collision/collision_result.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template class CollisionResult<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

@@ -53,15 +53,15 @@ void test_collide(const EngineT& engine)
 
   sphere1->set_position(math::Vector3<double>(-1, 0, 0));
   sphere2->set_position(math::Vector3<double>(1, 0, 0));
-  EXPECT_FALSE(collision2::collide(sphere1, sphere2));
+  EXPECT_FALSE(collision::collide(sphere1, sphere2));
 
   sphere1->set_position(math::Vector3<double>(-0.25, 0, 0));
   sphere2->set_position(math::Vector3<double>(0.25, 0, 0));
-  EXPECT_TRUE(collision2::collide(sphere1, sphere2));
+  EXPECT_TRUE(collision::collide(sphere1, sphere2));
 }
 
 //==============================================================================
 TEST(NarrowPhaseTest, Collide)
 {
-  test_collide(collision2::Engine<double>::create("fcl"));
+  test_collide(collision::Engine<double>::create("fcl"));
 }

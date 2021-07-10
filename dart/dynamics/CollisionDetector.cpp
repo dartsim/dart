@@ -41,7 +41,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 CollisionDetector::Factory* CollisionDetector::getFactory()

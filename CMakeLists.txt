@@ -94,7 +94,7 @@ option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
-option(DART_BUILD_DARTPY "Build dartpy (the python binding)" OFF)
+option(DART_BUILD_DARTPY "Build dartpy (the python binding)" ON)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a 
 # terminal. However, this doesn't work in some cases such as when the makefile is
 # invoked by Ninja. DART_FORCE_COLORED_OUTPUT can be used in this case to enforce

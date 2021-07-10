@@ -35,7 +35,7 @@
 #include "dart/collision/types.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S>
 struct CollisionOption
@@ -66,7 +66,7 @@ using CollisionOptiond = CollisionOption<double>;
 
 extern template struct CollisionOption<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/detail/collision_option_impl.hpp"

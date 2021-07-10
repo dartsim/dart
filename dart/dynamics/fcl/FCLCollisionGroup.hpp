@@ -37,7 +37,7 @@
 #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class CollisionObject;
 class FCLCollisionObjectUserData;
@@ -48,7 +48,7 @@ public:
   friend class FCLCollisionDetector;
 
   using FCLCollisionManager
-      = dart::collision::fcl::DynamicAABBTreeCollisionManager;
+      = dart::dynamics::fcl::DynamicAABBTreeCollisionManager;
 
   /// Constructor
   FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);

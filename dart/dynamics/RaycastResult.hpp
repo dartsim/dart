@@ -37,7 +37,7 @@
 #include <Eigen/Dense>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class CollisionObject;
 

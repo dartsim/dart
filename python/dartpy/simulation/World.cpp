@@ -196,15 +196,15 @@ void World(py::module& m)
       .def(
           "checkCollision",
           +[](dart::simulation::World* self,
-              const dart::collision::CollisionOption& option) -> bool {
+              const dart::dynamics::CollisionOption& option) -> bool {
             return self->checkCollision(option);
           },
           ::py::arg("option"))
       .def(
           "checkCollision",
           +[](dart::simulation::World* self,
-              const dart::collision::CollisionOption& option,
-              dart::collision::CollisionResult* result) -> bool {
+              const dart::dynamics::CollisionOption& option,
+              dart::dynamics::CollisionResult* result) -> bool {
             return self->checkCollision(option, result);
           },
           ::py::arg("option"),
@@ -212,7 +212,7 @@ void World(py::module& m)
       .def(
           "getLastCollisionResult",
           +[](dart::simulation::World* self)
-              -> const collision::CollisionResult& {
+              -> const dynamics::CollisionResult& {
             return self->getLastCollisionResult();
           })
       .def(

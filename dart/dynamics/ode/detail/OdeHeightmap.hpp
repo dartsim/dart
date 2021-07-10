@@ -39,7 +39,7 @@
 #include "dart/dynamics/ode/detail/OdeGeom.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 template <typename S>

@@ -44,7 +44,7 @@
 #include "dart/collision/fcl/fcl_object.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -169,5 +169,5 @@ FclEngine<S>::create_fcl_collision_geometry_impl(
   return std::shared_ptr<FclCollisionGeometry<S>>(geom);
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

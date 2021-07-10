@@ -36,7 +36,7 @@
 #include "dart/math/Types.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 /// Contact information
 template <typename S_>
@@ -87,7 +87,7 @@ using Contactd = Contact<double>;
 
 extern template struct Contact<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/detail/contact_impl.hpp"

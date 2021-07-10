@@ -38,7 +38,7 @@
 #include "dart/common/Deprecated.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template <typename S_>
 class CollisionFilter
@@ -91,7 +91,7 @@ using CompositeCollisionFilterd = CompositeCollisionFilter<double>;
 
 extern template class CompositeCollisionFilter<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
 
 #include "dart/collision/detail/collision_filter_impl.hpp"

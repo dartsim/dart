@@ -31,37 +31,35 @@
  */
 
 #include <dart/dart.hpp>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void CollisionOption(py::module& m)
+void RaycastResult(py::module& m)
 {
-  ::py::class_<dart::collision::CollisionOption>(m, "CollisionOption")
+  ::py::class_<dart::dynamics::RayHit>(m, "RayHit")
       .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableContact"))
+      .def_readwrite(
+          "mCollisionObject", &dart::dynamics::RayHit::mCollisionObject)
+      .def_readwrite("mNormal", &dart::dynamics::RayHit::mNormal)
+      .def_readwrite("mPoint", &dart::dynamics::RayHit::mPoint)
+      .def_readwrite("mFraction", &dart::dynamics::RayHit::mFraction);
+
+  ::py::class_<dart::dynamics::RaycastResult>(m, "RaycastResult")
+      .def(::py::init<>())
       .def(
-          ::py::init<bool, std::size_t>(),
-          ::py::arg("enableContact"),
-          ::py::arg("maxNumContacts"))
+          "clear", +[](dart::dynamics::RaycastResult* self) { self->clear(); })
       .def(
-          ::py::init<
-              bool,
-              std::size_t,
-              const std::shared_ptr<dart::collision::CollisionFilter>&>(),
-          ::py::arg("enableContact"),
-          ::py::arg("maxNumContacts"),
-          ::py::arg("collisionFilter"))
-      .def_readwrite(
-          "enableContact", &dart::collision::CollisionOption::enableContact)
-      .def_readwrite(
-          "maxNumContacts", &dart::collision::CollisionOption::maxNumContacts)
-      .def_readwrite(
-          "collisionFilter",
-          &dart::collision::CollisionOption::collisionFilter);
+          "hasHit",
+          +[](const dart::dynamics::RaycastResult* self) -> bool {
+            return self->hasHit();
+          })
+      .def_readwrite("mRayHits", &dart::dynamics::RaycastResult::mRayHits);
 }
 
 } // namespace python

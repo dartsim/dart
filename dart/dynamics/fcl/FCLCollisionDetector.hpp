@@ -38,7 +38,7 @@
 #include "dart/dynamics/fcl/FCLTypes.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class FCLCollisionObject;
 
@@ -146,7 +146,7 @@ protected:
 
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
-  std::shared_ptr<dart::collision::fcl::CollisionGeometry>
+  std::shared_ptr<dart::dynamics::fcl::CollisionGeometry>
   claimFCLCollisionGeometry(const dynamics::ConstShapePtr& shape);
 
 protected:
@@ -163,7 +163,7 @@ private:
     FCLCollisionGeometryDeleter(
         FCLCollisionDetector* cd, const dynamics::ConstShapePtr& shape);
 
-    void operator()(dart::collision::fcl::CollisionGeometry* geom) const;
+    void operator()(dart::dynamics::fcl::CollisionGeometry* geom) const;
 
   private:
     FCLCollisionDetector* mFCLCollisionDetector;
@@ -175,7 +175,7 @@ private:
   struct ShapeInfo final
   {
     /// A weak reference to the shape
-    std::weak_ptr<dart::collision::fcl::CollisionGeometry> mShape;
+    std::weak_ptr<dart::dynamics::fcl::CollisionGeometry> mShape;
 
     /// The last version of the shape, as known by this collision detector
     std::size_t mLastKnownVersion;
@@ -183,7 +183,7 @@ private:
 
   /// Create fcl::CollisionGeometry with the custom deleter
   /// FCLCollisionGeometryDeleter
-  std::shared_ptr<dart::collision::fcl::CollisionGeometry>
+  std::shared_ptr<dart::dynamics::fcl::CollisionGeometry>
   createFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape,
       FCLCollisionDetector::PrimitiveShape type,

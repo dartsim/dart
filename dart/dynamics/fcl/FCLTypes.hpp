@@ -37,26 +37,26 @@
 #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class FCLTypes
 {
 public:
 #if !FCL_VERSION_AT_LEAST(0, 6, 0)
   /// Convert Eigen vector3 type to FCL vector3 type
-  static dart::collision::fcl::Vector3 convertVector3(
+  static dart::dynamics::fcl::Vector3 convertVector3(
       const Eigen::Vector3d& _vec);
 #endif
   /// Convert FCL vector3 type to Eigen vector3 type
   static Eigen::Vector3d convertVector3(
-      const dart::collision::fcl::Vector3& _vec);
+      const dart::dynamics::fcl::Vector3& _vec);
 
   /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static dart::collision::fcl::Matrix3 convertMatrix3x3(
+  static dart::dynamics::fcl::Matrix3 convertMatrix3x3(
       const Eigen::Matrix3d& _R);
 
   /// Convert FCL transformation type to Eigen transformation type
-  static dart::collision::fcl::Transform3 convertTransform(
+  static dart::dynamics::fcl::Transform3 convertTransform(
       const Eigen::Isometry3d& _T);
 };
 

@@ -38,7 +38,7 @@
 #include "dart/dynamics/ShapeNode.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 void CollisionResult::addContact(const Contact& contact)

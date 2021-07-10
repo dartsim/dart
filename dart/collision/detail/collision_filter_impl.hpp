@@ -35,7 +35,7 @@
 #include "dart/collision/collision_filter.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -85,5 +85,5 @@ bool CompositeCollisionFilter<S>::ignores(
   return false;
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

@@ -33,7 +33,7 @@
 #include "dart/dynamics/ode/OdeTypes.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 Eigen::Vector3d OdeTypes::convertVector3(const dVector3& vec)

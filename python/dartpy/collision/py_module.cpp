@@ -38,71 +38,21 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Contact(py::module& sm);
-
-void CollisionFilter(py::module& sm);
-void CollisionObject(py::module& sm);
-void CollisionOption(py::module& sm);
-void CollisionResult(py::module& sm);
-
-void DistanceOption(py::module& sm);
-void DistanceResult(py::module& sm);
-
-void RaycastOption(py::module& sm);
-void RaycastResult(py::module& sm);
-
-void CollisionDetector(py::module& sm);
-void FCLCollisionDetector(py::module& sm);
-void DARTCollisionDetector(py::module& sm);
-
-void CollisionGroup(py::module& sm);
-void FCLCollisionGroup(py::module& sm);
-void DARTCollisionGroup(py::module& sm);
-
-#if DART_HAVE_BULLET
-void BulletCollisionDetector(py::module& sm);
-void BulletCollisionGroup(py::module& sm);
-#endif // DART_HAVE_BULLET
-
-#if DART_HAVE_ODE
-void OdeCollisionDetector(py::module& sm);
-void OdeCollisionGroup(py::module& sm);
-#endif // DART_HAVE_ODE
+void py_engine(py::module& m);
+void py_fcl_engine(py::module& m);
+void py_object(py::module& m);
+void py_collision_option(py::module& m);
+void py_narrow_phase_interface(py::module& m);
 
 void dart_collision(py::module& m)
 {
   auto sm = m.def_submodule("collision");
 
-  Contact(sm);
-
-  CollisionFilter(sm);
-  CollisionObject(sm);
-  CollisionOption(sm);
-  CollisionResult(sm);
-
-  DistanceOption(sm);
-  DistanceResult(sm);
-
-  RaycastOption(sm);
-  RaycastResult(sm);
-
-  CollisionDetector(sm);
-  FCLCollisionDetector(sm);
-  DARTCollisionDetector(sm);
-
-  CollisionGroup(sm);
-  FCLCollisionGroup(sm);
-  DARTCollisionGroup(sm);
-
-#if DART_HAVE_BULLET
-  BulletCollisionDetector(sm);
-  BulletCollisionGroup(sm);
-#endif // DART_HAVE_BULLET
-
-#if DART_HAVE_ODE
-  OdeCollisionDetector(sm);
-  OdeCollisionGroup(sm);
-#endif // DART_HAVE_ODE
+  py_engine(sm);
+  py_fcl_engine(sm);
+  py_object(sm);
+  py_collision_option(sm);
+  py_narrow_phase_interface(sm);
 }
 
 } // namespace python

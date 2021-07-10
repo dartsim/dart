@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -38,13 +38,19 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void py_collision_option(py::module& m);
-
-void dart_collision2(py::module& m)
+void RaycastOption(py::module& m)
 {
-  auto sm = m.def_submodule("collision2");
-
-  py_collision_option(sm);
+  ::py::class_<dart::dynamics::RaycastOption>(m, "RaycastOption")
+      .def(::py::init<>())
+      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
+      .def(
+          ::py::init<bool, bool>(),
+          ::py::arg("enableAllHits"),
+          ::py::arg("sortByClosest"))
+      .def_readwrite(
+          "mEnableAllHits", &dart::dynamics::RaycastOption::mEnableAllHits)
+      .def_readwrite(
+          "mSortByClosest", &dart::dynamics::RaycastOption::mSortByClosest);
 }
 
 } // namespace python

@@ -49,7 +49,7 @@ std::shared_ptr<World> createWorld()
 {
   auto world = simulation::World::create();
   world->getConstraintSolver()->setCollisionDetector(
-      collision::OdeCollisionDetector::create());
+      dynamics::OdeCollisionDetector::create());
   return world;
 }
 

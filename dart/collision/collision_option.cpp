@@ -33,9 +33,9 @@
 #include "dart/collision/collision_option.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 template struct CollisionOption<double>;
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

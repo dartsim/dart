@@ -38,7 +38,7 @@
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 /// Contact information
 struct Contact

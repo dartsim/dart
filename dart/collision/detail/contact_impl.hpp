@@ -35,7 +35,7 @@
 #include "dart/collision/contact.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -82,5 +82,5 @@ bool Contact<S>::is_non_zero_normal(const math::Vector3<S>& normal)
   return !is_zero_normal(normal);
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart

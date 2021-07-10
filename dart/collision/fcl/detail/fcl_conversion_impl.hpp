@@ -35,7 +35,7 @@
 #include "dart/collision/fcl/fcl_conversion.hpp"
 
 namespace dart {
-namespace collision2 {
+namespace collision {
 
 //==============================================================================
 template <typename S>
@@ -121,5 +121,5 @@ math::Isometry3<S> toTransform3(const FclTransform3<S>& T)
 #endif
 }
 
-} // namespace collision2
+} // namespace collision
 } // namespace dart
