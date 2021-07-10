@@ -53,11 +53,10 @@ public:
   void setTransform(const math::Isometry3<S>& tf) override;
 
   /// Return FCL collision object
-  dart::collision2::fcl::CollisionObject<S>* getFclCollisionObject();
+  FclCollisionObject<S>* getFclCollisionObject();
 
   /// Return FCL collision object
-  const dart::collision2::fcl::CollisionObject<S>* getFclCollisionObject()
-      const;
+  const FclCollisionObject<S>* getFclCollisionObject() const;
 
   math::Vector3<S> getTranslation() const;
 
@@ -68,8 +67,7 @@ protected:
   FclObject(
       Group<S>* collisionGroup,
       math::GeometryPtr shape,
-      const std::shared_ptr<dart::collision2::fcl::CollisionGeometry<S>>&
-          fclCollGeom);
+      const std::shared_ptr<FclCollisionGeometry<S>>& fclCollGeom);
 
   // Documentation inherited
   void updateEngineData() override;
@@ -78,8 +76,7 @@ protected:
   FclObject(Group<S>* collisionGroup, math::GeometryPtr shape);
 
   /// FCL collision object
-  std::unique_ptr<dart::collision2::fcl::CollisionObject<S>>
-      mFclCollisionObject;
+  std::unique_ptr<FclCollisionObject<S>> mFclCollisionObject;
 
 private:
   friend class FclEngine<S>;

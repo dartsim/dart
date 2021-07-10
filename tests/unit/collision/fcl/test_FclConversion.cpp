@@ -30,96 +30,71 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include "dart/collision/fcl/FclConversion.hpp"
+#include <dart/collision/collision.hpp>
+#include <dart/math/math.hpp>
+#include <dart/test/GTestUtils.hpp>
 
-namespace dart {
-namespace collision2 {
+using namespace dart;
 
 //==============================================================================
-template <typename S>
-FclVector3<S> toFclVector3(const math::Vector3<S>& vec)
+template <typename T>
+struct FclConversion : public testing::Test
 {
-  return FclVector3<S>(vec[0], vec[1], vec[2]);
+  using Type = T;
+};
+
+//==============================================================================
+using Types = testing::Types<double, float>;
+
+//==============================================================================
+TYPED_TEST_CASE(FclConversion, Types);
+
+//==============================================================================
+TYPED_TEST(FclConversion, Vector)
+{
+  using S = typename TestFixture::Type;
+
+  const math::Vector3<S> vec3 = math::Vector3<S>::Random();
+  collision2::FclVector3<S> fclVec3;
+  for (auto i = 0; i < 3; ++i)
+  {
+    fclVec3[i] = vec3[i];
+  }
+
+  EXPECT_VECTOR3S_EQ(fclVec3, collision2::toFclVector3<S>(vec3));
+  EXPECT_VECTOR3S_EQ(vec3, collision2::toVector3<S>(fclVec3));
 }
 
 //==============================================================================
-template <typename S>
-math::Vector3<S> toVector3(const FclVector3<S>& vec)
+TYPED_TEST(FclConversion, Matrix)
 {
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-  return vec;
-#else
-  return math::Vector3<S>(vec[0], vec[1], vec[2]);
-#endif
+  using S = typename TestFixture::Type;
+
+  const math::Matrix3<S> mat3 = math::Matrix3<S>::Random();
+  collision2::FclMatrix3<S> fclMat3;
+  for (auto i = 0; i < 3; ++i)
+  {
+    for (auto j = 0; j < 3; ++j)
+    {
+      fclMat3(i, j) = mat3(i, j);
+    }
+  }
+
+  EXPECT_MATRIX3S_EQ(fclMat3, collision2::toFclMatrix3<S>(mat3));
+  EXPECT_MATRIX3S_EQ(mat3, collision2::toMatrix3<S>(fclMat3));
 }
 
 //==============================================================================
-template <typename S>
-FclMatrix3<S> toFclMatrix3(const math::Matrix3<S>& R)
+TYPED_TEST(FclConversion, Transform)
 {
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-  return R;
-#else
-  return FclMatrix3<S>(
-      R(0, 0),
-      R(0, 1),
-      R(0, 2),
-      R(1, 0),
-      R(1, 1),
-      R(1, 2),
-      R(2, 0),
-      R(2, 1),
-      R(2, 2));
-#endif
+  using S = typename TestFixture::Type;
+
+  math::Isometry3<S> tf3 = math::Isometry3<S>::Identity();
+  tf3.linear() = math::Random::uniformRotationMatrix3<S>();
+  tf3.translation() = math::Vector3<S>::Random();
+
+  EXPECT_TRANSFORM3S_EQ(
+      tf3, collision2::toTransform3<S>(collision2::toFclTransform3<S>(tf3)));
 }
-
-//==============================================================================
-template <typename S>
-math::Matrix3<S> toMatrix3(const FclMatrix3<S>& R)
-{
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-  return R;
-#else
-  math::Matrix3<S> out;
-  out << R(0, 0), R(0, 1), R(0, 2), R(1, 0), R(1, 1), R(1, 2), R(2, 0), R(2, 1),
-      R(2, 2);
-  return out;
-#endif
-}
-
-//==============================================================================
-template <typename S>
-FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T)
-{
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-  return T;
-#else
-  FclTransform3<S> trans;
-
-  trans.setTranslation(toFclVector3<S>(T.translation()));
-  trans.setRotation(toFclMatrix3<S>(T.linear()));
-
-  return trans;
-#endif
-}
-
-//==============================================================================
-template <typename S>
-math::Isometry3<S> toTransform3(const FclTransform3<S>& T)
-{
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-  return T;
-#else
-  math::Isometry3<S> trans = math::Isometry3<S>::Identity();
-
-  trans.translation() = toVector3<S>(T.getTranslation());
-  trans.linear() = toMatrix3<S>(T.getRotation());
-
-  return trans;
-#endif
-}
-
-} // namespace collision2
-} // namespace dart

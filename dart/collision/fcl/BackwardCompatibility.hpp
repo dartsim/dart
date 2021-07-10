@@ -89,144 +89,131 @@
 
 namespace dart {
 namespace collision2 {
-namespace fcl {
 
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
 // Geometric fundamentals
 template <typename S>
-using Vector3 = ::fcl::Vector3<S>;
+using FclVector3 = ::fcl::Vector3<S>;
 template <typename S>
-using Matrix3 = ::fcl::Matrix3<S>;
+using FclMatrix3 = ::fcl::Matrix3<S>;
 template <typename S>
-using Transform3 = ::fcl::Transform3<S>;
+using FclTransform3 = ::fcl::Transform3<S>;
 // Geometric primitives
 template <typename S>
-using Box = ::fcl::Box<S>;
+using FclBox = ::fcl::Box<S>;
 template <typename S>
-using Cylinder = ::fcl::Cylinder<S>;
+using FclCylinder = ::fcl::Cylinder<S>;
 template <typename S>
-using Cone = ::fcl::Cone<S>;
+using FclCone = ::fcl::Cone<S>;
 template <typename S>
-using Ellipsoid = ::fcl::Ellipsoid<S>;
+using FclEllipsoid = ::fcl::Ellipsoid<S>;
 template <typename S>
-using Halfspace = ::fcl::Halfspace<S>;
+using FclHalfspace = ::fcl::Halfspace<S>;
 template <typename S>
-using Sphere = ::fcl::Sphere<S>;
+using FclSphere = ::fcl::Sphere<S>;
 #  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 template <typename S>
-using OcTree = ::fcl::OcTree<S>;
+using FclOcTree = ::fcl::OcTree<S>;
 #  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 template <typename S>
-using CollisionObject = ::fcl::CollisionObject<S>;
+using FclCollisionObject = ::fcl::CollisionObject<S>;
 template <typename S>
-using CollisionGeometry = ::fcl::CollisionGeometry<S>;
+using FclCollisionGeometry = ::fcl::CollisionGeometry<S>;
 template <typename S>
-using DynamicAABBTreeCollisionManager
+using FclDynamicAABBTreeCollisionManager
     = ::fcl::DynamicAABBTreeCollisionManager<S>;
 template <typename S>
-using OBBRSS = ::fcl::OBBRSS<S>;
+using FclOBBRSS = ::fcl::OBBRSS<S>;
 template <typename S>
-using CollisionRequest = ::fcl::CollisionRequest<S>;
+using FclCollisionRequest = ::fcl::CollisionRequest<S>;
 template <typename S>
-using CollisionResult = ::fcl::CollisionResult<S>;
+using FclCollisionResult = ::fcl::CollisionResult<S>;
 template <typename S>
-using DistanceRequest = ::fcl::DistanceRequest<S>;
+using FclDistanceRequest = ::fcl::DistanceRequest<S>;
 template <typename S>
-using DistanceResult = ::fcl::DistanceResult<S>;
+using FclDistanceResult = ::fcl::DistanceResult<S>;
 template <typename S>
-using Contact = ::fcl::Contact<S>;
+using FclContact = ::fcl::Contact<S>;
 #else
 // Geometric fundamentals
 template <typename S>
-using Vector3 = ::fcl::Vec3f;
+using FclVector3 = ::fcl::Vec3f;
 template <typename S>
-using Matrix3 = ::fcl::Matrix3f;
+using FclMatrix3 = ::fcl::Matrix3f;
 template <typename S>
-using Transform3 = ::fcl::Transform3f;
+using FclTransform3 = ::fcl::Transform3f;
 // Geometric primitives
 template <typename S>
-using Box = ::fcl::Box;
+using FclBox = ::fcl::Box;
 template <typename S>
-using Cylinder = ::fcl::Cylinder;
+using FclCylinder = ::fcl::Cylinder;
 template <typename S>
-using Cone = ::fcl::Cone;
+using FclCone = ::fcl::Cone;
 template <typename S>
-using Halfspace = ::fcl::Halfspace;
+using FclEllipsoid = ::fcl::Ellipsoid;
 template <typename S>
-using Sphere = ::fcl::Sphere;
+using FclHalfspace = ::fcl::Halfspace;
+template <typename S>
+using FclSphere = ::fcl::Sphere;
 #  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 template <typename S>
-using OcTree = ::fcl::OcTree;
+using FclOcTree = ::fcl::OcTree;
 #  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 template <typename S>
-using CollisionObject = ::fcl::CollisionObject;
+using FclCollisionObject = ::fcl::CollisionObject;
 template <typename S>
-using CollisionGeometry = ::fcl::CollisionGeometry;
+using FclCollisionGeometry = ::fcl::CollisionGeometry;
 template <typename S>
-using DynamicAABBTreeCollisionManager = ::fcl::DynamicAABBTreeCollisionManager;
+using FclDynamicAABBTreeCollisionManager
+    = ::fcl::DynamicAABBTreeCollisionManager;
 template <typename S>
-using OBBRSS = ::fcl::OBBRSS;
+using FclOBBRSS = ::fcl::OBBRSS;
 template <typename S>
-using CollisionRequest = ::fcl::CollisionRequest;
+using FclCollisionRequest = ::fcl::CollisionRequest;
 template <typename S>
-using CollisionResult = ::fcl::CollisionResult;
+using FclCollisionResult = ::fcl::CollisionResult;
 template <typename S>
-using DistanceRequest = ::fcl::DistanceRequest;
+using FclDistanceRequest = ::fcl::DistanceRequest;
 template <typename S>
-using DistanceResult = ::fcl::DistanceResult;
+using FclDistanceResult = ::fcl::DistanceResult;
 template <typename S>
-using Contact = ::fcl::Contact;
-#endif
-
-#if !FCL_VERSION_AT_LEAST(0, 6, 0)
-template <typename S>
-using Ellipsoid = ::fcl::Ellipsoid;
+using FclContact = ::fcl::Contact;
 #endif
 
 /// Returns norm of a 3-dim vector
 template <typename S>
-S length(const dart::collision2::fcl::Vector3<S>& t);
+S length(const FclVector3<S>& t);
 
 /// Returns squared norm of a 3-dim vector
 template <typename S>
-S length2(const dart::collision2::fcl::Vector3<S>& t);
+S length2(const FclVector3<S>& t);
 
 /// Returns translation component of a transform
 template <typename S>
-dart::collision2::fcl::Vector3<S> getTranslation(
-    const dart::collision2::fcl::Transform3<S>& T);
+FclVector3<S> getTranslation(const FclTransform3<S>& T);
 
 /// Sets translation component of a transform
 template <typename S>
-void setTranslation(
-    dart::collision2::fcl::Transform3<S>& T,
-    const dart::collision2::fcl::Vector3<S>& t);
+void setTranslation(FclTransform3<S>& T, const FclVector3<S>& t);
 
 /// Returns rotation component of a transform
 template <typename S>
-dart::collision2::fcl::Matrix3<S> getRotation(
-    const dart::collision2::fcl::Transform3<S>& T);
+FclMatrix3<S> getRotation(const FclTransform3<S>& T);
 
 /// Sets rotation component of a transform
 template <typename S>
-void setRotation(
-    dart::collision2::fcl::Transform3<S>& T,
-    const dart::collision2::fcl::Matrix3<S>& R);
+void setRotation(FclTransform3<S>& T, const FclMatrix3<S>& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
 template <typename S>
-void setEulerZYX(
-    dart::collision2::fcl::Matrix3<S>& rot, S eulerX, S eulerY, S eulerZ);
+void setEulerZYX(FclMatrix3<S>& rot, S eulerX, S eulerY, S eulerZ);
 
 /// Transforms a 3-dim vector by a transform and returns the result
 template <typename S>
-dart::collision2::fcl::Vector3<S> transform(
-    const dart::collision2::fcl::Transform3<S>& t,
-    const dart::collision2::fcl::Vector3<S>& v);
+FclVector3<S> transform(const FclTransform3<S>& t, const FclVector3<S>& v);
 
-} // namespace fcl
 } // namespace collision2
 } // namespace dart
 

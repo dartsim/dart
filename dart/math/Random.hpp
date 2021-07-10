@@ -188,6 +188,14 @@ public:
       typename DynamicSizeMatrixT::Scalar min,
       typename DynamicSizeMatrixT::Scalar max);
 
+  /// Returns a random unit quaternion sampled uniformly sampled on SO(3)
+  template <typename S = double>
+  static ::Eigen::Quaternion<S> uniformUnitQuaternion();
+
+  /// Returns a random rotation matrix that is uniformly sampled on SO(3)
+  template <typename S = double>
+  static ::Eigen::Matrix<S, 3, 3> uniformRotationMatrix3();
+
   /// Returns a random number from a normal distribution.
   ///
   /// This template function can generate different scalar types of random
