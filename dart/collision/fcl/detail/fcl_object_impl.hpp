@@ -43,42 +43,42 @@ namespace collision2 {
 template <typename S>
 math::Isometry3<S> FclObject<S>::get_pose() const
 {
-  return toTransform3<S>(mFclCollisionObject->getTransform());
+  return toTransform3<S>(m_fcl_collision_object->getTransform());
 }
 
 //==============================================================================
 template <typename S>
 void FclObject<S>::set_pose(const math::Isometry3<S>& tf)
 {
-  mFclCollisionObject->setTransform(toFclTransform3<S>(tf));
+  m_fcl_collision_object->setTransform(toFclTransform3<S>(tf));
 }
 
 //==============================================================================
 template <typename S>
 math::Vector3<S> FclObject<S>::get_position() const
 {
-  return toVector3<S>(mFclCollisionObject->getTranslation());
+  return toVector3<S>(m_fcl_collision_object->getTranslation());
 }
 
 //==============================================================================
 template <typename S>
 void FclObject<S>::set_position(const math::Vector3<S>& pos)
 {
-  mFclCollisionObject->setTranslation(toFclVector3<S>(pos));
+  m_fcl_collision_object->setTranslation(toFclVector3<S>(pos));
 }
 
 //==============================================================================
 template <typename S>
 FclCollisionObject<S>* FclObject<S>::get_fcl_collision_object()
 {
-  return mFclCollisionObject.get();
+  return m_fcl_collision_object.get();
 }
 
 //==============================================================================
 template <typename S>
 const FclCollisionObject<S>* FclObject<S>::get_fcl_collision_object() const
 {
-  return mFclCollisionObject.get();
+  return m_fcl_collision_object.get();
 }
 
 //==============================================================================
@@ -88,10 +88,10 @@ FclObject<S>::FclObject(
     math::GeometryPtr shape,
     const std::shared_ptr<FclCollisionGeometry<S>>& fclCollGeom)
   : Object<S>(collisionGroup, shape),
-    mFclCollisionObject(new FclCollisionObject<S>(fclCollGeom))
+    m_fcl_collision_object(new FclCollisionObject<S>(fclCollGeom))
 {
   assert(fclCollGeom);
-  mFclCollisionObject->setUserData(this);
+  m_fcl_collision_object->setUserData(this);
 }
 
 //==============================================================================
@@ -137,8 +137,8 @@ void FclObject<S>::update_engine_data()
   //    bvhModel->endUpdateModel();
   //  }
 
-  mFclCollisionObject->setTransform(toFclTransform3(get_pose()));
-  mFclCollisionObject->computeAABB();
+  m_fcl_collision_object->setTransform(toFclTransform3(get_pose()));
+  m_fcl_collision_object->computeAABB();
 }
 
 //==============================================================================

@@ -119,12 +119,11 @@ mkdir build && cd build
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 fi
-# TODO(JS): Enable DART_TREAT_WARNINGS_AS_ERRORS once refactor_collision_namespace is done
 cmake .. \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_BUILD_DARTPY=$BUILD_DARTPY \
   -DDART_VERBOSE=ON \
-  -DDART_TREAT_WARNINGS_AS_ERRORS=OFF \
+  -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_BUILD_EXTRAS=ON \
   -DDART_CODECOV=$CODECOV \
   ${install_prefix_option}

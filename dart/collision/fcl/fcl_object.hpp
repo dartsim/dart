@@ -53,15 +53,17 @@ public:
   // Documentation inherited
   void set_pose(const math::Isometry3<S>& tf) override;
 
+  // Documentation inherited
+  math::Vector3<S> get_position() const override;
+
+  // Documentation inherited
+  void set_position(const math::Vector3<S>& pos) override;
+
   /// Return FCL collision object
   FclCollisionObject<S>* get_fcl_collision_object();
 
   /// Return FCL collision object
   const FclCollisionObject<S>* get_fcl_collision_object() const;
-
-  math::Vector3<S> get_position() const;
-
-  void set_position(const math::Vector3<S>& pos);
 
 protected:
   /// Constructor
@@ -77,7 +79,7 @@ protected:
   FclObject(Group<S>* collisionGroup, math::GeometryPtr shape);
 
   /// FCL collision object
-  std::unique_ptr<FclCollisionObject<S>> mFclCollisionObject;
+  std::unique_ptr<FclCollisionObject<S>> m_fcl_collision_object;
 
 private:
   friend class FclEngine<S>;

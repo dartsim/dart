@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <Eigen/Core>
 
 #include "dart/math/geometry/Geometry2.hpp"
