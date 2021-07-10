@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/collision_option.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+//==============================================================================
+template <typename S>
+CollisionOption<S>::CollisionOption(
+    bool enable_contact,
+    int max_num_contacts,
+    const std::shared_ptr<CollisionFilter<S>>& collision_filter)
+  : enable_contact(enable_contact),
+    max_num_contacts(max_num_contacts),
+    collision_filter(collision_filter)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
+  // Do nothing
 }
 
-} // namespace python
+} // namespace collision2
 } // namespace dart

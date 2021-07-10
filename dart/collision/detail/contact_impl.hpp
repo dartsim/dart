@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/contact.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+//==============================================================================
+template <typename S>
+constexpr S Contact<S>::get_normal_epsilon()
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
+  return 1e-6;
 }
 
-} // namespace python
+//==============================================================================
+template <typename S>
+constexpr S Contact<S>::get_normal_epsilon_squared()
+{
+  return 1e-12;
+}
+
+//==============================================================================
+template <typename S>
+Contact<S>::Contact()
+  : point(math::Vector3<S>::Zero()),
+    normal(math::Vector3<S>::Zero()),
+    force(math::Vector3<S>::Zero()),
+    collision_object1(nullptr),
+    collision_object2(nullptr),
+    depth(0)
+{
+  // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+bool Contact<S>::is_zero_normal(const math::Vector3<S>& normal)
+{
+  if (normal.squaredNorm() < get_normal_epsilon_squared())
+    return true;
+  else
+    return false;
+}
+
+//==============================================================================
+template <typename S>
+bool Contact<S>::is_non_zero_normal(const math::Vector3<S>& normal)
+{
+  return !is_zero_normal(normal);
+}
+
+} // namespace collision2
 } // namespace dart

@@ -80,16 +80,19 @@ their namespace, with the extension `.hpp` and `.cpp`, respectively.
 * No "cuddled" braces!
 
 ```c++
-#ifndef DART_EXAMPLE_EXAMPLECLASS_HPP_  // Header guards must include the library, namespace, and source file names.
-#define DART_EXAMPLE_EXAMPLECLASS_HPP_
+// Use #pragma once over header guards
+#pragma once
 
 // Place all dependency includes at the top of the file.
 // Use absolute paths, and place these at the top.
 #include <stl_headers>
+
 #include <library/headers.hpp>
+
 #include "dart/common/pointers.hpp"
-#include "dart/component_name/ExampleInterface.hpp"
-#include "dart/component_name/ExampleOtherInterface.hpp"
+#include "dart/component_name/example_interface.hpp"
+#include "dart/component_name/example_other_interface.hpp"
+// Use lowercases with underscores for directory and file names.
 
 // Namespaces scopes should be one line each with "cuddled" braces.
 namespace dart {
@@ -135,7 +138,7 @@ public:
   virtual ~ExampleClass() = default;
 
   // Documentation inherited.  <-- Use this comment to indicate that the docstring of the interface method applies
-  int exampleInterfaceFunction() const override;  // <-- Always explicitly `override` interface functions without `virtual`
+  int example_interface_function() const override;  // <-- Always explicitly `override` interface functions without `virtual`
 
   /// Required brief description of method.
   /// \note If a method has output parameters, they should be the last
@@ -144,10 +147,10 @@ public:
   /// \param[in] a A description of a
   /// \param[in] b A description of b
   /// \param[out] out A description of out
-  int exampleMethod(int a, int b, int* out) const;
+  int example_method(int a, int b, int* out) const;
 
 private:
-  std::unique_ptr<util::RNG> mExampleMember; // Member variables are prefixed with "m"
+  std::unique_ptr<util::RNG> m_example_member; // Member variables are prefixed with "m_"
 };
 
 } // namespace example
@@ -155,11 +158,9 @@ private:
 
 // In certain cases, such as heavily templated code, implementations must be included
 // in headers. In this case, a "detail" header should be created in the "./detail"
-// subdirectory with the same name as the main header file, but an "-impl" suffix.
+// subdirectory with the same name as the main header file, but an "_impl" suffix.
 // Private declarations in this header can use a "detail" sub-namespace.
-#include "dart/component_name/detail/ExampleClass-impl.hpp"
-
-#endif // DART_EXAMPLE_EXAMPLECLASS_HPP_
+#include "dart/component_name/detail/example_class_impl.hpp"
 ```
 
 #### Source Style
@@ -172,10 +173,12 @@ private:
 ```c++
 // Includes should be at the top of the file.
 // The first include in a class source file should be the matching `.hpp` header file.
-#include "dart/example/ExampleClass.hpp"
+#include "dart/example/example_class.hpp"
 
 #include <stl_headers>
+
 #include <library/headers.hpp>
+
 #include "dart/example/OtherHeaders.hpp"
 
 // Namespace nesting is preferred to "using namespace" directives.
@@ -185,17 +188,15 @@ namespace example {
 
 // Each function is separated by an 80 column line of "=" characters.
 //==============================================================================
-int ExampleClass::exampleInterfaceFunction() const
-{
-  if (mExampleMember)
+int ExampleClass::example_interface_function() const {
+  if (m_example_member)
     return 3;
 
   return -1;
 }
 
 //==============================================================================
-int ExampleClass::exampleMethod(int a, int b, int* out) const
-{
+int ExampleClass::exampleMethod(int a, int b, int* out) const {
   int result = a + b;
   if (out)
     *out = result;

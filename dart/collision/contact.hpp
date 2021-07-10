@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/types.hpp"
+#include "dart/math/Types.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+/// Contact information
+template <typename S_>
+struct Contact
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  using S = S_;
 
-  eigen_geometry(m);
+  /// Default constructor
+  Contact();
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
-}
+  /// Contact point w.r.t. the world frame
+  math::Vector3<S> point;
 
-} // namespace python
+  /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
+  math::Vector3<S> normal;
+
+  /// Contact force acting on bodyNode1 w.r.t. the world frame
+  ///
+  /// The contact force acting on bodyNode2 is -force, which is the opposite
+  /// direction of the force.
+  math::Vector3<S> force;
+
+  /// First colliding collision object
+  Object<S>* collision_object1;
+
+  /// Second colliding collision object
+  Object<S>* collision_object2;
+
+  /// Penetration depth
+  S depth;
+
+  /// Returns the epsilon to be used for determination of zero-length normal.
+  constexpr static S get_normal_epsilon();
+
+  /// Returns the squired epsilon to be used for determination of zero-length
+  /// normal.
+  constexpr static S get_normal_epsilon_squared();
+
+  /// Returns true if the length of a normal is less than the epsilon.
+  static bool is_zero_normal(const math::Vector3<S>& normal);
+
+  /// Returns !isZeroNormal().
+  static bool is_non_zero_normal(const math::Vector3<S>& normal);
+};
+
+using Contactf = Contact<float>;
+using Contactd = Contact<double>;
+
+extern template struct Contact<double>;
+
+} // namespace collision2
 } // namespace dart
+
+#include "dart/collision/detail/contact_impl.hpp"

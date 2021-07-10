@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/types.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+template <typename S>
+struct CollisionOption
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  /// Flag whether the collision detector computes contact information (contact
+  /// point, normal, and penetration depth). If it is set to false, only the
+  /// result of that which pairs are colliding will be stored in the
+  /// CollisionResult without the contact information.
+  bool enable_contact;
 
-  eigen_geometry(m);
+  /// Maximum number of contacts to detect. Once the contacts are found up to
+  /// this number, the collision checking will terminate at that moment. Set
+  /// this to 1 for binary check.
+  int max_num_contacts;
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
-}
+  /// CollisionFilter
+  CollisionFilterPtr<S> collision_filter;
 
-} // namespace python
+  /// Constructor
+  CollisionOption(
+      bool enable_contact = true,
+      int max_num_contacts = 1000,
+      const CollisionFilterPtr<S>& collision_filter = nullptr);
+};
+
+using CollisionOptionf = CollisionOption<float>;
+using CollisionOptiond = CollisionOption<double>;
+
+extern template struct CollisionOption<double>;
+
+} // namespace collision2
 } // namespace dart
+
+#include "dart/collision/detail/collision_option_impl.hpp"

@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,63 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/object.hpp"
+#include "dart/collision/fcl/backward_compatibility.hpp"
+#include "dart/collision/fcl/fcl_types.hpp"
+#include "dart/math/Types.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+template <typename S_>
+class FclObject : public Object<S_>
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+public:
+  // Type aliases
+  using S = S_;
 
-  eigen_geometry(m);
+  // Documentation inherited
+  math::Isometry3<S> get_pose() const override;
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
-}
+  // Documentation inherited
+  void set_pose(const math::Isometry3<S>& tf) override;
 
-} // namespace python
+  /// Return FCL collision object
+  FclCollisionObject<S>* get_fcl_collision_object();
+
+  /// Return FCL collision object
+  const FclCollisionObject<S>* get_fcl_collision_object() const;
+
+  math::Vector3<S> get_position() const;
+
+  void set_position(const math::Vector3<S>& pos);
+
+protected:
+  /// Constructor
+  FclObject(
+      Group<S>* collisionGroup,
+      math::GeometryPtr shape,
+      const std::shared_ptr<FclCollisionGeometry<S>>& fclCollGeom);
+
+  // Documentation inherited
+  void update_engine_data() override;
+
+protected:
+  FclObject(Group<S>* collisionGroup, math::GeometryPtr shape);
+
+  /// FCL collision object
+  std::unique_ptr<FclCollisionObject<S>> mFclCollisionObject;
+
+private:
+  friend class FclEngine<S>;
+  friend class FclGroup<S>;
+};
+
+extern template class FclObject<double>;
+
+} // namespace collision2
 } // namespace dart
+
+#include "dart/collision/fcl/detail/fcl_object_impl.hpp"

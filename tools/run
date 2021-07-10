@@ -97,9 +97,13 @@ build() {
     "mkdir -p $full_build_dir \
     && cd $full_build_dir \
     $cleanup_command \
-    && cmake $project_dir \
+    && cmake $project_dir -DDART_BUILD_DARTPY=ON \
     && make -j tests \
-    && ctest --output-on-failure"
+    && ctest --output-on-failure \
+    && make -j examples \
+    && make -j tutorials \
+    && make -j8 dartpy \
+    && make pytest"
 }
 
 # Run the selected routine

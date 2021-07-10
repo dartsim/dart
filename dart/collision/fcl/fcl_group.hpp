@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/group.hpp"
+#include "dart/collision/types.hpp"
+#include "dart/collision/fcl/backward_compatibility.hpp"
+#include "dart/collision/fcl/fcl_types.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+template <typename S_>
+class FclGroup : public Group<S_>
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+public:
+  using S = S_;
+  using FCLCollisionManager = FclDynamicAABBTreeCollisionManager<S>;
 
-  eigen_geometry(m);
+  friend class FclEngine<S>;
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
-}
+  /// Constructor
+  FclGroup(Engine<S>* engine);
 
-} // namespace python
+  /// Destructor
+  virtual ~FclGroup() = default;
+
+  ObjectPtr<S> create_object(math::GeometryPtr shape) override;
+
+protected:
+  FclEngine<S>* get_mutable_fcl_engine();
+
+  const FclEngine<S>* get_fcl_engine() const;
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  FCLCollisionManager* get_fcl_collision_manager();
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  const FCLCollisionManager* get_fcl_collision_manager() const;
+
+protected:
+  /// FCL broad-phase algorithm
+  std::unique_ptr<FCLCollisionManager> m_broad_phase_alg;
+};
+
+extern template class FclGroup<double>;
+
+} // namespace collision2
 } // namespace dart
+
+#include "dart/collision/fcl/detail/fcl_group_impl.hpp"

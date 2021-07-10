@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/fcl/backward_compatibility.hpp"
+#include "dart/math/Types.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
+/// Converts Eigen vector3 to FCL vector3
+template <typename S>
+FclVector3<S> toFclVector3(const math::Vector3<S>& vec);
 
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
+/// Converts FCL vector3 to Eigen vector3
+template <typename S>
+math::Vector3<S> toVector3(const FclVector3<S>& vec);
 
-PYBIND11_MODULE(dartpy, m)
-{
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+/// Converts Eigen matrix3x3 to FCL matrix3x3
+template <typename S>
+FclMatrix3<S> toFclMatrix3(const math::Matrix3<S>& R);
 
-  eigen_geometry(m);
+/// Converts FCL matrix3x3 to Eigen matrix3x3
+template <typename S>
+math::Matrix3<S> toMatrix3(const FclMatrix3<S>& R);
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
-}
+/// Converts Eigen transform to FCL transform
+template <typename S>
+FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T);
 
-} // namespace python
+/// Converts FCL transform to Eigen transform
+template <typename S>
+math::Isometry3<S> toTransform3(const FclTransform3<S>& T);
+
+} // namespace collision2
 } // namespace dart
+
+#include "dart/collision/fcl/detail/fcl_conversion_impl.hpp"

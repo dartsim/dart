@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include "dart/collision/types.hpp"
+#include "dart/math/geometry/Geometry.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+template <typename S_>
+class Group
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+public:
+  // Type aliases
+  using S = S_;
 
-  eigen_geometry(m);
+  /// Destructor
+  virtual ~Group() = default;
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
-}
+  /// Return collision detection engine associated with this Group
+  Engine<S>* get_mutable_engine();
 
-} // namespace python
+  /// Return (const) collision detection engine associated with this
+  /// Group
+  const Engine<S>* get_engine() const;
+
+  /// Creates a collision object.
+  virtual ObjectPtr<S> create_object(math::GeometryPtr shape) = 0;
+
+  template <typename... Args>
+  ObjectPtr<S> create_sphere_object(Args&&... args);
+
+protected:
+  /// Constructor
+  ///
+  /// @param[in] collisionDetector: Collision detector that created this group.
+  Group(Engine<S>* engine);
+
+  Engine<S>* m_engine;
+
+private:
+  /// Set this to true to have this Group check for updates
+  /// automatically. Default is true.
+  bool m_update_automatically;
+};
+
+using Groupf = Group<float>;
+using Groupd = Group<double>;
+
+extern template class Group<double>;
+
+} // namespace collision2
 } // namespace dart
+
+#include "dart/collision/detail/group_impl.hpp"

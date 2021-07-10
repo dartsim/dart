@@ -38,33 +38,13 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void eigen_geometry(py::module& m);
+void py_collision_option(py::module& m);
 
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+void dart_collision2(py::module& m)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  auto sm = m.def_submodule("collision2");
 
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
+  py_collision_option(sm);
 }
 
 } // namespace python

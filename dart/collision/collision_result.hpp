@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,42 +30,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-#include <pybind11/pybind11.h>
+#pragma once
 
-namespace py = pybind11;
+#include <vector>
+
+#include "dart/collision/contact.hpp"
 
 namespace dart {
-namespace python {
+namespace collision2 {
 
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_collision2(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+template <typename S_>
+class CollisionResult
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+public:
+  using S = S_;
 
-  eigen_geometry(m);
+  /// Adds one contact
+  void add_contact(const Contact<S>& contact);
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_collision2(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
-}
+  /// Returns number of contacts
+  std::size_t get_num_contacts() const;
 
-} // namespace python
+  /// Returns the index-th contact
+  Contact<S>& get_mutable_contact(int index);
+
+  /// Returns (const) the index-th contact
+  const Contact<S>& get_contact(int index) const;
+
+  /// Returns contacts
+  const std::vector<Contact<S>>& get_contacts() const;
+
+  /// Returns binary collision result
+  bool is_collision() const;
+
+  /// Implicitly converts this CollisionResult to the value of isCollision()
+  operator bool() const;
+
+  /// Clears all the contacts
+  void clear();
+
+protected:
+  /// List of contact information for each contact
+  std::vector<Contact<S>> m_contacts;
+};
+
+extern template class CollisionResult<double>;
+
+} // namespace collision2
 } // namespace dart
+
+#include "dart/collision/detail/collision_result_impl.hpp"
