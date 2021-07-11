@@ -143,6 +143,8 @@ endif()
 # Optional Dependencies
 #=======================
 
+dart_find_package(spdlog)
+
 # find_package(Threads)
 dart_find_package(NLOPT)
 dart_find_package(IPOPT)

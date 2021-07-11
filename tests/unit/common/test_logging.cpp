@@ -30,30 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STLHELPERS_HPP_
-#define DART_COMMON_STLHELPERS_HPP_
+#include <gtest/gtest.h>
 
-#include <cassert>
-#include <cstddef>
-#include <vector>
+#include "dart/common/Console.hpp"
+#include "dart/common/logging.hpp"
 
-#include "Memory.hpp"
-
-namespace dart {
-namespace common {
+using namespace dart;
+using namespace dart::common;
 
 //==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(
-    std::size_t index, const std::vector<T>& vec) {
-  assert(index < vec.size());
-  if (index < vec.size())
-    return vec[index];
+TEST(LoggingTest, Basics) {
+  set_log_level(LogLevel::FATAL);
+  set_log_level(LogLevel::ERROR);
+  set_log_level(LogLevel::WARN);
+  set_log_level(LogLevel::INFO);
+  set_log_level(LogLevel::DEBUG);
+  set_log_level(LogLevel::TRACE);
 
-  return nullptr;
+  DART_TRACE("This is a [{}] message", "trace");
+  DART_DEBUG("This is a [{}] message", "debug");
+  DART_INFO("This is a [{}] message", "info");
+  DART_WARN("This is a [{}] message", "warn");
+  DART_ERROR("This is a [{}] message", "error");
+  DART_FATAL("This is a [{}] message", "fatal");
 }
-
-} // namespace common
-} // namespace dart
-
-#endif // DART_COMMON_STLHELPERS_HPP_

@@ -33,7 +33,7 @@
 #include "dart/optimization/ipopt/IpoptSolver.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/StlHelpers.hpp"
+#include "dart/common/macro.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimization/Function.hpp"
 #include "dart/optimization/Problem.hpp"

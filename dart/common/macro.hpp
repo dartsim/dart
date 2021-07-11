@@ -30,30 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STLHELPERS_HPP_
-#define DART_COMMON_STLHELPERS_HPP_
+#pragma once
 
-#include <cassert>
-#include <cstddef>
-#include <vector>
-
-#include "Memory.hpp"
-
-namespace dart {
-namespace common {
-
-//==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(
-    std::size_t index, const std::vector<T>& vec) {
-  assert(index < vec.size());
-  if (index < vec.size())
-    return vec[index];
-
-  return nullptr;
-}
-
-} // namespace common
-} // namespace dart
-
-#endif // DART_COMMON_STLHELPERS_HPP_
+#define DART_UNUSED(...) (void)sizeof(__VA_ARGS__)
