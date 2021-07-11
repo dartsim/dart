@@ -40,8 +40,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void InteractiveFrame(py::module& m)
-{
+void InteractiveFrame(py::module& m) {
   auto it
       = ::py::class_<
             dart::gui::osg::InteractiveTool,
@@ -88,7 +87,9 @@ void InteractiveFrame(py::module& m)
                 "setDefaultAlpha",
                 +[](dart::gui::osg::InteractiveTool* self,
                     double alpha,
-                    bool reset) { self->setDefaultAlpha(alpha, reset); },
+                    bool reset) {
+                  self->setDefaultAlpha(alpha, reset);
+                },
                 ::py::arg("alpha"),
                 ::py::arg("reset"))
             .def(
@@ -192,9 +193,10 @@ void InteractiveFrame(py::module& m)
               -> const std::vector<const dart::dynamics::SimpleFrame*> {
             return self->getShapeFrames();
           })
-      .def("removeAllShapeFrames", +[](dart::gui::osg::InteractiveFrame* self) {
-        self->removeAllShapeFrames();
-      });
+      .def(
+          "removeAllShapeFrames", +[](dart::gui::osg::InteractiveFrame* self) {
+            self->removeAllShapeFrames();
+          });
 }
 
 } // namespace python

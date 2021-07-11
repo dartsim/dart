@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,16 +41,17 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DegreeOfFreedom(py::module& m)
-{
+void DegreeOfFreedom(py::module& m) {
   ::py::class_<
       dart::dynamics::DegreeOfFreedom,
       dart::common::Subject,
       std::shared_ptr<dart::dynamics::DegreeOfFreedom>>(m, "DegreeOfFreedom")
       .def(
           "setName",
-          +[](dart::dynamics::DegreeOfFreedom* self, const std::string& _name)
-              -> const std::string& { return self->setName(_name); },
+          +[](dart::dynamics::DegreeOfFreedom* self,
+              const std::string& _name) -> const std::string& {
+            return self->setName(_name);
+          },
           ::py::return_value_policy::reference_internal,
           ::py::arg("name"))
       .def(
@@ -65,7 +67,9 @@ void DegreeOfFreedom(py::module& m)
       .def(
           "getName",
           +[](const dart::dynamics::DegreeOfFreedom* self)
-              -> const std::string& { return self->getName(); },
+              -> const std::string& {
+            return self->getName();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "preserveName",
@@ -111,7 +115,9 @@ void DegreeOfFreedom(py::module& m)
           })
       .def(
           "resetCommand",
-          +[](dart::dynamics::DegreeOfFreedom* self) { self->resetCommand(); })
+          +[](dart::dynamics::DegreeOfFreedom* self) {
+            self->resetCommand();
+          })
       .def(
           "setPosition",
           +[](dart::dynamics::DegreeOfFreedom* self, double _position) {
@@ -179,7 +185,9 @@ void DegreeOfFreedom(py::module& m)
           })
       .def(
           "resetPosition",
-          +[](dart::dynamics::DegreeOfFreedom* self) { self->resetPosition(); })
+          +[](dart::dynamics::DegreeOfFreedom* self) {
+            self->resetPosition();
+          })
       .def(
           "setInitialPosition",
           +[](dart::dynamics::DegreeOfFreedom* self, double _initial) {
@@ -248,7 +256,9 @@ void DegreeOfFreedom(py::module& m)
           })
       .def(
           "resetVelocity",
-          +[](dart::dynamics::DegreeOfFreedom* self) { self->resetVelocity(); })
+          +[](dart::dynamics::DegreeOfFreedom* self) {
+            self->resetVelocity();
+          })
       .def(
           "setInitialVelocity",
           +[](dart::dynamics::DegreeOfFreedom* self, double _initial) {
@@ -333,7 +343,9 @@ void DegreeOfFreedom(py::module& m)
           })
       .def(
           "resetForce",
-          +[](dart::dynamics::DegreeOfFreedom* self) { self->resetForce(); })
+          +[](dart::dynamics::DegreeOfFreedom* self) {
+            self->resetForce();
+          })
       .def(
           "setForceLimits",
           +[](dart::dynamics::DegreeOfFreedom* self,
@@ -353,7 +365,9 @@ void DegreeOfFreedom(py::module& m)
       .def(
           "getForceLimits",
           +[](const dart::dynamics::DegreeOfFreedom* self)
-              -> std::pair<double, double> { return self->getForceLimits(); })
+              -> std::pair<double, double> {
+            return self->getForceLimits();
+          })
       .def(
           "setForceLowerLimit",
           +[](dart::dynamics::DegreeOfFreedom* self, double _limit) {
@@ -455,7 +469,9 @@ void DegreeOfFreedom(py::module& m)
       .def(
           "getSkeleton",
           +[](dart::dynamics::DegreeOfFreedom* self)
-              -> dart::dynamics::SkeletonPtr { return self->getSkeleton(); })
+              -> dart::dynamics::SkeletonPtr {
+            return self->getSkeleton();
+          })
       .def(
           "getSkeleton",
           +[](const dart::dynamics::DegreeOfFreedom* self)

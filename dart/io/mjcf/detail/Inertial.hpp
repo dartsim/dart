@@ -47,8 +47,7 @@ namespace detail {
 
 class Body;
 
-class Inertial final
-{
+class Inertial final {
 public:
   Inertial() = default;
 
@@ -75,8 +74,7 @@ private:
   Errors compile(const Compiler& compiler);
 
 private:
-  struct Data
-  {
+  struct Data {
     /// Position of the inertial frame.
     Eigen::Vector3d mPos;
 

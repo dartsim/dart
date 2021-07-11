@@ -37,17 +37,17 @@
 
 #if DART_HAVE_OCTOMAP
 
-#  include <octomap/octomap.h>
-#  include "dart/dynamics/Frame.hpp"
-#  include "dart/dynamics/Shape.hpp"
-#  include "dart/dynamics/fcl/BackwardCompatibility.hpp"
+  #include <octomap/octomap.h>
+
+  #include "dart/dynamics/Frame.hpp"
+  #include "dart/dynamics/Shape.hpp"
+  #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// VoxelGridShape represents a probabilistic 3D occupancy voxel grid.
-class VoxelGridShape : public Shape
-{
+class VoxelGridShape : public Shape {
 public:
   /// Constructor.
   /// \param[in] resolution Size of voxel. Default is 0.01.

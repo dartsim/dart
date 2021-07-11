@@ -39,8 +39,7 @@ namespace dart {
 namespace collision {
 
 template <typename S_>
-class Group
-{
+class Group {
 public:
   // Type aliases
   using S = S_;

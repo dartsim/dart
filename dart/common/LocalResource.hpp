@@ -40,8 +40,7 @@ namespace dart {
 namespace common {
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class LocalResource : public virtual Resource
-{
+class LocalResource : public virtual Resource {
 public:
   explicit LocalResource(const std::string& _path);
   virtual ~LocalResource();

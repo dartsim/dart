@@ -50,8 +50,7 @@ namespace render {
 class PlaneShapeGeode;
 class PlaneShapeDrawable;
 
-class PlaneShapeNode : public ShapeNode, public ::osg::Group
-{
+class PlaneShapeNode : public ShapeNode, public ::osg::Group {
 public:
   PlaneShapeNode(
       std::shared_ptr<dart::dynamics::PlaneShape> shape,

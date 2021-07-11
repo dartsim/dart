@@ -59,8 +59,7 @@ template <
     typename BaseT,
     typename HeldT = std::shared_ptr<BaseT>,
     typename... Args>
-class Factory
-{
+class Factory {
 public:
   struct EnumClassHash;
 
@@ -121,8 +120,7 @@ template <
     typename DerivedT,
     typename HeldT = std::shared_ptr<BaseT>,
     typename... Args>
-class FactoryRegistrar final
-{
+class FactoryRegistrar final {
 public:
   using This = FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT>;
   using FactoryType = Factory<KeyT, BaseT, HeldT, Args...>;

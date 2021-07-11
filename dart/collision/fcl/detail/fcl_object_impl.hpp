@@ -32,52 +32,45 @@
 
 #pragma once
 
-#include "dart/collision/fcl/fcl_object.hpp"
-
 #include "dart/collision/fcl/fcl_conversion.hpp"
+#include "dart/collision/fcl/fcl_object.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
 template <typename S>
-math::Isometry3<S> FclObject<S>::get_pose() const
-{
+math::Isometry3<S> FclObject<S>::get_pose() const {
   return toTransform3<S>(m_fcl_collision_object->getTransform());
 }
 
 //==============================================================================
 template <typename S>
-void FclObject<S>::set_pose(const math::Isometry3<S>& tf)
-{
+void FclObject<S>::set_pose(const math::Isometry3<S>& tf) {
   m_fcl_collision_object->setTransform(toFclTransform3<S>(tf));
 }
 
 //==============================================================================
 template <typename S>
-math::Vector3<S> FclObject<S>::get_position() const
-{
+math::Vector3<S> FclObject<S>::get_position() const {
   return toVector3<S>(m_fcl_collision_object->getTranslation());
 }
 
 //==============================================================================
 template <typename S>
-void FclObject<S>::set_position(const math::Vector3<S>& pos)
-{
+void FclObject<S>::set_position(const math::Vector3<S>& pos) {
   m_fcl_collision_object->setTranslation(toFclVector3<S>(pos));
 }
 
 //==============================================================================
 template <typename S>
-FclCollisionObject<S>* FclObject<S>::get_fcl_collision_object()
-{
+FclCollisionObject<S>* FclObject<S>::get_fcl_collision_object() {
   return m_fcl_collision_object.get();
 }
 
 //==============================================================================
 template <typename S>
-const FclCollisionObject<S>* FclObject<S>::get_fcl_collision_object() const
-{
+const FclCollisionObject<S>* FclObject<S>::get_fcl_collision_object() const {
   return m_fcl_collision_object.get();
 }
 
@@ -88,16 +81,14 @@ FclObject<S>::FclObject(
     math::GeometryPtr shape,
     const std::shared_ptr<FclCollisionGeometry<S>>& fclCollGeom)
   : Object<S>(collisionGroup, shape),
-    m_fcl_collision_object(new FclCollisionObject<S>(fclCollGeom))
-{
+    m_fcl_collision_object(new FclCollisionObject<S>(fclCollGeom)) {
   assert(fclCollGeom);
   m_fcl_collision_object->setUserData(this);
 }
 
 //==============================================================================
 template <typename S>
-void FclObject<S>::update_engine_data()
-{
+void FclObject<S>::update_engine_data() {
   //  using dart::dynamics::BodyNode;
   //  using dart::dynamics::Shape;
   //  using dart::dynamics::SoftMeshShape;
@@ -144,8 +135,7 @@ void FclObject<S>::update_engine_data()
 //==============================================================================
 template <typename S>
 FclObject<S>::FclObject(Group<S>* collisionGroup, math::GeometryPtr shape)
-  : Object<S>(collisionGroup, std::move(shape))
-{
+  : Object<S>(collisionGroup, std::move(shape)) {
   // Do nothing
 }
 

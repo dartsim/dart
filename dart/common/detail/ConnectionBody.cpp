@@ -39,8 +39,7 @@ namespace signal {
 namespace detail {
 
 //==============================================================================
-ConnectionBodyBase::~ConnectionBodyBase()
-{
+ConnectionBodyBase::~ConnectionBodyBase() {
   // Do nothing
 }
 

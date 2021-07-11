@@ -41,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ImGuiHandler(py::module& m)
-{
+void ImGuiHandler(py::module& m) {
   ::pybind11::class_<
       dart::gui::osg::ImGuiHandler,
       osg::ref_ptr<dart::gui::osg::ImGuiHandler> >(m, "ImGuiHandler")
@@ -69,7 +68,9 @@ void ImGuiHandler(py::module& m)
           "hasWidget",
           +[](const dart::gui::osg::ImGuiHandler* self,
               const std::shared_ptr<dart::gui::osg::ImGuiWidget>& widget)
-              -> bool { return self->hasWidget(widget); },
+              -> bool {
+            return self->hasWidget(widget);
+          },
           ::pybind11::arg("widget"))
       .def(
           "addWidget",
@@ -82,7 +83,9 @@ void ImGuiHandler(py::module& m)
           "addWidget",
           +[](dart::gui::osg::ImGuiHandler* self,
               const std::shared_ptr<dart::gui::osg::ImGuiWidget>& widget,
-              bool visible) { self->addWidget(widget, visible); },
+              bool visible) {
+            self->addWidget(widget, visible);
+          },
           ::pybind11::arg("widget"),
           ::pybind11::arg("visible"))
       .def(
@@ -94,7 +97,9 @@ void ImGuiHandler(py::module& m)
           ::pybind11::arg("widget"))
       .def(
           "removeAllWidget",
-          +[](dart::gui::osg::ImGuiHandler* self) { self->removeAllWidget(); })
+          +[](dart::gui::osg::ImGuiHandler* self) {
+            self->removeAllWidget();
+          })
       .def(
           "handle",
           +[](dart::gui::osg::ImGuiHandler* self,

@@ -39,13 +39,11 @@
 namespace dart {
 namespace math {
 
-class Geometry
-{
+class Geometry {
 public:
   /// DataVariance can be used by renderers to determine whether it should
   /// expect data for this geometry to change during each update.
-  enum DataVariance
-  {
+  enum DataVariance {
     STATIC = 0, /// No data will ever change
     DYNAMIC_TRANSFORM
     = 1 << 1, /// The relative transform of the Geometry might change
@@ -72,8 +70,7 @@ public:
 
   /// Returns a string representing the geometry type
   /// \sa is()
-  virtual const std::string& getType() const
-  {
+  virtual const std::string& getType() const {
     static const std::string empty;
     return empty;
   }

@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void CollisionObject(py::module& m)
-{
+void CollisionObject(py::module& m) {
   ::py::class_<dart::dynamics::CollisionObject>(m, "CollisionObject")
       .def(
           "getCollisionDetector",
@@ -62,18 +61,24 @@ void CollisionObject(py::module& m)
       .def(
           "getShapeFrame",
           +[](const dart::dynamics::CollisionObject* self)
-              -> const dynamics::ShapeFrame* { return self->getShapeFrame(); },
+              -> const dynamics::ShapeFrame* {
+            return self->getShapeFrame();
+          },
           ::py::return_value_policy::reference_internal,
           "Return the associated ShapeFrame.")
       .def(
           "getShape",
           +[](const dart::dynamics::CollisionObject* self)
-              -> dart::dynamics::ConstShapePtr { return self->getShape(); },
+              -> dart::dynamics::ConstShapePtr {
+            return self->getShape();
+          },
           "Return the associated Shape.")
       .def(
           "getTransform",
           +[](const dart::dynamics::CollisionObject* self)
-              -> const Eigen::Isometry3d& { return self->getTransform(); },
+              -> const Eigen::Isometry3d& {
+            return self->getTransform();
+          },
           ::py::return_value_policy::reference_internal,
           "Return the transformation of this CollisionObject in world "
           "coordinates.");

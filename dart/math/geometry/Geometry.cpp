@@ -36,26 +36,22 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-Geometry::Geometry()
-{
+Geometry::Geometry() {
   // Do nothing
 }
 
 //==============================================================================
-Geometry::~Geometry()
-{
+Geometry::~Geometry() {
   // Do nothing
 }
 
 //==============================================================================
-void Geometry::setName(const std::string& name)
-{
+void Geometry::setName(const std::string& name) {
   mName = name;
 }
 
 //==============================================================================
-const std::string& Geometry::getName() const
-{
+const std::string& Geometry::getName() const {
   return mName;
 }
 

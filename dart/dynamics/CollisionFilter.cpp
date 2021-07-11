@@ -39,21 +39,19 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-CollisionFilter::~CollisionFilter()
-{
+CollisionFilter::~CollisionFilter() {
   // Do nothing
 }
 
 //==============================================================================
 bool CollisionFilter::needCollision(
-    const CollisionObject* object1, const CollisionObject* object2) const
-{
+    const CollisionObject* object1, const CollisionObject* object2) const {
   return !ignoresCollision(object1, object2);
 }
 
 //==============================================================================
-void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
-{
+void CompositeCollisionFilter::addCollisionFilter(
+    const CollisionFilter* filter) {
   // nullptr is not an allowed filter
   if (!filter)
     return;
@@ -63,23 +61,19 @@ void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
 
 //==============================================================================
 void CompositeCollisionFilter::removeCollisionFilter(
-    const CollisionFilter* filter)
-{
+    const CollisionFilter* filter) {
   mFilters.erase(filter);
 }
 
 //==============================================================================
-void CompositeCollisionFilter::removeAllCollisionFilters()
-{
+void CompositeCollisionFilter::removeAllCollisionFilters() {
   mFilters.clear();
 }
 
 //==============================================================================
 bool CompositeCollisionFilter::ignoresCollision(
-    const CollisionObject* object1, const CollisionObject* object2) const
-{
-  for (const auto* filter : mFilters)
-  {
+    const CollisionObject* object1, const CollisionObject* object2) const {
+  for (const auto* filter : mFilters) {
     if (filter->ignoresCollision(object1, object2))
       return true;
   }
@@ -89,29 +83,25 @@ bool CompositeCollisionFilter::ignoresCollision(
 
 //==============================================================================
 void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
-    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
-{
+    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2) {
   mBodyNodeBlackList.addPair(bodyNode1, bodyNode2);
 }
 
 //==============================================================================
 void BodyNodeCollisionFilter::removeBodyNodePairFromBlackList(
-    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
-{
+    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2) {
   mBodyNodeBlackList.removePair(bodyNode1, bodyNode2);
 }
 
 //==============================================================================
-void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
-{
+void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList() {
   mBodyNodeBlackList.removeAllPairs();
 }
 
 //==============================================================================
 bool BodyNodeCollisionFilter::ignoresCollision(
     const dynamics::CollisionObject* object1,
-    const dynamics::CollisionObject* object2) const
-{
+    const dynamics::CollisionObject* object2) const {
   if (object1 == object2)
     return true;
 
@@ -141,13 +131,11 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (!skel1->isMobile() && !skel2->isMobile())
     return true;
 
-  if (skel1 == skel2)
-  {
+  if (skel1 == skel2) {
     if (!skel1->isEnabledSelfCollisionCheck())
       return true;
 
-    if (!skel1->isEnabledAdjacentBodyCheck())
-    {
+    if (!skel1->isEnabledAdjacentBodyCheck()) {
       if (areAdjacentBodies(bodyNode1, bodyNode2))
         return true;
     }
@@ -162,11 +150,9 @@ bool BodyNodeCollisionFilter::ignoresCollision(
 //==============================================================================
 bool BodyNodeCollisionFilter::areAdjacentBodies(
     const dynamics::BodyNode* bodyNode1,
-    const dynamics::BodyNode* bodyNode2) const
-{
+    const dynamics::BodyNode* bodyNode2) const {
   if ((bodyNode1->getParentBodyNode() == bodyNode2)
-      || (bodyNode2->getParentBodyNode() == bodyNode1))
-  {
+      || (bodyNode2->getParentBodyNode() == bodyNode1)) {
     assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
     return true;
   }
@@ -174,5 +160,5 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
   return false;
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

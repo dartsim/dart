@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/PyramidShapeNode.hpp"
+
 #include <array>
 
 #include <osg/CullFace>
@@ -38,20 +40,17 @@
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/PyramidShapeNode.hpp"
-
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
 namespace osg {
 namespace render {
 
-class PyramidShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class PyramidShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   PyramidShapeGeode(
       std::shared_ptr<dart::dynamics::PyramidShape> shape,
@@ -70,8 +69,7 @@ protected:
 };
 
 //==============================================================================
-class PyramidShapeDrawable : public ::osg::Geometry
-{
+class PyramidShapeDrawable : public ::osg::Geometry {
 public:
   PyramidShapeDrawable(
       dart::dynamics::PyramidShape* shape,
@@ -94,16 +92,14 @@ protected:
 //==============================================================================
 PyramidShapeNode::PyramidShapeNode(
     std::shared_ptr<dart::dynamics::PyramidShape> shape, ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mPyramidShape(shape), mGeode(nullptr)
-{
+  : ShapeNode(shape, parent, this), mPyramidShape(shape), mGeode(nullptr) {
   mNode = this;
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
-void PyramidShapeNode::refresh()
-{
+void PyramidShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -115,10 +111,8 @@ void PyramidShapeNode::refresh()
 }
 
 //==============================================================================
-void PyramidShapeNode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mGeode)
-  {
+void PyramidShapeNode::extractData(bool /*firstTime*/) {
+  if (nullptr == mGeode) {
     mGeode = new PyramidShapeGeode(mPyramidShape, mParentShapeFrameNode);
     addChild(mGeode);
     return;
@@ -128,8 +122,7 @@ void PyramidShapeNode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-PyramidShapeNode::~PyramidShapeNode()
-{
+PyramidShapeNode::~PyramidShapeNode() {
   // Do nothing
 }
 
@@ -139,8 +132,7 @@ PyramidShapeGeode::PyramidShapeGeode(
   : ShapeNode(shape, parent, this),
     mPyramidShape(shape),
     mDrawable(nullptr),
-    mLineWidth(new ::osg::LineWidth)
-{
+    mLineWidth(new ::osg::LineWidth) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -150,18 +142,15 @@ PyramidShapeGeode::PyramidShapeGeode(
 }
 
 //==============================================================================
-void PyramidShapeGeode::refresh()
-{
+void PyramidShapeGeode::refresh() {
   mUtilized = true;
 
   extractData(false);
 }
 
 //==============================================================================
-void PyramidShapeGeode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mDrawable)
-  {
+void PyramidShapeGeode::extractData(bool /*firstTime*/) {
+  if (nullptr == mDrawable) {
     mDrawable = new PyramidShapeDrawable(mPyramidShape.get(), mVisualAspect);
     addDrawable(mDrawable);
     return;
@@ -171,8 +160,7 @@ void PyramidShapeGeode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-PyramidShapeGeode::~PyramidShapeGeode()
-{
+PyramidShapeGeode::~PyramidShapeGeode() {
   // Do nothing
 }
 
@@ -184,10 +172,8 @@ PyramidShapeDrawable::PyramidShapeDrawable(
     mVisualAspect(visualAspect),
     mVertices(new ::osg::Vec3Array),
     mNormals(new ::osg::Vec3Array),
-    mColors(new ::osg::Vec4Array)
-{
-  for (auto& e : mElements)
-  {
+    mColors(new ::osg::Vec4Array) {
+  for (auto& e : mElements) {
     e = new ::osg::DrawElementsUInt(::osg::PrimitiveSet::TRIANGLES);
     addPrimitiveSet(e);
   }
@@ -195,15 +181,13 @@ PyramidShapeDrawable::PyramidShapeDrawable(
 }
 
 //==============================================================================
-void PyramidShapeDrawable::refresh(bool firstTime)
-{
+void PyramidShapeDrawable::refresh(bool firstTime) {
   if (mPyramidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (firstTime)
-  {
+  if (firstTime) {
     for (auto& e : mElements)
       e->resize(3);
 
@@ -246,8 +230,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
   }
 
   if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-      || firstTime)
-  {
+      || firstTime) {
     const float w = static_cast<float>(mPyramidShape->getBaseWidth());
     const float d = static_cast<float>(mPyramidShape->getBaseDepth());
     const float h = static_cast<float>(mPyramidShape->getBaseWidth());
@@ -269,8 +252,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
 
     mNormals->clear();
     mNormals->reserve(mElements.size()); // 6
-    for (const auto& e : mElements)
-    {
+    for (const auto& e : mElements) {
       const auto& v1 = mVertices->at(e->at(0));
       const auto& v2 = mVertices->at(e->at(1));
       const auto& v3 = mVertices->at(e->at(2));
@@ -283,8 +265,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
   }
 
   if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     if (mColors->size() != 1)
       mColors->resize(1);
 
@@ -295,8 +276,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
 }
 
 //==============================================================================
-PyramidShapeDrawable::~PyramidShapeDrawable()
-{
+PyramidShapeDrawable::~PyramidShapeDrawable() {
   // Do nothing
 }
 

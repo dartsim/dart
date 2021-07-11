@@ -34,16 +34,15 @@
 
 #if DART_HAVE_ODE
 
-#  include <dart/dynamics/dynamics.hpp>
-#  include <pybind11/pybind11.h>
+  #include <dart/dynamics/dynamics.hpp>
+  #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void OdeCollisionGroup(py::module& m)
-{
+void OdeCollisionGroup(py::module& m) {
   ::py::class_<
       dart::dynamics::OdeCollisionGroup,
       dart::dynamics::CollisionGroup,

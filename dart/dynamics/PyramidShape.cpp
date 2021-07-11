@@ -33,6 +33,7 @@
 #include "dart/dynamics/PyramidShape.hpp"
 
 #include <cmath>
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -46,35 +47,30 @@ PyramidShape::PyramidShape(double baseWidth, double baseDepth, double height)
   : Shape(PYRAMID),
     mBaseWidth(baseWidth),
     mBaseDepth(baseDepth),
-    mHeight(height)
-{
+    mHeight(height) {
   assert(0.0 < baseWidth);
   assert(0.0 < baseDepth);
   assert(0.0 < height);
 }
 
 //==============================================================================
-const std::string& PyramidShape::getType() const
-{
+const std::string& PyramidShape::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PyramidShape::getStaticType()
-{
+const std::string& PyramidShape::getStaticType() {
   static const std::string type("PyramidShape");
   return type;
 }
 
 //==============================================================================
-double PyramidShape::getBaseWidth() const
-{
+double PyramidShape::getBaseWidth() const {
   return mBaseWidth;
 }
 
 //==============================================================================
-void PyramidShape::setBaseWidth(double width)
-{
+void PyramidShape::setBaseWidth(double width) {
   assert(0.0 < width);
   mBaseWidth = width;
   mIsBoundingBoxDirty = true;
@@ -84,14 +80,12 @@ void PyramidShape::setBaseWidth(double width)
 }
 
 //==============================================================================
-double PyramidShape::getBaseDepth() const
-{
+double PyramidShape::getBaseDepth() const {
   return mBaseDepth;
 }
 
 //==============================================================================
-void PyramidShape::setBaseDepth(double depth)
-{
+void PyramidShape::setBaseDepth(double depth) {
   assert(0.0 < depth);
   mBaseDepth = depth;
   mIsBoundingBoxDirty = true;
@@ -101,14 +95,12 @@ void PyramidShape::setBaseDepth(double depth)
 }
 
 //==============================================================================
-double PyramidShape::getHeight() const
-{
+double PyramidShape::getHeight() const {
   return mHeight;
 }
 
 //==============================================================================
-void PyramidShape::setHeight(double height)
-{
+void PyramidShape::setHeight(double height) {
   assert(0.0 < height);
   mHeight = height;
   mIsBoundingBoxDirty = true;
@@ -119,14 +111,12 @@ void PyramidShape::setHeight(double height)
 
 //==============================================================================
 double PyramidShape::computeVolume(
-    double baseWidth, double baseDepth, double height)
-{
+    double baseWidth, double baseDepth, double height) {
   return (1.0 / 3.0) * baseWidth * baseDepth * height;
 }
 
 //==============================================================================
-void PyramidShape::updateBoundingBox() const
-{
+void PyramidShape::updateBoundingBox() const {
   const Eigen::Vector3d corner(
       0.5 * mBaseWidth, 0.5 * mBaseDepth, 0.5 * mHeight);
 
@@ -137,15 +127,13 @@ void PyramidShape::updateBoundingBox() const
 }
 
 //==============================================================================
-void PyramidShape::updateVolume() const
-{
+void PyramidShape::updateVolume() const {
   mVolume = computeVolume(mBaseWidth, mBaseDepth, mHeight);
   mIsVolumeDirty = false;
 }
 
 //==============================================================================
-Eigen::Matrix3d PyramidShape::computeInertia(double /*mass*/) const
-{
+Eigen::Matrix3d PyramidShape::computeInertia(double /*mass*/) const {
   // TODO(JS): Not implemented
   dterr << "[PyramidShape] Moment of inertia computation is not implemented. "
         << "Returning identity.\n";

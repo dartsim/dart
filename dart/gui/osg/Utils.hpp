@@ -34,14 +34,12 @@
 #define DART_GUI_OSG_UTILS_HPP_
 
 #include <Eigen/Geometry>
-
 #include <osg/Matrix>
 
 //==============================================================================
 template <typename Scalar>
 ::osg::Matrix eigToOsgMatrix(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& tf)
-{
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& tf) {
   return ::osg::Matrix(
       tf(0, 0),
       tf(1, 0),
@@ -63,8 +61,7 @@ template <typename Scalar>
 
 //==============================================================================
 template <typename Derived>
-::osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M)
-{
+::osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M) {
   return ::osg::Matrix(
       M(0, 0),
       M(1, 0),
@@ -86,15 +83,13 @@ template <typename Derived>
 
 //==============================================================================
 template <typename Derived>
-::osg::Vec3f eigToOsgVec3f(const Eigen::MatrixBase<Derived>& vec)
-{
+::osg::Vec3f eigToOsgVec3f(const Eigen::MatrixBase<Derived>& vec) {
   return ::osg::Vec3f(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
 template <typename Derived>
-::osg::Vec3d eigToOsgVec3d(const Eigen::MatrixBase<Derived>& vec)
-{
+::osg::Vec3d eigToOsgVec3d(const Eigen::MatrixBase<Derived>& vec) {
   return ::osg::Vec3d(vec[0], vec[1], vec[2]);
 }
 
@@ -104,8 +99,7 @@ typename std::conditional<
     std::is_same<typename Derived::Scalar, float>::value,
     ::osg::Vec3f,
     ::osg::Vec3d>::type
-eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
-{
+eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec) {
   using Vec3 = typename std::conditional<
       std::is_same<typename Derived::Scalar, float>::value,
       ::osg::Vec3f,
@@ -115,28 +109,24 @@ eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
 }
 
 //==============================================================================
-inline Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec)
-{
+inline Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec) {
   return Eigen::Vector3f(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
-inline Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec)
-{
+inline Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec) {
   return Eigen::Vector3d(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
 template <typename Derived>
-::osg::Vec4f eigToOsgVec4f(const Eigen::MatrixBase<Derived>& vec)
-{
+::osg::Vec4f eigToOsgVec4f(const Eigen::MatrixBase<Derived>& vec) {
   return ::osg::Vec4f(vec[0], vec[1], vec[2], vec[3]);
 }
 
 //==============================================================================
 template <typename Derived>
-::osg::Vec4d eigToOsgVec4d(const Eigen::MatrixBase<Derived>& vec)
-{
+::osg::Vec4d eigToOsgVec4d(const Eigen::MatrixBase<Derived>& vec) {
   return ::osg::Vec4d(vec[0], vec[1], vec[2], vec[3]);
 }
 
@@ -146,8 +136,7 @@ std::conditional<
     std::is_same<typename Derived::Scalar, float>::value,
     ::osg::Vec4f,
     ::osg::Vec4d>
-eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
-{
+eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec) {
   return std::conditional<
       std::is_same<typename Derived::Scalar, float>::value,
       ::osg::Vec4f,
@@ -155,14 +144,12 @@ eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
 }
 
 //==============================================================================
-inline Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec)
-{
+inline Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec) {
   return Eigen::Vector4f(vec[0], vec[1], vec[2], vec[3]);
 }
 
 //==============================================================================
-inline Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
-{
+inline Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec) {
   return Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
 }
 

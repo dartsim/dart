@@ -45,8 +45,8 @@ namespace optimization {
 
 //==============================================================================
 template <typename T>
-static T getVectorObjectIfAvailable(std::size_t idx, const std::vector<T>& vec)
-{
+static T getVectorObjectIfAvailable(
+    std::size_t idx, const std::vector<T>& vec) {
   // TODO: Should we have an out-of-bounds assertion or throw here?
   if (idx < vec.size())
     return vec[idx];
@@ -60,47 +60,41 @@ GenericMultiObjectiveProblem::GenericMultiObjectiveProblem(
   : MultiObjectiveProblem(dim, integerDim),
     mObjectiveDimension(0u),
     mEqConstraintDimension(0u),
-    mIneqConstraintDimension(0u)
-{
+    mIneqConstraintDimension(0u) {
   setSolutionDimension(dim);
 }
 
 //==============================================================================
-std::size_t GenericMultiObjectiveProblem::getObjectiveDimension() const
-{
+std::size_t GenericMultiObjectiveProblem::getObjectiveDimension() const {
   return mObjectiveDimension;
 }
 
 //==============================================================================
-std::size_t GenericMultiObjectiveProblem::getNumObjectiveFunctions() const
-{
+std::size_t GenericMultiObjectiveProblem::getNumObjectiveFunctions() const {
   return mObjectiveFunctions.size();
 }
 
 //==============================================================================
 std::size_t GenericMultiObjectiveProblem::getNumEqualityConstraintFunctions()
-    const
-{
+    const {
   return mEqConstraintFunctions.size();
 }
 
 //==============================================================================
-std::size_t GenericMultiObjectiveProblem::getNumIneqConstraintFunctions() const
-{
+std::size_t GenericMultiObjectiveProblem::getNumIneqConstraintFunctions()
+    const {
   return mIneqConstraintFunctions.size();
 }
 
 //==============================================================================
 void GenericMultiObjectiveProblem::setObjectiveFunctions(
-    const std::vector<FunctionPtr>& objectives)
-{
+    const std::vector<FunctionPtr>& objectives) {
   mObjectiveFunctions = objectives;
   mObjectiveDimension = mObjectiveFunctions.size();
 }
 
 //==============================================================================
-void GenericMultiObjectiveProblem::addObjectiveFunction(FunctionPtr objective)
-{
+void GenericMultiObjectiveProblem::addObjectiveFunction(FunctionPtr objective) {
   assert(objective && "nullptr pointer is not allowed.");
   mObjectiveFunctions.emplace_back(std::move(objective));
   mObjectiveDimension = mObjectiveFunctions.size();
@@ -108,14 +102,13 @@ void GenericMultiObjectiveProblem::addObjectiveFunction(FunctionPtr objective)
 
 //==============================================================================
 const std::vector<FunctionPtr>&
-GenericMultiObjectiveProblem::getObjectiveFunctions() const
-{
+GenericMultiObjectiveProblem::getObjectiveFunctions() const {
   return mObjectiveFunctions;
 }
 
 //==============================================================================
-void GenericMultiObjectiveProblem::addEqConstraintFunction(FunctionPtr eqConst)
-{
+void GenericMultiObjectiveProblem::addEqConstraintFunction(
+    FunctionPtr eqConst) {
   assert(eqConst);
   mEqConstraintFunctions.push_back(eqConst);
   mEqConstraintDimension = mEqConstraintFunctions.size();
@@ -123,8 +116,7 @@ void GenericMultiObjectiveProblem::addEqConstraintFunction(FunctionPtr eqConst)
 
 //==============================================================================
 void GenericMultiObjectiveProblem::addIneqConstraintFunction(
-    FunctionPtr ineqConst)
-{
+    FunctionPtr ineqConst) {
   assert(ineqConst);
   mIneqConstraintFunctions.push_back(ineqConst);
   mIneqConstraintDimension = mIneqConstraintFunctions.size();
@@ -132,24 +124,22 @@ void GenericMultiObjectiveProblem::addIneqConstraintFunction(
 
 //==============================================================================
 FunctionPtr GenericMultiObjectiveProblem::getEqConstraintFunction(
-    std::size_t index) const
-{
+    std::size_t index) const {
   assert(index < mEqConstraintFunctions.size());
   return getVectorObjectIfAvailable<FunctionPtr>(index, mEqConstraintFunctions);
 }
 
 //==============================================================================
 FunctionPtr GenericMultiObjectiveProblem::getIneqConstraintFunction(
-    std::size_t index) const
-{
+    std::size_t index) const {
   assert(index < mIneqConstraintFunctions.size());
   return getVectorObjectIfAvailable<FunctionPtr>(
       index, mIneqConstraintFunctions);
 }
 
 //==============================================================================
-void GenericMultiObjectiveProblem::removeObjectiveFunction(FunctionPtr function)
-{
+void GenericMultiObjectiveProblem::removeObjectiveFunction(
+    FunctionPtr function) {
   mObjectiveFunctions.erase(
       std::remove(
           mObjectiveFunctions.begin(), mObjectiveFunctions.end(), function),
@@ -159,8 +149,7 @@ void GenericMultiObjectiveProblem::removeObjectiveFunction(FunctionPtr function)
 
 //==============================================================================
 void GenericMultiObjectiveProblem::removeEqConstraintFunction(
-    FunctionPtr eqConst)
-{
+    FunctionPtr eqConst) {
   mEqConstraintFunctions.erase(
       std::remove(
           mEqConstraintFunctions.begin(),
@@ -172,8 +161,7 @@ void GenericMultiObjectiveProblem::removeEqConstraintFunction(
 
 //==============================================================================
 void GenericMultiObjectiveProblem::removeIneqConstraintFunction(
-    FunctionPtr ineqConst)
-{
+    FunctionPtr ineqConst) {
   mIneqConstraintFunctions.erase(
       std::remove(
           mIneqConstraintFunctions.begin(),
@@ -184,34 +172,29 @@ void GenericMultiObjectiveProblem::removeIneqConstraintFunction(
 }
 
 //==============================================================================
-void GenericMultiObjectiveProblem::removeAllObjectiveFunctions()
-{
+void GenericMultiObjectiveProblem::removeAllObjectiveFunctions() {
   mObjectiveFunctions.clear();
   mObjectiveDimension = mObjectiveFunctions.size();
 }
 
 //==============================================================================
-std::size_t GenericMultiObjectiveProblem::getEqConstraintDimension() const
-{
+std::size_t GenericMultiObjectiveProblem::getEqConstraintDimension() const {
   return mEqConstraintDimension;
 }
 
 //==============================================================================
-void GenericMultiObjectiveProblem::removeAllEqConstraintFunctions()
-{
+void GenericMultiObjectiveProblem::removeAllEqConstraintFunctions() {
   mEqConstraintFunctions.clear();
   mEqConstraintDimension = mEqConstraintFunctions.size();
 }
 
 //==============================================================================
-std::size_t GenericMultiObjectiveProblem::getIneqConstraintDimension() const
-{
+std::size_t GenericMultiObjectiveProblem::getIneqConstraintDimension() const {
   return mIneqConstraintDimension;
 }
 
 //==============================================================================
-void GenericMultiObjectiveProblem::removeAllIneqConstraintFunctions()
-{
+void GenericMultiObjectiveProblem::removeAllIneqConstraintFunctions() {
   mIneqConstraintFunctions.clear();
   mIneqConstraintDimension = mIneqConstraintFunctions.size();
 }
@@ -220,13 +203,11 @@ void GenericMultiObjectiveProblem::removeAllIneqConstraintFunctions()
 static Eigen::VectorXd computeFunctions(
     const std::vector<FunctionPtr>& functions,
     std::size_t dimension,
-    const Eigen::VectorXd& x)
-{
+    const Eigen::VectorXd& x) {
   Eigen::VectorXd val(dimension);
 
   std::size_t index = 0u;
-  for (const FunctionPtr& function : functions)
-  {
+  for (const FunctionPtr& function : functions) {
     const std::size_t size = 1u; // TODO(JS): Update this once Function can
                                  // return vector
     // objectives.segment(index, size) = objective->evaluate(x);
@@ -239,30 +220,26 @@ static Eigen::VectorXd computeFunctions(
 
 //==============================================================================
 Eigen::VectorXd GenericMultiObjectiveProblem::evaluateObjectives(
-    const Eigen::VectorXd& x) const
-{
+    const Eigen::VectorXd& x) const {
   return computeFunctions(mObjectiveFunctions, getObjectiveDimension(), x);
 }
 
 //==============================================================================
 Eigen::VectorXd GenericMultiObjectiveProblem::evaluateEqConstraints(
-    const Eigen::VectorXd& x) const
-{
+    const Eigen::VectorXd& x) const {
   return computeFunctions(
       mEqConstraintFunctions, getEqConstraintDimension(), x);
 }
 
 //==============================================================================
 Eigen::VectorXd GenericMultiObjectiveProblem::evaluateIneqConstraints(
-    const Eigen::VectorXd& x) const
-{
+    const Eigen::VectorXd& x) const {
   return computeFunctions(
       mIneqConstraintFunctions, getIneqConstraintDimension(), x);
 }
 
 //==============================================================================
-std::size_t GenericMultiObjectiveProblem::getFitnessDimension() const
-{
+std::size_t GenericMultiObjectiveProblem::getFitnessDimension() const {
   const std::size_t objDim = getObjectiveDimension();
   const std::size_t eqDim = getEqConstraintDimension();
   const std::size_t ineqDim = getIneqConstraintDimension();
@@ -272,8 +249,7 @@ std::size_t GenericMultiObjectiveProblem::getFitnessDimension() const
 
 //==============================================================================
 Eigen::VectorXd GenericMultiObjectiveProblem::evaluateFitness(
-    const Eigen::VectorXd& x) const
-{
+    const Eigen::VectorXd& x) const {
   const int objDim = static_cast<int>(getObjectiveDimension());
   const int eqDim = static_cast<int>(getEqConstraintDimension());
   const int ineqDim = static_cast<int>(getIneqConstraintDimension());

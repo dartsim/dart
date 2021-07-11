@@ -31,7 +31,9 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
+
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
@@ -42,8 +44,7 @@ using dart::common::Uri;
 using dart::io::DartLoader;
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
-{
+TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull) {
   DartLoader loader;
   EXPECT_EQ(
       nullptr,
@@ -51,16 +52,14 @@ TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
-{
+TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull) {
   DartLoader loader;
   EXPECT_EQ(
       nullptr, loader.parseSkeleton("dart://sample/urdf/test/invalid.urdf)"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
-{
+TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull) {
   DartLoader loader;
   EXPECT_EQ(
       nullptr,
@@ -68,8 +67,7 @@ TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
-{
+TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull) {
   DartLoader loader;
   EXPECT_EQ(
       nullptr,
@@ -77,8 +75,7 @@ TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
-{
+TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull) {
   DartLoader loader;
   EXPECT_EQ(
       nullptr,
@@ -86,26 +83,23 @@ TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
-{
+TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry) {
   DartLoader loader;
   EXPECT_TRUE(
       nullptr
       != loader.parseSkeleton(
-             "dart://sample/urdf/test/primitive_geometry.urdf"));
+          "dart://sample/urdf/test/primitive_geometry.urdf"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseWorld)
-{
+TEST(DartLoader, parseWorld) {
   DartLoader loader;
   EXPECT_TRUE(
       nullptr != loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseJointProperties)
-{
+TEST(DartLoader, parseJointProperties) {
   // clang-format off
   std::string urdfStr = R"(
     <robot name="testRobot">
@@ -188,8 +182,7 @@ TEST(DartLoader, parseJointProperties)
 }
 
 //==============================================================================
-TEST(DartLoader, parseUrdfWithoutWorldLink)
-{
+TEST(DartLoader, parseUrdfWithoutWorldLink) {
   // clang-format off
   const std::string urdfStr = R"(
     <robot name="testRobot">
@@ -230,8 +223,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
 }
 
 //==============================================================================
-TEST(DartLoader, mimicJoint)
-{
+TEST(DartLoader, mimicJoint) {
   // clang-format off
   std::string urdfStr = R"(
     <robot name="testRobot">
@@ -320,8 +312,7 @@ TEST(DartLoader, mimicJoint)
 }
 
 //==============================================================================
-TEST(DartLoader, badMimicJoint)
-{
+TEST(DartLoader, badMimicJoint) {
   // clang-format off
   std::string urdfStr = R"(
     <robot name="testRobot">
@@ -408,8 +399,7 @@ TEST(DartLoader, badMimicJoint)
 }
 
 //==============================================================================
-TEST(DartLoader, WorldShouldBeTreatedAsKeyword)
-{
+TEST(DartLoader, WorldShouldBeTreatedAsKeyword) {
   // clang-format off
   const std::string urdfStr = R"(
     <robot name="testRobot">
@@ -437,8 +427,7 @@ TEST(DartLoader, WorldShouldBeTreatedAsKeyword)
 }
 
 //==============================================================================
-TEST(DartLoader, SingleLinkWithoutJoint)
-{
+TEST(DartLoader, SingleLinkWithoutJoint) {
   // clang-format off
   const std::string urdfStr = R"(
     <robot name="testRobot">
@@ -459,8 +448,7 @@ TEST(DartLoader, SingleLinkWithoutJoint)
 }
 
 //==============================================================================
-TEST(DartLoader, MultiTreeRobot)
-{
+TEST(DartLoader, MultiTreeRobot) {
   // clang-format off
   const std::string urdfStr = R"(
     <robot name="testRobot">
@@ -498,8 +486,7 @@ TEST(DartLoader, MultiTreeRobot)
 }
 
 //==============================================================================
-TEST(DartLoader, KR5MeshColor)
-{
+TEST(DartLoader, KR5MeshColor) {
   DartLoader loader;
   auto robot
       = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
@@ -508,14 +495,11 @@ TEST(DartLoader, KR5MeshColor)
   EXPECT_EQ(robot->getNumBodyNodes(), 7u);
   EXPECT_EQ(robot->getNumTrees(), 1u);
 
-  for (auto i = 0u; i < robot->getNumBodyNodes(); ++i)
-  {
+  for (auto i = 0u; i < robot->getNumBodyNodes(); ++i) {
     auto body = robot->getBodyNode(i);
-    for (auto shapeNode : body->getShapeNodesWith<dynamics::VisualAspect>())
-    {
+    for (auto shapeNode : body->getShapeNodesWith<dynamics::VisualAspect>()) {
       auto shape = shapeNode->getShape();
-      if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape))
-      {
+      if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape)) {
         EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
       }
     }
@@ -523,8 +507,7 @@ TEST(DartLoader, KR5MeshColor)
 }
 
 //==============================================================================
-TEST(DartLoader, parseVisualCollisionName)
-{
+TEST(DartLoader, parseVisualCollisionName) {
   // clang-format off
   std::string urdfStr = R"(
     <robot name="testRobot">

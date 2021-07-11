@@ -50,8 +50,7 @@ namespace common {
 /// as well as copying information between two extended data structures of the
 /// same type.
 template <class T>
-class Cloneable
-{
+class Cloneable {
 public:
   /// Default constructor
   Cloneable() = default;
@@ -80,8 +79,7 @@ public:
 /// construct an instance in the exact same way that you would construct a Mixin
 /// instance.
 template <class Base, class Mixin>
-class MakeCloneable : public Base, public Mixin
-{
+class MakeCloneable : public Base, public Mixin {
 public:
   using Data = Mixin;
 
@@ -136,8 +134,7 @@ template <
     class DataT,
     void (*setData)(OwnerT*, const DataT&),
     DataT (*getData)(const OwnerT*)>
-class ProxyCloneable : public Base
-{
+class ProxyCloneable : public Base {
 public:
   using Data = DataT;
   using Owner = OwnerT;
@@ -217,8 +214,7 @@ protected:
 /// Aspect::State and Aspect::Properties to be handled in a semantically
 /// palatable way.
 template <typename MapType>
-class CloneableMap
-{
+class CloneableMap {
 public:
   /// Default constructor
   CloneableMap() = default;
@@ -284,8 +280,7 @@ protected:
 /// The CloneableVector type wraps a std::vector of an Cloneable type allowing
 /// it to be handled by an CloneableMapHolder
 template <typename T>
-class CloneableVector
-{
+class CloneableVector {
 public:
   /// Default constructor
   CloneableVector() = default;

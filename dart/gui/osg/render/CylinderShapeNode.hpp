@@ -50,8 +50,7 @@ namespace render {
 class CylinderShapeGeode;
 class CylinderShapeDrawable;
 
-class CylinderShapeNode : public ShapeNode, public ::osg::Group
-{
+class CylinderShapeNode : public ShapeNode, public ::osg::Group {
 public:
   CylinderShapeNode(
       std::shared_ptr<dart::dynamics::CylinderShape> shape,

@@ -48,8 +48,7 @@ namespace dynamics {
 /// (such as position, velocity, and acceleration) can be modified. Conversely,
 /// the SimpleFrame class is nothing but a simple abstract Frame whose
 /// properties can be arbitrarily set and modified by the user.
-class SimpleFrame : public Detachable, public ShapeFrame
-{
+class SimpleFrame : public Detachable, public ShapeFrame {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SimpleFrame)
 

@@ -37,7 +37,6 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
 class State;
@@ -45,8 +44,7 @@ class State;
 //==============================================================================
 /// \brief class Humanoid
 /// \warning This class is not used now.
-class Humanoid
-{
+class Humanoid {
 public:
   /// \brief Constructor
   Humanoid(dart::dynamics::Skeleton* _skeleton);
@@ -107,8 +105,7 @@ protected:
 //==============================================================================
 /// \brief class AtlasRobot
 /// \warning This class is not used now.
-class AtlasRobot : public Humanoid
-{
+class AtlasRobot : public Humanoid {
 public:
   /// \brief Constructor
   AtlasRobot(dart::dynamics::Skeleton* _skeleton);

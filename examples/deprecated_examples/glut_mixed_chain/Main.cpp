@@ -43,8 +43,7 @@
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld = dart::io::SkelParser::readWorld(

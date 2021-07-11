@@ -38,8 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class EllipsoidShape : public Shape
-{
+class EllipsoidShape : public Shape {
 public:
   /// \brief Constructor.
   explicit EllipsoidShape(const Eigen::Vector3d& diameters);

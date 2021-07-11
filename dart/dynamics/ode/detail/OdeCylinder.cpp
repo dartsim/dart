@@ -41,17 +41,15 @@ namespace detail {
 //==============================================================================
 OdeCylinder::OdeCylinder(
     const OdeCollisionObject* parent, double radius, double height)
-  : OdeGeom(parent)
-{
+  : OdeGeom(parent) {
   mGeomId = dCreateCylinder(0, radius, height);
 }
 
 //==============================================================================
-OdeCylinder::~OdeCylinder()
-{
+OdeCylinder::~OdeCylinder() {
   dGeomDestroy(mGeomId);
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

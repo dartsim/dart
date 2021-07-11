@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ConstraintBase(py::module& m)
-{
+void ConstraintBase(py::module& m) {
   ::py::class_<
       dart::dynamics::ConstraintBase,
       std::shared_ptr<dart::dynamics::ConstraintBase> >(m, "ConstraintBase")
@@ -55,7 +54,9 @@ void ConstraintBase(py::module& m)
           })
       .def(
           "update",
-          +[](dart::dynamics::ConstraintBase* self) { self->update(); })
+          +[](dart::dynamics::ConstraintBase* self) {
+            self->update();
+          })
       .def(
           "getInformation",
           +[](dart::dynamics::ConstraintBase* self,
@@ -78,10 +79,14 @@ void ConstraintBase(py::module& m)
           ::py::arg("withCfm"))
       .def(
           "excite",
-          +[](dart::dynamics::ConstraintBase* self) { self->excite(); })
+          +[](dart::dynamics::ConstraintBase* self) {
+            self->excite();
+          })
       .def(
           "unexcite",
-          +[](dart::dynamics::ConstraintBase* self) { self->unexcite(); })
+          +[](dart::dynamics::ConstraintBase* self) {
+            self->unexcite();
+          })
       .def(
           "applyImpulse",
           +[](dart::dynamics::ConstraintBase* self, double* lambda) {
@@ -101,7 +106,9 @@ void ConstraintBase(py::module& m)
           })
       .def(
           "uniteSkeletons",
-          +[](dart::dynamics::ConstraintBase* self) { self->uniteSkeletons(); })
+          +[](dart::dynamics::ConstraintBase* self) {
+            self->uniteSkeletons();
+          })
       .def_static(
           "compressPath",
           +[](dart::dynamics::SkeletonPtr skeleton)

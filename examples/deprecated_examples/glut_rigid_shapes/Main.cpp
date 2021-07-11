@@ -37,14 +37,14 @@
  */
 
 #include <iostream>
+
 #include <dart/dart.hpp>
 #include <dart/io/io.hpp>
-#include "MyWindow.hpp"
-
 #include <fcl/config.h>
 
-int main(int argc, char* argv[])
-{
+#include "MyWindow.hpp"
+
+int main(int argc, char* argv[]) {
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld

@@ -40,8 +40,7 @@ namespace dart {
 namespace collision {
 
 template <typename S_>
-class CollisionResult
-{
+class CollisionResult {
 public:
   using S = S_;
 

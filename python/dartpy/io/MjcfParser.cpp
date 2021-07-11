@@ -39,8 +39,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void MjcfParser(py::module& m)
-{
+void MjcfParser(py::module& m) {
   auto sm = m.def_submodule("MjcfParser");
 
   // TODO(JS): Add bindings for dart::io::MjcfParser::Options and

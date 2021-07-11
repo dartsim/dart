@@ -40,8 +40,7 @@ AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     const dart::dynamics::SkeletonPtr& atlas)
   : dart::gui::osg::RealTimeWorldNode(world),
     mExternalForce(Eigen::Vector3d::Zero()),
-    mForceDuration(0.0)
-{
+    mForceDuration(0.0) {
   assert(world);
   assert(atlas);
 
@@ -49,8 +48,7 @@ AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::customPreStep()
-{
+void AtlasSimbiconWorldNode::customPreStep() {
   auto pelvis = mController->getAtlasRobot()->getBodyNode("pelvis");
   pelvis->addExtForce(mExternalForce);
   mController->update();
@@ -62,65 +60,55 @@ void AtlasSimbiconWorldNode::customPreStep()
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::reset()
-{
+void AtlasSimbiconWorldNode::reset() {
   mExternalForce.setZero();
   mController->resetRobot();
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::pushForwardAtlas(double force, int frames)
-{
+void AtlasSimbiconWorldNode::pushForwardAtlas(double force, int frames) {
   mExternalForce.x() = force;
   mForceDuration = frames;
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::pushBackwardAtlas(double force, int frames)
-{
+void AtlasSimbiconWorldNode::pushBackwardAtlas(double force, int frames) {
   mExternalForce.x() = -force;
   mForceDuration = frames;
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::pushLeftAtlas(double force, int frames)
-{
+void AtlasSimbiconWorldNode::pushLeftAtlas(double force, int frames) {
   mExternalForce.z() = force;
   mForceDuration = frames;
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::pushRightAtlas(double force, int frames)
-{
+void AtlasSimbiconWorldNode::pushRightAtlas(double force, int frames) {
   mExternalForce.z() = -force;
   mForceDuration = frames;
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::switchToNormalStrideWalking()
-{
+void AtlasSimbiconWorldNode::switchToNormalStrideWalking() {
   mController->changeStateMachine("walking", mWorld->getTime());
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::switchToShortStrideWalking()
-{
+void AtlasSimbiconWorldNode::switchToShortStrideWalking() {
   mController->changeStateMachine("running", mWorld->getTime());
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::switchToNoControl()
-{
+void AtlasSimbiconWorldNode::switchToNoControl() {
   mController->changeStateMachine("standing", mWorld->getTime());
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::showShadow()
-{
+void AtlasSimbiconWorldNode::showShadow() {
   auto shadow
       = dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer);
-  if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get()))
-  {
+  if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get())) {
     auto mapResolution = static_cast<short>(std::pow(2, 12));
     sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
   }
@@ -129,7 +117,6 @@ void AtlasSimbiconWorldNode::showShadow()
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::hideShadow()
-{
+void AtlasSimbiconWorldNode::hideShadow() {
   setShadowTechnique(nullptr);
 }

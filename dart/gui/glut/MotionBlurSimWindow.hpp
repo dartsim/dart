@@ -42,6 +42,7 @@
 #define DART_GUI_GLUT_MOTIONBLURSIMWINDOW_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 #include "dart/gui/glut/SimWindow.hpp"
@@ -50,8 +51,7 @@ namespace dart {
 namespace gui {
 namespace glut {
 
-class MotionBlurSimWindow : public glut::SimWindow
-{
+class MotionBlurSimWindow : public glut::SimWindow {
 public:
   /// \brief
   MotionBlurSimWindow();

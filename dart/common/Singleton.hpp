@@ -47,8 +47,7 @@ namespace common {
 /// // Call before main() and use theT only instead of calling getSingleton()
 /// static T& theT = T::getSingleton();
 template <typename T>
-class Singleton
-{
+class Singleton {
 public:
   /// Returns reference of the singleton
   template <typename... Args>

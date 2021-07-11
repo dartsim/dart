@@ -64,24 +64,21 @@ using ModelInterfacePtr = std::shared_ptr<urdf::ModelInterface>;
 DartLoader::DartLoader()
   : mLocalRetriever(new common::LocalResourceRetriever),
     mPackageRetriever(new io::PackageResourceRetriever(mLocalRetriever)),
-    mRetriever(new io::CompositeResourceRetriever)
-{
+    mRetriever(new io::CompositeResourceRetriever) {
   mRetriever->addSchemaRetriever("file", mLocalRetriever);
   mRetriever->addSchemaRetriever("package", mPackageRetriever);
   mRetriever->addSchemaRetriever("dart", DartResourceRetriever::create());
 }
 
 void DartLoader::addPackageDirectory(
-    const std::string& _packageName, const std::string& _packageDirectory)
-{
+    const std::string& _packageName, const std::string& _packageDirectory) {
   mPackageRetriever->addPackageDirectory(_packageName, _packageDirectory);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeleton(
     const common::Uri& _uri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
-    unsigned int flags)
-{
+    unsigned int flags) {
   const common::ResourceRetrieverPtr resourceRetriever
       = getResourceRetriever(_resourceRetriever);
 
@@ -91,8 +88,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
 
   // Use urdfdom to load the URDF file.
   const ModelInterfacePtr urdfInterface = urdf::parseURDF(content);
-  if (!urdfInterface)
-  {
+  if (!urdfInterface) {
     dtwarn << "[DartLoader::readSkeleton] Failed loading URDF file '"
            << _uri.toString() << "'.\n";
     return nullptr;
@@ -106,18 +102,15 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     const std::string& _urdfString,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
-    unsigned int flags)
-{
-  if (_urdfString.empty())
-  {
+    unsigned int flags) {
+  if (_urdfString.empty()) {
     dtwarn << "[DartLoader::parseSkeletonString] A blank string cannot be "
            << "parsed into a Skeleton. Returning a nullptr\n";
     return nullptr;
   }
 
   ModelInterfacePtr urdfInterface = urdf::parseURDF(_urdfString);
-  if (!urdfInterface)
-  {
+  if (!urdfInterface) {
     dtwarn << "[DartLoader::parseSkeletonString] Failed loading URDF.\n";
     return nullptr;
   }
@@ -132,8 +125,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 simulation::WorldPtr DartLoader::parseWorld(
     const common::Uri& _uri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
-    unsigned int flags)
-{
+    unsigned int flags) {
   const common::ResourceRetrieverPtr resourceRetriever
       = getResourceRetriever(_resourceRetriever);
 
@@ -148,13 +140,11 @@ simulation::WorldPtr DartLoader::parseWorldString(
     const std::string& _urdfString,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
-    unsigned int flags)
-{
+    unsigned int flags) {
   const common::ResourceRetrieverPtr resourceRetriever
       = getResourceRetriever(_resourceRetriever);
 
-  if (_urdfString.empty())
-  {
+  if (_urdfString.empty()) {
     dtwarn << "[DartLoader::parseWorldString] A blank string cannot be "
            << "parsed into a World. Returning a nullptr\n";
     return nullptr;
@@ -163,22 +153,19 @@ simulation::WorldPtr DartLoader::parseWorldString(
   std::shared_ptr<urdf_parsing::World> worldInterface
       = urdf_parsing::parseWorldURDF(_urdfString, _baseUri, resourceRetriever);
 
-  if (!worldInterface)
-  {
+  if (!worldInterface) {
     dtwarn << "[DartLoader::parseWorldString] Failed loading URDF.\n";
     return nullptr;
   }
 
   simulation::WorldPtr world = simulation::World::create();
 
-  for (std::size_t i = 0; i < worldInterface->models.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worldInterface->models.size(); ++i) {
     const urdf_parsing::Entity& entity = worldInterface->models[i];
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
         entity.model.get(), entity.uri, resourceRetriever, flags);
 
-    if (!skeleton)
-    {
+    if (!skeleton) {
       dtwarn << "[DartLoader::parseWorldString] Robot "
              << worldInterface->models[i].model->getName()
              << " was not correctly parsed!\n";
@@ -206,8 +193,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     const urdf::ModelInterface* model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
-    unsigned int flags)
-{
+    unsigned int flags) {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(model->getName());
 
   const urdf::Link* root = model->getRoot().get();
@@ -216,10 +202,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   // frame rather than a body in the robot model so we don't create a BodyNode
   // for it. This is not officially specified in the URDF spec, but "world" is
   // practically treated as a keyword.
-  if (root->name == "world")
-  {
-    if (model->getRoot()->child_links.size() > 1)
-    {
+  if (root->name == "world") {
+    if (model->getRoot()->child_links.size() > 1) {
       dtwarn << "[DartLoader::modelInterfaceToSkeleton] The world link has "
              << "more than one child links. This leads to creating a "
              << "multi-tree robot. Multi-tree robot is supported by DART, but "
@@ -227,8 +211,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
              << "model as a single tree robot.\n";
     }
 
-    for (std::size_t i = 0; i < root->child_links.size(); i++)
-    {
+    for (std::size_t i = 0; i < root->child_links.size(); i++) {
       if (!createSkeletonRecursive(
               model,
               skeleton,
@@ -236,17 +219,19 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
               nullptr,
               baseUri,
               resourceRetriever,
-              flags))
-      {
+              flags)) {
         return nullptr;
       }
     }
-  }
-  else
-  {
+  } else {
     if (!createSkeletonRecursive(
-            model, skeleton, root, nullptr, baseUri, resourceRetriever, flags))
-    {
+            model,
+            skeleton,
+            root,
+            nullptr,
+            baseUri,
+            resourceRetriever,
+            flags)) {
       return nullptr;
     }
   }
@@ -266,12 +251,10 @@ bool DartLoader::createSkeletonRecursive(
     dynamics::BodyNode* parentNode,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
-    unsigned int flags)
-{
+    unsigned int flags) {
   assert(lk);
 
-  if (parentNode != nullptr && lk->name == "world")
-  {
+  if (parentNode != nullptr && lk->name == "world") {
     dtwarn << "[DartLoader] Link name 'world' is reserved for the inertial "
            << "frame. Consider changing the name to something else.\n";
   }
@@ -292,8 +275,7 @@ bool DartLoader::createSkeletonRecursive(
   if (!result)
     return false;
 
-  for (std::size_t i = 0; i < lk->child_links.size(); ++i)
-  {
+  for (std::size_t i = 0; i < lk->child_links.size(); ++i) {
     if (!createSkeletonRecursive(
             model,
             skel,
@@ -301,8 +283,7 @@ bool DartLoader::createSkeletonRecursive(
             node,
             baseUri,
             resourceRetriever,
-            flags))
-    {
+            flags)) {
       return false;
     }
   }
@@ -312,11 +293,9 @@ bool DartLoader::createSkeletonRecursive(
 bool DartLoader::addMimicJointsRecursive(
     const urdf::ModelInterface* model,
     dynamics::SkeletonPtr _skel,
-    const urdf::Link* _lk)
-{
+    const urdf::Link* _lk) {
   const urdf::Joint* jt = _lk->parent_joint.get();
-  if (jt->mimic)
-  {
+  if (jt->mimic) {
     const std::string& jointName = jt->name;
     const double multiplier = jt->mimic->multiplier;
     const double offset = jt->mimic->offset;
@@ -325,16 +304,14 @@ bool DartLoader::addMimicJointsRecursive(
     dynamics::Joint* joint = _skel->getJoint(jointName);
     const dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
 
-    if (!joint)
-    {
+    if (!joint) {
       dterr << "Failed to configure a mimic joint [" << jointName
             << "] because the joint isn't found in Skeleton ["
             << _skel->getName() << "]\n.";
       return false;
     }
 
-    if (!mimicJoint)
-    {
+    if (!mimicJoint) {
       dterr << "Failed to configure a mimic joint [" << jointName
             << "] because the joint to mimic [" << mimicJoint
             << "] isn't found in Skeleton [" << _skel->getName() << "]\n.";
@@ -349,8 +326,7 @@ bool DartLoader::addMimicJointsRecursive(
     joint->setProperties(properties);
   }
 
-  for (std::size_t i = 0; i < _lk->child_links.size(); ++i)
-  {
+  for (std::size_t i = 0; i < _lk->child_links.size(); ++i) {
     if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get()))
       return false;
   }
@@ -364,8 +340,7 @@ bool DartLoader::addMimicJointsRecursive(
 bool DartLoader::readFileToString(
     const common::ResourceRetrieverPtr& _resourceRetriever,
     const common::Uri& _uri,
-    std::string& _output)
-{
+    std::string& _output) {
   const common::ResourcePtr resource = _resourceRetriever->retrieve(_uri);
   if (!resource)
     return false;
@@ -379,19 +354,15 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    unsigned int flags)
-{
+    unsigned int flags) {
   dynamics::Joint::Properties basicProperties("rootJoint");
 
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
-  if (flags & DartLoader::Flags::FIXED_BASE_LINK)
-  {
+  if (flags & DartLoader::Flags::FIXED_BASE_LINK) {
     pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
         _parent, basicProperties, _body);
-  }
-  else
-  {
+  } else {
     dynamics::GenericJoint<math::SE3Space>::Properties properties(
         basicProperties);
     pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
@@ -409,13 +380,11 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    unsigned int flags)
-{
+    unsigned int flags) {
   // Special case for the root link (A root link doesn't have the parent joint).
   // We don't have sufficient information what the joint type should be for the
   // root link. So we create the root joint by the specified flgas.
-  if (!_jt)
-  {
+  if (!_jt) {
     return createDartJointAndNodeForRoot(_body, _parent, _skeleton, flags);
   }
 
@@ -426,8 +395,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       = toEigen(_jt->parent_to_joint_origin_transform);
 
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
-  if (_jt->limits)
-  {
+  if (_jt->limits) {
     singleDof.mPositionLowerLimits[0] = _jt->limits->lower;
     singleDof.mPositionUpperLimits[0] = _jt->limits->upper;
     singleDof.mVelocityLowerLimits[0] = -_jt->limits->velocity;
@@ -437,8 +405,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
     // If the zero position is out of our limits, we should change the initial
     // position instead of assuming zero.
-    if (_jt->limits->lower > 0 || _jt->limits->upper < 0)
-    {
+    if (_jt->limits->lower > 0 || _jt->limits->upper < 0) {
       if (std::isfinite(_jt->limits->lower)
           && std::isfinite(_jt->limits->upper))
         singleDof.mInitialPositions[0]
@@ -456,17 +423,14 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     }
   }
 
-  if (_jt->dynamics)
-  {
+  if (_jt->dynamics) {
     singleDof.mDampingCoefficients[0] = _jt->dynamics->damping;
     singleDof.mFrictions[0] = _jt->dynamics->friction;
   }
 
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
-  switch (_jt->type)
-  {
-    case urdf::Joint::CONTINUOUS:
-    {
+  switch (_jt->type) {
+    case urdf::Joint::CONTINUOUS: {
       // We overwrite joint position limits to negative/positive infinities
       // for "continuous" joint. The URDF parser, by default, either reads
       // the limits, if specified for this joint, or sets them to 0.
@@ -484,8 +448,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::REVOLUTE:
-    {
+    case urdf::Joint::REVOLUTE: {
       dynamics::RevoluteJoint::Properties properties(
           dynamics::GenericJoint<math::R1Space>::Properties(
               basicProperties, singleDof),
@@ -496,8 +459,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::PRISMATIC:
-    {
+    case urdf::Joint::PRISMATIC: {
       dynamics::PrismaticJoint::Properties properties(
           dynamics::GenericJoint<math::R1Space>::Properties(
               basicProperties, singleDof),
@@ -508,14 +470,12 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::FIXED:
-    {
+    case urdf::Joint::FIXED: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
           _parent, basicProperties, _body);
       break;
     }
-    case urdf::Joint::FLOATING:
-    {
+    case urdf::Joint::FLOATING: {
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
 
@@ -523,8 +483,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
           _parent, properties, _body);
       break;
     }
-    case urdf::Joint::PLANAR:
-    {
+    case urdf::Joint::PLANAR: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
           _parent, dynamics::PlanarJoint::Properties(basicProperties), _body);
       // TODO(MXG): Should we read in position limits? The URDF limits
@@ -533,8 +492,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       // coordinates equally? Or just don't accept the position limits at all?
       break;
     }
-    default:
-    {
+    default: {
       dterr << "[DartLoader::createDartJoint] Unsupported joint type ("
             << _jt->type << ")\n";
       return nullptr;
@@ -551,13 +509,11 @@ bool DartLoader::createDartNodeProperties(
     const urdf::Link* _lk,
     dynamics::BodyNode::Properties& node,
     const common::Uri& /*_baseUri*/,
-    const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
-{
+    const common::ResourceRetrieverPtr& /*_resourceRetriever*/) {
   node.mName = _lk->name;
 
   // Load Inertial information
-  if (_lk->inertial)
-  {
+  if (_lk->inertial) {
     urdf::Pose origin = _lk->inertial->origin;
     node.mInertia.setLocalCOM(toEigen(origin.position));
     node.mInertia.setMass(_lk->inertial->mass);
@@ -584,10 +540,8 @@ bool DartLoader::createDartNodeProperties(
 void setMaterial(
     const urdf::ModelInterface* model,
     dynamics::VisualAspect* visualAspect,
-    const urdf::Visual* viz)
-{
-  if (viz->material)
-  {
+    const urdf::Visual* viz) {
+  if (viz->material) {
     urdf::Color urdf_color = viz->material->color;
 
     const auto& m_it = model->materials_.find(viz->material_name);
@@ -613,45 +567,37 @@ bool DartLoader::createShapeNodes(
     const urdf::Link* lk,
     dynamics::BodyNode* bodyNode,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& resourceRetriever)
-{
+    const common::ResourceRetrieverPtr& resourceRetriever) {
   // Set visual information
-  for (auto visual : lk->visual_array)
-  {
+  for (auto visual : lk->visual_array) {
     dynamics::ShapePtr shape
         = createShape(visual.get(), baseUri, resourceRetriever);
 
-    if (shape)
-    {
+    if (shape) {
       auto shapeNode
           = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
       if (not visual->name.empty())
         shapeNode->setName(visual->name);
       shapeNode->setRelativeTransform(toEigen(visual->origin));
       setMaterial(model, shapeNode->getVisualAspect(), visual.get());
-    }
-    else
-    {
+    } else {
       return false;
     }
   }
 
   // Set collision information
-  for (auto collision : lk->collision_array)
-  {
+  for (auto collision : lk->collision_array) {
     dynamics::ShapePtr shape
         = createShape(collision.get(), baseUri, resourceRetriever);
 
-    if (shape)
-    {
+    if (shape) {
       auto shapeNode = bodyNode->createShapeNodeWith<
           dynamics::CollisionAspect,
           dynamics::DynamicsAspect>(shape);
       if (not collision->name.empty())
         shapeNode->setName(collision->name);
       shapeNode->setRelativeTransform(toEigen(collision->origin));
-    }
-    else
+    } else
       return false;
   }
 
@@ -665,38 +611,33 @@ template <class VisualOrCollision>
 dynamics::ShapePtr DartLoader::createShape(
     const VisualOrCollision* _vizOrCol,
     const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
-{
+    const common::ResourceRetrieverPtr& _resourceRetriever) {
   dynamics::ShapePtr shape;
 
   // Sphere
   if (urdf::Sphere* sphere
-      = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get()))
-  {
+      = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get())) {
     shape = dynamics::ShapePtr(new dynamics::SphereShape(sphere->radius));
   }
   // Box
-  else if (urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get()))
-  {
+  else if (
+      urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get())) {
     shape = dynamics::ShapePtr(new dynamics::BoxShape(
         Eigen::Vector3d(box->dim.x, box->dim.y, box->dim.z)));
   }
   // Cylinder
   else if (
       urdf::Cylinder* cylinder
-      = dynamic_cast<urdf::Cylinder*>(_vizOrCol->geometry.get()))
-  {
+      = dynamic_cast<urdf::Cylinder*>(_vizOrCol->geometry.get())) {
     shape = dynamics::ShapePtr(
         new dynamics::CylinderShape(cylinder->radius, cylinder->length));
   }
   // Mesh
   else if (
-      urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
-  {
+      urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get())) {
     // Resolve relative URIs.
     common::Uri relativeUri, absoluteUri;
-    if (!absoluteUri.fromRelativeUri(_baseUri, mesh->filename))
-    {
+    if (!absoluteUri.fromRelativeUri(_baseUri, mesh->filename)) {
       dtwarn << "[DartLoader::createShape] Failed resolving mesh URI '"
              << mesh->filename << "' relative to '" << _baseUri.toString()
              << "'.\n";
@@ -715,8 +656,7 @@ dynamics::ShapePtr DartLoader::createShape(
         scale, scene, resolvedUri, _resourceRetriever);
   }
   // Unknown geometry type
-  else
-  {
+  else {
     dtwarn << "[DartLoader::createShape] Unknown URDF Shape type "
            << "(we only know of Sphere, Box, Cylinder, and Mesh). "
            << "We are returning a nullptr." << std::endl;
@@ -727,8 +667,7 @@ dynamics::ShapePtr DartLoader::createShape(
 }
 
 common::ResourceRetrieverPtr DartLoader::getResourceRetriever(
-    const common::ResourceRetrieverPtr& _resourceRetriever)
-{
+    const common::ResourceRetrieverPtr& _resourceRetriever) {
   if (_resourceRetriever)
     return _resourceRetriever;
   else
@@ -747,8 +686,7 @@ template dynamics::ShapePtr DartLoader::createShape<urdf::Collision>(
 /**
  * @function pose2Affine3d
  */
-Eigen::Isometry3d DartLoader::toEigen(const urdf::Pose& _pose)
-{
+Eigen::Isometry3d DartLoader::toEigen(const urdf::Pose& _pose) {
   Eigen::Quaterniond quat;
   _pose.rotation.getQuaternion(quat.x(), quat.y(), quat.z(), quat.w());
   Eigen::Isometry3d transform(quat);
@@ -757,8 +695,7 @@ Eigen::Isometry3d DartLoader::toEigen(const urdf::Pose& _pose)
   return transform;
 }
 
-Eigen::Vector3d DartLoader::toEigen(const urdf::Vector3& _vector)
-{
+Eigen::Vector3d DartLoader::toEigen(const urdf::Vector3& _vector) {
   return Eigen::Vector3d(_vector.x, _vector.y, _vector.z);
 }
 

@@ -34,10 +34,10 @@
 #define DART_COLLISION_BULLET_BULLETTYPES_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <Eigen/Dense>
 #include <btBulletCollisionCommon.h>
+
+#include "dart/config.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -54,7 +54,7 @@ btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R);
 /// @brief Convert Bullet transformation type to Eigen transformation type
 btTransform convertTransform(const Eigen::Isometry3d& _T);
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_BULLET_BULLETTYPES_HPP_

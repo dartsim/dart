@@ -372,6 +372,7 @@ function(dart_add_component)
     TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING
     TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL
     TARGET_LINK_LIBRARIES_PRIVATE
+    TARGET_LINK_LIBRARIES_PRIVATE_SKIP_CHECKING
     TARGET_LINK_OPTIONS_PUBLIC
     TARGET_COMPILE_FEATURES_PUBLIC
     TARGET_COMPILE_OPTIONS_PUBLIC
@@ -396,6 +397,7 @@ function(dart_add_component)
   set(link_libraries_public_skip_checking ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING})
   set(link_libraries_public_optional ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL})
   set(link_libraries_private ${${prefix}_TARGET_LINK_LIBRARIES_PRIVATE})
+  set(link_libraries_private_skip_checking ${${prefix}_TARGET_LINK_LIBRARIES_PRIVATE_SKIP_CHECKING})
   set(link_options_public ${${prefix}_TARGET_LINK_OPTIONS_PUBLIC})
   set(compile_features_public ${${prefix}_TARGET_COMPILE_FEATURES_PUBLIC})
   set(compile_options_public ${${prefix}_TARGET_COMPILE_OPTIONS_PUBLIC})
@@ -499,6 +501,7 @@ function(dart_add_component)
   target_link_libraries(${target_name} PUBLIC ${link_libraries_public_skip_checking})
   target_link_libraries(${target_name} PUBLIC ${current_target_link_libraries_public})
   target_link_libraries(${target_name} PRIVATE ${link_libraries_private})
+  target_link_libraries(${target_name} PRIVATE ${link_libraries_private_skip_checking})
   target_link_libraries(${target_name} PRIVATE ${current_target_link_libraries_private})
 
   # Set link options

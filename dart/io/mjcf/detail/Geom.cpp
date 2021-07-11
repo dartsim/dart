@@ -50,12 +50,10 @@ namespace detail {
 Errors Geom::read(
     tinyxml2::XMLElement* element,
     const Defaults& defaults,
-    const GeomAttributes& defaultAttributes)
-{
+    const GeomAttributes& defaultAttributes) {
   Errors errors;
 
-  if (std::string(element->Name()) != "geom")
-  {
+  if (std::string(element->Name()) != "geom") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Geom> from the provided element");
@@ -63,23 +61,17 @@ Errors Geom::read(
   }
 
   // Initialize the attributes from proper default
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     const std::string className = getAttributeString(element, "class");
     const auto& defaultClass = defaults.getDefault(className);
-    if (defaultClass)
-    {
+    if (defaultClass) {
       mAttributes = defaultClass->getGeomAttributes();
-    }
-    else
-    {
+    } else {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_INVALID,
           "Failed to find default with class name '" + className + "'"));
     }
-  }
-  else
-  {
+  } else {
     mAttributes = defaultAttributes;
   }
 
@@ -92,13 +84,11 @@ Errors Geom::read(
 
 //==============================================================================
 static bool canUseFromTo(
-    GeomType type, const common::optional<Eigen::Vector6d>& fromto)
-{
+    GeomType type, const common::optional<Eigen::Vector6d>& fromto) {
   if (not fromto)
     return false;
 
-  switch (type)
-  {
+  switch (type) {
     case detail::GeomType::CAPSULE:
     case detail::GeomType::ELLIPSOID:
     case detail::GeomType::CYLINDER:
@@ -110,12 +100,10 @@ static bool canUseFromTo(
 }
 
 //==============================================================================
-Errors Geom::preprocess(const Compiler& compiler)
-{
+Errors Geom::preprocess(const Compiler& compiler) {
   Errors errors;
 
-  if (mAttributes.mName)
-  {
+  if (mAttributes.mName) {
     mName = *mAttributes.mName;
   }
 
@@ -134,20 +122,16 @@ Errors Geom::preprocess(const Compiler& compiler)
   mGap = mAttributes.mGap;
 
   // Size
-  switch (mType)
-  {
+  switch (mType) {
     case GeomType::PLANE:
     case GeomType::HFIELD:
-    case GeomType::SPHERE:
-    {
+    case GeomType::SPHERE: {
       mSize = mAttributes.mSize;
       break;
     }
     case GeomType::CAPSULE:
-    case GeomType::CYLINDER:
-    {
-      if (mAttributes.mFromTo)
-      {
+    case GeomType::CYLINDER: {
+      if (mAttributes.mFromTo) {
         const double radius = mAttributes.mSize[0];
         mSize[0] = radius;
 
@@ -155,18 +139,14 @@ Errors Geom::preprocess(const Compiler& compiler)
         const Eigen::Vector3d to = (*mAttributes.mFromTo).tail<3>();
         const double halfLength = 0.5 * (from - to).norm();
         mSize[1] = halfLength;
-      }
-      else
-      {
+      } else {
         mSize = mAttributes.mSize;
       }
       break;
     }
     case GeomType::ELLIPSOID:
-    case GeomType::BOX:
-    {
-      if (mAttributes.mFromTo)
-      {
+    case GeomType::BOX: {
+      if (mAttributes.mFromTo) {
         const double halfLengthX = mAttributes.mSize[0];
         mSize[0] = halfLengthX;
 
@@ -177,31 +157,24 @@ Errors Geom::preprocess(const Compiler& compiler)
         const Eigen::Vector3d to = (*mAttributes.mFromTo).tail<3>();
         const double halfLengthZ = 0.5 * (from - to).norm();
         mSize[2] = halfLengthZ;
-      }
-      else
-      {
+      } else {
         mSize = mAttributes.mSize;
       }
       break;
     }
-    case GeomType::MESH:
-    {
+    case GeomType::MESH: {
       break;
     }
   }
 
-  if (mAttributes.mMass)
-  {
+  if (mAttributes.mMass) {
     mMass = *mAttributes.mMass;
     mVolume = computeVolume();
-    if (mVolume > 1e-6)
-    {
+    if (mVolume > 1e-6) {
       mDensity = mMass / mVolume;
     }
     mInertia = computeInertia();
-  }
-  else
-  {
+  } else {
     mDensity = mAttributes.mDensity;
     mVolume = computeVolume();
     mMass = mDensity * mVolume;
@@ -209,8 +182,7 @@ Errors Geom::preprocess(const Compiler& compiler)
   }
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  if (canUseFromTo(mType, mAttributes.mFromTo))
-  {
+  if (canUseFromTo(mType, mAttributes.mFromTo)) {
     assert(mAttributes.mFromTo);
     const Eigen::Vector6d& fromto = *mAttributes.mFromTo;
     const Eigen::Vector3d from = fromto.head<3>();
@@ -220,9 +192,7 @@ Errors Geom::preprocess(const Compiler& compiler)
     tf.linear()
         = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), dir)
               .toRotationMatrix();
-  }
-  else
-  {
+  } else {
     tf.translation() = mAttributes.mPos;
     tf.linear() = compileRotation(
         mAttributes.mQuat,
@@ -233,23 +203,16 @@ Errors Geom::preprocess(const Compiler& compiler)
         compiler);
   }
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL)
-  {
+  if (compiler.getCoordinate() == Coordinate::LOCAL) {
     mRelativeTransform = tf;
-  }
-  else
-  {
+  } else {
     mWorldTransform = tf;
   }
 
-  if (mAttributes.mType == GeomType::HFIELD)
-  {
-    if (mAttributes.mHField)
-    {
+  if (mAttributes.mType == GeomType::HFIELD) {
+    if (mAttributes.mHField) {
       mHField = *mAttributes.mHField;
-    }
-    else
-    {
+    } else {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_MISSING,
           "Failed to find 'hfield' attribute when the geom type is set to "
@@ -257,8 +220,7 @@ Errors Geom::preprocess(const Compiler& compiler)
     }
   }
 
-  if (mAttributes.mMesh)
-  {
+  if (mAttributes.mMesh) {
     mMesh = *mAttributes.mMesh;
 
     // When 'type' attribute is specified to a geometric primitive, namely one
@@ -274,8 +236,7 @@ Errors Geom::preprocess(const Compiler& compiler)
     // reference to the mesh used for fitting.
     if (mType == GeomType::SPHERE || mType == GeomType::CAPSULE
         || mType == GeomType::CYLINDER || mType == GeomType::ELLIPSOID
-        || mType == GeomType::BOX)
-    {
+        || mType == GeomType::BOX) {
       errors.push_back(Error(
           ErrorCode::UNDEFINED_ERROR,
           "Fitting primitive shapes to mesh is not supported yet. Setting "
@@ -286,13 +247,10 @@ Errors Geom::preprocess(const Compiler& compiler)
       mDensity = 1000;
       mSize.setConstant(0.1);
     }
-  }
-  else
-  {
+  } else {
     // If 'type' attribute is specified to "mesh", then 'mesh' attribute must
     // be specified.
-    if (mAttributes.mType == GeomType::MESH)
-    {
+    if (mAttributes.mType == GeomType::MESH) {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_MISSING,
           "Failed to find 'mesh' attribute when the geom type is set to "
@@ -306,37 +264,26 @@ Errors Geom::preprocess(const Compiler& compiler)
 }
 
 //==============================================================================
-Errors Geom::compile(const Compiler& /*compiler*/)
-{
+Errors Geom::compile(const Compiler& /*compiler*/) {
   Errors errors;
   return errors;
 }
 
 //==============================================================================
-Errors Geom::postprocess(const Body* parent, const Compiler& compiler)
-{
+Errors Geom::postprocess(const Body* parent, const Compiler& compiler) {
   Errors errors;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL)
-  {
-    if (parent != nullptr)
-    {
+  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+    if (parent != nullptr) {
       mWorldTransform = parent->getWorldTransform() * mRelativeTransform;
-    }
-    else
-    {
+    } else {
       mWorldTransform = mRelativeTransform;
     }
-  }
-  else
-  {
-    if (parent != nullptr)
-    {
+  } else {
+    if (parent != nullptr) {
       mRelativeTransform
           = parent->getWorldTransform().inverse() * mWorldTransform;
-    }
-    else
-    {
+    } else {
       mRelativeTransform = mWorldTransform;
     }
   }
@@ -345,220 +292,183 @@ Errors Geom::postprocess(const Body* parent, const Compiler& compiler)
 }
 
 //==============================================================================
-const std::string& Geom::getName() const
-{
+const std::string& Geom::getName() const {
   return mName;
 }
 
 //==============================================================================
-GeomType Geom::getType() const
-{
+GeomType Geom::getType() const {
   return mType;
 }
 
 //==============================================================================
-int Geom::getConType() const
-{
+int Geom::getConType() const {
   return mConType;
 }
 
 //==============================================================================
-int Geom::getConAffinity() const
-{
+int Geom::getConAffinity() const {
   return mConAffinity;
 }
 
 //==============================================================================
-int Geom::getConDim() const
-{
+int Geom::getConDim() const {
   return mConDim;
 }
 
 //==============================================================================
-int Geom::getGroup() const
-{
+int Geom::getGroup() const {
   return mGroup;
 }
 
 //==============================================================================
-int Geom::getPriority() const
-{
+int Geom::getPriority() const {
   return mPriority;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getSize() const
-{
+const Eigen::Vector3d& Geom::getSize() const {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector2d Geom::getPlaneHalfSize() const
-{
+Eigen::Vector2d Geom::getPlaneHalfSize() const {
   return mSize.head<2>();
 }
 
 //==============================================================================
-double Geom::getSphereRadius() const
-{
+double Geom::getSphereRadius() const {
   return mSize[0];
 }
 
 //==============================================================================
-double Geom::getCapsuleRadius() const
-{
+double Geom::getCapsuleRadius() const {
   return mSize[0];
 }
 
 //==============================================================================
-double Geom::getCapsuleHalfLength() const
-{
+double Geom::getCapsuleHalfLength() const {
   return mSize[1];
 }
 
 //==============================================================================
-double Geom::getCapsuleLength() const
-{
+double Geom::getCapsuleLength() const {
   return 2.0 * mSize[1];
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getEllipsoidRadii() const
-{
+const Eigen::Vector3d& Geom::getEllipsoidRadii() const {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector3d Geom::getEllipsoidDiameters() const
-{
+Eigen::Vector3d Geom::getEllipsoidDiameters() const {
   return 2.0 * mSize;
 }
 
 //==============================================================================
-double Geom::getCylinderRadius() const
-{
+double Geom::getCylinderRadius() const {
   return mSize[0];
 }
 
 //==============================================================================
-double Geom::getCylinderHalfLength() const
-{
+double Geom::getCylinderHalfLength() const {
   return mSize[1];
 }
 
 //==============================================================================
-double Geom::getCylinderLength() const
-{
+double Geom::getCylinderLength() const {
   return 2.0 * mSize[1];
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getBoxHalfSize() const
-{
+const Eigen::Vector3d& Geom::getBoxHalfSize() const {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector3d Geom::getBoxSize() const
-{
+Eigen::Vector3d Geom::getBoxSize() const {
   return 2.0 * mSize;
 }
 
 //==============================================================================
-const Eigen::Vector4d& Geom::getRGBA() const
-{
+const Eigen::Vector4d& Geom::getRGBA() const {
   return mRGBA;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getFriction() const
-{
+const Eigen::Vector3d& Geom::getFriction() const {
   return mFriction;
 }
 
 //==============================================================================
-double Geom::getMass() const
-{
+double Geom::getMass() const {
   return mMass;
 }
 
 //==============================================================================
-double Geom::getDensity() const
-{
+double Geom::getDensity() const {
   return mDensity;
 }
 
 //==============================================================================
-double Geom::getVolume() const
-{
+double Geom::getVolume() const {
   return mVolume;
 }
 
 //==============================================================================
-const Eigen::Matrix3d& Geom::getInertia() const
-{
+const Eigen::Matrix3d& Geom::getInertia() const {
   return mInertia;
 }
 
 //==============================================================================
-double Geom::getSolMix() const
-{
+double Geom::getSolMix() const {
   return mSolMix;
 }
 
 //==============================================================================
-double Geom::getMargine() const
-{
+double Geom::getMargine() const {
   return mMargin;
 }
 
 //==============================================================================
-double Geom::getGap() const
-{
+double Geom::getGap() const {
   return mGap;
 }
 
 //==============================================================================
-const std::string& Geom::getHField() const
-{
+const std::string& Geom::getHField() const {
   return mHField;
 }
 
 //==============================================================================
-const std::string& Geom::getMesh() const
-{
+const std::string& Geom::getMesh() const {
   return mMesh;
 }
 
 //==============================================================================
-void Geom::setRelativeTransform(const Eigen::Isometry3d& tf)
-{
+void Geom::setRelativeTransform(const Eigen::Isometry3d& tf) {
   mRelativeTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Geom::getRelativeTransform() const
-{
+const Eigen::Isometry3d& Geom::getRelativeTransform() const {
   return mRelativeTransform;
 }
 
 //==============================================================================
-void Geom::setWorldTransform(const Eigen::Isometry3d& tf)
-{
+void Geom::setWorldTransform(const Eigen::Isometry3d& tf) {
   mWorldTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Geom::getWorldTransform() const
-{
+const Eigen::Isometry3d& Geom::getWorldTransform() const {
   return mWorldTransform;
 }
 
 //==============================================================================
-double Geom::computeVolume() const
-{
-  switch (mType)
-  {
+double Geom::computeVolume() const {
+  switch (mType) {
     case GeomType::SPHERE:
       return dynamics::SphereShape::computeVolume(getSphereRadius());
     case GeomType::CAPSULE:
@@ -580,10 +490,8 @@ double Geom::computeVolume() const
 }
 
 //==============================================================================
-Eigen::Matrix3d Geom::computeInertia() const
-{
-  switch (mType)
-  {
+Eigen::Matrix3d Geom::computeInertia() const {
+  switch (mType) {
     case GeomType::SPHERE:
       return dynamics::SphereShape::computeInertia(getSphereRadius(), mMass);
     case GeomType::CAPSULE:

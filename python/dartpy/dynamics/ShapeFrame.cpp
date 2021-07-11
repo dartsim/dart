@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -72,7 +73,9 @@ namespace py = pybind11;
           py::return_value_policy::reference_internal)                         \
       .def(                                                                    \
           "remove" #name,                                                      \
-          +[](dart::dynamics::ShapeFrame* self) { self->remove##name(); })     \
+          +[](dart::dynamics::ShapeFrame* self) {                              \
+            self->remove##name();                                              \
+          })                                                                   \
       .def(                                                                    \
           "release" #name,                                                     \
           +[](dart::dynamics::ShapeFrame* self)                                \
@@ -83,8 +86,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ShapeFrame(py::module& m)
-{
+void ShapeFrame(py::module& m) {
   ::py::class_<
       dart::dynamics::ShapeFrame,
       // dart::common::EmbedPropertiesOnTopOf<
@@ -113,12 +115,16 @@ void ShapeFrame(py::module& m)
                       dart::dynamics::VisualAspect,
                       dart::dynamics::CollisionAspect,
                       dart::dynamics::DynamicsAspect>>::AspectProperties&
-                  properties) { self->setAspectProperties(properties); },
+                  properties) {
+            self->setAspectProperties(properties);
+          },
           ::py::arg("properties"))
       .def(
           "setShape",
           +[](dart::dynamics::ShapeFrame* self,
-              const dart::dynamics::ShapePtr& shape) { self->setShape(shape); },
+              const dart::dynamics::ShapePtr& shape) {
+            self->setShape(shape);
+          },
           ::py::arg("shape"))
       .def(
           "getShape",
@@ -128,7 +134,9 @@ void ShapeFrame(py::module& m)
       .def(
           "getShape",
           +[](const dart::dynamics::ShapeFrame* self)
-              -> dart::dynamics::ConstShapePtr { return self->getShape(); })
+              -> dart::dynamics::ConstShapePtr {
+            return self->getShape();
+          })
       // clang-format off
       DARTPY_DEFINE_SPECIALIZED_ASPECT(VisualAspect)
       DARTPY_DEFINE_SPECIALIZED_ASPECT(CollisionAspect)
@@ -170,7 +178,9 @@ void ShapeFrame(py::module& m)
       .def(
           "setRGBA",
           +[](dart::dynamics::VisualAspect* self,
-              const Eigen::Vector4d& color) { self->setRGBA(color); },
+              const Eigen::Vector4d& color) {
+            self->setRGBA(color);
+          },
           ::py::arg("color"))
       .def(
           "getRGBA",
@@ -202,12 +212,16 @@ void ShapeFrame(py::module& m)
       .def(
           "setColor",
           +[](dart::dynamics::VisualAspect* self,
-              const Eigen::Vector3d& color) { self->setColor(color); },
+              const Eigen::Vector3d& color) {
+            self->setColor(color);
+          },
           ::py::arg("color"))
       .def(
           "setColor",
           +[](dart::dynamics::VisualAspect* self,
-              const Eigen::Vector4d& color) { self->setColor(color); },
+              const Eigen::Vector4d& color) {
+            self->setColor(color);
+          },
           ::py::arg("color"))
       .def(
           "setRGB",
@@ -236,11 +250,20 @@ void ShapeFrame(py::module& m)
           +[](const dart::dynamics::VisualAspect* self) -> double {
             return self->getAlpha();
           })
-      .def("hide", +[](dart::dynamics::VisualAspect* self) { self->hide(); })
-      .def("show", +[](dart::dynamics::VisualAspect* self) { self->show(); })
-      .def("isHidden", +[](const dart::dynamics::VisualAspect* self) -> bool {
-        return self->isHidden();
-      });
+      .def(
+          "hide",
+          +[](dart::dynamics::VisualAspect* self) {
+            self->hide();
+          })
+      .def(
+          "show",
+          +[](dart::dynamics::VisualAspect* self) {
+            self->show();
+          })
+      .def(
+          "isHidden", +[](const dart::dynamics::VisualAspect* self) -> bool {
+            return self->isHidden();
+          });
 
   ::py::class_<dart::dynamics::CollisionAspect>(m, "CollisionAspect")
       .def(::py::init<>())

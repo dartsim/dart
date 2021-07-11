@@ -31,12 +31,12 @@
  */
 
 #include "dart/dynamics/dart/DARTCollide.hpp"
-#include "dart/dynamics/CollisionObject.hpp"
 
 #include <memory>
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CollisionObject.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -64,15 +64,13 @@ typedef double dMatrix4[16];
 typedef double dMatrix6[48];
 typedef double dQuaternion[4];
 
-inline void convVector(const Eigen::Vector3d& p0, dVector3& p1)
-{
+inline void convVector(const Eigen::Vector3d& p0, dVector3& p1) {
   p1[0] = p0[0];
   p1[1] = p0[1];
   p1[2] = p0[2];
 }
 
-inline void convMatrix(const Eigen::Isometry3d& T0, dMatrix3& R0)
-{
+inline void convMatrix(const Eigen::Isometry3d& T0, dMatrix3& R0) {
   R0[0] = T0(0, 0);
   R0[1] = T0(0, 1);
   R0[2] = T0(0, 2);
@@ -87,29 +85,24 @@ inline void convMatrix(const Eigen::Isometry3d& T0, dMatrix3& R0)
   R0[11] = T0(2, 3);
 }
 
-struct dContactGeom
-{
+struct dContactGeom {
   dVector3 pos;
   double depth;
 };
 
-inline double Inner(const double* a, const double* b)
-{
+inline double Inner(const double* a, const double* b) {
   return ((a)[0] * (b)[0] + (a)[1] * (b)[1] + (a)[2] * (b)[2]);
 }
 
-inline double Inner14(const double* a, const double* b)
-{
+inline double Inner14(const double* a, const double* b) {
   return ((a)[0] * (b)[0] + (a)[1] * (b)[4] + (a)[2] * (b)[8]);
 }
 
-inline double Inner41(const double* a, const double* b)
-{
+inline double Inner41(const double* a, const double* b) {
   return ((a)[0] * (b)[0] + (a)[4] * (b)[1] + (a)[8] * (b)[2]);
 }
 
-inline double Inner44(const double* a, const double* b)
-{
+inline double Inner44(const double* a, const double* b) {
   return ((a)[0] * (b)[0] + (a)[4] * (b)[4] + (a)[8] * (b)[8]);
 }
 
@@ -123,13 +116,11 @@ inline double Inner44(const double* a, const double* b)
   (A)[1] op Inner41((B + 1), (C));                                             \
   (A)[2] op Inner41((B + 2), (C));
 
-inline void dMULTIPLY0_331(double* A, const double* B, const double* C)
-{
+inline void dMULTIPLY0_331(double* A, const double* B, const double* C) {
   dMULTIPLYOP0_331(A, =, B, C)
 }
 
-inline void dMULTIPLY1_331(double* A, const double* B, const double* C)
-{
+inline void dMULTIPLY1_331(double* A, const double* B, const double* C) {
   dMULTIPLYOP1_331(A, =, B, C)
 }
 
@@ -143,28 +134,21 @@ inline void dMULTIPLY1_331(double* A, const double* B, const double* C)
 // n must be in the range [1..8]. m must be in the range [1..n]. i0 must be
 // in the range [0..n-1].
 
-void cullPoints(int n, double p[], int m, int i0, int iret[])
-{
+void cullPoints(int n, double p[], int m, int i0, int iret[]) {
   // compute the centroid of the polygon in cx,cy
   int i, j;
   double a, cx, cy, q;
-  if (n == 1)
-  {
+  if (n == 1) {
     cx = p[0];
     cy = p[1];
-  }
-  else if (n == 2)
-  {
+  } else if (n == 2) {
     cx = 0.5 * (p[0] + p[2]);
     cy = 0.5 * (p[1] + p[3]);
-  }
-  else
-  {
+  } else {
     a = 0;
     cx = 0;
     cy = 0;
-    for (i = 0; i < (n - 1); i++)
-    {
+    for (i = 0; i < (n - 1); i++) {
       q = p[i * 2] * p[i * 2 + 3] - p[i * 2 + 2] * p[i * 2 + 1];
       a += q;
       cx += q * (p[i * 2] + p[i * 2 + 2]);
@@ -188,21 +172,17 @@ void cullPoints(int n, double p[], int m, int i0, int iret[])
   avail[i0] = 0;
   iret[0] = i0;
   iret++;
-  for (j = 1; j < m; j++)
-  {
+  for (j = 1; j < m; j++) {
     a = double(j) * (2 * math::constantsd::pi() / m) + A[i0];
     if (a > math::constantsd::pi())
       a -= 2 * math::constantsd::pi();
     double maxdiff = 1e9, diff;
-    for (i = 0; i < n; i++)
-    {
-      if (avail[i])
-      {
+    for (i = 0; i < n; i++) {
+      if (avail[i]) {
         diff = fabs(A[i] - a);
         if (diff > math::constantsd::pi())
           diff = 2 * math::constantsd::pi() - diff;
-        if (diff < maxdiff)
-        {
+        if (diff < maxdiff) {
           maxdiff = diff;
           *iret = i;
         }
@@ -219,8 +199,7 @@ void dLineClosestApproach(
     const dVector3 pb,
     const dVector3 ub,
     double* alpha,
-    double* beta)
-{
+    double* beta) {
   dVector3 p;
   p[0] = pb[0] - pa[0];
   p[1] = pb[1] - pa[1];
@@ -229,56 +208,46 @@ void dLineClosestApproach(
   double q1 = Inner(ua, p);
   double q2 = -Inner(ub, p);
   double d = 1 - uaub * uaub;
-  if (d <= 0)
-  {
+  if (d <= 0) {
     // @@@ this needs to be made more robust
     *alpha = 0;
     *beta = 0;
-  }
-  else
-  {
+  } else {
     d = dRecip(d);
     *alpha = (q1 + uaub * q2) * d;
     *beta = (uaub * q1 + q2) * d;
   }
 }
 
-int intersectRectQuad(double h[2], double p[8], double ret[16])
-{
+int intersectRectQuad(double h[2], double p[8], double ret[16]) {
   // q (and r) contain nq (and nr) coordinate points for the current (and
   // chopped) polygons
   int nq = 4, nr = 0;
   double buffer[16];
   double* q = p;
   double* r = ret;
-  for (int dir = 0; dir <= 1; dir++)
-  {
+  for (int dir = 0; dir <= 1; dir++) {
     // direction notation: xy[0] = x axis, xy[1] = y axis
-    for (int sign = -1; sign <= 1; sign += 2)
-    {
+    for (int sign = -1; sign <= 1; sign += 2) {
       // chop q along the line xy[dir] = sign*h[dir]
       double* pq = q;
       double* pr = r;
       nr = 0;
-      for (int i = nq; i > 0; i--)
-      {
+      for (int i = nq; i > 0; i--) {
         // go through all points in q and all lines between adjacent points
-        if (sign * pq[dir] < h[dir])
-        {
+        if (sign * pq[dir] < h[dir]) {
           // this point is inside the chopping line
           pr[0] = pq[0];
           pr[1] = pq[1];
           pr += 2;
           nr++;
-          if (nr & 8)
-          {
+          if (nr & 8) {
             q = r;
             goto done;
           }
         }
         double* nextq = (i > 1) ? pq + 2 : q;
-        if ((sign * pq[dir] < h[dir]) ^ (sign * nextq[dir] < h[dir]))
-        {
+        if ((sign * pq[dir] < h[dir]) ^ (sign * nextq[dir] < h[dir])) {
           // this line crosses the chopping line
           pr[1 - dir] = pq[1 - dir]
                         + (nextq[1 - dir] - pq[1 - dir])
@@ -287,8 +256,7 @@ int intersectRectQuad(double h[2], double p[8], double ret[16])
           pr[dir] = sign * h[dir];
           pr += 2;
           nr++;
-          if (nr & 8)
-          {
+          if (nr & 8) {
             q = r;
             goto done;
           }
@@ -334,8 +302,7 @@ void dClosestLineBoxPoints(
     const dMatrix3 R,
     const dVector3 side,
     dVector3 lret,
-    dVector3 bret)
-{
+    dVector3 bret) {
   int i;
 
   // compute the start and delta of the line p1-p2 relative to the box.
@@ -353,15 +320,12 @@ void dClosestLineBoxPoints(
 
   // mirror the line so that v has all components >= 0
   dVector3 sign;
-  for (i = 0; i < 3; i++)
-  {
-    if (v[i] < 0)
-    {
+  for (i = 0; i < 3; i++) {
+    if (v[i] < 0) {
       s[i] = -s[i];
       v[i] = -v[i];
       sign[i] = -1;
-    }
-    else
+    } else
       sign[i] = 1;
   }
 
@@ -384,23 +348,16 @@ void dClosestLineBoxPoints(
   double tanchor[3];
 
   // find the region and tanchor values for p1
-  for (i = 0; i < 3; i++)
-  {
-    if (v[i] > 0)
-    {
-      if (s[i] < -h[i])
-      {
+  for (i = 0; i < 3; i++) {
+    if (v[i] > 0) {
+      if (s[i] < -h[i]) {
         region[i] = -1;
         tanchor[i] = (-h[i] - s[i]) / v[i];
-      }
-      else
-      {
+      } else {
         region[i] = (s[i] > h[i]);
         tanchor[i] = (h[i] - s[i]) / v[i];
       }
-    }
-    else
-    {
+    } else {
       region[i] = 0;
       tanchor[i] = 2; // this will never be a valid tanchor
     }
@@ -414,36 +371,30 @@ void dClosestLineBoxPoints(
   if (dd2dt >= 0)
     goto got_answer;
 
-  do
-  {
+  do {
     // find the point on the line that is at the next clip plane boundary
     double next_t = 1;
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
       if (tanchor[i] > t && tanchor[i] < 1 && tanchor[i] < next_t)
         next_t = tanchor[i];
     }
 
     // compute d|d|^2/dt for the next t
     double next_dd2dt = 0;
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
       next_dd2dt += (region[i] ? v2[i] : 0) * (next_t - tanchor[i]);
     }
 
     // if the sign of d|d|^2/dt has changed, solution = the crossover point
-    if (next_dd2dt >= 0)
-    {
+    if (next_dd2dt >= 0) {
       double m = (next_dd2dt - dd2dt) / (next_t - t);
       t -= dd2dt / m;
       goto got_answer;
     }
 
     // advance to the next anchor point / region
-    for (i = 0; i < 3; i++)
-    {
-      if (tanchor[i] == next_t)
-      {
+    for (i = 0; i < 3; i++) {
+      if (tanchor[i] == next_t) {
         tanchor[i] = (h[i] - s[i]) / v[i];
         region[i]++;
       }
@@ -460,8 +411,7 @@ got_answer:
     lret[i] = p1[i] + t * tmp[i]; // note: tmp=p2-p1
 
   // compute closest point on the box
-  for (i = 0; i < 3; i++)
-  {
+  for (i = 0; i < 3; i++) {
     tmp[i] = sign[i] * (s[i] + t * v[i]);
     if (tmp[i] < -h[i])
       tmp[i] = -h[i];
@@ -497,8 +447,7 @@ int dBoxBox(
     const dVector3 p2,
     const dMatrix3 R2,
     const dVector3 side2,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   const double fudge_factor = 1.05;
   dVector3 p, pp, normalC = {0.0, 0.0, 0.0, 0.0};
   const double* normalR = 0;
@@ -553,8 +502,7 @@ int dBoxBox(
 
 #define TST(expr1, expr2, norm, cc)                                            \
   s2 = std::abs(expr1) - (expr2);                                              \
-  if (s2 > s)                                                                  \
-  {                                                                            \
+  if (s2 > s) {                                                                \
     s = s2;                                                                    \
     normalR = norm;                                                            \
     invert_normal = ((expr1) < 0);                                             \
@@ -590,11 +538,9 @@ int dBoxBox(
 #define TST(expr1, expr2, n1, n2, n3, cc)                                      \
   s2 = std::abs(expr1) - (expr2);                                              \
   l = sqrt((n1) * (n1) + (n2) * (n2) + (n3) * (n3));                           \
-  if (l > 0)                                                                   \
-  {                                                                            \
+  if (l > 0) {                                                                 \
     s2 /= l;                                                                   \
-    if (s2 * fudge_factor > s)                                                 \
-    {                                                                          \
+    if (s2 * fudge_factor > s) {                                               \
       s = s2;                                                                  \
       normalR = 0;                                                             \
       normalC[0] = (n1) / l;                                                   \
@@ -679,34 +625,28 @@ int dBoxBox(
   Eigen::Vector3d point_vec;
   double penetration;
 
-  if (normalR)
-  {
+  if (normalR) {
     normal << normalR[0], normalR[4], normalR[8];
-  }
-  else
-  {
+  } else {
     normal << Inner((R1), (normalC)), Inner((R1 + 4), (normalC)),
         Inner((R1 + 8), (normalC));
     // dMULTIPLY0_331 (normal,R1,normalC);
   }
-  if (invert_normal)
-  {
+  if (invert_normal) {
     normal *= -1.0;
   }
 
   // compute contact point(s)
 
   // single point
-  if (code > 6)
-  {
+  if (code > 6) {
     // an edge from box 1 touches an edge from box 2.
     // find a point pa on the intersecting edge of box 1
     dVector3 pa;
     double sign;
     for (i = 0; i < 3; i++)
       pa[i] = p1[i];
-    for (j = 0; j < 3; j++)
-    {
+    for (j = 0; j < 3; j++) {
 #define TEMP_INNER14(a, b) (a[0] * (b)[0] + a[1] * (b)[4] + a[2] * (b)[8])
       sign = (TEMP_INNER14(normal, R1 + j) > 0) ? 1.0 : -1.0;
 
@@ -720,8 +660,7 @@ int dBoxBox(
     dVector3 pb;
     for (i = 0; i < 3; i++)
       pb[i] = p2[i];
-    for (j = 0; j < 3; j++)
-    {
+    for (j = 0; j < 3; j++) {
       sign = (TEMP_INNER14(normal, R2 + j) > 0) ? -1.0 : 1.0;
 #undef TEMP_INNER14
       for (i = 0; i < 3; i++)
@@ -763,17 +702,14 @@ int dBoxBox(
   // the incident face (the closest face of the other box).
 
   const double *Ra, *Rb, *pa, *pb, *Sa, *Sb;
-  if (code <= 3)
-  {
+  if (code <= 3) {
     Ra = R1;
     Rb = R2;
     pa = p1;
     pb = p2;
     Sa = A;
     Sb = B;
-  }
-  else
-  {
+  } else {
     Ra = R2;
     Rb = R1;
     pa = p2;
@@ -785,14 +721,11 @@ int dBoxBox(
   // nr = normal vector of reference face dotted with axes of incident box.
   // anr = absolute values of nr.
   dVector3 normal2, nr, anr;
-  if (code <= 3)
-  {
+  if (code <= 3) {
     normal2[0] = normal[0];
     normal2[1] = normal[1];
     normal2[2] = normal[2];
-  }
-  else
-  {
+  } else {
     normal2[0] = -normal[0];
     normal2[1] = -normal[1];
     normal2[2] = -normal[2];
@@ -806,31 +739,22 @@ int dBoxBox(
   // for the indident face. the other axis numbers of the indicent face
   // are stored in a1,a2.
   int lanr, a1, a2;
-  if (anr[1] > anr[0])
-  {
-    if (anr[1] > anr[2])
-    {
+  if (anr[1] > anr[0]) {
+    if (anr[1] > anr[2]) {
       a1 = 0;
       lanr = 1;
       a2 = 2;
-    }
-    else
-    {
+    } else {
       a1 = 0;
       a2 = 1;
       lanr = 2;
     }
-  }
-  else
-  {
-    if (anr[0] > anr[2])
-    {
+  } else {
+    if (anr[0] > anr[2]) {
       lanr = 0;
       a1 = 1;
       a2 = 2;
-    }
-    else
-    {
+    } else {
       a1 = 0;
       a2 = 1;
       lanr = 2;
@@ -839,13 +763,10 @@ int dBoxBox(
 
   // compute center point of incident face, in reference-face coordinates
   dVector3 center;
-  if (nr[lanr] < 0)
-  {
+  if (nr[lanr] < 0) {
     for (i = 0; i < 3; i++)
       center[i] = pb[i] - pa[i] + Sb[lanr] * Rb[i * 4 + lanr];
-  }
-  else
-  {
+  } else {
     for (i = 0; i < 3; i++)
       center[i] = pb[i] - pa[i] - Sb[lanr] * Rb[i * 4 + lanr];
   }
@@ -856,18 +777,13 @@ int dBoxBox(
     codeN = code - 1;
   else
     codeN = code - 4;
-  if (codeN == 0)
-  {
+  if (codeN == 0) {
     code1 = 1;
     code2 = 2;
-  }
-  else if (codeN == 1)
-  {
+  } else if (codeN == 1) {
     code1 = 0;
     code2 = 2;
-  }
-  else
-  {
+  } else {
     code1 = 0;
     code2 = 1;
   }
@@ -923,18 +839,15 @@ int dBoxBox(
   m21 *= det1;
   m22 *= det1;
   int cnum = 0; // number of penetrating contact points found
-  for (j = 0; j < n; j++)
-  {
+  for (j = 0; j < n; j++) {
     double k1 = m22 * (ret[j * 2] - c1) - m12 * (ret[j * 2 + 1] - c2);
     double k2 = -m21 * (ret[j * 2] - c1) + m11 * (ret[j * 2 + 1] - c2);
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
       point[cnum * 3 + i]
           = center[i] + k1 * Rb[i * 4 + a1] + k2 * Rb[i * 4 + a2];
     }
     dep[cnum] = Sa[codeN] - Inner(normal2, point + cnum * 3);
-    if (dep[cnum] >= 0)
-    {
+    if (dep[cnum] >= 0) {
       ret[cnum * 2] = ret[j * 2];
       ret[cnum * 2 + 1] = ret[j * 2 + 1];
       cnum++;
@@ -949,11 +862,9 @@ int dBoxBox(
     maxc = cnum;
   // if (maxc < 1) maxc = 1;
 
-  if (cnum <= maxc)
-  {
+  if (cnum <= maxc) {
     // we have less contacts than we need, so we use them all
-    for (j = 0; j < cnum; j++)
-    {
+    for (j = 0; j < cnum; j++) {
       point_vec << point[j * 3 + 0] + pa[0], point[j * 3 + 1] + pa[1],
           point[j * 3 + 2] + pa[2];
 
@@ -965,17 +876,13 @@ int dBoxBox(
       contact.penetrationDepth = dep[j];
       result.addContact(contact);
     }
-  }
-  else
-  {
+  } else {
     // we have more contacts than are wanted, some of them must be culled.
     // find the deepest point, it is always the first contact.
     int i1 = 0;
     double maxdepth = dep[0];
-    for (i = 1; i < cnum; i++)
-    {
-      if (dep[i] > maxdepth)
-      {
+    for (i = 1; i < cnum; i++) {
+      if (dep[i] > maxdepth) {
         maxdepth = dep[i];
         i1 = i;
       }
@@ -985,8 +892,7 @@ int dBoxBox(
     cullPoints(cnum, ret, maxc, i1, iret);
 
     cnum = maxc;
-    for (j = 0; j < cnum; j++)
-    {
+    for (j = 0; j < cnum; j++) {
       point_vec << point[iret[j] * 3 + 0] + pa[0],
           point[iret[j] * 3 + 1] + pa[1], point[iret[j] * 3 + 2] + pa[2];
 
@@ -1009,8 +915,7 @@ int collideBoxBox(
     const Eigen::Isometry3d& T0,
     const Eigen::Vector3d& size1,
     const Eigen::Isometry3d& T1,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   dVector3 halfSize0;
   dVector3 halfSize1;
 
@@ -1038,8 +943,7 @@ int collideBoxSphere(
     const Eigen::Isometry3d& T0,
     const double& r1,
     const Eigen::Isometry3d& T1,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   Eigen::Vector3d halfSize = 0.5 * size0;
   bool inside_box = true;
 
@@ -1048,35 +952,29 @@ int collideBoxSphere(
   Eigen::Vector3d c0 = T1.translation();
   Eigen::Vector3d p = T0.inverse() * c0;
 
-  if (p[0] < -halfSize[0])
-  {
+  if (p[0] < -halfSize[0]) {
     p[0] = -halfSize[0];
     inside_box = false;
   }
-  if (p[0] > halfSize[0])
-  {
+  if (p[0] > halfSize[0]) {
     p[0] = halfSize[0];
     inside_box = false;
   }
 
-  if (p[1] < -halfSize[1])
-  {
+  if (p[1] < -halfSize[1]) {
     p[1] = -halfSize[1];
     inside_box = false;
   }
-  if (p[1] > halfSize[1])
-  {
+  if (p[1] > halfSize[1]) {
     p[1] = halfSize[1];
     inside_box = false;
   }
 
-  if (p[2] < -halfSize[2])
-  {
+  if (p[2] < -halfSize[2]) {
     p[2] = -halfSize[2];
     inside_box = false;
   }
-  if (p[2] > halfSize[2])
-  {
+  if (p[2] > halfSize[2]) {
     p[2] = halfSize[2];
     inside_box = false;
   }
@@ -1084,21 +982,18 @@ int collideBoxSphere(
   Eigen::Vector3d normal(0.0, 0.0, 0.0);
   double penetration;
 
-  if (inside_box)
-  {
+  if (inside_box) {
     // find nearest side from the sphere center
     double min = halfSize[0] - std::abs(p[0]);
     double tmin = halfSize[1] - std::abs(p[1]);
     int idx = 0;
 
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 1;
     }
     tmin = halfSize[2] - std::abs(p[2]);
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 2;
     }
@@ -1124,13 +1019,11 @@ int collideBoxSphere(
   double mag = normal.norm();
   penetration = r1 - mag;
 
-  if (penetration < 0.0)
-  {
+  if (penetration < 0.0) {
     return 0;
   }
 
-  if (mag > DART_COLLISION_EPS)
-  {
+  if (mag > DART_COLLISION_EPS) {
     normal *= (1.0 / mag);
 
     Contact contact;
@@ -1140,21 +1033,17 @@ int collideBoxSphere(
     contact.normal = normal;
     contact.penetrationDepth = penetration;
     result.addContact(contact);
-  }
-  else
-  {
+  } else {
     double min = halfSize[0] - std::abs(p[0]);
     double tmin = halfSize[1] - std::abs(p[1]);
     int idx = 0;
 
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 1;
     }
     tmin = halfSize[2] - std::abs(p[2]);
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 2;
     }
@@ -1181,8 +1070,7 @@ int collideSphereBox(
     const Eigen::Isometry3d& T0,
     const Eigen::Vector3d& size1,
     const Eigen::Isometry3d& T1,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   Eigen::Vector3d size = 0.5 * size1;
   bool inside_box = true;
 
@@ -1190,35 +1078,29 @@ int collideSphereBox(
   Eigen::Vector3d c0 = T0.translation();
   Eigen::Vector3d p = T1.inverse() * c0;
 
-  if (p[0] < -size[0])
-  {
+  if (p[0] < -size[0]) {
     p[0] = -size[0];
     inside_box = false;
   }
-  if (p[0] > size[0])
-  {
+  if (p[0] > size[0]) {
     p[0] = size[0];
     inside_box = false;
   }
 
-  if (p[1] < -size[1])
-  {
+  if (p[1] < -size[1]) {
     p[1] = -size[1];
     inside_box = false;
   }
-  if (p[1] > size[1])
-  {
+  if (p[1] > size[1]) {
     p[1] = size[1];
     inside_box = false;
   }
 
-  if (p[2] < -size[2])
-  {
+  if (p[2] < -size[2]) {
     p[2] = -size[2];
     inside_box = false;
   }
-  if (p[2] > size[2])
-  {
+  if (p[2] > size[2]) {
     p[2] = size[2];
     inside_box = false;
   }
@@ -1226,21 +1108,18 @@ int collideSphereBox(
   Eigen::Vector3d normal(0.0, 0.0, 0.0);
   double penetration;
 
-  if (inside_box)
-  {
+  if (inside_box) {
     // find nearest side from the sphere center
     double min = size[0] - std::abs(p[0]);
     double tmin = size[1] - std::abs(p[1]);
     int idx = 0;
 
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 1;
     }
     tmin = size[2] - std::abs(p[2]);
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 2;
     }
@@ -1264,13 +1143,11 @@ int collideSphereBox(
   double mag = normal.norm();
   penetration = r0 - mag;
 
-  if (penetration < 0.0)
-  {
+  if (penetration < 0.0) {
     return 0;
   }
 
-  if (mag > DART_COLLISION_EPS)
-  {
+  if (mag > DART_COLLISION_EPS) {
     normal *= (1.0 / mag);
 
     Contact contact;
@@ -1280,21 +1157,17 @@ int collideSphereBox(
     contact.normal = normal;
     contact.penetrationDepth = penetration;
     result.addContact(contact);
-  }
-  else
-  {
+  } else {
     double min = size[0] - std::abs(p[0]);
     double tmin = size[1] - std::abs(p[1]);
     int idx = 0;
 
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 1;
     }
     tmin = size[2] - std::abs(p[2]);
-    if (tmin < min)
-    {
+    if (tmin < min) {
       min = tmin;
       idx = 2;
     }
@@ -1320,16 +1193,14 @@ int collideSphereSphere(
     const Eigen::Isometry3d& c0,
     const double& _r1,
     const Eigen::Isometry3d& c1,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   double r0 = _r0;
   double r1 = _r1;
   double rsum = r0 + r1;
   Eigen::Vector3d normal = c0.translation() - c1.translation();
   double normal_sqr = normal.squaredNorm();
 
-  if (normal_sqr > rsum * rsum)
-  {
+  if (normal_sqr > rsum * rsum) {
     return 0;
   }
 
@@ -1339,8 +1210,7 @@ int collideSphereSphere(
   Eigen::Vector3d point = r1 * c0.translation() + r0 * c1.translation();
   double penetration;
 
-  if (normal_sqr < DART_COLLISION_EPS)
-  {
+  if (normal_sqr < DART_COLLISION_EPS) {
     normal.setZero();
     penetration = rsum;
 
@@ -1376,14 +1246,12 @@ int collideCylinderSphere(
     const Eigen::Isometry3d& T0,
     const double& sphere_rad,
     const Eigen::Isometry3d& T1,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   Eigen::Vector3d center = T0.inverse() * T1.translation();
 
   double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
 
-  if (dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad)
-  {
+  if (dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad) {
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
@@ -1392,19 +1260,15 @@ int collideCylinderSphere(
     contact.point
         = T0
           * Eigen::Vector3d(
-                center[0], center[1], half_height - contact.penetrationDepth);
+              center[0], center[1], half_height - contact.penetrationDepth);
     contact.normal
         = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
     result.addContact(contact);
     return 1;
-  }
-  else
-  {
+  } else {
     double penetration = 0.5 * (cyl_rad + sphere_rad - dist);
-    if (penetration > 0.0)
-    {
-      if (std::abs(center[2]) > half_height)
-      {
+    if (penetration > 0.0) {
+      if (std::abs(center[2]) > half_height) {
         Eigen::Vector3d point
             = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
         point *= cyl_rad;
@@ -1414,8 +1278,7 @@ int collideCylinderSphere(
         normal = (T0.linear() * normal).normalized();
         point = T0 * point;
 
-        if (penetration > 0.0)
-        {
+        if (penetration > 0.0) {
           Contact contact;
           contact.collisionObject1 = o1;
           contact.collisionObject2 = o2;
@@ -1425,8 +1288,7 @@ int collideCylinderSphere(
           result.addContact(contact);
           return 1;
         }
-      }
-      else // if( center[2] >= -half_height && center[2] <= half_height )
+      } else // if( center[2] >= -half_height && center[2] <= half_height )
       {
         Eigen::Vector3d point
             = (Eigen::Vector3d(center[0], center[1], 0.0)).normalized();
@@ -1457,15 +1319,13 @@ int collideCylinderPlane(
     const Eigen::Isometry3d& T0,
     const Eigen::Vector3d& plane_normal,
     const Eigen::Isometry3d& T1,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   Eigen::Vector3d normal = T1.linear() * plane_normal;
   Eigen::Vector3d Rx = T0.linear().rightCols(1);
   Eigen::Vector3d Ry = normal - normal.dot(Rx) * Rx;
   double mag = Ry.norm();
   Ry.normalize();
-  if (mag < DART_COLLISION_EPS)
-  {
+  if (mag < DART_COLLISION_EPS) {
     if (std::abs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
       Ry = Eigen::Vector3d::UnitX();
     else
@@ -1496,10 +1356,8 @@ int collideCylinderPlane(
 
   double penetration = -1.0;
   int found = -1;
-  for (int i = 0; i < 4; i++)
-  {
-    if (depth[i] > penetration)
-    {
+  for (int i = 0; i < 4; i++) {
+    if (depth[i] > penetration) {
       penetration = depth[i];
       found = i;
     }
@@ -1514,8 +1372,7 @@ int collideCylinderPlane(
   else
     point = T * c[found];
 
-  if (penetration > 0.0)
-  {
+  if (penetration > 0.0) {
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
@@ -1530,8 +1387,7 @@ int collideCylinderPlane(
 }
 
 //==============================================================================
-int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
-{
+int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result) {
   // TODO(JS): We could make the contact point computation as optional for
   // the case that we want only binary check.
 
@@ -1544,28 +1400,22 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   const Eigen::Isometry3d& T1 = o1->getTransform();
   const Eigen::Isometry3d& T2 = o2->getTransform();
 
-  if (dynamics::SphereShape::getStaticType() == shapeType1)
-  {
+  if (dynamics::SphereShape::getStaticType() == shapeType1) {
     const auto* sphere0
         = static_cast<const dynamics::SphereShape*>(shape1.get());
 
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
-    {
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
       const auto* sphere1
           = static_cast<const dynamics::SphereShape*>(shape2.get());
 
       return collideSphereSphere(
           o1, o2, sphere0->getRadius(), T1, sphere1->getRadius(), T2, result);
-    }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
-    {
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
       const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
 
       return collideSphereBox(
           o1, o2, sphere0->getRadius(), T1, box1->getSize(), T2, result);
-    }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
-    {
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
 
@@ -1578,42 +1428,32 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     }
-  }
-  else if (dynamics::BoxShape::getStaticType() == shapeType1)
-  {
+  } else if (dynamics::BoxShape::getStaticType() == shapeType1) {
     const auto* box0 = static_cast<const dynamics::BoxShape*>(shape1.get());
 
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
-    {
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
       const auto* sphere1
           = static_cast<const dynamics::SphereShape*>(shape2.get());
 
       return collideBoxSphere(
           o1, o2, box0->getSize(), T1, sphere1->getRadius(), T2, result);
-    }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
-    {
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
       const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
 
       return collideBoxBox(
           o1, o2, box0->getSize(), T1, box1->getSize(), T2, result);
-    }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
-    {
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
 
       return collideBoxSphere(
           o1, o2, box0->getSize(), T1, ellipsoid1->getRadii()[0], T2, result);
     }
-  }
-  else if (dynamics::EllipsoidShape::getStaticType() == shapeType1)
-  {
+  } else if (dynamics::EllipsoidShape::getStaticType() == shapeType1) {
     const auto* ellipsoid0
         = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
 
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
-    {
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
       const auto* sphere1
           = static_cast<const dynamics::SphereShape*>(shape2.get());
 
@@ -1625,16 +1465,12 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           sphere1->getRadius(),
           T2,
           result);
-    }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
-    {
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
       const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
 
       return collideSphereBox(
           o1, o2, ellipsoid0->getRadii()[0], T1, box1->getSize(), T2, result);
-    }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
-    {
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
 
@@ -1656,5 +1492,5 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   return false;
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

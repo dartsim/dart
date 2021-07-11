@@ -55,8 +55,7 @@ namespace detail {
 ///
 /// \sa setActuatorType(), getActuatorType(),
 /// setSpringStiffness(), setDampingCoefficient(),
-enum ActuatorType
-{
+enum ActuatorType {
   /// Command input is joint force, and the output is joint acceleration.
   ///
   /// If the command is zero, then it's identical to passive joint. The valid
@@ -108,8 +107,7 @@ enum ActuatorType
 
 const ActuatorType DefaultActuatorType = FORCE;
 
-struct JointProperties
-{
+struct JointProperties {
   /// Joint name
   std::string mName;
 

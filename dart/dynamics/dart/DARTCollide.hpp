@@ -34,7 +34,9 @@
 #define DART_COLLISION_DART_DARTCOLLIDE_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
+
 #include "dart/dynamics/CollisionDetector.hpp"
 
 namespace dart {
@@ -98,7 +100,7 @@ int collideCylinderPlane(
     const Eigen::Isometry3d& T1,
     CollisionResult& result);
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DART_DARTCOLLIDE_HPP_

@@ -46,8 +46,7 @@ namespace dynamics {
 
 class CollisionObject;
 
-class CollisionFilter
-{
+class CollisionFilter {
 public:
   /// Destructor.
   virtual ~CollisionFilter();
@@ -67,8 +66,7 @@ public:
       const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
-class CompositeCollisionFilter : public CollisionFilter
-{
+class CompositeCollisionFilter : public CollisionFilter {
 public:
   /// Adds a collision filter to this CompositeCollisionFilter.
   void addCollisionFilter(const CollisionFilter* filter);
@@ -89,8 +87,7 @@ protected:
   std::unordered_set<const CollisionFilter*> mFilters;
 };
 
-class BodyNodeCollisionFilter : public CollisionFilter
-{
+class BodyNodeCollisionFilter : public CollisionFilter {
 public:
   /// Add a BodyNode pair to the blacklist.
   void addBodyNodePairToBlackList(
@@ -119,7 +116,7 @@ private:
   detail::UnorderedPairs<dynamics::BodyNode> mBodyNodeBlackList;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_COLLISIONFILTER_HPP_

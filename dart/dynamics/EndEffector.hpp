@@ -53,8 +53,7 @@ class Support final : public common::AspectWithStateAndVersionedProperties<
                           detail::SupportStateData,
                           detail::SupportPropertiesData,
                           EndEffector,
-                          &detail::SupportUpdate>
-{
+                          &detail::SupportUpdate> {
 public:
   DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(Support)
 
@@ -77,8 +76,7 @@ public:
 class EndEffector final : public common::EmbedPropertiesOnTopOf<
                               EndEffector,
                               detail::EndEffectorProperties,
-                              detail::EndEffectorCompositeBase>
-{
+                              detail::EndEffectorCompositeBase> {
 public:
   friend class Skeleton;
   friend class BodyNode;

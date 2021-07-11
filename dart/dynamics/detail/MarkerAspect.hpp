@@ -34,20 +34,15 @@
 #define DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
 
 #include <Eigen/Core>
+
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
 namespace detail {
 
-struct MarkerProperties
-{
-  enum ConstraintType
-  {
-    NO,
-    HARD,
-    SOFT
-  };
+struct MarkerProperties {
+  enum ConstraintType { NO, HARD, SOFT };
 
   Eigen::Vector4d mColor;
   ConstraintType mType;

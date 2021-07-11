@@ -60,38 +60,32 @@ Entity::Entity(Frame* _refFrame, bool _quiet)
     onVelocityChanged(mVelocityChangedSignal),
     onAccelerationChanged(mAccelerationChangedSignal),
     mAmQuiet(_quiet),
-    mAmFrame(false)
-{
+    mAmFrame(false) {
   changeParentFrame(_refFrame);
 }
 
 //==============================================================================
-Entity::Entity() : Entity(ConstructAbstract)
-{
+Entity::Entity() : Entity(ConstructAbstract) {
   // Delegated to Entity(ConstructAbstract_t)
 }
 
 //==============================================================================
-Entity::~Entity()
-{
+Entity::~Entity() {
   changeParentFrame(nullptr);
 }
 
 //==============================================================================
-Frame* Entity::getParentFrame()
-{
+Frame* Entity::getParentFrame() {
   return mParentFrame;
 }
 
 //==============================================================================
-const Frame* Entity::getParentFrame() const
-{
+const Frame* Entity::getParentFrame() const {
   return mParentFrame;
 }
 
 //==============================================================================
-bool Entity::descendsFrom(const Frame* _someFrame) const
-{
+bool Entity::descendsFrom(const Frame* _someFrame) const {
   if (nullptr == _someFrame)
     return true;
 
@@ -102,8 +96,7 @@ bool Entity::descendsFrom(const Frame* _someFrame) const
     return true;
 
   const Frame* descentCheck = getParentFrame();
-  while (descentCheck)
-  {
+  while (descentCheck) {
     if (descentCheck->isWorld())
       break;
 
@@ -116,26 +109,22 @@ bool Entity::descendsFrom(const Frame* _someFrame) const
 }
 
 //==============================================================================
-bool Entity::isQuiet() const
-{
+bool Entity::isQuiet() const {
   return mAmQuiet;
 }
 
 //==============================================================================
-bool Entity::isFrame() const
-{
+bool Entity::isFrame() const {
   return mAmFrame;
 }
 
 //==============================================================================
-void Entity::notifyTransformUpdate()
-{
+void Entity::notifyTransformUpdate() {
   dirtyTransform();
 }
 
 //==============================================================================
-void Entity::dirtyTransform()
-{
+void Entity::dirtyTransform() {
   mNeedTransformUpdate = true;
 
   // The actual transform hasn't updated yet. But when its getter is called,
@@ -144,20 +133,17 @@ void Entity::dirtyTransform()
 }
 
 //==============================================================================
-bool Entity::needsTransformUpdate() const
-{
+bool Entity::needsTransformUpdate() const {
   return mNeedTransformUpdate;
 }
 
 //==============================================================================
-void Entity::notifyVelocityUpdate()
-{
+void Entity::notifyVelocityUpdate() {
   dirtyVelocity();
 }
 
 //==============================================================================
-void Entity::dirtyVelocity()
-{
+void Entity::dirtyVelocity() {
   mNeedVelocityUpdate = true;
 
   // The actual velocity hasn't updated yet. But when its getter is called,
@@ -166,20 +152,17 @@ void Entity::dirtyVelocity()
 }
 
 //==============================================================================
-bool Entity::needsVelocityUpdate() const
-{
+bool Entity::needsVelocityUpdate() const {
   return mNeedVelocityUpdate;
 }
 
 //==============================================================================
-void Entity::notifyAccelerationUpdate()
-{
+void Entity::notifyAccelerationUpdate() {
   dirtyAcceleration();
 }
 
 //==============================================================================
-void Entity::dirtyAcceleration()
-{
+void Entity::dirtyAcceleration() {
   mNeedAccelerationUpdate = true;
 
   // The actual acceleration hasn't updated yet. But when its getter is called,
@@ -188,8 +171,7 @@ void Entity::dirtyAcceleration()
 }
 
 //==============================================================================
-bool Entity::needsAccelerationUpdate() const
-{
+bool Entity::needsAccelerationUpdate() const {
   return mNeedAccelerationUpdate;
 }
 
@@ -222,28 +204,24 @@ Entity::Entity(ConstructAbstractTag)
     onTransformUpdated(mTransformUpdatedSignal),
     onVelocityChanged(mVelocityChangedSignal),
     onAccelerationChanged(mAccelerationChangedSignal),
-    mAmQuiet(false)
-{
+    mAmQuiet(false) {
   dterr << "[Entity::Entity] Your class implementation is calling the Entity "
         << "constructor that is meant to be reserved for abstract classes!\n";
   assert(false);
 }
 
 //==============================================================================
-void Entity::changeParentFrame(Frame* _newParentFrame)
-{
+void Entity::changeParentFrame(Frame* _newParentFrame) {
   if (mParentFrame == _newParentFrame)
     return;
 
   const Frame* oldParentFrame = mParentFrame;
 
-  if (!mAmQuiet && nullptr != mParentFrame && !mParentFrame->isWorld())
-  {
+  if (!mAmQuiet && nullptr != mParentFrame && !mParentFrame->isWorld()) {
     // If this entity has a parent Frame, tell that parent that it is losing
     // this child
     EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
-    if (it != mParentFrame->mChildEntities.end())
-    {
+    if (it != mParentFrame->mChildEntities.end()) {
       mParentFrame->mChildEntities.erase(it);
       mParentFrame->processRemovedEntity(this);
     }
@@ -251,10 +229,8 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 
   mParentFrame = _newParentFrame;
 
-  if (!mAmQuiet && nullptr != mParentFrame)
-  {
-    if (!mParentFrame->isWorld())
-    {
+  if (!mAmQuiet && nullptr != mParentFrame) {
+    if (!mParentFrame->isWorld()) {
       // The WorldFrame should not keep track of its children, or else we get
       // concurrency issues (race conditions).
       mParentFrame->mChildEntities.insert(this);
@@ -269,20 +245,17 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 
 //==============================================================================
 Detachable::Detachable(Frame* _refFrame, bool _quiet)
-  : Entity(_refFrame, _quiet)
-{
+  : Entity(_refFrame, _quiet) {
   // Do nothing
 }
 
 //==============================================================================
-void Detachable::setParentFrame(Frame* _newParentFrame)
-{
+void Detachable::setParentFrame(Frame* _newParentFrame) {
   changeParentFrame(_newParentFrame);
 }
 
 //==============================================================================
-Detachable::Detachable() : Entity(ConstructAbstract)
-{
+Detachable::Detachable() : Entity(ConstructAbstract) {
   // Do nothing
 }
 

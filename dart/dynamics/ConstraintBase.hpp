@@ -46,8 +46,7 @@ class Skeleton;
 namespace dynamics {
 
 /// ConstraintInfo
-struct ConstraintInfo
-{
+struct ConstraintInfo {
   /// Impulse
   double* x;
 
@@ -71,8 +70,7 @@ struct ConstraintInfo
 };
 
 /// Constraint is a base class of concrete constraints classes
-class ConstraintBase
-{
+class ConstraintBase {
 public:
   /// Returns a string representing the constraint type
   virtual const std::string& getType() const;

@@ -39,13 +39,12 @@
 namespace dart {
 namespace dynamics {
 
-class OdeTypes
-{
+class OdeTypes {
 public:
   static Eigen::Vector3d convertVector3(const dVector3& vec);
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_ODETYPES_HPP_

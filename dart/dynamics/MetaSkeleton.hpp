@@ -58,8 +58,7 @@ class Marker;
 /// MetaSkeleton is a pure abstract base class that provides a common interface
 /// for obtaining data (such as Jacobians and Mass Matrices) from groups of
 /// BodyNodes.
-class MetaSkeleton : public common::Subject
-{
+class MetaSkeleton : public common::Subject {
 public:
   using NameChangedSignal = common::Signal<void(
       std::shared_ptr<const MetaSkeleton> _skeleton,

@@ -41,8 +41,7 @@ namespace dart {
 namespace dynamics {
 
 /// Contact information
-struct Contact
-{
+struct Contact {
   /// Default constructor
   Contact();
 
@@ -93,7 +92,7 @@ struct Contact
   static bool isNonZeroNormal(const Eigen::Vector3d& normal);
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #include "dart/dynamics/detail/Contact-impl.hpp"

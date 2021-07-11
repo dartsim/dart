@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_SKELETON_HPP_
 
 #include <mutex>
+
 #include "dart/common/NameManager.hpp"
 #include "dart/common/VersionCounter.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -55,8 +56,7 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Skeleton : public virtual common::VersionCounter,
                  public MetaSkeleton,
                  public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
-                 public detail::SkeletonAspectBase
-{
+                 public detail::SkeletonAspectBase {
 public:
   // Some of non-virtual functions of MetaSkeleton are hidden because of the
   // functions of the same name in this class. We expose those functions as
@@ -75,8 +75,7 @@ public:
   using State = common::Composite::State;
   using Properties = common::Composite::Properties;
 
-  enum ConfigFlags
-  {
+  enum ConfigFlags {
     CONFIG_NOTHING = 0,
     CONFIG_POSITIONS = 1 << 1,
     CONFIG_VELOCITIES = 1 << 2,
@@ -91,8 +90,7 @@ public:
   /// the number of degrees of freedom in the Skeleton or it must be zero. We
   /// assume that any Eigen::VectorXd member with zero entries should be
   /// ignored.
-  struct Configuration
-  {
+  struct Configuration {
     Configuration(
         const Eigen::VectorXd& positions = Eigen::VectorXd(),
         const Eigen::VectorXd& velocities = Eigen::VectorXd(),
@@ -1192,8 +1190,7 @@ protected:
   /// WholeBodyIK module for this Skeleton
   std::shared_ptr<WholeBodyIK> mWholeBodyIK;
 
-  struct DirtyFlags
-  {
+  struct DirtyFlags {
     /// Default constructor
     DirtyFlags();
 
@@ -1235,8 +1232,7 @@ protected:
     std::size_t mSupportVersion;
   };
 
-  struct DataCache
-  {
+  struct DataCache {
     DirtyFlags mDirty;
 
     /// BodyNodes belonging to this tree
@@ -1323,8 +1319,7 @@ public:
   // Union finding
   //--------------------------------------------------------------------------
   ///
-  void resetUnion()
-  {
+  void resetUnion() {
     mUnionRootSkeleton = mPtr;
     mUnionSize = 1;
   }

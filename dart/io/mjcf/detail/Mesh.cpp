@@ -44,12 +44,10 @@ namespace MjcfParser {
 namespace detail {
 
 //==============================================================================
-Errors Mesh::read(tinyxml2::XMLElement* element)
-{
+Errors Mesh::read(tinyxml2::XMLElement* element) {
   Errors errors;
 
-  if (std::string(element->Name()) != "mesh")
-  {
+  if (std::string(element->Name()) != "mesh") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Mesh> from the provided element");
@@ -61,8 +59,7 @@ Errors Mesh::read(tinyxml2::XMLElement* element)
   //-----------------
 
   // class
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     const std::string defaultClass = getAttributeString(element, "class");
   }
 
@@ -76,17 +73,14 @@ Errors Mesh::read(tinyxml2::XMLElement* element)
 }
 
 //==============================================================================
-Errors Mesh::preprocess(const Compiler& /*compiler*/)
-{
+Errors Mesh::preprocess(const Compiler& /*compiler*/) {
   Errors errors;
 
-  if (mAttributes.mName)
-  {
+  if (mAttributes.mName) {
     mName = *mAttributes.mName;
   }
 
-  if (mAttributes.mFile)
-  {
+  if (mAttributes.mFile) {
     mFile = *mAttributes.mFile;
   }
 
@@ -96,8 +90,7 @@ Errors Mesh::preprocess(const Compiler& /*compiler*/)
 }
 
 //==============================================================================
-Errors Mesh::compile(const Compiler& compiler)
-{
+Errors Mesh::compile(const Compiler& compiler) {
   Errors errors;
 
   mRetriever = compiler.getResourceRetriever();
@@ -108,19 +101,16 @@ Errors Mesh::compile(const Compiler& compiler)
 }
 
 //==============================================================================
-Errors Mesh::postprocess(const Compiler& /*compiler*/)
-{
+Errors Mesh::postprocess(const Compiler& /*compiler*/) {
   Errors errors;
 
   return errors;
 }
 
 //==============================================================================
-dynamics::MeshShapePtr Mesh::createMeshShape() const
-{
+dynamics::MeshShapePtr Mesh::createMeshShape() const {
   const aiScene* model = dynamics::MeshShape::loadMesh(mMeshUri, mRetriever);
-  if (model == nullptr)
-  {
+  if (model == nullptr) {
     return nullptr;
   }
 
@@ -131,28 +121,23 @@ dynamics::MeshShapePtr Mesh::createMeshShape() const
 }
 
 //==============================================================================
-const std::string& Mesh::getName() const
-{
+const std::string& Mesh::getName() const {
   return mName;
 }
 
 //==============================================================================
-const std::string& Mesh::getFile() const
-{
+const std::string& Mesh::getFile() const {
   return mFile;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Mesh::getScale() const
-{
+const Eigen::Vector3d& Mesh::getScale() const {
   return mScale;
 }
 
 //==============================================================================
-dynamics::MeshShapePtr Mesh::getMeshShape() const
-{
-  if (not mMeshShape && not mTriedToParse)
-  {
+dynamics::MeshShapePtr Mesh::getMeshShape() const {
+  if (not mMeshShape && not mTriedToParse) {
     mMeshShape = createMeshShape();
     mTriedToParse = true;
   }

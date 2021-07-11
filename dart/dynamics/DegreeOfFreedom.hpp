@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <string>
+
 #include <Eigen/Core>
 
 #include "dart/common/ClassWithVirtualBase.hpp"
@@ -51,8 +52,7 @@ class BodyNode;
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DegreeOfFreedom : public virtual common::Subject
-{
+class DegreeOfFreedom : public virtual common::Subject {
 public:
   friend class Joint;
   template <class>

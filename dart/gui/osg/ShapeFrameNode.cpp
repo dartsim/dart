@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/Node>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/render/BoxShapeNode.hpp"
 #include "dart/gui/osg/render/CapsuleShapeNode.hpp"
@@ -51,11 +52,8 @@
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/SphereShapeNode.hpp"
 #if DART_HAVE_OCTOMAP
-#  include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
+  #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 #endif
-#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
-#include "dart/gui/osg/render/WarningShapeNode.hpp"
-
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -72,8 +70,10 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
+#include "dart/gui/osg/render/WarningShapeNode.hpp"
 #if DART_HAVE_OCTOMAP
-#  include "dart/dynamics/VoxelGridShape.hpp"
+  #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 #include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -88,17 +88,15 @@ ShapeFrameNode::ShapeFrameNode(
   : mShapeFrame(_frame),
     mWorldNode(_worldNode),
     mRenderShapeNode(nullptr),
-    mUtilized(false)
-{
+    mUtilized(false) {
   refresh();
   setName(_frame->getName() + " [frame]");
 }
 
 //==============================================================================
-dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
-{
-  if (!mUtilized && checkUtilization)
-  {
+dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
+    bool checkUtilization) {
+  if (!mUtilized && checkUtilization) {
     dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
            << "ShapeFrameNode. This can be dangerous because unused "
            << "ShapeFrameNode implies that it's possible that the ShapeFrame "
@@ -110,10 +108,8 @@ dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
 
 //==============================================================================
 const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
-    bool checkUtilization) const
-{
-  if (!mUtilized && checkUtilization)
-  {
+    bool checkUtilization) const {
+  if (!mUtilized && checkUtilization) {
     dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
            << "ShapeFrameNode. This can be dangerous because unused "
            << "ShapeFrameNode implies that it's possible that the ShapeFrame "
@@ -124,20 +120,17 @@ const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
 }
 
 //==============================================================================
-WorldNode* ShapeFrameNode::getWorldNode()
-{
+WorldNode* ShapeFrameNode::getWorldNode() {
   return mWorldNode;
 }
 
 //==============================================================================
-const WorldNode* ShapeFrameNode::getWorldNode() const
-{
+const WorldNode* ShapeFrameNode::getWorldNode() const {
   return mWorldNode;
 }
 
 //==============================================================================
-void ShapeFrameNode::refresh(bool shortCircuitIfUtilized)
-{
+void ShapeFrameNode::refresh(bool shortCircuitIfUtilized) {
   if (shortCircuitIfUtilized && mUtilized)
     return;
 
@@ -149,41 +142,33 @@ void ShapeFrameNode::refresh(bool shortCircuitIfUtilized)
   // TODO(JS): Maybe the data varicance information should be in ShapeFrame and
   // checked here.
 
-  if (shape && mShapeFrame->getVisualAspect())
-  {
+  if (shape && mShapeFrame->getVisualAspect()) {
     refreshShapeNode(shape);
-  }
-  else if (mRenderShapeNode)
-  {
+  } else if (mRenderShapeNode) {
     removeChild(mRenderShapeNode->getNode());
     mRenderShapeNode = nullptr;
   }
 }
 
 //==============================================================================
-bool ShapeFrameNode::wasUtilized() const
-{
+bool ShapeFrameNode::wasUtilized() const {
   return mUtilized;
 }
 
 //==============================================================================
-void ShapeFrameNode::clearUtilization()
-{
+void ShapeFrameNode::clearUtilization() {
   mUtilized = false;
 }
 
 //==============================================================================
-ShapeFrameNode::~ShapeFrameNode()
-{
+ShapeFrameNode::~ShapeFrameNode() {
   // Do nothing
 }
 
 //==============================================================================
 void ShapeFrameNode::refreshShapeNode(
-    const std::shared_ptr<dart::dynamics::Shape>& shape)
-{
-  if (mRenderShapeNode && mRenderShapeNode->getShape() == shape)
-  {
+    const std::shared_ptr<dart::dynamics::Shape>& shape) {
+  if (mRenderShapeNode && mRenderShapeNode->getShape() == shape) {
     mRenderShapeNode->refresh();
     return;
   }
@@ -193,8 +178,7 @@ void ShapeFrameNode::refreshShapeNode(
 
 //==============================================================================
 static void warnAboutUnsuccessfulCast(
-    const std::string& shapeType, const std::string& entityName)
-{
+    const std::string& shapeType, const std::string& entityName) {
   dtwarn << "[dart::gui::osg::EntityNode::createShapeNode] A Shape in '"
          << entityName << "' claimed to be a '" << shapeType
          << "' but it failed to be dynamically cast to that type. "
@@ -204,8 +188,7 @@ static void warnAboutUnsuccessfulCast(
 
 //==============================================================================
 void ShapeFrameNode::createShapeNode(
-    const std::shared_ptr<dart::dynamics::Shape>& shape)
-{
+    const std::shared_ptr<dart::dynamics::Shape>& shape) {
   using namespace dart::dynamics;
   if (mRenderShapeNode)
     removeChild(mRenderShapeNode->getNode());
@@ -214,113 +197,88 @@ void ShapeFrameNode::createShapeNode(
 
   const auto& shapeType = shape->getType();
 
-  if (SphereShape::getStaticType() == shapeType)
-  {
+  if (SphereShape::getStaticType() == shapeType) {
     std::shared_ptr<SphereShape> es
         = std::dynamic_pointer_cast<SphereShape>(shape);
     if (es)
       mRenderShapeNode = new render::SphereShapeNode(es, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (BoxShape::getStaticType() == shapeType)
-  {
+  } else if (BoxShape::getStaticType() == shapeType) {
     std::shared_ptr<BoxShape> bs = std::dynamic_pointer_cast<BoxShape>(shape);
     if (bs)
       mRenderShapeNode = new render::BoxShapeNode(bs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (EllipsoidShape::getStaticType() == shapeType)
-  {
+  } else if (EllipsoidShape::getStaticType() == shapeType) {
     std::shared_ptr<EllipsoidShape> es
         = std::dynamic_pointer_cast<EllipsoidShape>(shape);
     if (es)
       mRenderShapeNode = new render::EllipsoidShapeNode(es, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (CylinderShape::getStaticType() == shapeType)
-  {
+  } else if (CylinderShape::getStaticType() == shapeType) {
     std::shared_ptr<CylinderShape> cs
         = std::dynamic_pointer_cast<CylinderShape>(shape);
     if (cs)
       mRenderShapeNode = new render::CylinderShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (CapsuleShape::getStaticType() == shapeType)
-  {
+  } else if (CapsuleShape::getStaticType() == shapeType) {
     std::shared_ptr<CapsuleShape> cs
         = std::dynamic_pointer_cast<CapsuleShape>(shape);
     if (cs)
       mRenderShapeNode = new render::CapsuleShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (ConeShape::getStaticType() == shapeType)
-  {
+  } else if (ConeShape::getStaticType() == shapeType) {
     std::shared_ptr<ConeShape> cs = std::dynamic_pointer_cast<ConeShape>(shape);
     if (cs)
       mRenderShapeNode = new render::ConeShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (PyramidShape::getStaticType() == shapeType)
-  {
+  } else if (PyramidShape::getStaticType() == shapeType) {
     std::shared_ptr<PyramidShape> cs
         = std::dynamic_pointer_cast<PyramidShape>(shape);
     if (cs)
       mRenderShapeNode = new render::PyramidShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (PlaneShape::getStaticType() == shapeType)
-  {
+  } else if (PlaneShape::getStaticType() == shapeType) {
     std::shared_ptr<PlaneShape> ps
         = std::dynamic_pointer_cast<PlaneShape>(shape);
     if (ps)
       mRenderShapeNode = new render::PlaneShapeNode(ps, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (shape->is<MultiSphereConvexHullShape>())
-  {
+  } else if (shape->is<MultiSphereConvexHullShape>()) {
     std::shared_ptr<MultiSphereConvexHullShape> ms
         = std::dynamic_pointer_cast<MultiSphereConvexHullShape>(shape);
     if (ms)
       mRenderShapeNode = new render::MultiSphereShapeNode(ms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (MeshShape::getStaticType() == shapeType)
-  {
+  } else if (MeshShape::getStaticType() == shapeType) {
     std::shared_ptr<MeshShape> ms = std::dynamic_pointer_cast<MeshShape>(shape);
     if (ms)
       mRenderShapeNode = new render::MeshShapeNode(ms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (SoftMeshShape::getStaticType() == shapeType)
-  {
+  } else if (SoftMeshShape::getStaticType() == shapeType) {
     std::shared_ptr<SoftMeshShape> sms
         = std::dynamic_pointer_cast<SoftMeshShape>(shape);
     if (sms)
       mRenderShapeNode = new render::SoftMeshShapeNode(sms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (LineSegmentShape::getStaticType() == shapeType)
-  {
+  } else if (LineSegmentShape::getStaticType() == shapeType) {
     std::shared_ptr<LineSegmentShape> lss
         = std::dynamic_pointer_cast<LineSegmentShape>(shape);
     if (lss)
       mRenderShapeNode = new render::LineSegmentShapeNode(lss, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
-  }
-  else if (PointCloudShape::getStaticType() == shapeType)
-  {
+  } else if (PointCloudShape::getStaticType() == shapeType) {
     std::shared_ptr<PointCloudShape> lss
         = std::dynamic_pointer_cast<PointCloudShape>(shape);
     if (lss)
@@ -329,8 +287,7 @@ void ShapeFrameNode::createShapeNode(
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
 #if DART_HAVE_OCTOMAP
-  else if (VoxelGridShape::getStaticType() == shapeType)
-  {
+  else if (VoxelGridShape::getStaticType() == shapeType) {
     std::shared_ptr<VoxelGridShape> lss
         = std::dynamic_pointer_cast<VoxelGridShape>(shape);
     if (lss)
@@ -339,8 +296,7 @@ void ShapeFrameNode::createShapeNode(
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
 #endif // DART_HAVE_OCTOMAP
-  else if (HeightmapShapef::getStaticType() == shapeType)
-  {
+  else if (HeightmapShapef::getStaticType() == shapeType) {
     std::shared_ptr<HeightmapShapef> lss
         = std::dynamic_pointer_cast<HeightmapShapef>(shape);
     if (lss)
@@ -358,8 +314,7 @@ void ShapeFrameNode::createShapeNode(
   //   else
   //     warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   // }
-  else
-  {
+  else {
     mRenderShapeNode = new render::WarningShapeNode(shape, this);
   }
 

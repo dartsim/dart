@@ -39,8 +39,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Contact(py::module& m)
-{
+void Contact(py::module& m) {
   ::py::class_<dart::dynamics::Contact>(m, "Contact")
       .def(::py::init<>())
       .def_static(

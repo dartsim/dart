@@ -33,6 +33,7 @@
 #include <dart/dart.hpp>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -41,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Problem(py::module& m)
-{
+void Problem(py::module& m) {
   ::py::class_<
       dart::optimization::Problem,
       std::shared_ptr<dart::optimization::Problem>>(m, "Problem")
@@ -79,7 +79,9 @@ void Problem(py::module& m)
           ::py::arg("seed"))
       .def(
           "clearAllSeeds",
-          +[](dart::optimization::Problem* self) { self->clearAllSeeds(); })
+          +[](dart::optimization::Problem* self) {
+            self->clearAllSeeds();
+          })
       .def(
           "setLowerBounds",
           +[](dart::optimization::Problem* self, const Eigen::VectorXd& _lb) {

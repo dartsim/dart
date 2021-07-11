@@ -43,19 +43,16 @@
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::io::SkelParser::readWorld("dart://sample/skel/softBodies.skel");
   assert(myWorld != nullptr);
 
-  for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
-  {
+  for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
     dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
-    for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j)
-    {
+    for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
       dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
       Eigen::Vector3d color = dart::Color::Random();
       auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAspect>();

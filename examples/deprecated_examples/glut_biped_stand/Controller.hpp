@@ -36,11 +36,9 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
-class Controller
-{
+class Controller {
 public:
   Controller(dart::dynamics::SkeletonPtr _skel, double _t);
   virtual ~Controller();

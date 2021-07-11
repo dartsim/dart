@@ -33,6 +33,7 @@
 #include "dart/optimization/MultiObjectiveSolver.hpp"
 
 #include <fstream>
+
 #include "dart/common/Console.hpp"
 #include "dart/optimization/MultiObjectiveProblem.hpp"
 
@@ -56,21 +57,18 @@ MultiObjectiveSolver::Properties::Properties(
     mIterationsPerEvolution(numMaxIterations),
     mIterationsPerPrint(iterationsPerPrint),
     mOutStream(ostream),
-    mPrintFinalResult(printFinalResult)
-{
+    mPrintFinalResult(printFinalResult) {
   // Do nothing
 }
 
 //==============================================================================
-MultiObjectiveSolver::MultiObjectiveSolver(const Properties& properties)
-{
+MultiObjectiveSolver::MultiObjectiveSolver(const Properties& properties) {
   setProperties(properties);
 }
 
 //==============================================================================
 void MultiObjectiveSolver::setProperties(
-    const MultiObjectiveSolver::Properties& properties)
-{
+    const MultiObjectiveSolver::Properties& properties) {
   mProperties.mProblem = properties.mProblem;
   setPopulationSize(properties.mPopulationSize);
   setNumPopulations(properties.mNumPopulations);
@@ -83,72 +81,62 @@ void MultiObjectiveSolver::setProperties(
 
 //==============================================================================
 const MultiObjectiveSolver::Properties&
-MultiObjectiveSolver::getSolverProperties() const
-{
+MultiObjectiveSolver::getSolverProperties() const {
   return mProperties;
 }
 
 //==============================================================================
 void MultiObjectiveSolver::setProblem(
-    std::shared_ptr<MultiObjectiveProblem> problem)
-{
+    std::shared_ptr<MultiObjectiveProblem> problem) {
   mProperties.mProblem = std::move(problem);
 }
 
 //==============================================================================
-std::shared_ptr<MultiObjectiveProblem> MultiObjectiveSolver::getProblem() const
-{
+std::shared_ptr<MultiObjectiveProblem> MultiObjectiveSolver::getProblem()
+    const {
   return mProperties.mProblem;
 }
 
 //==============================================================================
-void MultiObjectiveSolver::setPopulationSize(std::size_t size)
-{
+void MultiObjectiveSolver::setPopulationSize(std::size_t size) {
   mProperties.mPopulationSize = size;
 }
 
 //==============================================================================
-std::size_t MultiObjectiveSolver::getPopulationSize() const
-{
+std::size_t MultiObjectiveSolver::getPopulationSize() const {
   return mProperties.mPopulationSize;
 }
 
 //==============================================================================
-void MultiObjectiveSolver::setNumPopulations(std::size_t size)
-{
+void MultiObjectiveSolver::setNumPopulations(std::size_t size) {
   mProperties.mNumPopulations = size;
   //  mPopulations.resize(size);
 }
 
 //==============================================================================
-std::size_t MultiObjectiveSolver::getNumPopulations() const
-{
+std::size_t MultiObjectiveSolver::getNumPopulations() const {
   //  assert(mPopulations.size() == mProperties.mNumPopulations);
   return mProperties.mNumPopulations;
 }
 
 //==============================================================================
-const Population& MultiObjectiveSolver::getPopulation(std::size_t index) const
-{
+const Population& MultiObjectiveSolver::getPopulation(std::size_t index) const {
   return mPopulations[index];
 }
 
 //==============================================================================
-const std::vector<Population>& MultiObjectiveSolver::getPopulations() const
-{
+const std::vector<Population>& MultiObjectiveSolver::getPopulations() const {
   return mPopulations;
 }
 
 //==============================================================================
 void MultiObjectiveSolver::setNumIterationsPerEvolution(
-    std::size_t maxIterations)
-{
+    std::size_t maxIterations) {
   mProperties.mIterationsPerEvolution = maxIterations;
 }
 
 //==============================================================================
-std::size_t MultiObjectiveSolver::getNumIterationsPerEvolution() const
-{
+std::size_t MultiObjectiveSolver::getNumIterationsPerEvolution() const {
   return mProperties.mIterationsPerEvolution;
 }
 

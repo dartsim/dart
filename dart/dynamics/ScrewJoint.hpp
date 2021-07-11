@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class ScrewJoint
-class ScrewJoint : public detail::ScrewJointBase
-{
+class ScrewJoint : public detail::ScrewJointBase {
 public:
   friend class Skeleton;
   using UniqueProperties = detail::ScrewJointUniqueProperties;

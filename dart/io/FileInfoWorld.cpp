@@ -41,20 +41,17 @@ namespace dart {
 namespace io {
 
 //==============================================================================
-FileInfoWorld::FileInfoWorld() : mRecord(nullptr)
-{
+FileInfoWorld::FileInfoWorld() : mRecord(nullptr) {
   std::strcpy(mFileName, "");
 }
 
 //==============================================================================
-FileInfoWorld::~FileInfoWorld()
-{
+FileInfoWorld::~FileInfoWorld() {
   delete mRecord;
 }
 
 //==============================================================================
-bool FileInfoWorld::loadFile(const char* _fName)
-{
+bool FileInfoWorld::loadFile(const char* _fName) {
   std::ifstream inFile(_fName);
   if (inFile.fail() == 1)
     return false;
@@ -74,8 +71,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
   inFile >> buffer;
   inFile >> numSkeletons;
 
-  for (int i = 0; i < numSkeletons; i++)
-  {
+  for (int i = 0; i < numSkeletons; i++) {
     inFile >> buffer;
     inFile >> intVal;
     numDofsForSkels.push_back(intVal);
@@ -86,12 +82,9 @@ bool FileInfoWorld::loadFile(const char* _fName)
 
   mRecord = new simulation::Recording(numDofsForSkels);
 
-  for (int i = 0; i < numFrames; i++)
-  {
-    for (int j = 0; j < numSkeletons; j++)
-    {
-      for (int k = 0; k < mRecord->getNumDofs(j); k++)
-      {
+  for (int i = 0; i < numFrames; i++) {
+    for (int j = 0; j < numSkeletons; j++) {
+      for (int k = 0; k < mRecord->getNumDofs(j); k++) {
         inFile >> doubleVal;
         tempState.push_back(doubleVal);
       }
@@ -99,10 +92,8 @@ bool FileInfoWorld::loadFile(const char* _fName)
 
     inFile >> buffer;
     inFile >> intVal;
-    for (int j = 0; j < intVal; j++)
-    {
-      for (int k = 0; k < 6; k++)
-      {
+    for (int j = 0; j < intVal; j++) {
+      for (int k = 0; k < 6; k++) {
         inFile >> doubleVal;
         tempState.push_back(doubleVal);
       }
@@ -124,8 +115,8 @@ bool FileInfoWorld::loadFile(const char* _fName)
 }
 
 //==============================================================================
-bool FileInfoWorld::saveFile(const char* _fName, simulation::Recording* _record)
-{
+bool FileInfoWorld::saveFile(
+    const char* _fName, simulation::Recording* _record) {
   std::ofstream outFile(_fName, std::ios::out);
   if (outFile.fail())
     return false;
@@ -137,18 +128,15 @@ bool FileInfoWorld::saveFile(const char* _fName, simulation::Recording* _record)
   for (int i = 0; i < _record->getNumSkeletons(); i++)
     outFile << "Skeleton" << i << " " << _record->getNumDofs(i) << " ";
   outFile << std::endl;
-  for (int i = 0; i < _record->getNumFrames(); i++)
-  {
-    for (int j = 0; j < _record->getNumSkeletons(); j++)
-    {
+  for (int i = 0; i < _record->getNumFrames(); i++) {
+    for (int j = 0; j < _record->getNumSkeletons(); j++) {
       for (int k = 0; k < _record->getNumDofs(j); k++)
         outFile << _record->getGenCoord(i, j, k) << " ";
       outFile << std::endl;
     }
     outFile << "Contacts " << _record->getNumContacts(i) << std::endl;
 
-    for (int j = 0; j < _record->getNumContacts(i); j++)
-    {
+    for (int j = 0; j < _record->getNumContacts(i); j++) {
       outFile << _record->getContactPoint(i, j) << std::endl;
       outFile << _record->getContactForce(i, j) << std::endl;
     }
@@ -165,8 +153,7 @@ bool FileInfoWorld::saveFile(const char* _fName, simulation::Recording* _record)
 }
 
 //==============================================================================
-simulation::Recording* FileInfoWorld::getRecording() const
-{
+simulation::Recording* FileInfoWorld::getRecording() const {
   return mRecord;
 }
 

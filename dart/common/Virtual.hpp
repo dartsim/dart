@@ -39,8 +39,7 @@ namespace common {
 /// This class is used to have CRTP functions inherit their template parameters
 /// virtually instead of directly.
 template <class T>
-class Virtual : public virtual T
-{
+class Virtual : public virtual T {
 public:
   virtual ~Virtual() = default;
 };

@@ -38,7 +38,6 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
 #define ATLAS_DEFAULT_KD 1.0 // No more than 1.0
@@ -62,8 +61,7 @@ class TerminalCondition;
 
 //==============================================================================
 /// \brief class State
-class State
-{
+class State {
 public:
   /// \brief Constructor
   explicit State(

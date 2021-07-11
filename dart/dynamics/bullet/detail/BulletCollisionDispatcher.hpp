@@ -34,10 +34,9 @@
 #define DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
 
+#include "dart/config.hpp"
 #include "dart/dynamics/CollisionFilter.hpp"
 #include "dart/dynamics/CollisionObject.hpp"
 
@@ -45,8 +44,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class BulletCollisionDispatcher : public btCollisionDispatcher
-{
+class BulletCollisionDispatcher : public btCollisionDispatcher {
 public:
   explicit BulletCollisionDispatcher(btCollisionConfiguration* config);
 
@@ -68,7 +66,7 @@ protected:
 };
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_

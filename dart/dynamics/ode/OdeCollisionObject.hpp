@@ -45,8 +45,7 @@ namespace detail {
 class OdeGeom;
 } // namespace detail
 
-class OdeCollisionObject : public CollisionObject
-{
+class OdeCollisionObject : public CollisionObject {
 public:
   friend class OdeCollisionDetector;
   friend class OdeCollisionGroup;
@@ -83,7 +82,7 @@ protected:
   dBodyID mBodyId;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_

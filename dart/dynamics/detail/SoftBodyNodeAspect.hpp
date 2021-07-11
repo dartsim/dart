@@ -53,8 +53,7 @@ namespace detail {
 class SoftBodyAspect;
 
 //==============================================================================
-struct SoftBodyNodeUniqueState
-{
+struct SoftBodyNodeUniqueState {
   /// Array of States for PointMasses
   std::vector<PointMass::State> mPointStates;
 
@@ -62,8 +61,7 @@ struct SoftBodyNodeUniqueState
 };
 
 //==============================================================================
-struct SoftBodyNodeUniqueProperties
-{
+struct SoftBodyNodeUniqueProperties {
   /// Spring stiffness for vertex deformation restoring spring force of the
   /// point masses
   double mKv;
@@ -105,8 +103,7 @@ struct SoftBodyNodeUniqueProperties
 
 //==============================================================================
 struct SoftBodyNodeProperties : BodyNode::Properties,
-                                SoftBodyNodeUniqueProperties
-{
+                                SoftBodyNodeUniqueProperties {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SoftBodyNodeProperties)
 
   SoftBodyNodeProperties(

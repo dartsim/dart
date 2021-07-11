@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,16 +41,17 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Entity(py::module& m)
-{
+void Entity(py::module& m) {
   ::py::class_<
       dart::dynamics::Entity,
       dart::common::Subject,
       std::shared_ptr<dart::dynamics::Entity>>(m, "Entity")
       .def(
           "setName",
-          +[](dart::dynamics::Entity* self, const std::string& name)
-              -> const std::string& { return self->setName(name); },
+          +[](dart::dynamics::Entity* self,
+              const std::string& name) -> const std::string& {
+            return self->setName(name);
+          },
           ::py::return_value_policy::reference_internal,
           ::py::arg("name"))
       .def(
@@ -84,7 +86,9 @@ void Entity(py::module& m)
           })
       .def(
           "dirtyTransform",
-          +[](dart::dynamics::Entity* self) { self->dirtyTransform(); })
+          +[](dart::dynamics::Entity* self) {
+            self->dirtyTransform();
+          })
       .def(
           "needsTransformUpdate",
           +[](const dart::dynamics::Entity* self) -> bool {
@@ -92,7 +96,9 @@ void Entity(py::module& m)
           })
       .def(
           "dirtyVelocity",
-          +[](dart::dynamics::Entity* self) { self->dirtyVelocity(); })
+          +[](dart::dynamics::Entity* self) {
+            self->dirtyVelocity();
+          })
       .def(
           "needsVelocityUpdate",
           +[](const dart::dynamics::Entity* self) -> bool {
@@ -100,7 +106,9 @@ void Entity(py::module& m)
           })
       .def(
           "dirtyAcceleration",
-          +[](dart::dynamics::Entity* self) { self->dirtyAcceleration(); })
+          +[](dart::dynamics::Entity* self) {
+            self->dirtyAcceleration();
+          })
       .def(
           "needsAccelerationUpdate",
           +[](const dart::dynamics::Entity* self) -> bool {

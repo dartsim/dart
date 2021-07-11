@@ -54,12 +54,10 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::math;
 
-class Controller
-{
+class Controller {
 public:
   Controller(const SkeletonPtr& manipulator, const SkeletonPtr& /*domino*/)
-    : mManipulator(manipulator)
-  {
+    : mManipulator(manipulator) {
     // Grab the current joint angles to use them as desired angles
     // Lesson 2b
 
@@ -77,8 +75,7 @@ public:
 
   /// Compute a stable PD controller that also compensates for gravity and
   /// Coriolis forces
-  void setPDForces()
-  {
+  void setPDForces() {
     // Write a stable PD controller
     // Lesson 2c
 
@@ -87,8 +84,7 @@ public:
   }
 
   /// Compute an operational space controller to push on the first domino
-  void setOperationalSpaceForces()
-  {
+  void setOperationalSpaceForces() {
     // Lesson 3b
   }
 
@@ -127,15 +123,13 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class MyWindow : public dart::gui::glut::SimWindow
-{
+class MyWindow : public dart::gui::glut::SimWindow {
 public:
   MyWindow(const WorldPtr& world)
     : mTotalAngle(0.0),
       mHasEverRun(false),
       mForceCountDown(0),
-      mPushCountDown(0)
-  {
+      mPushCountDown(0) {
     setWorld(world);
     mFirstDomino = world->getSkeleton("domino");
     mFloor = world->getSkeleton("floor");
@@ -146,8 +140,7 @@ public:
 
   // Attempt to create a new domino. If the new domino would be in collision
   // with anything (other than the floor), then discard it.
-  void attemptToCreateDomino(double /*angle*/)
-  {
+  void attemptToCreateDomino(double /*angle*/) {
     // Create a new domino
     // Lesson 1a
 
@@ -158,17 +151,13 @@ public:
 
   // Delete the last domino that was added to the scene. (Do not delete the
   // original domino)
-  void deleteLastDomino()
-  {
+  void deleteLastDomino() {
     // Lesson 1c
   }
 
-  void keyboard(unsigned char key, int x, int y) override
-  {
-    if (!mHasEverRun)
-    {
-      switch (key)
-      {
+  void keyboard(unsigned char key, int x, int y) override {
+    if (!mHasEverRun) {
+      switch (key) {
         case 'q':
           attemptToCreateDomino(default_angle);
           break;
@@ -185,11 +174,8 @@ public:
           mHasEverRun = true;
           break;
       }
-    }
-    else
-    {
-      switch (key)
-      {
+    } else {
+      switch (key) {
         case 'f':
           mForceCountDown = default_force_duration;
           break;
@@ -203,24 +189,19 @@ public:
     SimWindow::keyboard(key, x, y);
   }
 
-  void timeStepping() override
-  {
+  void timeStepping() override {
     // If the user has pressed the 'f' key, apply a force to the first domino in
     // order to push it over
-    if (mForceCountDown > 0)
-    {
+    if (mForceCountDown > 0) {
       // Lesson 1d
       --mForceCountDown;
     }
 
     // Run the controller for the manipulator
-    if (mPushCountDown > 0)
-    {
+    if (mPushCountDown > 0) {
       mController->setOperationalSpaceForces();
       --mPushCountDown;
-    }
-    else
-    {
+    } else {
       mController->setPDForces();
     }
 
@@ -257,8 +238,7 @@ protected:
   std::unique_ptr<Controller> mController;
 };
 
-SkeletonPtr createDomino()
-{
+SkeletonPtr createDomino() {
   // Create a Skeleton with the name "domino"
   SkeletonPtr domino = Skeleton::create("domino");
 
@@ -282,8 +262,7 @@ SkeletonPtr createDomino()
   return domino;
 }
 
-SkeletonPtr createFloor()
-{
+SkeletonPtr createFloor() {
   SkeletonPtr floor = Skeleton::create("floor");
 
   // Give the floor a body
@@ -309,14 +288,12 @@ SkeletonPtr createFloor()
   return floor;
 }
 
-SkeletonPtr createManipulator()
-{
+SkeletonPtr createManipulator() {
   // Lesson 2a
   return Skeleton::create("manipulator");
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   SkeletonPtr domino = createDomino();
   SkeletonPtr floor = createFloor();
   SkeletonPtr manipulator = createManipulator();

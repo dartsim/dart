@@ -32,10 +32,10 @@
 
 #pragma once
 
-#include "dart/dynamics/ode/detail/OdeHeightmap.hpp"
-
 #include <type_traits>
+
 #include "dart/dynamics/HeightmapShape.hpp"
+#include "dart/dynamics/ode/detail/OdeHeightmap.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -52,12 +52,10 @@ void setOdeHeightfieldDetails(
     const std::size_t& width,
     const std::size_t& height,
     const Eigen::Matrix<S, 3, 1>& scale,
-    typename std::enable_if<std::is_same<float, S>::value>::type* = 0)
-{
+    typename std::enable_if<std::is_same<float, S>::value>::type* = 0) {
   assert(width >= 2);
   assert(height >= 2);
-  if ((width < 2) || (height < 2))
-  {
+  if ((width < 2) || (height < 2)) {
     dtwarn << "Cannot create height field of dimensions " << width << "x"
            << height << ", needs to be at least 2" << std::endl;
     return;
@@ -85,12 +83,10 @@ void setOdeHeightfieldDetails(
     const std::size_t& width,
     const std::size_t& height,
     const Eigen::Matrix<S, 3, 1>& scale,
-    typename std::enable_if<std::is_same<double, S>::value>::type* = 0)
-{
+    typename std::enable_if<std::is_same<double, S>::value>::type* = 0) {
   assert(width >= 2);
   assert(height >= 2);
-  if ((width < 2) || (height < 2))
-  {
+  if ((width < 2) || (height < 2)) {
     dtwarn << "Cannot create height field of dimensions " << width << "x"
            << height << ", needs to be at least 2" << std::endl;
     return;
@@ -115,8 +111,7 @@ template <typename S>
 OdeHeightmap<S>::OdeHeightmap(
     const OdeCollisionObject* parent,
     const dynamics::HeightmapShape<S>* heightMap)
-  : OdeGeom(parent)
-{
+  : OdeGeom(parent) {
   assert(heightMap);
 
   // get the heightmap parameters
@@ -162,12 +157,11 @@ OdeHeightmap<S>::OdeHeightmap(
 
 //==============================================================================
 template <typename S>
-OdeHeightmap<S>::~OdeHeightmap()
-{
+OdeHeightmap<S>::~OdeHeightmap() {
   dGeomHeightfieldDataDestroy(mOdeHeightfieldId);
   dGeomDestroy(mGeomId);
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

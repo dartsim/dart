@@ -58,8 +58,7 @@ Controller::Controller(
     mWeldJointConstraintPelvis(nullptr),
     mWeldJointConstraintLeftFoot(nullptr),
     mWeldJointConstraintRightFoot(nullptr),
-    mVerbosity(false)
-{
+    mVerbosity(false) {
   mCoronalLeftHip = mAtlasRobot->getDof("l_leg_hpx")->getIndexInSkeleton();
   mCoronalRightHip = mAtlasRobot->getDof("r_leg_hpx")->getIndexInSkeleton();
   mSagitalLeftHip = mAtlasRobot->getDof("l_leg_hpy")->getIndexInSkeleton();
@@ -77,48 +76,40 @@ Controller::Controller(
 }
 
 //==============================================================================
-Controller::~Controller()
-{
+Controller::~Controller() {
   for (vector<StateMachine*>::iterator it = mStateMachines.begin();
        it != mStateMachines.end();
-       ++it)
-  {
+       ++it) {
     delete *it;
   }
 }
 
 //==============================================================================
-void Controller::update()
-{
-  if (isAllowingControl())
-  {
+void Controller::update() {
+  if (isAllowingControl()) {
     // Compute control force
     mCurrentStateMachine->computeControlForce(mAtlasRobot->getTimeStep());
   }
 }
 
 //==============================================================================
-SkeletonPtr Controller::getAtlasRobot()
-{
+SkeletonPtr Controller::getAtlasRobot() {
   return mAtlasRobot;
 }
 
 //==============================================================================
-StateMachine* Controller::getCurrentState()
-{
+StateMachine* Controller::getCurrentState() {
   return mCurrentStateMachine;
 }
 
 //==============================================================================
 void Controller::changeStateMachine(
-    StateMachine* _stateMachine, double _currentTime)
-{
+    StateMachine* _stateMachine, double _currentTime) {
   assert(
       _containStateMachine(_stateMachine)
       && "_stateMachine should be in mStateMachines");
 
-  if (mCurrentStateMachine == _stateMachine)
-  {
+  if (mCurrentStateMachine == _stateMachine) {
     return;
   }
 
@@ -132,16 +123,14 @@ void Controller::changeStateMachine(
   mCurrentStateMachine = _stateMachine;
   mCurrentStateMachine->begin(_currentTime);
 
-  if (mVerbosity)
-  {
+  if (mVerbosity) {
     dtmsg << "State machine transition: from [" << prevName << "] to ["
           << nextName << "]." << endl;
   }
 }
 
 //==============================================================================
-void Controller::changeStateMachine(const string& _name, double _currentTime)
-{
+void Controller::changeStateMachine(const string& _name, double _currentTime) {
   // _state should be in mStates
   StateMachine* stateMachine = _findStateMachine(_name);
 
@@ -151,16 +140,14 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
 }
 
 //==============================================================================
-void Controller::changeStateMachine(std::size_t _idx, double _currentTime)
-{
+void Controller::changeStateMachine(std::size_t _idx, double _currentTime) {
   assert(_idx <= mStateMachines.size() && "Invalid index of StateMachine.");
 
   changeStateMachine(mStateMachines[_idx], _currentTime);
 }
 
 //==============================================================================
-bool Controller::isAllowingControl() const
-{
+bool Controller::isAllowingControl() const {
   auto pelvis = mAtlasRobot->getBodyNode("pelvis");
   const Eigen::Isometry3d tf = pelvis->getTransform();
   const Eigen::Vector3d pos = tf.translation();
@@ -174,10 +161,8 @@ bool Controller::isAllowingControl() const
 
 //==============================================================================
 void Controller::keyboard(
-    unsigned char _key, int /*_x*/, int /*_y*/, double _currentTime)
-{
-  switch (_key)
-  {
+    unsigned char _key, int /*_x*/, int /*_y*/, double _currentTime) {
+  switch (_key) {
     case 'h': // Harness pelvis toggle
       if (mPelvisHarnessOn)
         unharnessPelvis();
@@ -221,23 +206,20 @@ void Controller::keyboard(
 }
 
 //==============================================================================
-void Controller::printDebugInfo() const
-{
+void Controller::printDebugInfo() const {
   std::cout << "[ATLAS Robot]" << std::endl
             << " NUM NODES : " << mAtlasRobot->getNumBodyNodes() << std::endl
             << " NUM DOF   : " << mAtlasRobot->getNumDofs() << std::endl
             << " NUM JOINTS: " << mAtlasRobot->getNumBodyNodes() << std::endl;
 
-  for (std::size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i) {
     Joint* joint = mAtlasRobot->getJoint(i);
     BodyNode* body = mAtlasRobot->getBodyNode(i);
     BodyNode* parentBody = mAtlasRobot->getBodyNode(i)->getParentBodyNode();
 
     std::cout << "  Joint [" << i << "]: " << joint->getName() << " ("
               << joint->getNumDofs() << ")" << std::endl;
-    if (parentBody != nullptr)
-    {
+    if (parentBody != nullptr) {
       std::cout << "    Parent body: " << parentBody->getName() << std::endl;
     }
 
@@ -246,8 +228,7 @@ void Controller::printDebugInfo() const
 }
 
 //==============================================================================
-void Controller::harnessPelvis()
-{
+void Controller::harnessPelvis() {
   if (mPelvisHarnessOn)
     return;
 
@@ -261,8 +242,7 @@ void Controller::harnessPelvis()
 }
 
 //==============================================================================
-void Controller::unharnessPelvis()
-{
+void Controller::unharnessPelvis() {
   if (!mPelvisHarnessOn)
     return;
 
@@ -274,8 +254,7 @@ void Controller::unharnessPelvis()
 }
 
 //==============================================================================
-void Controller::harnessLeftFoot()
-{
+void Controller::harnessLeftFoot() {
   if (mLeftFootHarnessOn)
     return;
 
@@ -288,8 +267,7 @@ void Controller::harnessLeftFoot()
 }
 
 //==============================================================================
-void Controller::unharnessLeftFoot()
-{
+void Controller::unharnessLeftFoot() {
   if (!mLeftFootHarnessOn)
     return;
 
@@ -301,8 +279,7 @@ void Controller::unharnessLeftFoot()
 }
 
 //==============================================================================
-void Controller::harnessRightFoot()
-{
+void Controller::harnessRightFoot() {
   if (mRightFootHarnessOn)
     return;
 
@@ -315,8 +292,7 @@ void Controller::harnessRightFoot()
 }
 
 //==============================================================================
-void Controller::unharnessRightFoot()
-{
+void Controller::unharnessRightFoot() {
   if (!mRightFootHarnessOn)
     return;
 
@@ -328,8 +304,7 @@ void Controller::unharnessRightFoot()
 }
 
 //==============================================================================
-void Controller::resetRobot()
-{
+void Controller::resetRobot() {
   mAtlasRobot->setConfiguration(mInitialState);
 
   if (mVerbosity)
@@ -337,14 +312,12 @@ void Controller::resetRobot()
 }
 
 //==============================================================================
-void Controller::setVerbosity(bool verbosity)
-{
+void Controller::setVerbosity(bool verbosity) {
   mVerbosity = verbosity;
 }
 
 //==============================================================================
-void Controller::_buildStateMachines()
-{
+void Controller::_buildStateMachines() {
   // Standing controller
   mStateMachines.push_back(_createStandingStateMachine());
 
@@ -365,8 +338,7 @@ void Controller::_buildStateMachines()
 }
 
 //==============================================================================
-StateMachine* Controller::_createStandingStateMachine()
-{
+StateMachine* Controller::_createStandingStateMachine() {
   using namespace dart::math::suffixes;
 
   StateMachine* standing = new StateMachine("standing");
@@ -403,8 +375,7 @@ StateMachine* Controller::_createStandingStateMachine()
 }
 
 //==============================================================================
-StateMachine* Controller::_createWalkingInPlaceStateMachine()
-{
+StateMachine* Controller::_createWalkingInPlaceStateMachine() {
   using namespace dart::math::suffixes;
 
   const double cd = 0.5;
@@ -610,8 +581,7 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
 }
 
 //==============================================================================
-StateMachine* Controller::_createWalkingStateMachine()
-{
+StateMachine* Controller::_createWalkingStateMachine() {
   using namespace dart::math::suffixes;
 
   const double cd = 0.5;
@@ -817,8 +787,7 @@ StateMachine* Controller::_createWalkingStateMachine()
 }
 
 //==============================================================================
-StateMachine* Controller::_createRunningStateMachine()
-{
+StateMachine* Controller::_createRunningStateMachine() {
   using namespace dart::math::suffixes;
 
   const double cd = 0.5;
@@ -942,13 +911,10 @@ StateMachine* Controller::_createRunningStateMachine()
 }
 
 //==============================================================================
-void Controller::_setJointDamping()
-{
-  for (std::size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i)
-  {
+void Controller::_setJointDamping() {
+  for (std::size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i) {
     Joint* joint = mAtlasRobot->getJoint(i);
-    if (joint->getNumDofs() > 0)
-    {
+    if (joint->getNumDofs() > 0) {
       for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
         joint->setDampingCoefficient(j, 80.0);
     }
@@ -956,24 +922,20 @@ void Controller::_setJointDamping()
 }
 
 //==============================================================================
-BodyNode* Controller::_getLeftFoot() const
-{
+BodyNode* Controller::_getLeftFoot() const {
   return mAtlasRobot->getBodyNode("l_foot");
 }
 
 //==============================================================================
-BodyNode* Controller::_getRightFoot() const
-{
+BodyNode* Controller::_getRightFoot() const {
   return mAtlasRobot->getBodyNode("r_foot");
 }
 
 //==============================================================================
-bool Controller::_containStateMachine(const StateMachine* _stateMachine) const
-{
+bool Controller::_containStateMachine(const StateMachine* _stateMachine) const {
   for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end();
-       ++it)
-  {
+       ++it) {
     if (*it == _stateMachine)
       return true;
   }
@@ -982,22 +944,18 @@ bool Controller::_containStateMachine(const StateMachine* _stateMachine) const
 }
 
 //==============================================================================
-bool Controller::_containStateMachine(const string& _name) const
-{
+bool Controller::_containStateMachine(const string& _name) const {
   return _containStateMachine(_findStateMachine(_name));
 }
 
 //==============================================================================
-StateMachine* Controller::_findStateMachine(const string& _name) const
-{
+StateMachine* Controller::_findStateMachine(const string& _name) const {
   StateMachine* stateMachine = nullptr;
 
   for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end();
-       ++it)
-  {
-    if ((*it)->getName() == _name)
-    {
+       ++it) {
+    if ((*it)->getName() == _name) {
       stateMachine = *it;
       break;
     }

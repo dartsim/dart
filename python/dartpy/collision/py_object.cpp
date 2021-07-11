@@ -40,15 +40,10 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void py_object(py::module& m)
-{
-  ::py::class_<
-      collision::Objectd,
-      std::shared_ptr<collision::Objectd>>(
+void py_object(py::module& m) {
+  ::py::class_<collision::Objectd, std::shared_ptr<collision::Objectd>>(
       m, "Object")
-      .def(
-          "set_position",
-          &collision::Objectd::set_position);
+      .def("set_position", &collision::Objectd::set_position);
 }
 
 } // namespace python

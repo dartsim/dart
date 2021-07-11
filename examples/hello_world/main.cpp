@@ -34,8 +34,7 @@
 
 using namespace dart;
 
-int main()
-{
+int main() {
   auto shape
       = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.3, 0.3, 0.3));
 

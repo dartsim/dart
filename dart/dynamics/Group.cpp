@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Group.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -44,8 +45,7 @@ GroupPtr Group::create(
     const std::string& _name,
     const std::vector<BodyNode*>& _bodyNodes,
     bool _includeJoints,
-    bool _includeDofs)
-{
+    bool _includeDofs) {
   GroupPtr group(new Group(_name, _bodyNodes, _includeJoints, _includeDofs));
   group->mPtr = group;
   return group;
@@ -56,8 +56,7 @@ GroupPtr Group::create(
     const std::string& _name,
     const std::vector<DegreeOfFreedom*>& _dofs,
     bool _includeBodyNodes,
-    bool _includeJoints)
-{
+    bool _includeJoints) {
   GroupPtr group(new Group(_name, _dofs, _includeBodyNodes, _includeJoints));
   group->mPtr = group;
   return group;
@@ -65,27 +64,23 @@ GroupPtr Group::create(
 
 //==============================================================================
 GroupPtr Group::create(
-    const std::string& _name, const MetaSkeletonPtr& _metaSkeleton)
-{
+    const std::string& _name, const MetaSkeletonPtr& _metaSkeleton) {
   GroupPtr group(new Group(_name, _metaSkeleton));
   group->mPtr = group;
   return group;
 }
 
 //==============================================================================
-GroupPtr Group::cloneGroup() const
-{
+GroupPtr Group::cloneGroup() const {
   return cloneGroup(getName());
 }
 
 //==============================================================================
-GroupPtr Group::cloneGroup(const std::string& cloneName) const
-{
+GroupPtr Group::cloneGroup(const std::string& cloneName) const {
   // Create an empty Group
   GroupPtr newGroup = create(cloneName, nullptr);
 
-  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
-  {
+  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u)) {
     dtwarn << "[Group::cloneMetaSkeletonHelper] Attempting to "
            << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
            << "but including some Joints or DegreeOfFreedoms. This will lead "
@@ -102,15 +97,13 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
   // the body nodes.
   std::unordered_map<const Skeleton*, SkeletonPtr> mapToSkeletonClones;
   mapToSkeletonClones.reserve(mSkeletons.size());
-  for (const Skeleton* skel : mSkeletons)
-  {
+  for (const Skeleton* skel : mSkeletons) {
     SkeletonPtr skelClone = skel->cloneSkeleton();
     mapToSkeletonClones.insert(std::make_pair(skel, skelClone));
   }
 
   // Add BodyNodes
-  for (const BodyNodePtr& bodyNode : mBodyNodes)
-  {
+  for (const BodyNodePtr& bodyNode : mBodyNodes) {
     SkeletonPtr skelClone = mapToSkeletonClones[bodyNode->getSkeleton().get()];
     assert(skelClone);
     BodyNode* bodyNodeClone = skelClone->getBodyNode(bodyNode->getName());
@@ -119,8 +112,7 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
   }
 
   // Add Joints
-  for (const JointPtr& joint : mJoints)
-  {
+  for (const JointPtr& joint : mJoints) {
     SkeletonPtr skelClone = mapToSkeletonClones[joint->getSkeleton().get()];
     assert(skelClone);
     Joint* jointClone = skelClone->getJoint(joint->getName());
@@ -129,8 +121,7 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
   }
 
   // Add DegreeOfFreedoms
-  for (const DegreeOfFreedomPtr& dof : mDofs)
-  {
+  for (const DegreeOfFreedomPtr& dof : mDofs) {
     SkeletonPtr skelClone = mapToSkeletonClones[dof->getSkeleton().get()];
     assert(skelClone);
     DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
@@ -142,16 +133,13 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
 }
 
 //==============================================================================
-MetaSkeletonPtr Group::cloneMetaSkeleton(const std::string& cloneName) const
-{
+MetaSkeletonPtr Group::cloneMetaSkeleton(const std::string& cloneName) const {
   return cloneGroup(cloneName);
 }
 
 //==============================================================================
-void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
-{
-  if (_index1 >= mBodyNodes.size() || _index2 >= mBodyNodes.size())
-  {
+void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2) {
+  if (_index1 >= mBodyNodes.size() || _index2 >= mBodyNodes.size()) {
     dterr << "[Group::swapBodyNodeIndices] Trying to swap out-of-bound indices "
           << "for the Group named [" << getName() << "] (" << this << ")! "
           << "_index1:" << _index1 << " | _index2:" << _index2 << " | Both "
@@ -166,8 +154,7 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
   std::unordered_map<const BodyNode*, IndexMap>::iterator it1
       = mIndexMap.find(bn1);
 
-  if (it1 == mIndexMap.end())
-  {
+  if (it1 == mIndexMap.end()) {
     dterr << "[Group::swapBodyNodeIndices] Unable to find BodyNode ["
           << bn1->getName() << "] (" << bn1 << ") in the index map of the "
           << "Group [" << getName() << "] (" << this << ")! Please report this "
@@ -179,8 +166,7 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
   std::unordered_map<const BodyNode*, IndexMap>::iterator it2
       = mIndexMap.find(bn2);
 
-  if (it2 == mIndexMap.end())
-  {
+  if (it2 == mIndexMap.end()) {
     dterr << "[Group::swapBodyNodeIndices] Unable to find BodyNode ["
           << bn2->getName() << "] (" << bn2 << ") in the index map of the "
           << "Group [" << getName() << "] (" << this << ")! Please report this "
@@ -198,10 +184,8 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
 }
 
 //==============================================================================
-void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
-{
-  if (_index1 >= mDofs.size() || _index2 >= mDofs.size())
-  {
+void Group::swapDofIndices(std::size_t _index1, std::size_t _index2) {
+  if (_index1 >= mDofs.size() || _index2 >= mDofs.size()) {
     dterr << "[Group::swapDofIndices] Trying to swap out-of-bound indices for "
           << "the Group named [" << getName() << "] (" << this << ")! "
           << "_index1:" << _index1 << " | _index2:" << _index2 << " | Both "
@@ -216,8 +200,7 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
   std::unordered_map<const BodyNode*, IndexMap>::iterator it1
       = mIndexMap.find(dof1->getChildBodyNode());
 
-  if (it1 == mIndexMap.end())
-  {
+  if (it1 == mIndexMap.end()) {
     dterr << "[Group::swapDofIndices] Unable to find DegreeOfFreedom ["
           << dof1->getName() << "] (" << dof1 << ") in the index map of the "
           << "Group [" << getName() << "] (" << this << ")! Please report this "
@@ -229,8 +212,7 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
   std::unordered_map<const BodyNode*, IndexMap>::iterator it2
       = mIndexMap.find(dof2->getChildBodyNode());
 
-  if (it2 == mIndexMap.end())
-  {
+  if (it2 == mIndexMap.end()) {
     dterr << "[Group::swapDofIndices] Unable to find DegreeOfFreedom ["
           << dof2->getName() << "] (" << dof2 << ") in the index map of the "
           << "Group [" << getName() << "] (" << this << ")! Please report this "
@@ -252,12 +234,9 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
 }
 
 //==============================================================================
-bool Group::addComponent(BodyNode* _bn, bool _warning)
-{
-  if (nullptr == _bn)
-  {
-    if (_warning)
-    {
+bool Group::addComponent(BodyNode* _bn, bool _warning) {
+  if (nullptr == _bn) {
+    if (_warning) {
       dtwarn << "[Group::addComponent] Attempting to add a nullptr component "
              << "to the Group [" << getName() << "] (" << this << ")\n";
       assert(false);
@@ -273,8 +252,7 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
   for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i)
     added |= addDof(_bn->getParentJoint()->getDof(i), false);
 
-  if (_warning && !added)
-  {
+  if (_warning && !added) {
     dtwarn << "[Group::addComponent] The BodyNode named [" << _bn->getName()
            << "] (" << _bn << ") and all of its parent DegreesOfFreedom are "
            << "already in the Group [" << getName() << "] (" << this << ")\n";
@@ -286,8 +264,7 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
 
 //==============================================================================
 bool Group::addComponents(
-    const std::vector<BodyNode*>& _bodyNodes, bool _warning)
-{
+    const std::vector<BodyNode*>& _bodyNodes, bool _warning) {
   bool added = false;
   for (BodyNode* bn : _bodyNodes)
     added |= addComponent(bn, _warning);
@@ -296,12 +273,9 @@ bool Group::addComponents(
 }
 
 //==============================================================================
-bool Group::removeComponent(BodyNode* _bn, bool _warning)
-{
-  if (nullptr == _bn)
-  {
-    if (_warning)
-    {
+bool Group::removeComponent(BodyNode* _bn, bool _warning) {
+  if (nullptr == _bn) {
+    if (_warning) {
       dtwarn << "[Group::removeComponent] Attempting to remove a nullptr "
              << "component from the Group [" << getName() << "] (" << this
              << ")\n";
@@ -318,8 +292,7 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
   for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i)
     removed |= removeDof(_bn->getParentJoint()->getDof(i), false);
 
-  if (_warning && !removed)
-  {
+  if (_warning && !removed) {
     dtwarn << "[Group::removeComponent] The BodyNode named [" << _bn->getName()
            << "] (" << _bn << ") and its parent DegreesOfFreedom were not in "
            << "the Group [" << getName() << "] (" << this << ")\n";
@@ -331,8 +304,7 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
 
 //==============================================================================
 bool Group::removeComponents(
-    const std::vector<BodyNode*>& _bodyNodes, bool _warning)
-{
+    const std::vector<BodyNode*>& _bodyNodes, bool _warning) {
   bool removed = false;
   for (BodyNode* bn : _bodyNodes)
     removed |= removeComponent(bn, _warning);
@@ -341,12 +313,9 @@ bool Group::removeComponents(
 }
 
 //==============================================================================
-bool Group::addBodyNode(BodyNode* _bn, bool _warning)
-{
-  if (nullptr == _bn)
-  {
-    if (_warning)
-    {
+bool Group::addBodyNode(BodyNode* _bn, bool _warning) {
+  if (nullptr == _bn) {
+    if (_warning) {
       dtwarn << "[Group::addBodyNode] Attempting to add a nullptr BodyNode "
              << "to the Group [" << getName() << "] (" << this << ")\n";
       assert(false);
@@ -355,10 +324,8 @@ bool Group::addBodyNode(BodyNode* _bn, bool _warning)
     return false;
   }
 
-  if (INVALID_INDEX != getIndexOf(_bn, false))
-  {
-    if (_warning)
-    {
+  if (INVALID_INDEX != getIndexOf(_bn, false)) {
+    if (_warning) {
       dtwarn << "[Group::addBodyNode] The BodyNode named [" << _bn->getName()
              << "] (" << _bn << ") is already in the Group [" << getName()
              << "] (" << this << ")\n";
@@ -374,8 +341,7 @@ bool Group::addBodyNode(BodyNode* _bn, bool _warning)
 
 //==============================================================================
 bool Group::addBodyNodes(
-    const std::vector<BodyNode*>& _bodyNodes, bool _warning)
-{
+    const std::vector<BodyNode*>& _bodyNodes, bool _warning) {
   bool added = false;
   for (BodyNode* bn : _bodyNodes)
     added |= addBodyNode(bn, _warning);
@@ -384,12 +350,9 @@ bool Group::addBodyNodes(
 }
 
 //==============================================================================
-bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
-{
-  if (nullptr == _bn)
-  {
-    if (_warning)
-    {
+bool Group::removeBodyNode(BodyNode* _bn, bool _warning) {
+  if (nullptr == _bn) {
+    if (_warning) {
       dtwarn << "[Group::removeBodyNode] Attempting to remove a nullptr "
              << "BodyNode from the Group [" << getName() << "] (" << this
              << ")\n";
@@ -399,10 +362,8 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
     return false;
   }
 
-  if (INVALID_INDEX == getIndexOf(_bn, false))
-  {
-    if (_warning)
-    {
+  if (INVALID_INDEX == getIndexOf(_bn, false)) {
+    if (_warning) {
       dtwarn << "[Group::removeBodyNode] The BodyNode named [" << _bn->getName()
              << "] (" << _bn << ") is NOT in the Group [" << getName() << "] ("
              << this << ")\n";
@@ -418,8 +379,7 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
 
 //==============================================================================
 bool Group::removeBodyNodes(
-    const std::vector<BodyNode*>& _bodyNodes, bool _warning)
-{
+    const std::vector<BodyNode*>& _bodyNodes, bool _warning) {
   bool removed = false;
   for (BodyNode* bn : _bodyNodes)
     removed |= removeBodyNode(bn, _warning);
@@ -428,12 +388,9 @@ bool Group::removeBodyNodes(
 }
 
 //==============================================================================
-bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
-{
-  if (nullptr == _joint)
-  {
-    if (_warning)
-    {
+bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning) {
+  if (nullptr == _joint) {
+    if (_warning) {
       dtwarn << "[Group::addJoint] Attempting to add a nullptr Joint to the "
              << "Group [" << getName() << "] (" << this << ")\n";
       assert(false);
@@ -443,29 +400,23 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
   }
 
   bool added = false;
-  if (INVALID_INDEX == getIndexOf(_joint, false))
-  {
+  if (INVALID_INDEX == getIndexOf(_joint, false)) {
     registerJoint(_joint);
     added = true;
   }
 
-  if (_addDofs)
-  {
+  if (_addDofs) {
     for (std::size_t i = 0; i < _joint->getNumDofs(); ++i)
       added |= addDof(_joint->getDof(i), false, false);
   }
 
-  if (!added && _warning)
-  {
-    if (_addDofs)
-    {
+  if (!added && _warning) {
+    if (_addDofs) {
       dtwarn << "[Group::addJoint] The Joint named [" << _joint->getName()
              << "] (" << _joint << ") and all its DOFs are already in the "
              << "Group [" << getName() << "] (" << this << ")\n";
       assert(false);
-    }
-    else
-    {
+    } else {
       dtwarn << "[Group::addJoint] The Joint named [" << _joint->getName()
              << "] (" << _joint << ") is already in the Group [" << getName()
              << "] (" << this << ")\n";
@@ -478,8 +429,7 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
 
 //==============================================================================
 bool Group::addJoints(
-    const std::vector<Joint*>& _joints, bool _addDofs, bool _warning)
-{
+    const std::vector<Joint*>& _joints, bool _addDofs, bool _warning) {
   bool added = false;
   for (Joint* joint : _joints)
     added |= addJoint(joint, _addDofs, _warning);
@@ -488,12 +438,9 @@ bool Group::addJoints(
 }
 
 //==============================================================================
-bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
-{
-  if (nullptr == _joint)
-  {
-    if (_warning)
-    {
+bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning) {
+  if (nullptr == _joint) {
+    if (_warning) {
       dtwarn << "[Group::removeJoint] Attempting to remove a nullptr Joint "
              << "from the Group [" << getName() << "] (" << this << ")\n";
       assert(false);
@@ -506,29 +453,23 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
   JointPtr hold(_joint);
 
   bool removed = false;
-  if (INVALID_INDEX != getIndexOf(_joint, false))
-  {
+  if (INVALID_INDEX != getIndexOf(_joint, false)) {
     unregisterJoint(_joint->getChildBodyNode());
     removed = true;
   }
 
-  if (_removeDofs)
-  {
+  if (_removeDofs) {
     for (std::size_t i = 0; i < _joint->getNumDofs(); ++i)
       removed |= removeDof(_joint->getDof(i), false, false);
   }
 
-  if (!removed && _warning)
-  {
-    if (_removeDofs)
-    {
+  if (!removed && _warning) {
+    if (_removeDofs) {
       dtwarn << "[Group::removeJoint] The Joint named [" << _joint->getName()
              << "] (" << _joint << ") and its DOFs were NOT in the Group ["
              << getName() << "] (" << this << ")\n";
       assert(false);
-    }
-    else
-    {
+    } else {
       dtwarn << "[Group::removeJoint] The Joint named [" << _joint->getName()
              << "] (" << _joint << ") was NOT in the Group [" << getName()
              << "] (" << this << ")\n";
@@ -541,8 +482,7 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
 
 //==============================================================================
 bool Group::removeJoints(
-    const std::vector<Joint*>& _joints, bool _removeDofs, bool _warning)
-{
+    const std::vector<Joint*>& _joints, bool _removeDofs, bool _warning) {
   bool removed = false;
   for (Joint* joint : _joints)
     removed |= removeJoint(joint, _removeDofs, _warning);
@@ -551,12 +491,9 @@ bool Group::removeJoints(
 }
 
 //==============================================================================
-bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
-{
-  if (nullptr == _dof)
-  {
-    if (_warning)
-    {
+bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning) {
+  if (nullptr == _dof) {
+    if (_warning) {
       dtwarn << "[Group::addDof] Attempting to add a nullptr DegreeOfFreedom "
              << "to the Group [" << getName() << "] (" << this << ")\n";
       assert(false);
@@ -566,8 +503,7 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
   }
 
   bool added = false;
-  if (INVALID_INDEX == getIndexOf(_dof, false))
-  {
+  if (INVALID_INDEX == getIndexOf(_dof, false)) {
     registerDegreeOfFreedom(_dof);
     added = true;
   }
@@ -575,17 +511,13 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
   if (_addJoint)
     added |= addJoint(_dof->getJoint(), false, false);
 
-  if (!added && _warning)
-  {
-    if (_addJoint)
-    {
+  if (!added && _warning) {
+    if (_addJoint) {
       dtwarn << "[Group::addDof] The DegreeOfFreedom named [" << _dof->getName()
              << "] (" << _dof << ") and its Joint are already in the Group ["
              << getName() << "] (" << this << ")\n";
       assert(false);
-    }
-    else
-    {
+    } else {
       dtwarn << "[Group::addDof] The DegreeOfFreedom named [" << _dof->getName()
              << "] (" << _dof << ") is already in the Group [" << getName()
              << "] (" << this << ")\n";
@@ -598,8 +530,7 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
 
 //==============================================================================
 bool Group::addDofs(
-    const std::vector<DegreeOfFreedom*>& _dofs, bool _addJoint, bool _warning)
-{
+    const std::vector<DegreeOfFreedom*>& _dofs, bool _addJoint, bool _warning) {
   bool added = false;
   for (DegreeOfFreedom* dof : _dofs)
     added |= addDof(dof, _addJoint, _warning);
@@ -608,12 +539,10 @@ bool Group::addDofs(
 }
 
 //==============================================================================
-bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
-{
-  if (nullptr == _dof)
-  {
-    if (_warning)
-    {
+bool Group::removeDof(
+    DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning) {
+  if (nullptr == _dof) {
+    if (_warning) {
       dtwarn << "[Group::removeDof] Attempting to remove a nullptr "
              << "DegreeOfFreedom from the Group [" << getName() << "] (" << this
              << ")\n";
@@ -628,22 +557,18 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
   DegreeOfFreedomPtr hold(_dof);
 
   bool removed = false;
-  if (INVALID_INDEX != getIndexOf(_dof, false))
-  {
+  if (INVALID_INDEX != getIndexOf(_dof, false)) {
     unregisterDegreeOfFreedom(
         _dof->getChildBodyNode(), _dof->getIndexInJoint());
     removed = true;
   }
 
-  if (_cleanupJoint)
-  {
+  if (_cleanupJoint) {
     // Check whether any DOFs belonging to the Joint are remaining in the Group
     bool performCleanup = true;
     Joint* joint = _dof->getJoint();
-    for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
-    {
-      if (getIndexOf(joint->getDof(i), false) == INVALID_INDEX)
-      {
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      if (getIndexOf(joint->getDof(i), false) == INVALID_INDEX) {
         performCleanup = false;
         break;
       }
@@ -654,17 +579,13 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
       removed |= removeJoint(joint, false, false);
   }
 
-  if (!removed && _warning)
-  {
-    if (_cleanupJoint)
-    {
+  if (!removed && _warning) {
+    if (_cleanupJoint) {
       dtwarn << "[Group::removeDof] The DegreeOfFreedom named ["
              << _dof->getName() << "] (" << _dof << ") and its Joint were NOT "
              << "in the Group [" << getName() << "] (" << this << ")\n";
       assert(false);
-    }
-    else
-    {
+    } else {
       dtwarn << "[Group::removeDof] The DegreeOfFreedom named ["
              << _dof->getName() << "] (" << _dof << ") was NOT in the Group ["
              << getName() << "] (" << this << ")\n";
@@ -679,8 +600,7 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
 bool Group::removeDofs(
     const std::vector<DegreeOfFreedom*>& _dofs,
     bool _cleanupJoint,
-    bool _warning)
-{
+    bool _warning) {
   bool removed = false;
   for (DegreeOfFreedom* dof : _dofs)
     removed |= removeDof(dof, _cleanupJoint, _warning);
@@ -693,22 +613,18 @@ Group::Group(
     const std::string& _name,
     const std::vector<BodyNode*>& _bodyNodes,
     bool _includeJoints,
-    bool _includeDofs)
-{
+    bool _includeDofs) {
   setName(_name);
   addBodyNodes(_bodyNodes);
 
-  if (_includeDofs || _includeJoints)
-  {
-    for (std::size_t i = 0; i < _bodyNodes.size(); ++i)
-    {
+  if (_includeDofs || _includeJoints) {
+    for (std::size_t i = 0; i < _bodyNodes.size(); ++i) {
       Joint* joint = _bodyNodes[i]->getParentJoint();
 
       if (_includeJoints)
         addJoint(joint, false);
 
-      if (_includeDofs)
-      {
+      if (_includeDofs) {
         for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
           addDof(joint->getDof(j));
       }
@@ -721,15 +637,12 @@ Group::Group(
     const std::string& _name,
     const std::vector<DegreeOfFreedom*>& _dofs,
     bool _includeBodyNodes,
-    bool _includeJoints)
-{
+    bool _includeJoints) {
   setName(_name);
   addDofs(_dofs, _includeJoints);
 
-  if (_includeBodyNodes)
-  {
-    for (std::size_t i = 0; i < _dofs.size(); ++i)
-    {
+  if (_includeBodyNodes) {
+    for (std::size_t i = 0; i < _dofs.size(); ++i) {
       DegreeOfFreedom* dof = _dofs[i];
       addBodyNode(dof->getChildBodyNode(), false);
     }
@@ -737,12 +650,10 @@ Group::Group(
 }
 
 //==============================================================================
-Group::Group(const std::string& _name, const MetaSkeletonPtr& _metaSkeleton)
-{
+Group::Group(const std::string& _name, const MetaSkeletonPtr& _metaSkeleton) {
   setName(_name);
 
-  if (_metaSkeleton)
-  {
+  if (_metaSkeleton) {
     for (std::size_t i = 0; i < _metaSkeleton->getNumBodyNodes(); ++i)
       addBodyNode(_metaSkeleton->getBodyNode(i));
 

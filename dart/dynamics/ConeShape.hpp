@@ -40,8 +40,7 @@ namespace dynamics {
 
 /// ConeShape represents a three-dimensional geometric shape that tapers
 /// smoothly from a flat circular base to a point called the apex or vertex.
-class ConeShape : public Shape
-{
+class ConeShape : public Shape {
 public:
   /// Constructor.
   /// \param[in] radius Radius of the circular base.

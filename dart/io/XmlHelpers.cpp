@@ -46,74 +46,62 @@ namespace dart {
 namespace io {
 
 //==============================================================================
-std::string toString(bool v)
-{
+std::string toString(bool v) {
   return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(int v)
-{
+std::string toString(int v) {
   return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(unsigned int v)
-{
+std::string toString(unsigned int v) {
   return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(float v)
-{
+std::string toString(float v) {
   return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(double v)
-{
+std::string toString(double v) {
   return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(char v)
-{
+std::string toString(char v) {
   return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector2d& v)
-{
+std::string toString(const Eigen::Vector2d& v) {
   return boost::lexical_cast<std::string>(v.transpose());
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector3d& v)
-{
+std::string toString(const Eigen::Vector3d& v) {
   return boost::lexical_cast<std::string>(v.transpose());
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector3i& v)
-{
+std::string toString(const Eigen::Vector3i& v) {
   return boost::lexical_cast<std::string>(v.transpose());
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector6d& v)
-{
+std::string toString(const Eigen::Vector6d& v) {
   return boost::lexical_cast<std::string>(v.transpose());
 }
 
 //==============================================================================
-std::string toString(const Eigen::VectorXd& v)
-{
+std::string toString(const Eigen::VectorXd& v) {
   return boost::lexical_cast<std::string>(v.transpose());
 }
 
 //==============================================================================
-std::string toString(const Eigen::Isometry3d& v)
-{
+std::string toString(const Eigen::Isometry3d& v) {
   std::ostringstream ostr;
   ostr.precision(6);
 
@@ -127,14 +115,12 @@ std::string toString(const Eigen::Isometry3d& v)
 }
 
 //==============================================================================
-bool toBool(const std::string& str)
-{
+bool toBool(const std::string& str) {
   if (boost::to_upper_copy(str) == "TRUE" || str == "1")
     return true;
   else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
     return false;
-  else
-  {
+  else {
     dterr << "value [" << str << "] is not a valid boolean type. "
           << "Retuning false." << std::endl;
     return false;
@@ -142,37 +128,31 @@ bool toBool(const std::string& str)
 }
 
 //==============================================================================
-int toInt(const std::string& str)
-{
+int toInt(const std::string& str) {
   return boost::lexical_cast<int>(str);
 }
 
 //==============================================================================
-unsigned int toUInt(const std::string& str)
-{
+unsigned int toUInt(const std::string& str) {
   return boost::lexical_cast<unsigned int>(str);
 }
 
 //==============================================================================
-float toFloat(const std::string& str)
-{
+float toFloat(const std::string& str) {
   return boost::lexical_cast<float>(str);
 }
 
 //==============================================================================
-double toDouble(const std::string& str)
-{
+double toDouble(const std::string& str) {
   return boost::lexical_cast<double>(str);
 }
 //==============================================================================
-char toChar(const std::string& str)
-{
+char toChar(const std::string& str) {
   return boost::lexical_cast<char>(str);
 }
 
 //==============================================================================
-Eigen::Vector2d toVector2d(const std::string& str)
-{
+Eigen::Vector2d toVector2d(const std::string& str) {
   Eigen::Vector2d ret;
 
   std::vector<std::string> pieces;
@@ -181,16 +161,11 @@ Eigen::Vector2d toVector2d(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 2);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector2d[" << i
                   << "]: " << e.what() << std::endl;
@@ -202,8 +177,7 @@ Eigen::Vector2d toVector2d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector2i toVector2i(const std::string& str)
-{
+Eigen::Vector2i toVector2i(const std::string& str) {
   Eigen::Vector2i ret;
 
   std::vector<std::string> pieces;
@@ -212,16 +186,11 @@ Eigen::Vector2i toVector2i(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 2);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<int>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector2i[" << i
                   << "]: " << e.what() << std::endl;
@@ -233,8 +202,7 @@ Eigen::Vector2i toVector2i(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector3d toVector3d(const std::string& str)
-{
+Eigen::Vector3d toVector3d(const std::string& str) {
   Eigen::Vector3d ret;
 
   std::vector<std::string> pieces;
@@ -243,16 +211,11 @@ Eigen::Vector3d toVector3d(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 3);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector3d[" << i
                   << "]: " << e.what() << std::endl;
@@ -264,8 +227,7 @@ Eigen::Vector3d toVector3d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector3i toVector3i(const std::string& str)
-{
+Eigen::Vector3i toVector3i(const std::string& str) {
   Eigen::Vector3i ret;
 
   std::vector<std::string> pieces;
@@ -274,16 +236,11 @@ Eigen::Vector3i toVector3i(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 3);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<int>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid int for Eigen::Vector3i[" << i
                   << "]: " << e.what() << std::endl;
@@ -295,8 +252,7 @@ Eigen::Vector3i toVector3i(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector4d toVector4d(const std::string& str)
-{
+Eigen::Vector4d toVector4d(const std::string& str) {
   Eigen::Vector4d ret;
 
   std::vector<std::string> pieces;
@@ -305,16 +261,11 @@ Eigen::Vector4d toVector4d(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 4);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector4d[" << i
                   << "]: " << e.what() << std::endl;
@@ -326,8 +277,7 @@ Eigen::Vector4d toVector4d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector6d toVector6d(const std::string& str)
-{
+Eigen::Vector6d toVector6d(const std::string& str) {
   Eigen::Vector6d ret;
 
   std::vector<std::string> pieces;
@@ -336,16 +286,11 @@ Eigen::Vector6d toVector6d(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 6);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector6d[" << i
                   << "]: " << e.what() << std::endl;
@@ -357,8 +302,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::VectorXd toVectorXd(const std::string& str)
-{
+Eigen::VectorXd toVectorXd(const std::string& str) {
   std::vector<std::string> pieces;
   std::string trimedStr = boost::trim_copy(str);
   boost::split(
@@ -367,16 +311,11 @@ Eigen::VectorXd toVectorXd(const std::string& str)
 
   Eigen::VectorXd ret(pieces.size());
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::VectorXd[" << i
                   << "]: " << e.what() << std::endl;
@@ -388,8 +327,7 @@ Eigen::VectorXd toVectorXd(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Isometry3d toIsometry3d(const std::string& str)
-{
+Eigen::Isometry3d toIsometry3d(const std::string& str) {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   std::vector<std::string> pieces;
@@ -398,16 +336,11 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 6);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for SE3[" << i
                   << "]: " << e.what() << std::endl;
@@ -421,8 +354,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
-{
+Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str) {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   std::vector<std::string> pieces;
@@ -431,16 +363,11 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 6);
 
-  for (std::size_t i = 0; i < pieces.size(); ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < pieces.size(); ++i) {
+    if (pieces[i] != "") {
+      try {
         elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for SE3[" << i
                   << "]: " << e.what() << std::endl;
@@ -458,8 +385,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 
 //==============================================================================
 std::string getValueString(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -470,8 +396,7 @@ std::string getValueString(
 
 //==============================================================================
 bool getValueBool(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -481,8 +406,7 @@ bool getValueBool(
     return true;
   else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
     return false;
-  else
-  {
+  else {
     std::cerr << "value [" << str << "] is not a valid boolean type. "
               << "Returning false." << std::endl;
     assert(0);
@@ -492,8 +416,7 @@ bool getValueBool(
 
 //==============================================================================
 int getValueInt(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -504,8 +427,7 @@ int getValueInt(
 
 //==============================================================================
 unsigned int getValueUInt(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -516,8 +438,7 @@ unsigned int getValueUInt(
 
 //==============================================================================
 float getValueFloat(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -528,8 +449,7 @@ float getValueFloat(
 
 //==============================================================================
 double getValueDouble(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -540,8 +460,7 @@ double getValueDouble(
 
 //==============================================================================
 char getValueChar(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -552,8 +471,7 @@ char getValueChar(
 
 //==============================================================================
 Eigen::Vector2d getValueVector2d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -564,8 +482,7 @@ Eigen::Vector2d getValueVector2d(
 
 //==============================================================================
 Eigen::Vector3d getValueVector3d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -576,8 +493,7 @@ Eigen::Vector3d getValueVector3d(
 
 //==============================================================================
 Eigen::Vector3i getValueVector3i(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -588,8 +504,7 @@ Eigen::Vector3i getValueVector3i(
 
 //==============================================================================
 Eigen::Vector6d getValueVector6d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -600,8 +515,7 @@ Eigen::Vector6d getValueVector6d(
 
 //==============================================================================
 Eigen::VectorXd getValueVectorXd(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -612,8 +526,7 @@ Eigen::VectorXd getValueVectorXd(
 
 //==============================================================================
 Eigen::Vector3d getValueVec3(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -624,8 +537,7 @@ Eigen::Vector3d getValueVec3(
 
 //==============================================================================
 Eigen::Isometry3d getValueIsometry3d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -636,8 +548,7 @@ Eigen::Isometry3d getValueIsometry3d(
 
 //==============================================================================
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -648,8 +559,7 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
 
 //==============================================================================
 bool hasElement(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
@@ -659,8 +569,7 @@ bool hasElement(
 
 //==============================================================================
 const tinyxml2::XMLElement* getElement(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    const tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(!name.empty());
 
   return parentElement->FirstChildElement(name.c_str());
@@ -668,18 +577,15 @@ const tinyxml2::XMLElement* getElement(
 
 //==============================================================================
 tinyxml2::XMLElement* getElement(
-    tinyxml2::XMLElement* parentElement, const std::string& name)
-{
+    tinyxml2::XMLElement* parentElement, const std::string& name) {
   assert(!name.empty());
 
   return parentElement->FirstChildElement(name.c_str());
 }
 
 //==============================================================================
-std::string toString(tinyxml2::XMLError errorCode)
-{
-  switch (errorCode)
-  {
+std::string toString(tinyxml2::XMLError errorCode) {
+  switch (errorCode) {
     case tinyxml2::XMLError::XML_SUCCESS:
       return "XML_SUCCESS";
     case tinyxml2::XMLError::XML_NO_ATTRIBUTE:
@@ -727,8 +633,7 @@ std::string toString(tinyxml2::XMLError errorCode)
 void openXMLFile(
     tinyxml2::XMLDocument& doc,
     const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retrieverOrNullPtr)
-{
+    const common::ResourceRetrieverPtr& retrieverOrNullPtr) {
   common::ResourceRetrieverPtr retriever;
   if (retrieverOrNullPtr)
     retriever = retrieverOrNullPtr;
@@ -737,8 +642,7 @@ void openXMLFile(
 
   const auto content = retriever->readAll(uri);
   const auto result = doc.Parse(&content.front());
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error '"
            << toString(result) << "'.\n";
     throw std::runtime_error("Failed parsing XML.");
@@ -749,8 +653,7 @@ void openXMLFile(
 bool readXmlFile(
     tinyxml2::XMLDocument& doc,
     const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retrieverOrNullPtr)
-{
+    const common::ResourceRetrieverPtr& retrieverOrNullPtr) {
   common::ResourceRetrieverPtr retriever;
   if (retrieverOrNullPtr)
     retriever = retrieverOrNullPtr;
@@ -759,8 +662,7 @@ bool readXmlFile(
 
   const auto content = retriever->readAll(uri);
   const auto result = doc.Parse(&content.front());
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[readXmlFile] Failed parsing XML: TinyXML2 returned error '"
            << toString(result) << "'.\n";
     return false;
@@ -770,33 +672,29 @@ bool readXmlFile(
 }
 
 //==============================================================================
-bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name)
-{
+bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name) {
   const char* const result = element->Attribute(name);
   return result != nullptr;
 }
 
 //==============================================================================
-std::string getAttribute(tinyxml2::XMLElement* element, const char* const name)
-{
+std::string getAttribute(
+    tinyxml2::XMLElement* element, const char* const name) {
   return getAttributeString(element, name);
 }
 
 //==============================================================================
 void getAttribute(
-    tinyxml2::XMLElement* element, const char* const name, double* d)
-{
+    tinyxml2::XMLElement* element, const char* const name, double* d) {
   *d = getAttributeDouble(element, name);
 }
 
 //==============================================================================
 std::string getAttributeString(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const char* const result = element->Attribute(attributeName.c_str());
 
-  if (nullptr == result)
-  {
+  if (nullptr == result) {
     dtwarn << "[getAttribute] Error in parsing string type attribute ["
            << attributeName << "] of an element [" << element->Name()
            << "]. Returning empty string.\n";
@@ -808,13 +706,11 @@ std::string getAttributeString(
 
 //==============================================================================
 bool getAttributeBool(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   bool val = false;
   const int result = element->QueryBoolAttribute(attributeName.c_str(), &val);
 
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[getAttribute] Error in parsing bool type attribute ["
            << attributeName << "] of an element [" << element->Name()
            << "]. Returning false instead.\n";
@@ -826,13 +722,11 @@ bool getAttributeBool(
 
 //==============================================================================
 int getAttributeInt(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   int val = 0;
   const int result = element->QueryIntAttribute(attributeName.c_str(), &val);
 
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[getAttribute] Error in parsing int type attribute ["
            << attributeName << "] of an element [" << element->Name()
            << "]. Returning zero instead.\n";
@@ -844,14 +738,12 @@ int getAttributeInt(
 
 //==============================================================================
 unsigned int getAttributeUInt(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   unsigned int val = 0u;
   const int result
       = element->QueryUnsignedAttribute(attributeName.c_str(), &val);
 
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[getAttribute] Error in parsing unsiged int type attribute ["
            << attributeName << "] of an element [" << element->Name()
            << "]. Returning zero instead.\n";
@@ -863,13 +755,11 @@ unsigned int getAttributeUInt(
 
 //==============================================================================
 float getAttributeFloat(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   float val = 0.0f;
   const int result = element->QueryFloatAttribute(attributeName.c_str(), &val);
 
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[getAttribute] Error in parsing float type attribute ["
            << attributeName << "] of an element [" << element->Name()
            << "]. Returning zero instead.\n";
@@ -881,13 +771,11 @@ float getAttributeFloat(
 
 //==============================================================================
 double getAttributeDouble(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   double val = 0.0;
   const int result = element->QueryDoubleAttribute(attributeName.c_str(), &val);
 
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[getAttribute] Error in parsing double type attribute ["
            << attributeName << "] of an element [" << element->Name()
            << "]. Returning zero instead.\n";
@@ -899,8 +787,7 @@ double getAttributeDouble(
 
 //==============================================================================
 char getAttributeChar(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
 
   return toChar(val);
@@ -908,8 +795,7 @@ char getAttributeChar(
 
 //==============================================================================
 Eigen::Vector2i getAttributeVector2i(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector2i(val);
@@ -917,8 +803,7 @@ Eigen::Vector2i getAttributeVector2i(
 
 //==============================================================================
 Eigen::Vector2d getAttributeVector2d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector2d(val);
@@ -926,8 +811,7 @@ Eigen::Vector2d getAttributeVector2d(
 
 //==============================================================================
 Eigen::Vector3d getAttributeVector3d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector3d(val);
@@ -935,8 +819,7 @@ Eigen::Vector3d getAttributeVector3d(
 
 //==============================================================================
 Eigen::Vector4d getAttributeVector4d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector4d(val);
@@ -944,8 +827,7 @@ Eigen::Vector4d getAttributeVector4d(
 
 //==============================================================================
 Eigen::Vector6d getAttributeVector6d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector6d(val);
@@ -953,19 +835,16 @@ Eigen::Vector6d getAttributeVector6d(
 
 //==============================================================================
 Eigen::VectorXd getAttributeVectorXd(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
 
   return toVectorXd(val);
 }
 
 //==============================================================================
-bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
-{
+bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src) {
   // Protect from evil
-  if (destParent == nullptr)
-  {
+  if (destParent == nullptr) {
     return false;
   }
 
@@ -974,8 +853,7 @@ bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
 
   // Make the copy
   tinyxml2::XMLNode* copy = src.ShallowClone(doc);
-  if (copy == nullptr)
-  {
+  if (copy == nullptr) {
     return false;
   }
 
@@ -984,10 +862,8 @@ bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
 
   // Add the grandkids
   for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
-       node = node->NextSibling())
-  {
-    if (not copyNode(copy, *node))
-    {
+       node = node->NextSibling()) {
+    if (not copyNode(copy, *node)) {
       return false;
     }
   }
@@ -996,13 +872,11 @@ bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
 }
 
 //==============================================================================
-bool copyChildNodes(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
-{
+bool copyChildNodes(
+    tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src) {
   for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
-       node = node->NextSibling())
-  {
-    if (not copyNode(destParent, *node))
-    {
+       node = node->NextSibling()) {
+    if (not copyNode(destParent, *node)) {
       return false;
     }
   }

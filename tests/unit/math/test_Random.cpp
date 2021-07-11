@@ -32,14 +32,14 @@
 
 #include <dart/math/Random.hpp>
 #include <gtest/gtest.h>
+
 #include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
 using namespace dart::math;
 
 //==============================================================================
-TEST(Random, CheckSyntaxValidity)
-{
+TEST(Random, CheckSyntaxValidity) {
   const int rows = 5;
   const int cols = 5;
   const int size = 5;
@@ -179,8 +179,7 @@ TEST(Random, CheckSyntaxValidity)
 }
 
 //==============================================================================
-TEST(Random, UniformScalar)
-{
+TEST(Random, UniformScalar) {
   double mind = -5.0;
   double maxd = 10.0;
 
@@ -205,13 +204,11 @@ TEST(Random, UniformScalar)
 
 //==============================================================================
 template <typename I>
-bool testClosedEnds(int maxTry, I min = 0, I max = 2)
-{
+bool testClosedEnds(int maxTry, I min = 0, I max = 2) {
   bool foundMin = false;
   bool foundMax = false;
 
-  for (int i = 0; i < maxTry; ++i)
-  {
+  for (int i = 0; i < maxTry; ++i) {
     const I val = math::Random::uniform<I>(min, max);
 
     if (val == min)
@@ -228,8 +225,7 @@ bool testClosedEnds(int maxTry, I min = 0, I max = 2)
 }
 
 //==============================================================================
-TEST(Random, UniformClosedEnd)
-{
+TEST(Random, UniformClosedEnd) {
   const int maxTry = 100000;
 
   EXPECT_TRUE(testClosedEnds<short>(maxTry));
@@ -246,8 +242,7 @@ TEST(Random, UniformClosedEnd)
 }
 
 //==============================================================================
-TEST(Random, NormalScalar)
-{
+TEST(Random, NormalScalar) {
   double meand = 1.0;
   double sigmad = 10.0;
 
@@ -265,8 +260,7 @@ TEST(Random, NormalScalar)
 }
 
 //==============================================================================
-TEST(Random, UniformVector)
-{
+TEST(Random, UniformVector) {
   const int vectorSize = 5;
 
   Eigen::VectorXd mind = Eigen::VectorXd::Constant(vectorSize, -5.0);
@@ -292,8 +286,7 @@ TEST(Random, UniformVector)
 }
 
 //==============================================================================
-TEST(Random, SetSeed)
-{
+TEST(Random, SetSeed) {
   unsigned int N = 10;
 
   int min = -10;
@@ -303,16 +296,14 @@ TEST(Random, SetSeed)
   std::vector<int> second;
   std::vector<int> third;
 
-  for (unsigned int i = 0; i < N; ++i)
-  {
+  for (unsigned int i = 0; i < N; ++i) {
     math::Random::setSeed(i);
     first.push_back(math::Random::uniform(min, max));
     second.push_back(math::Random::uniform(min, max));
     third.push_back(math::Random::uniform(min, max));
   }
 
-  for (unsigned int i = 0; i < N; ++i)
-  {
+  for (unsigned int i = 0; i < N; ++i) {
     math::Random::setSeed(i);
     EXPECT_EQ(math::Random::getSeed(), static_cast<unsigned int>(i));
     EXPECT_EQ(first[i], math::Random::uniform(min, max));

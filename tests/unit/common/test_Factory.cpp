@@ -32,28 +32,16 @@
 
 #include <dart/common/Factory.hpp>
 #include <gtest/gtest.h>
+
 #include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
 
-enum ObjectTypeEnum
-{
-  OT_None,
-  OT_Apple,
-  OT_Banana,
-  OT_Orange
-};
+enum ObjectTypeEnum { OT_None, OT_Apple, OT_Banana, OT_Orange };
 
-enum class ObjectTypeEnumClass
-{
-  None,
-  Apple,
-  Banana,
-  Orange
-};
+enum class ObjectTypeEnumClass { None, Apple, Banana, Orange };
 
-class Fruit
-{
+class Fruit {
 public:
   using FactoryEnum = common::Factory<ObjectTypeEnum, Fruit>;
   using FactoryEnumClass = common::Factory<ObjectTypeEnumClass, Fruit>;
@@ -76,29 +64,24 @@ public:
   using RegistrarString = common::
       FactoryRegistrar<std::string, Fruit, Derived, std::shared_ptr<Fruit>>;
 
-  static FactoryEnum* getFactoryEnum()
-  {
+  static FactoryEnum* getFactoryEnum() {
     return SingletonFactoryEnum::getSingletonPtr();
   }
 
-  static FactoryEnumClass* getFactoryEnumClass()
-  {
+  static FactoryEnumClass* getFactoryEnumClass() {
     return SingletonFactoryEnumClass::getSingletonPtr();
   }
 
-  static FactoryString* getFactoryString()
-  {
+  static FactoryString* getFactoryString() {
     return SingletonFactoryString::getSingletonPtr();
   }
 
   virtual std::string getName() const = 0;
 };
 
-class Apple : public Fruit
-{
+class Apple : public Fruit {
 public:
-  std::string getName() const override
-  {
+  std::string getName() const override {
     return "apple";
   }
 
@@ -112,11 +95,9 @@ Apple::RegistrarEnumClass<Apple> Apple::mRegistrarEnumClass{
     ObjectTypeEnumClass::Apple};
 Apple::RegistrarString<Apple> Apple::mRegistrarString{"apple"};
 
-class Banana : public Fruit
-{
+class Banana : public Fruit {
 public:
-  std::string getName() const override
-  {
+  std::string getName() const override {
     return "banana";
   }
 
@@ -130,11 +111,9 @@ Banana::RegistrarEnumClass<Banana> Banana::mRegistrarEnumClass{
     ObjectTypeEnumClass::Banana};
 Banana::RegistrarString<Banana> Banana::mRegistrarString{"banana"};
 
-class Orange : public Fruit
-{
+class Orange : public Fruit {
 public:
-  std::string getName() const override
-  {
+  std::string getName() const override {
     return "orange";
   }
 
@@ -148,8 +127,7 @@ Orange::RegistrarEnumClass<Orange> Orange::mRegistrarEnumClass{
     ObjectTypeEnumClass::Orange};
 Orange::RegistrarString<Orange> Orange::mRegistrarString{"orange"};
 
-class City
-{
+class City {
 public:
   using Factory
       = common::Factory<std::string, City, std::shared_ptr<City>, int>;
@@ -159,19 +137,16 @@ public:
   using Registrar = common::
       FactoryRegistrar<std::string, City, Derived, std::shared_ptr<City>, int>;
 
-  static Factory* getFactory()
-  {
+  static Factory* getFactory() {
     return SingletonFactory::getSingletonPtr();
   }
 
-  City(int year) : mYear(year)
-  {
+  City(int year) : mYear(year) {
   }
 
   virtual std::string getName() const = 0;
 
-  int getYear() const
-  {
+  int getYear() const {
     return mYear;
   }
 
@@ -179,15 +154,12 @@ protected:
   int mYear;
 };
 
-class Atlanta : public City
-{
+class Atlanta : public City {
 public:
-  Atlanta(int year) : City(year)
-  {
+  Atlanta(int year) : City(year) {
   }
 
-  std::string getName() const override
-  {
+  std::string getName() const override {
     return "Atlanta";
   }
 
@@ -196,15 +168,12 @@ public:
 
 City::Registrar<Atlanta> Atlanta::mRegistrar("Atlanta");
 
-class Pittsburgh : public City
-{
+class Pittsburgh : public City {
 public:
-  Pittsburgh(int year) : City(year)
-  {
+  Pittsburgh(int year) : City(year) {
   }
 
-  std::string getName() const override
-  {
+  std::string getName() const override {
     return "Pittsburgh";
   }
 
@@ -213,15 +182,12 @@ public:
 
 City::Registrar<Pittsburgh> Pittsburgh::mRegistrar("Pittsburgh");
 
-class Seattle : public City
-{
+class Seattle : public City {
 public:
-  Seattle(int year) : City(year)
-  {
+  Seattle(int year) : City(year) {
   }
 
-  std::string getName() const override
-  {
+  std::string getName() const override {
     return "Seattle";
   }
 
@@ -231,8 +197,7 @@ public:
 City::Registrar<Seattle> Seattle::mRegistrar{"Seattle"};
 
 //==============================================================================
-TEST(Factory, Create)
-{
+TEST(Factory, Create) {
   //----------------------------------------------------------------------------
   // enum class key type
   //----------------------------------------------------------------------------
@@ -308,14 +273,12 @@ TEST(Factory, Create)
 }
 
 //==============================================================================
-static std::shared_ptr<Orange> createOrange()
-{
+static std::shared_ptr<Orange> createOrange() {
   return std::shared_ptr<Orange>(new Orange());
 }
 
 //==============================================================================
-TEST(Factory, VariousCreatorFunctions)
-{
+TEST(Factory, VariousCreatorFunctions) {
   using FruitFactory = common::Singleton<common::Factory<std::string, Fruit>>;
 
   FruitFactory::getSingleton().unregisterAllCreators();
@@ -339,8 +302,7 @@ TEST(Factory, VariousCreatorFunctions)
 }
 
 //==============================================================================
-TEST(Factory, CreateWithArguments)
-{
+TEST(Factory, CreateWithArguments) {
   EXPECT_TRUE(City::getFactory()->canCreate("Atlanta"));
   EXPECT_TRUE(City::getFactory()->canCreate("Pittsburgh"));
   EXPECT_TRUE(City::getFactory()->canCreate("Seattle"));

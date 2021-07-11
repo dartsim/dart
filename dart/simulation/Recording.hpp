@@ -54,8 +54,7 @@ class Skeleton;
 namespace simulation {
 
 /// \brief class Recording
-class Recording
-{
+class Recording {
 public:
   /// \brief Create Recording with a list of skeletons
   explicit Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons);

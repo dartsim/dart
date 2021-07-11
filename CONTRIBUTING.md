@@ -234,7 +234,7 @@ int ExampleClass::example_method(int a, int b, int* out) const {
 
 You can automatically format all DART code
 using [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html) through
-CMake. Make sure `clang-format 6.0` is installed.
+CMake. Make sure `clang-format-9` is installed.
 
 ##### Using CMake
 

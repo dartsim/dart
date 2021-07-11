@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include "dart/math/Random.hpp"
-
 #include "dart/math/Constants.hpp"
+#include "dart/math/Random.hpp"
 
 namespace dart {
 namespace math {
@@ -60,8 +59,7 @@ using is_base_of_matrix = is_base_of_template<Eigen::MatrixBase, T>;
 /// Reference:
 /// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
 template <typename T, typename Enable = void>
-struct is_compatible_to_uniform_int_distribution : std::false_type
-{
+struct is_compatible_to_uniform_int_distribution : std::false_type {
   // Define nothing
 };
 
@@ -88,8 +86,7 @@ struct is_compatible_to_uniform_int_distribution<
 
 //==============================================================================
 template <typename S, typename Enable = void>
-struct UniformScalarImpl
-{
+struct UniformScalarImpl {
   // Define nothing
 };
 
@@ -98,10 +95,8 @@ struct UniformScalarImpl
 template <typename S>
 struct UniformScalarImpl<
     S,
-    typename std::enable_if<std::is_floating_point<S>::value>::type>
-{
-  static S run(S min, S max)
-  {
+    typename std::enable_if<std::is_floating_point<S>::value>::type> {
+  static S run(S min, S max) {
     // Distribution objects are lightweight so we simply construct a new
     // distribution for each random number generation.
     Random::UniformRealDist<S> d(min, max);
@@ -115,10 +110,8 @@ template <typename S>
 struct UniformScalarImpl<
     S,
     typename std::enable_if<
-        is_compatible_to_uniform_int_distribution<S>::value>::type>
-{
-  static S run(S min, S max)
-  {
+        is_compatible_to_uniform_int_distribution<S>::value>::type> {
+  static S run(S min, S max) {
     // Distribution objects are lightweight so we simply construct a new
     // distribution for each random number generation.
     Random::UniformIntDist<S> d(min, max);
@@ -128,8 +121,7 @@ struct UniformScalarImpl<
 
 //==============================================================================
 template <typename Derived, typename Enable = void>
-struct UniformMatrixImpl
-{
+struct UniformMatrixImpl {
   // Define nothing
 };
 
@@ -140,12 +132,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
-{
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type> {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
-  {
+      const Eigen::MatrixBase<Derived>& max) {
     const auto uniformFunc = [&](int i, int j) {
       return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
     };
@@ -161,12 +151,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
-{
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type> {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
-  {
+      const Eigen::MatrixBase<Derived>& max) {
     const auto uniformFunc = [&](int i) {
       return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
     };
@@ -181,12 +169,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
-{
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type> {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
-  {
+      const Eigen::MatrixBase<Derived>& max) {
     const auto uniformFunc = [&](int i, int j) {
       return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
     };
@@ -201,12 +187,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
-{
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type> {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
-  {
+      const Eigen::MatrixBase<Derived>& max) {
     const auto uniformFunc = [&](int i) {
       return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
     };
@@ -216,8 +200,7 @@ struct UniformMatrixImpl<
 
 //==============================================================================
 template <typename T, typename Enable = void>
-struct UniformImpl
-{
+struct UniformImpl {
   // Define nothing
 };
 
@@ -225,10 +208,8 @@ struct UniformImpl
 template <typename T>
 struct UniformImpl<
     T,
-    typename std::enable_if<std::is_arithmetic<T>::value>::type>
-{
-  static T run(T min, T max)
-  {
+    typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+  static T run(T min, T max) {
     return UniformScalarImpl<T>::run(min, max);
   }
 };
@@ -237,18 +218,16 @@ struct UniformImpl<
 template <typename T>
 struct UniformImpl<
     T,
-    typename std::enable_if<is_base_of_matrix<T>::value>::type>
-{
-  static T run(const Eigen::MatrixBase<T>& min, const Eigen::MatrixBase<T>& max)
-  {
+    typename std::enable_if<is_base_of_matrix<T>::value>::type> {
+  static T run(
+      const Eigen::MatrixBase<T>& min, const Eigen::MatrixBase<T>& max) {
     return UniformMatrixImpl<T>::run(min, max);
   }
 };
 
 //==============================================================================
 template <typename S, typename Enable = void>
-struct NormalScalarImpl
-{
+struct NormalScalarImpl {
   // Define nothing
 };
 
@@ -257,10 +236,8 @@ struct NormalScalarImpl
 template <typename S>
 struct NormalScalarImpl<
     S,
-    typename std::enable_if<std::is_floating_point<S>::value>::type>
-{
-  static S run(S mean, S sigma)
-  {
+    typename std::enable_if<std::is_floating_point<S>::value>::type> {
+  static S run(S mean, S sigma) {
     Random::NormalRealDist<S> d(mean, sigma);
     return d(Random::getGenerator());
   }
@@ -272,10 +249,8 @@ template <typename S>
 struct NormalScalarImpl<
     S,
     typename std::enable_if<
-        is_compatible_to_uniform_int_distribution<S>::value>::type>
-{
-  static S run(S mean, S sigma)
-  {
+        is_compatible_to_uniform_int_distribution<S>::value>::type> {
+  static S run(S mean, S sigma) {
     using DefaultFloatType = float;
     const DefaultFloatType realNormal = Random::normal(
         static_cast<DefaultFloatType>(mean),
@@ -286,8 +261,7 @@ struct NormalScalarImpl<
 
 //==============================================================================
 template <typename T, typename Enable = void>
-struct NormalImpl
-{
+struct NormalImpl {
   // Define nothing
 };
 
@@ -295,10 +269,8 @@ struct NormalImpl
 template <typename T>
 struct NormalImpl<
     T,
-    typename std::enable_if<std::is_arithmetic<T>::value>::type>
-{
-  static T run(T min, T max)
-  {
+    typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+  static T run(T min, T max) {
     return NormalScalarImpl<T>::run(min, max);
   }
 };
@@ -307,16 +279,14 @@ struct NormalImpl<
 
 //==============================================================================
 template <typename S>
-S Random::uniform(S min, S max)
-{
+S Random::uniform(S min, S max) {
   return detail::UniformImpl<S>::run(min, max);
 }
 
 //==============================================================================
 template <typename FixedSizeT>
 FixedSizeT Random::uniform(
-    typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max)
-{
+    typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max) {
   return uniform<FixedSizeT>(
       FixedSizeT::Constant(min), FixedSizeT::Constant(max));
 }
@@ -326,8 +296,7 @@ template <typename DynamicSizeVectorT>
 DynamicSizeVectorT Random::uniform(
     int size,
     typename DynamicSizeVectorT::Scalar min,
-    typename DynamicSizeVectorT::Scalar max)
-{
+    typename DynamicSizeVectorT::Scalar max) {
   return uniform<DynamicSizeVectorT>(
       DynamicSizeVectorT::Constant(size, min),
       DynamicSizeVectorT::Constant(size, max));
@@ -339,8 +308,7 @@ DynamicSizeMatrixT Random::uniform(
     int rows,
     int cols,
     typename DynamicSizeMatrixT::Scalar min,
-    typename DynamicSizeMatrixT::Scalar max)
-{
+    typename DynamicSizeMatrixT::Scalar max) {
   return uniform<DynamicSizeMatrixT>(
       DynamicSizeMatrixT::Constant(rows, cols, min),
       DynamicSizeMatrixT::Constant(rows, cols, max));
@@ -348,8 +316,7 @@ DynamicSizeMatrixT Random::uniform(
 
 //==============================================================================
 template <typename S>
-::Eigen::Quaternion<S> Random::uniformUnitQuaternion()
-{
+::Eigen::Quaternion<S> Random::uniformUnitQuaternion() {
   // "Uniform Random Rotations" of Shoemake:
   // http://planning.cs.uiuc.edu/node198.html
 
@@ -373,15 +340,13 @@ template <typename S>
 
 //==============================================================================
 template <typename S>
-::Eigen::Matrix<S, 3, 3> Random::uniformRotationMatrix3()
-{
+::Eigen::Matrix<S, 3, 3> Random::uniformRotationMatrix3() {
   return uniformUnitQuaternion<S>().toRotationMatrix();
 }
 
 //==============================================================================
 template <typename S>
-S Random::normal(S min, S max)
-{
+S Random::normal(S min, S max) {
   return detail::NormalImpl<S>::run(min, max);
 }
 

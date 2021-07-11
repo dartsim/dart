@@ -33,6 +33,7 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 #include "pointers.hpp"
@@ -42,16 +43,17 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Node(py::module& m)
-{
+void Node(py::module& m) {
   ::py::class_<
       dart::dynamics::Node,
       /*dart::common::VersionCounter,*/ dart::common::Subject,
       std::shared_ptr<dart::dynamics::Node> >(m, "Node")
       .def(
           "setName",
-          +[](dart::dynamics::Node* self, const std::string& newName)
-              -> const std::string& { return self->setName(newName); },
+          +[](dart::dynamics::Node* self,
+              const std::string& newName) -> const std::string& {
+            return self->setName(newName);
+          },
           ::py::return_value_policy::reference_internal,
           ::py::arg("newName"))
       .def(

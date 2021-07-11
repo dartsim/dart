@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/InverseKinematics.hpp"
+
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -40,36 +41,29 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-InverseKinematicsPtr InverseKinematics::create(JacobianNode* _node)
-{
+InverseKinematicsPtr InverseKinematics::create(JacobianNode* _node) {
   return InverseKinematicsPtr(
       std::shared_ptr<InverseKinematics>(new InverseKinematics(_node)));
 }
 
 //==============================================================================
-InverseKinematics::~InverseKinematics()
-{
+InverseKinematics::~InverseKinematics() {
   mTargetConnection.disconnect();
   mNodeConnection.disconnect();
 }
 
 //==============================================================================
-bool InverseKinematics::solve(bool applySolution)
-{
-  if (applySolution)
-  {
+bool InverseKinematics::solve(bool applySolution) {
+  if (applySolution) {
     return solveAndApply(true);
-  }
-  else
-  {
+  } else {
     Eigen::VectorXd positions;
     return findSolution(positions);
   }
 }
 
 //==============================================================================
-bool InverseKinematics::solve(Eigen::VectorXd& positions, bool applySolution)
-{
+bool InverseKinematics::solve(Eigen::VectorXd& positions, bool applySolution) {
   if (applySolution)
     return solveAndApply(positions, true);
   else
@@ -77,10 +71,8 @@ bool InverseKinematics::solve(Eigen::VectorXd& positions, bool applySolution)
 }
 
 //==============================================================================
-bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
-{
-  if (nullptr == mSolver)
-  {
+bool InverseKinematics::findSolution(Eigen::VectorXd& positions) {
+  if (nullptr == mSolver) {
     dtwarn << "[InverseKinematics::findSolution] The Solver for an "
            << "InverseKinematics module associated with [" << mNode->getName()
            << "] is a nullptr. You must reset the module's Solver before you "
@@ -88,8 +80,7 @@ bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
     return false;
   }
 
-  if (nullptr == mProblem)
-  {
+  if (nullptr == mProblem) {
     dtwarn << "[InverseKinematics::findSolution] The Problem for an "
            << "InverseKinematics module associated with [" << mNode->getName()
            << "] is a nullptr. You must reset the module's Problem before you "
@@ -129,8 +120,7 @@ bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
 }
 
 //==============================================================================
-bool InverseKinematics::solveAndApply(bool allowIncompleteResult)
-{
+bool InverseKinematics::solveAndApply(bool allowIncompleteResult) {
   Eigen::VectorXd solution;
   const auto wasSolved = findSolution(solution);
   if (wasSolved || allowIncompleteResult)
@@ -140,8 +130,7 @@ bool InverseKinematics::solveAndApply(bool allowIncompleteResult)
 
 //==============================================================================
 bool InverseKinematics::solveAndApply(
-    Eigen::VectorXd& positions, bool allowIncompleteResult)
-{
+    Eigen::VectorXd& positions, bool allowIncompleteResult) {
   const auto wasSolved = findSolution(positions);
   if (wasSolved || allowIncompleteResult)
     setPositions(positions);
@@ -151,8 +140,7 @@ bool InverseKinematics::solveAndApply(
 //==============================================================================
 static std::shared_ptr<optimization::Function> cloneIkFunc(
     const std::shared_ptr<optimization::Function>& _function,
-    InverseKinematics* _ik)
-{
+    InverseKinematics* _ik) {
   std::shared_ptr<InverseKinematics::Function> ikFunc
       = std::dynamic_pointer_cast<InverseKinematics::Function>(_function);
 
@@ -163,8 +151,7 @@ static std::shared_ptr<optimization::Function> cloneIkFunc(
 }
 
 //==============================================================================
-InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
-{
+InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const {
   std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newNode));
   newIK->setActive(isActive());
   newIK->setHierarchyLevel(getHierarchyLevel());
@@ -216,8 +203,7 @@ InverseKinematics::ErrorMethod::Properties::Properties(
     const Eigen::Vector6d& _errorWeights)
   : mBounds(_bounds),
     mErrorLengthClamp(_errorClamp),
-    mErrorWeights(_errorWeights)
-{
+    mErrorWeights(_errorWeights) {
   // Do nothing
 }
 
@@ -230,24 +216,21 @@ InverseKinematics::ErrorMethod::ErrorMethod(
   : mIK(_ik),
     mMethodName(_methodName),
     mLastError(Eigen::Vector6d::Constant(std::nan(""))),
-    mErrorP(_properties)
-{
+    mErrorP(_properties) {
   // Do nothing
 }
 
 //==============================================================================
 Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
-    const Eigen::Isometry3d& /*_currentTf*/, const Eigen::Vector6d& /*_error*/)
-{
+    const Eigen::Isometry3d& /*_currentTf*/,
+    const Eigen::Vector6d& /*_error*/) {
   return mIK->getTarget()->getTransform();
 }
 
 //==============================================================================
 const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
-    const Eigen::VectorXd& _q)
-{
-  if (_q.size() != static_cast<int>(mIK->getDofs().size()))
-  {
+    const Eigen::VectorXd& _q) {
+  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
     dterr << "[InverseKinematics::ErrorMethod::evalError] Mismatch between "
           << "joint positions size [" << _q.size() << "] and the available "
           << "degrees of freedom [" << mIK->getDofs().size() << "]."
@@ -258,19 +241,15 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     return mLastError;
   }
 
-  if (_q.size() == 0)
-  {
+  if (_q.size() == 0) {
     mLastError.setZero();
     return mLastError;
   }
 
-  if (_q.size() == mLastPositions.size())
-  {
+  if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i)
-    {
-      if (_q[i] != mLastPositions[i])
-      {
+    for (int i = 0; i < mLastPositions.size(); ++i) {
+      if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
       }
@@ -288,15 +267,13 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
 }
 
 //==============================================================================
-const std::string& InverseKinematics::ErrorMethod::getMethodName() const
-{
+const std::string& InverseKinematics::ErrorMethod::getMethodName() const {
   return mMethodName;
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setBounds(
-    const Eigen::Vector6d& _lower, const Eigen::Vector6d& _upper)
-{
+    const Eigen::Vector6d& _lower, const Eigen::Vector6d& _upper) {
   mErrorP.mBounds.first = _lower;
   mErrorP.mBounds.second = _upper;
   clearCache();
@@ -304,23 +281,20 @@ void InverseKinematics::ErrorMethod::setBounds(
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setBounds(
-    const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds)
-{
+    const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds) {
   mErrorP.mBounds = _bounds;
   clearCache();
 }
 
 //==============================================================================
 const std::pair<Eigen::Vector6d, Eigen::Vector6d>&
-InverseKinematics::ErrorMethod::getBounds() const
-{
+InverseKinematics::ErrorMethod::getBounds() const {
   return mErrorP.mBounds;
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setAngularBounds(
-    const Eigen::Vector3d& _lower, const Eigen::Vector3d& _upper)
-{
+    const Eigen::Vector3d& _lower, const Eigen::Vector3d& _upper) {
   mErrorP.mBounds.first.head<3>() = _lower;
   mErrorP.mBounds.second.head<3>() = _upper;
   clearCache();
@@ -328,23 +302,20 @@ void InverseKinematics::ErrorMethod::setAngularBounds(
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setAngularBounds(
-    const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds)
-{
+    const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
   setAngularBounds(_bounds.first, _bounds.second);
 }
 
 //==============================================================================
 std::pair<Eigen::Vector3d, Eigen::Vector3d>
-InverseKinematics::ErrorMethod::getAngularBounds() const
-{
+InverseKinematics::ErrorMethod::getAngularBounds() const {
   return std::pair<Eigen::Vector3d, Eigen::Vector3d>(
       mErrorP.mBounds.first.head<3>(), mErrorP.mBounds.second.head<3>());
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setLinearBounds(
-    const Eigen::Vector3d& _lower, const Eigen::Vector3d& _upper)
-{
+    const Eigen::Vector3d& _lower, const Eigen::Vector3d& _upper) {
   mErrorP.mBounds.first.tail<3>() = _lower;
   mErrorP.mBounds.second.tail<3>() = _upper;
   clearCache();
@@ -352,84 +323,72 @@ void InverseKinematics::ErrorMethod::setLinearBounds(
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setLinearBounds(
-    const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds)
-{
+    const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
   setLinearBounds(_bounds.first, _bounds.second);
 }
 
 //==============================================================================
 std::pair<Eigen::Vector3d, Eigen::Vector3d>
-InverseKinematics::ErrorMethod::getLinearBounds() const
-{
+InverseKinematics::ErrorMethod::getLinearBounds() const {
   return std::pair<Eigen::Vector3d, Eigen::Vector3d>(
       mErrorP.mBounds.first.tail<3>(), mErrorP.mBounds.second.tail<3>());
 }
 
 //==============================================================================
-void InverseKinematics::ErrorMethod::setErrorLengthClamp(double _clampSize)
-{
+void InverseKinematics::ErrorMethod::setErrorLengthClamp(double _clampSize) {
   mErrorP.mErrorLengthClamp = _clampSize;
   clearCache();
 }
 
 //==============================================================================
-double InverseKinematics::ErrorMethod::getErrorLengthClamp() const
-{
+double InverseKinematics::ErrorMethod::getErrorLengthClamp() const {
   return mErrorP.mErrorLengthClamp;
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setErrorWeights(
-    const Eigen::Vector6d& _weights)
-{
+    const Eigen::Vector6d& _weights) {
   mErrorP.mErrorWeights = _weights;
   clearCache();
 }
 
 //==============================================================================
-const Eigen::Vector6d& InverseKinematics::ErrorMethod::getErrorWeights() const
-{
+const Eigen::Vector6d& InverseKinematics::ErrorMethod::getErrorWeights() const {
   return mErrorP.mErrorWeights;
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setAngularErrorWeights(
-    const Eigen::Vector3d& _weights)
-{
+    const Eigen::Vector3d& _weights) {
   mErrorP.mErrorWeights.head<3>() = _weights;
   clearCache();
 }
 
 //==============================================================================
-Eigen::Vector3d InverseKinematics::ErrorMethod::getAngularErrorWeights() const
-{
+Eigen::Vector3d InverseKinematics::ErrorMethod::getAngularErrorWeights() const {
   return mErrorP.mErrorWeights.head<3>();
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setLinearErrorWeights(
-    const Eigen::Vector3d& _weights)
-{
+    const Eigen::Vector3d& _weights) {
   mErrorP.mErrorWeights.tail<3>() = _weights;
   clearCache();
 }
 
 //==============================================================================
-Eigen::Vector3d InverseKinematics::ErrorMethod::getLinearErrorWeights() const
-{
+Eigen::Vector3d InverseKinematics::ErrorMethod::getLinearErrorWeights() const {
   return mErrorP.mErrorWeights.tail<3>();
 }
 
 //==============================================================================
 InverseKinematics::ErrorMethod::Properties
-InverseKinematics::ErrorMethod::getErrorMethodProperties() const
-{
+InverseKinematics::ErrorMethod::getErrorMethodProperties() const {
   return mErrorP;
 }
 
 //==============================================================================
-void InverseKinematics::ErrorMethod::clearCache()
-{
+void InverseKinematics::ErrorMethod::clearCache() {
   // This will force the error to be recomputed the next time computeError is
   // called
   mLastPositions.resize(0);
@@ -439,8 +398,7 @@ void InverseKinematics::ErrorMethod::clearCache()
 InverseKinematics::TaskSpaceRegion::UniqueProperties::UniqueProperties(
     bool computeErrorFromCenter, SimpleFramePtr referenceFrame)
   : mComputeErrorFromCenter(computeErrorFromCenter),
-    mReferenceFrame(std::move(referenceFrame))
-{
+    mReferenceFrame(std::move(referenceFrame)) {
   // Do nothing
 }
 
@@ -449,36 +407,31 @@ InverseKinematics::TaskSpaceRegion::Properties::Properties(
     const ErrorMethod::Properties& errorProperties,
     const UniqueProperties& taskSpaceProperties)
   : ErrorMethod::Properties(errorProperties),
-    UniqueProperties(taskSpaceProperties)
-{
+    UniqueProperties(taskSpaceProperties) {
   // Do nothing
 }
 
 //==============================================================================
 InverseKinematics::TaskSpaceRegion::TaskSpaceRegion(
     InverseKinematics* _ik, const Properties& _properties)
-  : ErrorMethod(_ik, "TaskSpaceRegion", _properties), mTaskSpaceP(_properties)
-{
+  : ErrorMethod(_ik, "TaskSpaceRegion", _properties), mTaskSpaceP(_properties) {
   // Do nothing
 }
 
 //==============================================================================
 std::unique_ptr<InverseKinematics::ErrorMethod>
-InverseKinematics::TaskSpaceRegion::clone(InverseKinematics* _newIK) const
-{
+InverseKinematics::TaskSpaceRegion::clone(InverseKinematics* _newIK) const {
   return std::make_unique<TaskSpaceRegion>(
       _newIK, getTaskSpaceRegionProperties());
 }
 
 //==============================================================================
 Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
-    const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error)
-{
+    const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error) {
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
   tf.rotate(_currentTf.linear());
-  for (std::size_t i = 0; i < 3; ++i)
-  {
+  for (std::size_t i = 0; i < 3; ++i) {
     const double angle = _error[i];
     Eigen::Vector3d axis(Eigen::Vector3d::Zero());
     axis[i] = 1.0;
@@ -492,8 +445,7 @@ Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
 }
 
 //==============================================================================
-Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
-{
+Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError() {
   // This is a slightly modified implementation of the Berenson et al Task Space
   // Region method found in "Task Space Regions: A Framework for
   // Pose-Constrained Manipulation Planning".
@@ -539,37 +491,26 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   const Eigen::Vector6d& min = mErrorP.mBounds.first;
   const Eigen::Vector6d& max = mErrorP.mBounds.second;
   double tolerance = mIK->getSolver()->getTolerance();
-  for (int i = 0; i < 6; ++i)
-  {
-    if (displacement[i] < min[i])
-    {
-      if (mTaskSpaceP.mComputeErrorFromCenter)
-      {
+  for (int i = 0; i < 6; ++i) {
+    if (displacement[i] < min[i]) {
+      if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(max[i]))
           error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
         else
           error[i] = displacement[i] - (min[i] + tolerance);
-      }
-      else
-      {
+      } else {
         error[i] = displacement[i] - min[i];
       }
-    }
-    else if (max[i] < displacement[i])
-    {
-      if (mTaskSpaceP.mComputeErrorFromCenter)
-      {
+    } else if (max[i] < displacement[i]) {
+      if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(min[i]))
           error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
         else
           error[i] = displacement[i] - (max[i] - tolerance);
-      }
-      else
-      {
+      } else {
         error[i] = displacement[i] - max[i];
       }
-    }
-    else
+    } else
       error[i] = 0.0;
   }
 
@@ -578,8 +519,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   if (error.norm() > mErrorP.mErrorLengthClamp)
     error = error.normalized() * mErrorP.mErrorLengthClamp;
 
-  if (!referenceFrame->isWorld())
-  {
+  if (!referenceFrame->isWorld()) {
     // Transform the error term into the world frame if it's not already
     const Eigen::Isometry3d& R = referenceFrame->getWorldTransform();
     error.head<3>() = R.linear() * error.head<3>();
@@ -591,43 +531,37 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
 
 //==============================================================================
 void InverseKinematics::TaskSpaceRegion::setComputeFromCenter(
-    bool computeFromCenter)
-{
+    bool computeFromCenter) {
   mTaskSpaceP.mComputeErrorFromCenter = computeFromCenter;
 }
 
 //==============================================================================
-bool InverseKinematics::TaskSpaceRegion::isComputingFromCenter() const
-{
+bool InverseKinematics::TaskSpaceRegion::isComputingFromCenter() const {
   return mTaskSpaceP.mComputeErrorFromCenter;
 }
 
 //==============================================================================
 void InverseKinematics::TaskSpaceRegion::setReferenceFrame(
-    SimpleFramePtr referenceFrame)
-{
+    SimpleFramePtr referenceFrame) {
   mTaskSpaceP.mReferenceFrame = std::move(referenceFrame);
 }
 
 //==============================================================================
 ConstSimpleFramePtr InverseKinematics::TaskSpaceRegion::getReferenceFrame()
-    const
-{
+    const {
   return mTaskSpaceP.mReferenceFrame;
 }
 
 //==============================================================================
 InverseKinematics::TaskSpaceRegion::Properties
-InverseKinematics::TaskSpaceRegion::getTaskSpaceRegionProperties() const
-{
+InverseKinematics::TaskSpaceRegion::getTaskSpaceRegionProperties() const {
   return Properties(getErrorMethodProperties(), mTaskSpaceP);
 }
 
 //==============================================================================
 InverseKinematics::GradientMethod::Properties::Properties(
     double clamp, const Eigen::VectorXd& weights)
-  : mComponentWiseClamp(clamp), mComponentWeights(weights)
-{
+  : mComponentWiseClamp(clamp), mComponentWeights(weights) {
   // Do nothing
 }
 
@@ -636,17 +570,14 @@ InverseKinematics::GradientMethod::GradientMethod(
     InverseKinematics* _ik,
     const std::string& _methodName,
     const Properties& _properties)
-  : mIK(_ik), mMethodName(_methodName), mGradientP(_properties)
-{
+  : mIK(_ik), mMethodName(_methodName), mGradientP(_properties) {
   // Do nothing
 }
 
 //==============================================================================
 void InverseKinematics::GradientMethod::evalGradient(
-    const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad)
-{
-  if (_q.size() != static_cast<int>(mIK->getDofs().size()))
-  {
+    const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad) {
+  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
     dterr << "[InverseKinematics::GradientMethod::evalGradient] Mismatch "
           << "between joint positions size [" << _q.size() << "] and the "
           << "available degrees of freedom [" << mIK->getDofs().size() << "]."
@@ -660,26 +591,21 @@ void InverseKinematics::GradientMethod::evalGradient(
     return;
   }
 
-  if (_q.size() == 0)
-  {
+  if (_q.size() == 0) {
     _grad.setZero();
     return;
   }
 
-  if (_q.size() == mLastPositions.size())
-  {
+  if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i)
-    {
-      if (_q[i] != mLastPositions[i])
-      {
+    for (int i = 0; i < mLastPositions.size(); ++i) {
+      if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
       }
     }
 
-    if (repeat)
-    {
+    if (repeat) {
       _grad = mLastGradient;
       return;
     }
@@ -693,17 +619,14 @@ void InverseKinematics::GradientMethod::evalGradient(
 }
 
 //==============================================================================
-const std::string& InverseKinematics::GradientMethod::getMethodName() const
-{
+const std::string& InverseKinematics::GradientMethod::getMethodName() const {
   return mMethodName;
 }
 
 //==============================================================================
 void InverseKinematics::GradientMethod::clampGradient(
-    Eigen::VectorXd& _grad) const
-{
-  for (int i = 0; i < _grad.size(); ++i)
-  {
+    Eigen::VectorXd& _grad) const {
+  for (int i = 0; i < _grad.size(); ++i) {
     if (std::abs(_grad[i]) > mGradientP.mComponentWiseClamp)
       _grad[i] = _grad[i] > 0 ? mGradientP.mComponentWiseClamp
                               : -mGradientP.mComponentWiseClamp;
@@ -711,21 +634,18 @@ void InverseKinematics::GradientMethod::clampGradient(
 }
 
 //==============================================================================
-void InverseKinematics::GradientMethod::setComponentWiseClamp(double _clamp)
-{
+void InverseKinematics::GradientMethod::setComponentWiseClamp(double _clamp) {
   mGradientP.mComponentWiseClamp = std::abs(_clamp);
 }
 
 //==============================================================================
-double InverseKinematics::GradientMethod::getComponentWiseClamp() const
-{
+double InverseKinematics::GradientMethod::getComponentWiseClamp() const {
   return mGradientP.mComponentWiseClamp;
 }
 
 //==============================================================================
 void InverseKinematics::GradientMethod::applyWeights(
-    Eigen::VectorXd& _grad) const
-{
+    Eigen::VectorXd& _grad) const {
   std::size_t numComponents
       = std::min(_grad.size(), mGradientP.mComponentWeights.size());
   for (std::size_t i = 0; i < numComponents; ++i)
@@ -734,22 +654,19 @@ void InverseKinematics::GradientMethod::applyWeights(
 
 //==============================================================================
 void InverseKinematics::GradientMethod::setComponentWeights(
-    const Eigen::VectorXd& _weights)
-{
+    const Eigen::VectorXd& _weights) {
   mGradientP.mComponentWeights = _weights;
 }
 
 //==============================================================================
 const Eigen::VectorXd& InverseKinematics::GradientMethod::getComponentWeights()
-    const
-{
+    const {
   return mGradientP.mComponentWeights;
 }
 
 //==============================================================================
 void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
-    Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs)
-{
+    Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs) {
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
   mInitialPositionsCache = skel->getPositions(dofs);
 
@@ -757,8 +674,7 @@ void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
     skel->getDof(dofs[i])->setVelocity(grad[i]);
   // Velocities of unused DOFs should already be set to zero.
 
-  for (std::size_t i = 0; i < dofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
     Joint* joint = skel->getDof(dofs[i])->getJoint();
     joint->integratePositions(1.0);
 
@@ -774,36 +690,31 @@ void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
 
 //==============================================================================
 InverseKinematics::GradientMethod::Properties
-InverseKinematics::GradientMethod::getGradientMethodProperties() const
-{
+InverseKinematics::GradientMethod::getGradientMethodProperties() const {
   return mGradientP;
 }
 
 //==============================================================================
-void InverseKinematics::GradientMethod::clearCache()
-{
+void InverseKinematics::GradientMethod::clearCache() {
   // This will force the gradient to be recomputed the next time computeGradient
   // is called
   mLastPositions.resize(0);
 }
 
 //==============================================================================
-InverseKinematics* InverseKinematics::GradientMethod::getIK()
-{
+InverseKinematics* InverseKinematics::GradientMethod::getIK() {
   return mIK;
 }
 
 //==============================================================================
-const InverseKinematics* InverseKinematics::GradientMethod::getIK() const
-{
+const InverseKinematics* InverseKinematics::GradientMethod::getIK() const {
   return mIK;
 }
 
 //==============================================================================
 InverseKinematics::JacobianDLS::UniqueProperties::UniqueProperties(
     double damping)
-  : mDamping(damping)
-{
+  : mDamping(damping) {
   // Do nothing
 }
 
@@ -812,44 +723,37 @@ InverseKinematics::JacobianDLS::Properties::Properties(
     const GradientMethod::Properties& gradientProperties,
     const UniqueProperties& dlsProperties)
   : GradientMethod::Properties(gradientProperties),
-    UniqueProperties(dlsProperties)
-{
+    UniqueProperties(dlsProperties) {
   // Do nothing
 }
 
 //==============================================================================
 InverseKinematics::JacobianDLS::JacobianDLS(
     InverseKinematics* _ik, const Properties& properties)
-  : GradientMethod(_ik, "JacobianDLS", properties), mDLSProperties(properties)
-{
+  : GradientMethod(_ik, "JacobianDLS", properties), mDLSProperties(properties) {
   // Do nothing
 }
 
 //==============================================================================
 std::unique_ptr<InverseKinematics::GradientMethod>
-InverseKinematics::JacobianDLS::clone(InverseKinematics* _newIK) const
-{
+InverseKinematics::JacobianDLS::clone(InverseKinematics* _newIK) const {
   return std::make_unique<JacobianDLS>(_newIK, getJacobianDLSProperties());
 }
 
 //==============================================================================
 void InverseKinematics::JacobianDLS::computeGradient(
-    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
-{
+    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) {
   const math::Jacobian& J = mIK->computeJacobian();
 
   const double& damping = mDLSProperties.mDamping;
   int rows = J.rows(), cols = J.cols();
-  if (rows <= cols)
-  {
+  if (rows <= cols) {
     _grad = J.transpose()
             * (pow(damping, 2) * Eigen::MatrixXd::Identity(rows, rows)
                + J * J.transpose())
                   .inverse()
             * _error;
-  }
-  else
-  {
+  } else {
     _grad = (pow(damping, 2) * Eigen::MatrixXd::Identity(cols, cols)
              + J.transpose() * J)
                 .inverse()
@@ -862,44 +766,38 @@ void InverseKinematics::JacobianDLS::computeGradient(
 }
 
 //==============================================================================
-void InverseKinematics::JacobianDLS::setDampingCoefficient(double _damping)
-{
+void InverseKinematics::JacobianDLS::setDampingCoefficient(double _damping) {
   mDLSProperties.mDamping = _damping;
 }
 
 //==============================================================================
-double InverseKinematics::JacobianDLS::getDampingCoefficient() const
-{
+double InverseKinematics::JacobianDLS::getDampingCoefficient() const {
   return mDLSProperties.mDamping;
 }
 
 //==============================================================================
 InverseKinematics::JacobianDLS::Properties
-InverseKinematics::JacobianDLS::getJacobianDLSProperties() const
-{
+InverseKinematics::JacobianDLS::getJacobianDLSProperties() const {
   return Properties(mGradientP, mDLSProperties);
 }
 
 //==============================================================================
 InverseKinematics::JacobianTranspose::JacobianTranspose(
     InverseKinematics* _ik, const Properties& properties)
-  : GradientMethod(_ik, "JacobianTranspose", properties)
-{
+  : GradientMethod(_ik, "JacobianTranspose", properties) {
   // Do nothing
 }
 
 //==============================================================================
 std::unique_ptr<InverseKinematics::GradientMethod>
-InverseKinematics::JacobianTranspose::clone(InverseKinematics* _newIK) const
-{
+InverseKinematics::JacobianTranspose::clone(InverseKinematics* _newIK) const {
   return std::make_unique<JacobianTranspose>(
       _newIK, getGradientMethodProperties());
 }
 
 //==============================================================================
 void InverseKinematics::JacobianTranspose::computeGradient(
-    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
-{
+    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) {
   const math::Jacobian& J = mIK->computeJacobian();
   _grad = J.transpose() * _error;
 
@@ -911,8 +809,7 @@ void InverseKinematics::JacobianTranspose::computeGradient(
 //==============================================================================
 InverseKinematics::Analytical::Solution::Solution(
     const Eigen::VectorXd& _config, int _validity)
-  : mConfig(_config), mValidity(_validity)
-{
+  : mConfig(_config), mValidity(_validity) {
   // Do nothing
 }
 
@@ -920,8 +817,7 @@ InverseKinematics::Analytical::Solution::Solution(
 InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
     ExtraDofUtilization extraDofUtilization, double extraErrorLengthClamp)
   : mExtraDofUtilization(extraDofUtilization),
-    mExtraErrorLengthClamp(extraErrorLengthClamp)
-{
+    mExtraErrorLengthClamp(extraErrorLengthClamp) {
   resetQualityComparisonFunction();
 }
 
@@ -932,15 +828,13 @@ InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
     QualityComparison qualityComparator)
   : mExtraDofUtilization(extraDofUtilization),
     mExtraErrorLengthClamp(extraErrorLengthClamp),
-    mQualityComparator(qualityComparator)
-{
+    mQualityComparator(qualityComparator) {
   // Do nothing
 }
 
 //==============================================================================
 void InverseKinematics::Analytical::UniqueProperties::
-    resetQualityComparisonFunction()
-{
+    resetQualityComparisonFunction() {
   // This function prefers the configuration whose highest joint velocity is
   // smaller than the highest joint velocity of the other configuration.
   mQualityComparator = [=](const Eigen::VectorXd& better,
@@ -949,19 +843,16 @@ void InverseKinematics::Analytical::UniqueProperties::
     const std::vector<std::size_t>& dofs = ik->getAnalytical()->getDofs();
     double biggestJump = 0.0;
     bool isBetter = true;
-    for (std::size_t i = 0; i < dofs.size(); ++i)
-    {
+    for (std::size_t i = 0; i < dofs.size(); ++i) {
       double q = ik->getNode()->getSkeleton()->getPosition(dofs[i]);
       const double& testBetter = std::abs(q - better[i]);
-      if (testBetter > biggestJump)
-      {
+      if (testBetter > biggestJump) {
         biggestJump = testBetter;
         isBetter = false;
       }
 
       const double& testWorse = std::abs(q - worse[i]);
-      if (testWorse > biggestJump)
-      {
+      if (testWorse > biggestJump) {
         biggestJump = testWorse;
         isBetter = true;
       }
@@ -976,16 +867,14 @@ InverseKinematics::Analytical::Properties::Properties(
     const GradientMethod::Properties& gradientProperties,
     const UniqueProperties& analyticalProperties)
   : GradientMethod::Properties(gradientProperties),
-    UniqueProperties(analyticalProperties)
-{
+    UniqueProperties(analyticalProperties) {
   // Do nothing
 }
 
 //==============================================================================
 InverseKinematics::Analytical::Properties::Properties(
     const UniqueProperties& analyticalProperties)
-  : UniqueProperties(analyticalProperties)
-{
+  : UniqueProperties(analyticalProperties) {
   // Do nothing
 }
 
@@ -994,13 +883,11 @@ InverseKinematics::Analytical::Analytical(
     InverseKinematics* _ik,
     const std::string& _methodName,
     const Properties& _properties)
-  : GradientMethod(_ik, _methodName, _properties), mAnalyticalP(_properties)
-{
+  : GradientMethod(_ik, _methodName, _properties), mAnalyticalP(_properties) {
   // During the cloning process, the GradientMethod gets created before the
   // ErrorMethod, so we need to check that an ErrorMethod exists before
   // attempting to use it.
-  if (InverseKinematics::ErrorMethod* error = mIK->mErrorMethod.get())
-  {
+  if (InverseKinematics::ErrorMethod* error = mIK->mErrorMethod.get()) {
     // We override the clamping and the weights of the error method, because
     // clamping and weighing are useful for iterative methods, but they are
     // harmful to analytical methods.
@@ -1010,8 +897,7 @@ InverseKinematics::Analytical::Analytical(
 }
 
 //==============================================================================
-const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
-{
+const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions() {
   const Eigen::Isometry3d& currentTf = mIK->getNode()->getWorldTransform();
   const Eigen::Vector6d& error = mIK->getErrorMethod().computeError();
 
@@ -1023,8 +909,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 
 //==============================================================================
 const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
-    const Eigen::Isometry3d& _desiredTf)
-{
+    const Eigen::Isometry3d& _desiredTf) {
   mRestoreConfigCache = getPositions();
 
   computeSolutions(_desiredTf);
@@ -1038,8 +923,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
   mLimitViolationCache.clear();
   mLimitViolationCache.reserve(mSolutions.size());
 
-  for (std::size_t i = 0; i < mSolutions.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     const Solution& s = mSolutions[i];
     if (s.mValidity == VALID)
       mValidSolutionsCache.push_back(s);
@@ -1084,14 +968,12 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
 void InverseKinematics::Analytical::addExtraDofGradient(
     Eigen::VectorXd& grad,
     const Eigen::Vector6d& error,
-    ExtraDofUtilization /*utilization*/)
-{
+    ExtraDofUtilization /*utilization*/) {
   mExtraDofGradCache.resize(mExtraDofs.size());
   const math::Jacobian& J = mIK->computeJacobian();
   const std::vector<int>& gradMap = mIK->getDofMap();
 
-  for (std::size_t i = 0; i < mExtraDofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
     if (gradIndex == -1)
@@ -1102,8 +984,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
   convertJacobianMethodOutputToGradient(mExtraDofGradCache, mExtraDofs);
 
-  for (std::size_t i = 0; i < mExtraDofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
     if (gradIndex == -1)
@@ -1115,8 +996,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
     double dq = weight * mExtraDofGradCache[i];
 
-    if (std::abs(dq) > mGradientP.mComponentWiseClamp)
-    {
+    if (std::abs(dq) > mGradientP.mComponentWiseClamp) {
       dq = dq < 0 ? -mGradientP.mComponentWiseClamp
                   : mGradientP.mComponentWiseClamp;
     }
@@ -1127,8 +1007,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
 //==============================================================================
 void InverseKinematics::Analytical::computeGradient(
-    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
-{
+    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) {
   _grad.setZero();
   if (Eigen::Vector6d::Zero() == _error)
     return;
@@ -1139,8 +1018,7 @@ void InverseKinematics::Analytical::computeGradient(
 
   if ((PRE_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
        || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
-      && mExtraDofs.size() > 0)
-  {
+      && mExtraDofs.size() > 0) {
     const double norm = _error.norm();
     const Eigen::Vector6d& error
         = norm > mAnalyticalP.mExtraErrorLengthClamp
@@ -1150,8 +1028,7 @@ void InverseKinematics::Analytical::computeGradient(
     addExtraDofGradient(_grad, error, PRE_ANALYTICAL);
 
     const std::vector<int>& gradMap = mIK->getDofMap();
-    for (std::size_t i = 0; i < mExtraDofs.size(); ++i)
-    {
+    for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
       const std::size_t depIndex = mExtraDofs[i];
       DegreeOfFreedom* dof = mIK->getNode()->getDependentDof(depIndex);
 
@@ -1174,8 +1051,7 @@ void InverseKinematics::Analytical::computeGradient(
   const std::vector<int>& analyticalToDependent = mDofMap;
   const std::vector<int>& dependentToGradient = mIK->getDofMap();
 
-  for (std::size_t i = 0; i < analyticalToDependent.size(); ++i)
-  {
+  for (std::size_t i = 0; i < analyticalToDependent.size(); ++i) {
     if (analyticalToDependent[i] == -1)
       continue;
 
@@ -1188,8 +1064,7 @@ void InverseKinematics::Analytical::computeGradient(
 
   if ((POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
        || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
-      && mExtraDofs.size() > 0)
-  {
+      && mExtraDofs.size() > 0) {
     setPositions(bestSolution);
 
     const Eigen::Isometry3d& postTf = mIK->getNode()->getWorldTransform();
@@ -1207,66 +1082,57 @@ void InverseKinematics::Analytical::computeGradient(
 }
 
 //==============================================================================
-void InverseKinematics::Analytical::setPositions(const Eigen::VectorXd& _config)
-{
+void InverseKinematics::Analytical::setPositions(
+    const Eigen::VectorXd& _config) {
   mIK->getNode()->getSkeleton()->setPositions(getDofs(), _config);
 }
 
 //==============================================================================
-Eigen::VectorXd InverseKinematics::Analytical::getPositions() const
-{
+Eigen::VectorXd InverseKinematics::Analytical::getPositions() const {
   return mIK->getNode()->getSkeleton()->getPositions(getDofs());
 }
 
 //==============================================================================
 void InverseKinematics::Analytical::setExtraDofUtilization(
-    ExtraDofUtilization _utilization)
-{
+    ExtraDofUtilization _utilization) {
   mAnalyticalP.mExtraDofUtilization = _utilization;
 }
 
 //==============================================================================
 IK::Analytical::ExtraDofUtilization IK::Analytical::getExtraDofUtilization()
-    const
-{
+    const {
   return mAnalyticalP.mExtraDofUtilization;
 }
 
 //==============================================================================
-void IK::Analytical::setExtraErrorLengthClamp(double _clamp)
-{
+void IK::Analytical::setExtraErrorLengthClamp(double _clamp) {
   mAnalyticalP.mExtraErrorLengthClamp = _clamp;
 }
 
 //==============================================================================
-double IK::Analytical::getExtraErrorLengthClamp() const
-{
+double IK::Analytical::getExtraErrorLengthClamp() const {
   return mAnalyticalP.mExtraErrorLengthClamp;
 }
 
 //==============================================================================
 void InverseKinematics::Analytical::setQualityComparisonFunction(
-    const QualityComparison& _func)
-{
+    const QualityComparison& _func) {
   mAnalyticalP.mQualityComparator = _func;
 }
 
 //==============================================================================
-void InverseKinematics::Analytical::resetQualityComparisonFunction()
-{
+void InverseKinematics::Analytical::resetQualityComparisonFunction() {
   mAnalyticalP.resetQualityComparisonFunction();
 }
 
 //==============================================================================
 InverseKinematics::Analytical::Properties
-InverseKinematics::Analytical::getAnalyticalProperties() const
-{
+InverseKinematics::Analytical::getAnalyticalProperties() const {
   return Properties(getGradientMethodProperties(), mAnalyticalP);
 }
 
 //==============================================================================
-void InverseKinematics::Analytical::constructDofMap()
-{
+void InverseKinematics::Analytical::constructDofMap() {
   const std::vector<std::size_t>& analyticalDofs = getDofs();
   const std::vector<std::size_t>& nodeDofs
       = mIK->getNode()->getDependentGenCoordIndices();
@@ -1277,20 +1143,16 @@ void InverseKinematics::Analytical::constructDofMap()
   std::vector<bool> isExtraDof;
   isExtraDof.resize(nodeDofs.size(), true);
 
-  for (std::size_t i = 0; i < analyticalDofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < analyticalDofs.size(); ++i) {
     mDofMap[i] = -1;
-    for (std::size_t j = 0; j < nodeDofs.size(); ++j)
-    {
-      if (analyticalDofs[i] == nodeDofs[j])
-      {
+    for (std::size_t j = 0; j < nodeDofs.size(); ++j) {
+      if (analyticalDofs[i] == nodeDofs[j]) {
         mDofMap[i] = j;
         isExtraDof[j] = false;
       }
     }
 
-    if (mDofMap[i] == -1)
-    {
+    if (mDofMap[i] == -1) {
       DegreeOfFreedom* dof
           = mIK->getNode()->getSkeleton()->getDof(analyticalDofs[i]);
       std::string name
@@ -1308,28 +1170,23 @@ void InverseKinematics::Analytical::constructDofMap()
   mExtraDofs.reserve(isExtraDof.size());
 
   const std::vector<int>& gradDofMap = mIK->getDofMap();
-  for (std::size_t i = 0; i < isExtraDof.size(); ++i)
-  {
+  for (std::size_t i = 0; i < isExtraDof.size(); ++i) {
     if (isExtraDof[i] && (gradDofMap[i] > -1))
       mExtraDofs.push_back(i);
   }
 }
 
 //==============================================================================
-void InverseKinematics::Analytical::checkSolutionJointLimits()
-{
+void InverseKinematics::Analytical::checkSolutionJointLimits() {
   const std::vector<std::size_t>& dofs = getDofs();
-  for (std::size_t i = 0; i < mSolutions.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     Solution& s = mSolutions[i];
     const Eigen::VectorXd& q = s.mConfig;
 
-    for (std::size_t j = 0; j < dofs.size(); ++j)
-    {
+    for (std::size_t j = 0; j < dofs.size(); ++j) {
       DegreeOfFreedom* dof = mIK->getNode()->getSkeleton()->getDof(dofs[j]);
       if (q[j] < dof->getPositionLowerLimit()
-          || dof->getPositionUpperLimit() < q[j])
-      {
+          || dof->getPositionUpperLimit() < q[j]) {
         s.mValidity |= LIMIT_VIOLATED;
         break;
       }
@@ -1338,42 +1195,35 @@ void InverseKinematics::Analytical::checkSolutionJointLimits()
 }
 
 //==============================================================================
-void InverseKinematics::setActive(bool _active)
-{
+void InverseKinematics::setActive(bool _active) {
   mActive = _active;
 }
 
 //==============================================================================
-void InverseKinematics::setInactive()
-{
+void InverseKinematics::setInactive() {
   mActive = false;
 }
 
 //==============================================================================
-bool InverseKinematics::isActive() const
-{
+bool InverseKinematics::isActive() const {
   return mActive;
 }
 
 //==============================================================================
-void InverseKinematics::setHierarchyLevel(std::size_t _level)
-{
+void InverseKinematics::setHierarchyLevel(std::size_t _level) {
   mHierarchyLevel = _level;
 }
 
 //==============================================================================
-std::size_t InverseKinematics::getHierarchyLevel() const
-{
+std::size_t InverseKinematics::getHierarchyLevel() const {
   return mHierarchyLevel;
 }
 
 //==============================================================================
-void InverseKinematics::useChain()
-{
+void InverseKinematics::useChain() {
   mDofs.clear();
 
-  if (mNode->getNumDependentGenCoords() == 0)
-  {
+  if (mNode->getNumDependentGenCoords() == 0) {
     setDofs(mDofs);
     return;
   }
@@ -1382,26 +1232,21 @@ void InverseKinematics::useChain()
 }
 
 //==============================================================================
-void InverseKinematics::useWholeBody()
-{
+void InverseKinematics::useWholeBody() {
   setDofs(mNode->getDependentGenCoordIndices());
 }
 
 //==============================================================================
-void InverseKinematics::setDofs(const std::vector<std::size_t>& _dofs)
-{
+void InverseKinematics::setDofs(const std::vector<std::size_t>& _dofs) {
   mDofs = _dofs;
   const std::vector<std::size_t>& entityDependencies
       = mNode->getDependentGenCoordIndices();
 
   mDofMap.resize(entityDependencies.size());
-  for (std::size_t i = 0; i < mDofMap.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mDofMap.size(); ++i) {
     mDofMap[i] = -1;
-    for (std::size_t j = 0; j < mDofs.size(); ++j)
-    {
-      if (mDofs[j] == entityDependencies[i])
-      {
+    for (std::size_t j = 0; j < mDofs.size(); ++j) {
+      if (mDofs[j] == entityDependencies[i]) {
         mDofMap[i] = j;
       }
     }
@@ -1414,117 +1259,101 @@ void InverseKinematics::setDofs(const std::vector<std::size_t>& _dofs)
 }
 
 //==============================================================================
-const std::vector<std::size_t>& InverseKinematics::getDofs() const
-{
+const std::vector<std::size_t>& InverseKinematics::getDofs() const {
   return mDofs;
 }
 
 //==============================================================================
-const std::vector<int>& InverseKinematics::getDofMap() const
-{
+const std::vector<int>& InverseKinematics::getDofMap() const {
   return mDofMap;
 }
 
 //==============================================================================
 void InverseKinematics::setObjective(
-    const std::shared_ptr<optimization::Function>& _objective)
-{
+    const std::shared_ptr<optimization::Function>& _objective) {
   mObjective = _objective;
 }
 
 //==============================================================================
-const std::shared_ptr<optimization::Function>& InverseKinematics::getObjective()
-{
+const std::shared_ptr<optimization::Function>&
+InverseKinematics::getObjective() {
   return mObjective;
 }
 
 //==============================================================================
 std::shared_ptr<const optimization::Function> InverseKinematics::getObjective()
-    const
-{
+    const {
   return mObjective;
 }
 
 //==============================================================================
 void InverseKinematics::setNullSpaceObjective(
-    const std::shared_ptr<optimization::Function>& _nsObjective)
-{
+    const std::shared_ptr<optimization::Function>& _nsObjective) {
   mNullSpaceObjective = _nsObjective;
 }
 
 //==============================================================================
 const std::shared_ptr<optimization::Function>&
-InverseKinematics::getNullSpaceObjective()
-{
+InverseKinematics::getNullSpaceObjective() {
   return mNullSpaceObjective;
 }
 
 //==============================================================================
 std::shared_ptr<const optimization::Function>
-InverseKinematics::getNullSpaceObjective() const
-{
+InverseKinematics::getNullSpaceObjective() const {
   return mNullSpaceObjective;
 }
 
 //==============================================================================
-bool InverseKinematics::hasNullSpaceObjective() const
-{
+bool InverseKinematics::hasNullSpaceObjective() const {
   return (nullptr != mNullSpaceObjective);
 }
 
 //==============================================================================
-InverseKinematics::ErrorMethod& InverseKinematics::getErrorMethod()
-{
+InverseKinematics::ErrorMethod& InverseKinematics::getErrorMethod() {
   return *mErrorMethod;
 }
 
 //==============================================================================
-const InverseKinematics::ErrorMethod& InverseKinematics::getErrorMethod() const
-{
+const InverseKinematics::ErrorMethod& InverseKinematics::getErrorMethod()
+    const {
   return *mErrorMethod;
 }
 
 //==============================================================================
-InverseKinematics::GradientMethod& InverseKinematics::getGradientMethod()
-{
+InverseKinematics::GradientMethod& InverseKinematics::getGradientMethod() {
   return *mGradientMethod;
 }
 
 //==============================================================================
 const InverseKinematics::GradientMethod& InverseKinematics::getGradientMethod()
-    const
-{
+    const {
   return *mGradientMethod;
 }
 
 //==============================================================================
-InverseKinematics::Analytical* InverseKinematics::getAnalytical()
-{
+InverseKinematics::Analytical* InverseKinematics::getAnalytical() {
   return mAnalytical;
 }
 
 //==============================================================================
-const InverseKinematics::Analytical* InverseKinematics::getAnalytical() const
-{
+const InverseKinematics::Analytical* InverseKinematics::getAnalytical() const {
   return mAnalytical;
 }
 
 //==============================================================================
-const std::shared_ptr<optimization::Problem>& InverseKinematics::getProblem()
-{
+const std::shared_ptr<optimization::Problem>& InverseKinematics::getProblem() {
   return mProblem;
 }
 
 //==============================================================================
 std::shared_ptr<const optimization::Problem> InverseKinematics::getProblem()
-    const
-{
+    const {
   return mProblem;
 }
 
 //==============================================================================
-void InverseKinematics::resetProblem(bool _clearSeeds)
-{
+void InverseKinematics::resetProblem(bool _clearSeeds) {
   mProblem->removeAllEqConstraints();
   mProblem->removeAllIneqConstraints();
 
@@ -1539,8 +1368,7 @@ void InverseKinematics::resetProblem(bool _clearSeeds)
 
 //==============================================================================
 void InverseKinematics::setSolver(
-    const std::shared_ptr<optimization::Solver>& _newSolver)
-{
+    const std::shared_ptr<optimization::Solver>& _newSolver) {
   mSolver = _newSolver;
   if (nullptr == mSolver)
     return;
@@ -1549,20 +1377,18 @@ void InverseKinematics::setSolver(
 }
 
 //==============================================================================
-const std::shared_ptr<optimization::Solver>& InverseKinematics::getSolver()
-{
+const std::shared_ptr<optimization::Solver>& InverseKinematics::getSolver() {
   return mSolver;
 }
 
 //==============================================================================
-std::shared_ptr<const optimization::Solver> InverseKinematics::getSolver() const
-{
+std::shared_ptr<const optimization::Solver> InverseKinematics::getSolver()
+    const {
   return mSolver;
 }
 
 //==============================================================================
-void InverseKinematics::setOffset(const Eigen::Vector3d& _offset)
-{
+void InverseKinematics::setOffset(const Eigen::Vector3d& _offset) {
   if (Eigen::Vector3d::Zero() == _offset)
     mHasOffset = false;
   else
@@ -1573,22 +1399,18 @@ void InverseKinematics::setOffset(const Eigen::Vector3d& _offset)
 }
 
 //==============================================================================
-const Eigen::Vector3d& InverseKinematics::getOffset() const
-{
+const Eigen::Vector3d& InverseKinematics::getOffset() const {
   return mOffset;
 }
 
 //==============================================================================
-bool InverseKinematics::hasOffset() const
-{
+bool InverseKinematics::hasOffset() const {
   return mHasOffset;
 }
 
 //==============================================================================
-void InverseKinematics::setTarget(std::shared_ptr<SimpleFrame> _newTarget)
-{
-  if (nullptr == _newTarget)
-  {
+void InverseKinematics::setTarget(std::shared_ptr<SimpleFrame> _newTarget) {
+  if (nullptr == _newTarget) {
     _newTarget = SimpleFramePtr(new SimpleFrame(
         Frame::World(),
         mNode->getName() + "_target",
@@ -1600,44 +1422,37 @@ void InverseKinematics::setTarget(std::shared_ptr<SimpleFrame> _newTarget)
 }
 
 //==============================================================================
-std::shared_ptr<SimpleFrame> InverseKinematics::getTarget()
-{
+std::shared_ptr<SimpleFrame> InverseKinematics::getTarget() {
   return mTarget;
 }
 
 //==============================================================================
-std::shared_ptr<const SimpleFrame> InverseKinematics::getTarget() const
-{
+std::shared_ptr<const SimpleFrame> InverseKinematics::getTarget() const {
   return mTarget;
 }
 
 //==============================================================================
-JacobianNode* InverseKinematics::getNode()
-{
+JacobianNode* InverseKinematics::getNode() {
   return getAffiliation();
 }
 
 //==============================================================================
-const JacobianNode* InverseKinematics::getNode() const
-{
+const JacobianNode* InverseKinematics::getNode() const {
   return getAffiliation();
 }
 
 //==============================================================================
-JacobianNode* InverseKinematics::getAffiliation()
-{
+JacobianNode* InverseKinematics::getAffiliation() {
   return mNode;
 }
 
 //==============================================================================
-const JacobianNode* InverseKinematics::getAffiliation() const
-{
+const JacobianNode* InverseKinematics::getAffiliation() const {
   return mNode;
 }
 
 //==============================================================================
-const math::Jacobian& InverseKinematics::computeJacobian() const
-{
+const math::Jacobian& InverseKinematics::computeJacobian() const {
   // TODO(MXG): Test whether we can safely use a const reference here instead of
   // just a regular const
   const math::Jacobian fullJacobian = hasOffset()
@@ -1646,8 +1461,7 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
 
   mJacobian.setZero(6, getDofs().size());
 
-  for (int i = 0; i < static_cast<int>(getDofMap().size()); ++i)
-  {
+  for (int i = 0; i < static_cast<int>(getDofMap().size()); ++i) {
     int j = getDofMap()[i];
     if (j >= 0)
       mJacobian.block<6, 1>(0, j) = fullJacobian.block<6, 1>(0, i);
@@ -1657,16 +1471,13 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
 }
 
 //==============================================================================
-Eigen::VectorXd InverseKinematics::getPositions() const
-{
+Eigen::VectorXd InverseKinematics::getPositions() const {
   return mNode->getSkeleton()->getPositions(mDofs);
 }
 
 //==============================================================================
-void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
-{
-  if (_q.size() != static_cast<int>(mDofs.size()))
-  {
+void InverseKinematics::setPositions(const Eigen::VectorXd& _q) {
+  if (_q.size() != static_cast<int>(mDofs.size())) {
     dterr << "[InverseKinematics::setPositions] Mismatch between joint "
           << "positions size [" << _q.size() << "] and number of available "
           << "degrees of freedom [" << mDofs.size() << "]\n";
@@ -1678,30 +1489,25 @@ void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
 }
 
 //==============================================================================
-void InverseKinematics::clearCaches()
-{
+void InverseKinematics::clearCaches() {
   mErrorMethod->clearCache();
   mGradientMethod->clearCache();
 }
 
 //==============================================================================
-InverseKinematics::Objective::Objective(InverseKinematics* _ik) : mIK(_ik)
-{
+InverseKinematics::Objective::Objective(InverseKinematics* _ik) : mIK(_ik) {
   // Do nothing
 }
 
 //==============================================================================
 optimization::FunctionPtr InverseKinematics::Objective::clone(
-    InverseKinematics* _newIK) const
-{
+    InverseKinematics* _newIK) const {
   return std::make_shared<Objective>(_newIK);
 }
 
 //==============================================================================
-double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
-{
-  if (nullptr == mIK)
-  {
+double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x) {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::eval] Attempting to use an "
           << "Objective function of an expired InverseKinematics module!\n";
     assert(false);
@@ -1721,10 +1527,8 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void InverseKinematics::Objective::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
-{
-  if (nullptr == mIK)
-  {
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::evalGradient] Attempting to use "
           << "an Objective function of an expired InverseKinematics module!\n";
     assert(false);
@@ -1736,8 +1540,7 @@ void InverseKinematics::Objective::evalGradient(
   else
     _grad.setZero();
 
-  if (mIK->mNullSpaceObjective)
-  {
+  if (mIK->mNullSpaceObjective) {
     mGradCache.resize(_grad.size());
     Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
     mIK->mNullSpaceObjective->evalGradient(_x, gradMap);
@@ -1752,23 +1555,19 @@ void InverseKinematics::Objective::evalGradient(
 }
 
 //==============================================================================
-InverseKinematics::Constraint::Constraint(InverseKinematics* _ik) : mIK(_ik)
-{
+InverseKinematics::Constraint::Constraint(InverseKinematics* _ik) : mIK(_ik) {
   // Do nothing
 }
 
 //==============================================================================
 optimization::FunctionPtr InverseKinematics::Constraint::clone(
-    InverseKinematics* _newIK) const
-{
+    InverseKinematics* _newIK) const {
   return std::make_shared<Constraint>(_newIK);
 }
 
 //==============================================================================
-double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
-{
-  if (nullptr == mIK)
-  {
+double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x) {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::eval] Attempting to use a "
           << "Constraint function of an expired InverseKinematics module!\n";
     assert(false);
@@ -1780,10 +1579,8 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void InverseKinematics::Constraint::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
-{
-  if (nullptr == mIK)
-  {
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::evalGradient] Attempting to use "
           << "a Constraint function of an expired InverseKinematics module!\n";
     assert(false);
@@ -1799,14 +1596,12 @@ InverseKinematics::InverseKinematics(JacobianNode* _node)
     mHierarchyLevel(0),
     mOffset(Eigen::Vector3d::Zero()),
     mHasOffset(false),
-    mNode(_node)
-{
+    mNode(_node) {
   initialize();
 }
 
 //==============================================================================
-void InverseKinematics::initialize()
-{
+void InverseKinematics::initialize() {
   // Default to having no objectives
   setObjective(nullptr);
   setNullSpaceObjective(nullptr);
@@ -1841,20 +1636,20 @@ void InverseKinematics::initialize()
 }
 
 //==============================================================================
-void InverseKinematics::resetTargetConnection()
-{
+void InverseKinematics::resetTargetConnection() {
   mTargetConnection.disconnect();
-  mTargetConnection = mTarget->onTransformUpdated.connect(
-      [=](const Entity*) { this->clearCaches(); });
+  mTargetConnection = mTarget->onTransformUpdated.connect([=](const Entity*) {
+    this->clearCaches();
+  });
   clearCaches();
 }
 
 //==============================================================================
-void InverseKinematics::resetNodeConnection()
-{
+void InverseKinematics::resetNodeConnection() {
   mNodeConnection.disconnect();
-  mNodeConnection = mNode->onTransformUpdated.connect(
-      [=](const Entity*) { this->clearCaches(); });
+  mNodeConnection = mNode->onTransformUpdated.connect([=](const Entity*) {
+    this->clearCaches();
+  });
   clearCaches();
 }
 

@@ -41,12 +41,10 @@ namespace MjcfParser {
 namespace detail {
 
 //==============================================================================
-Errors Inertial::read(tinyxml2::XMLElement* element)
-{
+Errors Inertial::read(tinyxml2::XMLElement* element) {
   Errors errors;
 
-  if (std::string(element->Name()) != "inertial")
-  {
+  if (std::string(element->Name()) != "inertial") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <inertial> from the provided element");
@@ -54,8 +52,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   }
 
   // (required) pos
-  if (not hasAttribute(element, "pos"))
-  {
+  if (not hasAttribute(element, "pos")) {
     errors.emplace_back(
         ErrorCode::ATTRIBUTE_MISSING,
         "Failed to find required attribute 'pos' in <inertial>");
@@ -69,8 +66,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
       errors.end(), orientationErrors.begin(), orientationErrors.end());
 
   // quat
-  if (hasAttribute(element, "quat"))
-  {
+  if (hasAttribute(element, "quat")) {
     const Eigen::Vector4d vec4d = getAttributeVector4d(element, "quat");
     mData.mQuat.w() = vec4d[0];
     mData.mQuat.x() = vec4d[1];
@@ -79,32 +75,27 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   }
 
   // axisangle
-  if (hasAttribute(element, "axisangle"))
-  {
+  if (hasAttribute(element, "axisangle")) {
     mData.mAxisAngle = getAttributeVector4d(element, "axisangle");
   }
 
   // euler
-  if (hasAttribute(element, "euler"))
-  {
+  if (hasAttribute(element, "euler")) {
     mData.mEuler = getAttributeVector3d(element, "euler");
   }
 
   // xyaxes
-  if (hasAttribute(element, "xyaxes"))
-  {
+  if (hasAttribute(element, "xyaxes")) {
     mData.mXYAxes = getAttributeVector6d(element, "xyaxes");
   }
 
   // zaxis
-  if (hasAttribute(element, "zaxis"))
-  {
+  if (hasAttribute(element, "zaxis")) {
     mData.mZAxis = getAttributeVector3d(element, "zaxis");
   }
 
   // (required) mass
-  if (not hasAttribute(element, "mass"))
-  {
+  if (not hasAttribute(element, "mass")) {
     errors.emplace_back(
         ErrorCode::ATTRIBUTE_MISSING,
         "Failed to find required attribute 'mass' in <inertial>");
@@ -113,24 +104,19 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   mData.mMass = getAttributeDouble(element, "mass");
 
   // (optional) diaginertia, fullinertia
-  if (hasAttribute(element, "diaginertia"))
-  {
+  if (hasAttribute(element, "diaginertia")) {
     mData.mDiagInertia = getAttributeVector3d(element, "diaginertia");
 
-    if (hasAttribute(element, "fullinertia"))
-    {
+    if (hasAttribute(element, "fullinertia")) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_CONFLICT,
           "Not allowed to set both of 'diaginertia' and 'fullinertia' in "
           "<inertial>");
       return errors;
     }
-  }
-  else
-  {
+  } else {
     // If diaginertia is omitted, the next attribute becomes required.
-    if (not hasAttribute(element, "fullinertia"))
-    {
+    if (not hasAttribute(element, "fullinertia")) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_MISSING,
           "Failed to find required attribute 'diaginertia' or 'fullinertia' in "
@@ -145,14 +131,12 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
 }
 
 //==============================================================================
-Errors Inertial::compile(const Compiler& compiler)
-{
+Errors Inertial::compile(const Compiler& compiler) {
   Errors errors;
 
   mPos = mData.mPos;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL)
-  {
+  if (compiler.getCoordinate() == Coordinate::LOCAL) {
     mRelativeTransform.translation() = mData.mPos;
     mRelativeTransform.linear() = compileRotation(
         mData.mQuat,
@@ -161,9 +145,7 @@ Errors Inertial::compile(const Compiler& compiler)
         mData.mXYAxes,
         mData.mZAxis,
         compiler);
-  }
-  else
-  {
+  } else {
     mWorldTransform.translation() = mData.mPos;
     mWorldTransform.linear() = compileRotation(
         mData.mQuat,
@@ -176,13 +158,10 @@ Errors Inertial::compile(const Compiler& compiler)
 
   mMass = mData.mMass;
 
-  if (mData.mDiagInertia)
-  {
+  if (mData.mDiagInertia) {
     mDiagonalInertia = *mData.mDiagInertia;
     mOffDiagonalInertia.setZero();
-  }
-  else
-  {
+  } else {
     assert(mData.mFullInertia);
     mDiagonalInertia = mData.mFullInertia->head<3>();
     mOffDiagonalInertia = mData.mFullInertia->tail<3>();
@@ -192,62 +171,52 @@ Errors Inertial::compile(const Compiler& compiler)
 }
 
 //==============================================================================
-void Inertial::setMass(double mass)
-{
+void Inertial::setMass(double mass) {
   mMass = mass;
 }
 
 //==============================================================================
-double Inertial::getMass() const
-{
+double Inertial::getMass() const {
   return mMass;
 }
 
 //==============================================================================
-void Inertial::setDiagInertia(const Eigen::Vector3d& inertia)
-{
+void Inertial::setDiagInertia(const Eigen::Vector3d& inertia) {
   mDiagonalInertia = inertia;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Inertial::getDiagInertia() const
-{
+const Eigen::Vector3d& Inertial::getDiagInertia() const {
   return mDiagonalInertia;
 }
 
 //==============================================================================
-void Inertial::setOffDiagInertia(const Eigen::Vector3d& inertia)
-{
+void Inertial::setOffDiagInertia(const Eigen::Vector3d& inertia) {
   mOffDiagonalInertia = inertia;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Inertial::getOffDiagInertia() const
-{
+const Eigen::Vector3d& Inertial::getOffDiagInertia() const {
   return mOffDiagonalInertia;
 }
 
 //==============================================================================
-void Inertial::setRelativeTransform(const Eigen::Isometry3d& tf)
-{
+void Inertial::setRelativeTransform(const Eigen::Isometry3d& tf) {
   mRelativeTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Inertial::getRelativeTransform() const
-{
+const Eigen::Isometry3d& Inertial::getRelativeTransform() const {
   return mRelativeTransform;
 }
 
 //==============================================================================
-void Inertial::setWorldTransform(const Eigen::Isometry3d& tf)
-{
+void Inertial::setWorldTransform(const Eigen::Isometry3d& tf) {
   mWorldTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Inertial::getWorldTransform() const
-{
+const Eigen::Isometry3d& Inertial::getWorldTransform() const {
   return mWorldTransform;
 }
 

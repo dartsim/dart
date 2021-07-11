@@ -49,8 +49,7 @@ namespace dynamics {
 ///
 /// ODE additionally supports ray and heightfiled, but DART doesn't support them
 /// yet.
-class OdeCollisionDetector : public CollisionDetector
-{
+class OdeCollisionDetector : public CollisionDetector {
 public:
   using CollisionDetector::createCollisionGroup;
 
@@ -125,7 +124,7 @@ private:
   static Registrar<OdeCollisionDetector> mRegistrar;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_

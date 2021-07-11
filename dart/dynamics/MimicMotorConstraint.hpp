@@ -45,8 +45,7 @@ class Joint;
 namespace dynamics {
 
 /// Servo motor constraint
-class MimicMotorConstraint : public ConstraintBase
-{
+class MimicMotorConstraint : public ConstraintBase {
 public:
   /// Constructor
   explicit MimicMotorConstraint(

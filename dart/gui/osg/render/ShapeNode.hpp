@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_
 
 #include <memory>
+
 #include <osg/Node>
 
 namespace dart {
@@ -55,8 +56,7 @@ class ShapeFrameNode;
 
 namespace render {
 
-class ShapeNode
-{
+class ShapeNode {
 public:
   ShapeNode(
       std::shared_ptr<dart::dynamics::Shape> shape,

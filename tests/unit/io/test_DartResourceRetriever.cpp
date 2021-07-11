@@ -31,15 +31,16 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
+
 #include "dart/config.hpp"
 #include "dart/io/DartResourceRetriever.hpp"
 
 using namespace dart;
 
 //==============================================================================
-TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
-{
+TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve) {
   auto retriever = io::DartResourceRetriever::create();
 
   EXPECT_FALSE(retriever->exists("unknown://test"));

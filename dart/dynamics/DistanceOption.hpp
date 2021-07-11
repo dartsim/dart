@@ -41,8 +41,7 @@ namespace dynamics {
 
 struct DistanceFilter;
 
-struct DistanceOption
-{
+struct DistanceOption {
   /// Whether to calculate the nearest points.
   ///
   /// The default is false.
@@ -73,7 +72,7 @@ struct DistanceOption
       const std::shared_ptr<DistanceFilter>& distanceFilter = nullptr);
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_DISTANCE_OPTION_HPP_

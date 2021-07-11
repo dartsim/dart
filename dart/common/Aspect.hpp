@@ -44,8 +44,7 @@ namespace common {
 
 class Composite;
 
-class Aspect
-{
+class Aspect {
 public:
   friend class Composite;
 
@@ -61,9 +60,7 @@ public:
   /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  class State : public Cloneable<State>
-  {
-  };
+  class State : public Cloneable<State> {};
 
   /// Use the MakeState class to easily create a State extension from an
   /// existing class or struct.
@@ -82,9 +79,7 @@ public:
   /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  class Properties : public Cloneable<Properties>
-  {
-  };
+  class Properties : public Cloneable<Properties> {};
 
   /// Use the MakeProperties class to easily create a Properties extension
   /// from an existing class or struct.
@@ -128,8 +123,7 @@ protected:
 
 //==============================================================================
 template <class CompositeType>
-class CompositeTrackingAspect : public Aspect
-{
+class CompositeTrackingAspect : public Aspect {
 public:
   /// Default constructor
   CompositeTrackingAspect();
@@ -163,12 +157,11 @@ protected:
   ClassName(const ClassName&) = delete;                                        \
   inline ClassName(const PropertiesData& properties = PropertiesData())        \
     : AspectWithVersionedProperties<                                           \
-          Base,                                                                \
-          Derived,                                                             \
-          PropertiesData,                                                      \
-          CompositeType,                                                       \
-          UpdatePropertiesMacro>(properties)                                   \
-  {                                                                            \
+        Base,                                                                  \
+        Derived,                                                               \
+        PropertiesData,                                                        \
+        CompositeType,                                                         \
+        UpdatePropertiesMacro>(properties) {                                   \
   }
 
 //==============================================================================
@@ -177,19 +170,16 @@ protected:
   inline ClassName(                                                            \
       const StateData& state = StateData(),                                    \
       const PropertiesData& properties = PropertiesData())                     \
-    : AspectImpl(state, properties)                                            \
-  {                                                                            \
+    : AspectImpl(state, properties) {                                          \
   }                                                                            \
   inline ClassName(                                                            \
       const PropertiesData& properties, const StateData state = StateData())   \
-    : AspectImpl(properties, state)                                            \
-  {                                                                            \
+    : AspectImpl(properties, state) {                                          \
   }
 
 //==============================================================================
 #define DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(Type, Name, Update)             \
-  inline void set##Name(const Type& value)                                     \
-  {                                                                            \
+  inline void set##Name(const Type& value) {                                   \
     mProperties.m##Name = value;                                               \
     Update();                                                                  \
   }
@@ -200,8 +190,7 @@ protected:
 
 //==============================================================================
 #define DART_COMMON_GET_ASPECT_PROPERTY(Type, Name)                            \
-  inline const Type& get##Name() const                                         \
-  {                                                                            \
+  inline const Type& get##Name() const {                                       \
     return mProperties.m##Name;                                                \
   }
 

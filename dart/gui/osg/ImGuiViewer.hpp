@@ -45,8 +45,7 @@ class ImGuiHandler;
 class MainMenuWidget;
 class AboutWidget;
 
-class ImGuiViewer : public Viewer
-{
+class ImGuiViewer : public Viewer {
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.

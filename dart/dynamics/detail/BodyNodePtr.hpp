@@ -43,15 +43,13 @@ namespace dynamics {
 class Skeleton;
 
 //==============================================================================
-struct MutexedWeakSkeletonPtr
-{
+struct MutexedWeakSkeletonPtr {
   std::mutex mMutex;
   std::weak_ptr<const Skeleton> mSkeleton;
 };
 
 //==============================================================================
-class SkeletonRefCountingBase
-{
+class SkeletonRefCountingBase {
 public:
   template <class>
   friend class TemplateBodyNodePtr;
@@ -106,44 +104,37 @@ protected:
 /// the BodyNode (and by extension, its Skeleton) does not get deleted. This
 /// remains true even if the BodyNode is moved into another Skeleton.
 template <class BodyNodeT>
-class TemplateBodyNodePtr
-{
+class TemplateBodyNodePtr {
 public:
   /// Default constructor
-  TemplateBodyNodePtr() : mPtr(nullptr)
-  {
+  TemplateBodyNodePtr() : mPtr(nullptr) {
   }
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
-  TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr)
-  {
+  TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) {
     set(_ptr);
   }
 
   /// User defined copy-constructor
-  TemplateBodyNodePtr(const TemplateBodyNodePtr& _bnp) : mPtr(nullptr)
-  {
+  TemplateBodyNodePtr(const TemplateBodyNodePtr& _bnp) : mPtr(nullptr) {
     set(_bnp.get());
   }
 
   /// Templated constructor for copying other BodyNodePtrs
   template <class OtherBodyNodeT>
   TemplateBodyNodePtr(const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp)
-    : mPtr(nullptr)
-  {
+    : mPtr(nullptr) {
     set(_bnp.get());
   }
 
   /// Destructor. Releases the BodyNode reference before being destroyed
-  ~TemplateBodyNodePtr()
-  {
+  ~TemplateBodyNodePtr() {
     set(nullptr);
   }
 
   /// User defined assignment operator
-  TemplateBodyNodePtr& operator=(const TemplateBodyNodePtr& bnp)
-  {
+  TemplateBodyNodePtr& operator=(const TemplateBodyNodePtr& bnp) {
     set(bnp.get());
     return *this;
   }
@@ -151,57 +142,48 @@ public:
   /// Change the BodyNode that this BodyNodePtr references
   template <class OtherBodyNodeT>
   TemplateBodyNodePtr& operator=(
-      const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp)
-  {
+      const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp) {
     set(_bnp.get());
     return *this;
   }
 
   /// Assignment operator
-  TemplateBodyNodePtr& operator=(BodyNodeT* _ptr)
-  {
+  TemplateBodyNodePtr& operator=(BodyNodeT* _ptr) {
     set(_ptr);
     return *this;
   }
 
   /// Implicit conversion
-  operator BodyNodeT*() const
-  {
+  operator BodyNodeT*() const {
     return mPtr;
   }
 
   /// Dereferencing operator
-  BodyNodeT& operator*() const
-  {
+  BodyNodeT& operator*() const {
     return *mPtr;
   }
 
   /// Dereferencing operation
-  BodyNodeT* operator->() const
-  {
+  BodyNodeT* operator->() const {
     return mPtr;
   }
 
   /// Get the raw BodyNode pointer
-  BodyNodeT* get() const
-  {
+  BodyNodeT* get() const {
     return mPtr;
   }
 
   /// Set the BodyNode for this BodyNodePtr
-  void set(BodyNodeT* _ptr)
-  {
+  void set(BodyNodeT* _ptr) {
     if (mPtr == _ptr)
       return;
 
-    if (nullptr != mPtr)
-    {
+    if (nullptr != mPtr) {
       static_cast<const SkeletonRefCountingBase*>(mPtr)
           ->decrementReferenceCount();
     }
 
-    if (nullptr != _ptr)
-    {
+    if (nullptr != _ptr) {
       static_cast<const SkeletonRefCountingBase*>(_ptr)
           ->incrementReferenceCount();
     }
@@ -220,21 +202,18 @@ private:
 /// check whether the BodyNode still exists. If it does exist, it will return a
 /// valid strong BodyNodePtr. Otherwise, it will return a nullptr BodyNodePtr.
 template <class BodyNodeT>
-class TemplateWeakBodyNodePtr
-{
+class TemplateWeakBodyNodePtr {
 public:
   template <class>
   friend class TemplateWeakBodyNodePtr;
 
   /// Default constructor
-  TemplateWeakBodyNodePtr() : mPtr(nullptr)
-  {
+  TemplateWeakBodyNodePtr() : mPtr(nullptr) {
   }
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
-  TemplateWeakBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr)
-  {
+  TemplateWeakBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) {
     set(_ptr);
   }
 
@@ -242,14 +221,12 @@ public:
   template <class OtherBodyNodeT>
   TemplateWeakBodyNodePtr(
       const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
-    : mPtr(nullptr)
-  {
+    : mPtr(nullptr) {
     set(_weakPtr);
   }
 
   /// Assignment operator for raw BodyNode pointers
-  TemplateWeakBodyNodePtr& operator=(BodyNodeT* _ptr)
-  {
+  TemplateWeakBodyNodePtr& operator=(BodyNodeT* _ptr) {
     set(_ptr);
     return *this;
   }
@@ -257,8 +234,7 @@ public:
   /// Assignment operator for WeakBodyNodePtrs
   template <class OtherBodyNodeT>
   TemplateWeakBodyNodePtr& operator=(
-      const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
-  {
+      const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr) {
     set(_weakPtr);
     return *this;
   }
@@ -270,8 +246,7 @@ public:
   ///
   /// To keep the BodyNode active, you should capture the return value of this
   /// function in a BodyNodePtr.
-  TemplateBodyNodePtr<BodyNodeT> lock() const
-  {
+  TemplateBodyNodePtr<BodyNodeT> lock() const {
     if (nullptr == mLocker)
       return nullptr;
 
@@ -287,8 +262,7 @@ public:
   }
 
   /// Set the BodyNode for this WeakBodyNodePtr
-  void set(BodyNodeT* _ptr)
-  {
+  void set(BodyNodeT* _ptr) {
     mPtr = _ptr;
 
     if (nullptr == mPtr)
@@ -301,10 +275,8 @@ public:
   /// Attempt to set the BodyNode for this WeakBodyNodePtr based on another
   /// WeakBodyNodePtr
   template <class OtherBodyNodeT>
-  void set(const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
-  {
-    if (nullptr == _weakPtr.mLocker)
-    {
+  void set(const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr) {
+    if (nullptr == _weakPtr.mLocker) {
       set(nullptr);
       return;
     }
@@ -312,8 +284,7 @@ public:
     std::lock_guard<std::mutex> lock(_weakPtr.mLocker->mMutex);
     std::shared_ptr<const Skeleton> skeleton
         = _weakPtr.mLocker->mSkeleton.lock();
-    if (nullptr == skeleton)
-    {
+    if (nullptr == skeleton) {
       set(nullptr);
       return;
     }
@@ -329,8 +300,7 @@ public:
   /// will still be active after this function has finished. To guarantee that
   /// the pointer remains active, use lock() and store its return in a
   /// BodyNodePtr
-  bool expired() const
-  {
+  bool expired() const {
     if (nullptr == mLocker)
       return true;
 

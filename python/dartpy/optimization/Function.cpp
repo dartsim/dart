@@ -33,6 +33,7 @@
 #include <dart/dart.hpp>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -41,15 +42,13 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-class PyFunction : public dart::optimization::Function
-{
+class PyFunction : public dart::optimization::Function {
 public:
   // Inherit the constructors
   using Function::Function;
 
   // Trampoline for virtual function
-  double eval(const Eigen::VectorXd& x) override
-  {
+  double eval(const Eigen::VectorXd& x) override {
     PYBIND11_OVERLOAD_PURE(
         double,   // Return type
         Function, // Parent class
@@ -59,8 +58,7 @@ public:
 
   // Trampoline for virtual function
   void evalGradient(
-      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
-  {
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override {
     PYBIND11_OVERLOAD(
         void,         // Return type
         Function,     // Parent class
@@ -70,8 +68,7 @@ public:
   }
 };
 
-void Function(py::module& m)
-{
+void Function(py::module& m) {
   ::py::class_<
       dart::optimization::Function,
       PyFunction,
@@ -121,7 +118,9 @@ void Function(py::module& m)
       .def(
           "eval",
           +[](dart::optimization::ModularFunction* self,
-              const Eigen::VectorXd& _x) -> double { return self->eval(_x); },
+              const Eigen::VectorXd& _x) -> double {
+            return self->eval(_x);
+          },
           ::py::arg("x"))
       .def(
           "setCostFunction",

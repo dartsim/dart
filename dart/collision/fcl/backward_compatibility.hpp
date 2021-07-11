@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include "dart/config.hpp"
-
 #include <Eigen/Dense>
+
+#include "dart/config.hpp"
 
 // clang-format off
 #define FCL_VERSION_AT_LEAST(x,y,z)                                            \
@@ -51,40 +51,40 @@
 
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
 
-#  include <fcl/math/geometry.h>
+  #include <fcl/math/geometry.h>
 
-#  include <fcl/geometry/bvh/BVH_model.h>
-#  include <fcl/geometry/geometric_shape_to_BVH_model.h>
-#  include <fcl/math/bv/OBBRSS.h>
-#  include <fcl/math/bv/utility.h>
-#  include <fcl/narrowphase/collision.h>
-#  include <fcl/narrowphase/collision_object.h>
-#  include <fcl/narrowphase/distance.h>
+  #include <fcl/geometry/bvh/BVH_model.h>
+  #include <fcl/geometry/geometric_shape_to_BVH_model.h>
+  #include <fcl/math/bv/OBBRSS.h>
+  #include <fcl/math/bv/utility.h>
+  #include <fcl/narrowphase/collision.h>
+  #include <fcl/narrowphase/collision_object.h>
+  #include <fcl/narrowphase/distance.h>
 
 #else
 
-#  include <fcl/math/matrix_3f.h>
-#  include <fcl/math/transform.h>
-#  include <fcl/math/vec_3f.h>
+  #include <fcl/math/matrix_3f.h>
+  #include <fcl/math/transform.h>
+  #include <fcl/math/vec_3f.h>
 
-#  include <fcl/BV/OBBRSS.h>
-#  include <fcl/BVH/BVH_model.h>
-#  include <fcl/shape/geometric_shape_to_BVH_model.h>
-#  include <fcl/collision.h>
-#  include <fcl/collision_data.h>
-#  include <fcl/collision_object.h>
-#  include <fcl/distance.h>
+  #include <fcl/BV/OBBRSS.h>
+  #include <fcl/BVH/BVH_model.h>
+  #include <fcl/shape/geometric_shape_to_BVH_model.h>
+  #include <fcl/collision.h>
+  #include <fcl/collision_data.h>
+  #include <fcl/collision_object.h>
+  #include <fcl/distance.h>
 
 #endif // FCL_VERSION_AT_LEAST(0,6,0)
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
 #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-#  if FCL_VERSION_AT_LEAST(0, 6, 0)
-#    include <fcl/geometry/octree/octree.h>
-#  else
-#    include <fcl/octree.h>
-#  endif // FCL_VERSION_AT_LEAST(0,6,0)
+  #if FCL_VERSION_AT_LEAST(0, 6, 0)
+    #include <fcl/geometry/octree/octree.h>
+  #else
+    #include <fcl/octree.h>
+  #endif // FCL_VERSION_AT_LEAST(0,6,0)
 #endif   // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
 namespace dart {
@@ -111,10 +111,10 @@ template <typename S>
 using FclHalfspace = ::fcl::Halfspace<S>;
 template <typename S>
 using FclSphere = ::fcl::Sphere<S>;
-#  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 template <typename S>
 using FclOcTree = ::fcl::OcTree<S>;
-#  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 template <typename S>
 using FclCollisionObject = ::fcl::CollisionObject<S>;
@@ -156,10 +156,10 @@ template <typename S>
 using FclHalfspace = ::fcl::Halfspace;
 template <typename S>
 using FclSphere = ::fcl::Sphere;
-#  if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 template <typename S>
 using FclOcTree = ::fcl::OcTree;
-#  endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 template <typename S>
 using FclCollisionObject = ::fcl::CollisionObject;

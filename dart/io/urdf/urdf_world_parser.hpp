@@ -53,8 +53,7 @@ namespace urdf_parsing {
 
 /// We need a customized version of the Entity class, because we need to keep
 /// track of a Skeleton's uri in order to correctly handle relative file paths.
-class Entity
-{
+class Entity {
 public:
   Entity() = default;
 
@@ -68,8 +67,7 @@ public:
   dart::common::Uri uri;
 };
 
-class World
-{
+class World {
 public:
   std::string name;
   std::vector<Entity> models;

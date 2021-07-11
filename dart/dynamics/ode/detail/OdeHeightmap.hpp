@@ -43,8 +43,7 @@ namespace dynamics {
 namespace detail {
 
 template <typename S>
-class OdeHeightmap : public OdeGeom
-{
+class OdeHeightmap : public OdeGeom {
 public:
   /// Constructor
   OdeHeightmap(
@@ -61,7 +60,7 @@ using OdeHeightmapf = OdeHeightmap<float>;
 using OdeHeightmapd = OdeHeightmap<double>;
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #include "dart/dynamics/ode/detail/OdeHeightmap-impl.hpp"

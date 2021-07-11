@@ -41,8 +41,7 @@ namespace dynamics {
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
-    const Frame* _inCoordinatesOf) const
-{
+    const Frame* _inCoordinatesOf) const {
   if (this == _inCoordinatesOf)
     return static_cast<const NodeType*>(this)->getJacobian();
   else if (_inCoordinatesOf->isWorld())
@@ -56,8 +55,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
-    const Eigen::Vector3d& _offset) const
-{
+    const Eigen::Vector3d& _offset) const {
   math::Jacobian J = static_cast<const NodeType*>(this)->getJacobian();
   J.bottomRows<3>() += J.topRows<3>().colwise().cross(_offset);
 
@@ -67,8 +65,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
-    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
-{
+    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const {
   if (this == _inCoordinatesOf)
     return getJacobian(_offset);
   else if (_inCoordinatesOf->isWorld())
@@ -83,8 +80,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getWorldJacobian(
-    const Eigen::Vector3d& _offset) const
-{
+    const Eigen::Vector3d& _offset) const {
   math::Jacobian J = static_cast<const NodeType*>(this)->getWorldJacobian();
   J.bottomRows<3>()
       += J.topRows<3>().colwise().cross(getWorldTransform().linear() * _offset);
@@ -95,16 +91,12 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getWorldJacobian(
 //==============================================================================
 template <class NodeType>
 math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobian(
-    const Frame* _inCoordinatesOf) const
-{
-  if (this == _inCoordinatesOf)
-  {
+    const Frame* _inCoordinatesOf) const {
+  if (this == _inCoordinatesOf) {
     const math::Jacobian& J = static_cast<const NodeType*>(this)->getJacobian();
 
     return J.bottomRows<3>();
-  }
-  else if (_inCoordinatesOf->isWorld())
-  {
+  } else if (_inCoordinatesOf->isWorld()) {
     const math::Jacobian& JWorld
         = static_cast<const NodeType*>(this)->getWorldJacobian();
 
@@ -119,8 +111,7 @@ math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobian(
 //==============================================================================
 template <class NodeType>
 math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobian(
-    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
-{
+    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const {
   const math::Jacobian& J = static_cast<const NodeType*>(this)->getJacobian();
 
   math::LinearJacobian JLinear;
@@ -135,15 +126,11 @@ math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobian(
 //==============================================================================
 template <class NodeType>
 math::AngularJacobian TemplatedJacobianNode<NodeType>::getAngularJacobian(
-    const Frame* _inCoordinatesOf) const
-{
-  if (this == _inCoordinatesOf)
-  {
+    const Frame* _inCoordinatesOf) const {
+  if (this == _inCoordinatesOf) {
     const math::Jacobian& J = static_cast<const NodeType*>(this)->getJacobian();
     return J.topRows<3>();
-  }
-  else if (_inCoordinatesOf->isWorld())
-  {
+  } else if (_inCoordinatesOf->isWorld()) {
     const math::Jacobian& JWorld
         = static_cast<const NodeType*>(this)->getWorldJacobian();
     return JWorld.topRows<3>();
@@ -157,8 +144,7 @@ math::AngularJacobian TemplatedJacobianNode<NodeType>::getAngularJacobian(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
-    const Frame* _inCoordinatesOf) const
-{
+    const Frame* _inCoordinatesOf) const {
   if (this == _inCoordinatesOf)
     return static_cast<const NodeType*>(this)->getJacobianSpatialDeriv();
 
@@ -170,8 +156,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
-    const Eigen::Vector3d& _offset) const
-{
+    const Eigen::Vector3d& _offset) const {
   math::Jacobian J_d
       = static_cast<const NodeType*>(this)->getJacobianSpatialDeriv();
 
@@ -183,8 +168,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
-    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
-{
+    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const {
   if (this == _inCoordinatesOf)
     return getJacobianSpatialDeriv(_offset);
 
@@ -198,8 +182,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
-    const Frame* _inCoordinatesOf) const
-{
+    const Frame* _inCoordinatesOf) const {
   if (_inCoordinatesOf->isWorld())
     return static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
@@ -211,8 +194,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
 //==============================================================================
 template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
-    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
-{
+    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const {
   math::Jacobian J_d
       = static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
@@ -234,8 +216,7 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
 //==============================================================================
 template <class NodeType>
 math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
-    const Frame* _inCoordinatesOf) const
-{
+    const Frame* _inCoordinatesOf) const {
   const math::Jacobian& J_d
       = static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
@@ -249,8 +230,7 @@ math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
 //==============================================================================
 template <class NodeType>
 math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
-    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
-{
+    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const {
   const math::Jacobian& J_d
       = static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
@@ -272,8 +252,7 @@ math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
 //==============================================================================
 template <class NodeType>
 math::AngularJacobian TemplatedJacobianNode<NodeType>::getAngularJacobianDeriv(
-    const Frame* _inCoordinatesOf) const
-{
+    const Frame* _inCoordinatesOf) const {
   const math::Jacobian& J_d
       = static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
@@ -289,8 +268,7 @@ template <class NodeType>
 TemplatedJacobianNode<NodeType>::TemplatedJacobianNode(BodyNode* bn)
   : Entity(Entity::ConstructAbstract),
     Frame(Frame::ConstructAbstract),
-    JacobianNode(bn)
-{
+    JacobianNode(bn) {
   // Do nothing
 }
 

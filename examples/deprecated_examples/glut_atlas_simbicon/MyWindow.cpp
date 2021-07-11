@@ -36,21 +36,18 @@
 
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
-  : SimWindow(), mController(_controller)
-{
+  : SimWindow(), mController(_controller) {
   mForce = Eigen::Vector3d::Zero();
   mImpulseDuration = 0.0;
 }
 
 //==============================================================================
-MyWindow::~MyWindow()
-{
+MyWindow::~MyWindow() {
   delete mController;
 }
 
 //==============================================================================
-void MyWindow::timeStepping()
-{
+void MyWindow::timeStepping() {
   // External force
   mWorld->getSkeleton("drc_skeleton")
       ->getBodyNode("pelvis")
@@ -64,16 +61,14 @@ void MyWindow::timeStepping()
 
   // for perturbation test
   mImpulseDuration--;
-  if (mImpulseDuration <= 0)
-  {
+  if (mImpulseDuration <= 0) {
     mImpulseDuration = 0;
     mForce.setZero();
   }
 }
 
 //==============================================================================
-void MyWindow::drawSkels()
-{
+void MyWindow::drawSkels() {
   //  glEnable(GL_LIGHTING);
   //  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -81,8 +76,7 @@ void MyWindow::drawSkels()
     drawSkeleton(mWorld->getSkeleton(i).get());
 
   // draw arrow
-  if (mImpulseDuration > 0)
-  {
+  if (mImpulseDuration > 0) {
     Eigen::Vector3d poa = mWorld->getSkeleton("drc_skeleton")
                               ->getBodyNode("pelvis")
                               ->getTransform()
@@ -94,10 +88,8 @@ void MyWindow::drawSkels()
 }
 
 //==============================================================================
-void MyWindow::keyboard(unsigned char _key, int _x, int _y)
-{
-  switch (_key)
-  {
+void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
+  switch (_key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
@@ -109,8 +101,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
         mSimulating = false;
       break;
     case '[': // step backward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame--;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
@@ -118,8 +109,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       }
       break;
     case ']': // step forwardward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame++;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;

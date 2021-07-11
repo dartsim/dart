@@ -38,8 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class DantzigBoxedLcpSolver : public BoxedLcpSolver
-{
+class DantzigBoxedLcpSolver : public BoxedLcpSolver {
 public:
   // Documentation inherited.
   const std::string& getType() const override;

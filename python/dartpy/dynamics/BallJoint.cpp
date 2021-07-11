@@ -40,8 +40,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void BallJoint(py::module& m)
-{
+void BallJoint(py::module& m) {
   ::py::class_<
       dart::dynamics::BallJoint::Properties,
       dart::dynamics::detail::GenericJointProperties<dart::math::SO3Space>>(
@@ -65,7 +64,9 @@ void BallJoint(py::module& m)
       .def(
           "isCyclic",
           +[](const dart::dynamics::BallJoint* self,
-              std::size_t _index) -> bool { return self->isCyclic(_index); },
+              std::size_t _index) -> bool {
+            return self->isCyclic(_index);
+          },
           ::py::arg("index"))
       .def(
           "getBallJointProperties",

@@ -37,10 +37,9 @@
 #include <memory>
 #include <unordered_set>
 
+#include <Eigen/Core>
 #include <osgShadow/ShadowTechnique>
 #include <osgViewer/Viewer>
-
-#include <Eigen/Core>
 
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Subject.hpp"
@@ -73,8 +72,7 @@ class Viewer;
 class SaveScreen;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class ViewerAttachment : public virtual ::osg::Group
-{
+class ViewerAttachment : public virtual ::osg::Group {
 public:
   friend class Viewer;
 
@@ -108,8 +106,7 @@ private:
   Viewer* mViewer;
 };
 
-class Viewer : public osgViewer::Viewer, public dart::common::Subject
-{
+class Viewer : public osgViewer::Viewer, public dart::common::Subject {
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.

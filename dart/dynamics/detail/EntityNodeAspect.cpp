@@ -38,14 +38,12 @@ namespace detail {
 
 //==============================================================================
 EntityNodeProperties::EntityNodeProperties(const std::string& name)
-  : mName(name)
-{
+  : mName(name) {
   // Do nothing
 }
 
 //==============================================================================
-EntityNodeProperties::operator const std::string&() const
-{
+EntityNodeProperties::operator const std::string&() const {
   return mName;
 }
 

@@ -40,28 +40,24 @@ RayHit::RayHit()
   : mCollisionObject(nullptr),
     mPoint(Eigen::Vector3d::Zero()),
     mFraction(0.0),
-    mNormal(Eigen::Vector3d::Zero())
-{
+    mNormal(Eigen::Vector3d::Zero()) {
   // Do nothing
 }
 
 //==============================================================================
-RaycastResult::RaycastResult() : mRayHits(false)
-{
+RaycastResult::RaycastResult() : mRayHits(false) {
   // Do nothing
 }
 
 //==============================================================================
-void RaycastResult::clear()
-{
+void RaycastResult::clear() {
   mRayHits.clear();
 }
 
 //==============================================================================
-bool RaycastResult::hasHit() const
-{
+bool RaycastResult::hasHit() const {
   return !mRayHits.empty();
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

@@ -44,11 +44,9 @@ class BodyNode;
 class Skeleton;
 
 /// class ZeroDofJoint
-class ZeroDofJoint : public Joint
-{
+class ZeroDofJoint : public Joint {
 public:
-  struct Properties : Joint::Properties
-  {
+  struct Properties : Joint::Properties {
     Properties(const Joint::Properties& _properties = Joint::Properties());
     virtual ~Properties() = default;
   };

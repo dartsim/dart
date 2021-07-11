@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
 #include <dart/collision/collision.hpp>
+#include <dart/config.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -39,15 +39,14 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void py_fcl_engine(py::module& m)
-{
+void py_fcl_engine(py::module& m) {
   ::py::class_<
       collision::FclEngined,
       std::shared_ptr<collision::FclEngined>,
       collision::Engined>(m, "FclEngine")
-      .def(py::init<>([](){
-    return collision::FclEngined::Create();
-  }));
+      .def(py::init<>([]() {
+        return collision::FclEngined::Create();
+      }));
 }
 
 } // namespace python

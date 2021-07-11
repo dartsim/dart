@@ -45,8 +45,7 @@ class Joint;
 namespace dynamics {
 
 /// Servo motor constraint
-class ServoMotorConstraint : public ConstraintBase
-{
+class ServoMotorConstraint : public ConstraintBase {
 public:
   /// Constructor
   explicit ServoMotorConstraint(dynamics::Joint* joint);

@@ -40,8 +40,7 @@ namespace dynamics {
 //==============================================================================
 OdeCollisionGroup::OdeCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector)
-{
+  : CollisionGroup(collisionDetector) {
   // This uses an internal data structure that records how each geom overlaps
   // cells in one of several three dimensional grids. Each grid has cubical
   // cells of side lengths 2i, where i is an integer that ranges from a minimum
@@ -57,8 +56,7 @@ OdeCollisionGroup::OdeCollisionGroup(
 }
 
 //==============================================================================
-OdeCollisionGroup::~OdeCollisionGroup()
-{
+OdeCollisionGroup::~OdeCollisionGroup() {
   // This is important to call this function before detroy ODE space.
   removeAllShapeFrames();
 
@@ -66,14 +64,12 @@ OdeCollisionGroup::~OdeCollisionGroup()
 }
 
 //==============================================================================
-void OdeCollisionGroup::initializeEngineData()
-{
+void OdeCollisionGroup::initializeEngineData() {
   // ODE don't need to anything after a geom is added to the space.
 }
 
 //==============================================================================
-void OdeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
-{
+void OdeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object) {
   auto casted = static_cast<OdeCollisionObject*>(object);
   auto geomId = casted->getOdeGeomId();
   dSpaceAdd(mSpaceId, geomId);
@@ -83,10 +79,8 @@ void OdeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 
 //==============================================================================
 void OdeCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
-{
-  for (auto collObj : collObjects)
-  {
+    const std::vector<CollisionObject*>& collObjects) {
+  for (auto collObj : collObjects) {
     auto casted = static_cast<OdeCollisionObject*>(collObj);
     auto geomId = casted->getOdeGeomId();
     dSpaceAdd(mSpaceId, geomId);
@@ -96,8 +90,8 @@ void OdeCollisionGroup::addCollisionObjectsToEngine(
 }
 
 //==============================================================================
-void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
-{
+void OdeCollisionGroup::removeCollisionObjectFromEngine(
+    CollisionObject* object) {
   auto casted = static_cast<OdeCollisionObject*>(object);
   auto geomId = casted->getOdeGeomId();
   dSpaceRemove(mSpaceId, geomId);
@@ -106,24 +100,21 @@ void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 }
 
 //==============================================================================
-void OdeCollisionGroup::removeAllCollisionObjectsFromEngine()
-{
+void OdeCollisionGroup::removeAllCollisionObjectsFromEngine() {
   dSpaceClean(mSpaceId);
 
   initializeEngineData();
 }
 
 //==============================================================================
-void OdeCollisionGroup::updateCollisionGroupEngineData()
-{
+void OdeCollisionGroup::updateCollisionGroupEngineData() {
   // ODE requires nothing for this.
 }
 
 //==============================================================================
-dSpaceID OdeCollisionGroup::getOdeSpaceId() const
-{
+dSpaceID OdeCollisionGroup::getOdeSpaceId() const {
   return mSpaceId;
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

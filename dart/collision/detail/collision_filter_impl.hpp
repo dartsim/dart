@@ -39,16 +39,14 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-CollisionFilter<S>::~CollisionFilter()
-{
+CollisionFilter<S>::~CollisionFilter() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
 void CompositeCollisionFilter<S>::add_collision_filter(
-    ConstCollisionFilterPtr<S> filter)
-{
+    ConstCollisionFilterPtr<S> filter) {
   // nullptr is not an allowed filter
   if (!filter)
     return;
@@ -59,25 +57,21 @@ void CompositeCollisionFilter<S>::add_collision_filter(
 //==============================================================================
 template <typename S>
 void CompositeCollisionFilter<S>::remove_collision_filter(
-    const ConstCollisionFilterPtr<S>& filter)
-{
+    const ConstCollisionFilterPtr<S>& filter) {
   m_filters.erase(filter);
 }
 
 //==============================================================================
 template <typename S>
-void CompositeCollisionFilter<S>::remove_all_collision_filters()
-{
+void CompositeCollisionFilter<S>::remove_all_collision_filters() {
   m_filters.clear();
 }
 
 //==============================================================================
 template <typename S>
 bool CompositeCollisionFilter<S>::ignores(
-    const Object<S>* object1, const Object<S>* object2) const
-{
-  for (const auto& filter : m_filters)
-  {
+    const Object<S>* object1, const Object<S>* object2) const {
+  for (const auto& filter : m_filters) {
     if (filter->ignores(object1, object2))
       return true;
   }

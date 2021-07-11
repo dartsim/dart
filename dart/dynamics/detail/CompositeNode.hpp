@@ -40,31 +40,27 @@ namespace dynamics {
 
 //==============================================================================
 template <class Base>
-void CompositeStateNode<Base>::setNodeState(const Node::State& otherState)
-{
+void CompositeStateNode<Base>::setNodeState(const Node::State& otherState) {
   common::Composite::setCompositeState(static_cast<const State&>(otherState));
 }
 
 //==============================================================================
 template <class Base>
-std::unique_ptr<Node::State> CompositeStateNode<Base>::getNodeState() const
-{
+std::unique_ptr<Node::State> CompositeStateNode<Base>::getNodeState() const {
   return std::make_unique<State>(common::Composite::getCompositeState());
 }
 
 //==============================================================================
 template <class Base>
 void CompositeStateNode<Base>::copyNodeStateTo(
-    std::unique_ptr<Node::State>& outputState) const
-{
+    std::unique_ptr<Node::State>& outputState) const {
   common::Composite::copyCompositeStateTo(static_cast<State&>(*outputState));
 }
 
 //==============================================================================
 template <class Base>
 void CompositePropertiesNode<Base>::setNodeProperties(
-    const Node::Properties& otherProperties)
-{
+    const Node::Properties& otherProperties) {
   common::Composite::setCompositeProperties(
       static_cast<const Properties&>(otherProperties));
 }
@@ -72,8 +68,7 @@ void CompositePropertiesNode<Base>::setNodeProperties(
 //==============================================================================
 template <class Base>
 std::unique_ptr<Node::Properties>
-CompositePropertiesNode<Base>::getNodeProperties() const
-{
+CompositePropertiesNode<Base>::getNodeProperties() const {
   return std::make_unique<Properties>(
       common::Composite::getCompositeProperties());
 }
@@ -81,8 +76,7 @@ CompositePropertiesNode<Base>::getNodeProperties() const
 //==============================================================================
 template <class Base>
 void CompositePropertiesNode<Base>::copyNodePropertiesTo(
-    std::unique_ptr<Node::Properties>& outputProperties) const
-{
+    std::unique_ptr<Node::Properties>& outputProperties) const {
   common::Composite::copyCompositePropertiesTo(
       static_cast<Properties&>(*outputProperties));
 }

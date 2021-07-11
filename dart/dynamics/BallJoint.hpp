@@ -41,15 +41,13 @@ namespace dart {
 namespace dynamics {
 
 /// class BallJoint
-class BallJoint : public GenericJoint<math::SO3Space>
-{
+class BallJoint : public GenericJoint<math::SO3Space> {
 public:
   friend class Skeleton;
 
   using Base = GenericJoint<math::SO3Space>;
 
-  struct Properties : Base::Properties
-  {
+  struct Properties : Base::Properties {
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 
     Properties(const Base::Properties& properties = Base::Properties());
@@ -79,8 +77,7 @@ public:
   /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
   /// the child BodyNode frames when applied to a BallJoint.
   template <typename RotationType>
-  static Eigen::Vector3d convertToPositions(const RotationType& _rotation)
-  {
+  static Eigen::Vector3d convertToPositions(const RotationType& _rotation) {
     return math::logMap(_rotation);
   }
 

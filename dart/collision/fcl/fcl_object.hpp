@@ -32,17 +32,16 @@
 
 #pragma once
 
-#include "dart/collision/object.hpp"
 #include "dart/collision/fcl/backward_compatibility.hpp"
 #include "dart/collision/fcl/fcl_types.hpp"
+#include "dart/collision/object.hpp"
 #include "dart/math/Types.hpp"
 
 namespace dart {
 namespace collision {
 
 template <typename S_>
-class FclObject : public Object<S_>
-{
+class FclObject : public Object<S_> {
 public:
   // Type aliases
   using S = S_;

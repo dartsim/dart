@@ -44,8 +44,7 @@ namespace dart {
 namespace optimization {
 
 /// \brief class Problem
-class Problem
-{
+class Problem {
 public:
   /// \brief Constructor
   explicit Problem(std::size_t _dim = 0);

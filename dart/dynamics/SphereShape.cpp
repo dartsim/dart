@@ -38,33 +38,28 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-SphereShape::SphereShape(double radius) : Shape(SPHERE)
-{
+SphereShape::SphereShape(double radius) : Shape(SPHERE) {
   setRadius(radius);
 }
 
 //==============================================================================
-SphereShape::~SphereShape()
-{
+SphereShape::~SphereShape() {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& SphereShape::getType() const
-{
+const std::string& SphereShape::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& SphereShape::getStaticType()
-{
+const std::string& SphereShape::getStaticType() {
   static const std::string type("SphereShape");
   return type;
 }
 
 //==============================================================================
-void SphereShape::setRadius(double radius)
-{
+void SphereShape::setRadius(double radius) {
   assert(radius > 0.0);
 
   mRadius = radius;
@@ -76,20 +71,17 @@ void SphereShape::setRadius(double radius)
 }
 
 //==============================================================================
-double SphereShape::getRadius() const
-{
+double SphereShape::getRadius() const {
   return mRadius;
 }
 
 //==============================================================================
-double SphereShape::computeVolume(double radius)
-{
+double SphereShape::computeVolume(double radius) {
   return math::constantsd::pi() * 4.0 / 3.0 * std::pow(radius, 3);
 }
 
 //==============================================================================
-Eigen::Matrix3d SphereShape::computeInertia(double radius, double mass)
-{
+Eigen::Matrix3d SphereShape::computeInertia(double radius, double mass) {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
   inertia(0, 0) = 2.0 / 5.0 * mass * std::pow(radius, 2);
@@ -100,22 +92,19 @@ Eigen::Matrix3d SphereShape::computeInertia(double radius, double mass)
 }
 
 //==============================================================================
-Eigen::Matrix3d SphereShape::computeInertia(double mass) const
-{
+Eigen::Matrix3d SphereShape::computeInertia(double mass) const {
   return computeInertia(mRadius, mass);
 }
 
 //==============================================================================
-void SphereShape::updateBoundingBox() const
-{
+void SphereShape::updateBoundingBox() const {
   mBoundingBox.setMin(Eigen::Vector3d::Constant(-mRadius));
   mBoundingBox.setMax(Eigen::Vector3d::Constant(mRadius));
   mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
-void SphereShape::updateVolume() const
-{
+void SphereShape::updateVolume() const {
   mVolume = computeVolume(mRadius);
   mIsVolumeDirty = false;
 }

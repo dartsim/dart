@@ -75,8 +75,7 @@ Eigen::Vector4d toVector4d(const std::string& str);
 Eigen::Vector6d toVector6d(const std::string& str);
 Eigen::VectorXd toVectorXd(const std::string& str);
 template <std::size_t N>
-Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
-{
+Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str) {
   Eigen::Matrix<double, N, 1> ret = Eigen::Matrix<double, N, 1>::Zero();
 
   std::vector<std::string> pieces;
@@ -84,27 +83,19 @@ Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
   boost::split(
       pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   std::size_t sizeToRead = std::min(N, pieces.size());
-  if (pieces.size() < N)
-  {
+  if (pieces.size() < N) {
     dterr << "Failed to read a vector because the dimension '" << pieces.size()
           << "' is less than the expectation '" << N << "'.\n";
-  }
-  else if (pieces.size() > N)
-  {
+  } else if (pieces.size() > N) {
     dterr << "Failed to read a vector because the dimension '" << pieces.size()
           << "' is greater than the expectation '" << N << "'.\n";
   }
 
-  for (std::size_t i = 0; i < sizeToRead; ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
+  for (std::size_t i = 0; i < sizeToRead; ++i) {
+    if (pieces[i] != "") {
+      try {
         ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
+      } catch (boost::bad_lexical_cast& e) {
         dterr << "value [" << pieces[i]
               << "] is not a valid double for Eigen::Vector" << N << "d[" << i
               << "]: " << e.what() << "\n";
@@ -206,8 +197,7 @@ Eigen::VectorXd getAttributeVectorXd(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 template <std::size_t N>
 Eigen::Matrix<double, N, 1> getAttributeVectorNd(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
+    const tinyxml2::XMLElement* element, const std::string& attributeName) {
   const std::string val = getAttributeString(element, attributeName);
   return toVectorNd<N>(val);
 }
@@ -216,8 +206,7 @@ Eigen::Matrix<double, N, 1> getAttributeVectorNd(
 /// child elements of given parent element. This class is templated to cover
 /// const and non-const tinyxml2::XMLElement types.
 template <typename ElementType>
-class TemplatedElementEnumerator
-{
+class TemplatedElementEnumerator {
 protected:
   using ElementPtr = ElementType*;
   using ElementRef = ElementType&;
@@ -228,29 +217,23 @@ public:
       ElementPtr parentElement, const std::string& childElementName)
     : mParentElement(parentElement),
       mChildElementName(childElementName),
-      mCurrentElement(nullptr)
-  {
+      mCurrentElement(nullptr) {
   }
 
   /// Destructor
-  ~TemplatedElementEnumerator()
-  {
+  ~TemplatedElementEnumerator() {
   }
 
   /// Set the current element to the next sibling element or to the first child
   /// element of given parent element if it exists; returns success
-  bool next()
-  {
+  bool next() {
     if (!mParentElement)
       return false;
 
-    if (mCurrentElement)
-    {
+    if (mCurrentElement) {
       mCurrentElement
           = mCurrentElement->NextSiblingElement(mChildElementName.c_str());
-    }
-    else
-    {
+    } else {
       mCurrentElement
           = mParentElement->FirstChildElement(mChildElementName.c_str());
     }
@@ -262,26 +245,22 @@ public:
   }
 
   /// Get the current element
-  ElementPtr get() const
-  {
+  ElementPtr get() const {
     return mCurrentElement;
   }
 
   /// Dereference operator
-  ElementPtr operator->() const
-  {
+  ElementPtr operator->() const {
     return mCurrentElement;
   }
 
   /// Dereference operator
-  ElementRef operator*() const
-  {
+  ElementRef operator*() const {
     return *mCurrentElement;
   }
 
   /// Equality operator
-  bool operator==(const TemplatedElementEnumerator<ElementType>& rhs) const
-  {
+  bool operator==(const TemplatedElementEnumerator<ElementType>& rhs) const {
     // If they point at the same node, then the names must match
     return (this->mParentElement == rhs.mParentElement)
            && (this->mCurrentElement == rhs.mCurrentElement)
@@ -291,8 +270,7 @@ public:
 
   /// Assignment operator
   TemplatedElementEnumerator<ElementType>& operator=(
-      const TemplatedElementEnumerator<ElementType>& rhs)
-  {
+      const TemplatedElementEnumerator<ElementType>& rhs) {
     this->mParentElement = rhs.mParentElement;
     this->mChildElementName = rhs.mChildElementName;
     this->mCurrentElement = rhs.mCurrentElement;
@@ -302,8 +280,7 @@ public:
 
 private:
   /// Returns true if the current element is valid (not a nullptr)
-  bool valid() const
-  {
+  bool valid() const {
     return mCurrentElement != nullptr;
   }
 

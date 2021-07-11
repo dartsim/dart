@@ -61,6 +61,7 @@ pybind11_add_module(${pybind_module}
   MODULE
   ${dartpy_headers}
   ${dartpy_sources}
+  EXCLUDE_FROM_ALL
 )
 
 target_include_directories(${pybind_module}

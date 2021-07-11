@@ -40,54 +40,46 @@ namespace dynamics {
 //==============================================================================
 DARTCollisionGroup::DARTCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector)
-{
+  : CollisionGroup(collisionDetector) {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::initializeEngineData()
-{
+void DARTCollisionGroup::initializeEngineData() {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
-{
+void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object) {
   if (std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object)
-      == mCollisionObjects.end())
-  {
+      == mCollisionObjects.end()) {
     mCollisionObjects.push_back(object);
   }
 }
 
 //==============================================================================
 void DARTCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
-{
+    const std::vector<CollisionObject*>& collObjects) {
   for (auto collObject : collObjects)
     addCollisionObjectToEngine(collObject);
 }
 
 //==============================================================================
 void DARTCollisionGroup::removeCollisionObjectFromEngine(
-    CollisionObject* object)
-{
+    CollisionObject* object) {
   mCollisionObjects.erase(
       std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object));
 }
 
 //==============================================================================
-void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
-{
+void DARTCollisionGroup::removeAllCollisionObjectsFromEngine() {
   mCollisionObjects.clear();
 }
 
 //==============================================================================
-void DARTCollisionGroup::updateCollisionGroupEngineData()
-{
+void DARTCollisionGroup::updateCollisionGroupEngineData() {
   // Do nothing
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

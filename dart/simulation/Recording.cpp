@@ -46,45 +46,38 @@ namespace dart {
 namespace simulation {
 
 //==============================================================================
-Recording::Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons)
-{
+Recording::Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons) {
   for (std::size_t i = 0; i < _skeletons.size(); i++)
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
 }
 
 //==============================================================================
-Recording::Recording(const std::vector<int>& _skelDofs)
-{
+Recording::Recording(const std::vector<int>& _skelDofs) {
   for (std::size_t i = 0; i < _skelDofs.size(); i++)
     mNumGenCoordsForSkeletons.push_back(_skelDofs[i]);
 }
 
 //==============================================================================
-Recording::~Recording()
-{
+Recording::~Recording() {
 }
 
 //==============================================================================
-int Recording::getNumFrames() const
-{
+int Recording::getNumFrames() const {
   return mBakedStates.size();
 }
 
 //==============================================================================
-int Recording::getNumSkeletons() const
-{
+int Recording::getNumSkeletons() const {
   return mNumGenCoordsForSkeletons.size();
 }
 
 //==============================================================================
-int Recording::getNumDofs(int _skelIdx) const
-{
+int Recording::getNumDofs(int _skelIdx) const {
   return mNumGenCoordsForSkeletons[_skelIdx];
 }
 
 //==============================================================================
-int Recording::getNumContacts(int _frameIdx) const
-{
+int Recording::getNumContacts(int _frameIdx) const {
   int totalDofs = 0;
   for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
@@ -92,8 +85,7 @@ int Recording::getNumContacts(int _frameIdx) const
 }
 
 //==============================================================================
-Eigen::VectorXd Recording::getConfig(int _frameIdx, int _skelIdx) const
-{
+Eigen::VectorXd Recording::getConfig(int _frameIdx, int _skelIdx) const {
   int index = 0;
   for (int i = 0; i < _skelIdx; i++)
     index += mNumGenCoordsForSkeletons[i];
@@ -101,8 +93,7 @@ Eigen::VectorXd Recording::getConfig(int _frameIdx, int _skelIdx) const
 }
 
 //==============================================================================
-double Recording::getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const
-{
+double Recording::getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const {
   int index = 0;
   for (int i = 0; i < _skelIdx; i++)
     index += mNumGenCoordsForSkeletons[i];
@@ -110,8 +101,8 @@ double Recording::getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const
 }
 
 //==============================================================================
-Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
-{
+Eigen::Vector3d Recording::getContactPoint(
+    int _frameIdx, int _contactIdx) const {
   int totalDofs = 0;
   for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
@@ -119,8 +110,8 @@ Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 }
 
 //==============================================================================
-Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
-{
+Eigen::Vector3d Recording::getContactForce(
+    int _frameIdx, int _contactIdx) const {
   int totalDofs = 0;
   for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
@@ -128,21 +119,18 @@ Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
 }
 
 //==============================================================================
-void Recording::clear()
-{
+void Recording::clear() {
   mBakedStates.clear();
 }
 
 //==============================================================================
-void Recording::addState(const Eigen::VectorXd& _state)
-{
+void Recording::addState(const Eigen::VectorXd& _state) {
   mBakedStates.push_back(_state);
 }
 
 //==============================================================================
 void Recording::updateNumGenCoords(
-    const std::vector<dynamics::SkeletonPtr>& _skeletons)
-{
+    const std::vector<dynamics::SkeletonPtr>& _skeletons) {
   mNumGenCoordsForSkeletons.clear();
   for (std::size_t i = 0; i < _skeletons.size(); ++i)
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());

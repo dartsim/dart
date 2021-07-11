@@ -41,8 +41,7 @@ void DartLoader(py::module& sm);
 void SkelParser(py::module& sm);
 void MjcfParser(py::module& sm);
 
-void dart_io(py::module& m)
-{
+void dart_io(py::module& m) {
   auto sm = m.def_submodule("io");
 
   DartLoader(sm);

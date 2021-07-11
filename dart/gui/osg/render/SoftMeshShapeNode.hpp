@@ -50,8 +50,7 @@ namespace render {
 class SoftMeshShapeGeode;
 class SoftMeshShapeDrawable;
 
-class SoftMeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
-{
+class SoftMeshShapeNode : public ShapeNode, public ::osg::MatrixTransform {
 public:
   SoftMeshShapeNode(
       std::shared_ptr<dart::dynamics::SoftMeshShape> shape,

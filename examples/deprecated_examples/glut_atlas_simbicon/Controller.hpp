@@ -36,14 +36,12 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
 class StateMachine;
 
 /// \brief SIMBICON for Atlas robot
-class Controller
-{
+class Controller {
 public:
   /// \brief Constructor
   Controller(

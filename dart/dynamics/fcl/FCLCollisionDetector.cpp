@@ -146,8 +146,7 @@ Contact convertContact(
 
 /// Collision data stores the collision request and the result given by
 /// collision algorithm.
-struct FCLCollisionCallbackData
-{
+struct FCLCollisionCallbackData {
   /// FCL collision request
   fcl::CollisionRequest fclRequest;
 
@@ -172,8 +171,7 @@ struct FCLCollisionCallbackData
   /// Whether the collision iteration can stop
   bool done;
 
-  bool isCollision() const
-  {
+  bool isCollision() const {
     if (result)
       return result->isCollision();
     else
@@ -192,8 +190,7 @@ struct FCLCollisionCallbackData
       foundCollision(false),
       primitiveShapeType(type),
       contactPointComputationMethod(method),
-      done(false)
-  {
+      done(false) {
     convertOption(option, fclRequest);
 
     fclRequest.num_max_contacts
@@ -203,8 +200,7 @@ struct FCLCollisionCallbackData
   }
 };
 
-struct FCLDistanceCallbackData
-{
+struct FCLDistanceCallbackData {
   /// FCL distance request
   fcl::DistanceRequest fclRequest;
 
@@ -225,8 +221,7 @@ struct FCLDistanceCallbackData
   bool done;
 
   FCLDistanceCallbackData(const DistanceOption& option, DistanceResult* result)
-    : option(option), result(result), done(false)
-  {
+    : option(option), result(result), done(false) {
     convertOption(option, fclRequest);
   }
 };
@@ -234,8 +229,7 @@ struct FCLDistanceCallbackData
 //==============================================================================
 // Create a cube mesh for collision detection
 template <class BV>
-::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ)
-{
+::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ) {
   int faces[6][4] = {{0, 1, 2, 3},
                      {3, 2, 6, 7},
                      {7, 6, 5, 4},
@@ -255,8 +249,7 @@ template <class BV>
   fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
-  for (int i = 0; i < 6; i++)
-  {
+  for (int i = 0; i < 6; i++) {
     p1 = fcl::Vector3(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
     p2 = fcl::Vector3(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
     p3 = fcl::Vector3(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
@@ -273,8 +266,7 @@ template <class BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
-{
+::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
   float v[59][3] = {{0, 0, 0},
                     {0.135299, -0.461940, -0.135299},
                     {0.000000, -0.461940, -0.191342},
@@ -364,8 +356,7 @@ template <class BV>
   fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
-  for (int i = 0; i < 112; i++)
-  {
+  for (int i = 0; i < 112; i++) {
     p1 = fcl::Vector3(
         v[f[i][0]][0] * _sizeX, v[f[i][0]][1] * _sizeY, v[f[i][0]][2] * _sizeZ);
     p2 = fcl::Vector3(
@@ -388,8 +379,7 @@ template <class BV>
     double _topRadius,
     double _height,
     int _slices,
-    int _stacks)
-{
+    int _stacks) {
   const int CACHE_SIZE = 240;
 
   int i, j;
@@ -406,8 +396,7 @@ template <class BV>
     _slices = CACHE_SIZE - 1;
 
   if (_slices < 2 || _stacks < 1 || _baseRadius < 0.0 || _topRadius < 0.0
-      || _height < 0.0)
-  {
+      || _height < 0.0) {
     return nullptr;
   }
 
@@ -418,8 +407,7 @@ template <class BV>
   deltaRadius = _baseRadius - _topRadius;
 
   /* Cache is the vertex locations cache */
-  for (i = 0; i < _slices; i++)
-  {
+  for (i = 0; i < _slices; i++) {
     angle = 2 * math::constantsd::pi() * i / _slices;
     sinCache[i] = sin(angle);
     cosCache[i] = cos(angle);
@@ -439,8 +427,7 @@ template <class BV>
   radiusLow = _baseRadius;
   zLow = zBase;
   p1 = fcl::Vector3(radiusLow * sintemp, radiusLow * costemp, zLow);
-  for (i = 1; i < _slices; i++)
-  {
+  for (i = 1; i < _slices; i++) {
     p2 = fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
     p3 = fcl::Vector3(
         radiusLow * sinCache[i + 1], radiusLow * cosCache[i + 1], zLow);
@@ -448,10 +435,8 @@ template <class BV>
   }
 
   /* Body of cylinder */
-  for (i = 0; i < _slices; i++)
-  {
-    for (j = 0; j < _stacks; j++)
-    {
+  for (i = 0; i < _slices; i++) {
+    for (j = 0; j < _stacks; j++) {
       zLow = j * _height / _stacks + zBase;
       zHigh = (j + 1) * _height / _stacks + zBase;
       radiusLow = _baseRadius - deltaRadius * (static_cast<float>(j) / _stacks);
@@ -477,8 +462,7 @@ template <class BV>
   radiusLow = _topRadius;
   zLow = zBase + _height;
   p1 = fcl::Vector3(radiusLow * sintemp, radiusLow * costemp, zLow);
-  for (i = 1; i < _slices; i++)
-  {
+  for (i = 1; i < _slices; i++) {
     p2 = fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
     p3 = fcl::Vector3(
         radiusLow * sinCache[i + 1], radiusLow * cosCache[i + 1], zLow);
@@ -492,8 +476,7 @@ template <class BV>
 //==============================================================================
 template <typename BV>
 ::fcl::BVHModel<BV>* createPyramid(
-    const dynamics::PyramidShape& shape, const fcl::Transform3& pose)
-{
+    const dynamics::PyramidShape& shape, const fcl::Transform3& pose) {
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
 
   std::vector<fcl::Vector3> points(5);
@@ -531,8 +514,7 @@ template <typename BV>
   faces[4].set(1, 3, 2);
   faces[5].set(1, 4, 3);
 
-  for (unsigned int i = 0; i < points.size(); ++i)
-  {
+  for (unsigned int i = 0; i < points.size(); ++i) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
     points[i] = pose * points[i];
 #else
@@ -551,20 +533,16 @@ template <typename BV>
 //==============================================================================
 template <class BV>
 ::fcl::BVHModel<BV>* createMesh(
-    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
-{
+    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh) {
   // Create FCL mesh from Assimp mesh
 
   assert(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
-  for (std::size_t i = 0; i < _mesh->mNumMeshes; i++)
-  {
-    for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
-    {
+  for (std::size_t i = 0; i < _mesh->mNumMeshes; i++) {
+    for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
       fcl::Vector3 vertices[3];
-      for (std::size_t k = 0; k < 3; k++)
-      {
+      for (std::size_t k = 0; k < 3; k++) {
         const aiVector3D& vertex
             = _mesh->mMeshes[i]
                   ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
@@ -580,19 +558,16 @@ template <class BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
-{
+::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh) {
   // Create FCL mesh from Assimp mesh
 
   assert(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
 
-  for (std::size_t i = 0; i < _mesh->mNumFaces; i++)
-  {
+  for (std::size_t i = 0; i < _mesh->mNumFaces; i++) {
     fcl::Vector3 vertices[3];
-    for (std::size_t j = 0; j < 3; j++)
-    {
+    for (std::size_t j = 0; j < 3; j++) {
       const aiVector3D& vertex = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
       vertices[j] = fcl::Vector3(vertex.x, vertex.y, vertex.z);
     }
@@ -614,48 +589,41 @@ FCLCollisionDetector::Registrar<FCLCollisionDetector>
         }};
 
 //==============================================================================
-std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
-{
+std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create() {
   return std::shared_ptr<FCLCollisionDetector>(new FCLCollisionDetector());
 }
 
 //==============================================================================
-FCLCollisionDetector::~FCLCollisionDetector()
-{
+FCLCollisionDetector::~FCLCollisionDetector() {
   assert(mShapeMap.empty());
 }
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
-FCLCollisionDetector::cloneWithoutCollisionObjects() const
-{
+FCLCollisionDetector::cloneWithoutCollisionObjects() const {
   return FCLCollisionDetector::create();
 }
 
 //==============================================================================
-const std::string& FCLCollisionDetector::getType() const
-{
+const std::string& FCLCollisionDetector::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& FCLCollisionDetector::getStaticType()
-{
+const std::string& FCLCollisionDetector::getStaticType() {
   static const std::string type = "fcl";
   return type;
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup()
-{
+std::unique_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup() {
   return std::make_unique<FCLCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
-static bool checkGroupValidity(FCLCollisionDetector* cd, CollisionGroup* group)
-{
-  if (cd != group->getCollisionDetector().get())
-  {
+static bool checkGroupValidity(
+    FCLCollisionDetector* cd, CollisionGroup* group) {
+  if (cd != group->getCollisionDetector().get()) {
     dterr << "[FCLCollisionDetector::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
@@ -670,8 +638,7 @@ static bool checkGroupValidity(FCLCollisionDetector* cd, CollisionGroup* group)
 bool FCLCollisionDetector::collide(
     CollisionGroup* group,
     const CollisionOption& option,
-    CollisionResult* result)
-{
+    CollisionResult* result) {
   if (result)
     result->clear();
 
@@ -699,8 +666,7 @@ bool FCLCollisionDetector::collide(
     CollisionGroup* group1,
     CollisionGroup* group2,
     const CollisionOption& option,
-    CollisionResult* result)
-{
+    CollisionResult* result) {
   if (result)
     result->clear();
 
@@ -731,8 +697,9 @@ bool FCLCollisionDetector::collide(
 
 //==============================================================================
 double FCLCollisionDetector::distance(
-    CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
-{
+    CollisionGroup* group,
+    const DistanceOption& option,
+    DistanceResult* result) {
   if (result)
     result->clear();
 
@@ -754,8 +721,7 @@ double FCLCollisionDetector::distance(
     CollisionGroup* group1,
     CollisionGroup* group2,
     const DistanceOption& option,
-    DistanceResult* result)
-{
+    DistanceResult* result) {
   if (result)
     result->clear();
 
@@ -782,10 +748,8 @@ double FCLCollisionDetector::distance(
 
 //==============================================================================
 void FCLCollisionDetector::setPrimitiveShapeType(
-    FCLCollisionDetector::PrimitiveShape type)
-{
-  if (type == PRIMITIVE)
-  {
+    FCLCollisionDetector::PrimitiveShape type) {
+  if (type == PRIMITIVE) {
     dtwarn << "[FCLCollisionDetector::setPrimitiveShapeType] You chose to use "
            << "FCL's primitive shape collision feature while it's not complete "
            << "(at least until 0.4.0) especially in use of dynamics "
@@ -799,17 +763,14 @@ void FCLCollisionDetector::setPrimitiveShapeType(
 
 //==============================================================================
 FCLCollisionDetector::PrimitiveShape
-FCLCollisionDetector::getPrimitiveShapeType() const
-{
+FCLCollisionDetector::getPrimitiveShapeType() const {
   return mPrimitiveShapeType;
 }
 
 //==============================================================================
 void FCLCollisionDetector::setContactPointComputationMethod(
-    FCLCollisionDetector::ContactPointComputationMethod method)
-{
-  if (method == FCL)
-  {
+    FCLCollisionDetector::ContactPointComputationMethod method) {
+  if (method == FCL) {
     dtwarn << "[FCLCollisionDetector::setContactPointComputationMethod] You "
            << "chose to use FCL's built in contact point computation while"
            << "it's buggy (see https://github.com/flexible-collision-library/"
@@ -824,8 +785,7 @@ void FCLCollisionDetector::setContactPointComputationMethod(
 
 //==============================================================================
 FCLCollisionDetector::ContactPointComputationMethod
-FCLCollisionDetector::getContactPointComputationMethod() const
-{
+FCLCollisionDetector::getContactPointComputationMethod() const {
   return mContactPointComputationMethod;
 }
 
@@ -833,15 +793,13 @@ FCLCollisionDetector::getContactPointComputationMethod() const
 FCLCollisionDetector::FCLCollisionDetector()
   : CollisionDetector(),
     mPrimitiveShapeType(MESH),
-    mContactPointComputationMethod(DART)
-{
+    mContactPointComputationMethod(DART) {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
 //==============================================================================
 std::unique_ptr<CollisionObject> FCLCollisionDetector::createCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
-{
+    const dynamics::ShapeFrame* shapeFrame) {
   auto fclCollGeom = claimFCLCollisionGeometry(shapeFrame->getShape());
 
   return std::unique_ptr<FCLCollisionObject>(
@@ -849,8 +807,8 @@ std::unique_ptr<CollisionObject> FCLCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
-{
+void FCLCollisionDetector::refreshCollisionObject(
+    CollisionObject* const object) {
   FCLCollisionObject* fcl = static_cast<FCLCollisionObject*>(object);
 
   fcl->mFCLCollisionObject = std::unique_ptr<fcl::CollisionObject>(
@@ -860,16 +818,14 @@ void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
 //==============================================================================
 std::shared_ptr<fcl::CollisionGeometry>
 FCLCollisionDetector::claimFCLCollisionGeometry(
-    const dynamics::ConstShapePtr& shape)
-{
+    const dynamics::ConstShapePtr& shape) {
   const std::size_t currentVersion = shape->getVersion();
 
   const auto search = mShapeMap.insert(std::make_pair(shape, ShapeInfo()));
   const bool inserted = search.second;
   ShapeInfo& info = search.first->second;
 
-  if (!inserted && currentVersion == info.mLastKnownVersion)
-  {
+  if (!inserted && currentVersion == info.mLastKnownVersion) {
     const auto& fclCollGeom = info.mShape;
     assert(fclCollGeom.lock());
     // Ensure all the collision geometry in the map should be alive pointers.
@@ -890,8 +846,7 @@ std::shared_ptr<fcl::CollisionGeometry>
 FCLCollisionDetector::createFCLCollisionGeometry(
     const dynamics::ConstShapePtr& shape,
     FCLCollisionDetector::PrimitiveShape type,
-    const FCLCollisionGeometryDeleter& deleter)
-{
+    const FCLCollisionGeometryDeleter& deleter) {
   using dynamics::BoxShape;
   using dynamics::ConeShape;
   using dynamics::CylinderShape;
@@ -909,8 +864,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
 
-  if (SphereShape::getStaticType() == shapeType)
-  {
+  if (SphereShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const SphereShape*>(shape.get()));
 
     auto* sphere = static_cast<const SphereShape*>(shape.get());
@@ -921,9 +875,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     else
       geom = createEllipsoid<fcl::OBBRSS>(
           radius * 2.0, radius * 2.0, radius * 2.0);
-  }
-  else if (BoxShape::getStaticType() == shapeType)
-  {
+  } else if (BoxShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const BoxShape*>(shape.get()));
 
     auto box = static_cast<const BoxShape*>(shape.get());
@@ -933,55 +885,42 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = new fcl::Box(size[0], size[1], size[2]);
     else
       geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
-  }
-  else if (EllipsoidShape::getStaticType() == shapeType)
-  {
+  } else if (EllipsoidShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
     auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
     const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
-    if (FCLCollisionDetector::PRIMITIVE == type)
-    {
+    if (FCLCollisionDetector::PRIMITIVE == type) {
       geom = new fcl::Ellipsoid(FCLTypes::convertVector3(radii));
-    }
-    else
-    {
+    } else {
       geom = createEllipsoid<fcl::OBBRSS>(
           radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
     }
-  }
-  else if (CylinderShape::getStaticType() == shapeType)
-  {
+  } else if (CylinderShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const CylinderShape*>(shape.get()));
 
     const auto cylinder = static_cast<const CylinderShape*>(shape.get());
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
-    if (FCLCollisionDetector::PRIMITIVE == type)
-    {
+    if (FCLCollisionDetector::PRIMITIVE == type) {
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
       // TODO(JS): We still need to use mesh for cylinder because FCL 0.4.0
       // returns single contact point for cylinder yet. Once FCL support
       // multiple contact points then above code will be replaced by:
       // fclCollGeom.reset(new fcl::Cylinder(radius, height));
-    }
-    else
-    {
+    } else {
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
-  }
-  else if (ConeShape::getStaticType() == shapeType)
-  {
+  } else if (ConeShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const ConeShape*>(shape.get()));
 
     const auto cone = std::static_pointer_cast<const ConeShape>(shape);
     const auto radius = cone->getRadius();
     const auto height = cone->getHeight();
 
-    if (FCLCollisionDetector::PRIMITIVE == type)
-    {
+    if (FCLCollisionDetector::PRIMITIVE == type) {
       // TODO(JS): We still need to use mesh for cone because FCL 0.4.0
       // returns single contact point for cone yet. Once FCL support
       // multiple contact points then above code will be replaced by:
@@ -990,44 +929,33 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       auto fclCone = fcl::Cone(radius, height);
       ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
       geom = fclMesh;
-    }
-    else
-    {
+    } else {
       auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
       auto fclCone = fcl::Cone(radius, height);
       ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
       geom = fclMesh;
     }
-  }
-  else if (PyramidShape::getStaticType() == shapeType)
-  {
+  } else if (PyramidShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const PyramidShape*>(shape.get()));
 
     const auto pyramid = std::static_pointer_cast<const PyramidShape>(shape);
     // Use mesh since FCL doesn't support pyramid shape.
     geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::Transform3());
-  }
-  else if (PlaneShape::getStaticType() == shapeType)
-  {
-    if (FCLCollisionDetector::PRIMITIVE == type)
-    {
+  } else if (PlaneShape::getStaticType() == shapeType) {
+    if (FCLCollisionDetector::PRIMITIVE == type) {
       assert(dynamic_cast<const PlaneShape*>(shape.get()));
       auto plane = static_cast<const PlaneShape*>(shape.get());
       const Eigen::Vector3d normal = plane->getNormal();
       const double offset = plane->getOffset();
 
       geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
-    }
-    else
-    {
+    } else {
       geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
       dtwarn << "[FCLCollisionDetector] PlaneShape is not supported by "
              << "FCLCollisionDetector. We create a thin box mesh insted, where "
              << "the size is [1000 0 1000].\n";
     }
-  }
-  else if (MeshShape::getStaticType() == shapeType)
-  {
+  } else if (MeshShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const MeshShape*>(shape.get()));
 
     auto shapeMesh = static_cast<const MeshShape*>(shape.get());
@@ -1035,9 +963,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto aiScene = shapeMesh->getMesh();
 
     geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
-  }
-  else if (SoftMeshShape::getStaticType() == shapeType)
-  {
+  } else if (SoftMeshShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
@@ -1046,27 +972,25 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
   }
 #if DART_HAVE_OCTOMAP
-  else if (VoxelGridShape::getStaticType() == shapeType)
-  {
-#  if FCL_HAVE_OCTOMAP
+  else if (VoxelGridShape::getStaticType() == shapeType) {
+  #if FCL_HAVE_OCTOMAP
     assert(dynamic_cast<const VoxelGridShape*>(shape.get()));
 
     auto octreeShape = static_cast<const VoxelGridShape*>(shape.get());
     auto octree = octreeShape->getOctree();
 
     geom = new fcl::OcTree(octree);
-#  else
+  #else
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
           << "Attempting to create an collision geometry for VoxelGridShape, "
           << "but the installed FCL isn't built with Octomap support. "
           << "Creating a sphere with 0.1 radius instead.\n";
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
-#  endif // FCL_HAVE_OCTOMAP
+  #endif // FCL_HAVE_OCTOMAP
   }
 #endif // DART_HAVE_OCTOMAP
-  else
-  {
+  else {
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
           << "Attempting to create an unsupported shape type [" << shapeType
           << "]. Creating a sphere with 0.1 radius "
@@ -1081,16 +1005,14 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 //==============================================================================
 FCLCollisionDetector::FCLCollisionGeometryDeleter::FCLCollisionGeometryDeleter(
     FCLCollisionDetector* cd, const dynamics::ConstShapePtr& shape)
-  : mFCLCollisionDetector(cd), mShape(shape)
-{
+  : mFCLCollisionDetector(cd), mShape(shape) {
   assert(cd);
   assert(shape);
 }
 
 //==============================================================================
 void FCLCollisionDetector::FCLCollisionGeometryDeleter::operator()(
-    fcl::CollisionGeometry* geom) const
-{
+    fcl::CollisionGeometry* geom) const {
   mFCLCollisionDetector->mShapeMap.erase(mShape);
 
   delete geom;
@@ -1100,8 +1022,7 @@ namespace {
 
 //==============================================================================
 bool collisionCallback(
-    fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata)
-{
+    fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata) {
   // Return true if you don't want more narrow phase collision checking after
   // this callback function returns, return false otherwise.
 
@@ -1117,8 +1038,7 @@ bool collisionCallback(
   const auto& filter = option.collisionFilter;
 
   // Filtering
-  if (filter)
-  {
+  if (filter) {
     auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
     auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
@@ -1134,28 +1054,21 @@ bool collisionCallback(
   // Perform narrow-phase detection
   ::fcl::collide(o1, o2, fclRequest, fclResult);
 
-  if (result)
-  {
+  if (result) {
     // Post processing -- converting fcl contact information to ours if needed
     if (FCLCollisionDetector::DART == collData->contactPointComputationMethod
-        && FCLCollisionDetector::MESH == collData->primitiveShapeType)
-    {
+        && FCLCollisionDetector::MESH == collData->primitiveShapeType) {
       postProcessDART(fclResult, o1, o2, option, *result);
-    }
-    else
-    {
+    } else {
       postProcessFCL(fclResult, o1, o2, option, *result);
     }
 
     // Check satisfaction of the stopping conditions
     if (result->getNumContacts() >= option.maxNumContacts)
       collData->done = true;
-  }
-  else
-  {
+  } else {
     // If no result is passed, stop checking when the first contact is found
-    if (fclResult.isCollision())
-    {
+    if (fclResult.isCollision()) {
       collData->foundCollision = true;
       collData->done = true;
     }
@@ -1169,8 +1082,7 @@ bool distanceCallback(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     void* ddata,
-    double& dist)
-{
+    double& dist) {
   auto* distData = static_cast<FCLDistanceCallbackData*>(ddata);
 
   const auto& fclRequest = distData->fclRequest;
@@ -1179,15 +1091,13 @@ bool distanceCallback(
   const auto& option = distData->option;
   const auto& filter = option.distanceFilter;
 
-  if (distData->done)
-  {
+  if (distData->done) {
     dist = distData->unclampedMinDistance;
     return true;
   }
 
   // Filtering
-  if (filter)
-  {
+  if (filter) {
     auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
     auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
@@ -1216,14 +1126,13 @@ bool distanceCallback(
 }
 
 //==============================================================================
-Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2)
-{
+Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2) {
   return contact1.point - contact2.point;
 }
 
 //==============================================================================
-fcl::Vector3 getDiff(const fcl::Contact& contact1, const fcl::Contact& contact2)
-{
+fcl::Vector3 getDiff(
+    const fcl::Contact& contact1, const fcl::Contact& contact2) {
   return contact1.pos - contact2.pos;
 }
 
@@ -1233,25 +1142,21 @@ template <
     typename ContactT,
     const ContactT& (ResultT::*GetFun)(std::size_t) const>
 void markRepeatedPoints(
-    std::vector<bool>& markForDeletion, const ResultT& fclResult, double tol)
-{
+    std::vector<bool>& markForDeletion, const ResultT& fclResult, double tol) {
   const auto checkSize = markForDeletion.size();
 
   if (checkSize == 0u)
     return;
 
-  for (auto i = 0u; i < checkSize - 1u; ++i)
-  {
+  for (auto i = 0u; i < checkSize - 1u; ++i) {
     const auto& contact1 = (fclResult.*GetFun)(i);
 
-    for (auto j = i + 1u; j < checkSize; ++j)
-    {
+    for (auto j = i + 1u; j < checkSize; ++j) {
       const auto& contact2 = (fclResult.*GetFun)(j);
 
       const auto diff = getDiff(contact1, contact2);
 
-      if (diff.dot(diff) < tol)
-      {
+      if (diff.dot(diff) < tol) {
         markForDeletion[i] = true;
         break;
       }
@@ -1265,19 +1170,16 @@ template <
     typename ContactT,
     const ContactT& (ResultT::*GetFun)(std::size_t) const>
 void markColinearPoints(
-    std::vector<bool>& markForDeletion, const ResultT& fclResult, double tol)
-{
+    std::vector<bool>& markForDeletion, const ResultT& fclResult, double tol) {
   const auto checkSize = markForDeletion.size();
 
-  for (auto i = 0u; i < checkSize; ++i)
-  {
+  for (auto i = 0u; i < checkSize; ++i) {
     if (markForDeletion[i])
       continue;
 
     const auto& contact1 = (fclResult.*GetFun)(i);
 
-    for (auto j = i + 1u; j < checkSize; ++j)
-    {
+    for (auto j = i + 1u; j < checkSize; ++j) {
       if (i == j || markForDeletion[j])
         continue;
 
@@ -1286,15 +1188,13 @@ void markColinearPoints(
 
       const auto& contact2 = (fclResult.*GetFun)(j);
 
-      for (auto k = j + 1u; k < checkSize; ++k)
-      {
+      for (auto k = j + 1u; k < checkSize; ++k) {
         if (i == k)
           continue;
 
         const auto& contact3 = (fclResult.*GetFun)(k);
 
-        if (isColinear(contact1, contact2, contact3, tol))
-        {
+        if (isColinear(contact1, contact2, contact3, tol)) {
           markForDeletion[i] = true;
           break;
         }
@@ -1309,8 +1209,7 @@ void postProcessFCL(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     const CollisionOption& option,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   const auto numContacts = fclResult.numContacts();
 
   if (0u == numContacts)
@@ -1318,13 +1217,10 @@ void postProcessFCL(
 
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
-  if (1u == option.maxNumContacts)
-  {
-    for (auto i = 0u; i < numContacts; ++i)
-    {
+  if (1u == option.maxNumContacts) {
+    for (auto i = 0u; i < numContacts; ++i) {
       if (fcl::length2(fclResult.getContact(i).normal)
-          < Contact::getNormalEpsilonSquared())
-      {
+          < Contact::getNormalEpsilonSquared()) {
         // Skip this contact. This is because we assume that a contact with
         // zero-length normal is invalid.
         continue;
@@ -1354,14 +1250,12 @@ void postProcessFCL(
       fcl::Contact,
       &fcl::CollisionResult::getContact>(markForDeletion, fclResult, tol);
 
-  for (auto i = 0u; i < numContacts; ++i)
-  {
+  for (auto i = 0u; i < numContacts; ++i) {
     if (markForDeletion[i])
       continue;
 
     if (fcl::length2(fclResult.getContact(i).normal)
-        < Contact::getNormalEpsilonSquared())
-    {
+        < Contact::getNormalEpsilonSquared()) {
       // Skip this contact. This is because we assume that a contact with
       // zero-length normal is invalid.
       continue;
@@ -1380,8 +1274,7 @@ void postProcessDART(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     const CollisionOption& option,
-    CollisionResult& result)
-{
+    CollisionResult& result) {
   const auto numFilteredContacts = fclResult.numContacts();
 
   if (0u == numFilteredContacts)
@@ -1392,8 +1285,7 @@ void postProcessDART(
   std::vector<Contact> unfiltered;
   unfiltered.reserve(numFilteredContacts * 2);
 
-  for (auto i = 0u; i < numFilteredContacts; ++i)
-  {
+  for (auto i = 0u; i < numFilteredContacts; ++i) {
     const auto& c = fclResult.getContact(i);
 
     // for each pair of intersecting triangles, we create two contact points
@@ -1405,11 +1297,9 @@ void postProcessDART(
     pair1.collisionObject2
         = static_cast<FCLCollisionObject*>(o2->getUserData());
 
-    if (option.enableContact)
-    {
+    if (option.enableContact) {
       pair1.normal = FCLTypes::convertVector3(-c.normal);
-      if (Contact::isZeroNormal(pair1.normal))
-      {
+      if (Contact::isZeroNormal(pair1.normal)) {
         // This is an invalid contact, as it contains a zero length normal.
         // Skip this contact.
         continue;
@@ -1422,8 +1312,7 @@ void postProcessDART(
 
       // If at least one of object is not mesh, then fallback to using contact
       // info computed by fcl.
-      if (!fclMeshA || !fclMeshB)
-      {
+      if (!fclMeshA || !fclMeshB) {
         unfiltered.push_back(convertContact(c, o1, o2, option));
         continue;
       }
@@ -1442,25 +1331,19 @@ void postProcessDART(
           pair1.point,
           pair2.point);
 
-      if (contactResult == COPLANAR_CONTACT)
-      {
+      if (contactResult == COPLANAR_CONTACT) {
         if (numContacts > 2u)
           continue;
-      }
-      else if (contactResult == NO_CONTACT)
-      {
+      } else if (contactResult == NO_CONTACT) {
         continue;
-      }
-      else
-      {
+      } else {
         numContacts++;
       }
     }
 
     // For binary check, return after adding the first contact point to the
     // result without the checkings of repeatidity and co-linearity.
-    if (1u == option.maxNumContacts)
-    {
+    if (1u == option.maxNumContacts) {
       result.addContact(pair1);
 
       return;
@@ -1485,8 +1368,7 @@ void postProcessDART(
   markColinearPoints<std::vector<Contact>, Contact, &std::vector<Contact>::at>(
       markForDeletion, unfiltered, tol);
 
-  for (auto i = 0u; i < unfilteredSize; ++i)
-  {
+  for (auto i = 0u; i < unfilteredSize; ++i) {
     if (markForDeletion[i])
       continue;
 
@@ -1503,8 +1385,7 @@ void interpreteDistanceResult(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     const DistanceOption& option,
-    DistanceResult& result)
-{
+    DistanceResult& result) {
   result.unclampedMinDistance = fclResult.min_distance;
   result.minDistance
       = std::max(fclResult.min_distance, option.distanceLowerBound);
@@ -1514,8 +1395,7 @@ void interpreteDistanceResult(
   result.shapeFrame2
       = static_cast<FCLCollisionObject*>(o2->getUserData())->getShapeFrame();
 
-  if (option.enableNearestPoints)
-  {
+  if (option.enableNearestPoints) {
     result.nearestPoint1
         = FCLTypes::convertVector3(fclResult.nearest_points[0]);
     result.nearestPoint2
@@ -1531,8 +1411,7 @@ int evalContactPosition(
     const fcl::Transform3& transform1,
     const fcl::Transform3& transform2,
     Eigen::Vector3d& contactPosition1,
-    Eigen::Vector3d& contactPosition2)
-{
+    Eigen::Vector3d& contactPosition2) {
   const auto& id1 = fclContact.b1;
   const auto& id2 = fclContact.b2;
   const auto& tri1 = mesh1.tri_indices[id1];
@@ -1550,8 +1429,7 @@ int evalContactPosition(
   fcl::Vector3 contact2;
   const auto testRes = FFtest(v1, v2, v3, p1, p2, p3, &contact1, &contact2);
 
-  if (testRes == COPLANAR_CONTACT)
-  {
+  if (testRes == COPLANAR_CONTACT) {
     const auto area1 = triArea(v1, v2, v3);
     const auto area2 = triArea(p1, p2, p3);
 
@@ -1581,8 +1459,7 @@ int FFtest(
     const fcl::Vector3& R2,
     const fcl::Vector3& R3,
     fcl::Vector3* res1,
-    fcl::Vector3* res2)
-{
+    fcl::Vector3* res2) {
   float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
   DART_SET(U0, r1);
   DART_SET(U1, r2);
@@ -1601,8 +1478,7 @@ int FFtest(
 
 //==============================================================================
 double triArea(
-    const fcl::Vector3& p1, const fcl::Vector3& p2, const fcl::Vector3& p3)
-{
+    const fcl::Vector3& p1, const fcl::Vector3& p2, const fcl::Vector3& p3) {
   const fcl::Vector3 a = p2 - p1;
   const fcl::Vector3 b = p3 - p1;
   const double aMag = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
@@ -1618,8 +1494,7 @@ bool isColinear(
     const Contact& contact1,
     const Contact& contact2,
     const Contact& contact3,
-    double tol)
-{
+    double tol) {
   return isColinear(contact1.point, contact2.point, contact3.point, tol);
 }
 
@@ -1628,15 +1503,13 @@ bool isColinear(
     const fcl::Contact& contact1,
     const fcl::Contact& contact2,
     const fcl::Contact& contact3,
-    double tol)
-{
+    double tol) {
   return isColinear(contact1.pos, contact2.pos, contact3.pos, tol);
 }
 
 //==============================================================================
 template <typename T>
-bool isColinear(const T& pos1, const T& pos2, const T& pos3, double tol)
-{
+bool isColinear(const T& pos1, const T& pos2, const T& pos3, double tol) {
   const auto va = pos1 - pos2;
   const auto vb = pos1 - pos3;
   const auto v = va.cross(vb);
@@ -1649,16 +1522,15 @@ bool isColinear(const T& pos1, const T& pos2, const T& pos3, double tol)
 
 //==============================================================================
 void convertOption(
-    const CollisionOption& option, fcl::CollisionRequest& request)
-{
+    const CollisionOption& option, fcl::CollisionRequest& request) {
   request.num_max_contacts = option.maxNumContacts;
   request.enable_contact = option.enableContact;
   request.gjk_solver_type = ::fcl::GST_LIBCCD;
 }
 
 //==============================================================================
-void convertOption(const DistanceOption& option, fcl::DistanceRequest& request)
-{
+void convertOption(
+    const DistanceOption& option, fcl::DistanceRequest& request) {
   request.enable_nearest_points = option.enableNearestPoints;
 }
 
@@ -1667,8 +1539,7 @@ Contact convertContact(
     const fcl::Contact& fclContact,
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
-    const CollisionOption& option)
-{
+    const CollisionOption& option) {
   Contact contact;
 
   contact.collisionObject1
@@ -1676,8 +1547,7 @@ Contact convertContact(
   contact.collisionObject2
       = static_cast<FCLCollisionObject*>(o2->getUserData());
 
-  if (option.enableContact)
-  {
+  if (option.enableContact) {
     contact.point = FCLTypes::convertVector3(fclContact.pos);
     contact.normal = -FCLTypes::convertVector3(fclContact.normal);
     contact.penetrationDepth = fclContact.penetration_depth;
@@ -1690,5 +1560,5 @@ Contact convertContact(
 
 } // anonymous namespace
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

@@ -50,8 +50,7 @@ namespace detail {
 
 class Body;
 
-class Site final
-{
+class Site final {
 public:
   /// Default constructor
   Site() = default;
@@ -113,8 +112,7 @@ private:
 
   /// Intermediate raw data read from the XML file. For the details, see
   /// http://www.mujoco.org/book/XMLreference.html#Site
-  struct Data
-  {
+  struct Data {
     /// Name of the Site
     common::optional<std::string> mName;
 

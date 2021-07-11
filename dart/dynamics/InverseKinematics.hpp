@@ -72,8 +72,7 @@ const double DefaultIKLinearWeight = 1.0;
 /// safely cloned  over to another JacobianNode, as long as every
 /// optimization::Function that depends on the JacobianNode inherits the
 /// InverseKinematics::Function class and correctly overloads the clone function
-class InverseKinematics : public common::Subject
-{
+class InverseKinematics : public common::Subject {
 public:
   /// Create an InverseKinematics module for a specified node
   static InverseKinematicsPtr create(JacobianNode* _node);
@@ -540,8 +539,7 @@ typedef InverseKinematics IK;
 /// InverseKinematics module that it belongs to gets cloned. Any Function
 /// classes in the Problem that do not inherit InverseKinematics::Function
 /// will just be copied over by reference.
-class InverseKinematics::Function
-{
+class InverseKinematics::Function {
 public:
   /// Enable this function to be cloned to a new IK module.
   virtual optimization::FunctionPtr clone(InverseKinematics* _newIK) const = 0;
@@ -553,15 +551,13 @@ public:
 //==============================================================================
 /// ErrorMethod is a base class for different ways of computing the error of
 /// an InverseKinematics module.
-class InverseKinematics::ErrorMethod : public common::Subject
-{
+class InverseKinematics::ErrorMethod : public common::Subject {
 public:
   typedef std::pair<Eigen::Vector6d, Eigen::Vector6d> Bounds;
 
   /// The Properties struct contains settings that are commonly used by
   /// methods that compute error for inverse kinematics.
-  struct Properties
-  {
+  struct Properties {
     /// Default constructor
     Properties(
         const Bounds& _bounds = Bounds(
@@ -740,11 +736,9 @@ public:
 //==============================================================================
 /// The TaskSpaceRegion is a nicely generalized method for computing the error
 /// of an IK Problem.
-class InverseKinematics::TaskSpaceRegion : public ErrorMethod
-{
+class InverseKinematics::TaskSpaceRegion : public ErrorMethod {
 public:
-  struct UniqueProperties
-  {
+  struct UniqueProperties {
     /// Setting this to true (which is default) will tell it to compute the
     /// error based on the center of the Task Space Region instead of the edge
     /// of the Task Space Region. This often results in faster convergence, as
@@ -765,8 +759,7 @@ public:
         SimpleFramePtr referenceFrame = nullptr);
   };
 
-  struct Properties : ErrorMethod::Properties, UniqueProperties
-  {
+  struct Properties : ErrorMethod::Properties, UniqueProperties {
     /// Default constructor
     Properties(
         const ErrorMethod::Properties& errorProperties
@@ -818,11 +811,9 @@ protected:
 //==============================================================================
 /// GradientMethod is a base class for different ways of computing the
 /// gradient of an InverseKinematics module.
-class InverseKinematics::GradientMethod : public common::Subject
-{
+class InverseKinematics::GradientMethod : public common::Subject {
 public:
-  struct Properties
-  {
+  struct Properties {
     /// The component-wise clamp for this GradientMethod
     double mComponentWiseClamp;
 
@@ -956,11 +947,9 @@ private:
 /// damping helps with this), and each cycle might take more time to compute
 /// than the JacobianTranspose method (although the JacobianDLS method will
 /// usually converge in fewer cycles than JacobianTranspose).
-class InverseKinematics::JacobianDLS : public GradientMethod
-{
+class InverseKinematics::JacobianDLS : public GradientMethod {
 public:
-  struct UniqueProperties
-  {
+  struct UniqueProperties {
     /// Damping coefficient
     double mDamping;
 
@@ -968,8 +957,7 @@ public:
     UniqueProperties(double damping = DefaultIKDLSCoefficient);
   };
 
-  struct Properties : GradientMethod::Properties, UniqueProperties
-  {
+  struct Properties : GradientMethod::Properties, UniqueProperties {
     /// Default constructor
     Properties(
         const GradientMethod::Properties& gradientProperties
@@ -1014,8 +1002,7 @@ protected:
 /// very smooth but imprecise, requiring more iterations before converging
 /// and being less precise in general. This method is suitable for animations
 /// where smoothness is prefered over precision.
-class InverseKinematics::JacobianTranspose : public GradientMethod
-{
+class InverseKinematics::JacobianTranspose : public GradientMethod {
 public:
   /// Constructor
   explicit JacobianTranspose(
@@ -1047,13 +1034,11 @@ public:
 /// counter-productive for analytical methods which do not typically rely on
 /// convergence; analytical methods can usually solve the entire error vector
 /// directly.
-class InverseKinematics::Analytical : public GradientMethod
-{
+class InverseKinematics::Analytical : public GradientMethod {
 public:
   /// Bitwise enumerations that are used to describe some properties of each
   /// solution produced by the analytical IK.
-  enum Validity_t
-  {
+  enum Validity_t {
     VALID = 0, ///< The solution is completely valid and reaches the target
     OUT_OF_REACH = 1 << 0,  ///< The solution does not reach the target
     LIMIT_VIOLATED = 1 << 1 ///< The solution has one or more joint positions
@@ -1079,8 +1064,7 @@ public:
   /// transpose, you can create two seperate IK modules (one which is
   /// analytical and one with the iterative method of your choice) and combine
   /// them in a HierarchicalIK.
-  enum ExtraDofUtilization
-  {
+  enum ExtraDofUtilization {
     UNUSED = 0,
     PRE_ANALYTICAL,
     POST_ANALYTICAL,
@@ -1088,8 +1072,7 @@ public:
   };
   // TODO(JS): Change to enum class?
 
-  struct Solution
-  {
+  struct Solution {
     /// Default constructor
     Solution(
         const Eigen::VectorXd& _config = Eigen::VectorXd(),
@@ -1110,8 +1093,7 @@ public:
       const InverseKinematics* _ik)>
       QualityComparison;
 
-  struct UniqueProperties
-  {
+  struct UniqueProperties {
     /// Flag for how to use the extra DOFs in the IK module.
     ExtraDofUtilization mExtraDofUtilization;
 
@@ -1136,8 +1118,7 @@ public:
     void resetQualityComparisonFunction();
   };
 
-  struct Properties : GradientMethod::Properties, UniqueProperties
-  {
+  struct Properties : GradientMethod::Properties, UniqueProperties {
     // Default constructor
     Properties(
         const GradientMethod::Properties& gradientProperties
@@ -1318,8 +1299,7 @@ private:
 /// instantiated by a user. Call InverseKinematics::resetProblem() to set
 /// the objective of the module's Problem to an InverseKinematics::Objective.
 class InverseKinematics::Objective final : public Function,
-                                           public optimization::Function
-{
+                                           public optimization::Function {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InverseKinematics::Objective)
 
@@ -1366,8 +1346,7 @@ public:
 /// first equality constraint of the module's Problem to an
 /// InverseKinematics::Constraint.
 class InverseKinematics::Constraint final : public Function,
-                                            public optimization::Function
-{
+                                            public optimization::Function {
 public:
   /// Constructor
   Constraint(InverseKinematics* _ik);

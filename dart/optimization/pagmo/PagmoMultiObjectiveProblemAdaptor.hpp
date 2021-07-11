@@ -34,7 +34,9 @@
 #define DART_OPTIMIZATION_PAGMO_PAGMOMULTIOBJECTIVEPROBLEMADAPTOR_HPP_
 
 #include <string>
+
 #include <pagmo/pagmo.hpp>
+
 #include "dart/optimization/MultiObjectiveProblem.hpp"
 
 namespace dart {
@@ -44,8 +46,7 @@ namespace optimization {
 ///
 /// Please see this for the details:
 /// https://esa.github.io/pagmo2/docs/cpp/problem.html
-class PagmoMultiObjectiveProblemAdaptor
-{
+class PagmoMultiObjectiveProblemAdaptor {
 public:
   /// Default constructor
   PagmoMultiObjectiveProblemAdaptor() = default;
@@ -90,8 +91,7 @@ protected:
 
 //==============================================================================
 template <typename Archive>
-void PagmoMultiObjectiveProblemAdaptor::serialize(Archive& ar)
-{
+void PagmoMultiObjectiveProblemAdaptor::serialize(Archive& ar) {
   ar(mProb->getSolutionDimension(), mProb->getFitnessDimension());
 }
 

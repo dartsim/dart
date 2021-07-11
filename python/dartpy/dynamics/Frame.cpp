@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Frame(py::module& m)
-{
+void Frame(py::module& m) {
   ::py::class_<
       dart::dynamics::Frame,
       dart::dynamics::Entity,
@@ -94,8 +94,10 @@ void Frame(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getSpatialVelocity",
-          +[](const dart::dynamics::Frame* self, const Eigen::Vector3d& offset)
-              -> Eigen::Vector6d { return self->getSpatialVelocity(offset); },
+          +[](const dart::dynamics::Frame* self,
+              const Eigen::Vector3d& offset) -> Eigen::Vector6d {
+            return self->getSpatialVelocity(offset);
+          },
           ::py::arg("offset"))
       .def(
           "getSpatialVelocity",
@@ -132,8 +134,10 @@ void Frame(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getLinearVelocity",
-          +[](const dart::dynamics::Frame* self, const Eigen::Vector3d& offset)
-              -> Eigen::Vector3d { return self->getLinearVelocity(offset); },
+          +[](const dart::dynamics::Frame* self,
+              const Eigen::Vector3d& offset) -> Eigen::Vector3d {
+            return self->getLinearVelocity(offset);
+          },
           ::py::arg("offset"))
       .def(
           "getLinearVelocity",
@@ -313,16 +317,23 @@ void Frame(py::module& m)
           })
       .def(
           "dirtyTransform",
-          +[](dart::dynamics::Frame* self) { self->dirtyTransform(); })
+          +[](dart::dynamics::Frame* self) {
+            self->dirtyTransform();
+          })
       .def(
           "dirtyVelocity",
-          +[](dart::dynamics::Frame* self) { self->dirtyVelocity(); })
+          +[](dart::dynamics::Frame* self) {
+            self->dirtyVelocity();
+          })
       .def(
           "dirtyAcceleration",
-          +[](dart::dynamics::Frame* self) { self->dirtyAcceleration(); })
-      .def_static("World", +[]() -> std::shared_ptr<dart::dynamics::Frame> {
-        return dart::dynamics::Frame::WorldShared();
-      });
+          +[](dart::dynamics::Frame* self) {
+            self->dirtyAcceleration();
+          })
+      .def_static(
+          "World", +[]() -> std::shared_ptr<dart::dynamics::Frame> {
+            return dart::dynamics::Frame::WorldShared();
+          });
 }
 
 } // namespace python

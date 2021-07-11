@@ -40,8 +40,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Joint(py::module& m)
-{
+void Joint(py::module& m) {
   ::py::class_<dart::dynamics::detail::JointProperties>(m, "JointProperties")
       .def(::py::init<>())
       .def(::py::init<const std::string&>(), ::py::arg("name"))

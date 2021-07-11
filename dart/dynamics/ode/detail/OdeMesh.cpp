@@ -43,8 +43,7 @@ OdeMesh::OdeMesh(
     const OdeCollisionObject* parent,
     const aiScene* scene,
     const Eigen::Vector3d& scale)
-  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
-{
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr) {
   // Fill vertices, normals, and indices in the ODE friendly data structures.
   fillArrays(scene, scale);
 
@@ -67,8 +66,7 @@ OdeMesh::OdeMesh(
 }
 
 //==============================================================================
-OdeMesh::~OdeMesh()
-{
+OdeMesh::~OdeMesh() {
   dGeomDestroy(mGeomId);
 
   if (mOdeTriMeshDataId)
@@ -76,14 +74,12 @@ OdeMesh::~OdeMesh()
 }
 
 //==============================================================================
-void OdeMesh::updateEngineData()
-{
+void OdeMesh::updateEngineData() {
   // Do nothing
 }
 
 //==============================================================================
-void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
-{
+void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale) {
   mVertices.clear();
   mNormals.clear();
   mIndices.clear();
@@ -91,8 +87,7 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
   // Cound the total numbers of vertices and indices.
   auto mNumVertices = 0u;
   auto mNumIndices = 0u;
-  for (auto i = 0u; i < scene->mNumMeshes; ++i)
-  {
+  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
     const auto mesh = scene->mMeshes[i];
 
     mNumVertices += mesh->mNumVertices;
@@ -110,12 +105,10 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
   auto vertexIndex = 0u;
   auto indexIndex = 0u;
   auto offset = 0u;
-  for (auto i = 0u; i < scene->mNumMeshes; ++i)
-  {
+  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
     const auto mesh = scene->mMeshes[i];
 
-    for (auto j = 0u; j < mesh->mNumVertices; ++j)
-    {
+    for (auto j = 0u; j < mesh->mNumVertices; ++j) {
       mVertices[vertexIndex] = mesh->mVertices[j].x * scale.x();
       mNormals[vertexIndex++] = mesh->mNormals[j].x;
 
@@ -126,8 +119,7 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
       mNormals[vertexIndex++] = mesh->mNormals[j].z;
     }
 
-    for (auto j = 0u; j < mesh->mNumFaces; ++j)
-    {
+    for (auto j = 0u; j < mesh->mNumFaces; ++j) {
       mIndices[indexIndex++] = mesh->mFaces[j].mIndices[0] + offset;
       mIndices[indexIndex++] = mesh->mFaces[j].mIndices[1] + offset;
       mIndices[indexIndex++] = mesh->mFaces[j].mIndices[2] + offset;
@@ -138,5 +130,5 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

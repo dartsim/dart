@@ -38,16 +38,14 @@ namespace dynamics {
 #if !FCL_VERSION_AT_LEAST(0, 6, 0)
 //==============================================================================
 dart::dynamics::fcl::Vector3 FCLTypes::convertVector3(
-    const Eigen::Vector3d& _vec)
-{
+    const Eigen::Vector3d& _vec) {
   return dart::dynamics::fcl::Vector3(_vec[0], _vec[1], _vec[2]);
 }
 #endif
 
 //==============================================================================
 Eigen::Vector3d FCLTypes::convertVector3(
-    const dart::dynamics::fcl::Vector3& _vec)
-{
+    const dart::dynamics::fcl::Vector3& _vec) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return _vec;
 #else
@@ -57,8 +55,7 @@ Eigen::Vector3d FCLTypes::convertVector3(
 
 //==============================================================================
 dart::dynamics::fcl::Matrix3 FCLTypes::convertMatrix3x3(
-    const Eigen::Matrix3d& _R)
-{
+    const Eigen::Matrix3d& _R) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return _R;
 #else
@@ -77,8 +74,7 @@ dart::dynamics::fcl::Matrix3 FCLTypes::convertMatrix3x3(
 
 //==============================================================================
 dart::dynamics::fcl::Transform3 FCLTypes::convertTransform(
-    const Eigen::Isometry3d& _T)
-{
+    const Eigen::Isometry3d& _T) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return _T;
 #else
@@ -91,5 +87,5 @@ dart::dynamics::fcl::Transform3 FCLTypes::convertTransform(
 #endif
 }
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

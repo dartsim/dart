@@ -38,8 +38,7 @@ namespace dart {
 namespace collision {
 
 template <typename S>
-struct CollisionOption
-{
+struct CollisionOption {
   /// Flag whether the collision detector computes contact information (contact
   /// point, normal, and penetration depth). If it is set to false, only the
   /// result of that which pairs are colliding will be stored in the

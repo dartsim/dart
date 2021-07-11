@@ -40,17 +40,15 @@ namespace detail {
 
 //==============================================================================
 OdeBox::OdeBox(const OdeCollisionObject* parent, const Eigen::Vector3d& size)
-  : OdeGeom(parent)
-{
+  : OdeGeom(parent) {
   mGeomId = dCreateBox(0, size.x(), size.y(), size.z());
 }
 
 //==============================================================================
-OdeBox::~OdeBox()
-{
+OdeBox::~OdeBox() {
   dGeomDestroy(mGeomId);
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

@@ -31,6 +31,7 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "dart/math/geometry/Icosphere.hpp"
 #include "dart/test/TestHelpers.hpp"
 
@@ -38,12 +39,10 @@ using namespace dart;
 using namespace math;
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles)
-{
+TEST(IcosphereTests, NumOfVerticesAndTriangles) {
   const double radius = 5.0;
 
-  for (auto i = 0; i < 8; ++i)
-  {
+  for (auto i = 0; i < 8; ++i) {
     const auto subdivisions = i;
     const auto icosphere = Icosphered(radius, subdivisions);
     const auto& vertices = icosphere.getVertices();
@@ -52,16 +51,14 @@ TEST(IcosphereTests, NumOfVerticesAndTriangles)
     EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
     EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
 
-    for (const auto& v : vertices)
-    {
+    for (const auto& v : vertices) {
       EXPECT_DOUBLE_EQ(v.norm(), radius);
     }
   }
 }
 
 //==============================================================================
-TEST(IcosphereTests, Constructor)
-{
+TEST(IcosphereTests, Constructor) {
   auto s1 = Icosphered(1, 0);
   EXPECT_FALSE(s1.isEmpty());
   EXPECT_DOUBLE_EQ(s1.getRadius(), 1);

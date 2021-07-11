@@ -43,19 +43,16 @@ namespace detail {
 
 //==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
-    const boost::filesystem::path& path)
-{
+    const boost::filesystem::path& path) {
   return load(path.string());
 }
 
 //==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
-    const std::string& path)
-{
+    const std::string& path) {
   // Check if the given path exits
   const bool exists = std::ifstream(path).good();
-  if (!exists)
-  {
+  if (!exists) {
     dtwarn << "[SharedLibraryManager::load] Failed to load the shared library '"
            << path.c_str() << "'. The file doesn't exist. Returning nullptr.\n";
     return nullptr;
@@ -67,8 +64,7 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   const auto iter = mSharedLibraries.find(canonicalPath);
 
   const auto found = iter != mSharedLibraries.end();
-  if (found)
-  {
+  if (found) {
     auto lib = iter->second.lock();
 
     // This check could fail if all instances to the library go out of scope,

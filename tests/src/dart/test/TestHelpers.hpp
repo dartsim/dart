@@ -41,7 +41,9 @@
 #define DART_UNITTESTS_TEST_HELPERS_H
 
 #include <vector>
+
 #include <Eigen/Dense>
+
 #include "dart/dart.hpp"
 #include "dart/test/GTestUtils.hpp"
 
@@ -52,21 +54,12 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 
 /// Function headers
-enum TypeOfDOF
-{
-  DOF_X,
-  DOF_Y,
-  DOF_Z,
-  DOF_ROLL,
-  DOF_PITCH,
-  DOF_YAW
-};
+enum TypeOfDOF { DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW };
 
 //==============================================================================
 // Deprecated. Use dart::test::equals() instead.
 template <class MatrixA, class MatrixB>
-bool equals(const MatrixA& expected, const MatrixB& actual, double tol = 1e-5)
-{
+bool equals(const MatrixA& expected, const MatrixB& actual, double tol = 1e-5) {
   return dart::test::equals(expected, actual, tol);
 }
 
@@ -75,16 +68,14 @@ bool equals(const MatrixA& expected, const MatrixB& actual, double tol = 1e-5)
 inline bool equals(
     const Eigen::Isometry3d& tf1,
     const Eigen::Isometry3d& tf2,
-    double tol = 1e-5)
-{
+    double tol = 1e-5) {
   return dart::test::equals(tf1, tf2, tol);
 }
 
 //==============================================================================
 /// Add an end-effector to the last link of the given robot
 inline void addEndEffector(
-    SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
-{
+    SkeletonPtr robot, BodyNode* parent_node, Vector3d dim) {
   // Create the end-effector node with a random dimension
   BodyNode::Properties node(BodyNode::AspectProperties("ee"));
   std::shared_ptr<Shape> shape(new BoxShape(Vector3d(0.2, 0.2, 0.2)));
@@ -109,8 +100,7 @@ inline std::pair<Joint*, BodyNode*> add1DofJoint(
     double val,
     double min,
     double max,
-    int type)
-{
+    int type) {
   GenericJoint<R1Space>::Properties properties(name);
   properties.mPositionLowerLimits[0] = min;
   properties.mPositionUpperLimits[0] = max;
@@ -161,8 +151,7 @@ inline SkeletonPtr createThreeLinkRobot(
     TypeOfDOF type3,
     bool finished = false,
     bool collisionShape = true,
-    size_t stopAfter = 3)
-{
+    size_t stopAfter = 3) {
   SkeletonPtr robot = Skeleton::create();
 
   Vector3d dimEE = dim1;
@@ -183,16 +172,14 @@ inline SkeletonPtr createThreeLinkRobot(
       type1);
   auto current_node = pair1.second;
   auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
-  if (collisionShape)
-  {
+  if (collisionShape) {
     shapeNode->createCollisionAspect();
     shapeNode->createDynamicsAspect();
   }
 
   BodyNode* parent_node = current_node;
 
-  if (stopAfter > 1)
-  {
+  if (stopAfter > 1) {
     // Create the second link
     node = BodyNode::Properties(BodyNode::AspectProperties("link2"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2) / 2.0));
@@ -214,8 +201,7 @@ inline SkeletonPtr createThreeLinkRobot(
 
     auto current_node = pair2.second;
     auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
-    if (collisionShape)
-    {
+    if (collisionShape) {
       shapeNode->createCollisionAspect();
       shapeNode->createDynamicsAspect();
     }
@@ -224,8 +210,7 @@ inline SkeletonPtr createThreeLinkRobot(
     dimEE = dim2;
   }
 
-  if (stopAfter > 2)
-  {
+  if (stopAfter > 2) {
     // Create the third link
     node = BodyNode::Properties(BodyNode::AspectProperties("link3"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim3(2) / 2.0));
@@ -247,8 +232,7 @@ inline SkeletonPtr createThreeLinkRobot(
 
     auto current_node = pair3.second;
     auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
-    if (collisionShape)
-    {
+    if (collisionShape) {
       shapeNode->createCollisionAspect();
       shapeNode->createDynamicsAspect();
     }
@@ -271,8 +255,7 @@ inline SkeletonPtr createTwoLinkRobot(
     TypeOfDOF type1,
     Vector3d dim2,
     TypeOfDOF type2,
-    bool finished = true)
-{
+    bool finished = true) {
   return createThreeLinkRobot(
       dim1,
       type1,
@@ -289,8 +272,7 @@ inline SkeletonPtr createTwoLinkRobot(
 /// Creates a N link manipulator with the given dimensions where each joint is
 /// the specified type
 inline SkeletonPtr createNLinkRobot(
-    int _n, Vector3d dim, TypeOfDOF type, bool finished = false)
-{
+    int _n, Vector3d dim, TypeOfDOF type, bool finished = false) {
   assert(_n > 0);
 
   SkeletonPtr robot = Skeleton::create();
@@ -322,8 +304,7 @@ inline SkeletonPtr createNLinkRobot(
   BodyNode* parent_node = current_node;
 
   // Create links iteratively
-  for (int i = 1; i < _n; ++i)
-  {
+  for (int i = 1; i < _n; ++i) {
     std::ostringstream ssLink;
     std::ostringstream ssJoint;
     ssLink << "link" << i;
@@ -373,8 +354,7 @@ inline SkeletonPtr createNLinkPendulum(
     const Vector3d& dim,
     TypeOfDOF type,
     const Vector3d& offset,
-    bool finished = false)
-{
+    bool finished = false) {
   assert(numBodyNodes > 0);
 
   SkeletonPtr robot = Skeleton::create();
@@ -409,8 +389,7 @@ inline SkeletonPtr createNLinkPendulum(
   BodyNode* parent_node = current_node;
 
   // Create links iteratively
-  for (size_t i = 1; i < numBodyNodes; ++i)
-  {
+  for (size_t i = 1; i < numBodyNodes; ++i) {
     std::ostringstream ssLink;
     std::ostringstream ssJoint;
     ssLink << "link" << i;
@@ -455,8 +434,7 @@ inline SkeletonPtr createNLinkPendulum(
 inline SkeletonPtr createGround(
     const Eigen::Vector3d& _size,
     const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
-{
+    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero()) {
   double mass = 1.0;
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -482,8 +460,7 @@ inline SkeletonPtr createGround(
 //==============================================================================
 inline SkeletonPtr createObject(
     const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
-{
+    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero()) {
   double mass = 1.0;
 
   GenericJoint<SE3Space>::Properties joint(std::string("joint1"));
@@ -505,8 +482,7 @@ inline SkeletonPtr createObject(
 //==============================================================================
 inline SkeletonPtr createSphere(
     const double _radius,
-    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero())
-{
+    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero()) {
   SkeletonPtr sphere = createObject(_position);
 
   BodyNode* bn = sphere->getBodyNode(0);
@@ -522,8 +498,7 @@ inline SkeletonPtr createSphere(
 inline SkeletonPtr createBox(
     const Eigen::Vector3d& _size,
     const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
-{
+    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero()) {
   SkeletonPtr box = createObject(_position, _orientation);
 
   BodyNode* bn = box->getBodyNode(0);
@@ -535,46 +510,37 @@ inline SkeletonPtr createBox(
 }
 
 //==============================================================================
-struct TestResource : public dart::common::Resource
-{
-  size_t getSize() override
-  {
+struct TestResource : public dart::common::Resource {
+  size_t getSize() override {
     return 0;
   }
 
-  size_t tell() override
-  {
+  size_t tell() override {
     return 0;
   }
 
-  bool seek(ptrdiff_t /*_offset*/, SeekType /*_origin*/) override
-  {
+  bool seek(ptrdiff_t /*_offset*/, SeekType /*_origin*/) override {
     return false;
   }
 
-  size_t read(void* /*_buffer*/, size_t /*_size*/, size_t /*_count*/) override
-  {
+  size_t read(void* /*_buffer*/, size_t /*_size*/, size_t /*_count*/) override {
     return 0;
   }
 };
 
 //==============================================================================
-struct PresentResourceRetriever : public dart::common::ResourceRetriever
-{
-  bool exists(const dart::common::Uri& _uri) override
-  {
+struct PresentResourceRetriever : public dart::common::ResourceRetriever {
+  bool exists(const dart::common::Uri& _uri) override {
     mExists.push_back(_uri.toString());
     return true;
   }
 
-  std::string getFilePath(const dart::common::Uri& _uri) override
-  {
+  std::string getFilePath(const dart::common::Uri& _uri) override {
     mGetFilePath.push_back(_uri.toString());
     return _uri.toString();
   }
 
-  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
-  {
+  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override {
     mRetrieve.push_back(_uri.toString());
     return std::make_shared<TestResource>();
   }
@@ -585,22 +551,18 @@ struct PresentResourceRetriever : public dart::common::ResourceRetriever
 };
 
 //==============================================================================
-struct AbsentResourceRetriever : public dart::common::ResourceRetriever
-{
-  bool exists(const dart::common::Uri& _uri) override
-  {
+struct AbsentResourceRetriever : public dart::common::ResourceRetriever {
+  bool exists(const dart::common::Uri& _uri) override {
     mExists.push_back(_uri.toString());
     return false;
   }
 
-  std::string getFilePath(const dart::common::Uri& _uri) override
-  {
+  std::string getFilePath(const dart::common::Uri& _uri) override {
     mGetFilePath.push_back(_uri.toString());
     return "";
   }
 
-  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
-  {
+  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override {
     mRetrieve.push_back(_uri.toString());
     return nullptr;
   }

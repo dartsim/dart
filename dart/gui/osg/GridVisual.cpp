@@ -43,14 +43,12 @@ namespace gui {
 namespace osg {
 
 //==============================================================================
-GridVisual::GridVisual()
-{
+GridVisual::GridVisual() {
   initialize();
 }
 
 //==============================================================================
-void GridVisual::setNumCells(std::size_t cells)
-{
+void GridVisual::setNumCells(std::size_t cells) {
   if (mNumCells == cells)
     return;
 
@@ -59,14 +57,12 @@ void GridVisual::setNumCells(std::size_t cells)
 }
 
 //==============================================================================
-std::size_t GridVisual::getNumCells() const
-{
+std::size_t GridVisual::getNumCells() const {
   return mNumCells;
 }
 
 //==============================================================================
-void GridVisual::setMinorLineStepSize(double size)
-{
+void GridVisual::setMinorLineStepSize(double size) {
   if (std::abs(mMinorLineStepSize - size) < 1e-6)
     return;
 
@@ -78,14 +74,12 @@ void GridVisual::setMinorLineStepSize(double size)
 }
 
 //==============================================================================
-double GridVisual::getMinorLineStepSize() const
-{
+double GridVisual::getMinorLineStepSize() const {
   return mMinorLineStepSize;
 }
 
 //==============================================================================
-void GridVisual::setNumMinorLinesPerMajorLine(std::size_t size)
-{
+void GridVisual::setNumMinorLinesPerMajorLine(std::size_t size) {
   if (mNumMinorLinesPerMajorLine == size)
     return;
 
@@ -94,14 +88,12 @@ void GridVisual::setNumMinorLinesPerMajorLine(std::size_t size)
 }
 
 //==============================================================================
-std::size_t GridVisual::getNumMinorLinesPerMajorLine() const
-{
+std::size_t GridVisual::getNumMinorLinesPerMajorLine() const {
   return mNumMinorLinesPerMajorLine;
 }
 
 //==============================================================================
-void GridVisual::setPlaneType(GridVisual::PlaneType type)
-{
+void GridVisual::setPlaneType(GridVisual::PlaneType type) {
   if (mPlaneType == type)
     return;
 
@@ -110,14 +102,12 @@ void GridVisual::setPlaneType(GridVisual::PlaneType type)
 }
 
 //==============================================================================
-GridVisual::PlaneType GridVisual::getPlaneType() const
-{
+GridVisual::PlaneType GridVisual::getPlaneType() const {
   return mPlaneType;
 }
 
 //==============================================================================
-void GridVisual::setOffset(const Eigen::Vector3d& offset)
-{
+void GridVisual::setOffset(const Eigen::Vector3d& offset) {
   if (mOffset.isApprox(offset))
     return;
 
@@ -126,14 +116,12 @@ void GridVisual::setOffset(const Eigen::Vector3d& offset)
 }
 
 //==============================================================================
-const Eigen::Vector3d& GridVisual::getOffset() const
-{
+const Eigen::Vector3d& GridVisual::getOffset() const {
   return mOffset;
 }
 
 //==============================================================================
-void GridVisual::display(bool display)
-{
+void GridVisual::display(bool display) {
   if (mDisplayGrid == display)
     return;
 
@@ -146,14 +134,12 @@ void GridVisual::display(bool display)
 }
 
 //==============================================================================
-bool GridVisual::isDisplayed() const
-{
+bool GridVisual::isDisplayed() const {
   return mDisplayGrid;
 }
 
 //==============================================================================
-void GridVisual::setMajorLineColor(const Eigen::Vector4d& color)
-{
+void GridVisual::setMajorLineColor(const Eigen::Vector4d& color) {
   assert(mMajorLineColor->size() == 1);
   mMajorLineColor->at(0) = ::osg::Vec4(
       static_cast<float>(color[0]),
@@ -164,15 +150,13 @@ void GridVisual::setMajorLineColor(const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-Eigen::Vector4d GridVisual::getMajorLineColor() const
-{
+Eigen::Vector4d GridVisual::getMajorLineColor() const {
   const ::osg::Vec4& c = mMajorLineColor->at(0);
   return Eigen::Vector4f(c[0], c[1], c[2], c[3]).cast<double>();
 }
 
 //==============================================================================
-void GridVisual::setMinorLineColor(const Eigen::Vector4d& color)
-{
+void GridVisual::setMinorLineColor(const Eigen::Vector4d& color) {
   assert(mMinorLineColor->size() == 1);
   mMinorLineColor->at(0) = ::osg::Vec4(
       static_cast<float>(color[0]),
@@ -183,15 +167,13 @@ void GridVisual::setMinorLineColor(const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-Eigen::Vector4d GridVisual::getMinorLineColor() const
-{
+Eigen::Vector4d GridVisual::getMinorLineColor() const {
   const ::osg::Vec4& c = mMinorLineColor->at(0);
   return Eigen::Vector4f(c[0], c[1], c[2], c[3]).cast<double>();
 }
 
 //==============================================================================
-void GridVisual::setAxisLineWidth(float width)
-{
+void GridVisual::setAxisLineWidth(float width) {
   if (width < 1)
     width = 1;
 
@@ -200,14 +182,12 @@ void GridVisual::setAxisLineWidth(float width)
 }
 
 //==============================================================================
-float GridVisual::getAxisLineWidth() const
-{
+float GridVisual::getAxisLineWidth() const {
   return mAxisLineWidth->getWidth();
 }
 
 //==============================================================================
-void GridVisual::setMajorLineWidth(float width)
-{
+void GridVisual::setMajorLineWidth(float width) {
   if (width < 1)
     width = 1;
 
@@ -216,14 +196,12 @@ void GridVisual::setMajorLineWidth(float width)
 }
 
 //==============================================================================
-float GridVisual::getMajorLineWidth() const
-{
+float GridVisual::getMajorLineWidth() const {
   return mMajorLineWidth->getWidth();
 }
 
 //==============================================================================
-void GridVisual::setMinorLineWidth(float width)
-{
+void GridVisual::setMinorLineWidth(float width) {
   if (width < 1)
     width = 1;
 
@@ -232,14 +210,12 @@ void GridVisual::setMinorLineWidth(float width)
 }
 
 //==============================================================================
-float GridVisual::getMinorLineWidth() const
-{
+float GridVisual::getMinorLineWidth() const {
   return mMinorLineWidth->getWidth();
 }
 
 //==============================================================================
-::osg::Vec3 toVec3(const Eigen::Vector3d& point)
-{
+::osg::Vec3 toVec3(const Eigen::Vector3d& point) {
   return ::osg::Vec3(
       static_cast<float>(point.x()),
       static_cast<float>(point.y()),
@@ -255,8 +231,7 @@ void setVertices(
     std::size_t numMinorLinesPerMajorLine,
     float stepSize,
     GridVisual::PlaneType planeType,
-    const Eigen::Vector3d& offset)
-{
+    const Eigen::Vector3d& offset) {
   assert(axisLineVertices);
   assert(majorLineVertices);
   assert(minorLineVertices);
@@ -264,22 +239,18 @@ void setVertices(
   int axis1 = 0;
   int axis2 = 1;
 
-  switch (planeType)
-  {
-    case GridVisual::PlaneType::XY:
-    {
+  switch (planeType) {
+    case GridVisual::PlaneType::XY: {
       axis1 = 0;
       axis2 = 1;
       break;
     }
-    case GridVisual::PlaneType::YZ:
-    {
+    case GridVisual::PlaneType::YZ: {
       axis1 = 1;
       axis2 = 2;
       break;
     }
-    case GridVisual::PlaneType::ZX:
-    {
+    case GridVisual::PlaneType::ZX: {
       axis1 = 2;
       axis2 = 0;
       break;
@@ -336,15 +307,13 @@ void setVertices(
   // Major and minor line vertices
   //-------------------------------
 
-  for (auto i = 1u; i < numCells + 1; ++i)
-  {
+  for (auto i = 1u; i < numCells + 1; ++i) {
     const float posInAxis2 = stepSize * i;
 
     const auto axis2Negative = -posInAxis2;
     const auto axis2Positive = +posInAxis2;
 
-    if (numMinorLinesPerMajorLine > 0 && i % numMinorLinesPerMajorLine == 0)
-    {
+    if (numMinorLinesPerMajorLine > 0 && i % numMinorLinesPerMajorLine == 0) {
       vec3[axis1] = axis1Negative;
       vec3[axis2] = axis2Positive;
       majorLineVertices->push_back(vec3 + osgOffset);
@@ -376,9 +345,7 @@ void setVertices(
       vec3[axis2] = axis1Positive;
       vec3[axis1] = axis2Negative;
       majorLineVertices->push_back(vec3 + osgOffset);
-    }
-    else
-    {
+    } else {
       vec3[axis1] = axis1Negative;
       vec3[axis2] = axis2Positive;
       minorLineVertices->push_back(vec3 + osgOffset);
@@ -415,13 +382,11 @@ void setVertices(
 }
 
 //==============================================================================
-void GridVisual::refresh()
-{
+void GridVisual::refresh() {
   if (!mNeedUpdate)
     return;
 
-  if (mDisplayGrid)
-  {
+  if (mDisplayGrid) {
     setVertices(
         mAxisLineVertices,
         mMajorLineVertices,
@@ -456,22 +421,18 @@ void GridVisual::refresh()
     static const ::osg::Vec4 yAxisLineColor(0.1f, 0.9f, 0.1f, 1.0f);
     static const ::osg::Vec4 zAxisLineColor(0.1f, 0.1f, 0.9f, 1.0f);
 
-    switch (mPlaneType)
-    {
-      case GridVisual::PlaneType::XY:
-      {
+    switch (mPlaneType) {
+      case GridVisual::PlaneType::XY: {
         mAxisLineColor->at(0) = xAxisLineColor;
         mAxisLineColor->at(2) = yAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::YZ:
-      {
+      case GridVisual::PlaneType::YZ: {
         mAxisLineColor->at(0) = yAxisLineColor;
         mAxisLineColor->at(2) = zAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::ZX:
-      {
+      case GridVisual::PlaneType::ZX: {
         mAxisLineColor->at(0) = zAxisLineColor;
         mAxisLineColor->at(2) = xAxisLineColor;
         break;
@@ -485,8 +446,7 @@ void GridVisual::refresh()
 }
 
 //==============================================================================
-void GridVisual::initialize()
-{
+void GridVisual::initialize() {
   mNeedUpdate = true;
 
   mDisplayGrid = true;

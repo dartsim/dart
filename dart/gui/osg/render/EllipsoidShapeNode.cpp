@@ -30,25 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Light>
 #include <osg/Material>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
-
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
 namespace osg {
 namespace render {
 
-class EllipsoidShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class EllipsoidShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   EllipsoidShapeGeode(
       dart::dynamics::EllipsoidShape* shape,
@@ -67,8 +66,7 @@ protected:
 };
 
 //==============================================================================
-class EllipsoidShapeDrawable : public ::osg::ShapeDrawable
-{
+class EllipsoidShapeDrawable : public ::osg::ShapeDrawable {
 public:
   EllipsoidShapeDrawable(
       dart::dynamics::EllipsoidShape* shape,
@@ -89,15 +87,13 @@ protected:
 EllipsoidShapeNode::EllipsoidShapeNode(
     std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
     ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mEllipsoidShape(shape), mGeode(nullptr)
-{
+  : ShapeNode(shape, parent, this), mEllipsoidShape(shape), mGeode(nullptr) {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
-void EllipsoidShapeNode::refresh()
-{
+void EllipsoidShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -109,18 +105,15 @@ void EllipsoidShapeNode::refresh()
 }
 
 //==============================================================================
-double smallestComponent(const Eigen::Vector3d& v)
-{
+double smallestComponent(const Eigen::Vector3d& v) {
   return std::min(v[0], std::min(v[1], v[2]));
 }
 
 //==============================================================================
-void EllipsoidShapeNode::extractData(bool firstTime)
-{
+void EllipsoidShapeNode::extractData(bool firstTime) {
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
       || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
     const Eigen::Vector3d& s
         = mEllipsoidShape->getDiameters()
@@ -132,8 +125,7 @@ void EllipsoidShapeNode::extractData(bool firstTime)
     setMatrix(eigToOsgMatrix(S));
   }
 
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new EllipsoidShapeGeode(
         mEllipsoidShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -144,8 +136,7 @@ void EllipsoidShapeNode::extractData(bool firstTime)
 }
 
 //==============================================================================
-EllipsoidShapeNode::~EllipsoidShapeNode()
-{
+EllipsoidShapeNode::~EllipsoidShapeNode() {
   // Do nothing
 }
 
@@ -157,8 +148,7 @@ EllipsoidShapeGeode::EllipsoidShapeGeode(
   : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mParentNode(parentNode),
     mEllipsoidShape(shape),
-    mDrawable(nullptr)
-{
+    mDrawable(nullptr) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -167,18 +157,15 @@ EllipsoidShapeGeode::EllipsoidShapeGeode(
 }
 
 //==============================================================================
-void EllipsoidShapeGeode::refresh()
-{
+void EllipsoidShapeGeode::refresh() {
   mUtilized = true;
 
   extractData();
 }
 
 //==============================================================================
-void EllipsoidShapeGeode::extractData()
-{
-  if (nullptr == mDrawable)
-  {
+void EllipsoidShapeGeode::extractData() {
+  if (nullptr == mDrawable) {
     mDrawable
         = new EllipsoidShapeDrawable(mEllipsoidShape, mVisualAspect, this);
     addDrawable(mDrawable);
@@ -189,8 +176,7 @@ void EllipsoidShapeGeode::extractData()
 }
 
 //==============================================================================
-EllipsoidShapeGeode::~EllipsoidShapeGeode()
-{
+EllipsoidShapeGeode::~EllipsoidShapeGeode() {
   // Do nothing
 }
 
@@ -199,14 +185,12 @@ EllipsoidShapeDrawable::EllipsoidShapeDrawable(
     dart::dynamics::EllipsoidShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     EllipsoidShapeGeode* parent)
-  : mEllipsoidShape(shape), mVisualAspect(visualAspect), mParent(parent)
-{
+  : mEllipsoidShape(shape), mVisualAspect(visualAspect), mParent(parent) {
   refresh(true);
 }
 
 //==============================================================================
-void EllipsoidShapeDrawable::refresh(bool firstTime)
-{
+void EllipsoidShapeDrawable::refresh(bool firstTime) {
   if (mEllipsoidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
@@ -214,8 +198,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
 
   if (mEllipsoidShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
     osg_shape = new ::osg::Sphere(
         ::osg::Vec3(0, 0, 0), smallestComponent(mEllipsoidShape->getRadii()));
@@ -225,15 +208,13 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   }
 
   if (mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 
 //==============================================================================
-EllipsoidShapeDrawable::~EllipsoidShapeDrawable()
-{
+EllipsoidShapeDrawable::~EllipsoidShapeDrawable() {
   // Do nothing
 }
 

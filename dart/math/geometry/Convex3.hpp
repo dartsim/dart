@@ -32,16 +32,15 @@
 
 #pragma once
 
-#include "dart/math/geometry/Geometry3.hpp"
-
 #include <Eigen/Core>
+
+#include "dart/math/geometry/Geometry3.hpp"
 
 namespace dart {
 namespace math {
 
 template <typename S>
-class Convex3 : public Geometry3<S>
-{
+class Convex3 : public Geometry3<S> {
 public:
   using Vector3 = Eigen::Matrix<S, 3, 1>;
   virtual Vector3 getLocalSupportPoint(const Vector3& direction) const = 0;

@@ -44,8 +44,7 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class GraphWindow : public Win2D
-{
+class GraphWindow : public Win2D {
 public:
   /// \brief
   GraphWindow();

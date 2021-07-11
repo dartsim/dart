@@ -39,7 +39,6 @@
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
-
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -49,8 +48,7 @@ class BodyNode;
 class Node;
 
 //==============================================================================
-class NodeDestructor final
-{
+class NodeDestructor final {
 public:
   /// Constructor
   NodeDestructor(Node* _node);
@@ -77,8 +75,7 @@ private:
 /// to inherit from AccessoryNode using CRTP.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Node : public virtual common::Subject,
-             public virtual common::VersionCounter
-{
+             public virtual common::VersionCounter {
 public:
   friend class BodyNode;
   friend class Skeleton;
@@ -101,9 +98,7 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  class State : public common::Cloneable<State>
-  {
-  };
+  class State : public common::Cloneable<State> {};
 
   /// Use the MakeState class to easily create a State extension from an
   /// existing class or struct
@@ -122,9 +117,7 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  class Properties : public common::Cloneable<Properties>
-  {
-  };
+  class Properties : public common::Cloneable<Properties> {};
 
   /// Use the MakeProperties class to easily create a Properties extension
   /// from an existing class or struct.
@@ -234,8 +227,7 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 /// list of Nodes, as well as detach and reattach. This uses CRTP to get around
 /// the diamond of death problem.
 template <class NodeType>
-class AccessoryNode
-{
+class AccessoryNode {
 public:
   /// Virtual destructor
   virtual ~AccessoryNode() = default;

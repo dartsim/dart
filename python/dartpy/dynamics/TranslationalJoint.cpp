@@ -34,6 +34,7 @@
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "Joint.hpp"
 
 namespace py = pybind11;
@@ -41,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void TranslationalJoint(py::module& m)
-{
+void TranslationalJoint(py::module& m) {
   ::py::class_<dart::dynamics::TranslationalJoint::Properties>(
       m, "TranslationalJointProperties")
       .def(::py::init<>())
@@ -65,12 +65,16 @@ void TranslationalJoint(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::TranslationalJoint* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::TranslationalJoint* self,
-              std::size_t _index) -> bool { return self->isCyclic(_index); },
+              std::size_t _index) -> bool {
+            return self->isCyclic(_index);
+          },
           ::py::arg("index"))
       .def(
           "getRelativeJacobianStatic",

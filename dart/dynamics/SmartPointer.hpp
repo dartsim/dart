@@ -221,7 +221,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
 
-} // namespace collision
+} // namespace dynamics
 
 } // namespace dart
 

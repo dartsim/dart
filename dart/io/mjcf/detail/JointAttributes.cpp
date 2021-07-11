@@ -42,12 +42,10 @@ namespace detail {
 
 //==============================================================================
 Errors appendJointAttributes(
-    JointAttributes& attributes, tinyxml2::XMLElement* element)
-{
+    JointAttributes& attributes, tinyxml2::XMLElement* element) {
   Errors errors;
 
-  if (std::string(element->Name()) != "joint")
-  {
+  if (std::string(element->Name()) != "joint") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <joint> from the provided element");
@@ -55,34 +53,23 @@ Errors appendJointAttributes(
   }
 
   // (optional) name
-  if (hasAttribute(element, "name"))
-  {
+  if (hasAttribute(element, "name")) {
     const std::string name = getAttributeString(element, "name");
     attributes.mName = name;
   }
 
   // type
-  if (hasAttribute(element, "type"))
-  {
+  if (hasAttribute(element, "type")) {
     const std::string type = getAttributeString(element, "type");
-    if (type == "free")
-    {
+    if (type == "free") {
       attributes.mType = JointType::FREE;
-    }
-    else if (type == "ball")
-    {
+    } else if (type == "ball") {
       attributes.mType = JointType::BALL;
-    }
-    else if (type == "slide")
-    {
+    } else if (type == "slide") {
       attributes.mType = JointType::SLIDE;
-    }
-    else if (type == "hinge")
-    {
+    } else if (type == "hinge") {
       attributes.mType = JointType::HINGE;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'type': " + type);
@@ -91,32 +78,27 @@ Errors appendJointAttributes(
   }
 
   // pos
-  if (hasAttribute(element, "pos"))
-  {
+  if (hasAttribute(element, "pos")) {
     attributes.mPos = getAttributeVector3d(element, "pos");
   }
 
   // axis
-  if (hasAttribute(element, "axis"))
-  {
+  if (hasAttribute(element, "axis")) {
     attributes.mAxis = getAttributeVector3d(element, "axis").normalized();
   }
 
   // range
-  if (hasAttribute(element, "range"))
-  {
+  if (hasAttribute(element, "range")) {
     attributes.mRange = getAttributeVector2d(element, "range");
   }
 
   // springref
-  if (hasAttribute(element, "springref"))
-  {
+  if (hasAttribute(element, "springref")) {
     attributes.mSpringRef = getAttributeDouble(element, "springref");
   }
 
   // damping
-  if (hasAttribute(element, "damping"))
-  {
+  if (hasAttribute(element, "damping")) {
     attributes.mDamping = getAttributeDouble(element, "damping");
   }
 

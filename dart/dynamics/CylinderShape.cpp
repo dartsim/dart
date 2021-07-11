@@ -33,6 +33,7 @@
 #include "dart/dynamics/CylinderShape.hpp"
 
 #include <cmath>
+
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
@@ -40,34 +41,29 @@ namespace dynamics {
 
 //==============================================================================
 CylinderShape::CylinderShape(double _radius, double _height)
-  : Shape(CYLINDER), mRadius(_radius), mHeight(_height)
-{
+  : Shape(CYLINDER), mRadius(_radius), mHeight(_height) {
   assert(0.0 < _radius);
   assert(0.0 < _height);
 }
 
 //==============================================================================
-const std::string& CylinderShape::getType() const
-{
+const std::string& CylinderShape::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& CylinderShape::getStaticType()
-{
+const std::string& CylinderShape::getStaticType() {
   static const std::string type("CylinderShape");
   return type;
 }
 
 //==============================================================================
-double CylinderShape::getRadius() const
-{
+double CylinderShape::getRadius() const {
   return mRadius;
 }
 
 //==============================================================================
-void CylinderShape::setRadius(double _radius)
-{
+void CylinderShape::setRadius(double _radius) {
   assert(0.0 < _radius);
   mRadius = _radius;
   mIsBoundingBoxDirty = true;
@@ -77,14 +73,12 @@ void CylinderShape::setRadius(double _radius)
 }
 
 //==============================================================================
-double CylinderShape::getHeight() const
-{
+double CylinderShape::getHeight() const {
   return mHeight;
 }
 
 //==============================================================================
-void CylinderShape::setHeight(double _height)
-{
+void CylinderShape::setHeight(double _height) {
   assert(0.0 < _height);
   mHeight = _height;
   mIsBoundingBoxDirty = true;
@@ -94,15 +88,13 @@ void CylinderShape::setHeight(double _height)
 }
 
 //==============================================================================
-double CylinderShape::computeVolume(double radius, double height)
-{
+double CylinderShape::computeVolume(double radius, double height) {
   return math::constantsd::pi() * std::pow(radius, 2) * height;
 }
 
 //==============================================================================
 Eigen::Matrix3d CylinderShape::computeInertia(
-    double radius, double height, double mass)
-{
+    double radius, double height, double mass) {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
 
   inertia(0, 0)
@@ -114,23 +106,20 @@ Eigen::Matrix3d CylinderShape::computeInertia(
 }
 
 //==============================================================================
-void CylinderShape::updateBoundingBox() const
-{
+void CylinderShape::updateBoundingBox() const {
   mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
   mBoundingBox.setMax(Eigen::Vector3d(mRadius, mRadius, mHeight * 0.5));
   mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
-void CylinderShape::updateVolume() const
-{
+void CylinderShape::updateVolume() const {
   mVolume = computeVolume(mRadius, mHeight);
   mIsVolumeDirty = false;
 }
 
 //==============================================================================
-Eigen::Matrix3d CylinderShape::computeInertia(double mass) const
-{
+Eigen::Matrix3d CylinderShape::computeInertia(double mass) const {
   return computeInertia(mRadius, mHeight, mass);
 }
 

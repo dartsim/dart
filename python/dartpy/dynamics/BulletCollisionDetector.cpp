@@ -34,16 +34,15 @@
 
 #if DART_HAVE_BULLET
 
-#  include <dart/dynamics/dynamics.hpp>
-#  include <pybind11/pybind11.h>
+  #include <dart/dynamics/dynamics.hpp>
+  #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void BulletCollisionDetector(py::module& m)
-{
+void BulletCollisionDetector(py::module& m) {
   ::py::class_<
       dart::dynamics::BulletCollisionDetector,
       std::shared_ptr<dart::dynamics::BulletCollisionDetector>,
@@ -61,7 +60,9 @@ void BulletCollisionDetector(py::module& m)
       .def(
           "getType",
           +[](const dart::dynamics::BulletCollisionDetector* self)
-              -> const std::string& { return self->getType(); },
+              -> const std::string& {
+            return self->getType();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "createCollisionGroup",

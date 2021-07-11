@@ -38,20 +38,17 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ConstraintBase::ConstraintBase() : mDim(0)
-{
+ConstraintBase::ConstraintBase() : mDim(0) {
   // Do nothing
 }
 
 //==============================================================================
-ConstraintBase::~ConstraintBase()
-{
+ConstraintBase::~ConstraintBase() {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& ConstraintBase::getType() const
-{
+const std::string& ConstraintBase::getType() const {
   dterr << "[ConstraintBase::getType] This function is for backward "
         << "compatibility, but must not be called. Please override this "
         << "function in the concrete constraint class.\n";
@@ -61,23 +58,19 @@ const std::string& ConstraintBase::getType() const
 }
 
 //==============================================================================
-std::size_t ConstraintBase::getDimension() const
-{
+std::size_t ConstraintBase::getDimension() const {
   return mDim;
 }
 
 //==============================================================================
-void ConstraintBase::uniteSkeletons()
-{
+void ConstraintBase::uniteSkeletons() {
   // Do nothing
 }
 
 //==============================================================================
 dynamics::SkeletonPtr ConstraintBase::compressPath(
-    dynamics::SkeletonPtr _skeleton)
-{
-  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton)
-  {
+    dynamics::SkeletonPtr _skeleton) {
+  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton) {
     _skeleton->mUnionRootSkeleton
         = _skeleton->mUnionRootSkeleton.lock()->mUnionRootSkeleton.lock();
     _skeleton = _skeleton->mUnionRootSkeleton.lock();
@@ -88,8 +81,7 @@ dynamics::SkeletonPtr ConstraintBase::compressPath(
 
 //==============================================================================
 dynamics::SkeletonPtr ConstraintBase::getRootSkeleton(
-    dynamics::SkeletonPtr _skeleton)
-{
+    dynamics::SkeletonPtr _skeleton) {
   while (_skeleton->mUnionRootSkeleton.lock() != _skeleton)
     _skeleton = _skeleton->mUnionRootSkeleton.lock();
 

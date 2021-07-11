@@ -34,38 +34,32 @@
 #include <dart/external/imgui/imgui.h>
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::WorldNode
-{
+class CustomWorldNode : public dart::gui::osg::WorldNode {
 public:
   CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::WorldNode(world)
-  {
+    : dart::gui::osg::WorldNode(world) {
     // Set up the customized WorldNode
   }
 
-  void customPreRefresh()
-  {
+  void customPreRefresh() {
     // Use this function to execute custom code before each time that the
     // window is rendered. This function can be deleted if it does not need
     // to be used.
   }
 
-  void customPostRefresh()
-  {
+  void customPostRefresh() {
     // Use this function to execute custom code after each time that the
     // window is rendered. This function can be deleted if it does not need
     // to be used.
   }
 
-  void customPreStep()
-  {
+  void customPreStep() {
     // Use this function to execute custom code before each simulation time
     // step is performed. This function can be deleted if it does not need
     // to be used.
   }
 
-  void customPostStep()
-  {
+  void customPostStep() {
     // Use this function to execute custom code after each simulation time
     // step is performed. This function can be deleted if it does not need
     // to be used.
@@ -73,59 +67,39 @@ public:
 };
 
 //==============================================================================
-class CustomEventHandler : public osgGA::GUIEventHandler
-{
+class CustomEventHandler : public osgGA::GUIEventHandler {
 public:
-  CustomEventHandler(/*Pass in any necessary arguments*/)
-  {
+  CustomEventHandler(/*Pass in any necessary arguments*/) {
     // Set up the customized event handler
   }
 
   virtual bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == 'q')
-      {
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == 'q') {
         std::cout << "Lowercase q pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == 'Q')
-      {
+      } else if (ea.getKey() == 'Q') {
         std::cout << "Capital Q pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
         std::cout << "Left arrow key pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
         std::cout << "Right arrow key pressed" << std::endl;
         return true;
       }
-    }
-    else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP)
-    {
-      if (ea.getKey() == 'q')
-      {
+    } else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP) {
+      if (ea.getKey() == 'q') {
         std::cout << "Lowercase q released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == 'Q')
-      {
+      } else if (ea.getKey() == 'Q') {
         std::cout << "Capital Q released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
         std::cout << "Left arrow key released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
         std::cout << "Right arrow key released" << std::endl;
         return true;
       }
@@ -140,8 +114,7 @@ public:
 };
 
 //==============================================================================
-class TestWidget : public dart::gui::osg::ImGuiWidget
-{
+class TestWidget : public dart::gui::osg::ImGuiWidget {
 public:
   /// Constructor
   TestWidget(
@@ -150,14 +123,12 @@ public:
       mWorld(std::move(world)),
       mGuiGravity(true),
       mGravity(true),
-      mGuiHeadlights(true)
-  {
+      mGuiHeadlights(true) {
     // Do nothing
   }
 
   // Documentation inherited
-  void render() override
-  {
+  void render() override {
     ImGui::SetNextWindowPos(ImVec2(10, 20));
     ImGui::SetNextWindowSize(ImVec2(240, 320));
     ImGui::SetNextWindowBgAlpha(0.5f);
@@ -165,24 +136,20 @@ public:
             "Tinkertoy Control",
             nullptr,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar
-                | ImGuiWindowFlags_HorizontalScrollbar))
-    {
+                | ImGuiWindowFlags_HorizontalScrollbar)) {
       // Early out if the window is collapsed, as an optimization.
       ImGui::End();
       return;
     }
 
     // Menu
-    if (ImGui::BeginMenuBar())
-    {
-      if (ImGui::BeginMenu("Menu"))
-      {
+    if (ImGui::BeginMenuBar()) {
+      if (ImGui::BeginMenu("Menu")) {
         if (ImGui::MenuItem("Exit"))
           mViewer->setDone(true);
         ImGui::EndMenu();
       }
-      if (ImGui::BeginMenu("Help"))
-      {
+      if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About DART"))
           mViewer->showAbout();
         ImGui::EndMenu();
@@ -193,11 +160,9 @@ public:
     ImGui::Text("An empty OSG example with ImGui");
     ImGui::Spacing();
 
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation())
-      {
+      if (mViewer->isAllowingSimulation()) {
         if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
           mViewer->simulate(true);
         ImGui::SameLine();
@@ -209,8 +174,7 @@ public:
     }
 
     if (ImGui::CollapsingHeader(
-            "World Options", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+            "World Options", ImGuiTreeNodeFlags_DefaultOpen)) {
       // Gravity
       ImGui::Checkbox("Gravity On/Off", &mGuiGravity);
       setGravity(mGuiGravity);
@@ -223,8 +187,7 @@ public:
       mViewer->switchHeadlights(mGuiHeadlights);
     }
 
-    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
       osg::Vec3d eye;
       osg::Vec3d center;
       osg::Vec3d up;
@@ -236,8 +199,7 @@ public:
       ImGui::Text("Up    : (%.2f, %.2f, %.2f)", up.x(), up.y(), up.z());
     }
 
-    if (ImGui::CollapsingHeader("Help"))
-    {
+    if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
       ImGui::Text("User Guide:\n");
       ImGui::Text("%s", mViewer->getInstructions().c_str());
@@ -248,8 +210,7 @@ public:
   }
 
 protected:
-  void setGravity(bool gravity)
-  {
+  void setGravity(bool gravity) {
     if (mGravity == gravity)
       return;
 
@@ -269,8 +230,7 @@ protected:
 };
 
 //==============================================================================
-int main()
-{
+int main() {
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 

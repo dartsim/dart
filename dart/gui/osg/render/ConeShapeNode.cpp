@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/ConeShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/ConeShapeNode.hpp"
-
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -46,8 +46,7 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-class ConeShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class ConeShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   ConeShapeGeode(
       dart::dynamics::ConeShape* shape,
@@ -65,8 +64,7 @@ protected:
 };
 
 //==============================================================================
-class ConeShapeDrawable : public ::osg::ShapeDrawable
-{
+class ConeShapeDrawable : public ::osg::ShapeDrawable {
 public:
   ConeShapeDrawable(
       dart::dynamics::ConeShape* shape,
@@ -87,15 +85,13 @@ protected:
 //==============================================================================
 ConeShapeNode::ConeShapeNode(
     std::shared_ptr<dart::dynamics::ConeShape> shape, ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mConeShape(shape), mGeode(nullptr)
-{
+  : ShapeNode(shape, parent, this), mConeShape(shape), mGeode(nullptr) {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
-void ConeShapeNode::refresh()
-{
+void ConeShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -107,10 +103,8 @@ void ConeShapeNode::refresh()
 }
 
 //==============================================================================
-void ConeShapeNode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mGeode)
-  {
+void ConeShapeNode::extractData(bool /*firstTime*/) {
+  if (nullptr == mGeode) {
     mGeode = new ConeShapeGeode(mConeShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
@@ -120,8 +114,7 @@ void ConeShapeNode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-ConeShapeNode::~ConeShapeNode()
-{
+ConeShapeNode::~ConeShapeNode() {
   // Do nothing
 }
 
@@ -132,8 +125,7 @@ ConeShapeGeode::ConeShapeGeode(
     ConeShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parent, this),
     mConeShape(shape),
-    mDrawable(nullptr)
-{
+    mDrawable(nullptr) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -142,18 +134,15 @@ ConeShapeGeode::ConeShapeGeode(
 }
 
 //==============================================================================
-void ConeShapeGeode::refresh()
-{
+void ConeShapeGeode::refresh() {
   mUtilized = true;
 
   extractData();
 }
 
 //==============================================================================
-void ConeShapeGeode::extractData()
-{
-  if (nullptr == mDrawable)
-  {
+void ConeShapeGeode::extractData() {
+  if (nullptr == mDrawable) {
     mDrawable = new ConeShapeDrawable(mConeShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
@@ -163,8 +152,7 @@ void ConeShapeGeode::extractData()
 }
 
 //==============================================================================
-ConeShapeGeode::~ConeShapeGeode()
-{
+ConeShapeGeode::~ConeShapeGeode() {
   // Do nothing
 }
 
@@ -173,22 +161,19 @@ ConeShapeDrawable::ConeShapeDrawable(
     dart::dynamics::ConeShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     ConeShapeGeode* parent)
-  : mConeShape(shape), mVisualAspect(visualAspect), mParent(parent)
-{
+  : mConeShape(shape), mVisualAspect(visualAspect), mParent(parent) {
   refresh(true);
 }
 
 //==============================================================================
-void ConeShapeDrawable::refresh(bool firstTime)
-{
+void ConeShapeDrawable::refresh(bool firstTime) {
   if (mConeShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mConeShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     double R = mConeShape->getRadius();
     double h = mConeShape->getHeight();
     ::osg::ref_ptr<::osg::Cone> osg_shape
@@ -198,15 +183,13 @@ void ConeShapeDrawable::refresh(bool firstTime)
   }
 
   if (mConeShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 
 //==============================================================================
-ConeShapeDrawable::~ConeShapeDrawable()
-{
+ConeShapeDrawable::~ConeShapeDrawable() {
   // Do nothing
 }
 

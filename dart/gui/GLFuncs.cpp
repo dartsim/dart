@@ -53,8 +53,7 @@ void drawArrow3D(
     const Eigen::Vector3d& _dir,
     const double _length,
     const double _thickness,
-    const double _arrowThickness)
-{
+    const double _arrowThickness) {
   const double pi = math::constantsd::pi();
 
   Eigen::Vector3d normDir = _dir;
@@ -91,8 +90,9 @@ void drawArrow3D(
 // draw a 2D arrow starting from pt along vec, the arrow head is on the other
 // end
 void drawArrow2D(
-    const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec, double _thickness)
-{
+    const Eigen::Vector2d& _pt,
+    const Eigen::Vector2d& _vec,
+    double _thickness) {
   const double pi = math::constantsd::pi();
 
   // draw the arrow body as a thick line
@@ -116,8 +116,7 @@ void drawArrow2D(
   glPopMatrix();
 }
 
-void drawProgressBar(int _currFrame, int _totalFrame)
-{
+void drawProgressBar(int _currFrame, int _totalFrame) {
   GLint oldMode;
   glGetIntegerv(GL_MATRIX_MODE, &oldMode);
   glMatrixMode(GL_PROJECTION);

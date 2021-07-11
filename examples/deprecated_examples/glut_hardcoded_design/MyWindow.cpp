@@ -39,29 +39,23 @@
 
 #include "MyWindow.hpp"
 
-void MyWindow::draw()
-{
+void MyWindow::draw() {
   glDisable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   drawSkeleton(skel.get());
 }
 
-void MyWindow::keyboard(unsigned char _key, int _x, int _y)
-{
+void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
   static bool inverse = false;
   static const double dDOF = 0.1;
-  switch (_key)
-  {
-    case '-':
-    {
+  switch (_key) {
+    case '-': {
       inverse = !inverse;
-    }
-    break;
+    } break;
     case '1':
     case '2':
-    case '3':
-    {
+    case '3': {
       std::size_t dofIdx = _key - 49;
       Eigen::VectorXd pose = skel->getPositions();
       pose(dofIdx) = pose(dofIdx) + (inverse ? -dDOF : dDOF);
@@ -69,8 +63,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       std::cout << "Updated pose DOF " << dofIdx << ": " << pose.transpose()
                 << std::endl;
       glutPostRedisplay();
-    }
-    break;
+    } break;
     default:
       Win3D::keyboard(_key, _x, _y);
   }

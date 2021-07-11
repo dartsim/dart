@@ -30,18 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
 #include <dart/collision/collision.hpp>
 #include <dart/math/math.hpp>
 #include <dart/test/GTestUtils.hpp>
+#include <gtest/gtest.h>
 
 using namespace dart;
 
 //==============================================================================
 template <typename T>
-struct FclConversion : public testing::Test
-{
+struct FclConversion : public testing::Test {
   using Type = T;
 };
 
@@ -52,14 +50,12 @@ using Types = testing::Types<double, float>;
 TYPED_TEST_CASE(FclConversion, Types);
 
 //==============================================================================
-TYPED_TEST(FclConversion, Vector)
-{
+TYPED_TEST(FclConversion, Vector) {
   using S = typename TestFixture::Type;
 
   const math::Vector3<S> vec3 = math::Vector3<S>::Random();
   collision::FclVector3<S> fclVec3;
-  for (auto i = 0; i < 3; ++i)
-  {
+  for (auto i = 0; i < 3; ++i) {
     fclVec3[i] = vec3[i];
   }
 
@@ -68,16 +64,13 @@ TYPED_TEST(FclConversion, Vector)
 }
 
 //==============================================================================
-TYPED_TEST(FclConversion, Matrix)
-{
+TYPED_TEST(FclConversion, Matrix) {
   using S = typename TestFixture::Type;
 
   const math::Matrix3<S> mat3 = math::Matrix3<S>::Random();
   collision::FclMatrix3<S> fclMat3;
-  for (auto i = 0; i < 3; ++i)
-  {
-    for (auto j = 0; j < 3; ++j)
-    {
+  for (auto i = 0; i < 3; ++i) {
+    for (auto j = 0; j < 3; ++j) {
       fclMat3(i, j) = mat3(i, j);
     }
   }
@@ -87,8 +80,7 @@ TYPED_TEST(FclConversion, Matrix)
 }
 
 //==============================================================================
-TYPED_TEST(FclConversion, Transform)
-{
+TYPED_TEST(FclConversion, Transform) {
   using S = typename TestFixture::Type;
 
   math::Isometry3<S> tf3 = math::Isometry3<S>::Identity();

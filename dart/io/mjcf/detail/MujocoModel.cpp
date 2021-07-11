@@ -47,12 +47,10 @@ namespace detail {
 Errors MujocoModel::read(
     tinyxml2::XMLElement* element,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
-{
+    const common::ResourceRetrieverPtr& retriever) {
   Errors errors;
 
-  if (std::string(element->Name()) != "mujoco")
-  {
+  if (std::string(element->Name()) != "mujoco") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Mujoco> from the provided element");
@@ -64,15 +62,13 @@ Errors MujocoModel::read(
   errors.insert(errors.end(), includeErrors.begin(), includeErrors.end());
 
   // Read 'model' attribute
-  if (hasAttribute(element, "model"))
-  {
+  if (hasAttribute(element, "model")) {
     const std::string model = getAttributeString(element, "model");
     mModel = model;
   }
 
   // Read <compiler>
-  if (hasElement(element, "compiler"))
-  {
+  if (hasElement(element, "compiler")) {
     auto compilerElement = getElement(element, "compiler");
     assert(compilerElement);
     const auto compilerErrors = mCompiler.read(compilerElement);
@@ -82,8 +78,7 @@ Errors MujocoModel::read(
   mCompiler.setResourceRetriever(retriever);
 
   // Read <option>
-  if (hasElement(element, "option"))
-  {
+  if (hasElement(element, "option")) {
     auto optionElement = getElement(element, "option");
     assert(optionElement);
     const auto optionErrors = mOption.read(optionElement);
@@ -91,8 +86,7 @@ Errors MujocoModel::read(
   }
 
   // Read <size>
-  if (hasElement(element, "size"))
-  {
+  if (hasElement(element, "size")) {
     auto sizeElement = getElement(element, "size");
     assert(sizeElement);
     const auto sizeErrors = mSize.read(sizeElement);
@@ -100,8 +94,7 @@ Errors MujocoModel::read(
   }
 
   // Read <asset>
-  if (hasElement(element, "asset"))
-  {
+  if (hasElement(element, "asset")) {
     auto assetElement = getElement(element, "asset");
     assert(assetElement);
     const auto assetErrors = mAsset.read(assetElement);
@@ -109,8 +102,7 @@ Errors MujocoModel::read(
   }
 
   // Read <default>
-  if (hasElement(element, "default"))
-  {
+  if (hasElement(element, "default")) {
     auto defaultElement = getElement(element, "default");
     assert(defaultElement);
     const auto defaultErrors = mDefaults.read(defaultElement, nullptr);
@@ -118,8 +110,7 @@ Errors MujocoModel::read(
   }
 
   // Read <worldbody>
-  if (hasElement(element, "worldbody"))
-  {
+  if (hasElement(element, "worldbody")) {
     auto worldnodeElement = getElement(element, "worldbody");
     assert(worldnodeElement);
     mWorldbody = Worldbody();
@@ -166,8 +157,7 @@ Errors MujocoModel::read(
       worldbodyPostprocessErrors.end());
 
   // Read <equality>
-  if (hasElement(element, "equality"))
-  {
+  if (hasElement(element, "equality")) {
     auto equalityElement = getElement(element, "equality");
     assert(equalityElement);
     const auto equalityErrors = mEquality.read(equalityElement, mDefaults);
@@ -179,14 +169,13 @@ Errors MujocoModel::read(
 
 //==============================================================================
 Errors MujocoModel::read(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retrieverOrNull)
-{
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retrieverOrNull) {
   Errors errors;
 
   // Create DART resource retriever if not passed
   common::ResourceRetrieverPtr retriever = retrieverOrNull;
-  if (retriever == nullptr)
-  {
+  if (retriever == nullptr) {
     auto newRetriever = std::make_shared<io::CompositeResourceRetriever>();
     newRetriever->addSchemaRetriever(
         "file", std::make_shared<common::LocalResourceRetriever>());
@@ -195,8 +184,7 @@ Errors MujocoModel::read(
   }
 
   tinyxml2::XMLDocument mjcfDoc;
-  if (not readXmlFile(mjcfDoc, uri, retriever))
-  {
+  if (not readXmlFile(mjcfDoc, uri, retriever)) {
     errors.emplace_back(
         ErrorCode::FILE_READ, "Failed to load '" + uri.toString() + "'.");
     return errors;
@@ -204,8 +192,7 @@ Errors MujocoModel::read(
 
   // Get root <mujoco> element
   tinyxml2::XMLElement* mujocoElement = mjcfDoc.FirstChildElement("mujoco");
-  if (mujocoElement == nullptr)
-  {
+  if (mujocoElement == nullptr) {
     errors.emplace_back(
         ErrorCode::ELEMENT_MISSING, "Failed to find <mujoco> at the root");
     return errors;
@@ -219,44 +206,37 @@ Errors MujocoModel::read(
 }
 
 //==============================================================================
-const std::string& MujocoModel::getModel() const
-{
+const std::string& MujocoModel::getModel() const {
   return mModel;
 }
 
 //==============================================================================
-const Compiler& MujocoModel::getCompiler() const
-{
+const Compiler& MujocoModel::getCompiler() const {
   return mCompiler;
 }
 
 //==============================================================================
-const Option& MujocoModel::getOption() const
-{
+const Option& MujocoModel::getOption() const {
   return mOption;
 }
 
 //==============================================================================
-const Size& MujocoModel::getSize() const
-{
+const Size& MujocoModel::getSize() const {
   return mSize;
 }
 
 //==============================================================================
-const Asset& MujocoModel::getAsset() const
-{
+const Asset& MujocoModel::getAsset() const {
   return mAsset;
 }
 
 //==============================================================================
-const Worldbody& MujocoModel::getWorldbody() const
-{
+const Worldbody& MujocoModel::getWorldbody() const {
   return mWorldbody;
 }
 
 //==============================================================================
-const Equality& MujocoModel::getEquality() const
-{
+const Equality& MujocoModel::getEquality() const {
   return mEquality;
 }
 

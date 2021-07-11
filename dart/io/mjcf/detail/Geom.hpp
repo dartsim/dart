@@ -48,8 +48,7 @@ namespace detail {
 
 class Body;
 
-class Geom final
-{
+class Geom final {
 public:
   /// Default constructor
   Geom() = default;

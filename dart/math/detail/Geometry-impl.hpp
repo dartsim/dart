@@ -32,11 +32,10 @@
 
 #pragma once
 
-#include "dart/math/Geometry.hpp"
-
 #include <unordered_map>
 
 #include "dart/external/convhull_3d/convhull_3d.h"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace math {
@@ -48,26 +47,22 @@ std::tuple<
     std::vector<Eigen::Matrix<Index, 3, 1>>>
 discardUnusedVertices(
     const std::vector<Eigen::Matrix<S, 3, 1>>& vertices,
-    const std::vector<Eigen::Matrix<Index, 3, 1>>& triangles)
-{
+    const std::vector<Eigen::Matrix<Index, 3, 1>>& triangles) {
   auto newVertices = std::vector<Eigen::Matrix<S, 3, 1>>();
   auto newTriangles = std::vector<Eigen::Matrix<Index, 3, 1>>();
   newTriangles.resize(triangles.size());
   auto indexMap = std::unordered_map<Index, Index>();
   auto newIndex = 0;
 
-  for (auto i = 0u; i < triangles.size(); ++i)
-  {
+  for (auto i = 0u; i < triangles.size(); ++i) {
     const auto& triangle = triangles[i];
     auto& newTriangle = newTriangles[i];
 
-    for (auto j = 0u; j < 3; ++j)
-    {
+    for (auto j = 0u; j < 3; ++j) {
       const auto result
           = indexMap.insert(std::make_pair(triangle[j], newIndex));
       const bool& inserted = result.second;
-      if (inserted)
-      {
+      if (inserted) {
         newVertices.push_back(vertices[triangle[j]]);
         newIndex++;
       }
@@ -85,12 +80,10 @@ std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>>,
     std::vector<Eigen::Matrix<Index, 3, 1>>>
 computeConvexHull3D(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& inputVertices, bool optimize)
-{
+    const std::vector<Eigen::Matrix<S, 3, 1>>& inputVertices, bool optimize) {
   ch_vertex* vertices = new ch_vertex[inputVertices.size()];
 
-  for (auto i = 0u; i < inputVertices.size(); ++i)
-  {
+  for (auto i = 0u; i < inputVertices.size(); ++i) {
     const Eigen::Matrix<S, 3, 1>& inputV = inputVertices[i];
     ch_vertex& v = vertices[i];
     v.x = inputV[0];
@@ -106,8 +99,7 @@ computeConvexHull3D(
   std::vector<Eigen::Matrix<Index, 3, 1>> eigenFaces;
   eigenFaces.reserve(numFaces);
 
-  for (auto i = 0; i < numFaces; ++i)
-  {
+  for (auto i = 0; i < numFaces; ++i) {
     const auto index1 = faces[3 * i];
     const auto index2 = faces[3 * i + 1];
     const auto index3 = faces[3 * i + 2];

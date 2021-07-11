@@ -34,13 +34,13 @@
 #define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 
 #include <string>
+
 #include <Eigen/Core>
 
 namespace dart {
 namespace dynamics {
 
-class BoxedLcpSolver
-{
+class BoxedLcpSolver {
 public:
   /// Destructor
   virtual ~BoxedLcpSolver() = default;

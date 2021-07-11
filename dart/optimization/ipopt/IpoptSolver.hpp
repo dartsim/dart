@@ -37,11 +37,11 @@
 
 #include "dart/optimization/ipopt/BackwardCompatibility.hpp"
 #if IPOPT_VERSION_GE(3, 13, 0)
-#  include <IpIpoptApplication.hpp>
-#  include <IpTNLP.hpp>
+  #include <IpIpoptApplication.hpp>
+  #include <IpTNLP.hpp>
 #else
-#  include <coin/IpIpoptApplication.hpp>
-#  include <coin/IpTNLP.hpp>
+  #include <coin/IpIpoptApplication.hpp>
+  #include <coin/IpTNLP.hpp>
 #endif
 
 #include "dart/optimization/Solver.hpp"
@@ -53,8 +53,7 @@ class Problem;
 class DartTNLP;
 
 /// \brief class IpoptSolver
-class IpoptSolver : public Solver
-{
+class IpoptSolver : public Solver {
 public:
   /// Default constructor
   IpoptSolver(const Solver::Properties& _properties = Solver::Properties());
@@ -94,8 +93,7 @@ private:
 };
 
 /// class DartTNLP
-class DartTNLP : public Ipopt::TNLP
-{
+class DartTNLP : public Ipopt::TNLP {
 public:
   friend class IpoptSolver;
 

@@ -43,8 +43,7 @@ namespace dynamics {
 /// HierarchicalIK will allow the IK solver to constrain the Skeleton so that it
 /// satisfies a support polygon style balancing constraint.
 class BalanceConstraint : public optimization::Function,
-                          public dynamics::HierarchicalIK::Function
-{
+                          public dynamics::HierarchicalIK::Function {
 public:
   /// The ErrorMethod_t determines whether the error should be computed based on
   /// the center of mass's distance from the centroid of the support polygon
@@ -60,12 +59,7 @@ public:
   /// tolerance can be set by using setOptimizationTolerance(). This method is
   /// ideal for use as an Objective function to improve the quality of a
   /// configuration rather than as a constraint function.
-  enum ErrorMethod_t
-  {
-    FROM_CENTROID = 0,
-    FROM_EDGE,
-    OPTIMIZE_BALANCE
-  };
+  enum ErrorMethod_t { FROM_CENTROID = 0, FROM_EDGE, OPTIMIZE_BALANCE };
 
   /// The BalanceMethod_t determines whether balancing should be achieved by
   /// shifting the locations of the supporting EndEffectors or by shifting the
@@ -77,11 +71,7 @@ public:
   /// towards the center of mass simultaneously. However, if the ErrorMethod_t
   /// is FROM_EDGE, then only the EndEffector that is closest to the center of
   /// mass will be shifted.
-  enum BalanceMethod_t
-  {
-    SHIFT_SUPPORT = 0,
-    SHIFT_COM
-  };
+  enum BalanceMethod_t { SHIFT_SUPPORT = 0, SHIFT_COM };
 
   /// Constructor
   BalanceConstraint(

@@ -34,15 +34,15 @@
 
 #if DART_HAVE_OCTOMAP
 
-#  include <osg/CullFace>
-#  include <osg/Geode>
-#  include <osg/Light>
-#  include <osg/Material>
-#  include <osg/ShapeDrawable>
+  #include <osg/CullFace>
+  #include <osg/Geode>
+  #include <osg/Light>
+  #include <osg/Material>
+  #include <osg/ShapeDrawable>
 
-#  include "dart/dynamics/SimpleFrame.hpp"
-#  include "dart/dynamics/VoxelGridShape.hpp"
-#  include "dart/gui/osg/Utils.hpp"
+  #include "dart/dynamics/SimpleFrame.hpp"
+  #include "dart/dynamics/VoxelGridShape.hpp"
+  #include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -50,11 +50,9 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-class BoxDrawable final : public ::osg::ShapeDrawable
-{
+class BoxDrawable final : public ::osg::ShapeDrawable {
 public:
-  BoxDrawable(double size, const Eigen::Vector4d& color)
-  {
+  BoxDrawable(double size, const Eigen::Vector4d& color) {
     mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
     setColor(eigToOsgVec4f(color));
     setShape(mShape);
@@ -65,8 +63,7 @@ public:
         new ::osg::CullFace(::osg::CullFace::BACK));
   }
 
-  void updateSize(double size)
-  {
+  void updateSize(double size) {
     mShape->setHalfLengths(::osg::Vec3(
         static_cast<float>(size * 0.5),
         static_cast<float>(size * 0.5),
@@ -75,8 +72,7 @@ public:
     dirtyDisplayList();
   }
 
-  void updateColor(const Eigen::Vector4d& color)
-  {
+  void updateColor(const Eigen::Vector4d& color) {
     setColor(eigToOsgVec4f(color));
   }
 
@@ -85,12 +81,10 @@ protected:
 };
 
 //==============================================================================
-class VoxelNode : public ::osg::MatrixTransform
-{
+class VoxelNode : public ::osg::MatrixTransform {
 public:
   VoxelNode(
-      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
-  {
+      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color) {
     mDrawable = new BoxDrawable(size, color);
     mGeode = new ::osg::Geode();
 
@@ -100,20 +94,17 @@ public:
     updateCenter(point);
   }
 
-  void updateCenter(const Eigen::Vector3d& point)
-  {
+  void updateCenter(const Eigen::Vector3d& point) {
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
     tf.translation() = point;
     setMatrix(eigToOsgMatrix(tf));
   }
 
-  void updateSize(double size)
-  {
+  void updateSize(double size) {
     mDrawable->updateSize(size);
   }
 
-  void updateColor(const Eigen::Vector4d& color)
-  {
+  void updateColor(const Eigen::Vector4d& color) {
     mDrawable->updateColor(color);
   }
 
@@ -128,22 +119,19 @@ VoxelGridShapeNode::VoxelGridShapeNode(
   : ShapeNode(shape, parent, this),
     mVoxelGridShape(shape),
     mGeode(nullptr),
-    mVoxelGridVersion(dynamics::INVALID_INDEX)
-{
+    mVoxelGridVersion(dynamics::INVALID_INDEX) {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 }
 
 //==============================================================================
-void VoxelGridShapeNode::refresh()
-{
+void VoxelGridShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
   if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
-      && mVoxelGridVersion == mVoxelGridShape->getVersion())
-  {
+      && mVoxelGridVersion == mVoxelGridShape->getVersion()) {
     return;
   }
 
@@ -153,8 +141,7 @@ void VoxelGridShapeNode::refresh()
 }
 
 //==============================================================================
-Eigen::Vector3d toVector3d(const octomap::point3d& point)
-{
+Eigen::Vector3d toVector3d(const octomap::point3d& point) {
   return Eigen::Vector3d(
       static_cast<double>(point.x()),
       static_cast<double>(point.y()),
@@ -162,8 +149,7 @@ Eigen::Vector3d toVector3d(const octomap::point3d& point)
 }
 
 //==============================================================================
-void VoxelGridShapeNode::extractData(bool /*firstTime*/)
-{
+void VoxelGridShapeNode::extractData(bool /*firstTime*/) {
   auto tree = mVoxelGridShape->getOctree();
   const auto visualSize = tree->getResolution();
   const auto& color = mVisualAspect->getRGBA();
@@ -175,21 +161,18 @@ void VoxelGridShapeNode::extractData(bool /*firstTime*/)
 
   // Update position of cache boxes.
   std::size_t boxIndex = 0u;
-  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end; ++it)
-  {
+  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end;
+       ++it) {
     auto threashold = tree->getOccupancyThres();
 
     if (it->getOccupancy() < threashold)
       continue;
 
-    if (boxIndex < mVoxelNodes.size())
-    {
+    if (boxIndex < mVoxelNodes.size()) {
       mVoxelNodes[boxIndex]->updateCenter(toVector3d(it.getCoordinate()));
       mVoxelNodes[boxIndex]->updateSize(visualSize);
       mVoxelNodes[boxIndex]->updateColor(color);
-    }
-    else
-    {
+    } else {
       ::osg::ref_ptr<VoxelNode> voxelNode
           = new VoxelNode(toVector3d(it.getCoordinate()), visualSize, color);
       mVoxelNodes.emplace_back(voxelNode);
@@ -201,8 +184,7 @@ void VoxelGridShapeNode::extractData(bool /*firstTime*/)
 
   // Fit the size of cache box list to the new points. No effect new boxes are
   // added to the list.
-  if (mVoxelNodes.size() > boxIndex)
-  {
+  if (mVoxelNodes.size() > boxIndex) {
     removeChildren(
         static_cast<unsigned int>(boxIndex),
         static_cast<unsigned int>(mVoxelNodes.size() - boxIndex));
@@ -211,8 +193,7 @@ void VoxelGridShapeNode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-VoxelGridShapeNode::~VoxelGridShapeNode()
-{
+VoxelGridShapeNode::~VoxelGridShapeNode() {
   // Do nothing
 }
 

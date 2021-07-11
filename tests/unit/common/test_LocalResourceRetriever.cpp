@@ -31,6 +31,7 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/test/TestHelpers.hpp"
 
@@ -39,112 +40,98 @@ using dart::common::Resource;
 using dart::common::Uri;
 
 #ifdef _WIN32
-#  define FILE_SCHEME "file:///"
+  #define FILE_SCHEME "file:///"
 #else
-#  define FILE_SCHEME "file://"
+  #define FILE_SCHEME "file://"
 #endif
 
-TEST(LocalResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
-{
+TEST(LocalResourceRetriever, exists_UnsupportedUri_ReturnsFalse) {
   LocalResourceRetriever retriever;
   EXPECT_FALSE(retriever.exists("unknown://test"));
 }
 
-TEST(LocalResourceRetriever, exists_FileUriDoesNotExist_ReturnsFalse)
-{
+TEST(LocalResourceRetriever, exists_FileUriDoesNotExist_ReturnsFalse) {
   LocalResourceRetriever retriever;
   EXPECT_FALSE(retriever.exists(FILE_SCHEME DART_DATA_PATH "does/not/exist"));
 }
 
-TEST(LocalResourceRetriever, exists_PathDoesNotExist_ReturnsFalse)
-{
+TEST(LocalResourceRetriever, exists_PathDoesNotExist_ReturnsFalse) {
   LocalResourceRetriever retriever;
   EXPECT_FALSE(retriever.exists(DART_DATA_PATH "does/not/exist"));
 }
 
-TEST(LocalResourceRetriever, exists_FileUriDoesExists_ReturnsTrue)
-{
+TEST(LocalResourceRetriever, exists_FileUriDoesExists_ReturnsTrue) {
   LocalResourceRetriever retriever;
   EXPECT_TRUE(retriever.exists(FILE_SCHEME DART_DATA_PATH "skel/cube.skel"));
 }
 
-TEST(LocalResourceRetriever, exists_PathDoesExists_ReturnsTrue)
-{
+TEST(LocalResourceRetriever, exists_PathDoesExists_ReturnsTrue) {
   LocalResourceRetriever retriever;
   EXPECT_TRUE(retriever.exists(DART_DATA_PATH "skel/cube.skel"));
 }
 
-TEST(LocalResourceRetriever, getFilePath_UnsupportedUri_ReturnsEmptyString)
-{
+TEST(LocalResourceRetriever, getFilePath_UnsupportedUri_ReturnsEmptyString) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(retriever.getFilePath("unknown://test"), "");
 }
 
-TEST(LocalResourceRetriever, getFilePath_FileUriDoesNotExist_ReturnsEmptyString)
-{
+TEST(
+    LocalResourceRetriever,
+    getFilePath_FileUriDoesNotExist_ReturnsEmptyString) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       retriever.getFilePath(FILE_SCHEME DART_DATA_PATH "does/not/exist"), "");
 }
 
-TEST(LocalResourceRetriever, getFilePath_PathDoesNotExist_ReturnsEmptyString)
-{
+TEST(LocalResourceRetriever, getFilePath_PathDoesNotExist_ReturnsEmptyString) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(retriever.getFilePath(DART_DATA_PATH "does/not/exist"), "");
 }
 
-TEST(LocalResourceRetriever, getFilePath_FileUriDoesExists_ReturnsPath)
-{
+TEST(LocalResourceRetriever, getFilePath_FileUriDoesExists_ReturnsPath) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       retriever.getFilePath(FILE_SCHEME DART_DATA_PATH "skel/cube.skel"),
       DART_DATA_PATH "skel/cube.skel");
 }
 
-TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
-{
+TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       retriever.getFilePath(DART_DATA_PATH "skel/cube.skel"),
       DART_DATA_PATH "skel/cube.skel");
 }
 
-TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
-{
+TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(nullptr, retriever.retrieve("unknown://test"));
 }
 
-TEST(LocalResourceRetriever, retrieve_FileUriDoesNotExist_ReturnsNull)
-{
+TEST(LocalResourceRetriever, retrieve_FileUriDoesNotExist_ReturnsNull) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       nullptr, retriever.retrieve(FILE_SCHEME DART_DATA_PATH "does/not/exist"));
 }
 
-TEST(LocalResourceRetriever, retrieve_PathDoesNotExist_ReturnsNull)
-{
+TEST(LocalResourceRetriever, retrieve_PathDoesNotExist_ReturnsNull) {
   LocalResourceRetriever retriever;
   EXPECT_EQ(nullptr, retriever.retrieve(DART_DATA_PATH "does/not/exist"));
 }
 
-TEST(LocalResourceRetriever, retrieve_FileUri)
-{
+TEST(LocalResourceRetriever, retrieve_FileUri) {
   LocalResourceRetriever retriever;
   auto resource
       = retriever.retrieve(FILE_SCHEME DART_DATA_PATH "test/hello_world.txt");
   ASSERT_TRUE(resource != nullptr);
 }
 
-TEST(LocalResourceRetriever, retrieve_Path)
-{
+TEST(LocalResourceRetriever, retrieve_Path) {
   LocalResourceRetriever retriever;
   auto resource = retriever.retrieve(DART_DATA_PATH "test/hello_world.txt");
   ASSERT_TRUE(resource != nullptr);
 }
 
-TEST(LocalResourceRetriever, readAll)
-{
+TEST(LocalResourceRetriever, readAll) {
   LocalResourceRetriever retriever;
   auto resource = retriever.retrieve(DART_DATA_PATH "test/hello_world.txt");
   ASSERT_TRUE(resource != nullptr);
@@ -157,8 +144,7 @@ TEST(LocalResourceRetriever, readAll)
       == std::string("Hello World"));
 }
 
-TEST(LocalResourceRetriever, retrieve_ResourceOperations)
-{
+TEST(LocalResourceRetriever, retrieve_ResourceOperations) {
   const std::string content = "Hello World";
 
   std::vector<char> buffer(100, '\0');

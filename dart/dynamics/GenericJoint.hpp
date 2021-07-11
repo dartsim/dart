@@ -35,6 +35,7 @@
 
 #include <array>
 #include <string>
+
 #include "dart/dynamics/detail/GenericJointAspect.hpp"
 
 namespace dart {
@@ -44,8 +45,7 @@ class DegreeOfFreedom;
 
 template <class ConfigSpaceT>
 class GenericJoint
-  : public detail::GenericJointBase<GenericJoint<ConfigSpaceT>, ConfigSpaceT>
-{
+  : public detail::GenericJointBase<GenericJoint<ConfigSpaceT>, ConfigSpaceT> {
 public:
   static constexpr std::size_t NumDofs = ConfigSpaceT::NumDofs;
 

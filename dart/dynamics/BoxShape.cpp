@@ -31,48 +31,43 @@
  */
 
 #include "dart/dynamics/BoxShape.hpp"
+
 #include <cmath>
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(BOX), mSize(_size)
-{
+BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(BOX), mSize(_size) {
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
 }
 
 //==============================================================================
-BoxShape::~BoxShape()
-{
+BoxShape::~BoxShape() {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& BoxShape::getType() const
-{
+const std::string& BoxShape::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& BoxShape::getStaticType()
-{
+const std::string& BoxShape::getStaticType() {
   static const std::string type("BoxShape");
   return type;
 }
 
 //==============================================================================
-double BoxShape::computeVolume(const Eigen::Vector3d& size)
-{
+double BoxShape::computeVolume(const Eigen::Vector3d& size) {
   return size[0] * size[1] * size[2];
 }
 
 //==============================================================================
 Eigen::Matrix3d BoxShape::computeInertia(
-    const Eigen::Vector3d& size, double mass)
-{
+    const Eigen::Vector3d& size, double mass) {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
   inertia(0, 0) = mass / 12.0 * (std::pow(size[1], 2) + std::pow(size[2], 2));
@@ -83,8 +78,7 @@ Eigen::Matrix3d BoxShape::computeInertia(
 }
 
 //==============================================================================
-void BoxShape::setSize(const Eigen::Vector3d& _size)
-{
+void BoxShape::setSize(const Eigen::Vector3d& _size) {
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
@@ -96,28 +90,24 @@ void BoxShape::setSize(const Eigen::Vector3d& _size)
 }
 
 //==============================================================================
-const Eigen::Vector3d& BoxShape::getSize() const
-{
+const Eigen::Vector3d& BoxShape::getSize() const {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Matrix3d BoxShape::computeInertia(double mass) const
-{
+Eigen::Matrix3d BoxShape::computeInertia(double mass) const {
   return computeInertia(mSize, mass);
 }
 
 //==============================================================================
-void BoxShape::updateBoundingBox() const
-{
+void BoxShape::updateBoundingBox() const {
   mBoundingBox.setMin(-mSize * 0.5);
   mBoundingBox.setMax(mSize * 0.5);
   mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
-void BoxShape::updateVolume() const
-{
+void BoxShape::updateVolume() const {
   mVolume = computeVolume(mSize);
   mIsVolumeDirty = false;
 }

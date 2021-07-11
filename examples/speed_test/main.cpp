@@ -34,6 +34,7 @@
 #include <numeric>
 
 #include <dart/dart.hpp>
+
 #include "dart/io/io.hpp"
 
 double testForwardKinematicSpeed(
@@ -41,8 +42,7 @@ double testForwardKinematicSpeed(
     bool position = true,
     bool velocity = true,
     bool acceleration = true,
-    std::size_t numTests = 100000)
-{
+    std::size_t numTests = 100000) {
   if (nullptr == skel)
     return 0;
 
@@ -53,22 +53,18 @@ double testForwardKinematicSpeed(
   std::chrono::time_point<std::chrono::system_clock> start, end;
   start = std::chrono::system_clock::now();
 
-  for (std::size_t i = 0; i < numTests; ++i)
-  {
-    for (std::size_t i = 0; i < skel->getNumDofs(); ++i)
-    {
+  for (std::size_t i = 0; i < numTests; ++i) {
+    for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
       dart::dynamics::DegreeOfFreedom* dof = skel->getDof(i);
       dof->setPosition(dart::math::Random::uniform(
           std::max(dof->getPositionLowerLimit(), -1.0),
           std::min(dof->getPositionUpperLimit(), 1.0)));
     }
 
-    for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
-    {
+    for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
       if (position)
         skel->getBodyNode(i)->getWorldTransform();
-      if (velocity)
-      {
+      if (velocity) {
         skel->getBodyNode(i)->getSpatialVelocity();
         skel->getBodyNode(i)->getPartialAcceleration();
       }
@@ -88,8 +84,7 @@ void runKinematicsTest(
     const std::vector<dart::simulation::WorldPtr>& worlds,
     bool position,
     bool velocity,
-    bool acceleration)
-{
+    bool acceleration) {
   double totalTime = 0;
   std::cout << "Testing: ";
   if (position)
@@ -101,8 +96,7 @@ void runKinematicsTest(
   std::cout << "\n";
 
   // Test for updating the whole skeleton
-  for (std::size_t i = 0; i < worlds.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr world = worlds[i];
     totalTime += testForwardKinematicSpeed(
         world->getSkeleton(0), position, velocity, acceleration);
@@ -112,13 +106,11 @@ void runKinematicsTest(
 }
 
 double testDynamicsSpeed(
-    dart::simulation::WorldPtr world, std::size_t numIterations = 10000)
-{
+    dart::simulation::WorldPtr world, std::size_t numIterations = 10000) {
   if (nullptr == world)
     return 0;
 
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
-  {
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     dart::dynamics::SkeletonPtr skel = world->getSkeleton(i);
     skel->resetPositions();
     skel->resetVelocities();
@@ -128,8 +120,7 @@ double testDynamicsSpeed(
   std::chrono::time_point<std::chrono::system_clock> start, end;
   start = std::chrono::system_clock::now();
 
-  for (std::size_t i = 0; i < numIterations; ++i)
-  {
+  for (std::size_t i = 0; i < numIterations; ++i) {
     world->step();
   }
 
@@ -141,12 +132,10 @@ double testDynamicsSpeed(
 
 void runDynamicsTest(
     std::vector<double>& results,
-    const std::vector<dart::simulation::WorldPtr>& worlds)
-{
+    const std::vector<dart::simulation::WorldPtr>& worlds) {
   double totalTime = 0;
 
-  for (std::size_t i = 0; i < worlds.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     totalTime += testDynamicsSpeed(worlds[i]);
   }
 
@@ -154,8 +143,7 @@ void runDynamicsTest(
   std::cout << "Result: " << totalTime << "s" << std::endl;
 }
 
-void print_results(const std::vector<double>& result)
-{
+void print_results(const std::vector<double>& result) {
   double sum = std::accumulate(result.begin(), result.end(), 0.0);
   double mean = sum / result.size();
   std::cout << "Average: " << mean << "\n";
@@ -171,8 +159,7 @@ void print_results(const std::vector<double>& result)
   std::cout << "Std Dev: " << stddev << "\n";
 }
 
-std::vector<std::string> getSceneFiles()
-{
+std::vector<std::string> getSceneFiles() {
   std::vector<std::string> scenes;
   scenes.push_back("dart://sample/skel/test/chainwhipa.skel");
   scenes.push_back("dart://sample/skel/test/single_pendulum.skel");
@@ -199,8 +186,7 @@ std::vector<std::string> getSceneFiles()
   return scenes;
 }
 
-std::vector<dart::simulation::WorldPtr> getWorlds()
-{
+std::vector<dart::simulation::WorldPtr> getWorlds() {
   std::vector<std::string> sceneFiles = getSceneFiles();
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < sceneFiles.size(); ++i)
@@ -209,26 +195,22 @@ std::vector<dart::simulation::WorldPtr> getWorlds()
   return worlds;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   bool test_kinematics = false;
-  for (int i = 1; i < argc; ++i)
-  {
+  for (int i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "-k")
       test_kinematics = true;
   }
 
   std::vector<dart::simulation::WorldPtr> worlds = getWorlds();
 
-  if (test_kinematics)
-  {
+  if (test_kinematics) {
     std::cout << "Testing Kinematics" << std::endl;
     std::vector<double> acceleration_results;
     std::vector<double> velocity_results;
     std::vector<double> position_results;
 
-    for (std::size_t i = 0; i < 10; ++i)
-    {
+    for (std::size_t i = 0; i < 10; ++i) {
       std::cout << "\nTrial #" << i + 1 << std::endl;
       runKinematicsTest(acceleration_results, worlds, true, true, true);
       runKinematicsTest(velocity_results, worlds, true, true, false);
@@ -251,8 +233,7 @@ int main(int argc, char* argv[])
 
   std::cout << "Testing Dynamics" << std::endl;
   std::vector<double> dynamics_results;
-  for (std::size_t i = 0; i < 10; ++i)
-  {
+  for (std::size_t i = 0; i < 10; ++i) {
     std::cout << "\nTrial #" << i + 1 << std::endl;
     runDynamicsTest(dynamics_results, worlds);
   }

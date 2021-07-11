@@ -35,6 +35,7 @@
 
 #include <Eigen/Dense>
 #include <assimp/scene.h>
+
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -43,8 +44,7 @@ namespace dynamics {
 class SoftBodyNode;
 
 // TODO(JS): Implement
-class SoftMeshShape : public Shape
-{
+class SoftMeshShape : public Shape {
 public:
   friend class SoftBodyNode;
 

@@ -44,8 +44,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Option final
-{
+class Option final {
 public:
   Option() = default;
 

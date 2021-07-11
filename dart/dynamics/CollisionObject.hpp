@@ -40,8 +40,7 @@
 namespace dart {
 namespace dynamics {
 
-class CollisionObject
-{
+class CollisionObject {
 public:
   friend class CollisionGroup;
 
@@ -82,7 +81,7 @@ protected:
   const dynamics::ShapeFrame* mShapeFrame;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_COLLISIONOBJECT_HPP_

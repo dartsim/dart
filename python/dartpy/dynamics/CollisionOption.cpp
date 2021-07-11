@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void CollisionOption(py::module& m)
-{
+void CollisionOption(py::module& m) {
   ::py::class_<dart::dynamics::CollisionOption>(m, "CollisionOption")
       .def(::py::init<>())
       .def(::py::init<bool>(), ::py::arg("enableContact"))
@@ -60,8 +59,7 @@ void CollisionOption(py::module& m)
       .def_readwrite(
           "maxNumContacts", &dart::dynamics::CollisionOption::maxNumContacts)
       .def_readwrite(
-          "collisionFilter",
-          &dart::dynamics::CollisionOption::collisionFilter);
+          "collisionFilter", &dart::dynamics::CollisionOption::collisionFilter);
 }
 
 } // namespace python

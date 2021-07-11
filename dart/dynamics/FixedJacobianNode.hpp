@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 class FixedJacobianNode : public detail::FixedJacobianNodeCompositeBase,
-                          public AccessoryNode<FixedJacobianNode>
-{
+                          public AccessoryNode<FixedJacobianNode> {
 public:
   /// Set the current relative transform of this Fixed Frame
   void setRelativeTransform(const Eigen::Isometry3d& newRelativeTf) override;
@@ -131,8 +130,7 @@ protected:
   /// mIsWorldJacobianClassicDerivDirty is true.
   void updateWorldJacobianClassicDeriv() const;
 
-  struct Cache
-  {
+  struct Cache {
     /// Cached Jacobian of this Fixed Frame
     ///
     /// Do not use directly! Use getJacobian() to access this quantity

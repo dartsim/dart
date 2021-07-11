@@ -35,8 +35,7 @@
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
-class WamWorld : public dart::gui::osg::WorldNode
-{
+class WamWorld : public dart::gui::osg::WorldNode {
 public:
   WamWorld(WorldPtr world, SkeletonPtr robot);
 

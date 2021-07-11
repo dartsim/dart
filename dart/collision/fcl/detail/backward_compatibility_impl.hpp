@@ -39,8 +39,7 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-S length(const FclVector3<S>& t)
-{
+S length(const FclVector3<S>& t) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t.norm();
 #else
@@ -50,8 +49,7 @@ S length(const FclVector3<S>& t)
 
 //==============================================================================
 template <typename S>
-S length2(const FclVector3<S>& t)
-{
+S length2(const FclVector3<S>& t) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t.squaredNorm();
 #else
@@ -61,8 +59,7 @@ S length2(const FclVector3<S>& t)
 
 //==============================================================================
 template <typename S>
-FclVector3<S> getTranslation(const FclTransform3<S>& T)
-{
+FclVector3<S> getTranslation(const FclTransform3<S>& T) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T.translation();
 #else
@@ -72,8 +69,7 @@ FclVector3<S> getTranslation(const FclTransform3<S>& T)
 
 //==============================================================================
 template <typename S>
-void setTranslation(FclTransform3<S>& T, const FclVector3<S>& t)
-{
+void setTranslation(FclTransform3<S>& T, const FclVector3<S>& t) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   T.translation() = t;
 #else
@@ -83,8 +79,7 @@ void setTranslation(FclTransform3<S>& T, const FclVector3<S>& t)
 
 //==============================================================================
 template <typename S>
-FclMatrix3<S> getRotation(const FclTransform3<S>& T)
-{
+FclMatrix3<S> getRotation(const FclTransform3<S>& T) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T.linear();
 #else
@@ -94,8 +89,7 @@ FclMatrix3<S> getRotation(const FclTransform3<S>& T)
 
 //==============================================================================
 template <typename S>
-void setRotation(FclTransform3<S>& T, const FclMatrix3<S>& R)
-{
+void setRotation(FclTransform3<S>& T, const FclMatrix3<S>& R) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   T.linear() = R;
 #else
@@ -105,8 +99,7 @@ void setRotation(FclTransform3<S>& T, const FclMatrix3<S>& R)
 
 //==============================================================================
 template <typename S>
-void setEulerZYX(FclMatrix3<S>& rot, S eulerX, S eulerY, S eulerZ)
-{
+void setEulerZYX(FclMatrix3<S>& rot, S eulerX, S eulerY, S eulerZ) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   S ci(cos(eulerX));
   S cj(cos(eulerY));
@@ -131,8 +124,7 @@ void setEulerZYX(FclMatrix3<S>& rot, S eulerX, S eulerY, S eulerZ)
 
 //==============================================================================
 template <typename S>
-FclVector3<S> transform(const FclTransform3<S>& t, const FclVector3<S>& v)
-{
+FclVector3<S> transform(const FclTransform3<S>& t, const FclVector3<S>& v) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return t * v;
 #else

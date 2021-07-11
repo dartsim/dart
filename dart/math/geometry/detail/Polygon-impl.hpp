@@ -32,40 +32,35 @@
 
 #pragma once
 
-#include "dart/math/geometry/Polygon.hpp"
-
 #include <cmath>
 
 #include "dart/math/Constants.hpp"
+#include "dart/math/geometry/Polygon.hpp"
 
 namespace dart {
 namespace math {
 
 //==============================================================================
 template <typename S>
-const std::string& Polygon<S>::getStaticType()
-{
+const std::string& Polygon<S>::getStaticType() {
   static const std::string type("Polygon");
   return type;
 }
 
 //==============================================================================
 template <typename S>
-const std::string& Polygon<S>::getType() const
-{
+const std::string& Polygon<S>::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<Polygon<S>> Polygon<S>::generateConvexHull() const
-{
+std::shared_ptr<Polygon<S>> Polygon<S>::generateConvexHull() const {
   //  mIndices.clear();
 
   auto polygon = std::make_shared<Polygon<S>>();
 
-  if (mPoints.size() <= 3)
-  {
+  if (mPoints.size() <= 3) {
     // Three or fewer points is already a convex hull
     //    for (std::size_t i = 0; i < mPoints.size(); ++i)
     //      mIndices.push_back(i);

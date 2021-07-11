@@ -31,14 +31,15 @@
  */
 
 #include <tuple>
+
 #include <gtest/gtest.h>
+
 #include "dart/dart.hpp"
 
 using namespace dart;
 
 //==============================================================================
-TEST(ScrewJoint, ThreadPitch)
-{
+TEST(ScrewJoint, ThreadPitch) {
   using namespace dart::math::suffixes;
 
   // Create single-body skeleton with a screw joint

@@ -45,8 +45,7 @@ class VisualAspect;
 class CollisionAspect;
 class DynamicsAspect;
 
-class ShapeNode : public detail::ShapeNodeCompositeBase
-{
+class ShapeNode : public detail::ShapeNodeCompositeBase {
 public:
   friend class BodyNode;
 

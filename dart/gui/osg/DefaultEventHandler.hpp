@@ -38,7 +38,6 @@
 #include <vector>
 
 #include <Eigen/Core>
-
 #include <osgGA/GUIEventHandler>
 
 #include "dart/common/ClassWithVirtualBase.hpp"
@@ -56,8 +55,7 @@ class Entity;
 namespace gui {
 namespace osg {
 
-struct PickInfo
-{
+struct PickInfo {
   dart::dynamics::ShapeFrame* frame;
   std::shared_ptr<dart::dynamics::Shape> shape;
   Eigen::Vector3d position;
@@ -66,8 +64,7 @@ struct PickInfo
 
 class Viewer;
 
-enum MouseButton
-{
+enum MouseButton {
 
   LEFT_MOUSE = 0,
   RIGHT_MOUSE,
@@ -76,8 +73,7 @@ enum MouseButton
   NUM_MOUSE_BUTTONS
 };
 
-enum MouseButtonEvent
-{
+enum MouseButtonEvent {
 
   BUTTON_PUSH = 0,
   BUTTON_DRAG,
@@ -86,8 +82,7 @@ enum MouseButtonEvent
 
 };
 
-enum ConstraintType
-{
+enum ConstraintType {
 
   UNCONSTRAINED = 0,
   LINE_CONSTRAINT,
@@ -102,8 +97,7 @@ class MouseEventHandler;
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DefaultEventHandler : public ::osgGA::GUIEventHandler,
                             public virtual dart::common::Subject,
-                            public virtual dart::common::Observer
-{
+                            public virtual dart::common::Observer {
 public:
   /// Constructor takes in a pointer to a viewer
   explicit DefaultEventHandler(Viewer* _viewer);

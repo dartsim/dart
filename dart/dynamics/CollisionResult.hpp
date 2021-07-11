@@ -35,6 +35,7 @@
 
 #include <unordered_set>
 #include <vector>
+
 #include "dart/dynamics/Contact.hpp"
 
 namespace dart {
@@ -48,8 +49,7 @@ class ShapeFrame;
 
 namespace dynamics {
 
-class CollisionResult
-{
+class CollisionResult {
 public:
   /// Add one contact
   void addContact(const Contact& contact);
@@ -102,7 +102,7 @@ protected:
   std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_COLLISIONRESULT_HPP_

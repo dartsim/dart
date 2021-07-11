@@ -34,6 +34,7 @@
 #define DART_GUI_RENDERINTERFACE_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 #include <assimp/scene.h>
 
@@ -42,24 +43,11 @@
 namespace dart {
 namespace gui {
 
-enum DecoBufferType
-{
-  BT_Front,
-  BT_Back
-};
+enum DecoBufferType { BT_Front, BT_Back };
 
-enum DecoColorChannel
-{
-  CC_R,
-  CC_G,
-  CC_B,
-  CC_A,
-  CC_RGB,
-  CC_RGBA
-};
+enum DecoColorChannel { CC_R, CC_G, CC_B, CC_A, CC_RGB, CC_RGBA };
 
-enum DecoDrawType
-{
+enum DecoDrawType {
   DT_WireFrame,
   DT_SolidPolygon,
   DT_FrontPolygon,
@@ -67,14 +55,11 @@ enum DecoDrawType
   DT_Max
 };
 
-class RenderInterface
-{
+class RenderInterface {
 public:
-  RenderInterface()
-  {
+  RenderInterface() {
   }
-  virtual ~RenderInterface()
-  {
+  virtual ~RenderInterface() {
   }
 
   virtual void initialize();

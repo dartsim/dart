@@ -42,8 +42,7 @@ namespace dynamics {
 ///
 /// This class is implementation of Sumit Jain and C. Karen Liu's paper:
 /// http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/projects/softcontacts/index.html
-class SoftBodyNode : public detail::SoftBodyNodeBase
-{
+class SoftBodyNode : public detail::SoftBodyNodeBase {
 public:
   using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
   using Properties = detail::SoftBodyNodeProperties;
@@ -331,8 +330,7 @@ private:
   void updateInertiaWithPointMass();
 };
 
-class SoftBodyNodeHelper
-{
+class SoftBodyNodeHelper {
 public:
   /// Create a Properties struct for a box-shaped SoftBodyNode with 8
   /// PointMasses

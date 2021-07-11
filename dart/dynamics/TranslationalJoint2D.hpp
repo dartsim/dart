@@ -44,8 +44,7 @@ namespace dynamics {
 ///
 /// First and second coordiantes represent the translations along first and
 /// second translational axes, respectively.
-class TranslationalJoint2D : public detail::TranslationalJoint2DBase
-{
+class TranslationalJoint2D : public detail::TranslationalJoint2DBase {
 public:
   friend class Skeleton;
   using PlaneType = detail::PlaneType;

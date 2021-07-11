@@ -41,35 +41,30 @@ namespace detail {
 //==============================================================================
 BulletCollisionDispatcher::BulletCollisionDispatcher(
     btCollisionConfiguration* config)
-  : btCollisionDispatcher(config), mDone(false), mFilter(nullptr)
-{
+  : btCollisionDispatcher(config), mDone(false), mFilter(nullptr) {
   // Do nothing
 }
 
 //==============================================================================
-void BulletCollisionDispatcher::setDone(bool done)
-{
+void BulletCollisionDispatcher::setDone(bool done) {
   mDone = done;
 }
 
 //==============================================================================
 void BulletCollisionDispatcher::setFilter(
-    const std::shared_ptr<CollisionFilter>& filter)
-{
+    const std::shared_ptr<CollisionFilter>& filter) {
   mFilter = filter;
 }
 
 //==============================================================================
 auto BulletCollisionDispatcher::getFilter() const
-    -> std::shared_ptr<CollisionFilter>
-{
+    -> std::shared_ptr<CollisionFilter> {
   return mFilter;
 }
 
 //==============================================================================
 bool BulletCollisionDispatcher::needsCollision(
-    const btCollisionObject* body0, const btCollisionObject* body1)
-{
+    const btCollisionObject* body0, const btCollisionObject* body1) {
   if (mDone)
     return false;
 
@@ -85,5 +80,5 @@ bool BulletCollisionDispatcher::needsCollision(
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

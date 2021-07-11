@@ -45,8 +45,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Mesh final
-{
+class Mesh final {
 public:
   /// Default constructor
   Mesh() = default;

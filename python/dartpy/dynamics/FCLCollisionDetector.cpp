@@ -38,16 +38,14 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void FCLCollisionDetector(py::module& m)
-{
+void FCLCollisionDetector(py::module& m) {
   auto fclCollisionDetector
       = ::py::class_<
             dart::dynamics::FCLCollisionDetector,
             std::shared_ptr<dart::dynamics::FCLCollisionDetector>,
             dart::dynamics::CollisionDetector>(m, "FCLCollisionDetector")
             .def(::py::init(
-                +[]()
-                    -> std::shared_ptr<dart::dynamics::FCLCollisionDetector> {
+                +[]() -> std::shared_ptr<dart::dynamics::FCLCollisionDetector> {
                   return dart::dynamics::FCLCollisionDetector::create();
                 }))
             .def(
@@ -59,7 +57,9 @@ void FCLCollisionDetector(py::module& m)
             .def(
                 "getType",
                 +[](const dart::dynamics::FCLCollisionDetector* self)
-                    -> const std::string& { return self->getType(); },
+                    -> const std::string& {
+                  return self->getType();
+                },
                 ::py::return_value_policy::reference_internal)
             .def(
                 "createCollisionGroup",
@@ -70,8 +70,9 @@ void FCLCollisionDetector(py::module& m)
             .def(
                 "setPrimitiveShapeType",
                 +[](dart::dynamics::FCLCollisionDetector* self,
-                    dart::dynamics::FCLCollisionDetector::PrimitiveShape
-                        type) { self->setPrimitiveShapeType(type); },
+                    dart::dynamics::FCLCollisionDetector::PrimitiveShape type) {
+                  self->setPrimitiveShapeType(type);
+                },
                 ::py::arg("type"))
             .def(
                 "getPrimitiveShapeType",
@@ -106,8 +107,7 @@ void FCLCollisionDetector(py::module& m)
       .value(
           "PRIMITIVE",
           dart::dynamics::FCLCollisionDetector::PrimitiveShape::PRIMITIVE)
-      .value(
-          "MESH", dart::dynamics::FCLCollisionDetector::PrimitiveShape::MESH)
+      .value("MESH", dart::dynamics::FCLCollisionDetector::PrimitiveShape::MESH)
       .export_values();
 
   ::py::enum_<

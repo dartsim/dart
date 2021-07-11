@@ -33,17 +33,16 @@
 #include <dart/dynamics/Inertia.hpp>
 #include <dart/math/Random.hpp>
 #include <gtest/gtest.h>
+
 #include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
 
 //==============================================================================
-TEST(Inertia, Verification)
-{
+TEST(Inertia, Verification) {
   const int numIter = 10;
 
-  for (int i = 0; i < numIter; ++i)
-  {
+  for (int i = 0; i < numIter; ++i) {
     const auto mass = math::Random::uniform<double>(0.1, 10.0);
     const auto com = math::Random::uniform<Eigen::Vector3d>(-5, 5);
     const auto i_xx = math::Random::uniform<double>(0.1, 1);

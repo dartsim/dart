@@ -42,8 +42,7 @@
 namespace dart {
 namespace optimization {
 
-class Function
-{
+class Function {
 public:
   /// Constructor
   explicit Function(const std::string& _name = "function");
@@ -96,8 +95,7 @@ typedef std::function<void(
 /// ModularFunction uses C++11 std::function to allow you to easily swap
 /// out the cost function, gradient function, and Hessian function during
 /// runtime for an optimization::Function instance.
-class ModularFunction : public Function
-{
+class ModularFunction : public Function {
 public:
   /// Constructor
   explicit ModularFunction(const std::string& _name = "modular_function");
@@ -155,8 +153,7 @@ protected:
 };
 
 /// NullFunction is a constant-zero Function
-class NullFunction : public Function
-{
+class NullFunction : public Function {
 public:
   /// Constructor
   explicit NullFunction(const std::string& _name = "null_function");
@@ -180,8 +177,7 @@ public:
 };
 
 /// class MultiFunction
-class MultiFunction
-{
+class MultiFunction {
 public:
   /// Constructor
   MultiFunction();

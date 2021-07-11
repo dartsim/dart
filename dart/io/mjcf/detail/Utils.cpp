@@ -42,53 +42,46 @@ namespace MjcfParser {
 namespace detail {
 
 //==============================================================================
-Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
-{
+Errors checkOrientationValidity(const tinyxml2::XMLElement* element) {
   Errors errors;
 
   std::size_t numOrientationTypes = 0;
   std::string orientationTypes;
 
-  if (hasAttribute(element, "quat"))
-  {
+  if (hasAttribute(element, "quat")) {
     orientationTypes += "quat";
     ++numOrientationTypes;
   }
 
-  if (hasAttribute(element, "axisangle"))
-  {
+  if (hasAttribute(element, "axisangle")) {
     if (not orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "axisangle";
     ++numOrientationTypes;
   }
 
-  if (hasAttribute(element, "euler"))
-  {
+  if (hasAttribute(element, "euler")) {
     if (not orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "euler";
     ++numOrientationTypes;
   }
 
-  if (hasAttribute(element, "xyaxes"))
-  {
+  if (hasAttribute(element, "xyaxes")) {
     if (not orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "xyaxes";
     ++numOrientationTypes;
   }
 
-  if (hasAttribute(element, "zaxis"))
-  {
+  if (hasAttribute(element, "zaxis")) {
     if (not orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "zaxis";
     ++numOrientationTypes;
   }
 
-  if (numOrientationTypes > 1)
-  {
+  if (numOrientationTypes > 1) {
     errors.push_back(Error(
         ErrorCode::ATTRIBUTE_CONFLICT,
         "More than one orientation representations present: "
@@ -105,65 +98,48 @@ Eigen::Matrix3d compileRotation(
     const common::optional<Eigen::Vector3d>& euler,
     const common::optional<Eigen::Vector6d>& xyAxes,
     const common::optional<Eigen::Vector3d>& zAxis,
-    const Compiler& compiler)
-{
+    const Compiler& compiler) {
   Eigen::Matrix3d rot = Eigen::Matrix3d::Identity();
 
-  if (axisAngle)
-  {
+  if (axisAngle) {
     const Eigen::Vector3d axis = axisAngle->head<3>().normalized();
     double angle = (*axisAngle)[3];
-    if (compiler.getAngle() == Angle::DEGREE)
-    {
+    if (compiler.getAngle() == Angle::DEGREE) {
       angle = math::toRadian(angle);
     }
     rot = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
     assert(math::verifyRotation(rot));
-  }
-  else if (euler)
-  {
+  } else if (euler) {
     Eigen::Vector3d angles = *euler;
-    if (compiler.getAngle() == Angle::DEGREE)
-    {
+    if (compiler.getAngle() == Angle::DEGREE) {
       angles[0] = math::toRadian(angles[0]);
       angles[1] = math::toRadian(angles[1]);
       angles[2] = math::toRadian(angles[2]);
     }
 
-    if (compiler.getEulerSeq() == "xyz")
-    {
+    if (compiler.getEulerSeq() == "xyz") {
       rot = math::eulerXYZToMatrix(angles);
       assert(math::verifyRotation(rot));
-    }
-    else if (compiler.getEulerSeq() == "zyx")
-    {
+    } else if (compiler.getEulerSeq() == "zyx") {
       rot = math::eulerZYXToMatrix(angles);
       assert(math::verifyRotation(rot));
-    }
-    else
-    {
+    } else {
       dterr << "[MjcfParser] Unsupported Euler angle sequence: '"
             << compiler.getEulerSeq() << "'. Please report this error. "
             << "This should be an easy fix.\n";
       rot.setIdentity();
     }
-  }
-  else if (xyAxes)
-  {
+  } else if (xyAxes) {
     rot.col(0) = (*xyAxes).head<3>().normalized();                    // X axis
     rot.col(1) = (*xyAxes).tail<3>().normalized();                    // Y axis
     rot.col(2).noalias() = rot.col(0).cross(rot.col(1)).normalized(); // Z axis
     assert(math::verifyRotation(rot));
-  }
-  else if (zAxis)
-  {
+  } else if (zAxis) {
     rot = Eigen::Quaterniond::FromTwoVectors(
               Eigen::Vector3d::UnitZ(), zAxis->normalized())
               .toRotationMatrix();
     assert(math::verifyRotation(rot));
-  }
-  else
-  {
+  } else {
     rot = quat.normalized().toRotationMatrix();
     assert(math::verifyRotation(rot));
   }
@@ -175,36 +151,31 @@ Eigen::Matrix3d compileRotation(
 Errors handleInclude(
     tinyxml2::XMLElement* element,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
-{
+    const common::ResourceRetrieverPtr& retriever) {
   Errors errors;
 
   ElementEnumerator includeElements(element, "include");
-  while (includeElements.next())
-  {
+  while (includeElements.next()) {
     const std::string fileAttribute
         = getAttributeString(includeElements.get(), "file");
     const common::Uri mjcfUri
         = common::Uri::createFromRelativeUri(baseUri, fileAttribute);
     tinyxml2::XMLDocument mjcfDoc;
-    if (not readXmlFile(mjcfDoc, mjcfUri, retriever))
-    {
+    if (not readXmlFile(mjcfDoc, mjcfUri, retriever)) {
       errors.emplace_back(
           ErrorCode::FILE_READ, "Failed to load '" + mjcfUri.toString() + "'.");
     }
 
     // Get root <mujoco> element
     tinyxml2::XMLElement* mujocoElement = mjcfDoc.FirstChildElement("mujoco");
-    if (mujocoElement == nullptr)
-    {
+    if (mujocoElement == nullptr) {
       errors.emplace_back(
           ErrorCode::ELEMENT_MISSING, "Failed to find <mujoco> at the root");
       return errors;
     }
 
     const bool copyResult = copyChildNodes(element, *mujocoElement);
-    if (not copyResult)
-    {
+    if (not copyResult) {
       errors.push_back(
           Error(ErrorCode::FILE_READ, "Failed to handle <include>"));
     }
@@ -215,15 +186,12 @@ Errors handleInclude(
 
 //==============================================================================
 std::vector<dynamics::BodyNode*> getBodyNodes(
-    const simulation::World& world, const std::string& name)
-{
+    const simulation::World& world, const std::string& name) {
   std::vector<dynamics::BodyNode*> bodyNodes;
 
-  for (std::size_t i = 0; i < world.getNumSkeletons(); ++i)
-  {
+  for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
     dynamics::SkeletonPtr skel = world.getSkeleton(i);
-    if (dynamics::BodyNode* bodyNode = skel->getBodyNode(name))
-    {
+    if (dynamics::BodyNode* bodyNode = skel->getBodyNode(name)) {
       bodyNodes.push_back(bodyNode);
     }
   }

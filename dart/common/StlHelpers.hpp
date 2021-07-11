@@ -42,8 +42,7 @@
 // Macro to suppress -Wunused-parameter and -Wunused-variable warnings in
 // release mode when a variable is only used in assertions.
 #define DART_UNUSED(x)                                                         \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
     (void)(x);                                                                 \
   } while (0)
 
@@ -53,8 +52,7 @@ namespace common {
 //==============================================================================
 template <typename T>
 static T getVectorObjectIfAvailable(
-    std::size_t index, const std::vector<T>& vec)
-{
+    std::size_t index, const std::vector<T>& vec) {
   assert(index < vec.size());
   if (index < vec.size())
     return vec[index];

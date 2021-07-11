@@ -50,8 +50,7 @@ namespace render {
 class LineSegmentShapeGeode;
 class LineSegmentShapeDrawable;
 
-class LineSegmentShapeNode : public ShapeNode, public ::osg::Group
-{
+class LineSegmentShapeNode : public ShapeNode, public ::osg::Group {
 public:
   LineSegmentShapeNode(
       std::shared_ptr<dart::dynamics::LineSegmentShape> shape,

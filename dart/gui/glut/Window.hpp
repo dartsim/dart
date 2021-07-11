@@ -43,8 +43,7 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class Window
-{
+class Window {
 public:
   Window();
   virtual ~Window();

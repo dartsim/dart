@@ -43,20 +43,17 @@ OdePlane::OdePlane(
     const OdeCollisionObject* parent,
     const Eigen::Vector3d& normal,
     double offset)
-  : OdeGeom(parent)
-{
+  : OdeGeom(parent) {
   mGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), offset);
 }
 
 //==============================================================================
-OdePlane::~OdePlane()
-{
+OdePlane::~OdePlane() {
   dGeomDestroy(mGeomId);
 }
 
 //==============================================================================
-void OdePlane::updateEngineData()
-{
+void OdePlane::updateEngineData() {
   const Eigen::Isometry3d& tf = mParentCollisionObject->getTransform();
   const Eigen::Vector3d pos = tf.translation();
   const Eigen::Matrix3d rot = tf.linear();
@@ -73,11 +70,10 @@ void OdePlane::updateEngineData()
 }
 
 //==============================================================================
-bool OdePlane::isPlaceable() const
-{
+bool OdePlane::isPlaceable() const {
   return false;
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

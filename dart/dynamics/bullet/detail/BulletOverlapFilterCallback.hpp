@@ -34,10 +34,9 @@
 #define DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
 
+#include "dart/config.hpp"
 #include "dart/dynamics/CollisionOption.hpp"
 #include "dart/dynamics/CollisionResult.hpp"
 
@@ -45,8 +44,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-struct BulletOverlapFilterCallback : public btOverlapFilterCallback
-{
+struct BulletOverlapFilterCallback : public btOverlapFilterCallback {
   // Constructor
   explicit BulletOverlapFilterCallback(
       const std::shared_ptr<CollisionFilter>& filter = nullptr,
@@ -70,7 +68,7 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 };
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_

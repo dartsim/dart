@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Chain(py::module& m)
-{
+void Chain(py::module& m) {
   ::py::class_<
       dart::dynamics::Chain,
       dart::dynamics::Linkage,
@@ -134,9 +134,10 @@ void Chain(py::module& m)
             return self->cloneMetaSkeleton(cloneName);
           },
           ::py::arg("cloneName"))
-      .def("isStillChain", +[](const dart::dynamics::Chain* self) -> bool {
-        return self->isStillChain();
-      });
+      .def(
+          "isStillChain", +[](const dart::dynamics::Chain* self) -> bool {
+            return self->isStillChain();
+          });
 
   ::py::class_<dart::dynamics::Chain::Criteria>(m, "ChainCriteria")
       .def(
@@ -160,7 +161,9 @@ void Chain(py::module& m)
       .def(
           "convert",
           +[](const dart::dynamics::Chain::Criteria* self)
-              -> dart::dynamics::Linkage::Criteria { return self->convert(); })
+              -> dart::dynamics::Linkage::Criteria {
+            return self->convert();
+          })
       .def_static(
           "static_convert",
           +[](const dart::dynamics::Linkage::Criteria& criteria)

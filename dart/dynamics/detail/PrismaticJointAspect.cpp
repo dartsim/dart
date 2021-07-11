@@ -39,8 +39,7 @@ namespace detail {
 //==============================================================================
 PrismaticJointUniqueProperties::PrismaticJointUniqueProperties(
     const Eigen::Vector3d& _axis)
-  : mAxis(_axis.normalized())
-{
+  : mAxis(_axis.normalized()) {
   // Do nothing
 }
 
@@ -49,8 +48,7 @@ PrismaticJointProperties::PrismaticJointProperties(
     const GenericJoint<math::R1Space>::Properties& genericJointProperties,
     const PrismaticJointUniqueProperties& prismaticProperties)
   : GenericJoint<math::R1Space>::Properties(genericJointProperties),
-    PrismaticJointUniqueProperties(prismaticProperties)
-{
+    PrismaticJointUniqueProperties(prismaticProperties) {
   // Do nothing
 }
 

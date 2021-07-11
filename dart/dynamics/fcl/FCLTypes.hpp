@@ -34,13 +34,13 @@
 #define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
 #include <Eigen/Dense>
+
 #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class FCLTypes
-{
+class FCLTypes {
 public:
 #if !FCL_VERSION_AT_LEAST(0, 6, 0)
   /// Convert Eigen vector3 type to FCL vector3 type
@@ -60,7 +60,7 @@ public:
       const Eigen::Isometry3d& _T);
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_FCL_FCLTTYPES_HPP_

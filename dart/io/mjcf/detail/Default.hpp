@@ -50,8 +50,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Default final
-{
+class Default final {
 public:
   /// Default constructor
   Default() = default;
@@ -76,8 +75,7 @@ private:
   WeldAttributes mWeldAttributes;
 };
 
-class Defaults
-{
+class Defaults {
 public:
   bool hasDefault(const std::string& className) const;
   const Default* getDefault(const std::string& className) const;

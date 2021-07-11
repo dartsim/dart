@@ -45,8 +45,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Equality final
-{
+class Equality final {
 public:
   Equality() = default;
 

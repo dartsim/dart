@@ -35,14 +35,11 @@
 
 #include <dart/dart.hpp>
 
-class MyWindow : public dart::gui::glut::SimWindow
-{
+class MyWindow : public dart::gui::glut::SimWindow {
 public:
-  MyWindow() : SimWindow()
-  {
+  MyWindow() : SimWindow() {
   }
-  virtual ~MyWindow()
-  {
+  virtual ~MyWindow() {
   }
 
   void timeStepping() override;

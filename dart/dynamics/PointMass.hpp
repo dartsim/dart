@@ -34,7 +34,9 @@
 #define DART_DYNAMICS_POINTMASS_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
+
 #include "dart/dynamics/Entity.hpp"
 #include "dart/math/Helpers.hpp"
 
@@ -47,14 +49,12 @@ class SoftBodyNode;
 class PointMassNotifier;
 
 ///
-class PointMass : public common::Subject
-{
+class PointMass : public common::Subject {
 public:
   friend class SoftBodyNode;
 
   /// State for each PointMass
-  struct State
-  {
+  struct State {
     /// Position
     Eigen::Vector3d mPositions;
 
@@ -80,8 +80,7 @@ public:
   };
 
   /// Properties for each PointMass
-  struct Properties
-  {
+  struct Properties {
     /// Resting position viewed in the parent SoftBodyNode frame
     Eigen::Vector3d mX0;
 
@@ -669,8 +668,7 @@ protected:
 //  PointMass* pm2;
 //};
 
-class PointMassNotifier : public Entity
-{
+class PointMassNotifier : public Entity {
 public:
   PointMassNotifier(SoftBodyNode* _parentSoftBody, const std::string& _name);
 

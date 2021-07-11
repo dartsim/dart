@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_RENDER_WARNINGSHAPENODE_HPP_
 
 #include <memory>
+
 #include <osg/Node>
 
 #include "dart/gui/osg/render/ShapeNode.hpp"
@@ -43,8 +44,7 @@ namespace gui {
 namespace osg {
 namespace render {
 
-class WarningShapeNode : public ShapeNode, public ::osg::Node
-{
+class WarningShapeNode : public ShapeNode, public ::osg::Node {
 public:
   WarningShapeNode(
       std::shared_ptr<dart::dynamics::Shape> shape, ShapeFrameNode* parent);

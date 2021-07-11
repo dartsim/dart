@@ -38,8 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class BoxShape : public Shape
-{
+class BoxShape : public Shape {
 public:
   /// \brief Constructor.
   explicit BoxShape(const Eigen::Vector3d& _size);

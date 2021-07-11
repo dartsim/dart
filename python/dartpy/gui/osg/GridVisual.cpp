@@ -41,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void GridVisual(py::module& m)
-{
+void GridVisual(py::module& m) {
   ::py::class_<
       dart::gui::osg::GridVisual,
       dart::gui::osg::ViewerAttachment,

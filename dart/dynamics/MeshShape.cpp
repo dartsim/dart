@@ -62,12 +62,10 @@ aiScene::aiScene()
     mNumLights(0),
     mLights(nullptr),
     mNumCameras(0),
-    mCameras(nullptr)
-{
+    mCameras(nullptr) {
 }
 
-aiScene::~aiScene()
-{
+aiScene::~aiScene() {
   delete mRootNode;
 
   if (mNumMeshes && mMeshes)
@@ -105,8 +103,7 @@ aiScene::~aiScene()
 // We define our own constructor and destructor for aiMaterial, because it seems
 // to be missing from the standard assimp library (see #451)
 #if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-aiMaterial::aiMaterial()
-{
+aiMaterial::aiMaterial() {
   mNumProperties = 0;
   mNumAllocated = 5;
   mProperties = new aiMaterialProperty*[5];
@@ -114,8 +111,7 @@ aiMaterial::aiMaterial()
     mProperties[i] = nullptr;
 }
 
-aiMaterial::~aiMaterial()
-{
+aiMaterial::~aiMaterial() {
   for (std::size_t i = 0; i < mNumProperties; ++i)
     delete mProperties[i];
 
@@ -136,64 +132,54 @@ MeshShape::MeshShape(
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
     mAlphaMode(BLEND),
-    mColorIndex(0)
-{
+    mColorIndex(0) {
   setMesh(mesh, path, std::move(resourceRetriever));
   setScale(scale);
 }
 
 //==============================================================================
-MeshShape::~MeshShape()
-{
+MeshShape::~MeshShape() {
   aiReleaseImport(mMesh);
 }
 
 //==============================================================================
-const std::string& MeshShape::getType() const
-{
+const std::string& MeshShape::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& MeshShape::getStaticType()
-{
+const std::string& MeshShape::getStaticType() {
   static const std::string type("MeshShape");
   return type;
 }
 
 //==============================================================================
-const aiScene* MeshShape::getMesh() const
-{
+const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
 
 //==============================================================================
-std::string MeshShape::getMeshUri() const
-{
+std::string MeshShape::getMeshUri() const {
   return mMeshUri.toString();
 }
 
 //==============================================================================
-const common::Uri& MeshShape::getMeshUri2() const
-{
+const common::Uri& MeshShape::getMeshUri2() const {
   return mMeshUri;
 }
 
 //==============================================================================
-void MeshShape::update()
-{
+void MeshShape::update() {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& MeshShape::getMeshPath() const
-{
+const std::string& MeshShape::getMeshPath() const {
   return mMeshPath;
 }
 
 //==============================================================================
-common::ResourceRetrieverPtr MeshShape::getResourceRetriever()
-{
+common::ResourceRetrieverPtr MeshShape::getResourceRetriever() {
   return mResourceRetriever;
 }
 
@@ -201,8 +187,7 @@ common::ResourceRetrieverPtr MeshShape::getResourceRetriever()
 void MeshShape::setMesh(
     const aiScene* mesh,
     const std::string& path,
-    common::ResourceRetrieverPtr resourceRetriever)
-{
+    common::ResourceRetrieverPtr resourceRetriever) {
   setMesh(mesh, common::Uri(path), std::move(resourceRetriever));
 }
 
@@ -210,12 +195,10 @@ void MeshShape::setMesh(
 void MeshShape::setMesh(
     const aiScene* mesh,
     const common::Uri& uri,
-    common::ResourceRetrieverPtr resourceRetriever)
-{
+    common::ResourceRetrieverPtr resourceRetriever) {
   mMesh = mesh;
 
-  if (!mMesh)
-  {
+  if (!mMesh) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
@@ -235,8 +218,7 @@ void MeshShape::setMesh(
 }
 
 //==============================================================================
-void MeshShape::setScale(const Eigen::Vector3d& scale)
-{
+void MeshShape::setScale(const Eigen::Vector3d& scale) {
   assert((scale.array() > 0.0).all());
 
   mScale = scale;
@@ -247,71 +229,59 @@ void MeshShape::setScale(const Eigen::Vector3d& scale)
 }
 
 //==============================================================================
-const Eigen::Vector3d& MeshShape::getScale() const
-{
+const Eigen::Vector3d& MeshShape::getScale() const {
   return mScale;
 }
 
 //==============================================================================
-void MeshShape::setColorMode(ColorMode mode)
-{
+void MeshShape::setColorMode(ColorMode mode) {
   mColorMode = mode;
 }
 
 //==============================================================================
-MeshShape::ColorMode MeshShape::getColorMode() const
-{
+MeshShape::ColorMode MeshShape::getColorMode() const {
   return mColorMode;
 }
 
 //==============================================================================
-void MeshShape::setAlphaMode(MeshShape::AlphaMode mode)
-{
+void MeshShape::setAlphaMode(MeshShape::AlphaMode mode) {
   mAlphaMode = mode;
 }
 
 //==============================================================================
-MeshShape::AlphaMode MeshShape::getAlphaMode() const
-{
+MeshShape::AlphaMode MeshShape::getAlphaMode() const {
   return mAlphaMode;
 }
 
 //==============================================================================
-void MeshShape::setColorIndex(int index)
-{
+void MeshShape::setColorIndex(int index) {
   mColorIndex = index;
 }
 
 //==============================================================================
-int MeshShape::getColorIndex() const
-{
+int MeshShape::getColorIndex() const {
   return mColorIndex;
 }
 
 //==============================================================================
-int MeshShape::getDisplayList() const
-{
+int MeshShape::getDisplayList() const {
   return mDisplayList;
 }
 
 //==============================================================================
-void MeshShape::setDisplayList(int index)
-{
+void MeshShape::setDisplayList(int index) {
   mDisplayList = index;
 }
 
 //==============================================================================
-Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
-{
+Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
   // Use bounding box to represent the mesh
   return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), _mass);
 }
 
 //==============================================================================
-void MeshShape::updateBoundingBox() const
-{
-  if (!mMesh)
-  {
+void MeshShape::updateBoundingBox() const {
+  if (!mMesh) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -325,10 +295,8 @@ void MeshShape::updateBoundingBox() const
   double min_Y = std::numeric_limits<double>::infinity();
   double min_Z = std::numeric_limits<double>::infinity();
 
-  for (unsigned int i = 0; i < mMesh->mNumMeshes; i++)
-  {
-    for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++)
-    {
+  for (unsigned int i = 0; i < mMesh->mNumMeshes; i++) {
+    for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++) {
       if (mMesh->mMeshes[i]->mVertices[j].x > max_X)
         max_X = mMesh->mMeshes[i]->mVertices[j].x;
       if (mMesh->mMeshes[i]->mVertices[j].x < min_X)
@@ -352,8 +320,7 @@ void MeshShape::updateBoundingBox() const
 }
 
 //==============================================================================
-void MeshShape::updateVolume() const
-{
+void MeshShape::updateVolume() const {
   const Eigen::Vector3d bounds = getBoundingBox().computeFullExtents();
   mVolume = bounds.x() * bounds.y() * bounds.z();
   mIsVolumeDirty = false;
@@ -361,8 +328,7 @@ void MeshShape::updateVolume() const
 
 //==============================================================================
 const aiScene* MeshShape::loadMesh(
-    const std::string& _uri, const common::ResourceRetrieverPtr& retriever)
-{
+    const std::string& _uri, const common::ResourceRetrieverPtr& retriever) {
   // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   aiSetImportPropertyInteger(
@@ -387,8 +353,7 @@ const aiScene* MeshShape::loadMesh(
 
   // If succeeded, store the importer in the scene to keep it alive. This is
   // necessary because the importer owns the memory that it allocates.
-  if (!scene)
-  {
+  if (!scene) {
     dtwarn << "[MeshShape::loadMesh] Failed loading mesh '" << _uri << "'.\n";
     aiReleasePropertyStore(propertyStore);
     return nullptr;
@@ -426,14 +391,12 @@ const aiScene* MeshShape::loadMesh(
 
 //==============================================================================
 const aiScene* MeshShape::loadMesh(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
-{
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever) {
   return loadMesh(uri.toString(), retriever);
 }
 
 //==============================================================================
-const aiScene* MeshShape::loadMesh(const std::string& filePath)
-{
+const aiScene* MeshShape::loadMesh(const std::string& filePath) {
   const auto retriever = std::make_shared<common::LocalResourceRetriever>();
   return loadMesh("file://" + filePath, retriever);
 }

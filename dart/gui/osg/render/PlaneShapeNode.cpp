@@ -30,23 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/PlaneShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/PlaneShapeNode.hpp"
-
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
 namespace osg {
 namespace render {
 
-class PlaneShapeGeode : public ShapeNode, public ::osg::Geode
-{
+class PlaneShapeGeode : public ShapeNode, public ::osg::Geode {
 public:
   PlaneShapeGeode(
       dart::dynamics::PlaneShape* shape,
@@ -64,8 +63,7 @@ protected:
 };
 
 //==============================================================================
-class PlaneShapeDrawable : public ::osg::ShapeDrawable
-{
+class PlaneShapeDrawable : public ::osg::ShapeDrawable {
 public:
   PlaneShapeDrawable(
       dart::dynamics::PlaneShape* shape,
@@ -85,15 +83,13 @@ protected:
 //==============================================================================
 PlaneShapeNode::PlaneShapeNode(
     std::shared_ptr<dart::dynamics::PlaneShape> shape, ShapeFrameNode* parent)
-  : ShapeNode(shape, parent, this), mPlaneShape(shape), mGeode(nullptr)
-{
+  : ShapeNode(shape, parent, this), mPlaneShape(shape), mGeode(nullptr) {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 }
 
 //==============================================================================
-void PlaneShapeNode::refresh()
-{
+void PlaneShapeNode::refresh() {
   mUtilized = true;
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -105,10 +101,8 @@ void PlaneShapeNode::refresh()
 }
 
 //==============================================================================
-void PlaneShapeNode::extractData(bool /*firstTime*/)
-{
-  if (nullptr == mGeode)
-  {
+void PlaneShapeNode::extractData(bool /*firstTime*/) {
+  if (nullptr == mGeode) {
     mGeode
         = new PlaneShapeGeode(mPlaneShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -119,8 +113,7 @@ void PlaneShapeNode::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-PlaneShapeNode::~PlaneShapeNode()
-{
+PlaneShapeNode::~PlaneShapeNode() {
   // Do nothing
 }
 
@@ -131,8 +124,7 @@ PlaneShapeGeode::PlaneShapeGeode(
     PlaneShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mPlaneShape(shape),
-    mDrawable(nullptr)
-{
+    mDrawable(nullptr) {
   getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
@@ -141,18 +133,15 @@ PlaneShapeGeode::PlaneShapeGeode(
 }
 
 //==============================================================================
-void PlaneShapeGeode::refresh()
-{
+void PlaneShapeGeode::refresh() {
   mUtilized = true;
 
   extractData();
 }
 
 //==============================================================================
-void PlaneShapeGeode::extractData()
-{
-  if (nullptr == mDrawable)
-  {
+void PlaneShapeGeode::extractData() {
+  if (nullptr == mDrawable) {
     mDrawable = new PlaneShapeDrawable(mPlaneShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
@@ -162,8 +151,7 @@ void PlaneShapeGeode::extractData()
 }
 
 //==============================================================================
-PlaneShapeGeode::~PlaneShapeGeode()
-{
+PlaneShapeGeode::~PlaneShapeGeode() {
   // Do nothing
 }
 
@@ -172,22 +160,19 @@ PlaneShapeDrawable::PlaneShapeDrawable(
     dart::dynamics::PlaneShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     PlaneShapeGeode* parent)
-  : mPlaneShape(shape), mVisualAspect(visualAspect), mParent(parent)
-{
+  : mPlaneShape(shape), mVisualAspect(visualAspect), mParent(parent) {
   refresh(true);
 }
 
 //==============================================================================
-void PlaneShapeDrawable::refresh(bool firstTime)
-{
+void PlaneShapeDrawable::refresh(bool firstTime) {
   if (mPlaneShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     const Eigen::Vector3d& n = mPlaneShape->getNormal();
     const Eigen::Vector3d& p = mPlaneShape->getOffset() * n;
     ::osg::ref_ptr<::osg::InfinitePlane> osg_shape = new ::osg::InfinitePlane;
@@ -199,15 +184,13 @@ void PlaneShapeDrawable::refresh(bool firstTime)
   }
 
   if (mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
   }
 }
 
 //==============================================================================
-PlaneShapeDrawable::~PlaneShapeDrawable()
-{
+PlaneShapeDrawable::~PlaneShapeDrawable() {
   // Do nothing
 }
 

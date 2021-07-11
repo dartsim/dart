@@ -17,27 +17,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-focal, ubuntu-hirsute]
+        os: [ubuntu-bionic, ubuntu-hirsute]
         platform: [linux/amd64]
         build_type: [Release]
         codecov: [OFF]
+        check_format: [OFF]
+        num_cores: [MAX]
         include:
-          - os: ubuntu-bionic
+          - os: ubuntu-focal
             platform: linux/amd64
             build_type: Debug
             codecov: ON
-          - os: ubuntu-bionic
+            check_format: ON
+            num_cores: MAX
+          - os: ubuntu-focal
             platform: linux/amd64
             build_type: Release
             codecov: OFF
-          - os: ubuntu-bionic
+            check_format: ON
+            num_cores: MAX
+          - os: ubuntu-focal
             platform: linux/arm64
             build_type: Release
             codecov: OFF
-          - os: ubuntu-bionic
+            check_format: OFF
+            num_cores: MAX
+          - os: ubuntu-focal
             platform: linux/ppc64le
             build_type: Release
             codecov: OFF
+            check_format: OFF
+            num_cores: MAX
     env:
       # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
       DART_DEV_IMAGE: dartsim/dart-dev
@@ -47,6 +57,8 @@ jobs:
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: "${{ matrix.build_type == 'Debug' && 'OFF' || 'ON' }}"
       CODECOV: ${{ matrix.codecov }}
+      CHECK_FORMAT: ${{ matrix.check_format }}
+      NUM_CORES: ${{ matrix.num_cores }}
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU

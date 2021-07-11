@@ -41,8 +41,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class OdeCapsule : public OdeGeom
-{
+class OdeCapsule : public OdeGeom {
 public:
   /// Constructor
   OdeCapsule(const OdeCollisionObject* parent, double radius, double height);
@@ -52,7 +51,7 @@ public:
 };
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_DETAIL_ODECAPSULE_HPP_

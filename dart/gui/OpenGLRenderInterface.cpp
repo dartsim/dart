@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/OpenGLRenderInterface.hpp"
+
 #include <iostream>
+
 #include <assimp/cimport.h>
 
 #include "dart/common/Console.hpp"
@@ -44,7 +47,6 @@
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
-#include "dart/gui/OpenGLRenderInterface.hpp"
 #include "dart/math/geometry/Icosphere.hpp"
 
 // Code taken from glut/lib/glut_shapes.c
@@ -56,8 +58,7 @@ static GLUquadricObj* quadObj;
       initQuadObj();                                                           \
   }
 
-static void initQuadObj(void)
-{
+static void initQuadObj(void) {
   quadObj = gluNewQuadric();
   if (!quadObj)
     // DART modified error output
@@ -68,8 +69,7 @@ static void initQuadObj(void)
 namespace dart {
 namespace gui {
 
-void OpenGLRenderInterface::initialize()
-{
+void OpenGLRenderInterface::initialize() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   glMatrixMode(GL_PROJECTION);
@@ -82,12 +82,11 @@ void OpenGLRenderInterface::initialize()
   clear(Eigen::Vector3d(1.0, 1.0, 1.0));
 }
 
-void OpenGLRenderInterface::destroy()
-{
+void OpenGLRenderInterface::destroy() {
 }
 
-void OpenGLRenderInterface::setViewport(int _x, int _y, int _width, int _height)
-{
+void OpenGLRenderInterface::setViewport(
+    int _x, int _y, int _width, int _height) {
   glViewport(_x, _y, _width, _height);
   mViewportX = _x;
   mViewportY = _y;
@@ -96,16 +95,14 @@ void OpenGLRenderInterface::setViewport(int _x, int _y, int _width, int _height)
 }
 
 void OpenGLRenderInterface::getViewport(
-    int& _x, int& _y, int& _width, int& _height) const
-{
+    int& _x, int& _y, int& _width, int& _height) const {
   _x = mViewportX;
   _y = mViewportY;
   _width = mViewportWidth;
   _height = mViewportHeight;
 }
 
-void OpenGLRenderInterface::clear(const Eigen::Vector3d& _color)
-{
+void OpenGLRenderInterface::clear(const Eigen::Vector3d& _color) {
   glClearColor((GLfloat)_color[0], (GLfloat)_color[1], (GLfloat)_color[2], 1.0);
   glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -113,63 +110,51 @@ void OpenGLRenderInterface::clear(const Eigen::Vector3d& _color)
 void OpenGLRenderInterface::setMaterial(
     const Eigen::Vector3d& /*_diffuse*/,
     const Eigen::Vector3d& /*_specular*/,
-    double /*_cosinePow*/)
-{
+    double /*_cosinePow*/) {
 }
 
 void OpenGLRenderInterface::getMaterial(
     Eigen::Vector3d& /*_diffuse*/,
     Eigen::Vector3d& /*_specular*/,
-    double& /*_cosinePow*/) const
-{
+    double& /*_cosinePow*/) const {
 }
 
-void OpenGLRenderInterface::setDefaultMaterial()
-{
+void OpenGLRenderInterface::setDefaultMaterial() {
 }
 
-void OpenGLRenderInterface::pushMatrix()
-{
+void OpenGLRenderInterface::pushMatrix() {
   glPushMatrix();
 }
 
-void OpenGLRenderInterface::popMatrix()
-{
+void OpenGLRenderInterface::popMatrix() {
   glPopMatrix();
 }
 
-void OpenGLRenderInterface::pushName(int _id)
-{
+void OpenGLRenderInterface::pushName(int _id) {
   glPushName(_id);
 }
 
-void OpenGLRenderInterface::popName()
-{
+void OpenGLRenderInterface::popName() {
   glPopName();
 }
 
-void OpenGLRenderInterface::translate(const Eigen::Vector3d& _offset)
-{
+void OpenGLRenderInterface::translate(const Eigen::Vector3d& _offset) {
   glTranslated(_offset[0], _offset[1], _offset[2]);
 }
 
-void OpenGLRenderInterface::rotate(const Eigen::Vector3d& _axis, double _rad)
-{
+void OpenGLRenderInterface::rotate(const Eigen::Vector3d& _axis, double _rad) {
   glRotated(_rad, _axis[0], _axis[1], _axis[2]);
 }
 
-void OpenGLRenderInterface::transform(const Eigen::Isometry3d& _transform)
-{
+void OpenGLRenderInterface::transform(const Eigen::Isometry3d& _transform) {
   glMultMatrixd(_transform.data());
 }
 
-void OpenGLRenderInterface::scale(const Eigen::Vector3d& _scale)
-{
+void OpenGLRenderInterface::scale(const Eigen::Vector3d& _scale) {
   glScaled(_scale[0], _scale[1], _scale[2]);
 }
 
-void OpenGLRenderInterface::drawSphere(double radius, int slices, int stacks)
-{
+void OpenGLRenderInterface::drawSphere(double radius, int slices, int stacks) {
   // Code taken from glut/lib/glut_shapes.c
   QUAD_OBJ_INIT;
   gluQuadricDrawStyle(quadObj, GLU_FILL);
@@ -184,8 +169,7 @@ void drawOpenCylinderConnectingTwoSpheres(
     const std::pair<double, Eigen::Vector3d>& sphere0,
     const std::pair<double, Eigen::Vector3d>& sphere1,
     int slices,
-    int stacks)
-{
+    int stacks) {
   const auto& r0 = sphere0.first;
   const auto& r1 = sphere1.first;
   const Eigen::Vector3d& p0 = sphere0.second;
@@ -226,11 +210,9 @@ void drawOpenCylinderConnectingTwoSpheres(
 void OpenGLRenderInterface::drawMultiSphere(
     const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
     int slices,
-    int stacks)
-{
+    int stacks) {
   // Draw spheres
-  for (const auto& sphere : spheres)
-  {
+  for (const auto& sphere : spheres) {
     glPushMatrix();
     {
       glTranslated(sphere.second.x(), sphere.second.y(), sphere.second.z());
@@ -242,12 +224,10 @@ void OpenGLRenderInterface::drawMultiSphere(
 
 void OpenGLRenderInterface::drawMultiSphereConvexHull(
     const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
-    std::size_t subdivisions)
-{
+    std::size_t subdivisions) {
   // Create meshes of sphere and combine them into a single mesh
   auto mesh = math::TriMeshf();
-  for (const auto& sphere : spheres)
-  {
+  for (const auto& sphere : spheres) {
     const double& radius = sphere.first;
     const Eigen::Vector3d& center = sphere.second;
 
@@ -267,10 +247,8 @@ void OpenGLRenderInterface::drawMultiSphereConvexHull(
 
   // Draw the triangles of the convex hull
   glBegin(GL_TRIANGLES);
-  for (const auto& triangle : meshTriangles)
-  {
-    for (auto i = 0u; i < 3; ++i)
-    {
+  for (const auto& triangle : meshTriangles) {
+    for (auto i = 0u; i < 3; ++i) {
       const auto& normal = meshNormals[triangle[i]];
       const auto& vertex = meshVertices[triangle[i]];
       glNormal3fv(normal.data());
@@ -280,15 +258,13 @@ void OpenGLRenderInterface::drawMultiSphereConvexHull(
   glEnd();
 }
 
-void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters)
-{
+void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters) {
   glScaled(_diameters(0), _diameters(1), _diameters(2));
 
   drawSphere(0.5);
 }
 
-void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size)
-{
+void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size) {
   glScaled(_size(0), _size(1), _size(2));
 
   // Code taken from glut/lib/glut_shapes.c
@@ -315,8 +291,7 @@ void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size)
   v[0][2] = v[3][2] = v[4][2] = v[7][2] = -size / 2;
   v[1][2] = v[2][2] = v[5][2] = v[6][2] = size / 2;
 
-  for (i = 5; i >= 0; i--)
-  {
+  for (i = 5; i >= 0; i--) {
     glBegin(GL_QUADS);
     glNormal3fv(&n[i][0]);
     glVertex3fv(&v[faces[i][0]][0]);
@@ -330,8 +305,11 @@ void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size)
 
 //==============================================================================
 void OpenGLRenderInterface::drawOpenCylinder(
-    double baseRadius, double topRadius, double height, int slices, int stacks)
-{
+    double baseRadius,
+    double topRadius,
+    double height,
+    int slices,
+    int stacks) {
   glPushMatrix();
 
   // Graphics assumes Cylinder is centered at CoM
@@ -352,8 +330,7 @@ void OpenGLRenderInterface::drawOpenCylinder(
 
 //==============================================================================
 void OpenGLRenderInterface::drawCylinder(
-    double radius, double height, int slices, int stacks)
-{
+    double radius, double height, int slices, int stacks) {
   drawOpenCylinder(radius, radius, height, slices, stacks);
 
   glPushMatrix();
@@ -374,8 +351,7 @@ void OpenGLRenderInterface::drawCylinder(
 }
 
 //==============================================================================
-static void drawOpenDome(double radius, int slices, int stacks)
-{
+static void drawOpenDome(double radius, int slices, int stacks) {
   // (2pi/Stacks)
   const auto pi = dart::math::constants<double>::pi();
   const auto drho = pi / stacks / 2.0;
@@ -391,8 +367,7 @@ static void drawOpenDome(double radius, int slices, int stacks)
   glBegin(GL_TRIANGLE_FAN);
   glNormal3d(0.0, 0.0, radius);
   glVertex3d(0.0, 0.0, radius);
-  for (int j = 0; j <= slices; ++j)
-  {
+  for (int j = 0; j <= slices; ++j) {
     const auto theta = (j == slices) ? 0.0 : j * dtheta;
     const auto stheta = -std::sin(theta);
     const auto ctheta = std::cos(theta);
@@ -406,8 +381,7 @@ static void drawOpenDome(double radius, int slices, int stacks)
   }
   glEnd();
 
-  for (int i = 1; i < stacks; ++i)
-  {
+  for (int i = 1; i < stacks; ++i) {
     const auto rho = i * drho;
     const auto srho = std::sin(rho);
     const auto crho = std::cos(rho);
@@ -419,8 +393,7 @@ static void drawOpenDome(double radius, int slices, int stacks)
     // artifacts at the poles on some OpenGL implementations
     glBegin(GL_TRIANGLE_STRIP);
 
-    for (int j = 0; j <= slices; ++j)
-    {
+    for (int j = 0; j <= slices; ++j) {
       const auto theta = (j == slices) ? 0.0 : j * dtheta;
       const auto stheta = -std::sin(theta);
       const auto ctheta = std::cos(theta);
@@ -444,8 +417,7 @@ static void drawOpenDome(double radius, int slices, int stacks)
 }
 
 //==============================================================================
-void OpenGLRenderInterface::drawCapsule(double radius, double height)
-{
+void OpenGLRenderInterface::drawCapsule(double radius, double height) {
   GLint slices = 16;
   GLint stacks = 16;
 
@@ -477,8 +449,7 @@ void OpenGLRenderInterface::drawCapsule(double radius, double height)
 }
 
 //==============================================================================
-void OpenGLRenderInterface::drawCone(double radius, double height)
-{
+void OpenGLRenderInterface::drawCone(double radius, double height) {
   GLint slices = 16;
   GLint stacks = 16;
 
@@ -500,15 +471,13 @@ void OpenGLRenderInterface::drawCone(double radius, double height)
 Eigen::Vector3d computeNormal(
     const Eigen::Vector3d& v1,
     const Eigen::Vector3d& v2,
-    const Eigen::Vector3d& v3)
-{
+    const Eigen::Vector3d& v3) {
   return (v1 - v2).cross(v2 - v3).normalized();
 }
 
 //==============================================================================
 void OpenGLRenderInterface::drawPyramid(
-    double baseWidth, double baseDepth, double height)
-{
+    double baseWidth, double baseDepth, double height) {
   const double w = baseWidth;
   const double d = baseDepth;
   const double h = height;
@@ -537,8 +506,7 @@ void OpenGLRenderInterface::drawPyramid(
   faces[5] << 1, 4, 3;
 
   glBegin(GL_TRIANGLES);
-  for (const auto& face : faces)
-  {
+  for (const auto& face : faces) {
     const auto& p1 = points[static_cast<size_t>(face[0])];
     const auto& p2 = points[static_cast<size_t>(face[1])];
     const auto& p3 = points[static_cast<size_t>(face[2])];
@@ -552,8 +520,7 @@ void OpenGLRenderInterface::drawPyramid(
   glEnd();
 }
 
-void OpenGLRenderInterface::color4_to_float4(const aiColor4D* c, float f[4])
-{
+void OpenGLRenderInterface::color4_to_float4(const aiColor4D* c, float f[4]) {
   f[0] = c->r;
   f[1] = c->g;
   f[2] = c->b;
@@ -561,8 +528,7 @@ void OpenGLRenderInterface::color4_to_float4(const aiColor4D* c, float f[4])
 }
 
 void OpenGLRenderInterface::set_float4(
-    float f[4], float a, float b, float c, float d)
-{
+    float f[4], float a, float b, float c, float d) {
   f[0] = a;
   f[1] = b;
   f[2] = c;
@@ -570,8 +536,7 @@ void OpenGLRenderInterface::set_float4(
 }
 
 // This function is taken from the examples coming with assimp
-void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
-{
+void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl) {
   float c[4];
 
   GLenum fill_mode;
@@ -609,8 +574,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
 
   max = 1;
   ret1 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shininess, &max);
-  if (ret1 == AI_SUCCESS)
-  {
+  if (ret1 == AI_SUCCESS) {
     max = 1;
     const int ret2 = aiGetMaterialFloatArray(
         mtl, AI_MATKEY_SHININESS_STRENGTH, &strength, &max);
@@ -618,9 +582,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
       glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess * strength);
     else
       glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-  }
-  else
-  {
+  } else {
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
     set_float4(c, 0.0f, 0.0f, 0.0f, 0.0f);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
@@ -629,7 +591,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
   max = 1;
   if (AI_SUCCESS
       == aiGetMaterialIntegerArray(
-             mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
+          mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
     fill_mode = wireframe ? GL_LINE : GL_FILL;
   else
     fill_mode = GL_FILL;
@@ -646,8 +608,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
 
 // This function is taken from the examples coming with assimp
 void OpenGLRenderInterface::recursiveRender(
-    const struct aiScene* sc, const struct aiNode* nd)
-{
+    const struct aiScene* sc, const struct aiNode* nd) {
   unsigned int i;
   unsigned int n = 0, t;
   aiMatrix4x4 m = nd->mTransformation;
@@ -658,8 +619,7 @@ void OpenGLRenderInterface::recursiveRender(
   glMultMatrixf((float*)&m);
 
   // draw all meshes assigned to this node
-  for (; n < nd->mNumMeshes; ++n)
-  {
+  for (; n < nd->mNumMeshes; ++n) {
     const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 
     glPushAttrib(GL_POLYGON_BIT | GL_LIGHTING_BIT); // for applyMaterial()
@@ -667,22 +627,17 @@ void OpenGLRenderInterface::recursiveRender(
         != (unsigned int)(-1)) // -1 is being used by us to indicate no material
       applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
 
-    if (mesh->mNormals == nullptr)
-    {
+    if (mesh->mNormals == nullptr) {
       glDisable(GL_LIGHTING);
-    }
-    else
-    {
+    } else {
       glEnable(GL_LIGHTING);
     }
 
-    for (t = 0; t < mesh->mNumFaces; ++t)
-    {
+    for (t = 0; t < mesh->mNumFaces; ++t) {
       const struct aiFace* face = &mesh->mFaces[t];
       GLenum face_mode;
 
-      switch (face->mNumIndices)
-      {
+      switch (face->mNumIndices) {
         case 1:
           face_mode = GL_POINTS;
           break;
@@ -699,8 +654,7 @@ void OpenGLRenderInterface::recursiveRender(
 
       glBegin(face_mode);
 
-      for (i = 0; i < face->mNumIndices; i++)
-      {
+      for (i = 0; i < face->mNumIndices; i++) {
         int index = face->mIndices[i];
         if (mesh->mColors[0] != nullptr)
           glColor4fv((GLfloat*)&mesh->mColors[0][index]);
@@ -716,8 +670,7 @@ void OpenGLRenderInterface::recursiveRender(
   }
 
   // draw all children
-  for (n = 0; n < nd->mNumChildren; ++n)
-  {
+  for (n = 0; n < nd->mNumChildren; ++n) {
     recursiveRender(sc, nd->mChildren[n]);
   }
 
@@ -726,8 +679,7 @@ void OpenGLRenderInterface::recursiveRender(
 
 //==============================================================================
 void OpenGLRenderInterface::drawMesh(
-    const Eigen::Vector3d& scale, const aiScene* mesh)
-{
+    const Eigen::Vector3d& scale, const aiScene* mesh) {
   if (!mesh)
     return;
 
@@ -740,21 +692,18 @@ void OpenGLRenderInterface::drawMesh(
 }
 
 //==============================================================================
-void OpenGLRenderInterface::drawSoftMesh(const aiMesh* mesh)
-{
+void OpenGLRenderInterface::drawSoftMesh(const aiMesh* mesh) {
   glEnable(GL_LIGHTING);
   glEnable(GL_AUTO_NORMAL);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  for (auto i = 0u; i < mesh->mNumFaces; ++i)
-  {
+  for (auto i = 0u; i < mesh->mNumFaces; ++i) {
     glBegin(GL_TRIANGLES);
 
     const auto& face = &mesh->mFaces[i];
     assert(3u == face->mNumIndices);
 
-    for (auto j = 0u; j < 3; ++j)
-    {
+    for (auto j = 0u; j < 3; ++j) {
       auto index = face->mIndices[j];
       glNormal3fv(&mesh->mVertices[index].x);
       glVertex3fv(&mesh->mVertices[index].x);
@@ -764,18 +713,15 @@ void OpenGLRenderInterface::drawSoftMesh(const aiMesh* mesh)
   }
 }
 
-void OpenGLRenderInterface::drawList(GLuint index)
-{
+void OpenGLRenderInterface::drawList(GLuint index) {
   glCallList(index);
 }
 
 void OpenGLRenderInterface::drawLineSegments(
     const std::vector<Eigen::Vector3d>& _vertices,
-    const common::aligned_vector<Eigen::Vector2i>& _connections)
-{
+    const common::aligned_vector<Eigen::Vector2i>& _connections) {
   glBegin(GL_LINES);
-  for (const Eigen::Vector2i& c : _connections)
-  {
+  for (const Eigen::Vector2i& c : _connections) {
     const Eigen::Vector3d& v1 = _vertices[c[0]];
     const Eigen::Vector3d& v2 = _vertices[c[1]];
     glVertex3f(v1[0], v1[1], v1[2]);
@@ -785,52 +731,43 @@ void OpenGLRenderInterface::drawLineSegments(
 }
 
 //==============================================================================
-void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel)
-{
+void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel) {
   if (_skel == 0)
     return;
 
-  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); i++)
-  {
+  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
     compileList(_skel->getBodyNode(i));
   }
 }
 
 //==============================================================================
-void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
-{
+void OpenGLRenderInterface::compileList(dynamics::BodyNode* node) {
   if (node == 0)
     return;
 
-  for (auto childFrame : node->getChildFrames())
-  {
+  for (auto childFrame : node->getChildFrames()) {
     auto shapeFrame = dynamic_cast<dynamics::ShapeFrame*>(childFrame);
     if (shapeFrame)
       compileList(shapeFrame->getShape().get());
   }
 
-  for (auto i = 0u; i < node->getNumNodes<dynamics::ShapeNode>(); ++i)
-  {
+  for (auto i = 0u; i < node->getNumNodes<dynamics::ShapeNode>(); ++i) {
     auto shapeNode = node->getNode<dynamics::ShapeNode>(i);
     compileList(shapeNode->getShape().get());
   }
 }
 
 //==============================================================================
-void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
-{
+void OpenGLRenderInterface::compileList(dynamics::Shape* shape) {
   if (!shape)
     return;
 
-  if (shape->getType() == dynamics::MeshShape::getStaticType())
-  {
+  if (shape->getType() == dynamics::MeshShape::getStaticType()) {
     assert(dynamic_cast<dynamics::MeshShape*>(shape));
 
     auto* mesh = static_cast<dynamics::MeshShape*>(shape);
     mesh->setDisplayList(compileList(mesh->getScale(), mesh->getMesh()));
-  }
-  else
-  {
+  } else {
     dtwarn << "[OpenGLRenderInterface::compileList] Attempting to compile "
            << "OpenGL list for an unsupported shape type [" << shape->getType()
            << "].\n";
@@ -838,8 +775,7 @@ void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
 }
 
 GLuint OpenGLRenderInterface::compileList(
-    const Eigen::Vector3d& _scale, const aiScene* _mesh)
-{
+    const Eigen::Vector3d& _scale, const aiScene* _mesh) {
   if (!_mesh)
     return 0;
 
@@ -853,29 +789,24 @@ GLuint OpenGLRenderInterface::compileList(
   return index;
 }
 
-void OpenGLRenderInterface::setPenColor(const Eigen::Vector4d& _col)
-{
+void OpenGLRenderInterface::setPenColor(const Eigen::Vector4d& _col) {
   glColor4d(_col[0], _col[1], _col[2], _col[3]);
 }
 
-void OpenGLRenderInterface::setPenColor(const Eigen::Vector3d& _col)
-{
+void OpenGLRenderInterface::setPenColor(const Eigen::Vector3d& _col) {
   glColor4d(_col[0], _col[1], _col[2], 1.0);
 }
 
-void OpenGLRenderInterface::setLineWidth(float _width)
-{
+void OpenGLRenderInterface::setLineWidth(float _width) {
   glLineWidth(_width);
 }
 
 void OpenGLRenderInterface::readFrameBuffer(
-    DecoBufferType /*_buffType*/, DecoColorChannel /*_ch*/, void* /*_pixels*/)
-{
+    DecoBufferType /*_buffType*/, DecoColorChannel /*_ch*/, void* /*_pixels*/) {
 }
 
 void OpenGLRenderInterface::saveToImage(
-    const char* /*_filename*/, DecoBufferType /*_buffType*/)
-{
+    const char* /*_filename*/, DecoBufferType /*_buffType*/) {
 }
 
 } // namespace gui

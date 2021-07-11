@@ -39,8 +39,7 @@
 namespace dart {
 namespace dynamics {
 
-class BoxedLcpConstraintSolver : public ConstraintSolver
-{
+class BoxedLcpConstraintSolver : public ConstraintSolver {
 public:
   /// Constructor
   ///

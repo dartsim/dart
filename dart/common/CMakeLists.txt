@@ -39,6 +39,7 @@ if(DART_CODECOV AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     -g          # generate debug info
     --coverage  # sets all required flags
   )
+  list(APPEND link_libraries_public_skip_checking gcov)
 endif()
 
 # Add component

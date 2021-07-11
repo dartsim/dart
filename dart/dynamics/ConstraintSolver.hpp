@@ -53,8 +53,7 @@ class ShapeNodeCollisionObject;
 namespace dynamics {
 
 /// ConstraintSolver manages constraints and computes constraint impulses
-class ConstraintSolver
-{
+class ConstraintSolver {
 public:
   /// Constructor
   ///

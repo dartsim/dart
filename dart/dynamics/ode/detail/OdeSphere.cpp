@@ -40,17 +40,15 @@ namespace detail {
 
 //==============================================================================
 OdeSphere::OdeSphere(const OdeCollisionObject* parent, double radius)
-  : OdeGeom(parent)
-{
+  : OdeGeom(parent) {
   mGeomId = dCreateSphere(0, radius);
 }
 
 //==============================================================================
-OdeSphere::~OdeSphere()
-{
+OdeSphere::~OdeSphere() {
   dGeomDestroy(mGeomId);
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart

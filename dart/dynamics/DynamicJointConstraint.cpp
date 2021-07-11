@@ -51,32 +51,27 @@ double DynamicJointConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
 DynamicJointConstraint::DynamicJointConstraint(dynamics::BodyNode* body)
-  : ConstraintBase(), mBodyNode1(body), mBodyNode2(nullptr)
-{
+  : ConstraintBase(), mBodyNode1(body), mBodyNode2(nullptr) {
   assert(body);
 }
 
 //==============================================================================
 DynamicJointConstraint::DynamicJointConstraint(
     dynamics::BodyNode* body1, dynamics::BodyNode* body2)
-  : ConstraintBase(), mBodyNode1(body1), mBodyNode2(body2)
-{
+  : ConstraintBase(), mBodyNode1(body1), mBodyNode2(body2) {
   assert(body1);
   assert(body2);
 }
 
 //==============================================================================
-DynamicJointConstraint::~DynamicJointConstraint()
-{
+DynamicJointConstraint::~DynamicJointConstraint() {
   // Do nothing
 }
 
 //==============================================================================
-void DynamicJointConstraint::setErrorAllowance(double allowance)
-{
+void DynamicJointConstraint::setErrorAllowance(double allowance) {
   // Clamp error reduction parameter if it is out of the range
-  if (allowance < 0.0)
-  {
+  if (allowance < 0.0) {
     dtwarn << "Error reduction parameter[" << allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -87,23 +82,19 @@ void DynamicJointConstraint::setErrorAllowance(double allowance)
 }
 
 //==============================================================================
-double DynamicJointConstraint::getErrorAllowance()
-{
+double DynamicJointConstraint::getErrorAllowance() {
   return mErrorAllowance;
 }
 
 //==============================================================================
-void DynamicJointConstraint::setErrorReductionParameter(double erp)
-{
+void DynamicJointConstraint::setErrorReductionParameter(double erp) {
   // Clamp error reduction parameter if it is out of the range [0, 1]
-  if (erp < 0.0)
-  {
+  if (erp < 0.0) {
     dtwarn << "Error reduction parameter [" << erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mErrorReductionParameter = 0.0;
   }
-  if (erp > 1.0)
-  {
+  if (erp > 1.0) {
     dtwarn << "Error reduction parameter [" << erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
     mErrorReductionParameter = 1.0;
@@ -113,17 +104,14 @@ void DynamicJointConstraint::setErrorReductionParameter(double erp)
 }
 
 //==============================================================================
-double DynamicJointConstraint::getErrorReductionParameter()
-{
+double DynamicJointConstraint::getErrorReductionParameter() {
   return mErrorReductionParameter;
 }
 
 //==============================================================================
-void DynamicJointConstraint::setMaxErrorReductionVelocity(double erv)
-{
+void DynamicJointConstraint::setMaxErrorReductionVelocity(double erv) {
   // Clamp maximum error reduction velocity if it is out of the range
-  if (erv < 0.0)
-  {
+  if (erv < 0.0) {
     dtwarn << "Maximum error reduction velocity [" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -134,17 +122,14 @@ void DynamicJointConstraint::setMaxErrorReductionVelocity(double erv)
 }
 
 //==============================================================================
-double DynamicJointConstraint::getMaxErrorReductionVelocity()
-{
+double DynamicJointConstraint::getMaxErrorReductionVelocity() {
   return mMaxErrorReductionVelocity;
 }
 
 //==============================================================================
-void DynamicJointConstraint::setConstraintForceMixing(double cfm)
-{
+void DynamicJointConstraint::setConstraintForceMixing(double cfm) {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9)
-  {
+  if (cfm < 1e-9) {
     dtwarn << "Constraint force mixing parameter [" << cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
@@ -155,20 +140,17 @@ void DynamicJointConstraint::setConstraintForceMixing(double cfm)
 }
 
 //==============================================================================
-double DynamicJointConstraint::getConstraintForceMixing()
-{
+double DynamicJointConstraint::getConstraintForceMixing() {
   return mConstraintForceMixing;
 }
 
 //==============================================================================
-dynamics::BodyNode* DynamicJointConstraint::getBodyNode1() const
-{
+dynamics::BodyNode* DynamicJointConstraint::getBodyNode1() const {
   return mBodyNode1;
 }
 
 //==============================================================================
-dynamics::BodyNode* DynamicJointConstraint::getBodyNode2() const
-{
+dynamics::BodyNode* DynamicJointConstraint::getBodyNode2() const {
   return mBodyNode2;
 }
 

@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/InteractiveFrame.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -48,68 +49,58 @@ InteractiveTool::InteractiveTool(
     SimpleFrame(frame, name),
     mDefaultAlpha(defaultAlpha),
     mEnabled(true),
-    mInteractiveFrame(frame)
-{
+    mInteractiveFrame(frame) {
   // Do nothing
 }
 
 //==============================================================================
-void InteractiveTool::setEnabled(bool enabled)
-{
+void InteractiveTool::setEnabled(bool enabled) {
   mEnabled = enabled;
   for (auto& frame : mSimpleFrames)
     frame->getVisualAspect(true)->setHidden(!enabled);
 }
 
 //==============================================================================
-bool InteractiveTool::getEnabled() const
-{
+bool InteractiveTool::getEnabled() const {
   return mEnabled;
 }
 
 //==============================================================================
-void InteractiveTool::setAlpha(double alpha)
-{
+void InteractiveTool::setAlpha(double alpha) {
   for (auto& frame : mSimpleFrames)
     frame->getVisualAspect(true)->setAlpha(alpha);
 }
 
 //==============================================================================
-void InteractiveTool::resetAlpha()
-{
+void InteractiveTool::resetAlpha() {
   setAlpha(mDefaultAlpha);
 }
 
 //==============================================================================
-void InteractiveTool::setDefaultAlpha(double alpha, bool reset)
-{
+void InteractiveTool::setDefaultAlpha(double alpha, bool reset) {
   mDefaultAlpha = alpha;
   if (reset)
     resetAlpha();
 }
 
 //==============================================================================
-double InteractiveTool::getDefaultAlpha() const
-{
+double InteractiveTool::getDefaultAlpha() const {
   return mDefaultAlpha;
 }
 
 //==============================================================================
-InteractiveFrame* InteractiveTool::getInteractiveFrame()
-{
+InteractiveFrame* InteractiveTool::getInteractiveFrame() {
   return mInteractiveFrame;
 }
 
 //==============================================================================
-const InteractiveFrame* InteractiveTool::getInteractiveFrame() const
-{
+const InteractiveFrame* InteractiveTool::getInteractiveFrame() const {
   return mInteractiveFrame;
 }
 
 //==============================================================================
 dart::dynamics::SimpleFrame* InteractiveTool::addShapeFrame(
-    const dart::dynamics::ShapePtr& shape)
-{
+    const dart::dynamics::ShapePtr& shape) {
   mSimpleFrames.push_back(std::make_unique<dart::dynamics::SimpleFrame>(this));
 
   auto shapeFrame = mSimpleFrames.back().get();
@@ -123,8 +114,7 @@ dart::dynamics::SimpleFrame* InteractiveTool::addShapeFrame(
 
 //==============================================================================
 const std::vector<dart::dynamics::SimpleFrame*>
-InteractiveTool::getShapeFrames()
-{
+InteractiveTool::getShapeFrames() {
   std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
   for (auto i = 0u; i < frames.size(); ++i)
@@ -135,8 +125,7 @@ InteractiveTool::getShapeFrames()
 
 //==============================================================================
 const std::vector<const dart::dynamics::SimpleFrame*>
-InteractiveTool::getShapeFrames() const
-{
+InteractiveTool::getShapeFrames() const {
   std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
   for (auto i = 0u; i < frames.size(); ++i)
@@ -146,8 +135,7 @@ InteractiveTool::getShapeFrames() const
 }
 
 //==============================================================================
-void InteractiveTool::removeAllShapeFrames()
-{
+void InteractiveTool::removeAllShapeFrames() {
   mSimpleFrames.clear();
 }
 
@@ -160,10 +148,8 @@ InteractiveFrame::InteractiveFrame(
     double thickness_scale)
   : Entity(referenceFrame, false),
     Frame(referenceFrame),
-    SimpleFrame(referenceFrame, name, relativeTransform)
-{
-  for (std::size_t i = 0; i < 3; ++i)
-  {
+    SimpleFrame(referenceFrame, name, relativeTransform) {
+  for (std::size_t i = 0; i < 3; ++i) {
     std::string affix = (i == 0) ? "x" : (i == 1) ? "y" : "z";
 
     mTools[InteractiveTool::LINEAR][i]
@@ -178,34 +164,29 @@ InteractiveFrame::InteractiveFrame(
 }
 
 //==============================================================================
-InteractiveFrame::~InteractiveFrame()
-{
+InteractiveFrame::~InteractiveFrame() {
   deleteAllVisualizationShapes();
   deleteAllTools();
 }
 
 //==============================================================================
 void InteractiveFrame::resizeStandardVisuals(
-    double size_scale, double thickness_scale)
-{
+    double size_scale, double thickness_scale) {
   deleteAllVisualizationShapes();
   createStandardVisualizationShapes(size_scale, thickness_scale);
 }
 
 //==============================================================================
 InteractiveTool* InteractiveFrame::getTool(
-    InteractiveTool::Type tool, std::size_t coordinate)
-{
-  if (InteractiveTool::NUM_TYPES <= tool)
-  {
+    InteractiveTool::Type tool, std::size_t coordinate) {
+  if (InteractiveTool::NUM_TYPES <= tool) {
     dtwarn << "[InteractiveFrame::getTool] Attempting to access tool #" << tool
            << ", but tools only go up to " << InteractiveTool::NUM_TYPES
            << "\n";
     return nullptr;
   }
 
-  if (3 <= coordinate)
-  {
+  if (3 <= coordinate) {
     dtwarn << "[InteractiveFrame::getTool] Attempting to access a tool with "
            << "coordinate #" << coordinate << ", but tool coordinates only go "
            << "up to 3\n";
@@ -217,15 +198,13 @@ InteractiveTool* InteractiveFrame::getTool(
 
 //==============================================================================
 const InteractiveTool* InteractiveFrame::getTool(
-    InteractiveTool::Type tool, std::size_t coordinate) const
-{
+    InteractiveTool::Type tool, std::size_t coordinate) const {
   return const_cast<InteractiveFrame*>(this)->getTool(tool, coordinate);
 }
 
 //==============================================================================
 dart::dynamics::SimpleFrame* InteractiveFrame::addShapeFrame(
-    const dart::dynamics::ShapePtr& shape)
-{
+    const dart::dynamics::ShapePtr& shape) {
   mSimpleFrames.push_back(std::make_unique<dart::dynamics::SimpleFrame>(this));
 
   auto shapeFrame = mSimpleFrames.back().get();
@@ -239,8 +218,7 @@ dart::dynamics::SimpleFrame* InteractiveFrame::addShapeFrame(
 
 //==============================================================================
 const std::vector<dart::dynamics::SimpleFrame*>
-InteractiveFrame::getShapeFrames()
-{
+InteractiveFrame::getShapeFrames() {
   std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
   for (auto i = 0u; i < frames.size(); ++i)
@@ -251,8 +229,7 @@ InteractiveFrame::getShapeFrames()
 
 //==============================================================================
 const std::vector<const dart::dynamics::SimpleFrame*>
-InteractiveFrame::getShapeFrames() const
-{
+InteractiveFrame::getShapeFrames() const {
   std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
   for (auto i = 0u; i < frames.size(); ++i)
@@ -262,15 +239,13 @@ InteractiveFrame::getShapeFrames() const
 }
 
 //==============================================================================
-void InteractiveFrame::removeAllShapeFrames()
-{
+void InteractiveFrame::removeAllShapeFrames() {
   mSimpleFrames.clear();
 }
 
 //==============================================================================
 void InteractiveFrame::createStandardVisualizationShapes(
-    double size, double thickness)
-{
+    double size, double thickness) {
   const auto pi = math::constantsd::pi();
 
   thickness = std::min(10.0, std::max(0.0, thickness));
@@ -281,8 +256,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
   double plane_length = plane_corner / sqrt(2);
 
   // Create translation arrows
-  for (std::size_t a = 0; a < 3; ++a)
-  {
+  for (std::size_t a = 0; a < 3; ++a) {
     Eigen::Vector3d tail(Eigen::Vector3d::Zero());
     tail[a] = ring_inner_scale;
     Eigen::Vector3d head(Eigen::Vector3d::Zero());
@@ -309,8 +283,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
   }
 
   // Create rotation rings
-  for (std::size_t r = 0; r < 3; ++r)
-  {
+  for (std::size_t r = 0; r < 3; ++r) {
     aiMesh* mesh = new aiMesh;
     mesh->mMaterialIndex = (unsigned int)(-1);
 
@@ -324,10 +297,8 @@ void InteractiveFrame::createStandardVisualizationShapes(
     aiVector3D normal;
     aiColor4D color1;
     aiColor4D color2;
-    for (std::size_t j = 0; j < 2; ++j)
-    {
-      for (std::size_t i = 0; i < resolution; ++i)
-      {
+    for (std::size_t j = 0; j < 2; ++j) {
+      for (std::size_t i = 0; i < resolution; ++i) {
         double theta = (double)(i) / (double)(resolution)*2 * pi;
 
         double x = 0;
@@ -353,8 +324,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
         mesh->mNormals[4 * i + j + R] = normal;
         mesh->mNormals[4 * i + 2 + j + R] = normal;
 
-        for (std::size_t c = 0; c < 3; ++c)
-        {
+        for (std::size_t c = 0; c < 3; ++c) {
           color1[c] = 0.0;
           color2[c] = 0.0;
         }
@@ -377,8 +347,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     std::size_t H = resolution / 2;
     mesh->mNumFaces = numFaces;
     mesh->mFaces = new aiFace[numFaces];
-    for (std::size_t i = 0; i < H; ++i)
-    {
+    for (std::size_t i = 0; i < H; ++i) {
       // Front
       aiFace* face = &mesh->mFaces[2 * i];
       face->mNumIndices = 3;
@@ -466,8 +435,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
   }
 
   // Create translation planes
-  for (std::size_t p = 0; p < 3; ++p)
-  {
+  for (std::size_t p = 0; p < 3; ++p) {
     aiMesh* mesh = new aiMesh;
     mesh->mMaterialIndex = (unsigned int)(-1);
 
@@ -478,16 +446,14 @@ void InteractiveFrame::createStandardVisualizationShapes(
     mesh->mColors[0] = new aiColor4D[numVertices];
 
     double L = plane_length;
-    for (std::size_t i = 0; i < 2; ++i)
-    {
+    for (std::size_t i = 0; i < 2; ++i) {
       mesh->mVertices[4 * i + 0] = aiVector3D(0, -L, -L);
       mesh->mVertices[4 * i + 1] = aiVector3D(0, L, -L);
       mesh->mVertices[4 * i + 2] = aiVector3D(0, -L, L);
       mesh->mVertices[4 * i + 3] = aiVector3D(0, L, L);
     }
 
-    for (std::size_t i = 0; i < 4; ++i)
-    {
+    for (std::size_t i = 0; i < 4; ++i) {
       mesh->mNormals[i] = aiVector3D(1, 0, 0);
       mesh->mNormals[i + 4] = aiVector3D(-1, 0, 0);
     }
@@ -501,8 +467,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     std::size_t numFaces = 4;
     mesh->mNumFaces = numFaces;
     mesh->mFaces = new aiFace[numFaces];
-    for (std::size_t i = 0; i < numFaces; ++i)
-    {
+    for (std::size_t i = 0; i < numFaces; ++i) {
       aiFace* face = &mesh->mFaces[i];
       face->mNumIndices = 3;
       face->mIndices = new unsigned int[3];
@@ -553,13 +518,10 @@ void InteractiveFrame::createStandardVisualizationShapes(
     shapeFrame->setRelativeTransform(tf);
   }
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
-  {
-    for (std::size_t j = 0; j < 3; ++j)
-    {
+  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
       const auto& shapesFrames = mTools[i][j]->getShapeFrames();
-      for (std::size_t s = 0; s < shapesFrames.size(); ++s)
-      {
+      for (std::size_t s = 0; s < shapesFrames.size(); ++s) {
         shapesFrames[s]->getShape()->setDataVariance(
             dart::dynamics::Shape::DYNAMIC_COLOR);
       }
@@ -567,8 +529,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
   }
 
   // Create axes
-  for (std::size_t i = 0; i < 3; ++i)
-  {
+  for (std::size_t i = 0; i < 3; ++i) {
     std::shared_ptr<dart::dynamics::LineSegmentShape> line(
         new dart::dynamics::LineSegmentShape(3.0));
     line->addVertex(Eigen::Vector3d::Zero());
@@ -583,14 +544,11 @@ void InteractiveFrame::createStandardVisualizationShapes(
 }
 
 //==============================================================================
-void InteractiveFrame::deleteAllVisualizationShapes()
-{
+void InteractiveFrame::deleteAllVisualizationShapes() {
   removeAllShapeFrames();
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
-  {
-    for (std::size_t j = 0; j < 3; ++j)
-    {
+  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
       InteractiveTool* tool = mTools[i][j];
       tool->removeAllShapeFrames();
     }
@@ -598,8 +556,7 @@ void InteractiveFrame::deleteAllVisualizationShapes()
 }
 
 //==============================================================================
-void InteractiveFrame::deleteAllTools()
-{
+void InteractiveFrame::deleteAllTools() {
   for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
     for (std::size_t j = 0; j < 3; ++j)
       delete mTools[i][j];

@@ -32,34 +32,30 @@
 
 #pragma once
 
-#include "dart/math/geometry/Sphere.hpp"
-
 #include <cmath>
 
 #include "dart/math/Constants.hpp"
+#include "dart/math/geometry/Sphere.hpp"
 
 namespace dart {
 namespace math {
 
 //==============================================================================
 template <typename S>
-const std::string& Sphere<S>::GetType()
-{
+const std::string& Sphere<S>::GetType() {
   static const std::string type("Sphere");
   return type;
 }
 
 //==============================================================================
 template <typename S>
-S Sphere<S>::ComputeVolume(S radius)
-{
+S Sphere<S>::ComputeVolume(S radius) {
   return constants<S>::pi() * S(4) / S(3) * radius * radius * radius;
 }
 
 //==============================================================================
 template <typename S>
-Eigen::Matrix<S, 3, 3> Sphere<S>::computeInertiaFromMass(S radius, S mass)
-{
+Eigen::Matrix<S, 3, 3> Sphere<S>::computeInertiaFromMass(S radius, S mass) {
   Eigen::Matrix<S, 3, 3> inertia = Eigen::Matrix<S, 3, 3>::Zero();
 
   inertia(0, 0) = S(2) / S(5) * mass * radius * radius;
@@ -71,45 +67,40 @@ Eigen::Matrix<S, 3, 3> Sphere<S>::computeInertiaFromMass(S radius, S mass)
 
 //==============================================================================
 template <typename S>
-Eigen::Matrix<S, 3, 3> Sphere<S>::computeInertiaFromDensity(S radius, S density)
-{
+Eigen::Matrix<S, 3, 3> Sphere<S>::computeInertiaFromDensity(
+    S radius, S density) {
   const S mass = ComputeVolume(radius) * density;
   return computeInertiaFromMass(radius, mass);
 }
 
 //==============================================================================
 template <typename S>
-Sphere<S>::Sphere(S radius) : mRadius(radius)
-{
+Sphere<S>::Sphere(S radius) : mRadius(radius) {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-const std::string& Sphere<S>::getType() const
-{
+const std::string& Sphere<S>::getType() const {
   return GetType();
 }
 
 //==============================================================================
 template <typename S>
-S Sphere<S>::getRadius() const
-{
+S Sphere<S>::getRadius() const {
   return mRadius;
 }
 
 //==============================================================================
 template <typename S>
-void Sphere<S>::setRadius(S radius)
-{
+void Sphere<S>::setRadius(S radius) {
   mRadius = radius;
 }
 
 //==============================================================================
 template <typename S>
 typename Sphere<S>::Vector3 Sphere<S>::getLocalSupportPoint(
-    const typename Sphere<S>::Vector3& direction) const
-{
+    const typename Sphere<S>::Vector3& direction) const {
   return mRadius * direction.normalized();
 }
 

@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -40,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void SimpleFrame(py::module& m)
-{
+void SimpleFrame(py::module& m) {
   ::py::class_<
       dart::dynamics::SimpleFrame,
       dart::dynamics::ShapeFrame,
@@ -63,8 +63,10 @@ void SimpleFrame(py::module& m)
           ::py::arg("relativeTransform"))
       .def(
           "setName",
-          +[](dart::dynamics::SimpleFrame* self, const std::string& _name)
-              -> const std::string& { return self->setName(_name); },
+          +[](dart::dynamics::SimpleFrame* self,
+              const std::string& _name) -> const std::string& {
+            return self->setName(_name);
+          },
           ::py::return_value_policy::reference_internal,
           ::py::arg("name"))
       .def(

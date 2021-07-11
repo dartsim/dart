@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
 #include <Eigen/Core>
+
 #include "dart/common/Composite.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/ProxyAspect.hpp"
@@ -50,8 +51,7 @@ namespace detail {
 /// The Properties of this Skeleton which are independent of the components
 /// within the Skeleton, such as its BodyNodes and Joints. This does not
 /// include any Properties of the Skeleton's Aspects.
-struct SkeletonAspectProperties
-{
+struct SkeletonAspectProperties {
   /// Name of the Skeleton
   std::string mName;
 

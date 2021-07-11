@@ -33,33 +33,29 @@
 #include "dart/dynamics/PGSLCPSolver.hpp"
 
 #ifndef NDEBUG
-#  include <iomanip>
-#  include <iostream>
+  #include <iomanip>
+  #include <iostream>
 #endif
-
-#include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/ConstrainedGroup.hpp"
 #include "dart/dynamics/ConstraintBase.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/math/Lemke.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PGSLCPSolver::PGSLCPSolver(double _timestep) : LCPSolver(_timestep)
-{
+PGSLCPSolver::PGSLCPSolver(double _timestep) : LCPSolver(_timestep) {
 }
 
 //==============================================================================
-PGSLCPSolver::~PGSLCPSolver()
-{
+PGSLCPSolver::~PGSLCPSolver() {
 }
 
 //==============================================================================
-void PGSLCPSolver::solve(ConstrainedGroup* _group)
-{
+void PGSLCPSolver::solve(ConstrainedGroup* _group) {
   // If there is no constraint, then just return true.
   std::size_t numConstraints = _group->getNumConstraints();
   if (numConstraints == 0)
@@ -87,8 +83,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   std::size_t* offset = new std::size_t[n];
   offset[0] = 0;
   //  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
-  for (std::size_t i = 1; i < numConstraints; ++i)
-  {
+  for (std::size_t i = 1; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = _group->getConstraint(i - 1);
     assert(constraint->getDimension() > 0);
     offset[i] = offset[i - 1] + constraint->getDimension();
@@ -98,8 +93,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   // For each constraint
   ConstraintInfo constInfo;
   constInfo.invTimeStep = 1.0 / mTimeStep;
-  for (std::size_t i = 0; i < numConstraints; ++i)
-  {
+  for (std::size_t i = 0; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = _group->getConstraint(i);
 
     constInfo.x = x + offset[i];
@@ -114,8 +108,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 
     // Fill a matrix by impulse tests: A
     constraint->excite();
-    for (std::size_t j = 0; j < constraint->getDimension(); ++j)
-    {
+    for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
       // Adjust findex for global index
       if (findex[offset[i] + j] >= 0)
         findex[offset[i] + j] += offset[i];
@@ -126,18 +119,15 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
       // Fill upper triangle blocks of A matrix
       int index = nSkip * (offset[i] + j) + offset[i];
       constraint->getVelocityChange(A + index, true);
-      for (std::size_t k = i + 1; k < numConstraints; ++k)
-      {
+      for (std::size_t k = i + 1; k < numConstraints; ++k) {
         index = nSkip * (offset[i] + j) + offset[k];
         _group->getConstraint(k)->getVelocityChange(A + index, false);
       }
 
       // Filling symmetric part of A matrix
-      for (std::size_t k = 0; k < i; ++k)
-      {
+      for (std::size_t k = 0; k < i; ++k) {
         for (std::size_t l = 0; l < _group->getConstraint(k)->getDimension();
-             ++l)
-        {
+             ++l) {
           int index1 = nSkip * (offset[i] + j) + offset[k] + l;
           int index2 = nSkip * (offset[k] + l) + offset[i] + j;
 
@@ -171,8 +161,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   //  std::cout << std::endl;
 
   // Apply constraint impulses
-  for (std::size_t i = 0; i < numConstraints; ++i)
-  {
+  for (std::size_t i = 0; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = _group->getConstraint(i);
     constraint->applyImpulse(x + offset[i]);
     constraint->excite();
@@ -191,20 +180,14 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 
 //==============================================================================
 #ifndef NDEBUG
-bool PGSLCPSolver::isSymmetric(std::size_t _n, double* _A)
-{
+bool PGSLCPSolver::isSymmetric(std::size_t _n, double* _A) {
   std::size_t nSkip = dPAD(_n);
-  for (std::size_t i = 0; i < _n; ++i)
-  {
-    for (std::size_t j = 0; j < _n; ++j)
-    {
-      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
-      {
+  for (std::size_t i = 0; i < _n; ++i) {
+    for (std::size_t j = 0; j < _n; ++j) {
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < _n; ++k)
-        {
-          for (std::size_t l = 0; l < nSkip; ++l)
-          {
+        for (std::size_t k = 0; k < _n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
             std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
           }
           std::cout << std::endl;
@@ -224,20 +207,14 @@ bool PGSLCPSolver::isSymmetric(std::size_t _n, double* _A)
 
 //==============================================================================
 bool PGSLCPSolver::isSymmetric(
-    std::size_t _n, double* _A, std::size_t _begin, std::size_t _end)
-{
+    std::size_t _n, double* _A, std::size_t _begin, std::size_t _end) {
   std::size_t nSkip = dPAD(_n);
-  for (std::size_t i = _begin; i <= _end; ++i)
-  {
-    for (std::size_t j = _begin; j <= _end; ++j)
-    {
-      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
-      {
+  for (std::size_t i = _begin; i <= _end; ++i) {
+    for (std::size_t j = _begin; j <= _end; ++j) {
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < _n; ++k)
-        {
-          for (std::size_t l = 0; l < nSkip; ++l)
-          {
+        for (std::size_t k = 0; k < _n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
             std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
           }
           std::cout << std::endl;
@@ -264,36 +241,30 @@ void PGSLCPSolver::print(
     double* /*hi*/,
     double* b,
     double* w,
-    int* findex)
-{
+    int* findex) {
   std::size_t nSkip = dPAD(_n);
   std::cout << "A: " << std::endl;
-  for (std::size_t i = 0; i < _n; ++i)
-  {
-    for (std::size_t j = 0; j < nSkip; ++j)
-    {
+  for (std::size_t i = 0; i < _n; ++i) {
+    for (std::size_t j = 0; j < nSkip; ++j) {
       std::cout << std::setprecision(4) << _A[i * nSkip + j] << " ";
     }
     std::cout << std::endl;
   }
 
   std::cout << "b: ";
-  for (std::size_t i = 0; i < _n; ++i)
-  {
+  for (std::size_t i = 0; i < _n; ++i) {
     std::cout << std::setprecision(4) << b[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "w: ";
-  for (std::size_t i = 0; i < _n; ++i)
-  {
+  for (std::size_t i = 0; i < _n; ++i) {
     std::cout << w[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "x: ";
-  for (std::size_t i = 0; i < _n; ++i)
-  {
+  for (std::size_t i = 0; i < _n; ++i) {
     std::cout << _x[i] << " ";
   }
   std::cout << std::endl;
@@ -313,37 +284,31 @@ void PGSLCPSolver::print(
   //  std::cout << std::endl;
 
   std::cout << "frictionIndex: ";
-  for (std::size_t i = 0; i < _n; ++i)
-  {
+  for (std::size_t i = 0; i < _n; ++i) {
     std::cout << findex[i] << " ";
   }
   std::cout << std::endl;
 
   double* Ax = new double[_n];
 
-  for (std::size_t i = 0; i < _n; ++i)
-  {
+  for (std::size_t i = 0; i < _n; ++i) {
     Ax[i] = 0.0;
   }
 
-  for (std::size_t i = 0; i < _n; ++i)
-  {
-    for (std::size_t j = 0; j < _n; ++j)
-    {
+  for (std::size_t i = 0; i < _n; ++i) {
+    for (std::size_t j = 0; j < _n; ++j) {
       Ax[i] += _A[i * nSkip + j] * _x[j];
     }
   }
 
   std::cout << "Ax   : ";
-  for (std::size_t i = 0; i < _n; ++i)
-  {
+  for (std::size_t i = 0; i < _n; ++i) {
     std::cout << Ax[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "b + w: ";
-  for (std::size_t i = 0; i < _n; ++i)
-  {
+  for (std::size_t i = 0; i < _n; ++i) {
     std::cout << b[i] + w[i] << " ";
   }
   std::cout << std::endl;
@@ -362,8 +327,7 @@ bool solvePGS(
     double* lo,
     double* hi,
     int* findex,
-    PGSOption* option)
-{
+    PGSOption* option) {
   // LDLT solver will work !!!
   // if (nub == n)
   //{
@@ -381,11 +345,9 @@ bool solvePGS(
 
   n_new = 0;
   sentinel = true;
-  for (i = 0; i < n; i++)
-  {
+  for (i = 0; i < n; i++) {
     // ORDERING
-    if (A[nskip * i + i] < option->eps_div)
-    {
+    if (A[nskip * i + i] < option->eps_div) {
       x[i] = 0.0;
       continue;
     }
@@ -414,8 +376,7 @@ bool solvePGS(
         x[i] = lo_tmp;
       else
         x[i] = new_x;
-    }
-    else // no friction index
+    } else // no friction index
     {
       if (new_x > hi[i])
         x[i] = hi[i];
@@ -426,22 +387,19 @@ bool solvePGS(
     }
 
     // TEST
-    if (sentinel)
-    {
+    if (sentinel) {
       ea = std::abs(x[i] - old_x);
       if (ea > option->eps_res)
         sentinel = false;
     }
   }
-  if (sentinel)
-  {
+  if (sentinel) {
     delete[] order;
     return true;
   }
 
   // SCALING
-  for (i = 0; i < n_new; i++)
-  {
+  for (i = 0; i < n_new; i++) {
     idx = order[i];
 
     dummy = 1.0 / A[nskip * idx + idx]; // diagonal element
@@ -451,15 +409,12 @@ bool solvePGS(
   }
 
   //--- ITERATION LOOP
-  for (iter = 1; iter < option->itermax; iter++)
-  {
+  for (iter = 1; iter < option->itermax; iter++) {
     //--- RANDOMLY_REORDER_CONSTRAINTS
 #if LCP_PGS_RANDOMLY_REORDER_CONSTRAINTS
-    if ((iter & 7) == 0)
-    {
+    if ((iter & 7) == 0) {
       int tmp, swapi;
-      for (i = 1; i < n_new; i++)
-      {
+      for (i = 1; i < n_new; i++) {
         tmp = order[i];
         swapi = dRandInt(i + 1);
         order[i] = order[swapi];
@@ -471,8 +426,7 @@ bool solvePGS(
     sentinel = true;
 
     //-- ONE LOOP
-    for (i = 0; i < n_new; i++)
-    {
+    for (i = 0; i < n_new; i++) {
       idx = order[i];
 
       A_ptr = A + nskip * idx;
@@ -497,8 +451,7 @@ bool solvePGS(
           x[idx] = lo_tmp;
         else
           x[idx] = new_x;
-      }
-      else // no friction index
+      } else // no friction index
       {
         if (new_x > hi[idx])
           x[idx] = hi[idx];
@@ -508,8 +461,7 @@ bool solvePGS(
           x[idx] = new_x;
       }
 
-      if (sentinel && std::abs(x[idx]) > option->eps_div)
-      {
+      if (sentinel && std::abs(x[idx]) > option->eps_div) {
         ea = std::abs((x[idx] - old_x) / x[idx]);
         if (ea > option->eps_ea)
           sentinel = false;
@@ -530,8 +482,7 @@ bool solvePGS(
 #define LCP_PGS_OPTION_DEFAULT_EPS_RESIDUAL 1E-6
 #define LCP_PGS_OPTION_DEFAULT_EPS_DIVIDE 1E-9
 
-void PGSOption::setDefault()
-{
+void PGSOption::setDefault() {
   itermax = LCP_PGS_OPTION_DEFAULT_ITERMAX;
   sor_w = LCP_PGS_OPTION_DEFAULT_SOR_W;
   eps_ea = LCP_PGS_OPTION_DEFAULT_EPS_EA;

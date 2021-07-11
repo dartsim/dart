@@ -41,8 +41,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void ShapeNode(py::module& m)
-{
+void ShapeNode(py::module& m) {
   ::py::class_<
       dart::dynamics::ShapeNode,
       dart::dynamics::JacobianNode,
@@ -65,7 +64,9 @@ void ShapeNode(py::module& m)
       .def(
           "copy",
           +[](dart::dynamics::ShapeNode* self,
-              const dart::dynamics::ShapeNode* other) { self->copy(other); },
+              const dart::dynamics::ShapeNode* other) {
+            self->copy(other);
+          },
           ::py::arg("other"))
       .def(
           "setRelativeTransform",

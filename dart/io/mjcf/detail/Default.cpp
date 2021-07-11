@@ -41,36 +41,30 @@ namespace MjcfParser {
 namespace detail {
 
 //==============================================================================
-const GeomAttributes& Default::getGeomAttributes() const
-{
+const GeomAttributes& Default::getGeomAttributes() const {
   return mGeomAttributes;
 }
 
 //==============================================================================
-const JointAttributes& Default::getJointAttributes() const
-{
+const JointAttributes& Default::getJointAttributes() const {
   return mJointAttributes;
 }
 
 //==============================================================================
-const MeshAttributes& Default::getMeshAttributes() const
-{
+const MeshAttributes& Default::getMeshAttributes() const {
   return mMeshAttributes;
 }
 
 //==============================================================================
-const WeldAttributes& Default::getWeldAttributes() const
-{
+const WeldAttributes& Default::getWeldAttributes() const {
   return mWeldAttributes;
 }
 
 //==============================================================================
-Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
-{
+Errors Default::read(tinyxml2::XMLElement* element, const Default* parent) {
   Errors errors;
 
-  if (std::string(element->Name()) != "default")
-  {
+  if (std::string(element->Name()) != "default") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Default> from the provided element");
@@ -78,16 +72,14 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
   }
 
   // Inherit from the parent
-  if (parent != nullptr)
-  {
+  if (parent != nullptr) {
     mGeomAttributes = parent->mGeomAttributes;
     mJointAttributes = parent->mJointAttributes;
     mMeshAttributes = parent->mMeshAttributes;
   }
 
   // Read <geom>
-  if (hasElement(element, "geom"))
-  {
+  if (hasElement(element, "geom")) {
     auto geomElement = getElement(element, "geom");
     const Errors geomErrors
         = appendGeomAttributes(mGeomAttributes, geomElement);
@@ -95,8 +87,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
   }
 
   // Read <joint>
-  if (hasElement(element, "joint"))
-  {
+  if (hasElement(element, "joint")) {
     auto jointElement = getElement(element, "joint");
     const Errors jointErrors
         = appendJointAttributes(mJointAttributes, jointElement);
@@ -104,8 +95,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
   }
 
   // Read <mesh>
-  if (hasElement(element, "mesh"))
-  {
+  if (hasElement(element, "mesh")) {
     auto meshElement = getElement(element, "mesh");
     const Errors meshErrors
         = appendMeshAttributes(mMeshAttributes, meshElement);
@@ -113,12 +103,10 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
   }
 
   // Read <mesh>
-  if (hasElement(element, "equality"))
-  {
+  if (hasElement(element, "equality")) {
     auto equalityElement = getElement(element, "equality");
 
-    if (hasElement(equalityElement, "weld"))
-    {
+    if (hasElement(equalityElement, "weld")) {
       auto weldElement = getElement(equalityElement, "weld");
       const Errors weldErrors
           = appendWeldAttributes(mWeldAttributes, weldElement);
@@ -130,18 +118,15 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
 }
 
 //==============================================================================
-bool Defaults::hasDefault(const std::string& className) const
-{
+bool Defaults::hasDefault(const std::string& className) const {
   return static_cast<bool>(getDefault(className));
 }
 
 //==============================================================================
-const Default* Defaults::getDefault(const std::string& className) const
-{
+const Default* Defaults::getDefault(const std::string& className) const {
   const auto result = mDefaultMap.find(className);
 
-  if (result == mDefaultMap.end())
-  {
+  if (result == mDefaultMap.end()) {
     return nullptr;
   }
 
@@ -149,19 +134,16 @@ const Default* Defaults::getDefault(const std::string& className) const
 }
 
 //==============================================================================
-const Default* Defaults::getRootDefault() const
-{
+const Default* Defaults::getRootDefault() const {
   assert(hasDefault(mRootClassName));
   return getDefault(mRootClassName);
 }
 
 //==============================================================================
-Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
-{
+Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent) {
   Errors errors;
 
-  if (std::string(element->Name()) != "default")
-  {
+  if (std::string(element->Name()) != "default") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <default> from the provided element");
@@ -169,19 +151,14 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
   }
 
   std::string className;
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     className = getAttributeString(element, "class");
 
-    if (parent == nullptr)
-    {
+    if (parent == nullptr) {
       mRootClassName = className;
     }
-  }
-  else
-  {
-    if (parent != nullptr)
-    {
+  } else {
+    if (parent != nullptr) {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_MISSING,
           "Class name for non-root <default> is not specified."));
@@ -191,8 +168,7 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
 
   auto newDefault = Default();
   const Errors defaultErrors = newDefault.read(element, parent);
-  if (not defaultErrors.empty())
-  {
+  if (not defaultErrors.empty()) {
     errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
     return errors;
   }
@@ -200,11 +176,9 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
 
   // Read multiple <default>
   ElementEnumerator defaultElements(element, "default");
-  while (defaultElements.next())
-  {
+  while (defaultElements.next()) {
     const Errors defaultErrors = read(defaultElements.get(), &newDefault);
-    if (not defaultErrors.empty())
-    {
+    if (not defaultErrors.empty()) {
       errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
       return errors;
     }

@@ -51,59 +51,49 @@ Humanoid::Humanoid(Skeleton* /*_skeleton*/)
     mLeftThigh(nullptr),
     mRightThigh(nullptr),
     mLeftFoot(nullptr),
-    mRightFoot(nullptr)
-{
+    mRightFoot(nullptr) {
 }
 
 //==============================================================================
-Humanoid::~Humanoid()
-{
+Humanoid::~Humanoid() {
 }
 
 //==============================================================================
-Skeleton* Humanoid::getSkeleton()
-{
+Skeleton* Humanoid::getSkeleton() {
   return mSkeleton;
 }
 
 //==============================================================================
-BodyNode* Humanoid::getPelvis()
-{
+BodyNode* Humanoid::getPelvis() {
   return mPelvis;
 }
 
 //==============================================================================
-BodyNode* Humanoid::getLeftThigh()
-{
+BodyNode* Humanoid::getLeftThigh() {
   return mLeftThigh;
 }
 
 //==============================================================================
-BodyNode* Humanoid::getRightThigh()
-{
+BodyNode* Humanoid::getRightThigh() {
   return mRightThigh;
 }
 
 //==============================================================================
-BodyNode* Humanoid::getLeftFoot()
-{
+BodyNode* Humanoid::getLeftFoot() {
   return mLeftFoot;
 }
 
 //==============================================================================
-BodyNode* Humanoid::getRightFoot()
-{
+BodyNode* Humanoid::getRightFoot() {
   return mRightFoot;
 }
 
 //==============================================================================
-AtlasRobot::AtlasRobot(Skeleton* _skeleton) : Humanoid(_skeleton)
-{
+AtlasRobot::AtlasRobot(Skeleton* _skeleton) : Humanoid(_skeleton) {
 }
 
 //==============================================================================
-AtlasRobot::~AtlasRobot()
-{
+AtlasRobot::~AtlasRobot() {
   mPelvis = mSkeleton->getBodyNode("pelvis");
   mLeftFoot = mSkeleton->getBodyNode("l_foot");
   mRightFoot = mSkeleton->getBodyNode("r_foot");

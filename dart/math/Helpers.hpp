@@ -55,15 +55,13 @@ namespace math {
 
 //==============================================================================
 template <typename T>
-constexpr T toRadian(const T& degree)
-{
+constexpr T toRadian(const T& degree) {
   return degree * constants<T>::pi() / 180.0;
 }
 
 //==============================================================================
 template <typename T>
-constexpr T toDegree(const T& radian)
-{
+constexpr T toDegree(const T& radian) {
   return radian * 180.0 / constants<T>::pi();
 }
 
@@ -71,83 +69,68 @@ constexpr T toDegree(const T& radian)
 /// const Matd CR(2,2,0.0,-1.0,1.0,0.0);
 const Eigen::Matrix2d CR((Eigen::Matrix2d() << 0.0, -1.0, 1.0, 0.0).finished());
 
-inline int delta(int _i, int _j)
-{
+inline int delta(int _i, int _j) {
   if (_i == _j)
     return 1;
   return 0;
 }
 
 template <typename T>
-inline constexpr int sign(T x, std::false_type)
-{
+inline constexpr int sign(T x, std::false_type) {
   return static_cast<T>(0) < x;
 }
 
 template <typename T>
-inline constexpr int sign(T x, std::true_type)
-{
+inline constexpr int sign(T x, std::true_type) {
   return (static_cast<T>(0) < x) - (x < static_cast<T>(0));
 }
 
 template <typename T>
-inline constexpr int sign(T x)
-{
+inline constexpr int sign(T x) {
   return sign(x, std::is_signed<T>());
 }
 
-inline double sqr(double _x)
-{
+inline double sqr(double _x) {
   return _x * _x;
 }
 
-inline double Tsinc(double _theta)
-{
+inline double Tsinc(double _theta) {
   return 0.5 - sqrt(_theta) / 48;
 }
 
-inline bool isZero(double _theta)
-{
+inline bool isZero(double _theta) {
   return (std::abs(_theta) < 1e-6);
 }
 
-inline double asinh(double _X)
-{
+inline double asinh(double _X) {
   return log(_X + sqrt(_X * _X + 1));
 }
 
-inline double acosh(double _X)
-{
+inline double acosh(double _X) {
   return log(_X + sqrt(_X * _X - 1));
 }
 
-inline double atanh(double _X)
-{
+inline double atanh(double _X) {
   return log((1 + _X) / (1 - _X)) / 2;
 }
 
-inline double asech(double _X)
-{
+inline double asech(double _X) {
   return log((sqrt(-_X * _X + 1) + 1) / _X);
 }
 
-inline double acosech(double _X)
-{
+inline double acosech(double _X) {
   return log((sign(_X) * sqrt(_X * _X + 1) + 1) / _X);
 }
 
-inline double acotanh(double _X)
-{
+inline double acotanh(double _X) {
   return log((_X + 1) / (_X - 1)) / 2;
 }
 
-inline double round(double _x)
-{
+inline double round(double _x) {
   return floor(_x + 0.5);
 }
 
-inline double round2(double _x)
-{
+inline double round2(double _x) {
   int gintx = static_cast<int>(std::floor(_x));
   if (_x - gintx < 0.5)
     return static_cast<double>(gintx);
@@ -156,8 +139,7 @@ inline double round2(double _x)
 }
 
 template <typename T>
-inline T clip(const T& val, const T& lower, const T& upper)
-{
+inline T clip(const T& val, const T& lower, const T& upper) {
   return std::max(lower, std::min(val, upper));
 }
 
@@ -165,27 +147,23 @@ template <typename DerivedA, typename DerivedB>
 inline typename DerivedA::PlainObject clip(
     const Eigen::MatrixBase<DerivedA>& val,
     const Eigen::MatrixBase<DerivedB>& lower,
-    const Eigen::MatrixBase<DerivedB>& upper)
-{
+    const Eigen::MatrixBase<DerivedB>& upper) {
   return lower.cwiseMax(val.cwiseMin(upper));
 }
 
-inline bool isEqual(double _x, double _y)
-{
+inline bool isEqual(double _x, double _y) {
   return (std::abs(_x - _y) < 1e-6);
 }
 
 // check if it is an integer
-inline bool isInt(double _x)
-{
+inline bool isInt(double _x) {
   if (isEqual(round(_x), _x))
     return true;
   return false;
 }
 
 /// \brief Returns whether _v is a NaN (Not-A-Number) value
-inline bool isNan(double _v)
-{
+inline bool isNan(double _v) {
 #ifdef _WIN32
   return _isnan(_v) != 0;
 #else
@@ -194,8 +172,7 @@ inline bool isNan(double _v)
 }
 
 /// \brief Returns whether _m is a NaN (Not-A-Number) matrix
-inline bool isNan(const Eigen::MatrixXd& _m)
-{
+inline bool isNan(const Eigen::MatrixXd& _m) {
   for (int i = 0; i < _m.rows(); ++i)
     for (int j = 0; j < _m.cols(); ++j)
       if (isNan(_m(i, j)))
@@ -206,8 +183,7 @@ inline bool isNan(const Eigen::MatrixXd& _m)
 
 /// \brief Returns whether _v is an infinity value (either positive infinity or
 /// negative infinity).
-inline bool isInf(double _v)
-{
+inline bool isInf(double _v) {
 #ifdef _WIN32
   return !_finite(_v);
 #else
@@ -217,8 +193,7 @@ inline bool isInf(double _v)
 
 /// \brief Returns whether _m is an infinity matrix (either positive infinity or
 /// negative infinity).
-inline bool isInf(const Eigen::MatrixXd& _m)
-{
+inline bool isInf(const Eigen::MatrixXd& _m) {
   for (int i = 0; i < _m.rows(); ++i)
     for (int j = 0; j < _m.cols(); ++j)
       if (isInf(_m(i, j)))
@@ -228,23 +203,18 @@ inline bool isInf(const Eigen::MatrixXd& _m)
 }
 
 /// \brief Returns whether _m is symmetric or not
-inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6)
-{
+inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6) {
   std::size_t rows = _m.rows();
   std::size_t cols = _m.cols();
 
   if (rows != cols)
     return false;
 
-  for (std::size_t i = 0; i < rows; ++i)
-  {
-    for (std::size_t j = i + 1; j < cols; ++j)
-    {
-      if (std::abs(_m(i, j) - _m(j, i)) > _tol)
-      {
+  for (std::size_t i = 0; i < rows; ++i) {
+    for (std::size_t j = i + 1; j < cols; ++j) {
+      if (std::abs(_m(i, j) - _m(j, i)) > _tol) {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < rows; ++k)
-        {
+        for (std::size_t k = 0; k < rows; ++k) {
           for (std::size_t l = 0; l < cols; ++l)
             std::cout << std::setprecision(4) << _m(k, l) << " ";
           std::cout << std::endl;
@@ -260,8 +230,7 @@ inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6)
   return true;
 }
 
-inline unsigned seedRand()
-{
+inline unsigned seedRand() {
   time_t now = time(0);
   unsigned char* p = reinterpret_cast<unsigned char*>(&now);
   unsigned seed = 0;
@@ -276,8 +245,7 @@ inline unsigned seedRand()
 
 /// \deprecated Please use Random::uniform() instead.
 DART_DEPRECATED(6.7)
-inline double random(double _min, double _max)
-{
+inline double random(double _min, double _max) {
   return _min
          + ((static_cast<double>(rand()) / (RAND_MAX + 1.0)) * (_max - _min));
 }
@@ -285,8 +253,7 @@ inline double random(double _min, double _max)
 /// \deprecated Please use Random::uniform() instead.
 template <int N>
 DART_DEPRECATED(6.7)
-Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
-{
+Eigen::Matrix<double, N, 1> randomVector(double _min, double _max) {
   Eigen::Matrix<double, N, 1> v;
   DART_SUPPRESS_DEPRECATED_BEGIN
   for (std::size_t i = 0; i < N; ++i)
@@ -299,8 +266,7 @@ Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
 /// \deprecated Please use Random::uniform() instead.
 template <int N>
 DART_DEPRECATED(6.7)
-Eigen::Matrix<double, N, 1> randomVector(double _limit)
-{
+Eigen::Matrix<double, N, 1> randomVector(double _limit) {
   DART_SUPPRESS_DEPRECATED_BEGIN
   return randomVector<N>(-std::abs(_limit), std::abs(_limit));
   DART_SUPPRESS_DEPRECATED_END
@@ -309,8 +275,8 @@ Eigen::Matrix<double, N, 1> randomVector(double _limit)
 //==============================================================================
 /// \deprecated Please use Random::uniform() instead.
 DART_DEPRECATED(6.7)
-inline Eigen::VectorXd randomVectorXd(std::size_t size, double min, double max)
-{
+inline Eigen::VectorXd randomVectorXd(
+    std::size_t size, double min, double max) {
   Eigen::VectorXd v = Eigen::VectorXd::Zero(size);
 
   DART_SUPPRESS_DEPRECATED_BEGIN
@@ -324,8 +290,7 @@ inline Eigen::VectorXd randomVectorXd(std::size_t size, double min, double max)
 //==============================================================================
 /// \deprecated Please use Random::uniform() instead.
 DART_DEPRECATED(6.7)
-inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit)
-{
+inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit) {
   DART_SUPPRESS_DEPRECATED_BEGIN
   return randomVectorXd(size, -std::abs(limit), std::abs(limit));
   DART_SUPPRESS_DEPRECATED_END
@@ -334,38 +299,32 @@ inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit)
 namespace suffixes {
 
 //==============================================================================
-constexpr double operator"" _pi(long double x)
-{
+constexpr double operator"" _pi(long double x) {
   return x * constants<double>::pi();
 }
 
 //==============================================================================
-constexpr double operator"" _pi(unsigned long long int x)
-{
+constexpr double operator"" _pi(unsigned long long int x) {
   return operator"" _pi(static_cast<long double>(x));
 }
 
 //==============================================================================
-constexpr double operator"" _rad(long double angle)
-{
+constexpr double operator"" _rad(long double angle) {
   return angle;
 }
 
 //==============================================================================
-constexpr double operator"" _rad(unsigned long long int angle)
-{
+constexpr double operator"" _rad(unsigned long long int angle) {
   return operator"" _rad(static_cast<long double>(angle));
 }
 
 //==============================================================================
-constexpr double operator"" _deg(long double angle)
-{
+constexpr double operator"" _deg(long double angle) {
   return toRadian(angle);
 }
 
 //==============================================================================
-constexpr double operator"" _deg(unsigned long long int angle)
-{
+constexpr double operator"" _deg(unsigned long long int angle) {
   return operator"" _deg(static_cast<long double>(angle));
 }
 
@@ -375,98 +334,79 @@ constexpr double operator"" _deg(unsigned long long int angle)
 
 namespace Color {
 
-inline Eigen::Vector4d Red(double alpha)
-{
+inline Eigen::Vector4d Red(double alpha) {
   return Eigen::Vector4d(0.9, 0.1, 0.1, alpha);
 }
 
-inline Eigen::Vector3d Red()
-{
+inline Eigen::Vector3d Red() {
   return Eigen::Vector3d(0.9, 0.1, 0.1);
 }
 
-inline Eigen::Vector3d Fuchsia()
-{
+inline Eigen::Vector3d Fuchsia() {
   return Eigen::Vector3d(1.0, 0.0, 0.5);
 }
 
-inline Eigen::Vector4d Fuchsia(double alpha)
-{
+inline Eigen::Vector4d Fuchsia(double alpha) {
   return Eigen::Vector4d(1.0, 0.0, 0.5, alpha);
 }
 
-inline Eigen::Vector4d Orange(double alpha)
-{
+inline Eigen::Vector4d Orange(double alpha) {
   return Eigen::Vector4d(1.0, 0.63, 0.0, alpha);
 }
 
-inline Eigen::Vector3d Orange()
-{
+inline Eigen::Vector3d Orange() {
   return Eigen::Vector3d(1.0, 0.63, 0.0);
 }
 
-inline Eigen::Vector4d Green(double alpha)
-{
+inline Eigen::Vector4d Green(double alpha) {
   return Eigen::Vector4d(0.1, 0.9, 0.1, alpha);
 }
 
-inline Eigen::Vector3d Green()
-{
+inline Eigen::Vector3d Green() {
   return Eigen::Vector3d(0.1, 0.9, 0.1);
 }
 
-inline Eigen::Vector4d Blue(double alpha)
-{
+inline Eigen::Vector4d Blue(double alpha) {
   return Eigen::Vector4d(0.1, 0.1, 0.9, alpha);
 }
 
-inline Eigen::Vector3d Blue()
-{
+inline Eigen::Vector3d Blue() {
   return Eigen::Vector3d(0.1, 0.1, 0.9);
 }
 
-inline Eigen::Vector4d White(double alpha)
-{
+inline Eigen::Vector4d White(double alpha) {
   return Eigen::Vector4d(1.0, 1.0, 1.0, alpha);
 }
 
-inline Eigen::Vector3d White()
-{
+inline Eigen::Vector3d White() {
   return Eigen::Vector3d(1.0, 1.0, 1.0);
 }
 
-inline Eigen::Vector4d Black(double alpha)
-{
+inline Eigen::Vector4d Black(double alpha) {
   return Eigen::Vector4d(0.05, 0.05, 0.05, alpha);
 }
 
-inline Eigen::Vector3d Black()
-{
+inline Eigen::Vector3d Black() {
   return Eigen::Vector3d(0.05, 0.05, 0.05);
 }
 
-inline Eigen::Vector4d LightGray(double alpha)
-{
+inline Eigen::Vector4d LightGray(double alpha) {
   return Eigen::Vector4d(0.9, 0.9, 0.9, alpha);
 }
 
-inline Eigen::Vector3d LightGray()
-{
+inline Eigen::Vector3d LightGray() {
   return Eigen::Vector3d(0.9, 0.9, 0.9);
 }
 
-inline Eigen::Vector4d Gray(double alpha)
-{
+inline Eigen::Vector4d Gray(double alpha) {
   return Eigen::Vector4d(0.6, 0.6, 0.6, alpha);
 }
 
-inline Eigen::Vector3d Gray()
-{
+inline Eigen::Vector3d Gray() {
   return Eigen::Vector3d(0.6, 0.6, 0.6);
 }
 
-inline Eigen::Vector4d Random(double alpha)
-{
+inline Eigen::Vector4d Random(double alpha) {
   return Eigen::Vector4d(
       math::Random::uniform(0.0, 1.0),
       math::Random::uniform(0.0, 1.0),
@@ -474,8 +414,7 @@ inline Eigen::Vector4d Random(double alpha)
       alpha);
 }
 
-inline Eigen::Vector3d Random()
-{
+inline Eigen::Vector3d Random() {
   return Eigen::Vector3d(
       math::Random::uniform(0.0, 1.0),
       math::Random::uniform(0.0, 1.0),

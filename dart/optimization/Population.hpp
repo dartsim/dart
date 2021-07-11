@@ -46,8 +46,7 @@ namespace optimization {
 
 class MultiObjectiveProblem;
 
-class Population
-{
+class Population {
 public:
   /// Constructor
   ///

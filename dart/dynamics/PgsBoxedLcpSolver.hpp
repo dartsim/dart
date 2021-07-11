@@ -34,17 +34,16 @@
 #define DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 
 #include <vector>
+
 #include "dart/dynamics/BoxedLcpSolver.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// Implementation of projected Gauss-Seidel (PGS) LCP solver.
-class PgsBoxedLcpSolver : public BoxedLcpSolver
-{
+class PgsBoxedLcpSolver : public BoxedLcpSolver {
 public:
-  struct Option
-  {
+  struct Option {
     int mMaxIteration;
     double mDeltaXThreshold;
     double mRelativeDeltaXTolerance;

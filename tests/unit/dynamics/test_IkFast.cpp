@@ -40,8 +40,7 @@
 using namespace dart;
 
 //==============================================================================
-TEST(IkFast, WrapCyclicSolution)
-{
+TEST(IkFast, WrapCyclicSolution) {
   const auto pi = math::constantsd::pi();
 
   double sol;
@@ -93,8 +92,7 @@ TEST(IkFast, WrapCyclicSolution)
 }
 
 //==============================================================================
-TEST(IkFast, FailedToLoadSharedLibrary)
-{
+TEST(IkFast, FailedToLoadSharedLibrary) {
   auto skel = dynamics::Skeleton::create();
   ASSERT_NE(skel, nullptr);
 
@@ -111,8 +109,7 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 }
 
 //==============================================================================
-TEST(IkFast, LoadWamArmIk)
-{
+TEST(IkFast, LoadWamArmIk) {
   io::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
       "herb_description", DART_DATA_PATH "/urdf/wam");
@@ -157,8 +154,7 @@ TEST(IkFast, LoadWamArmIk)
 
   const auto dofs = ikfast->getDofs();
 
-  for (const auto& solution : solutions)
-  {
+  for (const auto& solution : solutions) {
     ASSERT_EQ(solution.mConfig.size(), 6);
 
     if (solution.mValidity != InverseKinematics::Analytical::VALID)

@@ -38,8 +38,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void DartLoader(py::module& m)
-{
+void DartLoader(py::module& m) {
   ::py::class_<dart::io::DartLoader>(m, "DartLoader")
       .def(::py::init<>())
       .def(
@@ -93,8 +92,10 @@ void DartLoader(py::module& m)
           ::py::arg("resourceRetriever"))
       .def(
           "parseWorld",
-          +[](dart::io::DartLoader* self, const dart::common::Uri& _uri)
-              -> dart::simulation::WorldPtr { return self->parseWorld(_uri); },
+          +[](dart::io::DartLoader* self,
+              const dart::common::Uri& _uri) -> dart::simulation::WorldPtr {
+            return self->parseWorld(_uri);
+          },
           ::py::arg("uri"))
       .def(
           "parseWorld",

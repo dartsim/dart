@@ -33,6 +33,7 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -99,8 +100,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Skeleton(py::module& m)
-{
+void Skeleton(py::module& m) {
   ::py::class_<
       dart::dynamics::Skeleton,
       dart::dynamics::MetaSkeleton,

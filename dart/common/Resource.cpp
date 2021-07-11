@@ -34,14 +34,14 @@
 
 #include <exception>
 #include <string>
+
 #include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-std::string Resource::readAll()
-{
+std::string Resource::readAll() {
   std::string content;
   content.resize(getSize());
   const auto result = read(&content.front(), content.size(), 1);

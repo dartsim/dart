@@ -43,40 +43,34 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-RevoluteJoint::~RevoluteJoint()
-{
+RevoluteJoint::~RevoluteJoint() {
   // Do nothing
 }
 
 //==============================================================================
-void RevoluteJoint::setProperties(const Properties& _properties)
-{
+void RevoluteJoint::setProperties(const Properties& _properties) {
   GenericJoint<math::R1Space>::setProperties(
       static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
 //==============================================================================
-void RevoluteJoint::setProperties(const UniqueProperties& _properties)
-{
+void RevoluteJoint::setProperties(const UniqueProperties& _properties) {
   setAspectProperties(_properties);
 }
 
 //==============================================================================
-void RevoluteJoint::setAspectProperties(const AspectProperties& properties)
-{
+void RevoluteJoint::setAspectProperties(const AspectProperties& properties) {
   setAxis(properties.mAxis);
 }
 
 //==============================================================================
-RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
-{
+RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const {
   return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
-void RevoluteJoint::copy(const RevoluteJoint& _otherJoint)
-{
+void RevoluteJoint::copy(const RevoluteJoint& _otherJoint) {
   if (this == &_otherJoint)
     return;
 
@@ -84,8 +78,7 @@ void RevoluteJoint::copy(const RevoluteJoint& _otherJoint)
 }
 
 //==============================================================================
-void RevoluteJoint::copy(const RevoluteJoint* _otherJoint)
-{
+void RevoluteJoint::copy(const RevoluteJoint* _otherJoint) {
   if (nullptr == _otherJoint)
     return;
 
@@ -93,34 +86,29 @@ void RevoluteJoint::copy(const RevoluteJoint* _otherJoint)
 }
 
 //==============================================================================
-RevoluteJoint& RevoluteJoint::operator=(const RevoluteJoint& _otherJoint)
-{
+RevoluteJoint& RevoluteJoint::operator=(const RevoluteJoint& _otherJoint) {
   copy(_otherJoint);
   return *this;
 }
 
 //==============================================================================
-const std::string& RevoluteJoint::getType() const
-{
+const std::string& RevoluteJoint::getType() const {
   return getStaticType();
 }
 
 //==============================================================================
-bool RevoluteJoint::isCyclic(std::size_t _index) const
-{
+bool RevoluteJoint::isCyclic(std::size_t _index) const {
   return !hasPositionLimit(_index);
 }
 
 //==============================================================================
-const std::string& RevoluteJoint::getStaticType()
-{
+const std::string& RevoluteJoint::getStaticType() {
   static const std::string name = "RevoluteJoint";
   return name;
 }
 
 //==============================================================================
-void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
-{
+void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis) {
   if (_axis == mAspectProperties.mAxis)
     return;
 
@@ -131,16 +119,14 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& RevoluteJoint::getAxis() const
-{
+const Eigen::Vector3d& RevoluteJoint::getAxis() const {
   return mAspectProperties.mAxis;
 }
 
 //==============================================================================
 GenericJoint<math::R1Space>::JacobianMatrix
 RevoluteJoint::getRelativeJacobianStatic(
-    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
-{
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const {
   GenericJoint<math::R1Space>::JacobianMatrix jacobian = math::AdTAngular(
       Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
@@ -152,8 +138,7 @@ RevoluteJoint::getRelativeJacobianStatic(
 
 //==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& properties)
-  : detail::RevoluteJointBase(properties)
-{
+  : detail::RevoluteJointBase(properties) {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createRevoluteJointAspect(properties);
@@ -162,22 +147,19 @@ RevoluteJoint::RevoluteJoint(const Properties& properties)
 }
 
 //==============================================================================
-Joint* RevoluteJoint::clone() const
-{
+Joint* RevoluteJoint::clone() const {
   return new RevoluteJoint(getRevoluteJointProperties());
 }
 
 //==============================================================================
-void RevoluteJoint::updateDegreeOfFreedomNames()
-{
+void RevoluteJoint::updateDegreeOfFreedomNames() {
   // Same name as the joint it belongs to.
   if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName, false);
 }
 
 //==============================================================================
-void RevoluteJoint::updateRelativeTransform() const
-{
+void RevoluteJoint::updateRelativeTransform() const {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expAngular(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
@@ -187,15 +169,13 @@ void RevoluteJoint::updateRelativeTransform() const
 }
 
 //==============================================================================
-void RevoluteJoint::updateRelativeJacobian(bool _mandatory) const
-{
+void RevoluteJoint::updateRelativeJacobian(bool _mandatory) const {
   if (_mandatory)
     mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void RevoluteJoint::updateRelativeJacobianTimeDeriv() const
-{
+void RevoluteJoint::updateRelativeJacobianTimeDeriv() const {
   // Time derivative of revolute joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }

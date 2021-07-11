@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sstream>
-
 #include "Helpers.hpp"
 
+#include <sstream>
+
 //==============================================================================
-dart::dynamics::SkeletonPtr createGround()
-{
+dart::dynamics::SkeletonPtr createGround() {
   // Create a Skeleton to represent the ground
   dart::dynamics::SkeletonPtr ground
       = dart::dynamics::Skeleton::create("ground");
@@ -61,8 +60,7 @@ dart::dynamics::SkeletonPtr createGround()
 }
 
 //==============================================================================
-dart::dynamics::SkeletonPtr createWam()
-{
+dart::dynamics::SkeletonPtr createWam() {
   dart::io::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
       "herb_description", DART_DATA_PATH "/urdf/wam");
@@ -73,8 +71,7 @@ dart::dynamics::SkeletonPtr createWam()
 }
 
 //==============================================================================
-void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam)
-{
+void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam) {
   wam->getDof("/j1")->setPosition(0.0);
   wam->getDof("/j2")->setPosition(0.0);
   wam->getDof("/j3")->setPosition(0.0);
@@ -85,8 +82,7 @@ void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam)
 }
 
 //==============================================================================
-void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
-{
+void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam) {
   Eigen::Vector3d linearBounds
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
 
@@ -124,14 +120,12 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 
 //==============================================================================
 void enableDragAndDrops(
-    dart::gui::osg::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam)
-{
+    dart::gui::osg::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam) {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(wam->getBodyNode(i), false, false);
 
-  for (std::size_t i = 0; i < wam->getNumEndEffectors(); ++i)
-  {
+  for (std::size_t i = 0; i < wam->getNumEndEffectors(); ++i) {
     dart::dynamics::EndEffector* ee = wam->getEndEffector(i);
     if (!ee->getIK())
       continue;

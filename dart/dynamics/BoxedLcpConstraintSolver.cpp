@@ -34,16 +34,15 @@
 
 #include <cassert>
 #ifndef NDEBUG
-#  include <iomanip>
-#  include <iostream>
+  #include <iomanip>
+  #include <iostream>
 #endif
-
-#include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/ConstraintBase.hpp"
 #include "dart/dynamics/DantzigBoxedLcpSolver.hpp"
 #include "dart/dynamics/PgsBoxedLcpSolver.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/math/Lemke.hpp"
 
 namespace dart {
@@ -55,15 +54,13 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver,
     BoxedLcpSolverPtr secondaryBoxedLcpSolver)
   : BoxedLcpConstraintSolver(
-        std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
-{
+      std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver)) {
   setTimeStep(timeStep);
 }
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
-  : BoxedLcpConstraintSolver(std::make_shared<DantzigBoxedLcpSolver>())
-{
+  : BoxedLcpConstraintSolver(std::make_shared<DantzigBoxedLcpSolver>()) {
   // Do nothing
 }
 
@@ -71,22 +68,17 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver)
   : BoxedLcpConstraintSolver(
-        std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
-{
+      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>()) {
   // Do nothing
 }
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver, BoxedLcpSolverPtr secondaryBoxedLcpSolver)
-  : ConstraintSolver()
-{
-  if (boxedLcpSolver)
-  {
+  : ConstraintSolver() {
+  if (boxedLcpSolver) {
     setBoxedLcpSolver(std::move(boxedLcpSolver));
-  }
-  else
-  {
+  } else {
     dtwarn << "[BoxedLcpConstraintSolver] Attempting to construct with nullptr "
            << "LCP solver, which is not allowed. Using Dantzig solver "
            << "instead.\n";
@@ -97,17 +89,14 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
 }
 
 //==============================================================================
-void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
-{
-  if (!lcpSolver)
-  {
+void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver) {
+  if (!lcpSolver) {
     dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] "
            << "nullptr for boxed LCP solver is not allowed.\n";
     return;
   }
 
-  if (lcpSolver == mSecondaryBoxedLcpSolver)
-  {
+  if (lcpSolver == mSecondaryBoxedLcpSolver) {
     dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
            << "a primary LCP solver that is the same with the secondary LCP "
            << "solver, which is discouraged. Ignoring this request.\n";
@@ -117,17 +106,14 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 }
 
 //==============================================================================
-ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
-{
+ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const {
   return mBoxedLcpSolver;
 }
 
 //==============================================================================
 void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
-    BoxedLcpSolverPtr lcpSolver)
-{
-  if (lcpSolver == mBoxedLcpSolver)
-  {
+    BoxedLcpSolverPtr lcpSolver) {
+  if (lcpSolver == mBoxedLcpSolver) {
     dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
            << "the secondary LCP solver that is identical to the primary LCP "
            << "solver, which is redundant. Please use different solvers or set "
@@ -139,14 +125,12 @@ void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
 
 //==============================================================================
 ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
-    const
-{
+    const {
   return mSecondaryBoxedLcpSolver;
 }
 
 //==============================================================================
-void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
-{
+void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group) {
   // Build LCP terms by aggregating them from constraints
   const std::size_t numConstraints = group.getNumConstraints();
   const std::size_t n = group.getTotalDimension();
@@ -171,8 +155,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // Compute offset indices
   mOffset.resize(numConstraints);
   mOffset[0] = 0;
-  for (std::size_t i = 1; i < numConstraints; ++i)
-  {
+  for (std::size_t i = 1; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
     assert(constraint->getDimension() > 0);
     mOffset[i] = mOffset[i - 1] + constraint->getDimension();
@@ -181,8 +164,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // For each constraint
   ConstraintInfo constInfo;
   constInfo.invTimeStep = 1.0 / mTimeStep;
-  for (std::size_t i = 0; i < numConstraints; ++i)
-  {
+  for (std::size_t i = 0; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = group.getConstraint(i);
 
     constInfo.x = mX.data() + mOffset[i];
@@ -197,8 +179,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
     // Fill a matrix by impulse tests: A
     constraint->excite();
-    for (std::size_t j = 0; j < constraint->getDimension(); ++j)
-    {
+    for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
       // Adjust findex for global index
       if (mFIndex[mOffset[i] + j] >= 0)
         mFIndex[mOffset[i] + j] += mOffset[i];
@@ -209,18 +190,16 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       // Fill upper triangle blocks of A matrix
       int index = nSkip * (mOffset[i] + j) + mOffset[i];
       constraint->getVelocityChange(mA.data() + index, true);
-      for (std::size_t k = i + 1; k < numConstraints; ++k)
-      {
+      for (std::size_t k = i + 1; k < numConstraints; ++k) {
         index = nSkip * (mOffset[i] + j) + mOffset[k];
         group.getConstraint(k)->getVelocityChange(mA.data() + index, false);
       }
 
       // Filling symmetric part of A matrix
-      for (std::size_t k = 0; k < i; ++k)
-      {
+      for (std::size_t k = 0; k < i; ++k) {
         const int indexI = mOffset[i] + j;
-        for (std::size_t l = 0; l < group.getConstraint(k)->getDimension(); ++l)
-        {
+        for (std::size_t l = 0; l < group.getConstraint(k)->getDimension();
+             ++l) {
           const int indexJ = mOffset[k] + l;
           mA(indexI, indexJ) = mA(indexJ, indexI);
         }
@@ -242,8 +221,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   // Solve LCP using the primary solver and fallback to secondary solver when
   // the parimary solver failed.
-  if (mSecondaryBoxedLcpSolver)
-  {
+  if (mSecondaryBoxedLcpSolver) {
     // Make backups for the secondary LCP solver because the primary solver
     // modifies the original terms.
     mABackup = mA;
@@ -271,8 +249,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (success && mX.hasNaN())
     success = false;
 
-  if (!success && mSecondaryBoxedLcpSolver)
-  {
+  if (!success && mSecondaryBoxedLcpSolver) {
     mSecondaryBoxedLcpSolver->solve(
         n,
         mABackup.data(),
@@ -286,8 +263,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mX = mXBackup;
   }
 
-  if (mX.hasNaN())
-  {
+  if (mX.hasNaN()) {
     dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
           << "values: " << mX.transpose() << ". We're setting it zero for "
           << "safety. Consider using more robust solver such as PGS as a "
@@ -302,8 +278,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   //  std::cout << std::endl;
 
   // Apply constraint impulses
-  for (std::size_t i = 0; i < numConstraints; ++i)
-  {
+  for (std::size_t i = 0; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = group.getConstraint(i);
     constraint->applyImpulse(mX.data() + mOffset[i]);
     constraint->excite();
@@ -312,20 +287,14 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
 //==============================================================================
 #ifndef NDEBUG
-bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
-{
+bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A) {
   std::size_t nSkip = dPAD(n);
-  for (std::size_t i = 0; i < n; ++i)
-  {
-    for (std::size_t j = 0; j < n; ++j)
-    {
-      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
-      {
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < n; ++j) {
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < n; ++k)
-        {
-          for (std::size_t l = 0; l < nSkip; ++l)
-          {
+        for (std::size_t k = 0; k < n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
             std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
           }
           std::cout << std::endl;
@@ -345,20 +314,14 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 
 //==============================================================================
 bool BoxedLcpConstraintSolver::isSymmetric(
-    std::size_t n, double* A, std::size_t begin, std::size_t end)
-{
+    std::size_t n, double* A, std::size_t begin, std::size_t end) {
   std::size_t nSkip = dPAD(n);
-  for (std::size_t i = begin; i <= end; ++i)
-  {
-    for (std::size_t j = begin; j <= end; ++j)
-    {
-      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
-      {
+  for (std::size_t i = begin; i <= end; ++i) {
+    for (std::size_t j = begin; j <= end; ++j) {
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < n; ++k)
-        {
-          for (std::size_t l = 0; l < nSkip; ++l)
-          {
+        for (std::size_t k = 0; k < n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
             std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
           }
           std::cout << std::endl;
@@ -385,36 +348,30 @@ void BoxedLcpConstraintSolver::print(
     double* /*hi*/,
     double* b,
     double* w,
-    int* findex)
-{
+    int* findex) {
   std::size_t nSkip = dPAD(n);
   std::cout << "A: " << std::endl;
-  for (std::size_t i = 0; i < n; ++i)
-  {
-    for (std::size_t j = 0; j < nSkip; ++j)
-    {
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < nSkip; ++j) {
       std::cout << std::setprecision(4) << A[i * nSkip + j] << " ";
     }
     std::cout << std::endl;
   }
 
   std::cout << "b: ";
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     std::cout << std::setprecision(4) << b[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "w: ";
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     std::cout << w[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "x: ";
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     std::cout << x[i] << " ";
   }
   std::cout << std::endl;
@@ -434,37 +391,31 @@ void BoxedLcpConstraintSolver::print(
   //  std::cout << std::endl;
 
   std::cout << "frictionIndex: ";
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     std::cout << findex[i] << " ";
   }
   std::cout << std::endl;
 
   double* Ax = new double[n];
 
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     Ax[i] = 0.0;
   }
 
-  for (std::size_t i = 0; i < n; ++i)
-  {
-    for (std::size_t j = 0; j < n; ++j)
-    {
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < n; ++j) {
       Ax[i] += A[i * nSkip + j] * x[j];
     }
   }
 
   std::cout << "Ax   : ";
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     std::cout << Ax[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "b + w: ";
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     std::cout << b[i] + w[i] << " ";
   }
   std::cout << std::endl;

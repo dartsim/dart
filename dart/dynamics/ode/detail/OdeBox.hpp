@@ -41,8 +41,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class OdeBox : public OdeGeom
-{
+class OdeBox : public OdeGeom {
 public:
   /// Constructor
   OdeBox(const OdeCollisionObject* parent, const Eigen::Vector3d& size);
@@ -52,7 +51,7 @@ public:
 };
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_ODE_DETAIL_ODEBOX_HPP_

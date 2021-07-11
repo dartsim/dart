@@ -47,8 +47,7 @@ namespace dynamics {
 /// implementations of these various auxiliary Jacobian functions without any
 /// penalty from dynamic overload resolution.
 template <class NodeType>
-class TemplatedJacobianNode : public JacobianNode
-{
+class TemplatedJacobianNode : public JacobianNode {
 public:
   // Documentation inherited
   math::Jacobian getJacobian(

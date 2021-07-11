@@ -39,8 +39,7 @@ namespace python {
 
 void World(py::module& sm);
 
-void dart_simulation(py::module& m)
-{
+void dart_simulation(py::module& m) {
   auto sm = m.def_submodule("simulation");
 
   World(sm);

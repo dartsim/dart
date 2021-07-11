@@ -32,63 +32,55 @@
 
 #pragma once
 
-#include "dart/collision/object.hpp"
-
 #include <cassert>
 
 #include "dart/collision/engine.hpp"
 #include "dart/collision/group.hpp"
+#include "dart/collision/object.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
 template <typename S>
-Object<S>::Object()
-{
+Object<S>::Object() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-Object<S>::~Object()
-{
+Object<S>::~Object() {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S>
-Engine<S>* Object<S>::get_mutable_engine()
-{
+Engine<S>* Object<S>::get_mutable_engine() {
   return m_group->get_mutable_engine();
 }
 
 //==============================================================================
 template <typename S>
-const Engine<S>* Object<S>::get_engine() const
-{
+const Engine<S>* Object<S>::get_engine() const {
   return m_group->get_engine();
 }
 
 //==============================================================================
 template <typename S>
-const void* Object<S>::get_user_data() const
-{
+const void* Object<S>::get_user_data() const {
   return m_user_data;
 }
 
 //==============================================================================
 template <typename S>
-math::ConstGeometryPtr Object<S>::get_geometry() const
-{
+math::ConstGeometryPtr Object<S>::get_geometry() const {
   return m_geometry;
 }
 
 //==============================================================================
 template <typename S>
 Object<S>::Object(Group<S>* collisionGroup, math::GeometryPtr shape)
-  : m_group(collisionGroup), m_geometry(std::move(shape))
-{
+  : m_group(collisionGroup), m_geometry(std::move(shape)) {
   assert(m_group);
   assert(m_geometry);
 }

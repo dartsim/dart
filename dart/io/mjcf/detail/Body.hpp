@@ -50,8 +50,7 @@ namespace detail {
 
 class Size;
 
-class Body final
-{
+class Body final {
 public:
   /// Default constructor.
   Body() = default;

@@ -50,8 +50,7 @@ namespace render {
 class PyramidShapeGeode;
 class PyramidShapeDrawable;
 
-class PyramidShapeNode : public ShapeNode, public ::osg::Group
-{
+class PyramidShapeNode : public ShapeNode, public ::osg::Group {
 public:
   PyramidShapeNode(
       std::shared_ptr<dart::dynamics::PyramidShape> shape,

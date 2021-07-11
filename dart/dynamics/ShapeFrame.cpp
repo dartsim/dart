@@ -40,15 +40,13 @@ namespace detail {
 //==============================================================================
 VisualAspectProperties::VisualAspectProperties(
     const Eigen::Vector4d& color, const bool hidden, const bool shadowed)
-  : mRGBA(color), mHidden(hidden), mShadowed(shadowed)
-{
+  : mRGBA(color), mHidden(hidden), mShadowed(shadowed) {
   // Do nothing
 }
 
 //==============================================================================
 CollisionAspectProperties::CollisionAspectProperties(const bool collidable)
-  : mCollidable(collidable)
-{
+  : mCollidable(collidable) {
   // Do nothing
 }
 
@@ -61,8 +59,7 @@ DynamicsAspectProperties::DynamicsAspectProperties(
     mPrimarySlipCompliance(-1.0),
     mSecondarySlipCompliance(-1.0),
     mFirstFrictionDirection(Eigen::Vector3d::Zero()),
-    mFirstFrictionDirectionFrame(nullptr)
-{
+    mFirstFrictionDirectionFrame(nullptr) {
   // Do nothing
 }
 
@@ -81,15 +78,13 @@ DynamicsAspectProperties::DynamicsAspectProperties(
     mPrimarySlipCompliance(primarySlipCompliance),
     mSecondarySlipCompliance(secondarySlipCompliance),
     mFirstFrictionDirection(firstFrictionDirection),
-    mFirstFrictionDirectionFrame(firstFrictionDirectionFrame)
-{
+    mFirstFrictionDirectionFrame(firstFrictionDirectionFrame) {
   // Do nothing
 }
 
 //==============================================================================
 ShapeFrameProperties::ShapeFrameProperties(const ShapePtr& shape)
-  : mShape(shape)
-{
+  : mShape(shape) {
   // Do nothing
 }
 
@@ -97,14 +92,12 @@ ShapeFrameProperties::ShapeFrameProperties(const ShapePtr& shape)
 
 //==============================================================================
 VisualAspect::VisualAspect(const PropertiesData& properties)
-  : VisualAspect::Base(properties)
-{
+  : VisualAspect::Base(properties) {
   // Do nothing
 }
 
 //==============================================================================
-void VisualAspect::setRGBA(const Eigen::Vector4d& color)
-{
+void VisualAspect::setRGBA(const Eigen::Vector4d& color) {
   mProperties.mRGBA = color;
 
   notifyPropertiesUpdated();
@@ -113,20 +106,17 @@ void VisualAspect::setRGBA(const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-void VisualAspect::setColor(const Eigen::Vector3d& color)
-{
+void VisualAspect::setColor(const Eigen::Vector3d& color) {
   setRGB(color);
 }
 
 //==============================================================================
-void VisualAspect::setColor(const Eigen::Vector4d& color)
-{
+void VisualAspect::setColor(const Eigen::Vector4d& color) {
   setRGBA(color);
 }
 
 //==============================================================================
-void VisualAspect::setRGB(const Eigen::Vector3d& rgb)
-{
+void VisualAspect::setRGB(const Eigen::Vector3d& rgb) {
   Eigen::Vector4d rgba = getRGBA();
   rgba.head<3>() = rgb;
 
@@ -134,8 +124,7 @@ void VisualAspect::setRGB(const Eigen::Vector3d& rgb)
 }
 
 //==============================================================================
-void VisualAspect::setAlpha(const double alpha)
-{
+void VisualAspect::setAlpha(const double alpha) {
   mProperties.mRGBA[3] = alpha;
 
   notifyPropertiesUpdated();
@@ -144,98 +133,82 @@ void VisualAspect::setAlpha(const double alpha)
 }
 
 //==============================================================================
-Eigen::Vector3d VisualAspect::getColor() const
-{
+Eigen::Vector3d VisualAspect::getColor() const {
   return getRGB();
 }
 
 //==============================================================================
-Eigen::Vector3d VisualAspect::getRGB() const
-{
+Eigen::Vector3d VisualAspect::getRGB() const {
   return getRGBA().head<3>();
 }
 
 //==============================================================================
-double VisualAspect::getAlpha() const
-{
+double VisualAspect::getAlpha() const {
   return getRGBA()[3];
 }
 
 //==============================================================================
-void VisualAspect::hide()
-{
+void VisualAspect::hide() {
   setHidden(true);
 }
 
 //==============================================================================
-void VisualAspect::show()
-{
+void VisualAspect::show() {
   setHidden(false);
 }
 
 //==============================================================================
-bool VisualAspect::isHidden() const
-{
+bool VisualAspect::isHidden() const {
   return getHidden();
 }
 
 //==============================================================================
 CollisionAspect::CollisionAspect(const PropertiesData& properties)
-  : AspectImplementation(properties)
-{
+  : AspectImplementation(properties) {
   // Do nothing
 }
 
 //==============================================================================
-bool CollisionAspect::isCollidable() const
-{
+bool CollisionAspect::isCollidable() const {
   return getCollidable();
 }
 
 //==============================================================================
 DynamicsAspect::DynamicsAspect(const PropertiesData& properties)
-  : Base(properties)
-{
+  : Base(properties) {
   // Do nothing
 }
 
-void DynamicsAspect::setFrictionCoeff(const double& value)
-{
+void DynamicsAspect::setFrictionCoeff(const double& value) {
   mProperties.mFrictionCoeff = value;
   mProperties.mSecondaryFrictionCoeff = value;
 }
 
-double DynamicsAspect::getFrictionCoeff() const
-{
+double DynamicsAspect::getFrictionCoeff() const {
   return 0.5
          * (mProperties.mFrictionCoeff + mProperties.mSecondaryFrictionCoeff);
 }
 
-void DynamicsAspect::setPrimaryFrictionCoeff(const double& value)
-{
+void DynamicsAspect::setPrimaryFrictionCoeff(const double& value) {
   mProperties.mFrictionCoeff = value;
 }
 
-const double& DynamicsAspect::getPrimaryFrictionCoeff() const
-{
+const double& DynamicsAspect::getPrimaryFrictionCoeff() const {
   return mProperties.mFrictionCoeff;
 }
 
 //==============================================================================
-void DynamicsAspect::setFirstFrictionDirectionFrame(const Frame* value)
-{
+void DynamicsAspect::setFirstFrictionDirectionFrame(const Frame* value) {
   mProperties.mFirstFrictionDirectionFrame = value;
 }
 
 //==============================================================================
-const Frame* DynamicsAspect::getFirstFrictionDirectionFrame() const
-{
+const Frame* DynamicsAspect::getFirstFrictionDirectionFrame() const {
   return mProperties.mFirstFrictionDirectionFrame;
 }
 
 //==============================================================================
-ShapeFrame::~ShapeFrame()
-{
+ShapeFrame::~ShapeFrame() {
   // TODO(MXG): Why doesn't ScopedConnection seem to work as a member variable?
   // If we could use a ScopedConnection for mConnectionForShapeVersionChange
   // instead, then we wouldn't need to explicitly disconnect in this destructor.
@@ -243,26 +216,22 @@ ShapeFrame::~ShapeFrame()
 }
 
 //==============================================================================
-void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties)
-{
+void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties) {
   setAspectProperties(properties);
 }
 
 //==============================================================================
-void ShapeFrame::setAspectProperties(const AspectProperties& properties)
-{
+void ShapeFrame::setAspectProperties(const AspectProperties& properties) {
   setShape(properties.mShape);
 }
 
 //==============================================================================
-const ShapeFrame::AspectProperties& ShapeFrame::getAspectProperties() const
-{
+const ShapeFrame::AspectProperties& ShapeFrame::getAspectProperties() const {
   return mAspectProperties;
 }
 
 //==============================================================================
-void ShapeFrame::setShape(const ShapePtr& shape)
-{
+void ShapeFrame::setShape(const ShapePtr& shape) {
   if (shape == ShapeFrame::mAspectProperties.mShape)
     return;
 
@@ -273,8 +242,7 @@ void ShapeFrame::setShape(const ShapePtr& shape)
 
   mConnectionForShapeVersionChange.disconnect();
 
-  if (shape)
-  {
+  if (shape) {
     mConnectionForShapeVersionChange
         = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
             assert(shape == this->ShapeFrame::mAspectProperties.mShape.get());
@@ -288,44 +256,37 @@ void ShapeFrame::setShape(const ShapePtr& shape)
 }
 
 //==============================================================================
-ShapePtr ShapeFrame::getShape()
-{
+ShapePtr ShapeFrame::getShape() {
   return ShapeFrame::mAspectProperties.mShape;
 }
 
 //==============================================================================
-ConstShapePtr ShapeFrame::getShape() const
-{
+ConstShapePtr ShapeFrame::getShape() const {
   return ShapeFrame::mAspectProperties.mShape;
 }
 
 //==============================================================================
-ShapeFrame* ShapeFrame::asShapeFrame()
-{
+ShapeFrame* ShapeFrame::asShapeFrame() {
   return this;
 }
 
 //==============================================================================
-const ShapeFrame* ShapeFrame::asShapeFrame() const
-{
+const ShapeFrame* ShapeFrame::asShapeFrame() const {
   return this;
 }
 
 //==============================================================================
-bool ShapeFrame::isShapeNode() const
-{
+bool ShapeFrame::isShapeNode() const {
   return mAmShapeNode;
 }
 
 //==============================================================================
-ShapeNode* ShapeFrame::asShapeNode()
-{
+ShapeNode* ShapeFrame::asShapeNode() {
   return nullptr;
 }
 
 //==============================================================================
-const ShapeNode* ShapeFrame::asShapeNode() const
-{
+const ShapeNode* ShapeFrame::asShapeNode() const {
   return nullptr;
 }
 
@@ -338,8 +299,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
-    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
-{
+    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal) {
   createAspect<Aspect>();
   mAmShapeFrame = true;
   setProperties(properties);
@@ -354,8 +314,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const ShapePtr& shape)
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
-    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
-{
+    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal) {
   createAspect<Aspect>();
   mAmShapeFrame = true;
   setShape(shape);
@@ -363,8 +322,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const ShapePtr& shape)
 
 //==============================================================================
 ShapeFrame::ShapeFrame(const std::tuple<Frame*, Properties>& args)
-  : ShapeFrame(std::get<0>(args), std::get<1>(args))
-{
+  : ShapeFrame(std::get<0>(args), std::get<1>(args)) {
   // Delegating constructor
 }
 

@@ -39,8 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class UniversalJoint
-class UniversalJoint : public detail::UniversalJointBase
-{
+class UniversalJoint : public detail::UniversalJointBase {
 public:
   friend class Skeleton;
   using UniqueProperties = detail::UniversalJointUniqueProperties;

@@ -31,28 +31,24 @@
  */
 
 #ifndef EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
-#  define EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
+  #define EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
 
-#  include <Eigen/Dense>
-#  include <stdarg.h>
+  #include <Eigen/Dense>
+  #include <dart/dart.hpp>
+  #include <stdarg.h>
 
-#  include "Controller.hpp"
+  #include "Controller.hpp"
 
-#  include <dart/dart.hpp>
-
-class MyWindow : public dart::gui::glut::SimWindow
-{
+class MyWindow : public dart::gui::glut::SimWindow {
 public:
-  MyWindow() : SimWindow()
-  {
+  MyWindow() : SimWindow() {
     mForce = Eigen::Vector3d::Zero();
     mController = nullptr;
     mWeldJoint = nullptr;
     mImpulseDuration = 0;
     mHarnessOn = false;
   }
-  virtual ~MyWindow()
-  {
+  virtual ~MyWindow() {
   }
 
   void timeStepping() override;
@@ -61,8 +57,7 @@ public:
   //  void draw() override;
   void keyboard(unsigned char key, int x, int y) override;
 
-  void setController(Controller* _controller)
-  {
+  void setController(Controller* _controller) {
     mController = _controller;
   }
 
@@ -78,6 +73,7 @@ private:
 
 /*
 #include <stdarg.h>
+
 #include "Controller.hpp"
 #include "dynamics/SkeletonDynamics.hpp"
 #include "math/EulerIntegrator.hpp"

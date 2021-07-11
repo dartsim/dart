@@ -41,9 +41,7 @@ namespace dynamics {
 
 class CollisionFilter;
 
-struct CollisionOption
-{
-
+struct CollisionOption {
   /// Flag whether the collision detector computes contact information (contact
   /// point, normal, and penetration depth). If it is set to false, only the
   /// result of that which pairs are colliding will be stored in the
@@ -65,7 +63,7 @@ struct CollisionOption
       const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
 };
 
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
 #endif // DART_COLLISION_COLLISIONOPTION_HPP_

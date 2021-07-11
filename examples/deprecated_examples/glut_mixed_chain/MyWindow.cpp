@@ -43,19 +43,16 @@
 #define FORCE_ON_RIGIDBODY 500.0;
 #define FORCE_ON_VERTEX 1.00;
 
-MyWindow::MyWindow() : SoftSimWindow()
-{
+MyWindow::MyWindow() : SoftSimWindow() {
   mForceOnRigidBody = Eigen::Vector3d::Zero();
   mForceOnVertex = Eigen::Vector3d::Zero();
   mImpulseDuration = 0.0;
 }
 
-MyWindow::~MyWindow()
-{
+MyWindow::~MyWindow() {
 }
 
-void MyWindow::timeStepping()
-{
+void MyWindow::timeStepping() {
   //  dart::dynamics::SkeletonPtr Skeleton =
   //      static_cast<dart::dynamics::SkeletonPtr>(mWorld->getSkeleton(0));
   //  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
@@ -65,8 +62,7 @@ void MyWindow::timeStepping()
 
   // for perturbation test
   mImpulseDuration--;
-  if (mImpulseDuration <= 0)
-  {
+  if (mImpulseDuration <= 0) {
     mImpulseDuration = 0;
     mForceOnRigidBody.setZero();
   }
@@ -74,8 +70,7 @@ void MyWindow::timeStepping()
   mForceOnVertex /= 2.0;
 }
 
-void MyWindow::drawWorld() const
-{
+void MyWindow::drawWorld() const {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   //  Eigen::Vector4d color;
@@ -83,8 +78,7 @@ void MyWindow::drawWorld() const
   //  mWorld->getSkeleton(0)->draw(mRI, color, false);
 
   // draw arrow
-  if (mImpulseDuration > 0)
-  {
+  if (mImpulseDuration > 0) {
     dart::dynamics::SkeletonPtr Skeleton = mWorld->getSkeleton(1);
     dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(3);
     softBodyNode->addExtForce(mForceOnRigidBody);
@@ -98,10 +92,8 @@ void MyWindow::drawWorld() const
   SimWindow::drawWorld();
 }
 
-void MyWindow::keyboard(unsigned char key, int x, int y)
-{
-  switch (key)
-  {
+void MyWindow::keyboard(unsigned char key, int x, int y) {
+  switch (key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
@@ -113,8 +105,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mSimulating = false;
       break;
     case '[': // step backward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame--;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
@@ -122,8 +113,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       }
       break;
     case ']': // step forwardward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame++;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;

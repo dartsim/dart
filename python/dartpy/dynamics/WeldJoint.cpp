@@ -34,6 +34,7 @@
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "Joint.hpp"
 
 namespace py = pybind11;
@@ -41,8 +42,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void WeldJoint(py::module& m)
-{
+void WeldJoint(py::module& m) {
   ::py::class_<
       dart::dynamics::WeldJoint,
       dart::dynamics::ZeroDofJoint,
@@ -62,7 +62,9 @@ void WeldJoint(py::module& m)
       .def(
           "isCyclic",
           +[](const dart::dynamics::WeldJoint* self,
-              std::size_t _index) -> bool { return self->isCyclic(_index); },
+              std::size_t _index) -> bool {
+            return self->isCyclic(_index);
+          },
           ::py::arg("index"))
       .def(
           "setTransformFromParentBodyNode",

@@ -45,8 +45,7 @@ template <typename Base1Arg, typename... Base2Args>
 NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
     Base1Arg&& arg1, Base2Args&&... args2)
   : Base1(std::forward<Base1Arg>(arg1)),
-    Base2(std::forward<Base2Args>(args2)...)
-{
+    Base2(std::forward<Base2Args>(args2)...) {
   // Do nothing
 }
 
@@ -55,8 +54,7 @@ template <class Base1, class Base2>
 template <typename Base1Arg>
 NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
     Base1Arg&& arg1, common::NoArgTag)
-  : Base1(std::forward<Base1Arg>(arg1)), Base2()
-{
+  : Base1(std::forward<Base1Arg>(arg1)), Base2() {
   // Do nothing
 }
 
@@ -65,8 +63,7 @@ template <class Base1, class Base2>
 template <typename... Base2Args>
 NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
     common::NoArgTag, Base2Args&&... args2)
-  : Base1(), Base2(std::forward<Base2Args>(args2)...)
-{
+  : Base1(), Base2(std::forward<Base2Args>(args2)...) {
   // Do nothing
 }
 
@@ -97,8 +94,7 @@ DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(
 template <class Base1, class Base2>
 template <class T>
 constexpr bool
-NodeManagerJoinerForBodyNode<Base1, Base2>::isSpecializedForNode()
-{
+NodeManagerJoinerForBodyNode<Base1, Base2>::isSpecializedForNode() {
   return (
       Base1::template isSpecializedForNode<T>()
       || Base2::template isSpecializedForNode<T>());
@@ -110,10 +106,9 @@ template <typename... Args>
 NodeManagerJoinerForBodyNode<Base1, Base2, OtherBases...>::
     NodeManagerJoinerForBodyNode(Args&&... args)
   : NodeManagerJoinerForBodyNode<
-        Base1,
-        NodeManagerJoinerForBodyNode<Base2, OtherBases...>>(
-        std::forward<Args>(args)...)
-{
+      Base1,
+      NodeManagerJoinerForBodyNode<Base2, OtherBases...>>(
+      std::forward<Args>(args)...) {
   // Do nothing
 }
 
@@ -122,8 +117,7 @@ template <class Base1, class Base2>
 template <typename... Args>
 NodeManagerJoinerForSkeleton<Base1, Base2>::NodeManagerJoinerForSkeleton(
     Args&&... args)
-  : NodeManagerJoinerForBodyNode<Base1, Base2>(std::forward<Args>(args)...)
-{
+  : NodeManagerJoinerForBodyNode<Base1, Base2>(std::forward<Args>(args)...) {
   // Do nothing
 }
 
@@ -170,10 +164,9 @@ template <typename... Args>
 NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>::
     NodeManagerJoinerForSkeleton(Args&&... args)
   : NodeManagerJoinerForSkeleton<
-        Base1,
-        NodeManagerJoinerForSkeleton<Base2, OtherBases...>>(
-        std::forward<Args>(args)...)
-{
+      Base1,
+      NodeManagerJoinerForSkeleton<Base2, OtherBases...>>(
+      std::forward<Args>(args)...) {
   // Do nothing
 }
 

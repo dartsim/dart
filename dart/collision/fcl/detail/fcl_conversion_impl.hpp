@@ -39,15 +39,13 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-FclVector3<S> toFclVector3(const math::Vector3<S>& vec)
-{
+FclVector3<S> toFclVector3(const math::Vector3<S>& vec) {
   return FclVector3<S>(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
 template <typename S>
-math::Vector3<S> toVector3(const FclVector3<S>& vec)
-{
+math::Vector3<S> toVector3(const FclVector3<S>& vec) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return vec;
 #else
@@ -57,8 +55,7 @@ math::Vector3<S> toVector3(const FclVector3<S>& vec)
 
 //==============================================================================
 template <typename S>
-FclMatrix3<S> toFclMatrix3(const math::Matrix3<S>& R)
-{
+FclMatrix3<S> toFclMatrix3(const math::Matrix3<S>& R) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return R;
 #else
@@ -77,8 +74,7 @@ FclMatrix3<S> toFclMatrix3(const math::Matrix3<S>& R)
 
 //==============================================================================
 template <typename S>
-math::Matrix3<S> toMatrix3(const FclMatrix3<S>& R)
-{
+math::Matrix3<S> toMatrix3(const FclMatrix3<S>& R) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return R;
 #else
@@ -91,8 +87,7 @@ math::Matrix3<S> toMatrix3(const FclMatrix3<S>& R)
 
 //==============================================================================
 template <typename S>
-FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T)
-{
+FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T;
 #else
@@ -107,8 +102,7 @@ FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T)
 
 //==============================================================================
 template <typename S>
-math::Isometry3<S> toTransform3(const FclTransform3<S>& T)
-{
+math::Isometry3<S> toTransform3(const FclTransform3<S>& T) {
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
   return T;
 #else

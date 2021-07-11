@@ -49,8 +49,7 @@ namespace detail {
 
 class Body;
 
-class Asset final
-{
+class Asset final {
 public:
   /// Default constructor
   Asset() = default;

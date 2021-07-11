@@ -31,6 +31,7 @@
  */
 
 #include "dart/optimization/Solver.hpp"
+
 #include "dart/optimization/Problem.hpp"
 
 namespace dart {
@@ -51,26 +52,22 @@ Solver::Properties::Properties(
     mIterationsPerPrint(_iterationsPerPrint),
     mOutStream(_ostream),
     mPrintFinalResult(_printFinalResult),
-    mResultFile(_resultFile)
-{
+    mResultFile(_resultFile) {
   // Do nothing
 }
 
 //==============================================================================
-Solver::Solver(const Properties& _properties) : mProperties(_properties)
-{
+Solver::Solver(const Properties& _properties) : mProperties(_properties) {
   // Do nothing
 }
 
 //==============================================================================
-Solver::Solver(std::shared_ptr<Problem> _problem) : mProperties(_problem)
-{
+Solver::Solver(std::shared_ptr<Problem> _problem) : mProperties(_problem) {
   // Do nothing
 }
 
 //==============================================================================
-void Solver::setProperties(const Properties& _properties)
-{
+void Solver::setProperties(const Properties& _properties) {
   setProblem(_properties.mProblem);
   setNumMaxIterations(_properties.mNumMaxIterations);
   setIterationsPerPrint(_properties.mIterationsPerPrint);
@@ -80,14 +77,12 @@ void Solver::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-const Solver::Properties& Solver::getSolverProperties() const
-{
+const Solver::Properties& Solver::getSolverProperties() const {
   return mProperties;
 }
 
 //==============================================================================
-void Solver::copy(const Solver& _otherSolver)
-{
+void Solver::copy(const Solver& _otherSolver) {
   if (this == &_otherSolver)
     return;
 
@@ -95,93 +90,78 @@ void Solver::copy(const Solver& _otherSolver)
 }
 
 //==============================================================================
-Solver& Solver::operator=(const Solver& _otherSolver)
-{
+Solver& Solver::operator=(const Solver& _otherSolver) {
   copy(_otherSolver);
   return *this;
 }
 
 //==============================================================================
-void Solver::setProblem(std::shared_ptr<Problem> _newProblem)
-{
+void Solver::setProblem(std::shared_ptr<Problem> _newProblem) {
   mProperties.mProblem = _newProblem;
 }
 
 //==============================================================================
-std::shared_ptr<Problem> Solver::getProblem() const
-{
+std::shared_ptr<Problem> Solver::getProblem() const {
   return mProperties.mProblem;
 }
 
 //==============================================================================
-void Solver::setTolerance(double _newTolerance)
-{
+void Solver::setTolerance(double _newTolerance) {
   mProperties.mTolerance = _newTolerance;
 }
 
 //==============================================================================
-double Solver::getTolerance() const
-{
+double Solver::getTolerance() const {
   return mProperties.mTolerance;
 }
 
 //==============================================================================
-void Solver::setNumMaxIterations(std::size_t _newMax)
-{
+void Solver::setNumMaxIterations(std::size_t _newMax) {
   mProperties.mNumMaxIterations = _newMax;
 }
 
 //==============================================================================
-std::size_t Solver::getNumMaxIterations() const
-{
+std::size_t Solver::getNumMaxIterations() const {
   return mProperties.mNumMaxIterations;
 }
 
 //==============================================================================
-void Solver::setIterationsPerPrint(std::size_t _newRatio)
-{
+void Solver::setIterationsPerPrint(std::size_t _newRatio) {
   mProperties.mIterationsPerPrint = _newRatio;
 }
 
 //==============================================================================
-void Solver::setOutStream(std::ostream* _os)
-{
+void Solver::setOutStream(std::ostream* _os) {
   mProperties.mOutStream = _os;
 }
 
 //==============================================================================
-std::ostream* Solver::getOutStream() const
-{
+std::ostream* Solver::getOutStream() const {
   return mProperties.mOutStream;
 }
 
 //==============================================================================
-std::size_t Solver::getIterationsPerPrint() const
-{
+std::size_t Solver::getIterationsPerPrint() const {
   return mProperties.mIterationsPerPrint;
 }
 
 //==============================================================================
-void Solver::setPrintFinalResult(bool _print)
-{
+void Solver::setPrintFinalResult(bool _print) {
   mProperties.mPrintFinalResult = _print;
 }
 
 //==============================================================================
-bool Solver::getPrintFinalResult() const
-{
+bool Solver::getPrintFinalResult() const {
   return mProperties.mPrintFinalResult;
 }
 
 //==============================================================================
-void Solver::setResultFileName(const std::string& _resultFile)
-{
+void Solver::setResultFileName(const std::string& _resultFile) {
   mProperties.mResultFile = _resultFile;
 }
 
 //==============================================================================
-const std::string& Solver::getResultFileName() const
-{
+const std::string& Solver::getResultFileName() const {
   return mProperties.mResultFile;
 }
 

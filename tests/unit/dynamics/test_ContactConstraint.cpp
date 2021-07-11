@@ -32,18 +32,16 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/test/TestHelpers.hpp"
-
 #include "dart/common/common.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
 
 //==============================================================================
 void testContactWithKinematicJoint(
-    const dynamics::BoxedLcpSolverPtr& lcpSolver, double tol)
-{
+    const dynamics::BoxedLcpSolverPtr& lcpSolver, double tol) {
   auto world = std::make_shared<simulation::World>();
   world->setConstraintSolver(
       std::make_unique<dynamics::BoxedLcpConstraintSolver>(lcpSolver));
@@ -73,8 +71,7 @@ void testContactWithKinematicJoint(
   world->addSkeleton(skeleton1);
   world->addSkeleton(skeleton2);
 
-  for (auto i = 0u; i < 100; ++i)
-  {
+  for (auto i = 0u; i < 100; ++i) {
     skeleton1->setCommand(3, 0.1);
 
     world->step();
@@ -82,16 +79,14 @@ void testContactWithKinematicJoint(
     EXPECT_EQ(bodyNode1->getLinearVelocity()[0], 0.1);
 
     // Need few steps to settle down
-    if (i > 15)
-    {
+    if (i > 15) {
       EXPECT_NEAR(bodyNode2->getLinearVelocity()[0], 0.1, tol);
     }
   }
 }
 
 //==============================================================================
-TEST(ContactConstraint, ContactWithKinematicJoint)
-{
+TEST(ContactConstraint, ContactWithKinematicJoint) {
   testContactWithKinematicJoint(
       std::make_shared<dynamics::DantzigBoxedLcpSolver>(), 1e-6);
 

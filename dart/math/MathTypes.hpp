@@ -50,8 +50,7 @@ using Vector6d = Matrix<double, 6, 1>;
 using Matrix6d = Matrix<double, 6, 6>;
 
 inline Vector6d compose(
-    const Eigen::Vector3d& _angular, const Eigen::Vector3d& _linear)
-{
+    const Eigen::Vector3d& _angular, const Eigen::Vector3d& _linear) {
   Vector6d composition;
   composition << _angular, _linear;
   return composition;
@@ -78,8 +77,7 @@ using aligned_map = std::map<
 // Deprecated in favor of dart::common::make_aligned_shared
 template <typename _Tp, typename... _Args>
 DART_DEPRECATED(6.2)
-std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
-{
+std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args) {
   return ::dart::common::make_aligned_shared<_Tp, _Args...>(
       std::forward<_Args>(__args)...);
 }

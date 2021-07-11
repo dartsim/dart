@@ -44,18 +44,15 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ConstrainedGroup::ConstrainedGroup()
-{
+ConstrainedGroup::ConstrainedGroup() {
 }
 
 //==============================================================================
-ConstrainedGroup::~ConstrainedGroup()
-{
+ConstrainedGroup::~ConstrainedGroup() {
 }
 
 //==============================================================================
-void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
-{
+void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint) {
   assert(_constraint != nullptr && "Attempted to add nullptr.");
   assert(
       !containConstraint(_constraint)
@@ -66,28 +63,25 @@ void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
 }
 
 //==============================================================================
-std::size_t ConstrainedGroup::getNumConstraints() const
-{
+std::size_t ConstrainedGroup::getNumConstraints() const {
   return mConstraints.size();
 }
 
 //==============================================================================
-ConstraintBasePtr ConstrainedGroup::getConstraint(std::size_t _index)
-{
+ConstraintBasePtr ConstrainedGroup::getConstraint(std::size_t _index) {
   assert(_index < mConstraints.size());
   return mConstraints[_index];
 }
 
 //==============================================================================
-ConstConstraintBasePtr ConstrainedGroup::getConstraint(std::size_t _index) const
-{
+ConstConstraintBasePtr ConstrainedGroup::getConstraint(
+    std::size_t _index) const {
   assert(_index < mConstraints.size());
   return mConstraints[_index];
 }
 
 //==============================================================================
-void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
-{
+void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint) {
   assert(_constraint != nullptr && "Attempted to add nullptr.");
   assert(
       containConstraint(_constraint)
@@ -99,24 +93,21 @@ void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
 }
 
 //==============================================================================
-void ConstrainedGroup::removeAllConstraints()
-{
+void ConstrainedGroup::removeAllConstraints() {
   mConstraints.clear();
 }
 
 //==============================================================================
 #ifndef NDEBUG
 bool ConstrainedGroup::containConstraint(
-    const ConstConstraintBasePtr& _constraint) const
-{
+    const ConstConstraintBasePtr& _constraint) const {
   return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
          != mConstraints.end();
 }
 #endif
 
 //==============================================================================
-std::size_t ConstrainedGroup::getTotalDimension() const
-{
+std::size_t ConstrainedGroup::getTotalDimension() const {
   std::size_t totalDim = 0;
 
   for (std::size_t i = 0; i < mConstraints.size(); ++i)

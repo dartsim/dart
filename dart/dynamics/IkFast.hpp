@@ -36,9 +36,8 @@
 #include <array>
 
 #define IKFAST_HAS_LIBRARY
-#include "dart/external/ikfast/ikfast.h"
-
 #include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/external/ikfast/ikfast.h"
 
 namespace dart {
 namespace dynamics {
@@ -47,14 +46,12 @@ namespace dynamics {
 ///
 /// The detail of IkFast can be found here:
 /// http://openrave.org/docs/0.8.2/openravepy/ikfast/
-class IkFast : public InverseKinematics::Analytical
-{
+class IkFast : public InverseKinematics::Analytical {
 public:
   /// Inverse kinematics types supported by IkFast
   // Following conversion is referred from:
   // https://github.com/rdiankov/openrave/blob/b1ebe135b4217823ebdf56d9af5fe89b29723603/include/openrave/openrave.h#L575-L623
-  enum IkType
-  {
+  enum IkType {
     /// End effector reaches desired 6D transformation
     TRANSFORM_6D,
 

@@ -41,15 +41,13 @@ namespace dart {
 namespace dynamics {
 
 /// class TranslationalJoint
-class TranslationalJoint : public GenericJoint<math::R3Space>
-{
+class TranslationalJoint : public GenericJoint<math::R3Space> {
 public:
   friend class Skeleton;
 
   using Base = GenericJoint<math::R3Space>;
 
-  struct Properties : Base::Properties
-  {
+  struct Properties : Base::Properties {
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 
     Properties(const Base::Properties& _properties = Base::Properties());

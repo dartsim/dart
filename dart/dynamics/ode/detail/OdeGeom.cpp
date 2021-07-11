@@ -47,35 +47,30 @@ OdeGeom::OdeGeom(const OdeCollisionObject* collObj)
 }
 
 //==============================================================================
-OdeGeom::~OdeGeom()
-{
+OdeGeom::~OdeGeom() {
   // Do nothing
 }
 
 //==============================================================================
-const OdeCollisionObject* OdeGeom::getParentCollisionObject() const
-{
+const OdeCollisionObject* OdeGeom::getParentCollisionObject() const {
   return mParentCollisionObject;
 }
 
 //==============================================================================
-void OdeGeom::updateEngineData()
-{
+void OdeGeom::updateEngineData() {
   // Do nothing
 }
 
 //==============================================================================
-dGeomID OdeGeom::getOdeGeomId() const
-{
+dGeomID OdeGeom::getOdeGeomId() const {
   return mGeomId;
 }
 
 //==============================================================================
-bool OdeGeom::isPlaceable() const
-{
+bool OdeGeom::isPlaceable() const {
   return true;
 }
 
 } // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
