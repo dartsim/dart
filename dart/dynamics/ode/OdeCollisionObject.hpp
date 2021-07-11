@@ -39,7 +39,7 @@
 #include "dart/dynamics/ode/OdeCollisionDetector.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 namespace detail {
 class OdeGeom;

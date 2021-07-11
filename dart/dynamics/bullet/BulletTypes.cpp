@@ -36,7 +36,7 @@
 #include "dart/dynamics/bullet/BulletTypes.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 Eigen::Vector3d convertVector3(const btVector3& _vec)

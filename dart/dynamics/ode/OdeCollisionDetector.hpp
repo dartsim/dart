@@ -40,7 +40,7 @@
 #define MAX_COLLIDE_RETURNS 250
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 /// OdeCollisionDetector wraps the ODE collision detector.
 ///

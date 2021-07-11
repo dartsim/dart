@@ -36,13 +36,13 @@
 #include "dart/dynamics/fcl/FCLCollisionObject.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 FCLCollisionGroup::FCLCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector),
-    mBroadPhaseAlg(new dart::collision::fcl::DynamicAABBTreeCollisionManager())
+    mBroadPhaseAlg(new dart::dynamics::fcl::DynamicAABBTreeCollisionManager())
 {
   // Do nothing
 }

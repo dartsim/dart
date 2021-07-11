@@ -31,7 +31,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/math/Icosphere.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 #include "dart/test/TestHelpers.hpp"
 
 using namespace dart;

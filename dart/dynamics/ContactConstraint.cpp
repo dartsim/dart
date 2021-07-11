@@ -70,7 +70,7 @@ const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR = Eigen::Vector3d::UnitZ();
 
 //==============================================================================
 ContactConstraint::ContactConstraint(
-    collision::Contact& contact, double timeStep)
+    dynamics::Contact& contact, double timeStep)
   : ConstraintBase(),
     mTimeStep(timeStep),
     mBodyNodeA(const_cast<dynamics::ShapeFrame*>(
@@ -221,7 +221,7 @@ ContactConstraint::ContactConstraint(
     Eigen::Vector3d bodyPointA;
     Eigen::Vector3d bodyPointB;
 
-    collision::Contact& ct = mContact;
+    dynamics::Contact& ct = mContact;
 
     // TODO(JS): Assumed that the number of tangent basis is 2.
     const TangentBasisMatrix D = getTangentBasisMatrixODE(ct.normal);
@@ -279,7 +279,7 @@ ContactConstraint::ContactConstraint(
     mSpatialNormalA.resize(6, 1);
     mSpatialNormalB.resize(6, 1);
 
-    collision::Contact& ct = mContact;
+    dynamics::Contact& ct = mContact;
 
     // Contact normal in the local coordinates
     const Eigen::Vector3d bodyDirectionA
@@ -1054,7 +1054,7 @@ void ContactConstraint::setSecondarySlipCompliance(double slip)
 }
 
 //==============================================================================
-const collision::Contact& ContactConstraint::getContact() const
+const dynamics::Contact& ContactConstraint::getContact() const
 {
   return mContact;
 }

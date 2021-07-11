@@ -43,7 +43,7 @@
 #include "dart/dynamics/dart/DARTCollisionObject.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 namespace {
 
@@ -69,8 +69,8 @@ void postProcess(
 DARTCollisionDetector::Registrar<DARTCollisionDetector>
     DARTCollisionDetector::mRegistrar{
         DARTCollisionDetector::getStaticType(),
-        []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
-          return dart::collision::DARTCollisionDetector::create();
+        []() -> std::shared_ptr<dart::dynamics::DARTCollisionDetector> {
+          return dart::dynamics::DARTCollisionDetector::create();
         }};
 
 //==============================================================================

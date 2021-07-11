@@ -42,7 +42,7 @@
 #include "dart/dynamics/CollisionObject.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 class BulletCollisionDispatcher : public btCollisionDispatcher

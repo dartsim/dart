@@ -40,7 +40,7 @@ using namespace dart;
 void testBasicInterface(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {
-  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
+  if (cd->getType() != dynamics::FCLCollisionDetector::getStaticType())
   {
     dtwarn << "Aborting test: distance check is not supported by "
            << cd->getType() << ".\n";
@@ -63,13 +63,13 @@ void testBasicInterface(
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
   EXPECT_EQ(group12->getNumShapeFrames(), 2u);
 
-  collision::DistanceOption option;
+  dynamics::DistanceOption option;
   option.enableNearestPoints = true;
   EXPECT_TRUE(option.enableNearestPoints == true);
   EXPECT_TRUE(option.distanceLowerBound == 0.0);
   EXPECT_TRUE(option.distanceFilter == nullptr);
 
-  collision::DistanceResult result;
+  dynamics::DistanceResult result;
   EXPECT_TRUE(result.found() == false);
 
   result.clear();
@@ -143,7 +143,7 @@ TEST(Distance, testBasicInterface)
 void testOptions(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {
-  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
+  if (cd->getType() != dynamics::FCLCollisionDetector::getStaticType())
   {
     dtwarn << "Aborting test: distance check is not supported by "
            << cd->getType() << ".\n";
@@ -166,8 +166,8 @@ void testOptions(
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
   EXPECT_EQ(group12->getNumShapeFrames(), 2u);
 
-  collision::DistanceOption option;
-  collision::DistanceResult result;
+  dynamics::DistanceOption option;
+  dynamics::DistanceResult result;
 
   EXPECT_TRUE(option.distanceFilter == nullptr);
   EXPECT_TRUE(option.enableNearestPoints == false);
@@ -247,7 +247,7 @@ TEST(Distance, Options)
 void testSphereSphere(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {
-  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
+  if (cd->getType() != dynamics::FCLCollisionDetector::getStaticType())
   {
     dtwarn << "Aborting test: distance check is not supported by "
            << cd->getType() << ".\n";
@@ -270,8 +270,8 @@ void testSphereSphere(
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
   EXPECT_EQ(group12->getNumShapeFrames(), 2u);
 
-  collision::DistanceOption option;
-  collision::DistanceResult result;
+  dynamics::DistanceOption option;
+  dynamics::DistanceResult result;
 
   result.clear();
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));

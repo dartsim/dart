@@ -212,7 +212,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)
 // Collision
 //-----------------------------------------------------------------------------
 
-namespace collision {
+namespace dynamics {
 
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
 DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)

@@ -135,39 +135,39 @@ public:
   /// CollisionDetector passed as an argument. This method is deprecated in
   /// favor of the overload that accepts a std::shared_ptr.
   DART_DEPRECATED(6.0)
-  void setCollisionDetector(collision::CollisionDetector* collisionDetector);
+  void setCollisionDetector(dynamics::CollisionDetector* collisionDetector);
 
   /// Set collision detector
   void setCollisionDetector(
-      const std::shared_ptr<collision::CollisionDetector>& collisionDetector);
+      const std::shared_ptr<dynamics::CollisionDetector>& collisionDetector);
 
   /// Get collision detector
-  collision::CollisionDetectorPtr getCollisionDetector();
+  dynamics::CollisionDetectorPtr getCollisionDetector();
 
   /// Get (const) collision detector
-  collision::ConstCollisionDetectorPtr getCollisionDetector() const;
+  dynamics::ConstCollisionDetectorPtr getCollisionDetector() const;
 
   /// Return collision group of collision objects that are added to this
   /// ConstraintSolver
-  collision::CollisionGroupPtr getCollisionGroup();
+  dynamics::CollisionGroupPtr getCollisionGroup();
 
   /// Return (const) collision group of collision objects that are added to this
   /// ConstraintSolver
-  collision::ConstCollisionGroupPtr getCollisionGroup() const;
+  dynamics::ConstCollisionGroupPtr getCollisionGroup() const;
 
   /// Returns collision option that is used for collision checkings in this
   /// ConstraintSolver to generate contact constraints.
-  collision::CollisionOption& getCollisionOption();
+  dynamics::CollisionOption& getCollisionOption();
 
   /// Returns collision option that is used for collision checkings in this
   /// ConstraintSolver to generate contact constraints.
-  const collision::CollisionOption& getCollisionOption() const;
+  const dynamics::CollisionOption& getCollisionOption() const;
 
   /// Return the last collision checking result
-  collision::CollisionResult& getLastCollisionResult();
+  dynamics::CollisionResult& getLastCollisionResult();
 
   /// Return the last collision checking result
-  const collision::CollisionResult& getLastCollisionResult() const;
+  const dynamics::CollisionResult& getLastCollisionResult() const;
 
   /// Set LCP solver
   DART_DEPRECATED(6.7)
@@ -210,21 +210,21 @@ protected:
   void solveConstrainedGroups();
 
   /// Return true if at least one of colliding body is soft body
-  bool isSoftContact(const collision::Contact& contact) const;
+  bool isSoftContact(const dynamics::Contact& contact) const;
 
-  using CollisionDetector = collision::CollisionDetector;
+  using CollisionDetector = dynamics::CollisionDetector;
 
   /// Collision detector
-  collision::CollisionDetectorPtr mCollisionDetector;
+  dynamics::CollisionDetectorPtr mCollisionDetector;
 
   /// Collision group
-  collision::CollisionGroupPtr mCollisionGroup;
+  dynamics::CollisionGroupPtr mCollisionGroup;
 
   /// Collision detection option
-  collision::CollisionOption mCollisionOption;
+  dynamics::CollisionOption mCollisionOption;
 
   /// Last collision checking result
-  collision::CollisionResult mCollisionResult;
+  dynamics::CollisionResult mCollisionResult;
 
   /// Time step
   double mTimeStep;

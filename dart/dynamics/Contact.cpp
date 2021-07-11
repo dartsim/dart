@@ -33,7 +33,7 @@
 #include "dart/dynamics/Contact.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 Contact::Contact()

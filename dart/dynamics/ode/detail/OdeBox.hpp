@@ -38,7 +38,7 @@
 #include "dart/dynamics/ode/detail/OdeGeom.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 class OdeBox : public OdeGeom

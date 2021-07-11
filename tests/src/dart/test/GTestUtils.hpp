@@ -33,11 +33,87 @@
 #ifndef DART_UNITTESTS_GTESTUTILS_HPP_
 #define DART_UNITTESTS_GTESTUTILS_HPP_
 
-#include <gtest/gtest.h>
+#include <tuple>
 
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
+
 #include "dart/math/Geometry.hpp"
 #include "dart/math/MathTypes.hpp"
+
+//==============================================================================
+#define EXPECT_S_EQ(val1, val2)                                                \
+  if constexpr (::std::is_same_v<S, float>)                                    \
+  {                                                                            \
+    EXPECT_FLOAT_EQ(val1, val2);                                               \
+  }                                                                            \
+  else                                                                         \
+  {                                                                            \
+    EXPECT_DOUBLE_EQ(val1, val2);                                              \
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
+// do {} while (0) is to require semicolon after the macro
+
+//==============================================================================
+#define EXPECT_VECTOR2S_EQ(expected, actual)                                   \
+  EXPECT_S_EQ((expected)[0], (actual)[0]);                                     \
+  EXPECT_S_EQ((expected)[1], (actual)[1]);                                     \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
+// do {} while (0) is to require semicolon after the macro
+
+//==============================================================================
+#define EXPECT_VECTOR3S_EQ(expected, actual)                                   \
+  EXPECT_S_EQ((expected)[0], (actual)[0]);                                     \
+  EXPECT_S_EQ((expected)[1], (actual)[1]);                                     \
+  EXPECT_S_EQ((expected)[2], (actual)[2]);                                     \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
+// do {} while (0) is to require semicolon after the macro
+
+//==============================================================================
+#define EXPECT_MATRIX3S_EQ(expected, actual)                                   \
+  {                                                                            \
+    auto _mat3_a = expected;                                                   \
+    auto _mat3_b = actual;                                                     \
+    for (auto _i = 0; _i < 3; ++_i)                                            \
+    {                                                                          \
+      for (auto _j = 0; _j < 3; ++_j)                                          \
+      {                                                                        \
+        auto _a = _mat3_a(_i, _j);                                             \
+        auto _b = _mat3_b(_i, _j);                                             \
+        EXPECT_S_EQ(_a, _b);                                                   \
+      }                                                                        \
+    }                                                                          \
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
+// do {} while (0) is to require semicolon after the macro
+
+//==============================================================================
+#define EXPECT_TRANSFORM3S_EQ(expected, actual)                                \
+  {                                                                            \
+    auto _mat3_a = expected;                                                   \
+    auto _mat3_b = actual;                                                     \
+    for (auto _i = 0; _i < 4; ++_i)                                            \
+    {                                                                          \
+      for (auto _j = 0; _j < 4; ++_j)                                          \
+      {                                                                        \
+        auto _a = _mat3_a(_i, _j);                                             \
+        auto _b = _mat3_b(_i, _j);                                             \
+        EXPECT_S_EQ(_a, _b);                                                   \
+      }                                                                        \
+    }                                                                          \
+  }                                                                            \
+  do                                                                           \
+  {                                                                            \
+  } while (0)
+// do {} while (0) is to require semicolon after the macro
 
 //==============================================================================
 #define EXPECT_VECTOR_DOUBLE_EQ(vec1, vec2)                                    \
@@ -294,6 +370,44 @@ inline bool equals(
 
   return (norm < tol);
 }
+
+template <class T, class S>
+struct Case
+{
+  using type = T;
+
+  static std::string GetParam()
+  {
+    return S::str;
+  }
+};
+
+template <class TupleType, class TupleParam, std::size_t I>
+struct make_case
+{
+  static constexpr std::size_t N = std::tuple_size<TupleParam>::value;
+
+  using type = Case<
+      typename std::tuple_element<I / N, TupleType>::type,
+      typename std::tuple_element<I % N, TupleParam>::type>;
+};
+
+template <class T1, class T2, class Is>
+struct make_combinations;
+
+template <class TupleType, class TupleParam, std::size_t... Is>
+struct make_combinations<TupleType, TupleParam, std::index_sequence<Is...>>
+{
+  using tuples
+      = std::tuple<typename make_case<TupleType, TupleParam, Is>::type...>;
+};
+
+template <class TupleTypes, class... Params>
+using Combinations_t = typename make_combinations<
+    TupleTypes,
+    std::tuple<Params...>,
+    std::make_index_sequence<
+        (std::tuple_size<TupleTypes>::value) * (sizeof...(Params))>>::tuples;
 
 } // namespace test
 } // namespace dart

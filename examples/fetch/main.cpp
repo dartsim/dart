@@ -158,7 +158,7 @@ int main()
       "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml");
   assert(world);
   world->getConstraintSolver()->setCollisionDetector(
-      collision::BulletCollisionDetector::create());
+      dynamics::BulletCollisionDetector::create());
 
   // Get Fetch robot and set properties
   auto robot = world->getSkeleton("robot0:base_link");

@@ -71,7 +71,7 @@ constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
-    collision::Contact& contact, double timeStep)
+    dynamics::Contact& contact, double timeStep)
   : ConstraintBase(),
     mTimeStep(timeStep),
     mBodyNode1(const_cast<dynamics::ShapeFrame*>(
@@ -88,7 +88,7 @@ SoftContactConstraint::SoftContactConstraint(
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(nullptr),
     mPointMass2(nullptr),
-    mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(contact.userData)),
+    mSoftCollInfo(static_cast<dynamics::SoftCollisionInfo*>(contact.userData)),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
@@ -199,7 +199,7 @@ SoftContactConstraint::SoftContactConstraint(
 
     for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
-      collision::Contact* ct = mContacts[i];
+      dynamics::Contact* ct = mContacts[i];
 
       // TODO(JS): Assumed that the number of tangent basis is 2.
       Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
@@ -291,7 +291,7 @@ SoftContactConstraint::SoftContactConstraint(
 
     for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
-      collision::Contact* ct = mContacts[i];
+      dynamics::Contact* ct = mContacts[i];
 
       bodyDirection1.noalias()
           = mBodyNode1->getTransform().linear().transpose() * ct->normal;

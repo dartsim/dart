@@ -45,12 +45,12 @@
   using Weak##X##Ptr = std::weak_ptr<X>;                                       \
   using WeakConst##X##Ptr = std::weak_ptr<const X>;
 
-// Deprecated in DART 6.4. Please use DART_COMMON_DECLARE_SHARED_WEAK
-//
-// -- Standard shared/weak pointers --
-// Define a typedef for const and non-const version of shared_ptr and weak_ptr
-// for the class X
-#define DART_COMMON_MAKE_SHARED_WEAK(X) DART_COMMON_DECLARE_SHARED_WEAK(X)
+#define DART_COMMON_DECLARE_SHARED_WEAK_STRUCT(X)                              \
+  struct X;                                                                    \
+  using X##Ptr = std::shared_ptr<X>;                                           \
+  using Const##X##Ptr = std::shared_ptr<const X>;                              \
+  using Weak##X##Ptr = std::weak_ptr<X>;                                       \
+  using WeakConst##X##Ptr = std::weak_ptr<const X>;
 
 // -- Standard shared/weak/unique pointers --
 // Type aliases for const and non-const version of shared_ptr, weak_ptr, and
@@ -59,5 +59,44 @@
   DART_COMMON_DECLARE_SHARED_WEAK(X)                                           \
   using Unique##X##Ptr = std::unique_ptr<X>;                                   \
   using UniqueConst##X##Ptr = std::unique_ptr<const X>;
+
+#define DART_COMMON_DECLARE_SMART_POINTERS_STRUCT(X)                           \
+  DART_COMMON_DECLARE_SHARED_WEAK_STRUCT(X)                                    \
+  using Unique##X##Ptr = std::unique_ptr<X>;                                   \
+  using UniqueConst##X##Ptr = std::unique_ptr<const X>;
+
+#define DART_DEFINE_STRUCT_POINTERS_T1(x)                                      \
+  template <typename T>                                                        \
+  struct x;                                                                    \
+  template <typename T>                                                        \
+  using x##Ptr = ::std::shared_ptr<x<T>>;                                      \
+  template <typename T>                                                        \
+  using Const##x##Ptr = ::std::shared_ptr<const x<T>>;                         \
+  template <typename T>                                                        \
+  using x##WeakPtr = ::std::weak_ptr<x<T>>;                                    \
+  template <typename T>                                                        \
+  using Const##x##WeakPtr = ::std::weak_ptr<const x<T>>;                       \
+  template <typename T>                                                        \
+  using x##UniquePtr = ::std::unique_ptr<x<T>>;                                \
+  template <typename T>                                                        \
+  using Const##x##UniquePtr = ::std::unique_ptr<const x<T>>;                   \
+  void _ANONYMOUS_FUNCTION_3()
+
+#define DART_DEFINE_CLASS_POINTERS_T1(x)                                       \
+  template <typename T>                                                        \
+  class x;                                                                     \
+  template <typename T>                                                        \
+  using x##Ptr = ::std::shared_ptr<x<T>>;                                      \
+  template <typename T>                                                        \
+  using Const##x##Ptr = ::std::shared_ptr<const x<T>>;                         \
+  template <typename T>                                                        \
+  using x##WeakPtr = ::std::weak_ptr<x<T>>;                                    \
+  template <typename T>                                                        \
+  using Const##x##WeakPtr = ::std::weak_ptr<const x<T>>;                       \
+  template <typename T>                                                        \
+  using x##UniquePtr = ::std::unique_ptr<x<T>>;                                \
+  template <typename T>                                                        \
+  using Const##x##UniquePtr = ::std::unique_ptr<const x<T>>;                   \
+  void _ANONYMOUS_FUNCTION_3()
 
 #endif // DART_COMMON_SMARTPOINTER_HPP_

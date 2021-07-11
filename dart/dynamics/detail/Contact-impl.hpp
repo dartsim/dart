@@ -36,7 +36,7 @@
 #include "dart/dynamics/Contact.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 constexpr double Contact::getNormalEpsilon()

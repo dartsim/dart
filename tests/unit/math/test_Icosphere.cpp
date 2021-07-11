@@ -31,7 +31,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/math/Icosphere.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 #include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
@@ -71,4 +71,20 @@ TEST(IcosphereTests, Constructor)
   EXPECT_FALSE(s2.isEmpty());
   EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
   EXPECT_EQ(s2.getNumSubdivisions(), 3);
+}
+
+//==============================================================================
+TEST(IcosphereTests, ComputeVolume)
+{
+  const double pi = constantsd::pi();
+  const double radius = 1;
+  auto computeVolume = [&](double radius) {
+    return 4.0 / 3.0 * pi * radius * radius * radius;
+  };
+
+  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
+  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
+  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
+  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
+  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
 }

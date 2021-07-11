@@ -40,7 +40,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)

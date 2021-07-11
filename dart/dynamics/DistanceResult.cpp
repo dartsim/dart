@@ -36,7 +36,7 @@
 #define DART_DEFAULT_UNCLAMPED_MIN_DISTANCE (0.0)
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 DistanceResult::DistanceResult()

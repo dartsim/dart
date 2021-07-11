@@ -33,7 +33,7 @@
 #include "dart/dynamics/dart/DARTCollisionObject.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 DARTCollisionObject::DARTCollisionObject(

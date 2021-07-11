@@ -37,7 +37,7 @@
 #include <memory>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class CollisionFilter;
 

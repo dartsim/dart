@@ -47,6 +47,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
-            -DDART_SKIP_GLUT=ON
+            -DDART_SKIP_GLUT=ON ^
+            -DDART_BUILD_DARTPY=OFF
           cmake --build . --config %BUILD_TYPE% --target ALL_BUILD --parallel
-          ctest --output-on-fauilure -C %BUILD_TYPE%
+          ctest --rerun-failed --output-on-failure -C %BUILD_TYPE%

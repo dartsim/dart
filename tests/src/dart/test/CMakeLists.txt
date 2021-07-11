@@ -9,7 +9,7 @@
 # TODO(JS): Check dependencies
 
 # Search all header and source files
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
 # Set local target name

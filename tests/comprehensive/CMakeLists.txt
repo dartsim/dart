@@ -13,31 +13,31 @@ if(TARGET dart-optimization-pagmo)
 endif()
 
 dart_add_test("comprehensive" test_Distance)
-if(TARGET dart-collision-bullet)
-  target_link_libraries(test_Distance dart-collision-bullet)
+if(TARGET dart-collision)
+  target_link_libraries(test_Distance dart-collision)
 endif()
 
 dart_add_test("comprehensive" test_Raycast)
-if(TARGET dart-collision-bullet)
-  target_link_libraries(test_Raycast dart-collision-bullet)
+if(TARGET dart-collision)
+  target_link_libraries(test_Raycast dart-collision)
 endif()
 
-if(TARGET dart-collision-ode)
+if(TARGET dart-collision)
   # This test doesn't work with FCL because it converts simple shapes to meshes, which makes
   # it difficult to come up with correct test expectations.
   dart_add_test("comprehensive" test_ForceDependentSlip)
-  target_link_libraries(test_ForceDependentSlip dart-collision-ode)
+  target_link_libraries(test_ForceDependentSlip dart-collision)
 endif()
 
 if(TARGET dart-io)
 
   dart_add_test("comprehensive" test_Collision)
   target_link_libraries(test_Collision dart-io)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(test_Collision dart-collision-bullet)
+  if(TARGET dart-collision)
+    target_link_libraries(test_Collision dart-collision)
   endif()
-  if(TARGET dart-collision-ode)
-    target_link_libraries(test_Collision dart-collision-ode)
+  if(TARGET dart-collision)
+    target_link_libraries(test_Collision dart-collision)
   endif()
 
   dart_add_test("comprehensive" test_Dynamics)
@@ -57,8 +57,8 @@ if(TARGET dart-io)
 
   dart_add_test("comprehensive" test_World)
   target_link_libraries(test_World dart-io)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(test_World dart-collision-bullet)
+  if(TARGET dart-collision)
+    target_link_libraries(test_World dart-collision)
   endif()
 
   if(TARGET dart-io-urdf)

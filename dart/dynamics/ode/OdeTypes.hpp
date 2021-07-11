@@ -37,7 +37,7 @@
 #include <ode/ode.h>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class OdeTypes
 {

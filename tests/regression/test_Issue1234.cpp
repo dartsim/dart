@@ -50,7 +50,7 @@
 
 //==============================================================================
 bool runIssue1234Subtest(
-    const dart::collision::CollisionDetectorPtr detector,
+    const dart::dynamics::CollisionDetectorPtr detector,
     const dart::dynamics::ShapePtr& against,
     const Eigen::Vector3d normal,
     const double offset,
@@ -86,7 +86,7 @@ bool runIssue1234Subtest(
 
 //==============================================================================
 void runIssue1234Test(
-    std::function<dart::collision::CollisionDetectorPtr()> detectorFactory)
+    std::function<dart::dynamics::CollisionDetectorPtr()> detectorFactory)
 {
   const std::string meshUri = "dart://sample/obj/BoxSmall.obj";
   const auto aiscene = dart::dynamics::MeshShape::loadMesh(
@@ -165,12 +165,12 @@ void runIssue1234Test(
 TEST(DISABLED_Issue1234, Bullet)
 {
   runIssue1234Test(
-      [] { return dart::collision::BulletCollisionDetector::create(); });
+      [] { return dart::dynamics::BulletCollisionDetector::create(); });
 }
 
 //==============================================================================
 TEST(DISABLED_Issue1234, ODE)
 {
   runIssue1234Test(
-      [] { return dart::collision::OdeCollisionDetector::create(); });
+      [] { return dart::dynamics::OdeCollisionDetector::create(); });
 }

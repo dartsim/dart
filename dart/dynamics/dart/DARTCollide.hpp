@@ -38,7 +38,7 @@
 #include "dart/dynamics/CollisionDetector.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
 

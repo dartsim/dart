@@ -8,10 +8,14 @@ script_path="$(
 
 os=ubuntu-focal
 dart_version=v7.0
-build_rel_dir=.build
+build_dir_prefix=.build/
 project_dir=/opt/dart/
 cleanup_command=""
 use_dev_image=false
+test_command="&& make -j tests && ctest --output-on-failure"
+example_command="&& make -j examples"
+tutorial_command="&& make -j tutorials"
+dartpy_command="&& make -j16 dartpy && make pytest"
 
 help() {
   cat <<EOF
@@ -26,6 +30,10 @@ help() {
     -v <version>  DART version. Available <version>: {v6.10, v7.0 (default)}
     -c            Clean build. Empty the build directory before building.
     --dev         Use Docker image for development rather than release image.
+    --no-test     Skip building and running tests
+    --no-example  Skip building examples
+    --no-tutorial Skip building tutorials
+    --no-dartpy   Skip building dartpy
 EOF
 }
 
@@ -52,6 +60,18 @@ while [ $# -gt 0 ]; do
     ;;
   --dev)
     use_dev_image=true
+    ;;
+  --no-test)
+    test_command=""
+    ;;
+  --no-example)
+    example_command=""
+    ;;
+  --no-tutorial)
+    tutorial_command=""
+    ;;
+  --no-dartpy)
+    dartpy_command=""
     ;;
   *)
     bash_command=$@
@@ -87,16 +107,21 @@ build() {
 
   docker pull $full_image_name
 
+  full_build_dir=$project_dir$build_dir_prefix$os-$dart_version
+
   docker run \
     -it \
     --volume $(pwd):$project_dir \
     -w $project_dir/ \
     $full_image_name /bin/bash -c \
-    "mkdir -p $project_dir$build_rel_dir \
-    && cd $project_dir$build_rel_dir \
+    "mkdir -p $full_build_dir \
+    && cd $full_build_dir \
     $cleanup_command \
-    && cmake $project_dir \
-    && make -j"
+    && cmake $project_dir -DDART_BUILD_DARTPY=ON \
+    $test_command \
+    $example_command \
+    $tutorial_command \
+    $dartpy_command"
 }
 
 # Run the selected routine

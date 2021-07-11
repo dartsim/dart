@@ -37,7 +37,7 @@
 #include <unordered_set>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 template <class T>

@@ -42,7 +42,7 @@
 #include "dart/dynamics/CollisionResult.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 struct BulletOverlapFilterCallback : public btOverlapFilterCallback

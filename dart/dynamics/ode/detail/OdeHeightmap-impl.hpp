@@ -38,7 +38,7 @@
 #include "dart/dynamics/HeightmapShape.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 #define HF_THICKNESS 0.05

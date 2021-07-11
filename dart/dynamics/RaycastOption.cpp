@@ -33,7 +33,7 @@
 #include "dart/dynamics/RaycastOption.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 RaycastOption::RaycastOption(bool enableAllHits, bool sortByClosest)

@@ -40,7 +40,7 @@
 
 namespace dart {
 
-namespace collision {
+namespace dynamics {
 class SoftCollisionInfo;
 } // namespace collision
 
@@ -58,7 +58,7 @@ class SoftContactConstraint : public ConstraintBase
 {
 public:
   /// Constructor
-  SoftContactConstraint(collision::Contact& _contact, double _timeStep);
+  SoftContactConstraint(dynamics::Contact& _contact, double _timeStep);
 
   /// Destructor
   virtual ~SoftContactConstraint();
@@ -201,10 +201,10 @@ private:
 
   // TODO(JS): For now, there is only one contact per contact constraint
   /// Contacts between mBodyNode1 and mBodyNode2
-  std::vector<collision::Contact*> mContacts;
+  std::vector<dynamics::Contact*> mContacts;
 
   /// Soft collision information
-  collision::SoftCollisionInfo* mSoftCollInfo;
+  dynamics::SoftCollisionInfo* mSoftCollInfo;
 
   /// First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;

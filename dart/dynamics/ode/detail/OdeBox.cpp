@@ -35,7 +35,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 //==============================================================================

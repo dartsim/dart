@@ -41,7 +41,7 @@
 #include "dart/dynamics/CollisionGroup.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 class BulletCollisionGroup : public CollisionGroup
 {

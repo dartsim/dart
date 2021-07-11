@@ -35,7 +35,7 @@
 #include "dart/dynamics/MeshShape.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 namespace detail {
 
 //==============================================================================

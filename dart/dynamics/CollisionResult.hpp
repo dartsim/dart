@@ -46,7 +46,7 @@ class ShapeFrame;
 
 } // namespace dynamics
 
-namespace collision {
+namespace dynamics {
 
 class CollisionResult
 {

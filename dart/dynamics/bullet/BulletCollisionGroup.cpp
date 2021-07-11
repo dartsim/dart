@@ -37,7 +37,7 @@
 #include "dart/dynamics/bullet/detail/BulletCollisionDispatcher.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 BulletCollisionGroup::BulletCollisionGroup(

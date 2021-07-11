@@ -36,7 +36,7 @@
 #include "dart/dynamics/bullet/BulletTypes.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 btCollisionObject* BulletCollisionObject::getBulletCollisionObject()

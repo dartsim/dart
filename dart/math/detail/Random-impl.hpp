@@ -34,6 +34,8 @@
 
 #include "dart/math/Random.hpp"
 
+#include "dart/math/Constants.hpp"
+
 namespace dart {
 namespace math {
 
@@ -342,6 +344,38 @@ DynamicSizeMatrixT Random::uniform(
   return uniform<DynamicSizeMatrixT>(
       DynamicSizeMatrixT::Constant(rows, cols, min),
       DynamicSizeMatrixT::Constant(rows, cols, max));
+}
+
+//==============================================================================
+template <typename S>
+::Eigen::Quaternion<S> Random::uniformUnitQuaternion()
+{
+  // "Uniform Random Rotations" of Shoemake:
+  // http://planning.cs.uiuc.edu/node198.html
+
+  static_assert(
+      std::is_floating_point_v<S>, "Non-floating point type is not supported");
+
+  constexpr S pi = constants<S>::pi();
+
+  const S u1 = uniform<S>(0, 1);
+  const S u2 = uniform<S>(0, 1);
+  const S u3 = uniform<S>(0, 1);
+
+  const S a = std::sqrt(1. - u1);
+  const S b = S(2) * pi * u2;
+  const S c = std::sqrt(u1);
+  const S d = S(2) * pi * u3;
+
+  return ::Eigen::Quaternion<S>(
+      a * std::sin(b), a * std::cos(b), c * std::sin(d), c * std::cos(d));
+}
+
+//==============================================================================
+template <typename S>
+::Eigen::Matrix<S, 3, 3> Random::uniformRotationMatrix3()
+{
+  return uniformUnitQuaternion<S>().toRotationMatrix();
 }
 
 //==============================================================================

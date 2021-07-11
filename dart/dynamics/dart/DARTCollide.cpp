@@ -43,7 +43,7 @@
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 // point : world coordinate vector
 // normal : normal vector from right to left 0 <- 1

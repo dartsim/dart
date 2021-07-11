@@ -41,7 +41,7 @@ namespace dynamics {
 class ShapeFrame;
 } // namespace dynamics
 
-namespace collision {
+namespace dynamics {
 
 struct DistanceResult
 {

@@ -58,7 +58,7 @@ TEST(Issue895, BodyNodeSelfCollision)
   world->addSkeleton(skel);
 
   world->step();
-  const dart::collision::CollisionResult result
+  const dart::dynamics::CollisionResult result
       = world->getLastCollisionResult();
 
   EXPECT_EQ(result.getNumContacts(), 0u);

@@ -76,10 +76,10 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
 
-  collision::RaycastOption option;
+  dynamics::RaycastOption option;
   option.mEnableAllHits = false;
 
-  collision::RaycastResult result;
+  dynamics::RaycastResult result;
   EXPECT_FALSE(result.hasHit());
 
   RayHit rayHit;
@@ -176,10 +176,10 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 
   auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
 
-  collision::RaycastOption option;
+  dynamics::RaycastOption option;
   option.mEnableAllHits = false;
 
-  collision::RaycastResult result;
+  dynamics::RaycastResult result;
   EXPECT_FALSE(result.hasHit());
 
   RayHit rayHit;

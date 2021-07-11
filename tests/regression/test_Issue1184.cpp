@@ -101,7 +101,7 @@ TEST(Issue1184, Accuracy)
         {
           auto world = dart::simulation::World::create("test");
           world->getConstraintSolver()->setCollisionDetector(
-              dart::collision::BulletCollisionDetector::create());
+              dart::dynamics::BulletCollisionDetector::create());
 
           Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();
           const double initialHeight

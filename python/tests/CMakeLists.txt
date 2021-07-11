@@ -23,7 +23,7 @@ set(dartpy_test_utils
   util.py
 )
 
-file(GLOB_RECURSE dartpy_test_files "test_*.py")
+file(GLOB_RECURSE dartpy_test_files "*test_*.py")
 
 # Add custom target to run the tests
 add_custom_target(pytest

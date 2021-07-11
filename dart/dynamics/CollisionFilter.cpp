@@ -36,7 +36,7 @@
 #include "dart/dynamics/CollisionObject.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 CollisionFilter::~CollisionFilter()
@@ -109,8 +109,8 @@ void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
 
 //==============================================================================
 bool BodyNodeCollisionFilter::ignoresCollision(
-    const collision::CollisionObject* object1,
-    const collision::CollisionObject* object2) const
+    const dynamics::CollisionObject* object1,
+    const dynamics::CollisionObject* object2) const
 {
   if (object1 == object2)
     return true;

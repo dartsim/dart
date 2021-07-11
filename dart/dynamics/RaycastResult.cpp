@@ -33,7 +33,7 @@
 #include "dart/dynamics/RaycastResult.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
 RayHit::RayHit()

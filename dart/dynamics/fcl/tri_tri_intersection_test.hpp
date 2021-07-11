@@ -123,7 +123,7 @@
   }
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 /* if USE_EPSILON_TEST is true then we do a check:
          if |dv|<EPSILON then dv=0.0;

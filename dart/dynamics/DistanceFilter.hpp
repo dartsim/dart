@@ -39,7 +39,7 @@ namespace dynamics {
 class BodyNode;
 } // namespace dynamics
 
-namespace collision {
+namespace dynamics {
 
 class CollisionObject;
 

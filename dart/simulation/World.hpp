@@ -70,7 +70,7 @@ namespace dynamics {
 class ConstraintSolver;
 } // namespace dynamics
 
-namespace collision {
+namespace dynamics {
 class CollisionResult;
 } // namespace collision
 
@@ -196,15 +196,15 @@ public:
   /// or not without the contact information such as contact point, normal, and
   /// penetration depth.
   bool checkCollision(
-      const collision::CollisionOption& option
-      = collision::CollisionOption(false, 1u, nullptr),
-      collision::CollisionResult* result = nullptr);
+      const dynamics::CollisionOption& option
+      = dynamics::CollisionOption(false, 1u, nullptr),
+      dynamics::CollisionResult* result = nullptr);
 
   /// Return the collision checking result of the last simulation step. If this
   /// world hasn't stepped forward yet, then the result would be empty. Note
   /// that this function does not return the collision checking result of
   /// World::checkCollision().
-  const collision::CollisionResult& getLastCollisionResult() const;
+  const dynamics::CollisionResult& getLastCollisionResult() const;
 
   //--------------------------------------------------------------------------
   // Simulation

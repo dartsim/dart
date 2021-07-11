@@ -24,19 +24,14 @@ if(TARGET dart-io-urdf)
 
 endif()
 
-if(TARGET dart-collision-bullet)
+if(TARGET dart-collision)
 
   dart_add_test("regression" test_Issue1184)
-  target_link_libraries(test_Issue1184 dart-collision-bullet)
-
-endif()
-
-if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
+  target_link_libraries(test_Issue1184 dart-collision)
 
   dart_add_test("regression" test_Issue1234)
   target_link_libraries(test_Issue1234
-    dart-collision-bullet
-    dart-collision-ode
+    dart-collision
     dart-io)
 
 endif()
