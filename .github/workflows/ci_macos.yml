@@ -6,9 +6,12 @@ on:
   push:
     branches:
       - "**"
+  pull_request:
+    branches:
+      - "**"
   schedule:
     # Run every day at 02:00
-    - cron: "0 2 * * 0-6"
+    - cron: "0 2 * * 0,2,4,6"
 
 jobs:
   # macOS 10.15 (Catalina)

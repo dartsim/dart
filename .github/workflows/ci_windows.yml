@@ -6,6 +6,9 @@ on:
   push:
     branches:
       - "**"
+  pull_request:
+    branches:
+      - "**"
   schedule:
     # Run every day at 02:00
     - cron: "0 2 * * 0-6"
