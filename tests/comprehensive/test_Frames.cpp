@@ -36,7 +36,7 @@
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 
-#include "dart/test/GTestUtils.hpp"
+#include "dart/test/math/GTestUtils.hpp"
 #include "dart/test/TestHelpers.hpp"
 
 using namespace dart;

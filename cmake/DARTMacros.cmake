@@ -380,6 +380,7 @@ function(dart_add_component)
     TARGET_COMPILE_DEFINITIONS_PUBLIC
     COMPONENT_DEPENDENCIES
     COMPONENT_DEPENDENCY_PACKAGES
+    COMPONENT_OPTIONAL_DEPENDENCY_PACKAGES
     SUB_DIRECTORIES
   )
   cmake_parse_arguments(
@@ -405,13 +406,19 @@ function(dart_add_component)
   set(target_compile_definitions_public ${${prefix}_TARGET_COMPILE_DEFINITIONS_PUBLIC})
   set(dependent_components ${${prefix}_COMPONENT_DEPENDENCIES})
   set(dependent_packages ${${prefix}_COMPONENT_DEPENDENCY_PACKAGES})
+  set(optional_dependent_packages ${${prefix}_COMPONENT_OPTIONAL_DEPENDENCY_PACKAGES})
+  
   set(sub_directories ${${prefix}_SUB_DIRECTORIES})
 
-  # Return if 
+  # Return if the component is specified not to build
   if(NOT DART_BUILD_COMP_${component_name})
     message(WARNING "Skipping component <${component_name}> because DART_BUILD_COMP_${component_name} is not set or set to OFF")
     return()
   endif()
+
+  # Target name
+  set(target_base ${project_name}${project_version_major})
+  set(target_name ${target_base}-${component_name})
 
   # Check dependencies
   get_property(enabled_components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -434,9 +441,16 @@ function(dart_add_component)
     endif()
   endforeach()
 
-  # Target name
-  set(target_base ${project_name}${project_version_major})
-  set(target_name ${target_base}-${component_name})
+  # Check optional dependent packages
+  foreach(package ${optional_dependent_packages})
+    dart_check_optional_package(${package} ${target_name} ${package})
+    if(DART_HAVE_${package})
+      list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=1)
+    else()
+      list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=0)
+      message(STATUS "Building component <${component_name}> without ${package}")
+    endif()
+  endforeach()
 
   # Include path
   set(include_base_path include/${org_name}/${project_name}${project_version_major})

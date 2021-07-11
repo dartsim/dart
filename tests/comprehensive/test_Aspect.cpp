@@ -44,7 +44,6 @@
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
-#include "dart/test/TestHelpers.hpp"
 
 using namespace dart::common;
 

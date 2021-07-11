@@ -260,11 +260,11 @@ TEST(World, Cloning)
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
         dart::dynamics::SkeletonPtr clone = clones[c]->getSkeleton(k);
 
-        EXPECT_TRUE(equals(skel->getPositions(), clone->getPositions(), 0));
-        EXPECT_TRUE(equals(skel->getVelocities(), clone->getVelocities(), 0));
+        EXPECT_TRUE(test::equals(skel->getPositions(), clone->getPositions(), 0));
+        EXPECT_TRUE(test::equals(skel->getVelocities(), clone->getVelocities(), 0));
         EXPECT_TRUE(
             equals(skel->getAccelerations(), clone->getAccelerations(), 0));
-        EXPECT_TRUE(equals(skel->getForces(), clone->getForces(), 0));
+        EXPECT_TRUE(test::equals(skel->getForces(), clone->getForces(), 0));
       }
     }
   }

@@ -30,4 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/test/GTestUtils.hpp"
+#pragma once
+
+#ifndef HAVE_CSTDDEF
+  #define HAVE_CSTDDEF
+#endif
+
+#include "dart/optimization/ipopt/BackwardCompatibility.hpp"
+#if IPOPT_VERSION_GE(3, 13, 0)
+  #include <IpIpoptApplication.hpp>
+  #include <IpTNLP.hpp>
+#else
+  #include <coin/IpIpoptApplication.hpp>
+  #include <coin/IpTNLP.hpp>
+#endif

@@ -9,6 +9,12 @@
 # Set basic component settings
 set(project_name ${PROJECT_NAME})
 set(component_name common)
+set(link_libraries_public
+  Boost::boost
+  Boost::system
+  Boost::filesystem
+  Eigen3::Eigen
+)
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
@@ -58,10 +64,6 @@ dart_add_component(
     Boost Eigen3
   TARGET_LINK_LIBRARIES_PUBLIC
     ${link_libraries_public}
-    Boost::boost
-    Boost::system
-    Boost::filesystem
-    Eigen3::Eigen
   TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING
     ${CMAKE_DL_LIBS}
     $<$<PLATFORM_ID:Linux>:stdc++fs>

@@ -41,7 +41,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/io/VskParser.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/test/TestHelpers.hpp"
+#include "dart/test/io/TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

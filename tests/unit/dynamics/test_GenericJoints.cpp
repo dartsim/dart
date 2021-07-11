@@ -35,10 +35,10 @@
 #include <gtest/gtest.h>
 
 #include "dart/dart.hpp"
-#include "dart/test/TestHelpers.hpp"
 
 using namespace dart;
-using namespace dynamics;
+using namespace dart::math;
+using namespace dart::dynamics;
 
 // class ZeroDofJointTest : public GenericJoint<NullSpace>
 //{

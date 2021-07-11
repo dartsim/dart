@@ -30,47 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @file TestHelper.h
- * @author Can Erdogan
- * @date Feb 03, 2013
- * @brief Contains the helper functions for the tests.
- */
-
-#ifndef DART_UNITTESTS_TEST_HELPERS_H
-#define DART_UNITTESTS_TEST_HELPERS_H
+#pragma once
 
 #include <vector>
 
 #include <Eigen/Dense>
 
 #include "dart/dart.hpp"
-#include "dart/test/GTestUtils.hpp"
+#include "dart/test/math/GTestUtils.hpp"
 
 using namespace Eigen;
 using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
-using namespace dart::simulation;
 
 /// Function headers
 enum TypeOfDOF { DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW };
-
-//==============================================================================
-// Deprecated. Use dart::test::equals() instead.
-template <class MatrixA, class MatrixB>
-bool equals(const MatrixA& expected, const MatrixB& actual, double tol = 1e-5) {
-  return dart::test::equals(expected, actual, tol);
-}
-
-//==============================================================================
-// Deprecated. Use dart::test::equals() instead.
-inline bool equals(
-    const Eigen::Isometry3d& tf1,
-    const Eigen::Isometry3d& tf2,
-    double tol = 1e-5) {
-  return dart::test::equals(tf1, tf2, tol);
-}
 
 //==============================================================================
 /// Add an end-effector to the last link of the given robot
@@ -508,68 +483,3 @@ inline SkeletonPtr createBox(
 
   return box;
 }
-
-//==============================================================================
-struct TestResource : public dart::common::Resource {
-  size_t getSize() override {
-    return 0;
-  }
-
-  size_t tell() override {
-    return 0;
-  }
-
-  bool seek(ptrdiff_t /*_offset*/, SeekType /*_origin*/) override {
-    return false;
-  }
-
-  size_t read(void* /*_buffer*/, size_t /*_size*/, size_t /*_count*/) override {
-    return 0;
-  }
-};
-
-//==============================================================================
-struct PresentResourceRetriever : public dart::common::ResourceRetriever {
-  bool exists(const dart::common::Uri& _uri) override {
-    mExists.push_back(_uri.toString());
-    return true;
-  }
-
-  std::string getFilePath(const dart::common::Uri& _uri) override {
-    mGetFilePath.push_back(_uri.toString());
-    return _uri.toString();
-  }
-
-  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override {
-    mRetrieve.push_back(_uri.toString());
-    return std::make_shared<TestResource>();
-  }
-
-  std::vector<std::string> mExists;
-  std::vector<std::string> mGetFilePath;
-  std::vector<std::string> mRetrieve;
-};
-
-//==============================================================================
-struct AbsentResourceRetriever : public dart::common::ResourceRetriever {
-  bool exists(const dart::common::Uri& _uri) override {
-    mExists.push_back(_uri.toString());
-    return false;
-  }
-
-  std::string getFilePath(const dart::common::Uri& _uri) override {
-    mGetFilePath.push_back(_uri.toString());
-    return "";
-  }
-
-  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override {
-    mRetrieve.push_back(_uri.toString());
-    return nullptr;
-  }
-
-  std::vector<std::string> mExists;
-  std::vector<std::string> mGetFilePath;
-  std::vector<std::string> mRetrieve;
-};
-
-#endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H

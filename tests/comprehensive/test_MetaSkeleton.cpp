@@ -158,9 +158,9 @@ TEST(MetaSkeleton, Referential)
         tree->setVelocities(dq);
         tree->setAccelerations(ddq);
 
-        EXPECT_TRUE(equals(q, tree->getPositions(), 0.0));
-        EXPECT_TRUE(equals(dq, tree->getVelocities(), 0.0));
-        EXPECT_TRUE(equals(ddq, tree->getAccelerations(), 0.0));
+        EXPECT_TRUE(test::equals(q, tree->getPositions(), 0.0));
+        EXPECT_TRUE(test::equals(dq, tree->getVelocities(), 0.0));
+        EXPECT_TRUE(test::equals(ddq, tree->getAccelerations(), 0.0));
 
         const Eigen::MatrixXd& skelMassMatrix = skeleton->getMassMatrix();
         const Eigen::MatrixXd& treeMassMatrix = tree->getMassMatrix();

@@ -33,7 +33,7 @@
 #include <gtest/gtest.h>
 
 #include "dart/io/CompositeResourceRetriever.hpp"
-#include "dart/test/TestHelpers.hpp"
+#include "dart/test/io/TestHelpers.hpp"
 
 using dart::common::Resource;
 using dart::common::ResourcePtr;
