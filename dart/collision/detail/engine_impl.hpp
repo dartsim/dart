@@ -33,6 +33,7 @@
 #pragma once
 
 #include "dart/collision/engine.hpp"
+#include "dart/common/logging.hpp"
 
 namespace dart {
 namespace collision {
@@ -43,7 +44,7 @@ std::unordered_map<std::string, EnginePtr<S>> Engine<S>::m_engines;
 
 //==============================================================================
 template <typename S>
-EnginePtr<S> Engine<S>::create(const std::string& engine_name) {
+EnginePtr<S> Engine<S>::Create(const std::string& engine_name) {
   const auto& result = m_engines.find(engine_name);
   if (result != m_engines.end()) {
     return result->second;
@@ -53,8 +54,7 @@ EnginePtr<S> Engine<S>::create(const std::string& engine_name) {
   auto newEngine = factory->create(engine_name);
 
   if (!newEngine) {
-    dtwarn << "Failed to create a collision detector with the given engine "
-           << "name '" << engine_name << "'.\n";
+    DART_WARN("Failed to create a collision engine [{}].", engine_name);
     return nullptr;
   }
 
