@@ -143,6 +143,8 @@ endif()
 # Optional Dependencies
 #=======================
 
+dart_find_package(spdlog)
+
 # find_package(Threads)
 dart_find_package(NLOPT)
 dart_find_package(IPOPT)
@@ -260,4 +262,3 @@ dart_find_package(OpenSceneGraph)
 
 # Doxygen
 find_package(Doxygen QUIET)
-dart_check_optional_package(DOXYGEN "generating API documentation" "doxygen")

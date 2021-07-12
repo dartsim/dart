@@ -16,6 +16,16 @@ set(link_libraries_public
   Eigen3::Eigen
 )
 
+if(spdlog_FOUND)
+  if(TARGET spdlog::spdlog_header_only)
+    list(APPEND link_libraries_public spdlog::spdlog_header_only)
+  elseif(TARGET spdlog::spdlog)
+    list(APPEND link_libraries_public spdlog::spdlog)
+  else()
+    message(FATAL_ERROR "Failed to find spdlog targets")
+  endif()
+endif()
+
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
   if(MSVC)
@@ -62,6 +72,8 @@ dart_add_component(
     ${component_name}
   COMPONENT_DEPENDENCY_PACKAGES
     Boost Eigen3
+  COMPONENT_OPTIONAL_DEPENDENCY_PACKAGES
+    spdlog
   TARGET_LINK_LIBRARIES_PUBLIC
     ${link_libraries_public}
   TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING
@@ -70,6 +82,8 @@ dart_add_component(
     ${link_libraries_public_skip_checking}
   TARGET_LINK_OPTIONS_PUBLIC
     ${link_options_public}
+  TARGET_COMPILE_DEFINITIONS_PUBLIC
+    -DDART_ACTIVE_LOG_LEVEL=${DART_ACTIVE_LOG_LEVEL}
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
   TARGET_COMPILE_OPTIONS_PUBLIC

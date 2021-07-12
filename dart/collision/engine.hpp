@@ -55,7 +55,7 @@ public:
   ///
   /// @param[in] engine_name: Name of the underlying collision detection engine
   /// to create.
-  static EnginePtr<S> create(const std::string& engine_name);
+  static EnginePtr<S> Create(const std::string& engine_name);
 
   /// Destructor
   virtual ~Engine();

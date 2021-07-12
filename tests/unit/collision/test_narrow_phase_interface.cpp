@@ -59,5 +59,5 @@ void test_collide(const EngineT& engine) {
 
 //==============================================================================
 TEST(NarrowPhaseTest, Collide) {
-  test_collide(collision::Engine<double>::create("fcl"));
+  test_collide(collision::Engine<double>::Create("fcl"));
 }

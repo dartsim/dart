@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,67 +32,78 @@
 
 #pragma once
 
-#include "dart/collision/engine.hpp"
 #include "dart/common/logging.hpp"
 
+#include "dart/common/macro.hpp"
+
+#if DART_HAVE_spdlog
+  #include <spdlog/spdlog.h>
+#else
+  #include "dart/common/Console.hpp"
+#endif
+
 namespace dart {
-namespace collision {
+namespace common {
 
 //==============================================================================
-template <typename S>
-std::unordered_map<std::string, EnginePtr<S>> Engine<S>::m_engines;
-
-//==============================================================================
-template <typename S>
-EnginePtr<S> Engine<S>::Create(const std::string& engine_name) {
-  const auto& result = m_engines.find(engine_name);
-  if (result != m_engines.end()) {
-    return result->second;
-  }
-
-  auto factory = SingletonFactory::getSingletonPtr();
-  auto newEngine = factory->create(engine_name);
-
-  if (!newEngine) {
-    DART_WARN("Failed to create a collision engine [{}].", engine_name);
-    return nullptr;
-  }
-
-  m_engines[engine_name] = newEngine;
-
-  return newEngine;
+template <typename S, typename... Args>
+void trace(const S& format_str, [[maybe_unused]] Args&&... args) {
+#if DART_HAVE_spdlog
+  spdlog::trace(format_str, std::forward<Args>(args)...);
+#else
+  colorMsg("[trace]", 37) << format_str << "\n";
+#endif
 }
 
 //==============================================================================
-template <typename S>
-Engine<S>::~Engine() {
-  // Do nothing
+template <typename S, typename... Args>
+void debug(const S& format_str, [[maybe_unused]] Args&&... args) {
+#if DART_HAVE_spdlog
+  spdlog::debug(format_str, std::forward<Args>(args)...);
+#else
+  colorMsg("[debug]", 36) << format_str << "\n";
+#endif
 }
 
 //==============================================================================
-template <typename S>
-template <typename GeometryType, typename... Args>
-ObjectPtr<S> Engine<S>::create_object(Args&&... args) {
-  return get_default_group()->template create_object<GeometryType>(
-      std::forward<Args>(args)...);
+template <typename S, typename... Args>
+void info(const S& format_str, [[maybe_unused]] Args&&... args) {
+#if DART_HAVE_spdlog
+  spdlog::info(format_str, std::forward<Args>(args)...);
+#else
+  colorMsg("[info]", 32) << format_str << "\n";
+#endif
 }
 
 //==============================================================================
-template <typename S>
-template <typename... Args>
-ObjectPtr<S> Engine<S>::create_sphere_object(Args&&... args) {
-  return get_default_group()->create_sphere_object(std::forward<Args>(args)...);
+template <typename S, typename... Args>
+void warn(const S& format_str, [[maybe_unused]] Args&&... args) {
+#if DART_HAVE_spdlog
+  spdlog::warn(format_str, std::forward<Args>(args)...);
+#else
+  colorMsg("[warn]", 33) << format_str << "\n";
+#endif
 }
 
 //==============================================================================
-template <typename S>
-Group<S>* Engine<S>::get_default_group() {
-  if (!m_default_group) {
-    m_default_group = create_group();
-  }
-
-  return m_default_group.get();
+template <typename S, typename... Args>
+void error(const S& format_str, [[maybe_unused]] Args&&... args) {
+#if DART_HAVE_spdlog
+  spdlog::error(format_str, std::forward<Args>(args)...);
+#else
+  colorMsg("[error]", 31) << format_str << "\n";
+#endif
 }
 
-} // namespace collision
+//==============================================================================
+template <typename S, typename... Args>
+void fatal(const S& format_str, [[maybe_unused]] Args&&... args) {
+#if DART_HAVE_spdlog
+  spdlog::critical(format_str, std::forward<Args>(args)...);
+#else
+  colorMsg("[fatal]", 30) << format_str << "\n";
+#endif
+}
+
+} // namespace common
 } // namespace dart

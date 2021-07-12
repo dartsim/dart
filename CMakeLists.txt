@@ -144,14 +144,29 @@ set(BUILD_TYPE_MINSIZEREL FALSE)
 
 if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
   set(BUILD_TYPE_DEBUG TRUE)
+  if(NOT DART_ACTIVE_LOG_LEVEL)
+    set(DART_ACTIVE_LOG_LEVEL 1)  # DEBUG
+  endif()
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
   set(BUILD_TYPE_RELEASE TRUE)
+  if(NOT DART_ACTIVE_LOG_LEVEL)
+    set(DART_ACTIVE_LOG_LEVEL 2)  # INFO
+  endif()
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
   set(BUILD_TYPE_RELWITHDEBINFO TRUE)
+  if(NOT DART_ACTIVE_LOG_LEVEL)
+    set(DART_ACTIVE_LOG_LEVEL 2)  # INFO
+  endif()
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
   set(BUILD_TYPE_MINSIZEREL TRUE)
+  if(NOT DART_ACTIVE_LOG_LEVEL)
+    set(DART_ACTIVE_LOG_LEVEL 2)  # INFO
+  endif()
 else()
   message(WARNING "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
+  if(NOT DART_ACTIVE_LOG_LEVEL)
+    set(DART_ACTIVE_LOG_LEVEL 2)  # INFO
+  endif()
 endif()
 
 #===============================================================================
