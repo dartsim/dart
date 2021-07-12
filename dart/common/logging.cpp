@@ -47,7 +47,7 @@ namespace common {
 void set_log_level(LogLevel level) {
 #if DART_HAVE_spdlog
   switch (level) {
-    case LogLevel::TRACE:
+    case LogLevel::LL_TRACE:
   #if DART_ACTIVE_LOG_LEVEL > DART_LOG_LEVEL_TRACE
       std::cout
           << "[warning] Log level is set to TRACE, but trace "
@@ -56,7 +56,7 @@ void set_log_level(LogLevel level) {
   #endif
       spdlog::set_level(spdlog::level::trace);
       break;
-    case LogLevel::DEBUG:
+    case LogLevel::LL_DEBUG:
   #if DART_ACTIVE_LOG_LEVEL > DART_LOG_LEVEL_DEBUG
       std::cout
           << "[warning] Log level is set to DEBUG, but debug or lower level "
@@ -65,7 +65,7 @@ void set_log_level(LogLevel level) {
   #endif
       spdlog::set_level(spdlog::level::debug);
       break;
-    case LogLevel::INFO:
+    case LogLevel::LL_INFO:
   #if DART_ACTIVE_LOG_LEVEL > DART_LOG_LEVEL_INFO
       std::cout
           << "[warning] Log level is set to INFO, but info or lower level "
@@ -74,7 +74,7 @@ void set_log_level(LogLevel level) {
   #endif
       spdlog::set_level(spdlog::level::info);
       break;
-    case LogLevel::WARN:
+    case LogLevel::LL_WARN:
   #if DART_ACTIVE_LOG_LEVEL > DART_LOG_LEVEL_WARN
       std::cout
           << "[warning] Log level is set to WARN, but warn or lower level "
@@ -83,7 +83,7 @@ void set_log_level(LogLevel level) {
   #endif
       spdlog::set_level(spdlog::level::warn);
       break;
-    case LogLevel::ERROR:
+    case LogLevel::LL_ERROR:
   #if DART_ACTIVE_LOG_LEVEL > DART_LOG_LEVEL_ERROR
       std::cout
           << "[warning] Log level is set to ERROR, but error or lower level "
@@ -92,7 +92,7 @@ void set_log_level(LogLevel level) {
   #endif
       spdlog::set_level(spdlog::level::err);
       break;
-    case LogLevel::FATAL:
+    case LogLevel::LL_FATAL:
   #if DART_ACTIVE_LOG_LEVEL > DART_LOG_LEVEL_FATAL
       std::cout
           << "[warning] Log level is set to FATAL, but fatal "
@@ -101,7 +101,7 @@ void set_log_level(LogLevel level) {
   #endif
       spdlog::set_level(spdlog::level::critical);
       break;
-    case LogLevel::OFF:
+    case LogLevel::LL_OFF:
       spdlog::set_level(spdlog::level::off);
       break;
     default:

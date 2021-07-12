@@ -91,35 +91,35 @@ enum class LogLevel {
   ///
   /// This level is intended to use for showing logic-level program flow,
   /// without performance concerns. Not encouraged to use in production.
-  TRACE,
+  LL_TRACE,
 
   /// The DEBUG level designates fine-grained informational events that are most
   /// useful to debug.
   ///
   /// This level is intended to use for dumping variable state, specific error
   /// codes, etc, which don't affect the performance significantly.
-  DEBUG,
+  LL_DEBUG,
 
   /// The INFO level designates informational messages that highlight the
   /// progress of the application at coarse-grained level.
   ///
   /// Assumed to be used in production.
-  INFO,
+  LL_INFO,
 
   /// The WARN level designates potentially harmful situations.
-  WARN,
+  LL_WARN,
 
   /// The ERROR level designates error events that might still allow the
   /// application to continue running, but the application might not be able to
   /// achieve the goals.
-  ERROR,
+  LL_ERROR,
 
   /// The FATAL level designates very sever error events that will presumably
   /// lead the application to abort.
-  FATAL,
+  LL_FATAL,
 
   /// Use to completely turn off logging.
-  OFF,
+  LL_OFF,
 };
 // Informative discussion: https://github.com/dartsim/dart/issues/428
 

@@ -40,12 +40,12 @@ using namespace dart::common;
 
 //==============================================================================
 TEST(LoggingTest, Basics) {
-  set_log_level(LogLevel::FATAL);
-  set_log_level(LogLevel::ERROR);
-  set_log_level(LogLevel::WARN);
-  set_log_level(LogLevel::INFO);
-  set_log_level(LogLevel::DEBUG);
-  set_log_level(LogLevel::TRACE);
+  set_log_level(LogLevel::LL_FATAL);
+  set_log_level(LogLevel::LL_ERROR);
+  set_log_level(LogLevel::LL_WARN);
+  set_log_level(LogLevel::LL_INFO);
+  set_log_level(LogLevel::LL_DEBUG);
+  set_log_level(LogLevel::LL_TRACE);
 
   DART_TRACE("This is a [{}] message", "trace");
   DART_DEBUG("This is a [{}] message", "debug");
