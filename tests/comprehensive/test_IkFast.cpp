@@ -35,9 +35,10 @@
 #include <gtest/gtest.h>
 
 #include "dart/dart.hpp"
-#include "dart/test/TestHelpers.hpp"
+#include "dart/test/math/GTestUtils.hpp"
 
 using namespace dart;
+using namespace dart::dynamics;
 
 //==============================================================================
 TEST(IkFast, WrapCyclicSolution) {
@@ -162,6 +163,6 @@ TEST(IkFast, LoadWamArmIk) {
 
     wam->setPositions(dofs, solution.mConfig);
     Eigen::Isometry3d newTf = ee->getTransform();
-    EXPECT_TRUE(equals(targetFrame->getTransform(), newTf, 1e-2));
+    EXPECT_TRUE(test::equals(targetFrame->getTransform(), newTf, 1e-2));
   }
 }

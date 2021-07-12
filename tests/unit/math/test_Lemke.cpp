@@ -33,7 +33,6 @@
 #include <gtest/gtest.h>
 
 #include "dart/math/Lemke.hpp"
-#include "dart/test/TestHelpers.hpp"
 
 //==============================================================================
 TEST(Lemke, Lemke_1D) {

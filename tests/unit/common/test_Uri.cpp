@@ -33,7 +33,6 @@
 #include <gtest/gtest.h>
 
 #include "dart/common/Uri.hpp"
-#include "dart/test/TestHelpers.hpp"
 
 using dart::common::Uri;
 

@@ -1117,10 +1117,10 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
           = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
       VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
 
-      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE));
-      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD1, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD2, TOLERANCE));
+      EXPECT_TRUE(test::equals(dq0, dq0FD, TOLERANCE));
+      EXPECT_TRUE(test::equals(dq1, dq1FD, TOLERANCE));
+      EXPECT_TRUE(test::equals(ddq0, ddqFD1, TOLERANCE));
+      EXPECT_TRUE(test::equals(ddq0, ddqFD2, TOLERANCE));
 
       if (!equals(dq0FD, dq0, TOLERANCE))
       {
@@ -1339,14 +1339,14 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
         Vector3d WorldAngAccApprox = (WorldAngVel2 - WorldAngVel1) / timeStep;
 
         // Comparing two velocities
-        EXPECT_TRUE(equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE));
 
         // Debugging code
         if (!equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE))
@@ -1598,14 +1598,14 @@ void DynamicsTest::testInverseDynamics(const common::Uri& uri)
       skel->setAccelerations(ddq);
       skel->computeInverseDynamics(false, true, true);
       const VectorXd f = skel->getForces();
-      EXPECT_TRUE(equals(f, f0));
+      EXPECT_TRUE(test::equals(f, f0));
 
       // Test forward dynamics to ensure the result joint accelerations are
       // identical to the accelerations used to compute the input forces
       skel->setForces(f);
       skel->computeForwardDynamics();
       const VectorXd ddq2 = skel->getAccelerations();
-      EXPECT_TRUE(equals(ddq, ddq2));
+      EXPECT_TRUE(test::equals(ddq, ddq2));
     }
   }
 }
@@ -1719,7 +1719,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       EXPECT_EQ(M.cols(), (int)dof);
 
       // Check mass matrix
-      EXPECT_TRUE(equals(M, M2, 1e-6));
+      EXPECT_TRUE(test::equals(M, M2, 1e-6));
       if (!equals(M, M2, 1e-6))
       {
         cout << "M :" << endl << M << endl << endl;
@@ -1728,7 +1728,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       }
 
       // Check augmented mass matrix
-      EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
+      EXPECT_TRUE(test::equals(AugM, AugM2, 1e-6));
       if (!equals(AugM, AugM2, 1e-6))
       {
         cout << "AugM :" << endl << AugM << endl << endl;
@@ -1737,13 +1737,13 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(M_InvM, I, 1e-6));
+      EXPECT_TRUE(test::equals(M_InvM, I, 1e-6));
       if (!equals(M_InvM, I, 1e-6))
       {
         cout << "InvM  :" << endl << InvM << endl << endl;
         failure = true;
       }
-      EXPECT_TRUE(equals(InvM_M, I, 1e-6));
+      EXPECT_TRUE(test::equals(InvM_M, I, 1e-6));
       if (!equals(InvM_M, I, 1e-6))
       {
         cout << "InvM_M:" << endl << InvM_M << endl << endl;
@@ -1751,13 +1751,13 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
+      EXPECT_TRUE(test::equals(AugM_InvAugM, I, 1e-6));
       if (!equals(AugM_InvAugM, I, 1e-6))
       {
         cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
         failure = true;
       }
-      EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
+      EXPECT_TRUE(test::equals(InvAugM_AugM, I, 1e-6));
       if (!equals(InvAugM_AugM, I, 1e-6))
       {
         cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
@@ -1792,7 +1792,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       skel->computeInverseDynamics(false, false);
       VectorXd Cg2 = skel->getForces();
 
-      EXPECT_TRUE(equals(C, C2, 1e-6));
+      EXPECT_TRUE(test::equals(C, C2, 1e-6));
       if (!equals(C, C2, 1e-6))
       {
         cout << "C :" << C.transpose() << endl;
@@ -1800,7 +1800,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
         failure = true;
       }
 
-      EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
+      EXPECT_TRUE(test::equals(Cg, Cg2, 1e-6));
       if (!equals(Cg, Cg2, 1e-6))
       {
         cout << "Cg :" << Cg.transpose() << endl;
@@ -2361,7 +2361,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
       MatrixXd invM = skel->getInvMassMatrix();
       VectorXd deltaVel2 = invM * impulses;
 
-      EXPECT_TRUE(equals(deltaVel1, deltaVel2, TOLERANCE));
+      EXPECT_TRUE(test::equals(deltaVel1, deltaVel2, TOLERANCE));
       if (!equals(deltaVel1, deltaVel2, TOLERANCE))
       {
         cout << "deltaVel1: " << deltaVel1.transpose() << endl;
@@ -2528,8 +2528,8 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Initialize the skeleton with the zero initial states
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  EXPECT_TRUE(equals(skel->getPositions(), q0));
-  EXPECT_TRUE(equals(skel->getVelocities(), dq0));
+  EXPECT_TRUE(test::equals(skel->getPositions(), q0));
+  EXPECT_TRUE(test::equals(skel->getVelocities(), dq0));
 
   // Make sure all the joint actuator types
   EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::FORCE);
@@ -2569,8 +2569,8 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Restore the skeleton to the initial state
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  EXPECT_TRUE(equals(skel->getPositions(), q0));
-  EXPECT_TRUE(equals(skel->getVelocities(), dq0));
+  EXPECT_TRUE(test::equals(skel->getPositions(), q0));
+  EXPECT_TRUE(test::equals(skel->getVelocities(), dq0));
 
   // Change all the actuator types to force
   skel->getJoint(0)->setActuatorType(Joint::FORCE);

@@ -18,8 +18,8 @@ endif()
 
 set(link_libraries)
 set(link_dart_libraries
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-planning
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-test
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-planning
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
 )
 
 # Build the uint tests

@@ -47,7 +47,7 @@
 #include "dart/optimization/Function.hpp"
 #include "dart/optimization/GradientDescentSolver.hpp"
 #include "dart/optimization/Problem.hpp"
-#include "dart/test/TestHelpers.hpp"
+#include "dart/test/math/GTestUtils.hpp"
 #if DART_HAVE_NLOPT
   #include "dart/optimization/nlopt/NloptSolver.hpp"
 #endif

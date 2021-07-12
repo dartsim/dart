@@ -33,8 +33,6 @@
 #include <dart/common/Factory.hpp>
 #include <gtest/gtest.h>
 
-#include "dart/test/TestHelpers.hpp"
-
 using namespace dart;
 
 enum ObjectTypeEnum { OT_None, OT_Apple, OT_Banana, OT_Orange };

@@ -63,14 +63,14 @@ TEST(InverseKinematics, SolveForFreeJoint)
 
   ik->getSolver()->setNumMaxIterations(100);
 
-  EXPECT_FALSE(equals(
+  EXPECT_FALSE(test::equals(
       ik->getTarget()->getTransform().matrix(),
       skel->getBodyNode(0)->getTransform().matrix(),
       1e-1));
 
   EXPECT_TRUE(ik->getSolver()->solve());
 
-  EXPECT_TRUE(equals(
+  EXPECT_TRUE(test::equals(
       ik->getTarget()->getTransform().matrix(),
       skel->getBodyNode(0)->getTransform().matrix(),
       1e-8));
@@ -133,7 +133,7 @@ TEST(InverseKinematics, DoNotApplySolutionOnFailure)
   skel->resetPositions();
 
   EXPECT_FALSE(ik->solveAndApply(false));
-  EXPECT_TRUE(equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+  EXPECT_TRUE(test::equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
 
   EXPECT_FALSE(ik->solveAndApply(true));
   EXPECT_FALSE(

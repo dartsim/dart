@@ -40,8 +40,9 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/test/TestHelpers.hpp"
+#include "dart/test/math/GTestUtils.hpp"
 
+using namespace Eigen;
 using namespace dart;
 using namespace common;
 using namespace math;
@@ -946,7 +947,7 @@ TEST(MATH, INVERSION) {
             << " s\n";
 }
 
-/******************************************************************************/
+//==============================================================================
 // TEST(MATH, SE3_VS_EIGENMATRIX4D)
 //{
 //    int n = 10000;
@@ -1053,7 +1054,7 @@ TEST(MATH, INVERSION) {
 ////    std::cout << E4 << std::endl;
 //}
 
-/******************************************************************************/
+//==============================================================================
 // TEST(MATH, SO3)
 //{
 //    // Exponential and Logarithm mapping
@@ -1212,7 +1213,7 @@ TEST(MATH, INVERSION) {
 //    }
 //}
 
-/******************************************************************************/
+//==============================================================================
 TEST(MATH, ROTATION) {
   using namespace dart;
   using namespace math;
@@ -1240,7 +1241,7 @@ TEST(MATH, ROTATION) {
       << "Orig: " << m << " Reconstructed: " << m2;
 }
 
-/******************************************************************************/
+//==============================================================================
 TEST(MATH, UTILS) {
   // Test CR Matrix
   EXPECT_DOUBLE_EQ(dart::math::CR(0, 1), -1.0);
@@ -1326,13 +1327,13 @@ TEST(MATH, PerformanceComparisonOfAdTJac) {
     Jacobian resJ2 = AdTJac2(T, dynamicJ);
     Jacobian resJ3 = AdTJac3(T, fixedJ);
 
-    EXPECT_TRUE(equals(resJ1, resJ2));
-    EXPECT_TRUE(equals(resJ2, resJ3));
+    EXPECT_TRUE(test::equals(resJ1, resJ2));
+    EXPECT_TRUE(test::equals(resJ2, resJ3));
 
     Jacobian resJ4 = AdInvTJac(T, dynamicJ);
     Jacobian resJ5 = AdInvTJacFixed(T, fixedJ);
 
-    EXPECT_TRUE(equals(resJ4, resJ5));
+    EXPECT_TRUE(test::equals(resJ4, resJ5));
   }
 
   // Test2: performance

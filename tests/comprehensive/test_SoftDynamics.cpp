@@ -336,7 +336,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       EXPECT_EQ(M.cols(), dof);
 
       // Check mass matrix
-      EXPECT_TRUE(equals(M, M2, 1e-6));
+      EXPECT_TRUE(test::equals(M, M2, 1e-6));
       if (!equals(M, M2, 1e-6))
       {
         cout << "M :" << endl << M << endl << endl;
@@ -344,7 +344,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       }
 
       // Check augmented mass matrix
-      EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
+      EXPECT_TRUE(test::equals(AugM, AugM2, 1e-6));
       if (!equals(AugM, AugM2, 1e-6))
       {
         cout << "AugM :" << endl << AugM << endl << endl;
@@ -352,26 +352,26 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(M_InvM, I, 1e-6));
+      EXPECT_TRUE(test::equals(M_InvM, I, 1e-6));
       if (!equals(M_InvM, I, 1e-6))
       {
         cout << "InvM  :" << endl << InvM << endl << endl;
       }
-      EXPECT_TRUE(equals(InvM_M, I, 1e-6));
+      EXPECT_TRUE(test::equals(InvM_M, I, 1e-6));
       if (!equals(InvM_M, I, 1e-6))
       {
         cout << "InvM_M:" << endl << InvM_M << endl << endl;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
+      EXPECT_TRUE(test::equals(AugM_InvAugM, I, 1e-6));
       if (!equals(AugM_InvAugM, I, 1e-6))
       {
         cout << "InvAugM  :" << endl << InvAugM << endl << endl;
         cout << "InvAugM2  :" << endl << AugM.inverse() << endl << endl;
         cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
       }
-      EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
+      EXPECT_TRUE(test::equals(InvAugM_AugM, I, 1e-6));
       if (!equals(InvAugM_AugM, I, 1e-6))
       {
         cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
@@ -425,14 +425,14 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       softSkel->computeInverseDynamics(false, false);
       VectorXd Cg2 = softSkel->getForces();
 
-      EXPECT_TRUE(equals(C, C2, 1e-6));
+      EXPECT_TRUE(test::equals(C, C2, 1e-6));
       if (!equals(C, C2, 1e-6))
       {
         cout << "C :" << C.transpose() << endl;
         cout << "C2:" << C2.transpose() << endl;
       }
 
-      EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
+      EXPECT_TRUE(test::equals(Cg, Cg2, 1e-6));
       if (!equals(Cg, Cg2, 1e-6))
       {
         cout << "Cg :" << Cg.transpose() << endl;

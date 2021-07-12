@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,56 +30,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#pragma once
 
-#include "dart/math/geometry/Icosphere.hpp"
+#include <vector>
 
-using namespace dart;
-using namespace math;
+#include "dart/common/common.hpp"
+#include "dart/io/io.hpp"
 
 //==============================================================================
-TEST(IcosphereTests, NumOfVerticesAndTriangles) {
-  const double radius = 5.0;
-
-  for (auto i = 0; i < 8; ++i) {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphered(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices) {
-      EXPECT_DOUBLE_EQ(v.norm(), radius);
-    }
+struct TestResource : public dart::common::Resource {
+  size_t getSize() override {
+    return 0;
   }
-}
+
+  size_t tell() override {
+    return 0;
+  }
+
+  bool seek(ptrdiff_t /*_offset*/, SeekType /*_origin*/) override {
+    return false;
+  }
+
+  size_t read(void* /*_buffer*/, size_t /*_size*/, size_t /*_count*/) override {
+    return 0;
+  }
+};
 
 //==============================================================================
-TEST(IcosphereTests, Constructor) {
-  auto s1 = Icosphered(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_DOUBLE_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
+struct PresentResourceRetriever : public dart::common::ResourceRetriever {
+  bool exists(const dart::common::Uri& _uri) override {
+    mExists.push_back(_uri.toString());
+    return true;
+  }
 
-  auto s2 = Icosphered(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
-}
+  std::string getFilePath(const dart::common::Uri& _uri) override {
+    mGetFilePath.push_back(_uri.toString());
+    return _uri.toString();
+  }
+
+  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override {
+    mRetrieve.push_back(_uri.toString());
+    return std::make_shared<TestResource>();
+  }
+
+  std::vector<std::string> mExists;
+  std::vector<std::string> mGetFilePath;
+  std::vector<std::string> mRetrieve;
+};
 
 //==============================================================================
-TEST(IcosphereTests, ComputeVolume) {
-  const double pi = constantsd::pi();
-  const double radius = 1;
-  auto computeVolume = [&](double radius) {
-    return 4.0 / 3.0 * pi * radius * radius * radius;
-  };
+struct AbsentResourceRetriever : public dart::common::ResourceRetriever {
+  bool exists(const dart::common::Uri& _uri) override {
+    mExists.push_back(_uri.toString());
+    return false;
+  }
 
-  EXPECT_NEAR(Icosphered(radius, 2).getVolume(), computeVolume(radius), 5e-1);
-  EXPECT_NEAR(Icosphered(radius, 3).getVolume(), computeVolume(radius), 5e-2);
-  EXPECT_NEAR(Icosphered(radius, 4).getVolume(), computeVolume(radius), 1e-2);
-  EXPECT_NEAR(Icosphered(radius, 5).getVolume(), computeVolume(radius), 5e-3);
-  EXPECT_NEAR(Icosphered(radius, 6).getVolume(), computeVolume(radius), 1e-3);
-}
+  std::string getFilePath(const dart::common::Uri& _uri) override {
+    mGetFilePath.push_back(_uri.toString());
+    return "";
+  }
+
+  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override {
+    mRetrieve.push_back(_uri.toString());
+    return nullptr;
+  }
+
+  std::vector<std::string> mExists;
+  std::vector<std::string> mGetFilePath;
+  std::vector<std::string> mRetrieve;
+};

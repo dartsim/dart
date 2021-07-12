@@ -33,7 +33,7 @@
 #include <gtest/gtest.h>
 
 #include "dart/common/LocalResourceRetriever.hpp"
-#include "dart/test/TestHelpers.hpp"
+#include "dart/config.hpp"
 
 using dart::common::LocalResourceRetriever;
 using dart::common::Resource;

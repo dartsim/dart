@@ -44,8 +44,8 @@ using namespace dart;
 TEST(Raycast, RayHitDefaultConstructor)
 {
   RayHit rayHit;
-  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d::Zero().eval()));
-  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d::Zero().eval()));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d::Zero().eval()));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d::Zero().eval()));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0);
 }
 
@@ -105,8 +105,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(-1, 0, 0)));
-  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0.25);
 
   result.clear();
@@ -121,8 +121,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
-  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(1, 0, 0)));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0.25);
 
   result.clear();
@@ -136,8 +136,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(0, 0, 0)));
-  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(0, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0.5);
 }
 
@@ -198,8 +198,8 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
-  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
   EXPECT_NEAR(rayHit.mFraction, 0.2, 1e-5);
 
   result.clear();
@@ -216,12 +216,12 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 2u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
-  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
   EXPECT_NEAR(rayHit.mFraction, 0.2, 1e-5);
   rayHit = result.mRayHits[1];
-  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
-  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
   EXPECT_NEAR(rayHit.mFraction, 0.6, 1e-5);
 }
 

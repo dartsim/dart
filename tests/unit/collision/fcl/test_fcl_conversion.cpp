@@ -32,7 +32,7 @@
 
 #include <dart/collision/collision.hpp>
 #include <dart/math/math.hpp>
-#include <dart/test/GTestUtils.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 #include <gtest/gtest.h>
 
 using namespace dart;
