@@ -135,34 +135,6 @@ function(dart_check_required_package variable dependency)
 endfunction()
 
 #===============================================================================
-macro(dart_check_optional_package variable component dependency)
-  option(DART_SKIP_${variable} "If ON, do not use ${variable} even if it is found." OFF)
-  mark_as_advanced(DART_SKIP_${variable})
-  if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable}})
-    set(DART_HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
-    if(DART_VERBOSE)
-      message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
-                     " found")
-    endif()
-  else()
-    set(DART_HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
-    if(NOT ${${variable}_FOUND})
-      if(ARGV3) # version
-        message(WARNING "Looking for ${dependency} - NOT found, to use"
-                        " ${component}, please install ${dependency} (>= ${ARGV3})")
-      else()
-        message(WARNING "Looking for ${dependency} - NOT found, to use"
-                        " ${component}, please install ${dependency}")
-      endif()
-    elseif(${DART_SKIP_${variable}} AND DART_VERBOSE)
-      message(STATUS "Not using ${dependency} - version ${${variable}_VERSION}"
-                     " even if found because DART_SKIP_${variable} is ON.")
-    endif()
-    return()
-  endif()
-endmacro()
-
-#===============================================================================
 macro(dart_check_dependent_target target)
   foreach(dependent_target ${ARGN})
     if (NOT TARGET ${dependent_target})
@@ -441,14 +413,19 @@ function(dart_add_component)
     endif()
   endforeach()
 
-  # Check optional dependent packages
+  # Check optional dependencies
   foreach(package ${optional_dependent_packages})
-    dart_check_optional_package(${package} ${target_name} ${package})
-    if(DART_HAVE_${package})
-      list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=1)
+    if(${package}_FOUND)
+      if(NOT DART_SKIP_${package})
+        list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=1)
+        list(APPEND dependent_packages ${package})
+      else()
+        list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=0)
+        message(STATUS "Building component <${component_name}> without ${package} because DART_SKIP_${package} is set")
+      endif()
     else()
       list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=0)
-      message(STATUS "Building component <${component_name}> without ${package}")
+      message(STATUS "Building component <${component_name}> without ${package} because it's not found")
     endif()
   endforeach()
 
@@ -615,10 +592,30 @@ function(dart_add_component_sub_directory)
 
   # Check dependencies
   foreach(package ${dependent_packages})
-    dart_check_optional_package(${package} ${current_target_name} ${package})
-    if(NOT DART_HAVE_${package})
-      message(STATUS "Skipping <todo> because of missing dependency package ${package}")
+    if(${package}_FOUND)
+      if(DART_SKIP_${package})
+        message(STATUS "Building target ${current_target_name} without sub component <todo> because DART_SKIP_${package} is set")
+        return()
+      endif()
+    else()
+      message(STATUS "Building target ${current_target_name} without sub component <todo> because of missing dependency package ${package}")
       return()
+    endif()
+  endforeach()
+
+  # Check optional dependencies
+  foreach(package ${optional_dependent_packages})
+    if(${package}_FOUND)
+      if(NOT DART_SKIP_${package})
+        list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=1)
+        list(APPEND dependent_packages ${package})
+      else()
+        list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=0)
+        message(STATUS "Building component <${component_name}> without ${package} because DART_SKIP_${package} is set")
+      endif()
+    else()
+      list(APPEND target_compile_definitions_public -DDART_HAVE_${package}=0)
+      message(STATUS "Building component <${component_name}> without ${package} because it's not found")
     endif()
   endforeach()
 

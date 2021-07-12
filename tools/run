@@ -178,6 +178,12 @@ clean_all() {
 build() {
   full_image_name=$full_image_name_dev
 
+  echo "======================================================================="
+  echo " [Build] "
+  echo " Docker   : $full_image_name"
+  echo " Num cores: $num_cores / $(nproc)"
+  echo "======================================================================="
+
   docker pull $full_image_name
 
   docker run \

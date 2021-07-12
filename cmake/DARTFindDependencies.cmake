@@ -262,4 +262,3 @@ dart_find_package(OpenSceneGraph)
 
 # Doxygen
 find_package(Doxygen QUIET)
-dart_check_optional_package(DOXYGEN "generating API documentation" "doxygen")

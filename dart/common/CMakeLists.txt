@@ -17,7 +17,13 @@ set(link_libraries_public
 )
 
 if(spdlog_FOUND)
-  list(APPEND link_libraries_public spdlog::spdlog_header_only)
+  if(TARGET spdlog::spdlog_header_only)
+    list(APPEND link_libraries_public spdlog::spdlog_header_only)
+  elseif(TARGET spdlog::spdlog)
+    list(APPEND link_libraries_public spdlog::spdlog)
+  else()
+    message(FATAL_ERROR "Failed to find spdlog targets")
+  endif()
 endif()
 
 # Build DART with all available SIMD instructions
