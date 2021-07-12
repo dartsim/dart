@@ -39,13 +39,8 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-CollisionOption<S>::CollisionOption(
-    bool enable_contact,
-    int max_num_contacts,
-    const std::shared_ptr<CollisionFilter<S>>& collision_filter)
-  : enable_contact(enable_contact),
-    max_num_contacts(max_num_contacts),
-    collision_filter(collision_filter) {
+CollisionOption<S>::CollisionOption(bool enable_contact, int max_num_contacts)
+  : enable_contact(enable_contact), max_num_contacts(max_num_contacts) {
   // Do nothing
 }
 

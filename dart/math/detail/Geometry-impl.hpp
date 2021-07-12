@@ -79,7 +79,7 @@ template <typename S, typename Index>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>>,
     std::vector<Eigen::Matrix<Index, 3, 1>>>
-computeConvexHull3D(
+compute_convex_hull_3d(
     const std::vector<Eigen::Matrix<S, 3, 1>>& inputVertices, bool optimize) {
   ch_vertex* vertices = new ch_vertex[inputVertices.size()];
 

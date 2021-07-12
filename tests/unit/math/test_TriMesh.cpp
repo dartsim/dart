@@ -32,7 +32,7 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/math/geometry/TriMesh.hpp"
+#include "dart/math/geometry/tri_mesh.hpp"
 
 using namespace dart;
 using namespace math;

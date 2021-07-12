@@ -37,22 +37,22 @@
 #include "dart/collision/fcl/fcl_object.hpp"
 #include "dart/collision/object.hpp"
 #include "dart/common/Console.hpp"
-#include "dart/math/geometry/Sphere.hpp"
+#include "dart/math/geometry/sphere.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<FclCollisionGeometry<S>> createFclCollisionGeometry(
+std::shared_ptr<FclCollisionGeometry<S>> create_fcl_collision_geometry(
     const math::ConstGeometryPtr& shape,
     typename FclEngine<S>::PrimitiveShape /*type*/) {
   FclCollisionGeometry<S>* geom = nullptr;
 
   if (auto sphere = shape->as<math::Sphered>()) {
-    geom = new FclSphere<S>(sphere->getRadius());
+    geom = new FclSphere<S>(sphere->get_radius());
   } else {
-    dterr << "Unsupported geometry type: " << shape->getType() << "\n";
+    dterr << "Unsupported geometry type: " << shape->get_type() << "\n";
   }
 
   return std::shared_ptr<FclCollisionGeometry<S>>(geom);
@@ -70,15 +70,14 @@ FclGroup<S>::FclGroup(Engine<S>* engine)
 template <typename S>
 ObjectPtr<S> FclGroup<S>::create_object(math::GeometryPtr shape) {
   if (!shape) {
-    dtwarn
-        << "Not allowed to create a collision object for a shape of nullptr.\n";
+    DART_WARN("Not allowed to create a collision object for a null shape");
     return nullptr;
   }
 
   auto fcl_collision_geometry
-      = createFclCollisionGeometry<S>(shape, FclEngine<S>::MESH);
+      = create_fcl_collision_geometry<S>(shape, FclEngine<S>::MESH);
   if (!fcl_collision_geometry) {
-    dtwarn << "Failed to create FCL collision geometry.\n";
+    DART_WARN("Failed to create FCL collision geometry.");
     return nullptr;
   }
 

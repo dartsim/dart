@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "dart/math/Constants.hpp"
 #include "dart/math/Random.hpp"
+#include "dart/math/constant.hpp"
 
 namespace dart {
 namespace math {
@@ -323,16 +323,14 @@ template <typename S>
   static_assert(
       std::is_floating_point_v<S>, "Non-floating point type is not supported");
 
-  constexpr S pi = constants<S>::pi();
-
   const S u1 = uniform<S>(0, 1);
   const S u2 = uniform<S>(0, 1);
   const S u3 = uniform<S>(0, 1);
 
   const S a = std::sqrt(1. - u1);
-  const S b = S(2) * pi * u2;
+  const S b = S(2) * pi<S>() * u2;
   const S c = std::sqrt(u1);
-  const S d = S(2) * pi * u3;
+  const S d = S(2) * pi<S>() * u3;
 
   return ::Eigen::Quaternion<S>(
       a * std::sin(b), a * std::cos(b), c * std::sin(d), c * std::cos(d));

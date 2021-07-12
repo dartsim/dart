@@ -39,7 +39,7 @@
 #include <iostream>
 #include <vector>
 #include <Eigen/Geometry>
-#include "dart/math/Constants.hpp"
+#include "dart/math/constant.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -172,7 +172,7 @@ public:
 
   list<double> getSwitchingPoints() const
   {
-    const double pi = math::constantsd::pi();
+    const double pi = math::pi();
     list<double> switchingPoints;
     const double dim = x.size();
     for (unsigned int i = 0; i < dim; i++)

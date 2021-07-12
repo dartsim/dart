@@ -181,7 +181,7 @@ void DynamicsTest::randomizeRefFrames()
 
     Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
     Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(
-        -2 * dart::math::constantsd::pi(), 2 * dart::math::constantsd::pi());
+        -2 * dart::math::pi(), 2 * dart::math::pi());
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);
@@ -881,12 +881,12 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 #else
   int nTestItr = 5;
 #endif
-  double qLB = -0.5 * constantsd::pi();
-  double qUB = 0.5 * constantsd::pi();
-  double dqLB = -0.5 * constantsd::pi();
-  double dqUB = 0.5 * constantsd::pi();
-  double ddqLB = -0.5 * constantsd::pi();
-  double ddqUB = 0.5 * constantsd::pi();
+  double qLB = -0.5 * pi();
+  double qUB = 0.5 * pi();
+  double dqLB = -0.5 * pi();
+  double dqUB = 0.5 * pi();
+  double ddqLB = -0.5 * pi();
+  double ddqUB = 0.5 * pi();
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
@@ -1061,12 +1061,12 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 #else
   int nRandomItr = 10;
 #endif
-  double qLB = -0.5 * constantsd::pi();
-  double qUB = 0.5 * constantsd::pi();
-  double dqLB = -0.3 * constantsd::pi();
-  double dqUB = 0.3 * constantsd::pi();
-  double ddqLB = -0.1 * constantsd::pi();
-  double ddqUB = 0.1 * constantsd::pi();
+  double qLB = -0.5 * pi();
+  double qUB = 0.5 * pi();
+  double dqLB = -0.3 * pi();
+  double dqUB = 0.3 * pi();
+  double ddqLB = -0.1 * pi();
+  double ddqUB = 0.1 * pi();
   Vector3d gravity(0.0, -9.81, 0.0);
   double timeStep = 1e-3;
   double TOLERANCE = 5e-4;
@@ -1165,12 +1165,12 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
   int nRandomItr = 10;
   std::size_t numSteps = 1e+3;
 #endif
-  double qLB = -0.5 * constantsd::pi();
-  double qUB = 0.5 * constantsd::pi();
-  double dqLB = -0.5 * constantsd::pi();
-  double dqUB = 0.5 * constantsd::pi();
-  double ddqLB = -0.5 * constantsd::pi();
-  double ddqUB = 0.5 * constantsd::pi();
+  double qLB = -0.5 * pi();
+  double qUB = 0.5 * pi();
+  double dqLB = -0.5 * pi();
+  double dqUB = 0.5 * pi();
+  double ddqLB = -0.5 * pi();
+  double ddqUB = 0.5 * pi();
   Vector3d gravity(0.0, -9.81, 0.0);
   double timeStep = 1.0e-6;
   const double tol = timeStep * 1e+2;
@@ -1259,12 +1259,12 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 #else
   int nRandomItr = 10;
 #endif
-  double qLB = -0.5 * constantsd::pi();
-  double qUB = 0.5 * constantsd::pi();
-  double dqLB = -0.5 * constantsd::pi();
-  double dqUB = 0.5 * constantsd::pi();
-  double ddqLB = -0.5 * constantsd::pi();
-  double ddqUB = 0.5 * constantsd::pi();
+  double qLB = -0.5 * pi();
+  double qUB = 0.5 * pi();
+  double dqLB = -0.5 * pi();
+  double dqUB = 0.5 * pi();
+  double ddqLB = -0.5 * pi();
+  double ddqUB = 0.5 * pi();
   Vector3d gravity(0.0, -9.81, 0.0);
   double timeStep = 1.0e-6;
 
@@ -1404,12 +1404,12 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   std::size_t nRandomItr = 1e+2;
   std::size_t numSteps = 1e+2;
 #endif
-  double qLB = -0.5 * constantsd::pi();
-  double qUB = 0.5 * constantsd::pi();
-  double dqLB = -0.3 * constantsd::pi();
-  double dqUB = 0.3 * constantsd::pi();
-  double ddqLB = -0.1 * constantsd::pi();
-  double ddqUB = 0.1 * constantsd::pi();
+  double qLB = -0.5 * pi();
+  double qUB = 0.5 * pi();
+  double dqLB = -0.3 * pi();
+  double dqUB = 0.3 * pi();
+  double ddqLB = -0.1 * pi();
+  double ddqUB = 0.1 * pi();
   double timeStep = 1e-6;
 
   EXPECT_NE(skel, nullptr);
@@ -1544,8 +1544,8 @@ void DynamicsTest::testInverseDynamics(const common::Uri& uri)
 #endif
 
   // Lower and upper bound of configuration for system
-  const double lb = -1.0 * math::constantsd::pi();
-  const double ub = 1.0 * math::constantsd::pi();
+  const double lb = -1.0 * math::pi();
+  const double ub = 1.0 * math::pi();
 
   // Lower and upper bound of joint damping and stiffness
   const double lbD = 0.0;
@@ -1576,8 +1576,8 @@ void DynamicsTest::testInverseDynamics(const common::Uri& uri)
 
         double lbRP = dof->getPositionLowerLimit();
         double ubRP = dof->getPositionUpperLimit();
-        lbRP = std::max(lbRP, -math::constantsd::pi());
-        ubRP = std::min(ubRP, +math::constantsd::pi());
+        lbRP = std::max(lbRP, -math::pi());
+        ubRP = std::min(ubRP, +math::pi());
         dof->setRestPosition(math::Random::uniform(lbRP, ubRP));
       }
 
@@ -1630,8 +1630,8 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.0 * constantsd::pi();
-  double ub = 1.0 * constantsd::pi();
+  double lb = -1.0 * pi();
+  double ub = 1.0 * pi();
 
   // Lower and upper bound of joint damping and stiffness
   double lbD = 0.0;
@@ -1677,10 +1677,10 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -constantsd::pi())
-            lbRP = -constantsd::pi();
-          if (ubRP > constantsd::pi())
-            ubRP = constantsd::pi();
+          if (lbRP < -pi())
+            lbRP = -pi();
+          if (ubRP > pi())
+            ubRP = pi();
           joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
         }
       }
@@ -1922,8 +1922,8 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * constantsd::pi();
-  double ub = 1.5 * constantsd::pi();
+  double lb = -1.5 * pi();
+  double ub = 1.5 * pi();
 
   // Lower and upper bound of joint damping and stiffness
   double lbD = 0.0;
@@ -1989,10 +1989,10 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -constantsd::pi())
-            lbRP = -constantsd::pi();
-          if (ubRP > constantsd::pi())
-            ubRP = constantsd::pi();
+          if (lbRP < -pi())
+            lbRP = -pi();
+          if (ubRP > pi())
+            ubRP = pi();
           joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
         }
       }
@@ -2086,8 +2086,8 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 #endif // ------- Debug mode
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * constantsd::pi();
-  double ub = 1.5 * constantsd::pi();
+  double lb = -1.5 * pi();
+  double ub = 1.5 * pi();
 
   // Lower and upper bound of joint damping and stiffness
   double lbD = 0.0;
@@ -2154,10 +2154,10 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -constantsd::pi())
-            lbRP = -constantsd::pi();
-          if (ubRP > constantsd::pi())
-            ubRP = constantsd::pi();
+          if (lbRP < -pi())
+            lbRP = -pi();
+          if (ubRP > pi())
+            ubRP = pi();
           joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
         }
       }
@@ -2201,8 +2201,8 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
 #endif
 
   // Lower and upper bound of configuration for system
-  //  double lb = -1.5 * constantsd::pi();
-  //  double ub =  1.5 * constantsd::pi();
+  //  double lb = -1.5 * pi();
+  //  double ub =  1.5 * pi();
 
   simulation::WorldPtr myWorld;
 
@@ -2239,10 +2239,10 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
         {
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -constantsd::pi())
-            lbRP = -constantsd::pi();
-          if (ubRP > constantsd::pi())
-            ubRP = constantsd::pi();
+          if (lbRP < -pi())
+            lbRP = -pi();
+          if (ubRP > pi())
+            ubRP = pi();
           joint->setPosition(l, Random::uniform(lbRP, ubRP));
         }
 
@@ -2296,8 +2296,8 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
   double TOLERANCE = 1e-1;
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * constantsd::pi();
-  double ub = 1.5 * constantsd::pi();
+  double lb = -1.5 * pi();
+  double ub = 1.5 * pi();
 
   simulation::WorldPtr myWorld;
 
@@ -2334,10 +2334,10 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
         {
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -constantsd::pi())
-            lbRP = -constantsd::pi();
-          if (ubRP > constantsd::pi())
-            ubRP = constantsd::pi();
+          if (lbRP < -pi())
+            lbRP = -pi();
+          if (ubRP > pi())
+            ubRP = pi();
           joint->setPosition(l, Random::uniform(lbRP, ubRP));
         }
       }

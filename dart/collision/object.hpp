@@ -36,7 +36,7 @@
 
 #include "dart/collision/types.hpp"
 #include "dart/math/SmartPointer.hpp"
-#include "dart/math/Types.hpp"
+#include "dart/math/type.hpp"
 
 namespace dart {
 namespace collision {

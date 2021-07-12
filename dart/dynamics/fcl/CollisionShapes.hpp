@@ -38,7 +38,7 @@
 #include <assimp/scene.h>
 
 #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
-#include "dart/math/Constants.hpp"
+#include "dart/math/constant.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -279,7 +279,7 @@ template <class BV>
 
   /* Cache is the vertex locations cache */
   for (i = 0; i < _slices; i++) {
-    angle = 2 * math::constantsd::pi() * i / _slices;
+    angle = 2 * math::pi() * i / _slices;
     sinCache[i] = sin(angle);
     cosCache[i] = cos(angle);
   }

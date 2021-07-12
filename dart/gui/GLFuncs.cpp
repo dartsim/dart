@@ -41,7 +41,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/glut/GLUTFuncs.hpp"
-#include "dart/math/Constants.hpp"
+#include "dart/math/constant.hpp"
 // TODO(JS): remove once glut become an optional dependency
 
 namespace dart {
@@ -54,7 +54,7 @@ void drawArrow3D(
     const double _length,
     const double _thickness,
     const double _arrowThickness) {
-  const double pi = math::constantsd::pi();
+  const double pi = math::pi();
 
   Eigen::Vector3d normDir = _dir;
   normDir.normalize();
@@ -93,7 +93,7 @@ void drawArrow2D(
     const Eigen::Vector2d& _pt,
     const Eigen::Vector2d& _vec,
     double _thickness) {
-  const double pi = math::constantsd::pi();
+  const double pi = math::pi();
 
   // draw the arrow body as a thick line
   glLineWidth(_thickness);

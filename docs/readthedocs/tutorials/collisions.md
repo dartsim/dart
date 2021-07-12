@@ -745,7 +745,7 @@ edge of a polygon like so:
 
 ```cpp
 size_t numEdges = ring->getNumBodyNodes();
-double angle = 2 * dart::math::constantsd::pi() / numEdges;
+double angle = 2 * dart::math::pi() / numEdges;
 ```
 
 Now it's important to remember that the joints we have between the BodyNodes are

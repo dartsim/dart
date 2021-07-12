@@ -50,14 +50,8 @@ struct CollisionOption {
   /// this to 1 for binary check.
   int max_num_contacts;
 
-  /// CollisionFilter
-  CollisionFilterPtr<S> collision_filter;
-
   /// Constructor
-  CollisionOption(
-      bool enable_contact = true,
-      int max_num_contacts = 1000,
-      const CollisionFilterPtr<S>& collision_filter = nullptr);
+  CollisionOption(bool enable_contact = true, int max_num_contacts = 1000);
 };
 
 using CollisionOptionf = CollisionOption<float>;

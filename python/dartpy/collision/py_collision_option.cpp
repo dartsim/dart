@@ -41,21 +41,14 @@ namespace python {
 void py_collision_option(py::module& m) {
   ::py::class_<collision::CollisionOption<double>>(m, "CollisionOption")
       .def(
-          ::py::init<
-              bool,
-              int,
-              const std::shared_ptr<collision::CollisionFilter<double>>&>(),
+          ::py::init<bool, int>(),
           ::py::arg("enable_contact") = true,
-          ::py::arg("max_num_contacts") = 1000,
-          ::py::arg("collision_filter") = nullptr)
+          ::py::arg("max_num_contacts") = 1000)
       .def_readwrite(
           "enable_contact", &collision::CollisionOption<double>::enable_contact)
       .def_readwrite(
           "max_num_contacts",
-          &collision::CollisionOption<double>::max_num_contacts)
-      .def_readwrite(
-          "collision_filter",
-          &collision::CollisionOption<double>::collision_filter);
+          &collision::CollisionOption<double>::max_num_contacts);
 }
 
 } // namespace python

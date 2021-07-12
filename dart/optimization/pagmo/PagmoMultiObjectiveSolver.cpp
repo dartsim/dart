@@ -38,7 +38,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/StlHelpers.hpp"
-#include "dart/math/Constants.hpp"
+#include "dart/math/constant.hpp"
 #include "dart/optimization/Function.hpp"
 #include "dart/optimization/MultiObjectiveProblem.hpp"
 #include "dart/optimization/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"

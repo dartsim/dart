@@ -33,34 +33,34 @@
 #pragma once
 
 #include "dart/collision/fcl/backward_compatibility.hpp"
-#include "dart/math/Types.hpp"
+#include "dart/math/type.hpp"
 
 namespace dart {
 namespace collision {
 
 /// Converts Eigen vector3 to FCL vector3
 template <typename S>
-FclVector3<S> toFclVector3(const math::Vector3<S>& vec);
+FclVector3<S> to_fcl_vector3(const math::Vector3<S>& vec);
 
 /// Converts FCL vector3 to Eigen vector3
 template <typename S>
-math::Vector3<S> toVector3(const FclVector3<S>& vec);
+math::Vector3<S> to_vector3(const FclVector3<S>& vec);
 
 /// Converts Eigen matrix3x3 to FCL matrix3x3
 template <typename S>
-FclMatrix3<S> toFclMatrix3(const math::Matrix3<S>& R);
+FclMatrix3<S> to_fcl_matrix3(const math::Matrix3<S>& R);
 
 /// Converts FCL matrix3x3 to Eigen matrix3x3
 template <typename S>
-math::Matrix3<S> toMatrix3(const FclMatrix3<S>& R);
+math::Matrix3<S> to_matrix3(const FclMatrix3<S>& R);
 
 /// Converts Eigen transform to FCL transform
 template <typename S>
-FclTransform3<S> toFclTransform3(const math::Isometry3<S>& T);
+FclTransform3<S> to_fcl_pose3(const math::Isometry3<S>& T);
 
 /// Converts FCL transform to Eigen transform
 template <typename S>
-math::Isometry3<S> toTransform3(const FclTransform3<S>& T);
+math::Isometry3<S> to_pose3(const FclTransform3<S>& T);
 
 } // namespace collision
 } // namespace dart

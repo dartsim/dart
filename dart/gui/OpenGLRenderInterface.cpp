@@ -47,7 +47,7 @@
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
-#include "dart/math/geometry/Icosphere.hpp"
+#include "dart/math/geometry/icosphere.hpp"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj* quadObj;
@@ -353,7 +353,7 @@ void OpenGLRenderInterface::drawCylinder(
 //==============================================================================
 static void drawOpenDome(double radius, int slices, int stacks) {
   // (2pi/Stacks)
-  const auto pi = dart::math::constants<double>::pi();
+  const auto pi = dart::math::pi();
   const auto drho = pi / stacks / 2.0;
   const auto dtheta = 2.0 * pi / slices;
 

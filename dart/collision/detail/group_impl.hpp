@@ -35,7 +35,7 @@
 #include <cassert>
 
 #include "dart/collision/group.hpp"
-#include "dart/math/geometry/Sphere.hpp"
+#include "dart/math/geometry/sphere.hpp"
 
 namespace dart {
 namespace collision {

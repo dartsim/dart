@@ -86,7 +86,11 @@ public:
   GroupPtr<S> create_group() override;
 
   // Documentation inherited
-  bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2) override;
+  bool collide(
+      ObjectPtr<S> object1,
+      ObjectPtr<S> object2,
+      const CollisionOption<S>& option = {},
+      CollisionResult<S>* result = nullptr) override;
 
 protected:
   /// Constructor

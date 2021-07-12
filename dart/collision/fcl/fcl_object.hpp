@@ -35,7 +35,7 @@
 #include "dart/collision/fcl/backward_compatibility.hpp"
 #include "dart/collision/fcl/fcl_types.hpp"
 #include "dart/collision/object.hpp"
-#include "dart/math/Types.hpp"
+#include "dart/math/type.hpp"
 
 namespace dart {
 namespace collision {
@@ -71,11 +71,10 @@ protected:
       math::GeometryPtr shape,
       const std::shared_ptr<FclCollisionGeometry<S>>& fclCollGeom);
 
+  FclObject(Group<S>* collisionGroup, math::GeometryPtr shape);
+
   // Documentation inherited
   void update_engine_data() override;
-
-protected:
-  FclObject(Group<S>* collisionGroup, math::GeometryPtr shape);
 
   /// FCL collision object
   std::unique_ptr<FclCollisionObject<S>> m_fcl_collision_object;

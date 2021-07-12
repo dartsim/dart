@@ -33,7 +33,6 @@
 #pragma once
 
 #include "dart/common/logging.hpp"
-
 #include "dart/common/macro.hpp"
 
 #if DART_HAVE_spdlog

@@ -33,7 +33,7 @@
 #include "dart/gui/Trackball.hpp"
 
 #include "dart/gui/LoadOpengl.hpp"
-#include "dart/math/Constants.hpp"
+#include "dart/math/constant.hpp"
 
 namespace dart {
 namespace gui {
@@ -69,7 +69,7 @@ void Trackball::applyGLRotation() {
 }
 
 void Trackball::draw(int _winWidth, int _winHeight) {
-  const double pi = math::constantsd::pi();
+  const double pi = math::pi();
 
   glDisable(GL_LIGHTING);
   glDisable(GL_TEXTURE_2D);

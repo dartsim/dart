@@ -39,6 +39,7 @@
 namespace dart {
 namespace collision {
 
+/// Structure to store the result of narrow phase collision checkings
 template <typename S_>
 class CollisionResult {
 public:

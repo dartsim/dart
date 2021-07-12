@@ -39,17 +39,35 @@ namespace collision {
 
 //==============================================================================
 template <typename S>
-bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2) {
-  auto engine = object1->get_mutable_engine();
-  assert(engine);
-
-  if (engine != object2->get_mutable_engine()) {
-    dterr << "Not allowed collision checking for objects created from "
-             "different engines\n";
+bool collide(
+    ObjectPtr<S> object1,
+    ObjectPtr<S> object2,
+    const CollisionOption<S>& option,
+    CollisionResult<S>* result) {
+  if (!object1) {
     return false;
   }
 
-  return engine->collide(object1, object2);
+  if (!object2) {
+    return false;
+  }
+
+  assert(object1->get_engine());
+  assert(object2->get_engine());
+
+  Engine<S>* engine = object1->get_mutable_engine();
+  assert(engine);
+
+  if (engine != object2->get_engine()) {
+    DART_ERROR(
+        "Failed to check collision for objects created from different engines. "
+        "Object1 from [{}] while Object2 from [{}]",
+        object1->get_engine()->get_type(),
+        object2->get_engine()->get_type());
+    return false;
+  }
+
+  return engine->collide(object1, object2, option, result);
 }
 
 } // namespace collision

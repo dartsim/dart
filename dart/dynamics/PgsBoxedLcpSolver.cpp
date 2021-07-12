@@ -39,7 +39,7 @@
 
 #include "dart/external/odelcpsolver/matrix.h"
 #include "dart/external/odelcpsolver/misc.h"
-#include "dart/math/Constants.hpp"
+#include "dart/math/constant.hpp"
 
 #define PGS_EPSILON 10e-9
 

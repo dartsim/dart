@@ -36,8 +36,8 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Deprecated.hpp"
-#include "dart/math/Constants.hpp"
 #include "dart/math/MathTypes.hpp"
+#include "dart/math/constant.hpp"
 
 namespace dart {
 namespace math {
@@ -456,9 +456,7 @@ bool verifyTransform(const Eigen::Isometry3d& _T);
 /// Compute the angle (in the range of -pi to +pi) which ignores any full
 /// rotations
 inline double wrapToPi(double angle) {
-  constexpr auto pi = constantsd::pi();
-
-  return std::fmod(angle + pi, 2 * pi) - pi;
+  return std::fmod(angle + pi(), 2 * pi()) - pi();
 }
 
 template <typename MatrixType, typename ReturnType>
@@ -530,7 +528,7 @@ template <typename S = double, typename Index = std::size_t>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>>,
     std::vector<Eigen::Matrix<Index, 3, 1>>>
-computeConvexHull3D(
+compute_convex_hull_3d(
     const std::vector<Eigen::Matrix<S, 3, 1>>& vertices, bool optimize = true);
 
 /// Compute the centroid of a polygon, assuming the polygon is a convex hull

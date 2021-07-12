@@ -33,12 +33,12 @@
 #pragma once
 
 #include "dart/collision/types.hpp"
-#include "dart/math/Types.hpp"
+#include "dart/math/type.hpp"
 
 namespace dart {
 namespace collision {
 
-/// Contact information
+/// Contact information of a pair of collision objects
 template <typename S_>
 struct Contact {
   using S = S_;

@@ -32,7 +32,7 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/math/geometry/Icosphere.hpp"
+#include "dart/math/geometry/icosphere.hpp"
 
 using namespace dart;
 using namespace math;

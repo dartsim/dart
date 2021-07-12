@@ -51,16 +51,16 @@ EnginePtr<S> Engine<S>::Create(const std::string& engine_name) {
   }
 
   auto factory = SingletonFactory::getSingletonPtr();
-  auto newEngine = factory->create(engine_name);
+  auto new_engine = factory->create(engine_name);
 
-  if (!newEngine) {
+  if (!new_engine) {
     DART_WARN("Failed to create a collision engine [{}].", engine_name);
     return nullptr;
   }
 
-  m_engines[engine_name] = newEngine;
+  m_engines[engine_name] = new_engine;
 
-  return newEngine;
+  return new_engine;
 }
 
 //==============================================================================

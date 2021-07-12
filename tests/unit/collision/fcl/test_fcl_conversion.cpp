@@ -59,8 +59,8 @@ TYPED_TEST(FclConversion, Vector) {
     fclVec3[i] = vec3[i];
   }
 
-  EXPECT_VECTOR3S_EQ(fclVec3, collision::toFclVector3<S>(vec3));
-  EXPECT_VECTOR3S_EQ(vec3, collision::toVector3<S>(fclVec3));
+  EXPECT_VECTOR3S_EQ(fclVec3, collision::to_fcl_vector3<S>(vec3));
+  EXPECT_VECTOR3S_EQ(vec3, collision::to_vector3<S>(fclVec3));
 }
 
 //==============================================================================
@@ -75,8 +75,8 @@ TYPED_TEST(FclConversion, Matrix) {
     }
   }
 
-  EXPECT_MATRIX3S_EQ(fclMat3, collision::toFclMatrix3<S>(mat3));
-  EXPECT_MATRIX3S_EQ(mat3, collision::toMatrix3<S>(fclMat3));
+  EXPECT_MATRIX3S_EQ(fclMat3, collision::to_fcl_matrix3<S>(mat3));
+  EXPECT_MATRIX3S_EQ(mat3, collision::to_matrix3<S>(fclMat3));
 }
 
 //==============================================================================
@@ -88,5 +88,5 @@ TYPED_TEST(FclConversion, Transform) {
   tf3.translation() = math::Vector3<S>::Random();
 
   EXPECT_TRANSFORM3S_EQ(
-      tf3, collision::toTransform3<S>(collision::toFclTransform3<S>(tf3)));
+      tf3, collision::to_pose3<S>(collision::to_fcl_pose3<S>(tf3)));
 }

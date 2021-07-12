@@ -41,25 +41,25 @@ namespace collision {
 //==============================================================================
 template <typename S>
 math::Isometry3<S> FclObject<S>::get_pose() const {
-  return toTransform3<S>(m_fcl_collision_object->getTransform());
+  return to_pose3<S>(m_fcl_collision_object->getTransform());
 }
 
 //==============================================================================
 template <typename S>
 void FclObject<S>::set_pose(const math::Isometry3<S>& tf) {
-  m_fcl_collision_object->setTransform(toFclTransform3<S>(tf));
+  m_fcl_collision_object->setTransform(to_fcl_pose3<S>(tf));
 }
 
 //==============================================================================
 template <typename S>
 math::Vector3<S> FclObject<S>::get_position() const {
-  return toVector3<S>(m_fcl_collision_object->getTranslation());
+  return to_vector3<S>(m_fcl_collision_object->getTranslation());
 }
 
 //==============================================================================
 template <typename S>
 void FclObject<S>::set_position(const math::Vector3<S>& pos) {
-  m_fcl_collision_object->setTranslation(toFclVector3<S>(pos));
+  m_fcl_collision_object->setTranslation(to_fcl_vector3<S>(pos));
 }
 
 //==============================================================================
@@ -128,7 +128,7 @@ void FclObject<S>::update_engine_data() {
   //    bvhModel->endUpdateModel();
   //  }
 
-  m_fcl_collision_object->setTransform(toFclTransform3(get_pose()));
+  m_fcl_collision_object->setTransform(to_fcl_pose3(get_pose()));
   m_fcl_collision_object->computeAABB();
 }
 

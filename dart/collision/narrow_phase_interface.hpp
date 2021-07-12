@@ -32,14 +32,18 @@
 
 #pragma once
 
-#include "dart/collision/contact.hpp"
+#include "dart/collision/collision_option.hpp"
 #include "dart/collision/object.hpp"
 
 namespace dart {
 namespace collision {
 
 template <typename S>
-bool collide(ObjectPtr<S> object1, ObjectPtr<S> object2);
+bool collide(
+    ObjectPtr<S> object1,
+    ObjectPtr<S> object2,
+    const CollisionOption<S>& option = {},
+    CollisionResult<S>* result = nullptr);
 
 } // namespace collision
 } // namespace dart

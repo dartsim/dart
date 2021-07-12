@@ -156,8 +156,8 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   EXPECT_EQ((int)world->getNumSkeletons(), 2);
 
   // Lower and upper bound of configuration for system
-  // double lb = -1.5 * constantsd::pi();
-  // double ub =  1.5 * constantsd::pi();
+  // double lb = -1.5 * pi();
+  // double ub =  1.5 * pi();
 
   int maxSteps = 500;
   for (int i = 0; i < maxSteps; ++i)

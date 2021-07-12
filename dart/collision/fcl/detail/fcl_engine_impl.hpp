@@ -32,15 +32,13 @@
 
 #pragma once
 
-#include <assimp/scene.h>
-
 #include "dart/collision/collision_result.hpp"
 #include "dart/collision/fcl/fcl_engine.hpp"
 #include "dart/collision/fcl/fcl_group.hpp"
 #include "dart/collision/fcl/fcl_object.hpp"
 #include "dart/collision/fcl/fcl_primitive_shape_utils.hpp"
 #include "dart/common/Console.hpp"
-#include "dart/math/geometry/Sphere.hpp"
+#include "dart/math/geometry/sphere.hpp"
 
 namespace dart {
 namespace collision {
@@ -78,36 +76,49 @@ GroupPtr<S> FclEngine<S>::create_group() {
 
 //==============================================================================
 template <typename S>
-bool FclEngine<S>::collide(ObjectPtr<S> object1, ObjectPtr<S> object2) {
+bool FclEngine<S>::collide(
+    ObjectPtr<S> object1,
+    ObjectPtr<S> object2,
+    const CollisionOption<S>& option,
+    CollisionResult<S>* result) {
   auto derived1 = std::dynamic_pointer_cast<FclObject<S>>(object1);
   if (!derived1) {
-    dterr << "Invalid object\n";
+    DART_ERROR("Invalid object");
     return false;
   }
 
   auto derived2 = std::dynamic_pointer_cast<FclObject<S>>(object2);
   if (!derived2) {
-    dterr << "Invalid object\n";
+    DART_ERROR("Invalid object");
     return false;
   }
 
   auto fcl_collision_object1 = derived1->get_fcl_collision_object();
   if (!fcl_collision_object1) {
-    dterr << "Invalid object\n";
+    DART_ERROR("Invalid object");
     return false;
   }
 
   auto fcl_collision_object2 = derived2->get_fcl_collision_object();
   if (!fcl_collision_object2) {
-    dterr << "Invalid object\n";
+    DART_ERROR("Invalid object");
     return false;
   }
 
-  FclCollisionRequest<S> request;
-  FclCollisionResult<S> result;
+  FclCollisionRequest<S> fcl_request;
+  fcl_request.enable_contact = option.enable_contact;
+  fcl_request.num_max_contacts = option.max_num_contacts;
 
-  return ::fcl::collide(
-      fcl_collision_object1, fcl_collision_object2, request, result);
+  FclCollisionResult<S> fcl_result;
+
+  const bool found = ::fcl::collide(
+      fcl_collision_object1, fcl_collision_object2, fcl_request, fcl_result);
+
+  if (result) {
+    //
+  }
+
+  return found;
 }
 
 //==============================================================================
@@ -123,10 +134,10 @@ std::shared_ptr<FclCollisionGeometry<S>>
 FclEngine<S>::create_fcl_collision_geometry_impl(
     const math::ConstGeometryPtr& shape, FclEngine<S>::PrimitiveShape type) {
   FclCollisionGeometry<S>* geom = nullptr;
-  const auto& shapeType = shape->getType();
+  const auto& shapeType = shape->get_type();
 
   if (auto sphere = shape->as<math::Sphered>()) {
-    const auto radius = sphere->getRadius();
+    const auto radius = sphere->get_radius();
 
     if (FclEngine<S>::PRIMITIVE == type) {
       geom = new FclSphere<S>(radius);
@@ -138,11 +149,10 @@ FclEngine<S>::create_fcl_collision_geometry_impl(
       geom = fcl_mesh;
     }
   } else {
-    dterr << "[FclEngine<S>::createFCLCollisionGeometry] "
-          << "Attempting to create an unsupported shape type [" << shapeType
-          << "]. Creating a sphere with 0.1 radius "
-          << "instead.\n";
-
+    DART_ERROR(
+        "Attempting to create an unsupported shape type [{}]. Creating a "
+        "sphere with 0.1 radius instead.",
+        shapeType);
     geom = new FclSphere<S>(0.1);
   }
 

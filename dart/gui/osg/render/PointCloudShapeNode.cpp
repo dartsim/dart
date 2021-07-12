@@ -153,8 +153,7 @@ public:
     mRadius = static_cast<float>(size) / 2.0f;
 
     const auto segmentCount = 16u;
-    const auto pi = math::constantsf::pi();
-    const auto ratio = 2.0f * pi / segmentCount;
+    const auto ratio = 2.0f * math::pi<float>() / segmentCount;
 
     mVertices->resize(segmentCount);
     for (auto i = 0u; i < segmentCount; ++i) {

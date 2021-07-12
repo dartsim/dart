@@ -33,3 +33,16 @@
 #pragma once
 
 #define DART_UNUSED(...) (void)sizeof(__VA_ARGS__)
+
+#define DART_NUM_ARGS(...)                                                     \
+  DETAIL_DART_NUM_ARGS(, ##__VA_ARGS__, 6, 5, 4, 3, 2, 1, 0)
+#define DETAIL_DART_NUM_ARGS(z, a, b, c, d, e, f, cnt, ...) cnt
+
+#define DART_CONCAT(a, b) DETAIL_DART_CONCAT(a, b)
+#define DETAIL_DART_CONCAT(a, b) a##b
+
+#define DART_ASSERT(...)                                                       \
+  DART_CONCAT(DETAIL_DART_ASSERT_, DART_NUM_ARGS(__VA_ARGS__))                 \
+  (__VA_ARGS__)
+#define DETAIL_DART_ASSERT_1(condition) assert(condition)
+#define DETAIL_DART_ASSERT_2(condition, message) assert(condition&& #message)

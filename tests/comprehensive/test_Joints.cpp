@@ -122,7 +122,7 @@ void JOINTS::randomizeRefFrames()
 
     Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
     Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(
-        -2 * dart::math::constantsd::pi(), 2 * dart::math::constantsd::pi());
+        -2 * dart::math::pi(), 2 * dart::math::pi());
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);
@@ -163,8 +163,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 
     for (int i = 0; i < dof; ++i)
     {
-      q(i) = Random::uniform(-constantsd::pi() * 1.0, constantsd::pi() * 1.0);
-      dq(i) = Random::uniform(-constantsd::pi() * 1.0, constantsd::pi() * 1.0);
+      q(i) = Random::uniform(-pi() * 1.0, pi() * 1.0);
+      dq(i) = Random::uniform(-pi() * 1.0, pi() * 1.0);
     }
 
     joint->setPositions(q);
@@ -453,8 +453,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
   EXPECT_TRUE(joint0 != nullptr);
   EXPECT_TRUE(joint1 != nullptr);
 
-  double limit0 = constantsd::pi() / 6.0;
-  double limit1 = constantsd::pi() / 6.0;
+  double limit0 = pi() / 6.0;
+  double limit1 = pi() / 6.0;
 
   joint0->setLimitEnforcement(true);
   joint0->setPositionLowerLimit(0, -limit0);
@@ -621,8 +621,8 @@ TEST_F(JOINTS, JOINT_LIMITS)
 
   EXPECT_TRUE(joint0 != nullptr);
 
-  double limit = constantsd::pi() / 6.0;
-  Eigen::VectorXd limits = Eigen::VectorXd::Constant(1, constantsd::pi() / 2.0);
+  double limit = pi() / 6.0;
+  Eigen::VectorXd limits = Eigen::VectorXd::Constant(1, pi() / 2.0);
 
   joint0->setPositionLowerLimit(0, -limit);
   joint0->setPositionUpperLimit(0, limit);
@@ -1160,8 +1160,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   joint0->setLimitEnforcement(true);
   joint1->setLimitEnforcement(true);
 
-  const double ll = -constantsd::pi() / 12.0; // -15 degree
-  const double ul = +constantsd::pi() / 12.0; // +15 degree
+  const double ll = -pi() / 12.0; // -15 degree
+  const double ul = +pi() / 12.0; // +15 degree
 
   std::size_t dof0 = joint0->getNumDofs();
   for (std::size_t i = 0; i < dof0; ++i)
@@ -1256,7 +1256,7 @@ Eigen::Matrix<double, N, 1> random_vec(double limit = 100)
 //==============================================================================
 Eigen::Isometry3d random_transform(
     double translation_limit = 100,
-    double rotation_limit = 2 * dart::math::constantsd::pi())
+    double rotation_limit = 2 * dart::math::pi())
 {
   Eigen::Vector3d r = random_vec<3>(translation_limit);
   Eigen::Vector3d theta = random_vec<3>(rotation_limit);

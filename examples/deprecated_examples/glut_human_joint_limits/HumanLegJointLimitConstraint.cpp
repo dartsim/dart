@@ -194,7 +194,7 @@ double HumanLegJointLimitConstraint::getConstraintForceMixing()
 //==============================================================================
 void HumanLegJointLimitConstraint::update()
 {
-  const auto pi2 = math::constantsd::two_pi();
+  const auto pi2 = math::two_pi();
 
   double qz = mHipJoint->getPosition(0);
   double qx = mHipJoint->getPosition(1);

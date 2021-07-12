@@ -80,6 +80,8 @@
   using x##UniquePtr = ::std::unique_ptr<x<T>>;                                \
   template <typename T>                                                        \
   using Const##x##UniquePtr = ::std::unique_ptr<const x<T>>;                   \
+  using x##f = x<float>;                                                       \
+  using x##d = x<double>;                                                      \
   void _ANONYMOUS_FUNCTION_3()
 
 #define DART_DEFINE_CLASS_POINTERS_T1(x)                                       \
@@ -97,6 +99,8 @@
   using x##UniquePtr = ::std::unique_ptr<x<T>>;                                \
   template <typename T>                                                        \
   using Const##x##UniquePtr = ::std::unique_ptr<const x<T>>;                   \
+  using x##f = x<float>;                                                       \
+  using x##d = x<double>;                                                      \
   void _ANONYMOUS_FUNCTION_3()
 
 #endif // DART_COMMON_SMARTPOINTER_HPP_

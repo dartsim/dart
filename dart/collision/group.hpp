@@ -33,7 +33,7 @@
 #pragma once
 
 #include "dart/collision/types.hpp"
-#include "dart/math/geometry/Geometry.hpp"
+#include "dart/math/geometry/geometry.hpp"
 
 namespace dart {
 namespace collision {
