@@ -113,6 +113,9 @@ option(DART_BUILD_COMP_io           "Build component 'io'"           ON)
 option(DART_BUILD_COMP_gui          "Build component 'gui'"          ON)
 option(DART_BUILD_COMP_planning     "Build component 'planning'"     ON)
 
+# Experimental
+option(DART_ENABLE_THREAD_SAFE "Build as thread-safe library" ON)
+
 #===============================================================================
 # Print intro
 #===============================================================================

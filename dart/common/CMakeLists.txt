@@ -58,6 +58,15 @@ if(DART_CODECOV AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   list(APPEND link_libraries_public_skip_checking gcov)
 endif()
 
+set(compile_definitions_public
+  -DDART_ACTIVE_LOG_LEVEL=${DART_ACTIVE_LOG_LEVEL}
+)
+if(DART_ENABLE_THREAD_SAFE)
+  list(APPEND compile_definitions_public -DDART_ENABLE_THREAD_SAFE=1)
+else()
+  list(APPEND compile_definitions_public -DDART_ENABLE_THREAD_SAFE=0)
+endif()
+
 # Add component
 dart_add_component(
   PROJECT_NAME
@@ -83,7 +92,7 @@ dart_add_component(
   TARGET_LINK_OPTIONS_PUBLIC
     ${link_options_public}
   TARGET_COMPILE_DEFINITIONS_PUBLIC
-    -DDART_ACTIVE_LOG_LEVEL=${DART_ACTIVE_LOG_LEVEL}
+    ${compile_definitions_public}
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
   TARGET_COMPILE_OPTIONS_PUBLIC

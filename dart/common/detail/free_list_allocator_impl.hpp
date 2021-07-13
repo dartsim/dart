@@ -32,77 +32,46 @@
 
 #pragma once
 
+#include "dart/common/free_list_allocator.hpp"
 #include "dart/common/logging.hpp"
-#include "dart/common/macro.hpp"
 
-#if DART_HAVE_spdlog
-  #include <spdlog/spdlog.h>
-#else
-  #include "dart/common/Console.hpp"
-#endif
-
-namespace dart {
-namespace common {
+namespace dart::common {
 
 //==============================================================================
-template <typename S, typename... Args>
-void trace(const S& format_str, [[maybe_unused]] Args&&... args) {
-#if DART_HAVE_spdlog
-  spdlog::trace(format_str, std::forward<Args>(args)...);
-#else
-  colorMsg("[trace]", 37) << format_str << "\n";
-#endif
+template <std::size_t Alignment>
+FreeListAllocator<Alignment>::FreeListAllocator(
+    std::shared_ptr<Allocator> base_allocator) {
+  // Set base allocator
+  m_base_allocator = base_allocator ? std::move(base_allocator)
+                                    : std::make_shared<DefaultAllocator>();
 }
 
 //==============================================================================
-template <typename S, typename... Args>
-void debug(const S& format_str, [[maybe_unused]] Args&&... args) {
-#if DART_HAVE_spdlog
-  spdlog::debug(format_str, std::forward<Args>(args)...);
-#else
-  colorMsg("[debug]", 36) << format_str << "\n";
+template <std::size_t Alignment>
+void* FreeListAllocator<Alignment>::allocate(size_t size) {
+#if DART_ENABLE_THREAD_SAFE
+  std::lock_guard<std::mutex> lock(m_mutex);
 #endif
+
+  if (size == 0) {
+    DART_DEBUG("Not allowed to allocate zero bytes");
+    return nullptr;
+  }
+
+  return nullptr;
 }
 
 //==============================================================================
-template <typename S, typename... Args>
-void info(const S& format_str, [[maybe_unused]] Args&&... args) {
-#if DART_HAVE_spdlog
-  spdlog::info(format_str, std::forward<Args>(args)...);
-#else
-  colorMsg("[info]", 32) << format_str << "\n";
+template <std::size_t Alignment>
+void FreeListAllocator<Alignment>::release(void* pointer, std::size_t size) {
+#if DART_ENABLE_THREAD_SAFE
+  std::lock_guard<std::mutex> lock(m_mutex);
 #endif
+
+  if (size == 0) {
+    DART_DEBUG("Not allowed to release zero bytes");
+    return;
+  }
 }
 
-//==============================================================================
-template <typename S, typename... Args>
-void warn(const S& format_str, [[maybe_unused]] Args&&... args) {
-#if DART_HAVE_spdlog
-  spdlog::warn(format_str, std::forward<Args>(args)...);
-#else
-  colorMsg("[warn]", 33) << format_str << "\n";
-#endif
-}
-
-//==============================================================================
-template <typename S, typename... Args>
-void error(const S& format_str, [[maybe_unused]] Args&&... args) {
-#if DART_HAVE_spdlog
-  spdlog::error(format_str, std::forward<Args>(args)...);
-#else
-  colorMsg("[error]", 31) << format_str << "\n";
-#endif
-}
-
-//==============================================================================
-template <typename S, typename... Args>
-void fatal(const S& format_str, [[maybe_unused]] Args&&... args) {
-#if DART_HAVE_spdlog
-  spdlog::critical(format_str, std::forward<Args>(args)...);
-#else
-  colorMsg("[fatal]", 30) << format_str << "\n";
-#endif
-}
-
-} // namespace common
-} // namespace dart
+} // namespace dart::common

@@ -63,6 +63,34 @@ using aligned_map = std::map<
     _Compare,
     Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
 
+namespace literals {
+
+constexpr std::size_t operator"" _KiB(unsigned long long value) noexcept {
+  return std::size_t(value * 1024);
+}
+
+constexpr std::size_t operator"" _KB(unsigned long long value) noexcept {
+  return std::size_t(value * 1000);
+}
+
+constexpr std::size_t operator"" _MiB(unsigned long long value) noexcept {
+  return std::size_t(value * 1024 * 1024);
+}
+
+constexpr std::size_t operator"" _MB(unsigned long long value) noexcept {
+  return std::size_t(value * 1000 * 1000);
+}
+
+constexpr std::size_t operator"" _GiB(unsigned long long value) noexcept {
+  return std::size_t(value * 1024 * 1024 * 1024);
+}
+
+constexpr std::size_t operator"" _GB(unsigned long long value) noexcept {
+  return std::size_t(value * 1000 * 1000 * 1000);
+}
+
+} // namespace literals
+
 } // namespace common
 } // namespace dart
 
