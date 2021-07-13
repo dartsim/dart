@@ -34,7 +34,8 @@ string(REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\3"
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
+set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
+# Note: Check validity by running: pkg-config --list-all | grep <pkg_name>
 
 # Use DART_SOURCE/BINARY_DIR instead of CMAKE_SOURCE/BINARY_DIR to support the
 # case that DART is built as a sub-project in another project.
