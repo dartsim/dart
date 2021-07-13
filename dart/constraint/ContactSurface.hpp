@@ -86,17 +86,16 @@ struct ContactSurfaceParams
       DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY};
 };
 
-class ContactConstraint;
-
 /// Class used to determine the properties of a contact constraint based on the
 /// two colliding bodies and information about their contact.
 class ContactSurfaceHandler
 {
 public:
   /// Constructor
-  /// \param[in] parent Optional parent handler. It suggested that new handlers
-  ///                   should not overwrite the previous ones, but rather
-  ///                   "extend" them.
+  /// \param[in] parent Optional parent handler. In ConstraintSolver, the parent
+  ///                   handler is automatically set to the previous handler
+  ///                   when adding a new one. It is suggested to keep this
+  ///                   paradigm if used elsewhere.
   explicit ContactSurfaceHandler(ContactSurfaceHandlerPtr parent = nullptr);
 
   /// Create parameters of the contact constraint. This method should combine
