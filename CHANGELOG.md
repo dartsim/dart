@@ -2,7 +2,7 @@
 
 ### [DART 6.12.0 (TBD)](https://github.com/dartsim/dart/milestone/66?closed=1)
 
-### [DART 6.11.0 (TBD)](https://github.com/dartsim/dart/milestone/64?closed=1)
+### [DART 6.11.0 (2021-07-15)](https://github.com/dartsim/dart/milestone/64?closed=1)
 
 * Math
 
