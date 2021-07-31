@@ -84,6 +84,12 @@ struct ContactSurfaceParams
   /// z = vel. in second friction direction
   Eigen::Vector3d mContactSurfaceMotionVelocity{
       DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY};
+
+private:
+  /// Used for future-compatibility. Add any newly added fields here so that
+  /// ABI doesn't change. The data should be accessed via non-virtual getters
+  /// and setters added to this struct.
+  void* mExtraData {nullptr};
 };
 
 /// Class used to determine the properties of a contact constraint based on the

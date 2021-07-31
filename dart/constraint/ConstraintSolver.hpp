@@ -186,12 +186,12 @@ public:
 
   /// Get the handler used for computing contact surface parameters based on
   /// the contact properties of the two colliding bodies.
-  ContactSurfaceHandlerPtr getContactSurfaceHandler() const;
+  ContactSurfaceHandlerPtr getLastContactSurfaceHandler() const;
 
   /// Set the handler used for computing contact surface parameters based on
   /// the contact properties of the two colliding bodies. This function
   /// automatically sets the previous handler as parent of the given handler.
-  void setContactSurfaceHandler(ContactSurfaceHandlerPtr handler);
+  void addContactSurfaceHandler(ContactSurfaceHandlerPtr handler);
 
   /// Remove the given contact surface handler. If it is not the last in the
   /// chain of handlers, the neighbor handlers are automatically connected

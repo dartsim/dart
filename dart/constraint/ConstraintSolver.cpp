@@ -739,13 +739,14 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 }
 
 //==============================================================================
-ContactSurfaceHandlerPtr ConstraintSolver::getContactSurfaceHandler() const
+ContactSurfaceHandlerPtr
+ConstraintSolver::getLastContactSurfaceHandler() const
 {
   return mContactSurfaceHandler;
 }
 
 //==============================================================================
-void ConstraintSolver::setContactSurfaceHandler(
+void ConstraintSolver::addContactSurfaceHandler(
     ContactSurfaceHandlerPtr handler)
 {
   handler->setParent(mContactSurfaceHandler);
