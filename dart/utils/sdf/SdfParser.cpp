@@ -1028,10 +1028,12 @@ void readVisualizationShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
+  assert(hasAttribute(vizShapeNodeEle, "name"));
+  const std::string visualName = getAttributeString(vizShapeNodeEle, "name");
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
       vizShapeNodeEle,
-      bodyNode->getName() + " - visual shape",
+      bodyNode->getName() + " - " + visualName,
       baseUri,
       retriever);
 
@@ -1052,10 +1054,12 @@ void readCollisionShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
+  assert(hasAttribute(collShapeNodeEle, "name"));
+  const std::string collName = getAttributeString(collShapeNodeEle, "name");
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
       collShapeNodeEle,
-      bodyNode->getName() + " - collision shape",
+      bodyNode->getName() + " - " + collName,
       baseUri,
       retriever);
 
