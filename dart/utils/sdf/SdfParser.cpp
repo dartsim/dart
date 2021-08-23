@@ -1028,8 +1028,14 @@ void readVisualizationShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  assert(hasAttribute(vizShapeNodeEle, "name"));
-  const std::string visualName = getAttributeString(vizShapeNodeEle, "name");
+  std::string visualName = "visual shape";
+  if (hasAttribute(vizShapeNodeEle, "name")) {
+    visualName = getAttributeString(vizShapeNodeEle, "name");
+  } else {
+    dtwarn << "Missing required attribute [name] in <visual> element of "
+           << "<link name = " << bodyNode->getName() << ">.\n";
+  }
+
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
       vizShapeNodeEle,
@@ -1054,8 +1060,14 @@ void readCollisionShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  assert(hasAttribute(collShapeNodeEle, "name"));
-  const std::string collName = getAttributeString(collShapeNodeEle, "name");
+  std::string collName = "collision shape";
+  if (hasAttribute(collShapeNodeEle, "name")) {
+    collName = getAttributeString(collShapeNodeEle, "name");
+  } else {
+    dtwarn << "Missing required attribute [name] in <collision> element of "
+           << "<link name = " << bodyNode->getName() << ">.\n";
+  }
+
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
       collShapeNodeEle,
