@@ -626,7 +626,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
         parent,
         static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("revolute2") == type)
+  else if (std::string("revolute2") == type || std::string("universal") == type)
     return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
         parent,
         static_cast<const dynamics::UniversalJoint::Properties&>(
@@ -1028,10 +1028,18 @@ void readVisualizationShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
+  std::string visualName = "visual shape";
+  if (hasAttribute(vizShapeNodeEle, "name")) {
+    visualName = getAttributeString(vizShapeNodeEle, "name");
+  } else {
+    dtwarn << "Missing required attribute [name] in <visual> element of "
+           << "<link name = " << bodyNode->getName() << ">.\n";
+  }
+
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
       vizShapeNodeEle,
-      bodyNode->getName() + " - visual shape",
+      bodyNode->getName() + " - " + visualName,
       baseUri,
       retriever);
 
@@ -1052,10 +1060,18 @@ void readCollisionShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
+  std::string collName = "collision shape";
+  if (hasAttribute(collShapeNodeEle, "name")) {
+    collName = getAttributeString(collShapeNodeEle, "name");
+  } else {
+    dtwarn << "Missing required attribute [name] in <collision> element of "
+           << "<link name = " << bodyNode->getName() << ">.\n";
+  }
+
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
       collShapeNodeEle,
-      bodyNode->getName() + " - collision shape",
+      bodyNode->getName() + " - " + collName,
       baseUri,
       retriever);
 
@@ -1224,23 +1240,42 @@ SDFJoint readJoint(
       = (childWorld * childToJoint).inverse() * _skeletonFrame;
 
   if (type == std::string("fixed"))
+  {
     newJoint.properties = dynamics::WeldJoint::Properties::createShared(
         readWeldJoint(_jointElement, parentModelFrame, name));
-  if (type == std::string("prismatic"))
+  }
+  else if (type == std::string("prismatic"))
+  {
     newJoint.properties = dynamics::PrismaticJoint::Properties::createShared(
         readPrismaticJoint(_jointElement, parentModelFrame, name));
-  if (type == std::string("revolute"))
+  }
+  else if (type == std::string("revolute"))
+  {
     newJoint.properties = dynamics::RevoluteJoint::Properties::createShared(
         readRevoluteJoint(_jointElement, parentModelFrame, name));
-  if (type == std::string("screw"))
+  }
+  else if (type == std::string("screw"))
+  {
     newJoint.properties = dynamics::ScrewJoint::Properties::createShared(
         readScrewJoint(_jointElement, parentModelFrame, name));
-  if (type == std::string("revolute2"))
+  }
+  else if (type == std::string("revolute2") || type == std::string("universal"))
+  {
     newJoint.properties = dynamics::UniversalJoint::Properties::createShared(
         readUniversalJoint(_jointElement, parentModelFrame, name));
-  if (type == std::string("ball"))
+  }
+  else if (type == std::string("ball"))
+  {
     newJoint.properties = dynamics::BallJoint::Properties::createShared(
         readBallJoint(_jointElement, parentModelFrame, name));
+  }
+  else
+  {
+    dterr << "Unsupported joint type [" << type
+          << "]. Using [fixed] joint type instead.\n";
+    newJoint.properties = dynamics::WeldJoint::Properties::createShared(
+        readWeldJoint(_jointElement, parentModelFrame, name));
+  }
 
   newJoint.type = type;
 

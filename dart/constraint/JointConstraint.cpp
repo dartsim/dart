@@ -400,14 +400,33 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
   const int dof = static_cast<int>(mJoint->getNumDofs());
   for (int i = 0; i < dof; ++i)
   {
-    assert(lcp->w[index] == 0.0);
+    if (!mActive[i])
+      continue;
+
+#ifndef NDEBUG // debug
+    if (std::abs(lcp->w[index]) > 1e-6)
+    {
+      dterr << "Invalid " << index
+            << "-th slack variable. Expected: 0.0. Actual: "
+            << lcp->w[index] << ".\n";
+      assert(false);
+    }
+#endif
 
     lcp->b[index] = mDesiredVelocityChange[i];
 
     lcp->lo[index] = mImpulseLowerBound[i];
     lcp->hi[index] = mImpulseUpperBound[i];
 
-    assert(lcp->findex[index] == -1);
+#ifndef NDEBUG // debug
+    if (lcp->findex[index] != -1)
+    {
+      dterr << "Invalid " << index
+            << "-th friction index. Expected: -1. Actual: "
+            << lcp->findex[index] << ".\n";
+      assert(false);
+    }
+#endif
 
     if (mLifeTime[i])
       lcp->x[index] = mOldX[i];
