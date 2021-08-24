@@ -1,6 +1,6 @@
 ## DART 6
 
-### [DART 6.11.1 (TBD)](https://github.com/dartsim/dart/milestone/67?closed=1)
+### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
 
 * Dynamics
 
