@@ -31,54 +31,61 @@
  */
 
 #include <TestHelpers.hpp>
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <dart/utils/sdf/sdf.hpp>
 #include <gtest/gtest.h>
 
-#include <dart/dart.hpp>
-#include <dart/utils/sdf/sdf.hpp>
-
 //========================================================================================
-TEST(Issue1583, ServoJointWithPositionLimits)
+TEST(Issue1596, ServoJointWithPositionLimits)
 {
-  const double pos_lb = -0.1;
-  const double pos_ub = +0.1;
-  const double vel_desired = 1;
-
+#if NDEBUG // release
+  const auto num_steps = 50000;
+#else
+  const auto num_steps = 1000;
+#endif
   auto skel = dart::utils::SdfParser::readSkeleton(
-      "dart://sample/sdf/test/test_issue1583.model");
+      "dart://sample/sdf/test/test_issue1596.model");
   ASSERT_NE(skel, nullptr);
 
   auto world = dart::simulation::World::create();
-  world->setGravity(Eigen::Vector3d::Zero());
+  world->setGravity(Eigen::Vector3d(9.81, 9.81, 0));
   world->addSkeleton(skel);
   ASSERT_EQ(world->getNumSkeletons(), 1);
 
-  auto* joint = skel->getJoint("j1");
-  joint->setPositionLowerLimit(0, pos_lb);
-  joint->setPositionUpperLimit(0, pos_ub);
-  joint->setLimitEnforcement(true);
-  joint->setActuatorType(dart::dynamics::Joint::SERVO);
+  auto* joint0 = skel->getJoint("joint_00");
+  auto* joint1 = skel->getJoint("joint_01");
+  std::vector<dart::dynamics::Joint*> joints = {joint0, joint1};
 
-  EXPECT_DOUBLE_EQ(0, joint->getPosition(0));
-  EXPECT_DOUBLE_EQ(0, joint->getVelocity(0));
-  EXPECT_DOUBLE_EQ(0, joint->getAcceleration(0));
-
-  for (std::size_t i = 0; i < 1000; ++i)
+  for (auto joint : joints)
   {
-    joint->setCommand(0, vel_desired);
-    world->step();
+    ASSERT_NE(joint, nullptr);
+    ASSERT_EQ(
+        joint->getType(), dart::dynamics::UniversalJoint::getStaticType());
+    EXPECT_EQ(joint->getNumDofs(), 2);
+    joint->setLimitEnforcement(true);
 
-    const double pos = joint->getPosition(0);
-    const double vel = joint->getVelocity(0);
-
-    EXPECT_LE(pos, pos_ub + 1e-6);
-    EXPECT_GE(pos, pos_lb - 1e-6);
-
-    if (std::abs(vel - vel_desired) > 1e-6)
-    {
-      EXPECT_NEAR(pos, pos_ub, 1e-2);
-    }
+    EXPECT_DOUBLE_EQ(0, joint->getPosition(0));
+    EXPECT_DOUBLE_EQ(0, joint->getPosition(1));
+    EXPECT_DOUBLE_EQ(0, joint->getVelocity(0));
+    EXPECT_DOUBLE_EQ(0, joint->getVelocity(1));
+    EXPECT_DOUBLE_EQ(0, joint->getAcceleration(0));
+    EXPECT_DOUBLE_EQ(0, joint->getAcceleration(1));
   }
 
-  EXPECT_NEAR(pos_ub, joint->getPosition(0), 1e-2);
-  EXPECT_NEAR(0, joint->getVelocity(0), 1e-6);
+  for (std::size_t i = 0; i < num_steps; ++i)
+  {
+    world->step();
+
+    for (const auto joint : joints)
+    {
+      const double pos0 = joint->getPosition(0);
+      const double pos1 = joint->getPosition(1);
+
+      EXPECT_LE(pos0, joint->getPositionUpperLimit(0) + 1e-6);
+      EXPECT_LE(pos1, joint->getPositionUpperLimit(1) + 1e-6);
+      EXPECT_GE(pos0, joint->getPositionLowerLimit(0) - 1e-6);
+      EXPECT_GE(pos1, joint->getPositionLowerLimit(1) - 1e-6);
+    }
+  }
 }

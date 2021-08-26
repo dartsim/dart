@@ -2,6 +2,12 @@
 
 ### [DART 6.12.0 (TBD)](https://github.com/dartsim/dart/milestone/66?closed=1)
 
+### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
+
+* Dynamics
+
+  * Fixed incorrect LCP construction in JointConstraint for multi-DOFs joints : [#1597](https://github.com/dartsim/dart/pull/1597)
+
 ### [DART 6.11.0 (2021-07-15)](https://github.com/dartsim/dart/milestone/64?closed=1)
 
 * Math
