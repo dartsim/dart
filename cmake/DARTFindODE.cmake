@@ -6,9 +6,9 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(ODE CONFIG NAMES ODE ode)
+find_package(ODE QUIET CONFIG NAMES ODE ode)
 
-if(NOT ODE_FOUND)
+if(NOT ODE_FOUND AND NOT ode_FOUND)
 
   find_package(ODE 0.13 QUIET MODULE)
 
