@@ -2,6 +2,10 @@
 
 ### [DART 6.12.0 (TBD)](https://github.com/dartsim/dart/milestone/66?closed=1)
 
+* API Breaking Changes
+
+  * DART 6.12.0 and later require compilers that support C++17.
+
 ### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
 
 * Dynamics

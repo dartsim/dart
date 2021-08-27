@@ -139,11 +139,7 @@ target_link_libraries(dart
 if (TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)
 endif()
-if(CMAKE_VERSION VERSION_LESS 3.8.2)
-  target_compile_options(dart PUBLIC -std=c++14)
-else()
-  target_compile_features(dart PUBLIC cxx_std_14)
-endif()
+target_compile_features(dart PUBLIC cxx_std_17)
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
