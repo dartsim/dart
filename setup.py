@@ -54,7 +54,7 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         cmake_args = [
-            '-DDART_BUILD_DARTPY=ON', '-DPYTHON_EXECUTABLE=' + sys.executable
+            '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
 
         cfg = 'Debug' if self.debug else 'Release'
