@@ -4,13 +4,20 @@
 
 * API Breaking Changes
 
-  * DART 6.12.0 and later require compilers that support C++17.
+  * DART 6.12.0 and later require compilers that support C++17: [#1600](https://github.com/dartsim/dart/pull/1600)
+    * Increased minimum CMake version to 3.10.2
+    * Increased minimum compiler versions to GCC 7.3.0, Clang 6.0, MSVC 16.0
+    * Dropped Ubuntu Xenial (16.04 LTS) support
+
+* Build
+
+  * Remove DART_BUILD_DARTPY option: [#1600](https://github.com/dartsim/dart/pull/1600)
 
 ### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
 
 * Dynamics
 
-  * Fixed incorrect LCP construction in JointConstraint for multi-DOFs joints : [#1597](https://github.com/dartsim/dart/pull/1597)
+  * Fixed incorrect LCP construction in JointConstraint for multi-DOFs joints: [#1597](https://github.com/dartsim/dart/pull/1597)
 
 ### [DART 6.11.0 (2021-07-15)](https://github.com/dartsim/dart/milestone/64?closed=1)
 
