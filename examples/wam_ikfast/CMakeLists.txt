@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10.2)
 
 get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
