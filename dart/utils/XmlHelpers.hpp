@@ -233,9 +233,7 @@ public:
   }
 
   /// Destructor
-  ~TemplatedElementEnumerator()
-  {
-  }
+  ~TemplatedElementEnumerator() {}
 
   /// Set the current element to the next sibling element or to the first child
   /// element of given parent element if it exists; returns success

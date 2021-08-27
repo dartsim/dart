@@ -245,8 +245,7 @@ bool Joint::isKinematic() const
     case VELOCITY:
     case LOCKED:
       return true;
-    default:
-    {
+    default: {
       dterr << "Unsupported actuator type." << std::endl;
       return false;
     }

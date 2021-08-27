@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.hpp"
-
 #include <iostream>
 
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 #include <dart/utils/utils.hpp>
+
+#include "MyWindow.hpp"
 
 using namespace dart;
 using namespace dynamics;

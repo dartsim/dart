@@ -31,7 +31,9 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
+
 #include "dart/config.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 

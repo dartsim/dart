@@ -33,6 +33,7 @@
 #include <gtest/gtest.h>
 
 #include "dart/lcpsolver/Lemke.hpp"
+
 #include "TestHelpers.hpp"
 
 //==============================================================================

@@ -31,9 +31,12 @@
  */
 
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
+
 #include <cassert>
 #include <iostream>
+
 #include <assimp/IOStream.hpp>
+
 #include "dart/common/Console.hpp"
 
 namespace dart {

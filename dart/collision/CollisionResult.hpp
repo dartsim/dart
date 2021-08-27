@@ -35,6 +35,7 @@
 
 #include <unordered_set>
 #include <vector>
+
 #include "dart/collision/Contact.hpp"
 
 namespace dart {

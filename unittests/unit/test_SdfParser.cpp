@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -40,6 +40,8 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

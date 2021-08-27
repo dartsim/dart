@@ -34,16 +34,15 @@
 
 #include <cassert>
 #ifndef NDEBUG
-#  include <iomanip>
-#  include <iostream>
+  #include <iomanip>
+  #include <iostream>
 #endif
-
-#include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {
@@ -55,7 +54,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver,
     BoxedLcpSolverPtr secondaryBoxedLcpSolver)
   : BoxedLcpConstraintSolver(
-        std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
+      std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
 {
   setTimeStep(timeStep);
 }
@@ -71,7 +70,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver)
   : BoxedLcpConstraintSolver(
-        std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
+      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
 {
   // Do nothing
 }

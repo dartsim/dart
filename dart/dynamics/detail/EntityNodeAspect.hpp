@@ -86,7 +86,7 @@ public:
   template <typename... Args>
   EntityNodeBase(Args&&... args)
     : common::CompositeJoiner<Base, EntityNodeAspectBase<Base>>(
-          common::NoArg, std::forward<Args>(args)...)
+        common::NoArg, std::forward<Args>(args)...)
   {
     // Do nothing
   }

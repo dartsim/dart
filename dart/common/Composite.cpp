@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Composite.hpp"
+
 #include <cassert>
 #include <iostream>
 
-#include "dart/common/Composite.hpp"
 #include "dart/common/Console.hpp"
 
 namespace dart {

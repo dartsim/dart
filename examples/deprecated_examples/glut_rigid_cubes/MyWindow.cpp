@@ -37,9 +37,7 @@ MyWindow::MyWindow() : SimWindow()
   mForce = Eigen::Vector3d::Zero();
 }
 
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 void MyWindow::timeStepping()
 {

@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/PyramidShapeNode.hpp"
+
 #include <array>
 
 #include <osg/CullFace>
@@ -38,12 +40,10 @@
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/PyramidShapeNode.hpp"
-
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

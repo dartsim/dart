@@ -31,9 +31,8 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
 #include <dart/dart.hpp>
+#include <gtest/gtest.h>
 
 dart::dynamics::SkeletonPtr create_box(
     const Eigen::Vector3d& dims,

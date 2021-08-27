@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Inertia.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/math/Geometry.hpp"
 
@@ -254,7 +255,6 @@ bool Inertia::verifyMoment(
 bool Inertia::verifySpatialTensor(
     const Eigen::Matrix6d& _spatial, bool _printWarnings, double _tolerance)
 {
-
   bool valid = true;
 
   for (std::size_t i = 0; i < 6; ++i)

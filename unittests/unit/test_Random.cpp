@@ -32,6 +32,7 @@
 
 #include <dart/math/Random.hpp>
 #include <gtest/gtest.h>
+
 #include "TestHelpers.hpp"
 
 using namespace dart;

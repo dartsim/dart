@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/render/ShapeNode.hpp"
+
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 

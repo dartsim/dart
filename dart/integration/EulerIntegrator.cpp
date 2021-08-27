@@ -36,14 +36,10 @@ namespace dart {
 namespace integration {
 
 //==============================================================================
-EulerIntegrator::EulerIntegrator() : Integrator()
-{
-}
+EulerIntegrator::EulerIntegrator() : Integrator() {}
 
 //==============================================================================
-EulerIntegrator::~EulerIntegrator()
-{
-}
+EulerIntegrator::~EulerIntegrator() {}
 
 //==============================================================================
 void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)

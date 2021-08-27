@@ -34,6 +34,7 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <vector>
+
 #include "dart/collision/CollisionDetector.hpp"
 
 namespace dart {

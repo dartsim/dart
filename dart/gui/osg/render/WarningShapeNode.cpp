@@ -31,11 +31,11 @@
  */
 
 #include "dart/gui/osg/render/WarningShapeNode.hpp"
-#include "dart/gui/osg/ShapeFrameNode.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 
 namespace dart {
 namespace gui {

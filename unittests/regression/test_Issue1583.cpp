@@ -31,10 +31,9 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
 #include <dart/dart.hpp>
 #include <dart/utils/sdf/sdf.hpp>
+#include <gtest/gtest.h>
 
 //========================================================================================
 TEST(Issue1583, ServoJointWithPositionLimits)

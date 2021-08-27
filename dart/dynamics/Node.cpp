@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Node.hpp"
+
 #include "dart/dynamics/BodyNode.hpp"
 
 #define REPORT_INVALID_NODE(func)                                              \

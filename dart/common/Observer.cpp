@@ -31,6 +31,7 @@
  */
 
 #include "dart/common/Observer.hpp"
+
 #include "dart/common/Subject.hpp"
 
 namespace dart {

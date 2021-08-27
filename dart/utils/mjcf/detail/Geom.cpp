@@ -138,14 +138,12 @@ Errors Geom::preprocess(const Compiler& compiler)
   {
     case GeomType::PLANE:
     case GeomType::HFIELD:
-    case GeomType::SPHERE:
-    {
+    case GeomType::SPHERE: {
       mSize = mAttributes.mSize;
       break;
     }
     case GeomType::CAPSULE:
-    case GeomType::CYLINDER:
-    {
+    case GeomType::CYLINDER: {
       if (mAttributes.mFromTo)
       {
         const double radius = mAttributes.mSize[0];
@@ -163,8 +161,7 @@ Errors Geom::preprocess(const Compiler& compiler)
       break;
     }
     case GeomType::ELLIPSOID:
-    case GeomType::BOX:
-    {
+    case GeomType::BOX: {
       if (mAttributes.mFromTo)
       {
         const double halfLengthX = mAttributes.mSize[0];
@@ -184,8 +181,7 @@ Errors Geom::preprocess(const Compiler& compiler)
       }
       break;
     }
-    case GeomType::MESH:
-    {
+    case GeomType::MESH: {
       break;
     }
   }

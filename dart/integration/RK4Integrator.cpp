@@ -36,14 +36,10 @@ namespace dart {
 namespace integration {
 
 //==============================================================================
-RK4Integrator::RK4Integrator()
-{
-}
+RK4Integrator::RK4Integrator() {}
 
 //==============================================================================
-RK4Integrator::~RK4Integrator()
-{
-}
+RK4Integrator::~RK4Integrator() {}
 
 //==============================================================================
 void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)

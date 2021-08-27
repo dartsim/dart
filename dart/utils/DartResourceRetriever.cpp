@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/config.hpp"

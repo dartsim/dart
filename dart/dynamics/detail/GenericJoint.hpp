@@ -33,11 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 
-#include "dart/dynamics/GenericJoint.hpp"
-
 #include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 #include "dart/math/ConfigurationSpace.hpp"
 #include "dart/math/Helpers.hpp"
 
@@ -1548,11 +1547,10 @@ double GenericJoint<ConfigSpaceT>::computePotentialEnergy() const
   Vector displacement
       = getPositionsStatic() - Base::mAspectProperties.mRestPositions;
 
-  const double pe
-      = 0.5
-        * displacement.dot(
-              Base::mAspectProperties.mSpringStiffnesses.cwiseProduct(
-                  displacement));
+  const double pe = 0.5
+                    * displacement.dot(
+                        Base::mAspectProperties.mSpringStiffnesses.cwiseProduct(
+                            displacement));
 
   return pe;
 }

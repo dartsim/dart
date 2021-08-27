@@ -34,7 +34,6 @@
 #define DART_UTILS_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 
 #include <Eigen/Core>
-
 #include <tinyxml2.h>
 
 #include "dart/common/Optional.hpp"

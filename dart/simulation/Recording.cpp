@@ -60,9 +60,7 @@ Recording::Recording(const std::vector<int>& _skelDofs)
 }
 
 //==============================================================================
-Recording::~Recording()
-{
-}
+Recording::~Recording() {}
 
 //==============================================================================
 int Recording::getNumFrames() const

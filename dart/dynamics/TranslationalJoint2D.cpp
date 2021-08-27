@@ -224,7 +224,7 @@ void TranslationalJoint2D::updateRelativeTransform() const
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(
-             mAspectProperties.getTranslationalAxes() * positions)
+           mAspectProperties.getTranslationalAxes() * positions)
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification

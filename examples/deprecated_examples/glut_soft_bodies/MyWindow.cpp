@@ -50,9 +50,7 @@ MyWindow::MyWindow() : SoftSimWindow()
   mImpulseDuration = 0.0;
 }
 
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 void MyWindow::timeStepping()
 {

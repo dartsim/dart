@@ -101,9 +101,7 @@ using aligned_map = std::map<
 private:                                                                       \
   struct private_structure                                                     \
   {                                                                            \
-    explicit private_structure()                                               \
-    {                                                                          \
-    }                                                                          \
+    explicit private_structure() {}                                            \
   };                                                                           \
                                                                                \
 public:                                                                        \
@@ -207,11 +205,11 @@ public:                                                                        \
 // Define two static creator functions that returns std::unique_ptr and
 // std::unique_ptr, respectively, to the object
 #if DART_ENABLE_SIMD
-#  define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(class_name)                      \
     DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)
 #else
-#  define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
     DART_DEFINE_OBJECT_CREATORS(class_name)
 #endif
 
@@ -219,11 +217,11 @@ public:                                                                        \
 // std::unique_ptr, respectively, to the object where the constructor is
 // protected
 #if DART_ENABLE_SIMD
-#  define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
     DART_DEFINE_CREATE_ALIGNED_PTR_SHARED_FOR_PROTECTED_CTOR(class_name)       \
     DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(class_name)
 #else
-#  define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
     DART_DEFINE_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)
 #endif
 

@@ -35,6 +35,7 @@
 
 #include <string>
 #include <vector>
+
 #include <Eigen/Core>
 
 #include "dart/common/Composite.hpp"

@@ -31,17 +31,16 @@
  */
 
 #include "dart/gui/osg/DragAndDrop.hpp"
-#include "dart/gui/osg/DefaultEventHandler.hpp"
-#include "dart/gui/osg/InteractiveFrame.hpp"
-#include "dart/gui/osg/MouseEventHandler.hpp"
-#include "dart/gui/osg/Viewer.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
-
+#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include "dart/gui/osg/InteractiveFrame.hpp"
+#include "dart/gui/osg/MouseEventHandler.hpp"
+#include "dart/gui/osg/Viewer.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {

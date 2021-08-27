@@ -42,6 +42,7 @@
 #define DART_GUI_GLUT_MOTIONBLURSIMWINDOW_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 #include "dart/gui/glut/SimWindow.hpp"

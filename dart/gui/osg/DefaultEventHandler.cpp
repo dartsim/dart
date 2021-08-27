@@ -30,19 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/DefaultEventHandler.hpp"
+
+#include <iostream>
+
 #include <osgGA/GUIEventAdapter>
 
-#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/gui/osg/MouseEventHandler.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/Viewer.hpp"
 #include "dart/gui/osg/render/ShapeNode.hpp"
-
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
-
-#include <iostream>
 
 namespace dart {
 namespace gui {
@@ -326,8 +326,7 @@ bool DefaultEventHandler::handle(
 
   switch (ea.getEventType())
   {
-    case ::osgGA::GUIEventAdapter::KEYDOWN:
-    {
+    case ::osgGA::GUIEventAdapter::KEYDOWN: {
       switch (ea.getKey())
       {
         case 8: // ctrl+h
@@ -336,8 +335,7 @@ bool DefaultEventHandler::handle(
           return true;
         }
 
-        case ' ':
-        {
+        case ' ': {
           if (mViewer->isAllowingSimulation())
           {
             mViewer->simulate(!mViewer->isSimulating());
@@ -349,8 +347,7 @@ bool DefaultEventHandler::handle(
       break;
     }
 
-    case ::osgGA::GUIEventAdapter::MOVE:
-    {
+    case ::osgGA::GUIEventAdapter::MOVE: {
       if (!mSuppressMovePicks)
         pick(mMovePicks, ea);
 

@@ -299,7 +299,7 @@ void PlanarJoint::updateRelativeJacobianTimeDeriv() const
       math::AdT(
           Joint::mAspectProperties.mT_ChildBodyToJoint
               * math::expAngular(
-                    mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
+                  mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
           J.col(0)));
 
   mJacobianDeriv.col(1) = -math::ad(
@@ -307,7 +307,7 @@ void PlanarJoint::updateRelativeJacobianTimeDeriv() const
       math::AdT(
           Joint::mAspectProperties.mT_ChildBodyToJoint
               * math::expAngular(
-                    mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
+                  mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
           J.col(1)));
 
   assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());

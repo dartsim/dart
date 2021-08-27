@@ -34,6 +34,7 @@
 #define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
 #include <Eigen/Dense>
+
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {

@@ -33,11 +33,10 @@
 #ifndef DART_MATH_DETAIL_TRIMESH_IMPL_HPP_
 #define DART_MATH_DETAIL_TRIMESH_IMPL_HPP_
 
-#include "dart/math/TriMesh.hpp"
-
 #include <Eigen/Geometry>
 
 #include "dart/math/Geometry.hpp"
+#include "dart/math/TriMesh.hpp"
 
 namespace dart {
 namespace math {

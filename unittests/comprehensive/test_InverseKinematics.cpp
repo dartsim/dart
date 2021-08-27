@@ -31,10 +31,12 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
 
 #include "dart/config.hpp"
 #include "dart/math/Helpers.hpp"
+
 #include "TestHelpers.hpp"
 
 using namespace Eigen;

@@ -36,6 +36,7 @@
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
 #include <assimp/cfileio.h>
+
 #include "dart/common/Resource.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 

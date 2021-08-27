@@ -407,8 +407,8 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     if (std::abs(lcp->w[index]) > 1e-6)
     {
       dterr << "Invalid " << index
-            << "-th slack variable. Expected: 0.0. Actual: "
-            << lcp->w[index] << ".\n";
+            << "-th slack variable. Expected: 0.0. Actual: " << lcp->w[index]
+            << ".\n";
       assert(false);
     }
 #endif

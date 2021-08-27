@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <unordered_map>
+
 #include <osg/Group>
 #include <osgShadow/ShadowTechnique>
 

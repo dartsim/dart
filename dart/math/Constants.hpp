@@ -41,7 +41,6 @@ namespace math {
 template <typename T>
 struct constants
 {
-
   static constexpr T pi()
   {
     return 3.141592653589793238462643383279502884197169399375105820974944592L;

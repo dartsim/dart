@@ -68,9 +68,7 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
   mPreOffset = 0.0;
 }
 
-Controller::~Controller()
-{
-}
+Controller::~Controller() {}
 
 Eigen::VectorXd Controller::getTorques()
 {

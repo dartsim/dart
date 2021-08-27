@@ -595,7 +595,6 @@ void PointMass::clearConstraintImpulse()
 //==============================================================================
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
 {
-
   Eigen::Vector3d& mRest
       = mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mX0;
   if (_p == mRest)

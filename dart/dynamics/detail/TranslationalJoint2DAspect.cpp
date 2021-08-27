@@ -93,8 +93,9 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
 }
 
 //==============================================================================
-TranslationalJoint2DUniqueProperties& TranslationalJoint2DUniqueProperties::
-operator=(const TranslationalJoint2DUniqueProperties& other)
+TranslationalJoint2DUniqueProperties&
+TranslationalJoint2DUniqueProperties::operator=(
+    const TranslationalJoint2DUniqueProperties& other)
 {
   if (this != &other)
   {

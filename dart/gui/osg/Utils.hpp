@@ -34,7 +34,6 @@
 #define DART_GUI_OSG_UTILS_HPP_
 
 #include <Eigen/Geometry>
-
 #include <osg/Matrix>
 
 //==============================================================================

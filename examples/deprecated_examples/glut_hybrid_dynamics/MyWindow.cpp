@@ -33,14 +33,10 @@
 #include "MyWindow.hpp"
 
 //==============================================================================
-MyWindow::MyWindow() : SimWindow(), mHarnessOn(false)
-{
-}
+MyWindow::MyWindow() : SimWindow(), mHarnessOn(false) {}
 
 //==============================================================================
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 //==============================================================================
 void MyWindow::timeStepping()

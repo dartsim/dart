@@ -31,7 +31,9 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "dart/math/TriMesh.hpp"
+
 #include "TestHelpers.hpp"
 
 using namespace dart;

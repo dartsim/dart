@@ -31,16 +31,13 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
+#include <dart/collision/CollisionResult.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
-
 #include <dart/simulation/World.hpp>
-
-#include <dart/collision/CollisionResult.hpp>
+#include <gtest/gtest.h>
 
 //==============================================================================
 TEST(Issue1231, NoContacts)

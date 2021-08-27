@@ -55,9 +55,7 @@ public:
   using element_type = NodeT;
 
   /// Default constructor
-  TemplateNodePtr() : mNode(nullptr)
-  {
-  }
+  TemplateNodePtr() : mNode(nullptr) {}
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
@@ -155,9 +153,7 @@ public:
   friend class TemplateWeakNodePtr;
 
   /// Default constructor
-  TemplateWeakNodePtr() : mNode(nullptr)
-  {
-  }
+  TemplateWeakNodePtr() : mNode(nullptr) {}
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor

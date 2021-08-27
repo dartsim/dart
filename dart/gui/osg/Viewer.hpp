@@ -37,10 +37,9 @@
 #include <memory>
 #include <unordered_set>
 
+#include <Eigen/Core>
 #include <osgShadow/ShadowTechnique>
 #include <osgViewer/Viewer>
-
-#include <Eigen/Core>
 
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Subject.hpp"

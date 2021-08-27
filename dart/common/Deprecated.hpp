@@ -42,14 +42,14 @@
 //==============================================================================
 
 #if defined(__GNUC__) || defined(__clang__)
-#  define DART_DEPRECATED(version) __attribute__((deprecated))
-#  define DART_FORCEINLINE __attribute__((always_inline))
+  #define DART_DEPRECATED(version) __attribute__((deprecated))
+  #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
-#  define DART_DEPRECATED(version) __declspec(deprecated)
-#  define DART_FORCEINLINE _forceinline
+  #define DART_DEPRECATED(version) __declspec(deprecated)
+  #define DART_FORCEINLINE _forceinline
 #else
-#  define DART_DEPRECATED(version) ()
-#  define DART_FORCEINLINE
+  #define DART_DEPRECATED(version) ()
+  #define DART_FORCEINLINE
 #endif
 
 // We define two convenient macros that can be used to suppress
@@ -67,26 +67,26 @@
 //
 #if defined(DART_COMPILER_GCC)
 
-#  define DART_SUPPRESS_DEPRECATED_BEGIN                                       \
+  #define DART_SUPPRESS_DEPRECATED_BEGIN                                       \
     _Pragma("GCC diagnostic push")                                             \
         _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
 
-#  define DART_SUPPRESS_DEPRECATED_END _Pragma("GCC diagnostic pop")
+  #define DART_SUPPRESS_DEPRECATED_END _Pragma("GCC diagnostic pop")
 
 #elif defined(DART_COMPILER_CLANG)
 
-#  define DART_SUPPRESS_DEPRECATED_BEGIN                                       \
+  #define DART_SUPPRESS_DEPRECATED_BEGIN                                       \
     _Pragma("clang diagnostic push")                                           \
         _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
 
-#  define DART_SUPPRESS_DEPRECATED_END _Pragma("clang diagnostic pop")
+  #define DART_SUPPRESS_DEPRECATED_END _Pragma("clang diagnostic pop")
 
 #elif defined(DART_COMPILER_MSVC)
 
-#  define DART_SUPPRESS_DEPRECATED_BEGIN                                       \
+  #define DART_SUPPRESS_DEPRECATED_BEGIN                                       \
     __pragma(warning(push)) __pragma(warning(disable : 4996))
 
-#  define DART_SUPPRESS_DEPRECATED_END __pragma(warning(pop))
+  #define DART_SUPPRESS_DEPRECATED_END __pragma(warning(pop))
 
 #endif
 

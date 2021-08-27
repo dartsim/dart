@@ -229,8 +229,7 @@ public:
         changeDamping(-delta_damping);
         break;
 
-      case 'r':
-      {
+      case 'r': {
         if (mBallConstraint)
           removeConstraint();
         else

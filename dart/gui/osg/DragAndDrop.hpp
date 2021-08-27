@@ -40,6 +40,7 @@
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Shape.hpp"
+
 #include "DefaultEventHandler.hpp"
 
 namespace dart {

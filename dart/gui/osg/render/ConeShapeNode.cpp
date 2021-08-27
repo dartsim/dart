@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/ConeShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/ConeShapeNode.hpp"
-
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

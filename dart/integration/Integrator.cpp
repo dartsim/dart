@@ -36,24 +36,16 @@ namespace dart {
 namespace integration {
 
 //==============================================================================
-IntegrableSystem::IntegrableSystem()
-{
-}
+IntegrableSystem::IntegrableSystem() {}
 
 //==============================================================================
-IntegrableSystem::~IntegrableSystem()
-{
-}
+IntegrableSystem::~IntegrableSystem() {}
 
 //==============================================================================
-Integrator::Integrator()
-{
-}
+Integrator::Integrator() {}
 
 //==============================================================================
-Integrator::~Integrator()
-{
-}
+Integrator::~Integrator() {}
 
 } // namespace integration
 } // namespace dart

@@ -35,7 +35,9 @@
 
 #include <ctime>
 #include <vector>
+
 #include <Eigen/Dense>
+
 #include "dart/math/MathTypes.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////

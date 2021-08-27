@@ -1052,21 +1052,21 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 #if HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType)
   {
-#  if FCL_HAVE_OCTOMAP
+  #if FCL_HAVE_OCTOMAP
     assert(dynamic_cast<const VoxelGridShape*>(shape.get()));
 
     auto octreeShape = static_cast<const VoxelGridShape*>(shape.get());
     auto octree = octreeShape->getOctree();
 
     geom = new fcl::OcTree(octree);
-#  else
+  #else
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
           << "Attempting to create an collision geometry for VoxelGridShape, "
           << "but the installed FCL isn't built with Octomap support. "
           << "Creating a sphere with 0.1 radius instead.\n";
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
-#  endif // FCL_HAVE_OCTOMAP
+  #endif // FCL_HAVE_OCTOMAP
   }
 #endif // HAVE_OCTOMAP
   else

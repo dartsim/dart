@@ -31,22 +31,18 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
+#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
-
-#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/simulation/World.hpp>
-
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
-
 #include <dart/utils/DartResourceRetriever.hpp>
+#include <gtest/gtest.h>
 
 //==============================================================================
 bool runIssue1234Subtest(
@@ -164,13 +160,15 @@ void runIssue1234Test(
 //==============================================================================
 TEST(DISABLED_Issue1234, Bullet)
 {
-  runIssue1234Test(
-      [] { return dart::collision::BulletCollisionDetector::create(); });
+  runIssue1234Test([] {
+    return dart::collision::BulletCollisionDetector::create();
+  });
 }
 
 //==============================================================================
 TEST(DISABLED_Issue1234, ODE)
 {
-  runIssue1234Test(
-      [] { return dart::collision::OdeCollisionDetector::create(); });
+  runIssue1234Test([] {
+    return dart::collision::OdeCollisionDetector::create();
+  });
 }

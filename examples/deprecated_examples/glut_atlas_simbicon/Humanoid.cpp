@@ -57,9 +57,7 @@ Humanoid::Humanoid(Skeleton* /*_skeleton*/)
 }
 
 //==============================================================================
-Humanoid::~Humanoid()
-{
-}
+Humanoid::~Humanoid() {}
 
 //==============================================================================
 Skeleton* Humanoid::getSkeleton()
@@ -98,9 +96,7 @@ BodyNode* Humanoid::getRightFoot()
 }
 
 //==============================================================================
-AtlasRobot::AtlasRobot(Skeleton* _skeleton) : Humanoid(_skeleton)
-{
-}
+AtlasRobot::AtlasRobot(Skeleton* _skeleton) : Humanoid(_skeleton) {}
 
 //==============================================================================
 AtlasRobot::~AtlasRobot()

@@ -34,6 +34,7 @@
 #define DART_UTILS_FILEINFOC3D_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 #include "dart/math/MathTypes.hpp"
@@ -43,12 +44,9 @@ namespace utils {
 
 class FileInfoC3D
 {
-
 public:
   FileInfoC3D();
-  virtual ~FileInfoC3D()
-  {
-  }
+  virtual ~FileInfoC3D() {}
 
   inline int getNumMarkers() const
   {

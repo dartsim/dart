@@ -39,12 +39,8 @@
 class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
-  MyWindow() : SimWindow()
-  {
-  }
-  virtual ~MyWindow()
-  {
-  }
+  MyWindow() : SimWindow() {}
+  virtual ~MyWindow() {}
 
   void timeStepping() override;
   //  void drawSkels() override;

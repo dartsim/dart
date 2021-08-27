@@ -34,7 +34,9 @@
 
 #include <cmath>
 #include <cstring>
+
 #include <Eigen/Dense>
+
 #include "dart/external/odelcpsolver/matrix.h"
 #include "dart/external/odelcpsolver/misc.h"
 #include "dart/math/Constants.hpp"

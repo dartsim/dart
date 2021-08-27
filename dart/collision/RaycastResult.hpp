@@ -34,6 +34,7 @@
 #define DART_COLLISION_RAYCASTRESULT_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 namespace dart {

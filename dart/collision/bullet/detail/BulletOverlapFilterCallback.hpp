@@ -34,12 +34,11 @@
 #define DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
 
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
+#include "dart/config.hpp"
 
 namespace dart {
 namespace collision {

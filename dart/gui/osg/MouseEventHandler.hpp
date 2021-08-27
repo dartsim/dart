@@ -36,7 +36,6 @@
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/common/Subject.hpp"
-
 #include "dart/gui/osg/DefaultEventHandler.hpp"
 
 namespace dart {
@@ -52,9 +51,7 @@ class MouseEventHandler : public virtual dart::common::Subject,
 public:
   friend class DefaultEventHandler;
 
-  inline MouseEventHandler() : mEventHandler(nullptr)
-  {
-  }
+  inline MouseEventHandler() : mEventHandler(nullptr) {}
 
   /// Overload this function to set behavior that will get triggered during a
   /// mouse event

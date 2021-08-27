@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Group.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"

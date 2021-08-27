@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/OpenGLRenderInterface.hpp"
+
 #include <iostream>
+
 #include <assimp/cimport.h>
 
 #include "dart/common/Console.hpp"
@@ -44,7 +47,6 @@
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
-#include "dart/gui/OpenGLRenderInterface.hpp"
 #include "dart/math/Icosphere.hpp"
 
 // Code taken from glut/lib/glut_shapes.c
@@ -82,9 +84,7 @@ void OpenGLRenderInterface::initialize()
   clear(Eigen::Vector3d(1.0, 1.0, 1.0));
 }
 
-void OpenGLRenderInterface::destroy()
-{
-}
+void OpenGLRenderInterface::destroy() {}
 
 void OpenGLRenderInterface::setViewport(int _x, int _y, int _width, int _height)
 {
@@ -124,9 +124,7 @@ void OpenGLRenderInterface::getMaterial(
 {
 }
 
-void OpenGLRenderInterface::setDefaultMaterial()
-{
-}
+void OpenGLRenderInterface::setDefaultMaterial() {}
 
 void OpenGLRenderInterface::pushMatrix()
 {
@@ -629,7 +627,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
   max = 1;
   if (AI_SUCCESS
       == aiGetMaterialIntegerArray(
-             mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
+          mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
     fill_mode = wireframe ? GL_LINE : GL_FILL;
   else
     fill_mode = GL_FILL;

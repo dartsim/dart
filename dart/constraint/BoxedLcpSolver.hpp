@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 
 #include <string>
+
 #include <Eigen/Core>
 
 namespace dart {

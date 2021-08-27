@@ -44,14 +44,10 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
-ConstrainedGroup::ConstrainedGroup()
-{
-}
+ConstrainedGroup::ConstrainedGroup() {}
 
 //==============================================================================
-ConstrainedGroup::~ConstrainedGroup()
-{
-}
+ConstrainedGroup::~ConstrainedGroup() {}
 
 //==============================================================================
 void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)

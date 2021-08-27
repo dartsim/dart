@@ -33,9 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_
 #define DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_
 
-#include "dart/dynamics/EntityNode.hpp"
-
 #include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/EntityNode.hpp"
 
 namespace dart {
 namespace dynamics {

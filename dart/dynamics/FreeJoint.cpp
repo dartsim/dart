@@ -420,8 +420,8 @@ void FreeJoint::setSpatialAcceleration(
                 getRelativeTransform(),
                 getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
             + math::ad(
-                  getChildBodyNode()->getSpatialVelocity(),
-                  getRelativeJacobianStatic() * getVelocitiesStatic());
+                getChildBodyNode()->getSpatialVelocity(),
+                getRelativeJacobianStatic() * getVelocitiesStatic());
 
       targetRelSpatialAcc -= parentAcceleration;
     }
@@ -432,17 +432,17 @@ void FreeJoint::setSpatialAcceleration(
                 getRelativeTransform(),
                 getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
             + math::ad(
-                  getChildBodyNode()->getSpatialVelocity(),
-                  getRelativeJacobianStatic() * getVelocitiesStatic());
+                getChildBodyNode()->getSpatialVelocity(),
+                getRelativeJacobianStatic() * getVelocitiesStatic());
       const Eigen::Vector6d arbitraryAcceleration
           = math::AdT(
                 relativeTo->getTransform(getChildBodyNode()),
                 relativeTo->getSpatialAcceleration())
             - math::ad(
-                  getChildBodyNode()->getSpatialVelocity(),
-                  math::AdT(
-                      relativeTo->getTransform(getChildBodyNode()),
-                      relativeTo->getSpatialVelocity()));
+                getChildBodyNode()->getSpatialVelocity(),
+                math::AdT(
+                    relativeTo->getTransform(getChildBodyNode()),
+                    relativeTo->getSpatialVelocity()));
 
       targetRelSpatialAcc += -parentAcceleration + arbitraryAcceleration;
     }

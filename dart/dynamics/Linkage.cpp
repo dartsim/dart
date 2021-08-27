@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/Linkage.hpp"
+
 #include <algorithm>
 #include <unordered_set>
 
 #include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/Linkage.hpp"
 
 namespace dart {
 namespace dynamics {

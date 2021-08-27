@@ -31,7 +31,9 @@
  */
 
 #include <tuple>
+
 #include <gtest/gtest.h>
+
 #include "dart/dart.hpp"
 
 using namespace dart;

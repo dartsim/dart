@@ -31,6 +31,7 @@
  */
 
 #include "dart/optimizer/Solver.hpp"
+
 #include "dart/optimizer/Problem.hpp"
 
 namespace dart {

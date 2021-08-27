@@ -33,6 +33,7 @@
 #include "dart/common/ResourceRetriever.hpp"
 
 #include <sstream>
+
 #include "dart/common/Console.hpp"
 
 namespace dart {

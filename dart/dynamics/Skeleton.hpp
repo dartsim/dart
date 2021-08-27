@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_SKELETON_HPP_
 
 #include <mutex>
+
 #include "dart/common/NameManager.hpp"
 #include "dart/common/VersionCounter.hpp"
 #include "dart/dynamics/EndEffector.hpp"
