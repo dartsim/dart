@@ -358,6 +358,25 @@ if(DART_BUILD_EXTRAS)
   add_subdirectory(extras)
 endif()
 
+# Add 'ALL' target that builds everything
+set(all_target_candidates tests_and_run benchmarks dartpy pytest dartc)
+foreach(target_candidate ${all_target_candidates})
+  if(TARGET ${target_candidate})
+    list(APPEND all_targets ${target_candidate})
+  endif()
+endforeach()
+foreach(target_candidate ${examples})
+  if(TARGET ${target_candidate})
+    list(APPEND all_targets ${target_candidate})
+  endif()
+endforeach()
+foreach(target_candidate ${tutorials})
+  if(TARGET ${target_candidate})
+    list(APPEND all_targets ${target_candidate})
+  endif()
+endforeach()
+add_custom_target(ALL DEPENDS ${all_targets})
+
 #===============================================================================
 # CMake configuration files for components and targets
 #===============================================================================
