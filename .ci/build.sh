@@ -153,7 +153,7 @@ if [ "$CHECK_FORMAT" = "ON" ]; then
 fi
 
 # DART: build, test, and install
-make -j$num_threads all tests benchmarks
+make -j$num_threads all tests
 ctest --output-on-failure -j$num_threads
 
 if [ "$BUILD_EXAMPLES" = "ON" ]; then

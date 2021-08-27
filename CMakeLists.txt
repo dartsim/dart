@@ -354,7 +354,7 @@ if(DART_BUILD_EXTRAS)
 endif()
 
 # Add 'ALL' target that builds everything
-set(all_target_candidates tests_and_run benchmarks dartpy pytest dartc)
+set(all_target_candidates tests_and_run dartpy pytest dartc)
 foreach(target_candidate ${all_target_candidates})
   if(TARGET ${target_candidate})
     list(APPEND all_targets ${target_candidate})
