@@ -409,39 +409,33 @@ dynamics::ShapePtr createShape(const GeomOrSite& geomOrSite)
 
   switch (geomOrSite.getType())
   {
-    case detail::GeomType::SPHERE:
-    {
+    case detail::GeomType::SPHERE: {
       shape = std::make_shared<dynamics::SphereShape>(
           geomOrSite.getSphereRadius());
       break;
     }
-    case detail::GeomType::CAPSULE:
-    {
+    case detail::GeomType::CAPSULE: {
       shape = std::make_shared<dynamics::CapsuleShape>(
           geomOrSite.getCapsuleRadius(), geomOrSite.getCapsuleLength());
       break;
     }
-    case detail::GeomType::ELLIPSOID:
-    {
+    case detail::GeomType::ELLIPSOID: {
       // DART takes diameters while MJCF has radii
       shape = std::make_shared<dynamics::EllipsoidShape>(
           geomOrSite.getEllipsoidDiameters());
       break;
     }
-    case detail::GeomType::CYLINDER:
-    {
+    case detail::GeomType::CYLINDER: {
       shape = std::make_shared<dynamics::CylinderShape>(
           geomOrSite.getCylinderRadius(), geomOrSite.getCylinderLength());
       break;
     }
-    case detail::GeomType::BOX:
-    {
+    case detail::GeomType::BOX: {
       // DART takes full-sizes while MJCF has half-sizes
       shape = std::make_shared<dynamics::BoxShape>(geomOrSite.getBoxSize());
       break;
     }
-    default:
-    {
+    default: {
       break;
     }
   }
@@ -457,8 +451,7 @@ dynamics::ShapePtr createShape(
 
   switch (geom.getType())
   {
-    case detail::GeomType::PLANE:
-    {
+    case detail::GeomType::PLANE: {
       // TODO(JS): Needs to properly parse PLANE.
       Eigen::Vector3d size;
       size.head<2>() = 2.0 * geom.getPlaneHalfSize();
@@ -466,21 +459,18 @@ dynamics::ShapePtr createShape(
       shape = std::make_shared<dynamics::BoxShape>(size);
       break;
     }
-    case detail::GeomType::HFIELD:
-    {
+    case detail::GeomType::HFIELD: {
       dterr << "[MjcfParser] Not implemented for 'HFIELD' geom type.\n";
       break;
     }
-    case detail::GeomType::MESH:
-    {
+    case detail::GeomType::MESH: {
       const detail::Mesh* mjcfMesh = mjcfAsset.getMesh(geom.getMesh());
       assert(mjcfMesh);
       shape = mjcfMesh->getMeshShape();
       assert(shape);
       break;
     }
-    default:
-    {
+    default: {
       return createShape(geom);
     }
   }

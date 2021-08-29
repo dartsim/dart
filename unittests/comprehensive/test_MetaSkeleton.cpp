@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -41,6 +41,8 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
-
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -257,7 +257,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
 
   if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
       || mSoftMeshShape->checkDataVariance(
-             dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+          dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime)
   {
     if (mVertices->size() != bn->getNumPointMasses())

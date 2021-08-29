@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <string>
+
 #include <Eigen/Core>
 
 #include "dart/common/ClassWithVirtualBase.hpp"

@@ -53,10 +53,11 @@ void JointCoulombFrictionConstraint(py::module& m)
                 setConstraintForceMixing(_cfm);
           },
           ::py::arg("cfm"))
-      .def_static("getConstraintForceMixing", +[]() -> double {
-        return dart::constraint::JointCoulombFrictionConstraint::
-            getConstraintForceMixing();
-      });
+      .def_static(
+          "getConstraintForceMixing", +[]() -> double {
+            return dart::constraint::JointCoulombFrictionConstraint::
+                getConstraintForceMixing();
+          });
 }
 
 } // namespace python

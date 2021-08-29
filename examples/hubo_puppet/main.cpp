@@ -324,9 +324,9 @@ public:
       Eigen::Quaterniond Rlower = Eigen::Quaterniond(Eigen::AngleAxisd(
                                       testQ(EP), Eigen::Vector3d::UnitY()))
                                   * Eigen::Quaterniond(Eigen::AngleAxisd(
-                                        testQ(WY), Eigen::Vector3d::UnitZ()))
+                                      testQ(WY), Eigen::Vector3d::UnitZ()))
                                   * Eigen::Quaterniond(Eigen::AngleAxisd(
-                                        testQ(WP), Eigen::Vector3d::UnitY()));
+                                      testQ(WP), Eigen::Vector3d::UnitY()));
 
       Eigen::Matrix3d Rupper = B.rotation() * Rlower.inverse().matrix();
 
@@ -1020,8 +1020,7 @@ public:
         case 'Q':
         case 'E':
         case 'F':
-        case 'Z':
-        {
+        case 'Z': {
           mTeleop->setMovement(mMoveComponents);
           return true;
         }
@@ -1110,8 +1109,7 @@ public:
         case 'Q':
         case 'E':
         case 'F':
-        case 'Z':
-        {
+        case 'Z': {
           mTeleop->setMovement(mMoveComponents);
           return true;
         }

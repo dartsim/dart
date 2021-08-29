@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <osgViewer/Viewer>
-
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
 #include <dart/utils/utils.hpp>
+#include <osgViewer/Viewer>
 
 using namespace dart::dynamics;
 

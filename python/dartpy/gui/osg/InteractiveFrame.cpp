@@ -193,9 +193,10 @@ void InteractiveFrame(py::module& m)
               -> const std::vector<const dart::dynamics::SimpleFrame*> {
             return self->getShapeFrames();
           })
-      .def("removeAllShapeFrames", +[](dart::gui::osg::InteractiveFrame* self) {
-        self->removeAllShapeFrames();
-      });
+      .def(
+          "removeAllShapeFrames", +[](dart::gui::osg::InteractiveFrame* self) {
+            self->removeAllShapeFrames();
+          });
 }
 
 } // namespace python

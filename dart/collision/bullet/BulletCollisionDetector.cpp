@@ -31,11 +31,9 @@
  */
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
+#include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <algorithm>
-
-#include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
@@ -48,6 +46,7 @@
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"

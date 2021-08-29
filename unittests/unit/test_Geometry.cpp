@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -44,6 +44,8 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

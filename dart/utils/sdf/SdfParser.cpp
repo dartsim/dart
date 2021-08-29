@@ -998,7 +998,6 @@ dynamics::ShapeNode* readShapeNode(
 void readMaterial(
     tinyxml2::XMLElement* materialEle, dynamics::ShapeNode* shapeNode)
 {
-
   auto visualAspect = shapeNode->getVisualAspect();
   if (hasElement(materialEle, "diffuse"))
   {
@@ -1029,9 +1028,12 @@ void readVisualizationShapeNode(
     const common::ResourceRetrieverPtr& retriever)
 {
   std::string visualName = "visual shape";
-  if (hasAttribute(vizShapeNodeEle, "name")) {
+  if (hasAttribute(vizShapeNodeEle, "name"))
+  {
     visualName = getAttributeString(vizShapeNodeEle, "name");
-  } else {
+  }
+  else
+  {
     dtwarn << "Missing required attribute [name] in <visual> element of "
            << "<link name = " << bodyNode->getName() << ">.\n";
   }
@@ -1061,9 +1063,12 @@ void readCollisionShapeNode(
     const common::ResourceRetrieverPtr& retriever)
 {
   std::string collName = "collision shape";
-  if (hasAttribute(collShapeNodeEle, "name")) {
+  if (hasAttribute(collShapeNodeEle, "name"))
+  {
     collName = getAttributeString(collShapeNodeEle, "name");
-  } else {
+  }
+  else
+  {
     dtwarn << "Missing required attribute [name] in <collision> element of "
            << "<link name = " << bodyNode->getName() << ">.\n";
   }

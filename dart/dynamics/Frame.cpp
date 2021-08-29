@@ -81,9 +81,7 @@ std::shared_ptr<Frame> Frame::WorldShared()
 {
   struct EnableMakeShared : WorldFrame
   {
-    EnableMakeShared() : Entity(nullptr, true), WorldFrame()
-    {
-    }
+    EnableMakeShared() : Entity(nullptr, true), WorldFrame() {}
   };
   static auto sharedWorld = std::make_shared<EnableMakeShared>();
   return sharedWorld;
@@ -175,8 +173,8 @@ Eigen::Vector6d Frame::getSpatialVelocity(
 
   const Eigen::Vector6d& result = (getSpatialVelocity()
                                    - math::AdT(
-                                         _relativeTo->getTransform(this),
-                                         _relativeTo->getSpatialVelocity()))
+                                       _relativeTo->getTransform(this),
+                                       _relativeTo->getSpatialVelocity()))
                                       .eval();
 
   if (this == _inCoordinatesOf)
@@ -291,17 +289,16 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
     return math::AdR(getTransform(_inCoordinatesOf), getSpatialAcceleration());
   }
 
-  const Eigen::Vector6d& result
-      = (getSpatialAcceleration()
-         - math::AdT(
-               _relativeTo->getTransform(this),
-               _relativeTo->getSpatialAcceleration())
-         + math::ad(
-               getSpatialVelocity(),
-               math::AdT(
-                   _relativeTo->getTransform(this),
-                   _relativeTo->getSpatialVelocity())))
-            .eval();
+  const Eigen::Vector6d& result = (getSpatialAcceleration()
+                                   - math::AdT(
+                                       _relativeTo->getTransform(this),
+                                       _relativeTo->getSpatialAcceleration())
+                                   + math::ad(
+                                       getSpatialVelocity(),
+                                       math::AdT(
+                                           _relativeTo->getTransform(this),
+                                           _relativeTo->getSpatialVelocity())))
+                                      .eval();
 
   if (this == _inCoordinatesOf)
     return result;

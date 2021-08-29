@@ -36,7 +36,6 @@
 #include <cstdarg>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 

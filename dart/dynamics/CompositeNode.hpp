@@ -99,7 +99,7 @@ public:
   template <typename... Args>
   CompositeNode(Args&&... args)
     : CompositePropertiesNode<CompositeStateNode<Base>>(
-          std::forward<Args>(args)...)
+        std::forward<Args>(args)...)
   {
     // Do nothing
   }

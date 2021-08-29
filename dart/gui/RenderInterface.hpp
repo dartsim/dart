@@ -34,6 +34,7 @@
 #define DART_GUI_RENDERINTERFACE_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 #include <assimp/scene.h>
 
@@ -70,12 +71,8 @@ enum DecoDrawType
 class RenderInterface
 {
 public:
-  RenderInterface()
-  {
-  }
-  virtual ~RenderInterface()
-  {
-  }
+  RenderInterface() {}
+  virtual ~RenderInterface() {}
 
   virtual void initialize();
   virtual void destroy();

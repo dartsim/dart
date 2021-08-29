@@ -763,7 +763,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       const unsigned int matIndex = mAiMesh->mMaterialIndex;
       if (matIndex
           != static_cast<unsigned int>(
-                 -1)) // -1 is being used by us to indicate no material
+              -1)) // -1 is being used by us to indicate no material
       {
         isColored = true;
         auto material = mMainNode->getMaterial(matIndex);
@@ -828,8 +828,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     {
       switch (mAiMesh->mNumUVComponents[unit])
       {
-        case 1:
-        {
+        case 1: {
           ::osg::ref_ptr<::osg::FloatArray> texture
               = new ::osg::FloatArray(mAiMesh->mNumVertices);
           for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
@@ -837,8 +836,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
           setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
           break;
         }
-        case 2:
-        {
+        case 2: {
           ::osg::ref_ptr<::osg::Vec2Array> texture
               = new ::osg::Vec2Array(mAiMesh->mNumVertices);
           for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
@@ -849,8 +847,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
           setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
           break;
         }
-        case 3:
-        {
+        case 3: {
           ::osg::ref_ptr<::osg::Vec3Array> texture
               = new ::osg::Vec3Array(mAiMesh->mNumVertices);
           for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)

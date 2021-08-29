@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/FixedJacobianNode.hpp"
+
 #include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {

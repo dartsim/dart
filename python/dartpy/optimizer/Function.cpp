@@ -33,6 +33,7 @@
 #include <dart/dart.hpp>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -159,9 +160,10 @@ void Function(py::module& m)
             self->setHessianFunction(_hessian);
           },
           ::py::arg("hessian"))
-      .def("clearHessianFunction", +[](dart::optimizer::ModularFunction* self) {
-        self->clearHessianFunction();
-      });
+      .def(
+          "clearHessianFunction", +[](dart::optimizer::ModularFunction* self) {
+            self->clearHessianFunction();
+          });
 }
 
 } // namespace python

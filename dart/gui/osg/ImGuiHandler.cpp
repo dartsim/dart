@@ -43,10 +43,9 @@
 #include <osg/Camera>
 #include <osg/RenderInfo>
 
+#include "dart/common/Console.hpp"
 #include "dart/external/imgui/imgui.h"
 #include "dart/external/imgui/imgui_impl_opengl2.h"
-
-#include "dart/common/Console.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
 
 namespace dart {
@@ -283,8 +282,7 @@ bool ImGuiHandler::handle(
 
   switch (eventAdapter.getEventType())
   {
-    case osgGA::GUIEventAdapter::KEYDOWN:
-    {
+    case osgGA::GUIEventAdapter::KEYDOWN: {
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
@@ -314,8 +312,7 @@ bool ImGuiHandler::handle(
 
       return wantCapureKeyboard;
     }
-    case osgGA::GUIEventAdapter::KEYUP:
-    {
+    case osgGA::GUIEventAdapter::KEYUP: {
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
@@ -345,8 +342,7 @@ bool ImGuiHandler::handle(
 
       return wantCapureKeyboard;
     }
-    case osgGA::GUIEventAdapter::PUSH:
-    {
+    case osgGA::GUIEventAdapter::PUSH: {
       io.MousePos
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
 
@@ -376,15 +372,13 @@ bool ImGuiHandler::handle(
       return wantCapureMouse;
     }
     case osgGA::GUIEventAdapter::DRAG:
-    case osgGA::GUIEventAdapter::MOVE:
-    {
+    case osgGA::GUIEventAdapter::MOVE: {
       io.MousePos
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
 
       return wantCapureMouse;
     }
-    case osgGA::GUIEventAdapter::RELEASE:
-    {
+    case osgGA::GUIEventAdapter::RELEASE: {
       // When a mouse button is released no button mask is set. So we mark all
       // the buttons are released.
       mMousePressed[0] = false;
@@ -393,8 +387,7 @@ bool ImGuiHandler::handle(
 
       return wantCapureMouse;
     }
-    case osgGA::GUIEventAdapter::SCROLL:
-    {
+    case osgGA::GUIEventAdapter::SCROLL: {
       constexpr float increment = 0.1f;
 
       switch (eventAdapter.getScrollingMotion())
@@ -418,8 +411,7 @@ bool ImGuiHandler::handle(
 
       return wantCapureMouse;
     }
-    default:
-    {
+    default: {
       return false;
     }
   }

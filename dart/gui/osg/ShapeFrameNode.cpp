@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/Node>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/render/BoxShapeNode.hpp"
 #include "dart/gui/osg/render/CapsuleShapeNode.hpp"
@@ -51,11 +52,8 @@
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/SphereShapeNode.hpp"
 #if HAVE_OCTOMAP
-#  include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
+  #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 #endif
-#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
-#include "dart/gui/osg/render/WarningShapeNode.hpp"
-
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -72,8 +70,10 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
+#include "dart/gui/osg/render/WarningShapeNode.hpp"
 #if HAVE_OCTOMAP
-#  include "dart/dynamics/VoxelGridShape.hpp"
+  #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 #include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"

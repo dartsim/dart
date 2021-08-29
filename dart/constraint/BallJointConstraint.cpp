@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 #include "dart/constraint/BallJointConstraint.hpp"
-#include <iostream>
 
-#include "dart/external/odelcpsolver/lcp.h"
+#include <iostream>
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 
 namespace dart {
 namespace constraint {
@@ -86,9 +86,7 @@ BallJointConstraint::BallJointConstraint(
 }
 
 //==============================================================================
-BallJointConstraint::~BallJointConstraint()
-{
-}
+BallJointConstraint::~BallJointConstraint() {}
 
 //==============================================================================
 const std::string& BallJointConstraint::getType() const

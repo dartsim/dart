@@ -35,6 +35,7 @@
 
 #include <cassert>
 #include <sstream>
+
 #include "dart/common/Console.hpp"
 #include "dart/common/NameManager.hpp"
 

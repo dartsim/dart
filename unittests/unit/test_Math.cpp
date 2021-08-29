@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/common/Timer.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -40,6 +40,8 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace common;
@@ -53,9 +55,7 @@ using namespace simulation;
 class EigenSE3
 {
 public:
-  explicit EigenSE3(const Eigen::Matrix4d& T) : mT(T)
-  {
-  }
+  explicit EigenSE3(const Eigen::Matrix4d& T) : mT(T) {}
 
   /// \brief multiplication operator
   inline EigenSE3 operator*(const EigenSE3& T) const

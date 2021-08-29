@@ -32,12 +32,12 @@
 
 #include <gtest/gtest.h>
 
-#include "TestHelpers.hpp"
-
 #include "dart/common/common.hpp"
 #include "dart/constraint/constraint.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/World.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 

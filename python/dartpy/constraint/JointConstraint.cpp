@@ -87,9 +87,11 @@ void JointConstraint(py::module& m)
             dart::constraint::JointConstraint::setConstraintForceMixing(cfm);
           },
           ::py::arg("cfm"))
-      .def_static("getConstraintForceMixing", +[]() -> double {
-        return dart::constraint::JointConstraint::getConstraintForceMixing();
-      });
+      .def_static(
+          "getConstraintForceMixing", +[]() -> double {
+            return dart::constraint::JointConstraint::
+                getConstraintForceMixing();
+          });
 }
 
 } // namespace python

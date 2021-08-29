@@ -171,8 +171,7 @@ public:
     bool handled = false;
     switch (ea.getEventType())
     {
-      case ::osgGA::GUIEventAdapter::KEYDOWN:
-      {
+      case ::osgGA::GUIEventAdapter::KEYDOWN: {
         switch (ea.getKey())
         {
           case '1':
@@ -191,8 +190,7 @@ public:
         break;
       }
 
-      case ::osgGA::GUIEventAdapter::KEYUP:
-      {
+      case ::osgGA::GUIEventAdapter::KEYUP: {
         switch (ea.getKey())
         {
           case '1':

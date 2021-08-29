@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/EndEffector.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 

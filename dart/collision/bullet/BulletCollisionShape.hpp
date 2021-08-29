@@ -36,9 +36,9 @@
 #include <memory>
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
+
+#include "dart/config.hpp"
 
 namespace dart {
 namespace collision {

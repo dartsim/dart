@@ -57,9 +57,7 @@ GraphWindow::GraphWindow() : Win2D()
   mBackground[3] = 1.0;
 }
 
-GraphWindow::~GraphWindow()
-{
-}
+GraphWindow::~GraphWindow() {}
 
 void GraphWindow::draw()
 {

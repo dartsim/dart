@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <string>
+
 #include "dart/common/Resource.hpp"
 #include "dart/common/Uri.hpp"
 

@@ -35,13 +35,9 @@
 namespace dart {
 namespace gui {
 
-void RenderInterface::initialize()
-{
-}
+void RenderInterface::initialize() {}
 
-void RenderInterface::destroy()
-{
-}
+void RenderInterface::destroy() {}
 
 void RenderInterface::setViewport(
     int /*_x*/, int /*_y*/, int /*_width*/, int /*_height*/)
@@ -53,9 +49,7 @@ void RenderInterface::getViewport(
 {
 }
 
-void RenderInterface::clear(const Eigen::Vector3d& /*_color*/)
-{
-}
+void RenderInterface::clear(const Eigen::Vector3d& /*_color*/) {}
 
 void RenderInterface::setMaterial(
     const Eigen::Vector3d& /*_diffuse*/,
@@ -71,41 +65,25 @@ void RenderInterface::getMaterial(
 {
 }
 
-void RenderInterface::setDefaultMaterial()
-{
-}
+void RenderInterface::setDefaultMaterial() {}
 
-void RenderInterface::pushMatrix()
-{
-}
+void RenderInterface::pushMatrix() {}
 
-void RenderInterface::popMatrix()
-{
-}
+void RenderInterface::popMatrix() {}
 
-void RenderInterface::pushName(int /*_id*/)
-{
-}
+void RenderInterface::pushName(int /*_id*/) {}
 
-void RenderInterface::popName()
-{
-}
+void RenderInterface::popName() {}
 
-void RenderInterface::translate(const Eigen::Vector3d& /*_offset*/)
-{
-}
+void RenderInterface::translate(const Eigen::Vector3d& /*_offset*/) {}
 
 void RenderInterface::rotate(const Eigen::Vector3d& /*_axis*/, double /*_rad*/)
 {
 }
 
-void RenderInterface::transform(const Eigen::Isometry3d& /*_transform*/)
-{
-}
+void RenderInterface::transform(const Eigen::Isometry3d& /*_transform*/) {}
 
-void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
-{
-}
+void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/) {}
 
 void RenderInterface::drawSphere(
     double /*_radius*/, int /*slices*/, int /*stacks*/)
@@ -127,9 +105,7 @@ void RenderInterface::drawMultiSphereConvexHull(
   // Do nothing
 }
 
-void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
-{
-}
+void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/) {}
 
 void RenderInterface::drawMesh(
     const Eigen::Vector3d& /*_scale*/, const aiScene* /*_mesh*/)
@@ -141,9 +117,7 @@ void RenderInterface::drawSoftMesh(const aiMesh* /*mesh*/)
   // Do nothing
 }
 
-void RenderInterface::drawList(unsigned int /*indeX*/)
-{
-}
+void RenderInterface::drawList(unsigned int /*indeX*/) {}
 
 void RenderInterface::drawLineSegments(
     const std::vector<Eigen::Vector3d>&,
@@ -157,9 +131,7 @@ unsigned int RenderInterface::compileDisplayList(
   return 0;
 }
 
-void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/)
-{
-}
+void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/) {}
 
 void RenderInterface::drawOpenCylinder(
     double /*baseRadius*/,
@@ -175,30 +147,20 @@ void RenderInterface::drawCylinder(
 {
 }
 
-void RenderInterface::drawCapsule(double /*_radius*/, double /*_height*/)
-{
-}
+void RenderInterface::drawCapsule(double /*_radius*/, double /*_height*/) {}
 
-void RenderInterface::drawCone(double /*_radius*/, double /*_height*/)
-{
-}
+void RenderInterface::drawCone(double /*_radius*/, double /*_height*/) {}
 
 void RenderInterface::drawPyramid(
     double /*baseWidth*/, double /*baseDepth*/, double /*height*/)
 {
 }
 
-void RenderInterface::setPenColor(const Eigen::Vector4d& /*_col*/)
-{
-}
+void RenderInterface::setPenColor(const Eigen::Vector4d& /*_col*/) {}
 
-void RenderInterface::setPenColor(const Eigen::Vector3d& /*_col*/)
-{
-}
+void RenderInterface::setPenColor(const Eigen::Vector3d& /*_col*/) {}
 
-void RenderInterface::setLineWidth(float)
-{
-}
+void RenderInterface::setLineWidth(float) {}
 
 void RenderInterface::saveToImage(
     const char* /*_filename*/, DecoBufferType /*_buffType*/)

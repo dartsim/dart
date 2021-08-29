@@ -31,6 +31,7 @@
  */
 
 #include <numeric>
+
 #include <gtest/gtest.h>
 
 #include "dart/dart.hpp"

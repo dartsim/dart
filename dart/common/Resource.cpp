@@ -34,6 +34,7 @@
 
 #include <exception>
 #include <string>
+
 #include "dart/common/Console.hpp"
 
 namespace dart {

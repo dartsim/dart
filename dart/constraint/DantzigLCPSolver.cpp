@@ -33,15 +33,14 @@
 #include "dart/constraint/DantzigLCPSolver.hpp"
 
 #ifndef NDEBUG
-#  include <iomanip>
-#  include <iostream>
+  #include <iomanip>
+  #include <iostream>
 #endif
-
-#include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {
@@ -62,7 +61,6 @@ DantzigLCPSolver::~DantzigLCPSolver()
 //==============================================================================
 void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 {
-
   // Build LCP terms by aggregating them from constraints
   std::size_t numConstraints = _group->getNumConstraints();
   std::size_t n = _group->getTotalDimension();

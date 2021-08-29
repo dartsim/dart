@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_RENDER_WARNINGSHAPENODE_HPP_
 
 #include <memory>
+
 #include <osg/Node>
 
 #include "dart/gui/osg/render/ShapeNode.hpp"

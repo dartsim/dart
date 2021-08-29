@@ -31,9 +31,11 @@
  */
 
 #include "LocalResource.hpp"
+
 #include <cstring>
 #include <iostream>
 #include <limits>
+
 #include "dart/common/Console.hpp"
 
 namespace dart {

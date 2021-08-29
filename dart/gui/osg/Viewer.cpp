@@ -30,23 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/Viewer.hpp"
+
 #include <iomanip>
 
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/DefaultEventHandler.hpp"
 #include "dart/gui/osg/DragAndDrop.hpp"
 #include "dart/gui/osg/TrackballManipulator.hpp"
 #include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/Viewer.hpp"
 #include "dart/gui/osg/WorldNode.hpp"
-
 #include "dart/simulation/World.hpp"
-
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {
@@ -509,9 +508,8 @@ void Viewer::setUpwardsDirection(const ::osg::Vec3& _up)
   else
     mUpwards = ::osg::Vec3(0, 0, 1);
 
-  mOver
-      = _up
-        ^ ::osg::Vec3(
+  mOver = _up
+          ^ ::osg::Vec3(
               1, 0, 0); // Note: operator^ is the cross product operator in OSG
   if (mOver.length() < 1e-12)
     mOver = ::osg::Vec3(0, 0, 1) ^ _up;

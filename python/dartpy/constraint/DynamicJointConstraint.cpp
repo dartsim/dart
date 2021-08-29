@@ -92,10 +92,11 @@ void DynamicJointConstraint(py::module& m)
                 cfm);
           },
           ::py::arg("cfm"))
-      .def_static("getConstraintForceMixing", +[]() -> double {
-        return dart::constraint::DynamicJointConstraint::
-            getConstraintForceMixing();
-      });
+      .def_static(
+          "getConstraintForceMixing", +[]() -> double {
+            return dart::constraint::DynamicJointConstraint::
+                getConstraintForceMixing();
+          });
 
   ::py::class_<
       dart::constraint::BallJointConstraint,
@@ -114,9 +115,10 @@ void DynamicJointConstraint(py::module& m)
           ::py::arg("body1"),
           ::py::arg("body2"),
           ::py::arg("jointPos"))
-      .def_static("getStaticType", +[]() -> std::string {
-        return dart::constraint::BallJointConstraint::getStaticType();
-      });
+      .def_static(
+          "getStaticType", +[]() -> std::string {
+            return dart::constraint::BallJointConstraint::getStaticType();
+          });
 
   ::py::class_<
       dart::constraint::WeldJointConstraint,

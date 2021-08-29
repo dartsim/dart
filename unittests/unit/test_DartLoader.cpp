@@ -31,7 +31,9 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
+
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
@@ -92,7 +94,7 @@ TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
   EXPECT_TRUE(
       nullptr
       != loader.parseSkeleton(
-             "dart://sample/urdf/test/primitive_geometry.urdf"));
+          "dart://sample/urdf/test/primitive_geometry.urdf"));
 }
 
 //==============================================================================

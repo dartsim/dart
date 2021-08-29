@@ -32,13 +32,9 @@
 
 #include "MyWindow.hpp"
 
-MyWindow::MyWindow() : SimWindow()
-{
-}
+MyWindow::MyWindow() : SimWindow() {}
 
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 void MyWindow::timeStepping()
 {

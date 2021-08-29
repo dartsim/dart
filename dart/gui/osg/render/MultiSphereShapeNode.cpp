@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -39,7 +41,6 @@
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 #include "dart/math/Icosphere.hpp"
 
 namespace dart {

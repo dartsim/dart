@@ -421,8 +421,7 @@ public:
         case 'q':
         case 'e':
         case 'f':
-        case 'z':
-        {
+        case 'z': {
           mTeleop->setMovement(mMoveComponents);
           return true;
         }
@@ -492,8 +491,7 @@ public:
         case 'q':
         case 'e':
         case 'f':
-        case 'z':
-        {
+        case 'z': {
           mTeleop->setMovement(mMoveComponents);
           return true;
         }

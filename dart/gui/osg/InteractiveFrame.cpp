@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/InteractiveFrame.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"

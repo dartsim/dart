@@ -1,18 +1,20 @@
+# https://releases.llvm.org/9.0.0/tools/clang/docs/ClangFormatStyleOptions.html
+
 ---
 Language:        Cpp
 BasedOnStyle:  Google
 AccessModifierOffset: -2
 AlignAfterOpenBracket: AlwaysBreak
-AlignEscapedNewlinesLeft: false
+AlignEscapedNewlines: Right
 AlignOperands:   true
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: false
+AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterDefinitionReturnType: false
 AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: true
 BinPackArguments: false
@@ -26,9 +28,13 @@ BraceWrapping:
   AfterObjCDeclaration: true
   AfterStruct:     true
   AfterUnion:      true
+  AfterExternBlock: false
   BeforeCatch:     true
   BeforeElse:      true
   IndentBraces:    false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
@@ -43,7 +49,7 @@ DerivePointerAlignment: false
 DisableFormat:   false
 ExperimentalAutoDetectBinPacking: false
 FixNamespaceComments: true
-ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
+ForEachMacros:   [ foreach, Q_FOREACH ]
 # Sort headers by main include file (implicit priority 0),
 # then project and private includes, then system headers
 IncludeCategories:
@@ -56,11 +62,11 @@ IncludeCategories:
   - Regex:     '^".*'          # headers relative to this project
     Priority:  4
 IndentCaseLabels: true
-IndentPPDirectives: AfterHash  # Change to BeforeHas since clang-format >= 9
+IndentPPDirectives: BeforeHash
 IndentFunctionDeclarationAfterType: false
 IndentWidth:     2
 IndentWrappedFunctionNames: false
-KeepEmptyLinesAtTheStartOfBlocks: true
+KeepEmptyLinesAtTheStartOfBlocks: false
 MacroBlockBegin: ''
 MacroBlockEnd: ''
 MaxEmptyLinesToKeep: 1
@@ -74,6 +80,8 @@ PenaltyBreakString: 1000
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 200
 PointerAlignment: Left
+ReflowComments: true
+SortIncludes: true
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements

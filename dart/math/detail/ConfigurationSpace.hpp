@@ -34,7 +34,6 @@
 #define DART_MATH_DETAIL_CONFIGURATIONSPACE_H_
 
 #include "dart/math/ConfigurationSpace.hpp"
-
 #include "dart/math/Geometry.hpp"
 
 namespace dart {

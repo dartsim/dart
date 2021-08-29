@@ -466,8 +466,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch (_jt->type)
   {
-    case urdf::Joint::CONTINUOUS:
-    {
+    case urdf::Joint::CONTINUOUS: {
       // We overwrite joint position limits to negative/positive infinities
       // for "continuous" joint. The URDF parser, by default, either reads
       // the limits, if specified for this joint, or sets them to 0.
@@ -485,8 +484,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::REVOLUTE:
-    {
+    case urdf::Joint::REVOLUTE: {
       dynamics::RevoluteJoint::Properties properties(
           dynamics::GenericJoint<math::R1Space>::Properties(
               basicProperties, singleDof),
@@ -497,8 +495,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::PRISMATIC:
-    {
+    case urdf::Joint::PRISMATIC: {
       dynamics::PrismaticJoint::Properties properties(
           dynamics::GenericJoint<math::R1Space>::Properties(
               basicProperties, singleDof),
@@ -509,14 +506,12 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::FIXED:
-    {
+    case urdf::Joint::FIXED: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
           _parent, basicProperties, _body);
       break;
     }
-    case urdf::Joint::FLOATING:
-    {
+    case urdf::Joint::FLOATING: {
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
 
@@ -524,8 +519,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
           _parent, properties, _body);
       break;
     }
-    case urdf::Joint::PLANAR:
-    {
+    case urdf::Joint::PLANAR: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
           _parent, dynamics::PlanarJoint::Properties(basicProperties), _body);
       // TODO(MXG): Should we read in position limits? The URDF limits
@@ -534,8 +528,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       // coordinates equally? Or just don't accept the position limits at all?
       break;
     }
-    default:
-    {
+    default: {
       dterr << "[DartLoader::createDartJoint] Unsupported joint type ("
             << _jt->type << ")\n";
       return nullptr;

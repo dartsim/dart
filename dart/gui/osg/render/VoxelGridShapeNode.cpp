@@ -34,15 +34,15 @@
 
 #if HAVE_OCTOMAP
 
-#  include <osg/CullFace>
-#  include <osg/Geode>
-#  include <osg/Light>
-#  include <osg/Material>
-#  include <osg/ShapeDrawable>
+  #include <osg/CullFace>
+  #include <osg/Geode>
+  #include <osg/Light>
+  #include <osg/Material>
+  #include <osg/ShapeDrawable>
 
-#  include "dart/dynamics/SimpleFrame.hpp"
-#  include "dart/dynamics/VoxelGridShape.hpp"
-#  include "dart/gui/osg/Utils.hpp"
+  #include "dart/dynamics/SimpleFrame.hpp"
+  #include "dart/dynamics/VoxelGridShape.hpp"
+  #include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

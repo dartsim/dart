@@ -36,20 +36,20 @@
 #include <string>
 
 #ifdef _WIN32
-#  ifdef NOMINMAX
-#    include <windows.h>
-#  else
-#    define NOMINMAX
-#    include <windows.h>
-#    undef NOMINMAX
-#  endif
+  #ifdef NOMINMAX
+    #include <windows.h>
+  #else
+    #define NOMINMAX
+    #include <windows.h>
+    #undef NOMINMAX
+  #endif
 typedef struct
 {
   LARGE_INTEGER start;
   LARGE_INTEGER stop;
 } stopWatch;
 #else
-#  include <sys/time.h>
+  #include <sys/time.h>
 #endif
 
 namespace dart {

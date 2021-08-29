@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Chain.hpp"
+
 #include "dart/dynamics/FreeJoint.hpp"
 
 namespace dart {

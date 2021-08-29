@@ -34,12 +34,11 @@
 #define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionShape.hpp"
+#include "dart/config.hpp"
 
 namespace dart {
 namespace collision {

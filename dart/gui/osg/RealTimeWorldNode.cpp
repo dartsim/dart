@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/RealTimeWorldNode.hpp"
+
 #include "dart/common/Console.hpp"
 #include "dart/simulation/World.hpp"
 

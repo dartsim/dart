@@ -37,11 +37,11 @@
 // virtually from another to avoid problems on MSVC
 // See https://github.com/dartsim/dart/issues/1522
 #if defined(_MSC_VER)
-#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN __pragma(vtordisp(push, 2))
-#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END __pragma(vtordisp(pop))
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN __pragma(vtordisp(push, 2))
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END __pragma(vtordisp(pop))
 #else
-#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-#  define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 #endif
 
 #endif // DART_COMMON_CLASSWITHVIRTUALBASE_HPP_

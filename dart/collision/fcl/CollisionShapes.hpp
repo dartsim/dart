@@ -34,6 +34,7 @@
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
 #include <cmath>
+
 #include <assimp/scene.h>
 
 #include "dart/collision/fcl/BackwardCompatibility.hpp"

@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sstream>
-
 #include "Helpers.hpp"
+
+#include <sstream>
 
 #include <dart/utils/urdf/urdf.hpp>
 

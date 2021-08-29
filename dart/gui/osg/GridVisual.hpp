@@ -37,7 +37,6 @@
 #include <osg/LineWidth>
 
 #include "dart/dynamics/SmartPointer.hpp"
-
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Viewer.hpp"
 

@@ -51,14 +51,10 @@ double LCPSolver::getTimeStep() const
 }
 
 //==============================================================================
-LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep)
-{
-}
+LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep) {}
 
 //==============================================================================
-LCPSolver::~LCPSolver()
-{
-}
+LCPSolver::~LCPSolver() {}
 
 } // namespace constraint
 } // namespace dart

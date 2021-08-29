@@ -31,10 +31,12 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/utils/urdf/DartLoader.hpp"
+
+#include "TestHelpers.hpp"
 
 std::vector<std::size_t> twoLinkIndices;
 

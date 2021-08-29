@@ -35,6 +35,7 @@
 
 #include <array>
 #include <string>
+
 #include "dart/dynamics/detail/GenericJointAspect.hpp"
 
 namespace dart {

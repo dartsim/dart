@@ -73,9 +73,7 @@ JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
 }
 
 //==============================================================================
-JointCoulombFrictionConstraint::~JointCoulombFrictionConstraint()
-{
-}
+JointCoulombFrictionConstraint::~JointCoulombFrictionConstraint() {}
 
 //==============================================================================
 const std::string& JointCoulombFrictionConstraint::getType() const

@@ -65,9 +65,9 @@ void ImGuiViewer(py::module& m)
       .def(
           "showAbout",
           +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
-      .def("hideAbout", +[](dart::gui::osg::ImGuiViewer* self) {
-        self->hideAbout();
-      });
+      .def(
+          "hideAbout",
+          +[](dart::gui::osg::ImGuiViewer* self) { self->hideAbout(); });
 }
 
 } // namespace python

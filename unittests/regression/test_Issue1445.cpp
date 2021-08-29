@@ -31,10 +31,9 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
 #include <dart/dart.hpp>
 #include <dart/utils/sdf/sdf.hpp>
+#include <gtest/gtest.h>
 
 // This test is adapted from @azeey's work here:
 // https://github.com/ignitionrobotics/ign-physics/pull/31

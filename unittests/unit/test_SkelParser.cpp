@@ -31,13 +31,14 @@
  */
 
 #include <iostream>
-#include <gtest/gtest.h>
 
-#include "GTestUtils.hpp"
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 #include "dart/dart.hpp"
 #include "dart/utils/utils.hpp"
+
+#include "GTestUtils.hpp"
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

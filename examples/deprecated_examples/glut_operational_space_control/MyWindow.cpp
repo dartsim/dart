@@ -45,9 +45,7 @@ MyWindow::MyWindow(Controller* _controller)
 }
 
 //==============================================================================
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 //==============================================================================
 void MyWindow::timeStepping()

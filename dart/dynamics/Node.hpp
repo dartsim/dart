@@ -39,7 +39,6 @@
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
-
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {

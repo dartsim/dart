@@ -34,9 +34,9 @@
 #define DART_COMMON_OPTIONAL_HPP_
 
 #if __cplusplus >= 201703L
-#  include <optional>
+  #include <optional>
 #else
-#  include <boost/optional.hpp>
+  #include <boost/optional.hpp>
 #endif
 
 namespace dart {

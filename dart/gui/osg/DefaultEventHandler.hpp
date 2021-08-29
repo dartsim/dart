@@ -38,7 +38,6 @@
 #include <vector>
 
 #include <Eigen/Core>
-
 #include <osgGA/GUIEventHandler>
 
 #include "dart/common/ClassWithVirtualBase.hpp"

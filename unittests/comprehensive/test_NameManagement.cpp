@@ -31,8 +31,11 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
+
 #include "dart/dynamics/SoftBodyNode.hpp"
+
 #include "TestHelpers.hpp"
 
 using namespace dart;

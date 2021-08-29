@@ -63,9 +63,7 @@ Controller::Controller(
 }
 
 //==============================================================================
-Controller::~Controller()
-{
-}
+Controller::~Controller() {}
 
 //==============================================================================
 void Controller::update(const Eigen::Vector3d& _targetPosition)
@@ -116,6 +114,4 @@ dart::dynamics::BodyNode* Controller::getEndEffector() const
 }
 
 //==============================================================================
-void Controller::keyboard(unsigned char /*_key*/, int /*_x*/, int /*_y*/)
-{
-}
+void Controller::keyboard(unsigned char /*_key*/, int /*_x*/, int /*_y*/) {}

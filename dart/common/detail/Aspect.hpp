@@ -45,7 +45,7 @@ namespace common {
 template <class CompositeType>
 CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect()
   : mComposite(
-        nullptr) // This will be set later when the Composite calls setComposite
+      nullptr) // This will be set later when the Composite calls setComposite
 {
   // Do nothing
 }

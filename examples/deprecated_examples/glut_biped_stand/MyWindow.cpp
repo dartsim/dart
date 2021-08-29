@@ -41,9 +41,7 @@ MyWindow::MyWindow() : SimWindow()
   mImpulseDuration = 0;
 }
 
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 void MyWindow::timeStepping()
 {
@@ -65,7 +63,6 @@ void MyWindow::timeStepping()
 
 void MyWindow::drawWorld() const
 {
-
   SimWindow::drawWorld();
 
   // draw arrow

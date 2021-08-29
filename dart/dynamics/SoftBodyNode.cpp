@@ -38,12 +38,11 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/math/Helpers.hpp"
-
-#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {

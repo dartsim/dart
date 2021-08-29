@@ -31,15 +31,14 @@
  */
 
 #ifndef EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
-#  define EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
+  #define EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
 
-#  include <Eigen/Dense>
-#  include <stdarg.h>
+  #include <Eigen/Dense>
+  #include <dart/dart.hpp>
+  #include <dart/gui/gui.hpp>
+  #include <stdarg.h>
 
-#  include "Controller.hpp"
-
-#  include <dart/dart.hpp>
-#  include <dart/gui/gui.hpp>
+  #include "Controller.hpp"
 
 class MyWindow : public dart::gui::glut::SimWindow
 {
@@ -52,9 +51,7 @@ public:
     mImpulseDuration = 0;
     mHarnessOn = false;
   }
-  virtual ~MyWindow()
-  {
-  }
+  virtual ~MyWindow() {}
 
   void timeStepping() override;
   void drawSkels() override;
@@ -79,6 +76,7 @@ private:
 
 /*
 #include <stdarg.h>
+
 #include "Controller.hpp"
 #include "dynamics/SkeletonDynamics.hpp"
 #include "integration/EulerIntegrator.hpp"

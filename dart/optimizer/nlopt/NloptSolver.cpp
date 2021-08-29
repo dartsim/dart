@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <memory>
-
 #include "dart/optimizer/nlopt/NloptSolver.hpp"
+
+#include <memory>
 
 #include <Eigen/Dense>
 

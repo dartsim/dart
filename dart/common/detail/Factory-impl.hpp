@@ -33,9 +33,8 @@
 #ifndef DART_COMMON_DETAIL_FACTORY_IMPL_HPP_
 #define DART_COMMON_DETAIL_FACTORY_IMPL_HPP_
 
-#include "dart/common/Factory.hpp"
-
 #include "dart/common/Console.hpp"
+#include "dart/common/Factory.hpp"
 #include "dart/common/Memory.hpp"
 
 namespace dart {

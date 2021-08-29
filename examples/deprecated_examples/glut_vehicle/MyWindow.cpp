@@ -40,9 +40,7 @@ MyWindow::MyWindow() : SimWindow()
   mD = 0.005;
 }
 
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 void MyWindow::timeStepping()
 {
@@ -77,7 +75,6 @@ void MyWindow::drawWorld() const
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
-
   using namespace dart::math::suffixes;
 
   switch (_key)

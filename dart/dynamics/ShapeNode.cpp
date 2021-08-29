@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/ShapeNode.hpp"
+
 #include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {

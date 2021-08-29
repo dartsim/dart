@@ -33,6 +33,7 @@
 #include "dart/dynamics/PyramidShape.hpp"
 
 #include <cmath>
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"

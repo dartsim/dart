@@ -35,6 +35,7 @@
 #include <dart/dart.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 #include <gtest/gtest.h>
+
 #include "TestHelpers.hpp"
 
 using namespace dart;

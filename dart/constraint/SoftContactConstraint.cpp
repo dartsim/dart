@@ -34,8 +34,6 @@
 
 #include <iostream>
 
-#include "dart/external/odelcpsolver/lcp.h"
-
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -44,6 +42,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -316,9 +315,7 @@ SoftContactConstraint::SoftContactConstraint(
 }
 
 //==============================================================================
-SoftContactConstraint::~SoftContactConstraint()
-{
-}
+SoftContactConstraint::~SoftContactConstraint() {}
 
 //==============================================================================
 const std::string& SoftContactConstraint::getType() const

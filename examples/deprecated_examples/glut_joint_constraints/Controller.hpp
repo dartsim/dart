@@ -36,7 +36,6 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
 class Controller
@@ -46,9 +45,7 @@ public:
       const dart::dynamics::SkeletonPtr& _skel,
       dart::constraint::ConstraintSolver* _collisionSolver,
       double _t);
-  virtual ~Controller()
-  {
-  }
+  virtual ~Controller() {}
 
   Eigen::VectorXd getTorques()
   {

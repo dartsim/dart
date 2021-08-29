@@ -34,7 +34,9 @@
 #define DART_GUI_GLFUNCS_HPP_
 
 #include <string>
+
 #include <Eigen/Eigen>
+
 #include "dart/common/Deprecated.hpp"
 
 namespace dart {
