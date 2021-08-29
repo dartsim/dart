@@ -543,9 +543,10 @@ void InverseKinematics(py::module& m)
           +[](dart::dynamics::InverseKinematics* self,
               const Eigen::VectorXd& _q) { self->setPositions(_q); },
           ::py::arg("q"))
-      .def("clearCaches", +[](dart::dynamics::InverseKinematics* self) {
-        self->clearCaches();
-      });
+      .def(
+          "clearCaches", +[](dart::dynamics::InverseKinematics* self) {
+            self->clearCaches();
+          });
 }
 
 } // namespace python

@@ -306,12 +306,10 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mSkeletons.push_back(_skeleton);
   mMapForSkeletons[_skeleton] = _skeleton;
 
-  mNameConnectionsForSkeletons.push_back(
-      _skeleton->onNameChanged.connect([=](dynamics::ConstMetaSkeletonPtr skel,
-                                           const std::string&,
-                                           const std::string&) {
-        this->handleSkeletonNameChange(skel);
-      }));
+  mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
+      [=](dynamics::ConstMetaSkeletonPtr skel,
+          const std::string&,
+          const std::string&) { this->handleSkeletonNameChange(skel); }));
 
   _skeleton->setName(
       mNameMgrForSkeletons.issueNewNameAndAdd(_skeleton->getName(), _skeleton));
@@ -466,12 +464,10 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
   mSimpleFrames.push_back(_frame);
   mSimpleFrameToShared[_frame.get()] = _frame;
 
-  mNameConnectionsForSimpleFrames.push_back(
-      _frame->onNameChanged.connect([=](const dynamics::Entity* _entity,
-                                        const std::string&,
-                                        const std::string&) {
-        this->handleSimpleFrameNameChange(_entity);
-      }));
+  mNameConnectionsForSimpleFrames.push_back(_frame->onNameChanged.connect(
+      [=](const dynamics::Entity* _entity,
+          const std::string&,
+          const std::string&) { this->handleSimpleFrameNameChange(_entity); }));
 
   _frame->setName(
       mNameMgrForSimpleFrames.issueNewNameAndAdd(_frame->getName(), _frame));

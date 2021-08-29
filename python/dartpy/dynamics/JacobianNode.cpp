@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -274,9 +275,10 @@ void JacobianNode(py::module& m)
       .def(
           "dirtyJacobian",
           +[](dart::dynamics::JacobianNode* self) { self->dirtyJacobian(); })
-      .def("dirtyJacobianDeriv", +[](dart::dynamics::JacobianNode* self) {
-        self->dirtyJacobianDeriv();
-      });
+      .def(
+          "dirtyJacobianDeriv", +[](dart::dynamics::JacobianNode* self) {
+            self->dirtyJacobianDeriv();
+          });
 }
 
 } // namespace python

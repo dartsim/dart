@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -236,11 +237,14 @@ void ShapeFrame(py::module& m)
           +[](const dart::dynamics::VisualAspect* self) -> double {
             return self->getAlpha();
           })
-      .def("hide", +[](dart::dynamics::VisualAspect* self) { self->hide(); })
-      .def("show", +[](dart::dynamics::VisualAspect* self) { self->show(); })
-      .def("isHidden", +[](const dart::dynamics::VisualAspect* self) -> bool {
-        return self->isHidden();
-      });
+      .def(
+          "hide", +[](dart::dynamics::VisualAspect* self) { self->hide(); })
+      .def(
+          "show", +[](dart::dynamics::VisualAspect* self) { self->show(); })
+      .def(
+          "isHidden", +[](const dart::dynamics::VisualAspect* self) -> bool {
+            return self->isHidden();
+          });
 
   ::py::class_<dart::dynamics::CollisionAspect>(m, "CollisionAspect")
       .def(::py::init<>())

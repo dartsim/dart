@@ -33,6 +33,7 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 #include "pointers.hpp"
@@ -1196,9 +1197,9 @@ void BodyNode(py::module& m)
       .def(
           "dirtyExternalForces",
           +[](dart::dynamics::BodyNode* self) { self->dirtyExternalForces(); })
-      .def("dirtyCoriolisForces", +[](dart::dynamics::BodyNode* self) {
-        self->dirtyCoriolisForces();
-      });
+      .def(
+          "dirtyCoriolisForces",
+          +[](dart::dynamics::BodyNode* self) { self->dirtyCoriolisForces(); });
 }
 
 } // namespace python

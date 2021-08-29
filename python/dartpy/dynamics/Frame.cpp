@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -320,9 +321,10 @@ void Frame(py::module& m)
       .def(
           "dirtyAcceleration",
           +[](dart::dynamics::Frame* self) { self->dirtyAcceleration(); })
-      .def_static("World", +[]() -> std::shared_ptr<dart::dynamics::Frame> {
-        return dart::dynamics::Frame::WorldShared();
-      });
+      .def_static(
+          "World", +[]() -> std::shared_ptr<dart::dynamics::Frame> {
+            return dart::dynamics::Frame::WorldShared();
+          });
 }
 
 } // namespace python

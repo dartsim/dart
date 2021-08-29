@@ -92,9 +92,10 @@ void GUIEventHandler(py::module& m)
                         -> osgGA::GUIEventAdapter::EventType {
                       return self->getEventType();
                     })
-                .def("getKey", +[](const osgGA::GUIEventAdapter* self) -> int {
-                  return self->getKey();
-                });
+                .def(
+                    "getKey", +[](const osgGA::GUIEventAdapter* self) -> int {
+                      return self->getKey();
+                    });
 
 #define DARTPY_DEFINE_ENUM_MOUSE_BUTTON_MASK(val)                              \
   .value(#val, osgGA::GUIEventAdapter::MouseButtonMask::val)

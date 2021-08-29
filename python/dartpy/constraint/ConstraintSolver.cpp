@@ -184,9 +184,9 @@ void ConstraintSolver(py::module& m)
           },
           "Returns collision option that is used for collision checkings in "
           "this ConstraintSolver to generate contact constraints.")
-      .def("solve", +[](dart::constraint::ConstraintSolver* self) {
-        self->solve();
-      });
+      .def(
+          "solve",
+          +[](dart::constraint::ConstraintSolver* self) { self->solve(); });
 }
 
 } // namespace python

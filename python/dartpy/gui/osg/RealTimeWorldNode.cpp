@@ -170,9 +170,9 @@ void RealTimeWorldNode(py::module& m)
           +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
             return self->getHighestRealTimeFactor();
           })
-      .def("refresh", +[](dart::gui::osg::RealTimeWorldNode* self) {
-        self->refresh();
-      });
+      .def(
+          "refresh",
+          +[](dart::gui::osg::RealTimeWorldNode* self) { self->refresh(); });
 }
 
 } // namespace python

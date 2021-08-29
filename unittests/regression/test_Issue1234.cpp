@@ -160,15 +160,13 @@ void runIssue1234Test(
 //==============================================================================
 TEST(DISABLED_Issue1234, Bullet)
 {
-  runIssue1234Test([] {
-    return dart::collision::BulletCollisionDetector::create();
-  });
+  runIssue1234Test(
+      [] { return dart::collision::BulletCollisionDetector::create(); });
 }
 
 //==============================================================================
 TEST(DISABLED_Issue1234, ODE)
 {
-  runIssue1234Test([] {
-    return dart::collision::OdeCollisionDetector::create();
-  });
+  runIssue1234Test(
+      [] { return dart::collision::OdeCollisionDetector::create(); });
 }

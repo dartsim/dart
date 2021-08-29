@@ -324,7 +324,8 @@ void Shape(py::module& m)
             return self->getType();
           },
           ::py::return_value_policy::reference_internal)
-      .def("update", +[](dart::dynamics::MeshShape* self) { self->update(); })
+      .def(
+          "update", +[](dart::dynamics::MeshShape* self) { self->update(); })
       .def(
           "notifyAlphaUpdated",
           +[](dart::dynamics::MeshShape* self, double alpha) {

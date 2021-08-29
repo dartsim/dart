@@ -1843,9 +1843,8 @@ void InverseKinematics::initialize()
 void InverseKinematics::resetTargetConnection()
 {
   mTargetConnection.disconnect();
-  mTargetConnection = mTarget->onTransformUpdated.connect([=](const Entity*) {
-    this->clearCaches();
-  });
+  mTargetConnection = mTarget->onTransformUpdated.connect(
+      [=](const Entity*) { this->clearCaches(); });
   clearCaches();
 }
 
@@ -1853,9 +1852,8 @@ void InverseKinematics::resetTargetConnection()
 void InverseKinematics::resetNodeConnection()
 {
   mNodeConnection.disconnect();
-  mNodeConnection = mNode->onTransformUpdated.connect([=](const Entity*) {
-    this->clearCaches();
-  });
+  mNodeConnection = mNode->onTransformUpdated.connect(
+      [=](const Entity*) { this->clearCaches(); });
   clearCaches();
 }
 
