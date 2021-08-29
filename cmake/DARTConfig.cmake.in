@@ -12,11 +12,7 @@
 
 # Specify CMake minimum required version
 if(NOT CMAKE_MINIMUM_REQUIRED_VERSION)
-  if(MSVC)
-    cmake_minimum_required(VERSION 3.8.0)
-  else()
-    cmake_minimum_required(VERSION 3.5.1)
-  endif()
+  cmake_minimum_required(VERSION 3.10.2)
 else()
   # Support if() IN_LIST operator
   if(POLICY CMP0057)

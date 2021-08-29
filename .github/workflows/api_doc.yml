@@ -1,0 +1,53 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: API Documentation
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  deploy:
+    name: API Documentation
+    runs-on: ubuntu-18.04
+    env:
+      DART_DEV_IMAGE: dartsim/dart-dev
+      DOCKER_TAG: bionic-docs
+      BUILD_TYPE: Release
+      COMPILER: gcc
+      BUILD_DOCS: ON
+    steps:
+      # Extract branch name
+      - name: Extract branch name
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+        id: extract_branch
+
+      # Extract branch name on pull request
+      - name: Print branch name
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH_NAME=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Pull dev container
+        run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
+
+      - name: Build
+        run: |
+          docker run \
+            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+            --env-file ./.ci/docker/env.list \
+            $DART_DEV_IMAGE:$DOCKER_TAG \
+            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
+
+      - name: Deploy
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: gh-pages
+          enable_jekyll: true

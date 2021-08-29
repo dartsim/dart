@@ -5,8 +5,12 @@ brew update > /dev/null
 brew bundle || brew bundle
 
 # OpenSceneGraph
-# install master branch until 3.7.0 is released
-brew install open-scene-graph --HEAD
+if [ "$INSTALL_OSG_HEAD" = "OFF" ]; then
+    brew install open-scene-graph
+else
+    # Install master branch until 3.7.0 is released (see: https://github.com/dartsim/dart/issues/1439)
+    brew install open-scene-graph --HEAD
+fi
 
 # Use pip for the default Python3 version
 py_version=$(python3 -c "import sys; print('{}.{}'.format(sys.version_info[0], sys.version_info[1]))")

@@ -57,7 +57,6 @@ RUN cd /opt/dart \
     -DCMAKE_INSTALL_PREFIX=/usr/ \
     -DCMAKE_BUILD_TYPE=Release .. \
     -DBUILD_SHARED_LIBS=ON \
-    -DDART_BUILD_DARTPY=ON \
     && make \
     && make install \
     && make dartpy \

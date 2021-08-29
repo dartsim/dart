@@ -124,7 +124,7 @@ def test_filter(cd):
     # with the same size shape so that they collide by default.
     skel = dart.dynamics.Skeleton()
 
-    shape = dart.dynamics.BoxShape(np.zeros(3))
+    shape = dart.dynamics.BoxShape(np.ones(3))
 
     _, body0 = skel.createRevoluteJointAndBodyNodePair()
     shape_node0 = body0.createShapeNode(shape)

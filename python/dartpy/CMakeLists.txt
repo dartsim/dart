@@ -1,3 +1,11 @@
+# Copyright (c) 2011-2021, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/main/LICENSE
+#
+# This file is provided under the "BSD-style" License
+
 if(NOT DARTPY_PYTHON_VERSION)
   set(DARTPY_PYTHON_VERSION 3.4 CACHE STRING "Choose the target Python version (e.g., 3.4, 2.7)" FORCE)
 endif()
@@ -12,18 +20,14 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 if(NOT IS_ABSOLUTE PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
 endif()
-if(NOT PythonInterp_FOUND)
-  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonInterp. "
-    "Disabling dartpy."
-  )
+if(NOT PythonInterp_FOUND AND NOT PYTHONINTERP_FOUND)
+  message(WARNING "Disabling [dartpy] due to missing [PythonInterp].")
   return()
 endif()
 
 find_package(PythonLibs ${DARTPY_PYTHON_VERSION} QUIET)
-if(NOT PythonLibs_FOUND)
-  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find PythonLibs. "
-    "Disabling dartpy."
-  )
+if(NOT PythonLibs_FOUND AND NOT PYTHONLIBS_FOUND)
+  message(WARNING "Disabling [dartpy] due to missing [PythonLibs].")
   return()
 endif()
 
@@ -32,9 +36,7 @@ endif()
 set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
 find_package(pybind11 2.2.0 QUIET)
 if(NOT pybind11_FOUND)
-  message(WARNING "DART_BUILD_DARTPY is ON, but failed to find pybind11 >= "
-    "2.2.0. Disabling dartpy."
-  )
+  message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
   return()
 endif()
 

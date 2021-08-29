@@ -32,6 +32,31 @@ if [ -z "$BUILD_DIR" ]; then
   BUILD_DIR=$PWD
 fi
 
+if [ -z "$CHECK_FORMAT" ]; then
+  echo "Info: Environment variable CHECK_FORMAT is unset. Using OFF by default."
+  CHECK_FORMAT=OFF
+fi
+
+if [ -z "$NUM_CORES" ]; then
+  echo "Info: Environment variable NUM_CORES is unset. Using MAX by default."
+  NUM_CORES=MAX
+fi
+
+if [ -z "$BUILD_EXAMPLES" ]; then
+  echo "Info: Environment variable BUILD_EXAMPLES is unset. Using ON by default."
+  BUILD_EXAMPLES=ON
+fi
+
+if [ -z "$BUILD_TUTORIALS" ]; then
+  echo "Info: Environment variable BUILD_TUTORIALS is unset. Using ON by default."
+  BUILD_TUTORIALS=ON
+fi
+
+if [ -z "$TEST_INSTALLATION" ]; then
+  echo "Info: Environment variable TEST_INSTALLATION is unset. Using ON by default."
+  TEST_INSTALLATION=ON
+fi
+
 if [ -f /etc/os-release ]; then
   # freedesktop.org and systemd
   . /etc/os-release
@@ -74,17 +99,12 @@ else
   num_available_threads=1
   echo "$OSTYPE is not supported to detect the number of logical CPU cores."
 fi
-num_threads=$num_available_threads
-while getopts ":j:" opt; do
-  case $opt in
-  j)
-    num_threads="$OPTARG"
-    ;;
-  \?)
-    echo "Invalid option -$OPTARG" >&2
-    ;;
-  esac
-done
+
+if [ "$NUM_CORES" = "MAX" ]; then
+  num_threads=$num_available_threads
+else
+  num_threads=$NUM_CORES
+fi
 
 # Set compilers
 if [ "$COMPILER" = "gcc" ]; then
@@ -99,7 +119,7 @@ fi
 
 # Build API documentation and exit
 if [ $BUILD_DOCS = "ON" ]; then
-  . "${BUILD_DIR}/.ci/travis/build_docs.sh"
+  . "${BUILD_DIR}/.ci/build_docs.sh"
   exit 0
 fi
 
@@ -121,7 +141,6 @@ if [ "$OSTYPE" = "linux-gnu" ]; then
 fi
 cmake .. \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-  -DDART_BUILD_DARTPY=$BUILD_DARTPY \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_BUILD_EXTRAS=ON \
@@ -129,13 +148,22 @@ cmake .. \
   ${install_prefix_option}
 
 # Check format
-if [ "$OSTYPE" = "linux-gnu" ] && [ $(lsb_release -sc) = "bionic" ]; then
+if [ "$CHECK_FORMAT" = "ON" ]; then
   make check-format
 fi
 
 # DART: build, test, and install
-make -j$num_threads all tutorials examples tests
+make -j$num_threads all tests
 ctest --output-on-failure -j$num_threads
+
+if [ "$BUILD_EXAMPLES" = "ON" ]; then
+  make -j$num_threads all examples
+fi
+
+if [ "$BUILD_TUTORIALS" = "ON" ]; then
+  make -j$num_threads all tutorials
+fi
+
 make -j$num_threads install
 
 # dartpy: build, test, and install
@@ -147,14 +175,24 @@ fi
 
 # Codecov
 if [ "$CODECOV" = "ON" ]; then
-  make -j$num_threads codecov
+  lcov --directory . --capture --output-file coverage.info
+  # filter out system and extra files.
+  # To also not include test code in coverage add them with full path to the patterns: '*/tests/*'
+  lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' --output-file coverage.info
+  # output coverage data for debugging (optional)
+  lcov --list coverage.info
+  # Uploading to CodeCov
+  # '-f' specifies file(s) to use and disables manual coverage gathering and file search which has already been done above
+  bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
 fi
 
 # DART: build an C++ example using installed DART
-cd $BUILD_DIR/examples/hello_world
-mkdir build && cd build
-cmake ..
-make -j$num_threads
+if [ "$TEST_INSTALLATION" = "ON" ]; then
+  cd $BUILD_DIR/examples/hello_world
+  mkdir build && cd build
+  cmake ..
+  make -j$num_threads
+fi
 
 # dartpy: run a Python example using installed dartpy
 if [ "$BUILD_DARTPY" = "ON" ]; then
