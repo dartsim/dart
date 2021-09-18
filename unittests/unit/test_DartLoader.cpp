@@ -39,6 +39,8 @@
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
 
+#include "TestHelpers.hpp"
+
 using namespace dart;
 using dart::common::Uri;
 using dart::utils::DartLoader;
@@ -209,22 +211,28 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   // clang-format on
 
   DartLoader loader;
+  DartLoader::Options options;
 
-  auto robot1 = loader.parseSkeletonString(urdfStr, "", nullptr);
+  // Default
+  auto robot1 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot1);
   EXPECT_EQ(
       robot1->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
   EXPECT_EQ(robot1->getRootJoint()->getName(), "rootJoint");
 
-  auto robot2 = loader.parseSkeletonString(
-      urdfStr, "", nullptr, DartLoader::Flags::NONE);
+  // Floating
+  options.mDefaultRootJointType = DartLoader::RootJointType::FLOATING;
+  loader.setOptions(options);
+  auto robot2 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot2);
   EXPECT_EQ(
       robot2->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
   EXPECT_EQ(robot2->getRootJoint()->getName(), "rootJoint");
 
-  auto robot3 = loader.parseSkeletonString(
-      urdfStr, "", nullptr, DartLoader::Flags::FIXED_BASE_LINK);
+  // Fixed
+  options.mDefaultRootJointType = DartLoader::RootJointType::FIXED;
+  loader.setOptions(options);
+  auto robot3 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot3);
   EXPECT_EQ(
       robot3->getRootJoint()->getType(), dynamics::WeldJoint::getStaticType());
@@ -590,4 +598,41 @@ TEST(DartLoader, parseVisualCollisionName)
   // fail if the naming pattern in the function is changed.
   EXPECT_EQ(shape_nodes1[0]->getName(), body1->getName() + "_ShapeNode_0");
   EXPECT_EQ(shape_nodes1[1]->getName(), body1->getName() + "_ShapeNode_1");
+}
+
+//==============================================================================
+TEST(DartLoader, Options)
+{
+  // clang-format off
+  std::string urdfStr = R"(
+    <robot name="testRobot">
+      <link name="link_0">
+      </link>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  DartLoader::Options options;
+
+  // Default inertia
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(nullptr != robot);
+  auto link_0 = robot->getBodyNode("link_0");
+  ASSERT_TRUE(link_0 != nullptr);
+  EXPECT_TRUE(equals(
+      link_0->getInertia().getSpatialTensor(),
+      dynamics::Inertia().getSpatialTensor()));
+
+  // Custom inertia
+  options.mDefaultInertia.setMass(5);
+  options.mDefaultInertia.setMoment(1, 2, 3, 4, 5, 6);
+  loader.setOptions(options);
+  robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(nullptr != robot);
+  link_0 = robot->getBodyNode("link_0");
+  ASSERT_TRUE(link_0 != nullptr);
+  EXPECT_TRUE(equals(
+      link_0->getInertia().getSpatialTensor(),
+      options.mDefaultInertia.getSpatialTensor()));
 }

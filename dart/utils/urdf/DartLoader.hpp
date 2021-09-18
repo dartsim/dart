@@ -77,6 +77,8 @@ namespace utils {
 class DartLoader
 {
 public:
+  /// \deprecated Deprecated in 6.11. Use RootJointType and Options instead.
+  ///
   /// Flags for specifying URDF file parsing policies.
   enum Flags
   {
@@ -90,8 +92,46 @@ public:
     DEFAULT = NONE,
   };
 
+  /// Root joint type to be used when the parent joint of the root link is not
+  /// specified in the URDF file.
+  enum class RootJointType
+  {
+    /// Floating joint type of URDF.
+    FLOATING = 0,
+
+    /// Fixed joint type of URDF.
+    FIXED = 1,
+  };
+
+  /// Options to be used in parsing URDF files.
+  struct Options
+  {
+    /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
+    common::ResourceRetrieverPtr mResourceRetriever;
+
+    /// Default root joint type to be used when the parent joint of the root
+    /// link is not specified in the URDF file.
+    RootJointType mDefaultRootJointType;
+
+    /// Default inertia properties to be used when the inertial element is not
+    /// specified in the link element.
+    dynamics::Inertia mDefaultInertia;
+
+    /// Default constructor
+    Options(
+        common::ResourceRetrieverPtr resourceRetriever = nullptr,
+        RootJointType defaultRootJointType = RootJointType::FLOATING,
+        const dynamics::Inertia& defaultInertia = dynamics::Inertia());
+  };
+
   /// Constructor with the default ResourceRetriever.
-  DartLoader();
+  explicit DartLoader(const Options& options = Options());
+
+  /// Sets options
+  void setOptions(const Options& options);
+
+  /// Returns options
+  const Options& getOptions() const;
 
   /// Specify the directory of a ROS package. In your URDF files, you may see
   /// strings with a package URI pattern such as:
@@ -113,33 +153,51 @@ public:
   /// specify as the package directory will end up replacing the 'package
   /// keyword' and 'package name' components of the URI string.
   void addPackageDirectory(
-      const std::string& _packageName, const std::string& _packageDirectory);
+      const std::string& packageName, const std::string& packageDirectory);
 
   /// Parse a file to produce a Skeleton
+  DART_DEPRECATED(6.11)
   dynamics::SkeletonPtr parseSkeleton(
-      const common::Uri& _uri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
+      const common::Uri& uri,
+      const common::ResourceRetrieverPtr& resourceRetriever,
+      unsigned int flags = DEFAULT);
+
+  /// Parse a file to produce a Skeleton
+  dynamics::SkeletonPtr parseSkeleton(const common::Uri& uri);
+
+  /// Parse a text string to produce a Skeleton
+  DART_DEPRECATED(6.11)
+  dynamics::SkeletonPtr parseSkeletonString(
+      const std::string& urdfString,
+      const common::Uri& baseUri,
+      const common::ResourceRetrieverPtr& resourceRetriever,
       unsigned int flags = DEFAULT);
 
   /// Parse a text string to produce a Skeleton
   dynamics::SkeletonPtr parseSkeletonString(
-      const std::string& _urdfString,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
+      const std::string& urdfString, const common::Uri& baseUri);
+
+  /// Parse a file to produce a World
+  DART_DEPRECATED(6.11)
+  dart::simulation::WorldPtr parseWorld(
+      const common::Uri& uri,
+      const common::ResourceRetrieverPtr& resourceRetriever,
       unsigned int flags = DEFAULT);
 
   /// Parse a file to produce a World
-  dart::simulation::WorldPtr parseWorld(
-      const common::Uri& _uri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
+  dart::simulation::WorldPtr parseWorld(const common::Uri& uri);
+
+  /// Parse a text string to produce a World
+  DART_DEPRECATED(6.11)
+  dart::simulation::WorldPtr parseWorldString(
+      const std::string& urdfString,
+      const common::Uri& baseUri,
+      const common::ResourceRetrieverPtr& resourceRetriever,
       unsigned int flags = DEFAULT);
 
   /// Parse a text string to produce a World
   dart::simulation::WorldPtr parseWorldString(
-      const std::string& _urdfString,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr,
-      unsigned int flags = DEFAULT);
+      const std::string& urdfString, const common::Uri& baseUri);
 
 private:
   typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
@@ -150,7 +208,7 @@ private:
       const urdf::ModelInterface* model,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& resourceRetriever,
-      unsigned int flags);
+      const Options& options);
 
   static bool createSkeletonRecursive(
       const urdf::ModelInterface* model,
@@ -159,7 +217,7 @@ private:
       dynamics::BodyNode* parent,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever,
-      unsigned int flags);
+      const Options& options);
 
   static bool addMimicJointsRecursive(
       const urdf::ModelInterface* model,
@@ -177,13 +235,14 @@ private:
       const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
       dynamics::SkeletonPtr _skeleton,
-      unsigned int flgas);
+      const Options& options);
 
   static bool createDartNodeProperties(
       const urdf::Link* _lk,
       dynamics::BodyNode::Properties& properties,
       const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever);
+      const common::ResourceRetrieverPtr& _resourceRetriever,
+      const Options& options);
 
   static bool createShapeNodes(
       const urdf::ModelInterface* model,
@@ -203,6 +262,7 @@ private:
       const common::Uri& _uri,
       std::string& _output);
 
+  Options mOptions;
   common::LocalResourceRetrieverPtr mLocalRetriever;
   utils::PackageResourceRetrieverPtr mPackageRetriever;
   utils::CompositeResourceRetrieverPtr mRetriever;

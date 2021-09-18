@@ -41,94 +41,136 @@ namespace python {
 
 void DartLoader(py::module& m)
 {
-  ::py::class_<dart::utils::DartLoader>(m, "DartLoader")
-      .def(::py::init<>())
-      .def(
-          "addPackageDirectory",
-          +[](dart::utils::DartLoader* self,
-              const std::string& _packageName,
-              const std::string& _packageDirectory) -> void {
-            return self->addPackageDirectory(_packageName, _packageDirectory);
-          },
-          ::py::arg("packageName"),
-          ::py::arg("packageDirectory"))
-      .def(
-          "parseSkeleton",
-          +[](dart::utils::DartLoader* self,
-              const dart::common::Uri& _uri) -> dart::dynamics::SkeletonPtr {
-            return self->parseSkeleton(_uri);
-          },
-          ::py::arg("uri"))
-      .def(
-          "parseSkeleton",
-          +[](dart::utils::DartLoader* self,
-              const dart::common::Uri& _uri,
-              const dart::common::ResourceRetrieverPtr& _resourceRetriever)
-              -> dart::dynamics::SkeletonPtr {
-            return self->parseSkeleton(_uri, _resourceRetriever);
-          },
-          ::py::arg("uri"),
-          ::py::arg("resourceRetriever"))
-      .def(
-          "parseSkeletonString",
-          +[](dart::utils::DartLoader* self,
-              const std::string& _urdfString,
-              const dart::common::Uri& _baseUri)
-              -> dart::dynamics::SkeletonPtr {
-            return self->parseSkeletonString(_urdfString, _baseUri);
-          },
-          ::py::arg("urdfString"),
-          ::py::arg("baseUri"))
-      .def(
-          "parseSkeletonString",
-          +[](dart::utils::DartLoader* self,
-              const std::string& _urdfString,
-              const dart::common::Uri& _baseUri,
-              const dart::common::ResourceRetrieverPtr& _resourceRetriever)
-              -> dart::dynamics::SkeletonPtr {
-            return self->parseSkeletonString(
-                _urdfString, _baseUri, _resourceRetriever);
-          },
-          ::py::arg("urdfString"),
-          ::py::arg("baseUri"),
-          ::py::arg("resourceRetriever"))
-      .def(
-          "parseWorld",
-          +[](dart::utils::DartLoader* self, const dart::common::Uri& _uri)
-              -> dart::simulation::WorldPtr { return self->parseWorld(_uri); },
-          ::py::arg("uri"))
-      .def(
-          "parseWorld",
-          +[](dart::utils::DartLoader* self,
-              const dart::common::Uri& _uri,
-              const dart::common::ResourceRetrieverPtr& _resourceRetriever)
-              -> dart::simulation::WorldPtr {
-            return self->parseWorld(_uri, _resourceRetriever);
-          },
-          ::py::arg("uri"),
-          ::py::arg("resourceRetriever"))
-      .def(
-          "parseWorldString",
-          +[](dart::utils::DartLoader* self,
-              const std::string& _urdfString,
-              const dart::common::Uri& _baseUri) -> dart::simulation::WorldPtr {
-            return self->parseWorldString(_urdfString, _baseUri);
-          },
-          ::py::arg("urdfString"),
-          ::py::arg("baseUri"))
-      .def(
-          "parseWorldString",
-          +[](dart::utils::DartLoader* self,
-              const std::string& _urdfString,
-              const dart::common::Uri& _baseUri,
-              const dart::common::ResourceRetrieverPtr& _resourceRetriever)
-              -> dart::simulation::WorldPtr {
-            return self->parseWorldString(
-                _urdfString, _baseUri, _resourceRetriever);
-          },
-          ::py::arg("urdfString"),
-          ::py::arg("baseUri"),
-          ::py::arg("resourceRetriever"));
+  auto dartLoaderFlags
+      = ::py::enum_<utils::DartLoader::Flags>(m, "DartLoaderFlags")
+            .value("NONE", utils::DartLoader::Flags::NONE)
+            .value("FIXED_BASE_LINK", utils::DartLoader::Flags::FIXED_BASE_LINK)
+            .value("DEFAULT", utils::DartLoader::Flags::DEFAULT);
+
+  auto dartLoaderRootJointType
+      = ::py::enum_<utils::DartLoader::RootJointType>(
+            m, "DartLoaderRootJointType")
+            .value("FLOATING", utils::DartLoader::RootJointType::FLOATING)
+            .value("FIXED", utils::DartLoader::RootJointType::FIXED);
+
+  auto dartLoaderOptions
+      = ::py::class_<utils::DartLoader::Options>(m, "DartLoaderOptions")
+            .def(
+                ::py::init<
+                    common::ResourceRetrieverPtr,
+                    utils::DartLoader::RootJointType,
+                    const dynamics::Inertia&>(),
+                ::py::arg("resourceRetriever") = nullptr,
+                ::py::arg("defaultRootJointType")
+                = utils::DartLoader::RootJointType::FLOATING,
+                ::py::arg("defaultInertia") = dynamics::Inertia())
+            .def_readwrite(
+                "mResourceRetriever",
+                &utils::DartLoader::Options::mResourceRetriever)
+            .def_readwrite(
+                "mDefaultRootJointType",
+                &utils::DartLoader::Options::mDefaultRootJointType)
+            .def_readwrite(
+                "mDefaultInertia",
+                &utils::DartLoader::Options::mDefaultInertia);
+
+  auto dartLoader
+      = ::py::class_<utils::DartLoader>(m, "DartLoader")
+            .def(::py::init<>())
+            .def(
+                "setOptions",
+                &utils::DartLoader::setOptions,
+                ::py::arg("options") = utils::DartLoader::Options())
+            .def("getOptions", &utils::DartLoader::getOptions)
+            .def(
+                "addPackageDirectory",
+                &utils::DartLoader::addPackageDirectory,
+                ::py::arg("packageName"),
+                ::py::arg("packageDirectory"))
+            .def(
+                "parseSkeleton",
+                +[](dart::utils::DartLoader* self,
+                    const dart::common::Uri& uri,
+                    const common::ResourceRetrieverPtr& resourceRetriever,
+                    unsigned int flags) -> dart::dynamics::SkeletonPtr {
+                  DART_SUPPRESS_DEPRECATED_BEGIN
+                  return self->parseSkeleton(uri, resourceRetriever, flags);
+                  DART_SUPPRESS_DEPRECATED_END
+                },
+                ::py::arg("uri"),
+                ::py::arg("resourceRetriever"),
+                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+            .def(
+                "parseSkeleton",
+                ::py::overload_cast<const common::Uri&>(
+                    &utils::DartLoader::parseSkeleton),
+                ::py::arg("uri"))
+            .def(
+                "parseSkeletonString",
+                +[](utils::DartLoader* self,
+                    const std::string& urdfString,
+                    const common::Uri& baseUri,
+                    const common::ResourceRetrieverPtr& resourceRetriever,
+                    unsigned int flags) -> dynamics::SkeletonPtr {
+                  DART_SUPPRESS_DEPRECATED_BEGIN
+                  return self->parseSkeletonString(
+                      urdfString, baseUri, resourceRetriever, flags);
+                  DART_SUPPRESS_DEPRECATED_END
+                },
+                ::py::arg("urdfString"),
+                ::py::arg("baseUri"),
+                ::py::arg("resourceRetriever"),
+                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+            .def(
+                "parseSkeletonString",
+                ::py::overload_cast<const std::string&, const common::Uri&>(
+                    &utils::DartLoader::parseSkeletonString),
+                ::py::arg("urdfString"),
+                ::py::arg("baseUri"))
+            .def(
+                "parseWorld",
+                +[](utils::DartLoader* self,
+                    const common::Uri& _uri,
+                    const common::ResourceRetrieverPtr& resourceRetriever,
+                    unsigned int flags) -> simulation::WorldPtr {
+                  DART_SUPPRESS_DEPRECATED_BEGIN
+                  return self->parseWorld(_uri, resourceRetriever, flags);
+                  DART_SUPPRESS_DEPRECATED_END
+                },
+                ::py::arg("uri"),
+                ::py::arg("resourceRetriever"),
+                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+            .def(
+                "parseWorld",
+                ::py::overload_cast<const common::Uri&>(
+                    &utils::DartLoader::parseWorld),
+                ::py::arg("uri"))
+            .def(
+                "parseWorldString",
+                +[](utils::DartLoader* self,
+                    const std::string& urdfString,
+                    const common::Uri& baseUri,
+                    const common::ResourceRetrieverPtr& resourceRetriever,
+                    unsigned int flags) -> simulation::WorldPtr {
+                  DART_SUPPRESS_DEPRECATED_BEGIN
+                  return self->parseWorldString(
+                      urdfString, baseUri, resourceRetriever, flags);
+                  DART_SUPPRESS_DEPRECATED_END
+                },
+                ::py::arg("urdfString"),
+                ::py::arg("baseUri"),
+                ::py::arg("resourceRetriever"),
+                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+            .def(
+                "parseWorldString",
+                ::py::overload_cast<const std::string&, const common::Uri&>(
+                    &utils::DartLoader::parseWorldString),
+                ::py::arg("urdfString"),
+                ::py::arg("baseUri"));
+
+  dartLoader.attr("Flags") = dartLoaderFlags;
+  dartLoader.attr("RootJointType") = dartLoaderRootJointType;
+  dartLoader.attr("Options") = dartLoaderOptions;
 }
 
 } // namespace python
