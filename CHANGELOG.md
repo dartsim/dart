@@ -13,6 +13,10 @@
 
   * Remove DART_BUILD_DARTPY option: [#1600](https://github.com/dartsim/dart/pull/1600)
 
+* Parsers
+
+  * Added default options to DartLoader for missing properties in URDF files: : [#1605](https://github.com/dartsim/dart/pull/1605)
+
 ### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
 
 * Dynamics
