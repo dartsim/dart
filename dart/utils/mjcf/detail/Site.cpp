@@ -180,7 +180,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
 static bool canUseFromTo(
     GeomType type, const common::optional<Eigen::Vector6d>& fromto)
 {
-  if (not fromto)
+  if (!fromto)
     return false;
 
   switch (type)

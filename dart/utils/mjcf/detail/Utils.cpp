@@ -57,7 +57,7 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
 
   if (hasAttribute(element, "axisangle"))
   {
-    if (not orientationTypes.empty())
+    if (!orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "axisangle";
     ++numOrientationTypes;
@@ -65,7 +65,7 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
 
   if (hasAttribute(element, "euler"))
   {
-    if (not orientationTypes.empty())
+    if (!orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "euler";
     ++numOrientationTypes;
@@ -73,7 +73,7 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
 
   if (hasAttribute(element, "xyaxes"))
   {
-    if (not orientationTypes.empty())
+    if (!orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "xyaxes";
     ++numOrientationTypes;
@@ -81,7 +81,7 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
 
   if (hasAttribute(element, "zaxis"))
   {
-    if (not orientationTypes.empty())
+    if (!orientationTypes.empty())
       orientationTypes += ", ";
     orientationTypes += "zaxis";
     ++numOrientationTypes;
@@ -187,7 +187,7 @@ Errors handleInclude(
     const common::Uri mjcfUri
         = common::Uri::createFromRelativeUri(baseUri, fileAttribute);
     tinyxml2::XMLDocument mjcfDoc;
-    if (not readXmlFile(mjcfDoc, mjcfUri, retriever))
+    if (!readXmlFile(mjcfDoc, mjcfUri, retriever))
     {
       errors.emplace_back(
           ErrorCode::FILE_READ, "Failed to load '" + mjcfUri.toString() + "'.");
@@ -203,7 +203,7 @@ Errors handleInclude(
     }
 
     const bool copyResult = copyChildNodes(element, *mujocoElement);
-    if (not copyResult)
+    if (!copyResult)
     {
       errors.push_back(
           Error(ErrorCode::FILE_READ, "Failed to handle <include>"));

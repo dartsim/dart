@@ -208,7 +208,7 @@ Errors Body::compile(const Compiler& compiler)
       }
     }
 
-    if (not mGeoms.empty())
+    if (!mGeoms.empty())
     {
       mInertial = computeInertialFromGeoms(mGeoms, compiler);
     }

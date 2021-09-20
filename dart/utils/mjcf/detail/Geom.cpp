@@ -94,7 +94,7 @@ Errors Geom::read(
 static bool canUseFromTo(
     GeomType type, const common::optional<Eigen::Vector6d>& fromto)
 {
-  if (not fromto)
+  if (!fromto)
     return false;
 
   switch (type)

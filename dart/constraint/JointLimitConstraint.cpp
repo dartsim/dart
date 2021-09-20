@@ -364,8 +364,8 @@ void JointLimitConstraint::applyUnitImpulse(std::size_t index)
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
   {
-    if (not mIsPositionLimitViolated[static_cast<int>(i)]
-        && not mIsVelocityLimitViolated[static_cast<int>(i)])
+    if (!mIsPositionLimitViolated[static_cast<int>(i)]
+        && !mIsVelocityLimitViolated[static_cast<int>(i)])
     {
       continue;
     }
@@ -394,8 +394,8 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
   {
-    if (not mIsPositionLimitViolated[static_cast<int>(i)]
-        && not mIsVelocityLimitViolated[static_cast<int>(i)])
+    if (!mIsPositionLimitViolated[static_cast<int>(i)]
+        && !mIsVelocityLimitViolated[static_cast<int>(i)])
     {
       continue;
     }
@@ -438,8 +438,8 @@ void JointLimitConstraint::applyImpulse(double* lambda)
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
   {
-    if (not mIsPositionLimitViolated[static_cast<int>(i)]
-        && not mIsVelocityLimitViolated[static_cast<int>(i)])
+    if (!mIsPositionLimitViolated[static_cast<int>(i)]
+        && !mIsVelocityLimitViolated[static_cast<int>(i)])
     {
       continue;
     }
