@@ -151,7 +151,7 @@ const Eigen::Vector3d& Mesh::getScale() const
 //==============================================================================
 dynamics::MeshShapePtr Mesh::getMeshShape() const
 {
-  if (not mMeshShape && not mTriedToParse)
+  if (!mMeshShape && !mTriedToParse)
   {
     mMeshShape = createMeshShape();
     mTriedToParse = true;

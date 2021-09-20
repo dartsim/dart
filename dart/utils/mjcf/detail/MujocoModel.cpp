@@ -195,7 +195,7 @@ Errors MujocoModel::read(
   }
 
   tinyxml2::XMLDocument mjcfDoc;
-  if (not readXmlFile(mjcfDoc, uri, retriever))
+  if (!readXmlFile(mjcfDoc, uri, retriever))
   {
     errors.emplace_back(
         ErrorCode::FILE_READ, "Failed to load '" + uri.toString() + "'.");

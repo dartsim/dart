@@ -117,7 +117,7 @@ Errors appendBodyAttributes(
   // user
   if (hasAttribute(element, "user"))
   {
-    if (not size)
+    if (!size)
     {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,

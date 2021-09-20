@@ -136,7 +136,7 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   {
     mBody2 = *mAttributes.mBody2;
   }
-  if (not mAttributes.mRelPose.tail<4>().isApprox(Eigen::Vector4d::Zero()))
+  if (!mAttributes.mRelPose.tail<4>().isApprox(Eigen::Vector4d::Zero()))
   {
     mRelativeTransfrom = Eigen::Isometry3d::Identity();
     Eigen::Quaterniond quat;

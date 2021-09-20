@@ -2626,7 +2626,7 @@ def CheckSpacing(filename, clean_lines, linenum, nesting_state, error):
     if (line.count('"', 0, commentpos) -
         line.count('\\"', 0, commentpos)) % 2 == 0:   # not in quotes
       # Allow one space for new scopes, two spaces otherwise:
-      if (not Match(r'^\s*{ //', line) and
+      if (!Match(r'^\s*{ //', line) and
           ((commentpos >= 1 and
             line[commentpos-1] not in string.whitespace) or
            (commentpos >= 2 and
@@ -2905,7 +2905,7 @@ def CheckSectionSpacing(filename, clean_lines, class_info, linenum, error):
     # Also ignores cases where the previous line ends with a backslash as can be
     # common when defining classes in C macros.
     prev_line = clean_lines.lines[linenum - 1]
-    if (not IsBlankLine(prev_line) and
+    if (!IsBlankLine(prev_line) and
         not Search(r'\b(class|struct)\b', prev_line) and
         not Search(r'\\$', prev_line)):
       # Try a bit harder to find the beginning of the class.  This is to
@@ -3383,7 +3383,7 @@ def CheckStyle(filename, clean_lines, linenum, file_extension, nesting_state,
   #
   # The "$Id:...$" comment may also get very long without it being the
   # developers fault.
-  if (not line.startswith('#include') and not is_header_guard and
+  if (!line.startswith('#include') and not is_header_guard and
       not Match(r'^\s*//.*http(s?)://\S*$', line) and
       not Match(r'^// \$Id:.*#[0-9]+ \$$', line)):
     line_width = GetLineWidth(line)

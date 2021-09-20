@@ -986,7 +986,7 @@ bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
   for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
        node = node->NextSibling())
   {
-    if (not copyNode(copy, *node))
+    if (!copyNode(copy, *node))
     {
       return false;
     }
@@ -1001,7 +1001,7 @@ bool copyChildNodes(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
   for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
        node = node->NextSibling())
   {
-    if (not copyNode(destParent, *node))
+    if (!copyNode(destParent, *node))
     {
       return false;
     }

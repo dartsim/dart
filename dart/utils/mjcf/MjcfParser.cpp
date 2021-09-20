@@ -61,7 +61,7 @@ dynamics::BodyNode::Properties createBodyProperties(
   dynamics::BodyNode::Properties bodyProps;
 
   // Name
-  if (not mjcfBody.getName().empty())
+  if (!mjcfBody.getName().empty())
   {
     bodyProps.mName = mjcfBody.getName();
   }
@@ -92,7 +92,7 @@ void createJointCommonProperties(
     const detail::Joint& mjcfJoint)
 {
   // Name
-  if (not mjcfJoint.getName().empty())
+  if (!mjcfJoint.getName().empty())
   {
     props.mName = mjcfJoint.getName();
   }
@@ -629,12 +629,12 @@ bool populateSkeletonRecurse(
   assert(joint != nullptr);
 
   // Create ShapeNodes for the current BodyNode
-  if (not createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
+  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
     return false;
 
   for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i)
   {
-    if (not populateSkeletonRecurse(
+    if (!populateSkeletonRecurse(
             skel, bodyNode, mjcfBody.getChildBody(i), mjcfAsset))
     {
       return false;
@@ -652,7 +652,7 @@ dynamics::SkeletonPtr createSkeleton(
 
   const bool success
       = populateSkeletonRecurse(skel, nullptr, mjcfBody, mjcfAsset);
-  if (not success)
+  if (!success)
   {
     const std::string bodyName
         = mjcfBody.getName().empty() ? "(noname)" : mjcfBody.getName();
@@ -716,7 +716,7 @@ simulation::WorldPtr createWorld(
     std::tie(joint, body)
         = skel->createJointAndBodyNodePair<dynamics::WeldJoint>();
 
-    if (not mjcfGeom.getName().empty())
+    if (!mjcfGeom.getName().empty())
     {
       skel->setName(options.mGeomSkeletonNamePrefix + mjcfGeom.getName());
     }
@@ -754,7 +754,7 @@ simulation::WorldPtr createWorld(
     std::tie(joint, body)
         = skel->createJointAndBodyNodePair<dynamics::WeldJoint>();
 
-    if (not mjcfSite.getName().empty())
+    if (!mjcfSite.getName().empty())
     {
       skel->setName(options.mSiteSkeletonNamePrefix + mjcfSite.getName());
     }
@@ -818,7 +818,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 {
   auto mujoco = detail::MujocoModel();
   const detail::Errors errors = mujoco.read(uri, options.mRetriever);
-  if (not errors.empty())
+  if (!errors.empty())
   {
     dterr << "[MjcfParser] Failed to parse MJCF file for the following "
              "reason(s):\n";
@@ -848,7 +848,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
     // Body2
     dynamics::BodyNode* body2 = nullptr;
     const std::string& bodyName2 = weld.getBody2();
-    if (not bodyName2.empty())
+    if (!bodyName2.empty())
     {
       body2 = getUniqueBodyOrNull(*world, bodyName2);
       if (body2 == nullptr)
