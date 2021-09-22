@@ -17,6 +17,10 @@
 
   * Added default options to DartLoader for missing properties in URDF files: : [#1605](https://github.com/dartsim/dart/pull/1605)
 
+* GUI
+
+  * Updated ImGui to 1.84.2: [#1608](https://github.com/dartsim/dart/pull/1608)
+
 ### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
 
 * Dynamics
