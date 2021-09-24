@@ -35,10 +35,13 @@
 
 #include "TestHelpers.hpp"
 
+#include "dart/utils/sdf/SdfParser.hpp"
+
 using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
 using namespace dart::simulation;
+using namespace dart::utils;
 
 //==============================================================================
 TEST(Issue1193, AngularVelAdd)
@@ -74,4 +77,243 @@ TEST(Issue1193, AngularVelAdd)
   EXPECT_NEAR(0.0, lx, 1e-8);
   EXPECT_NEAR(maxSteps * world->getGravity().y() * dt, ly, 1e-8);
   EXPECT_NEAR(0.0, lz, 1e-8);
+}
+
+const double tol = 1e-5;
+const int g_iters = 100000;
+
+Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
+{
+  Eigen::Vector3d angMomentum = Eigen::Vector3d::Zero();
+  for(auto *bn: skel->getBodyNodes())
+  {
+    angMomentum += dart::math::dAdInvT(
+                       bn->getWorldTransform(),
+                       bn->getSpatialInertia() * bn->getSpatialVelocity())
+                       .head<3>();
+  }
+  return angMomentum;
+}
+
+
+TEST(Issue1193, SingleBody)
+{
+  WorldPtr world = World::create();
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+  world->setGravity(Vector3d::Zero());
+  SkeletonPtr skel = createBox({1, 1, 1});
+  skel->disableSelfCollisionCheck();
+  world->addSkeleton(skel);
+  auto rootBn = skel->getRootBodyNode();
+
+  Eigen::Vector3d initPosition = rootBn->getWorldTransform().translation();
+  Vector6d vels = compose({0, 25, 0}, {0, 0, -100});
+
+  rootBn->getParentJoint()->setVelocities(vels);
+
+  rootBn->addExtTorque({0, 50, 0});
+  for (int i = 0; i < g_iters; ++i)
+  {
+    world->step();
+  }
+  Eigen::Vector3d positionDiff
+      = rootBn->getWorldTransform().translation() - initPosition;
+  EXPECT_NEAR(0.0, positionDiff.x(), tol);
+  EXPECT_NEAR(0.0, positionDiff.y(), tol);
+  EXPECT_NEAR(g_iters * dt * vels[5], positionDiff.z(), tol);
+}
+
+TEST(Issue1193, SingleBodyWithOffDiagonalMoi)
+{
+  WorldPtr world = World::create();
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+  world->setGravity(Vector3d::Zero());
+  SkeletonPtr skel = createBox({1, 4, 9});
+  skel->disableSelfCollisionCheck();
+  world->addSkeleton(skel);
+  auto rootBn = skel->getRootBodyNode();
+  rootBn->setMomentOfInertia(1.1, 1.1, 0.7, 0.1, 0, 0);
+  Eigen::Vector3d initPosition = rootBn->getWorldTransform().translation();
+
+  // Setting this to compose({0, 25, 0}, {0, 0, -100}) causes the test to fail.
+  Vector6d vels = compose({0, 2.5, 0}, {0, 0, -10.0});
+
+  rootBn->getParentJoint()->setVelocities(vels);
+
+  rootBn->addExtTorque({0, 50, 0});
+  //
+  for (int i = 0; i < g_iters; ++i)
+  {
+    world->step();
+  }
+  Eigen::Vector3d positionDiff
+      = rootBn->getWorldTransform().translation() - initPosition;
+  EXPECT_NEAR(0.0, positionDiff.x(), tol);
+  EXPECT_NEAR(0.0, positionDiff.y(), tol);
+  EXPECT_NEAR(g_iters * dt * vels[5], positionDiff.z(), tol);
+}
+
+TEST(Issue1193, SingleBodyWithJointOffset)
+{
+  WorldPtr world = World::create();
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+  world->setGravity(Vector3d::Zero());
+  SkeletonPtr skel = createBox({1, 1, 1});
+  skel->disableSelfCollisionCheck();
+  world->addSkeleton(skel);
+  auto rootBn = skel->getRootBodyNode();
+  rootBn->setMomentOfInertia(1.1, 1.1, 0.7, 0.1, 0, 0);
+  Eigen::Vector3d initPosition = rootBn->getWorldTransform().translation();
+
+  Vector6d vels = compose({0, 2.5, 0}, {0, 0, -10});
+
+  auto *freeJoint = dynamic_cast<FreeJoint *>(rootBn->getParentJoint());
+  freeJoint->setVelocities(vels);
+
+  Eigen::Isometry3d jointPoseInParent = Eigen::Isometry3d::Identity();
+  jointPoseInParent.translate(Eigen::Vector3d(0.0, 4.0, 0));
+  freeJoint->setTransformFromParentBodyNode(jointPoseInParent);
+
+  rootBn->addExtTorque({0, 50, 0});
+  for (int i = 0; i < g_iters; ++i)
+  {
+    world->step();
+  }
+
+  Eigen::Vector3d positionDiff
+      = rootBn->getWorldTransform().translation() - initPosition;
+  EXPECT_NEAR(0.0, positionDiff.x(), tol);
+  EXPECT_NEAR(4.0, positionDiff.y(), tol);
+  EXPECT_NEAR(g_iters * dt * vels[5], positionDiff.z(), tol);
+}
+
+TEST(Issue1193, SingleBodyWithCOMOffset)
+{
+  WorldPtr world = World::create();
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+  world->setGravity(Vector3d::Zero());
+  SkeletonPtr skel = createBox({1, 1, 1});
+  world->addSkeleton(skel);
+  auto rootBn = skel->getRootBodyNode();
+  rootBn->setMomentOfInertia(1.0/6, 1.0/6.0, 1.0/6.0, 0, 0, 0);
+  rootBn->setLocalCOM({1, 5, 8});
+  rootBn->addExtForce({10, 0, 0});
+  world->step();
+  auto comLinearVel = rootBn->getCOMLinearVelocity();
+  // TODO (addisu) Improve FreeJoint integration so that a higher tolerance is
+  // not necessary here.
+  EXPECT_NEAR(0.01, comLinearVel.x(), tol * 1e2);
+}
+
+//==============================================================================
+TEST(Issue1193, WithFixedJoint)
+{
+  WorldPtr world = World::create();
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+  world->setGravity(Vector3d::Zero());
+  SkeletonPtr skel = createBox({1, 1, 1}, {0, 0, 2});
+  skel->disableSelfCollisionCheck();
+  world->addSkeleton(skel);
+  auto rootBn = skel->getRootBodyNode();
+
+  Eigen::Isometry3d comRelPose;
+  comRelPose = Eigen::Translation3d(0, 0, -2);
+  auto comFrame = SimpleFrame::createShared(rootBn, "CombinedCOM", comRelPose);
+  Eigen::Vector3d initComPosition = comFrame->getWorldTransform().translation();
+
+  GenericJoint<R1Space>::Properties joint2Prop(std::string("joint2"));
+  BodyNode::Properties link2Prop(
+      BodyNode::AspectProperties(std::string("link2")));
+  link2Prop.mInertia.setMass(1.0);
+
+  auto pair = rootBn->createChildJointAndBodyNodePair<WeldJoint>(
+      WeldJoint::Properties(joint2Prop), link2Prop);
+  auto *joint = pair.first;
+
+  Eigen::Isometry3d jointPoseInParent = Eigen::Isometry3d::Identity();
+  jointPoseInParent.translate(Eigen::Vector3d(0.0, 0.0, -4));
+  joint->setTransformFromParentBodyNode(jointPoseInParent);
+
+  // TODO (addisu) Improve FreeJoint integration so we can test with larger
+  // forces. Currently, increasing these forces much more causes the test to
+  // fail.
+  rootBn->setExtTorque({0, 2500, 0});
+  rootBn->setExtForce({0, 0, -1000});
+
+  for (int i = 0; i < g_iters; ++i)
+  {
+    world->step();
+  }
+  Eigen::Vector3d positionDiff
+      = comFrame->getWorldTransform().translation() - initComPosition;
+  EXPECT_NEAR(0.0, positionDiff.x(), tol);
+  EXPECT_NEAR(0.0, positionDiff.y(), tol);
+}
+
+TEST(Issue1193, WithRevoluteJoint)
+{
+  auto world = SdfParser::readWorld(
+      "dart://sample/sdf/test/issue1193_revolute_test.sdf");
+  ASSERT_TRUE(world != nullptr);
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = world->getSkeleton(0);
+  auto rootBn = skel->getRootBodyNode();
+
+  Eigen::Isometry3d comRelPose;
+  comRelPose = Eigen::Translation3d(0, 0, -2);
+  auto comFrame = SimpleFrame::createShared(rootBn, "CombinedCOM", comRelPose);
+  Eigen::Vector3d initComPosition = comFrame->getWorldTransform().translation();
+
+  auto *joint = skel->getJoint("revJoint");
+  ASSERT_NE(nullptr, joint);
+
+  for (int i = 0; i < g_iters; ++i)
+  {
+    joint->setCommand(0, 0.1);
+    world->step();
+  }
+
+  Eigen::Vector3d positionDiff
+      = comFrame->getWorldTransform().translation() - initComPosition;
+  EXPECT_NEAR(0.0, positionDiff.x(), tol * 5e2);
+  EXPECT_NEAR(0.0, positionDiff.y(), tol * 5e2);
+}
+
+TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
+{
+  auto world = SdfParser::readWorld(
+      "dart://sample/sdf/test/issue1193_revolute_with_offset_test.sdf");
+  ASSERT_TRUE(world != nullptr);
+  const double dt = 0.0001;
+  world->setTimeStep(dt);
+  world->setGravity(Vector3d::Zero());
+
+  SkeletonPtr skel = world->getSkeleton(0);
+  auto link1 = skel->getBodyNode("link1");
+
+  auto *joint = skel->getJoint("revJoint");
+  ASSERT_NE(nullptr, joint);
+
+  link1->getParentJoint()->setVelocities(compose({0, 0.25, 0}, {0, 0, -0.1}));
+  world->step();
+  Eigen::Vector3d maxAngMomentumChange = Eigen::Vector3d::Zero();
+  Eigen::Vector3d h0 = computeWorldAngularMomentum(skel);
+  for (int i = 1; i < g_iters; ++i)
+  {
+    joint->setCommand(0, 0.1);
+    world->step();
+
+    Eigen::Vector3d hNext = computeWorldAngularMomentum(skel);
+    maxAngMomentumChange
+        = (hNext - h0).cwiseAbs().cwiseMax(maxAngMomentumChange);
+  }
+
+  EXPECT_NEAR(0.0, maxAngMomentumChange.norm(), tol * 10);
 }

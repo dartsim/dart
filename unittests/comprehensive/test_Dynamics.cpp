@@ -2624,7 +2624,9 @@ TEST_F(DynamicsTest, OffsetCOM)
       box->getShapeNode(0)->getShape()->computeInertia(inertia.getMass()));
   inertia.setLocalCOM({0, 500, 0});
   box->setInertia(inertia);
-  box->addExtTorque({0, 0, 100}, false);
+  Eigen::Isometry3d boxInitialPose = box->getWorldTransform();
+  Eigen::Vector3d torque(0, 0, 100);
+  box->addExtTorque(torque, false);
 
   {
     Vector3d comVel = box->getCOMLinearVelocity();
@@ -2641,28 +2643,30 @@ TEST_F(DynamicsTest, OffsetCOM)
   // Velocity at COM should be zero since the object is just rotating.
   {
     Vector3d comVel = box->getCOMLinearVelocity();
-    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel))
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel, 1e-4))
         << "comVel: " << comVel.transpose();
   }
   {
     Vector3d angVel = box->getAngularVelocity();
-    EXPECT_TRUE(equals(Vector3d(0, 0, 0.01), angVel))
+    // We can compute expectedAngAccel like so because the initial angular
+    // velocity is zero.
+    Vector3d expectedAngAccel = inertia.getMoment().inverse() * torque;
+    Vector3d expectedAngVel = expectedAngAccel * dt;
+    EXPECT_TRUE(equals(expectedAngVel, angVel))
         << "angVel: " << angVel.transpose();
     Vector3d linVel = box->getLinearVelocity();
     Vector3d expLinVel
-        = angVel.cross(box->getWorldTransform().linear() * -box->getLocalCOM());
+        = angVel.cross(boxInitialPose.linear() * -box->getLocalCOM());
     EXPECT_TRUE(equals(expLinVel, linVel))
         << "Expected: " << expLinVel.transpose()
         << "\nActual: " << linVel.transpose();
 
     Vector3d angAccel = box->getAngularAcceleration();
-    EXPECT_TRUE(equals(Vector3d(0, 0, 10), angAccel))
+    EXPECT_TRUE(equals(expectedAngAccel, angAccel))
         << "angAccel: " << angAccel.transpose();
     Vector3d linAccel = box->getLinearAcceleration();
     Vector3d expLinAccel
-        = angVel.cross(linVel)
-          + angAccel.cross(
-                box->getWorldTransform().linear() * -box->getLocalCOM());
+        = expectedAngAccel.cross(boxInitialPose.linear() * -box->getLocalCOM());
     EXPECT_TRUE(equals(expLinAccel, linAccel))
         << "Expected: " << expLinAccel.transpose()
         << "\nActual: " << linAccel.transpose();

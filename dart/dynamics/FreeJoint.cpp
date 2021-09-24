@@ -589,77 +589,54 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Vector6d& vel = getVelocitiesStatic();
-  const Eigen::Vector6d& accel = getAccelerationsStatic();
-  auto* bn = getChildBodyNode();
-  Eigen::Isometry3d Tcom;
-  // Transform from joint to center of mass of child body
-  Tcom = Eigen::Translation3d(
-      Joint::mAspectProperties.mT_ChildBodyToJoint.inverse()
-      * bn->getLocalCOM());
-  auto velAtCom = math::AdT(Tcom.inverse(), vel);
-  auto accelAtCom = math::AdT(Tcom.inverse(), accel);
+  const Eigen::Isometry3d Qdiff
+      = convertToTransform(getVelocitiesStatic() * _dt);
+  const Eigen::Isometry3d Qnext = getQ() * Qdiff;
 
-  const Eigen::Isometry3d Qcom = getQ() * Tcom;
-  const Eigen::Isometry3d Qdiff = convertToTransform(velAtCom * _dt);
-
-  const Eigen::Vector6d newVelAtCom = math::AdR(Qdiff.inverse(), velAtCom);
-  const Eigen::Vector6d newAccelAtCom = math::AdR(Qdiff.inverse(), accelAtCom);
-
-  const Eigen::Isometry3d QnextAtCom = Qcom * Qdiff;
-  const Eigen::Isometry3d Qnext = QnextAtCom * Tcom.inverse();
-
-  setVelocitiesStatic(math::AdT(Tcom, newVelAtCom));
-  setAccelerationsStatic(math::AdT(Tcom, newAccelAtCom));
+  setVelocitiesStatic(math::AdR(Qdiff.inverse(), getVelocitiesStatic()));
+  setAccelerationsStatic(math::AdR(Qdiff.inverse(), getAccelerationsStatic()));
   setPositionsStatic(convertToPositions(Qnext));
 }
 
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  const Eigen::Vector6d& vel = getVelocitiesStatic();
-  // Acceleration with additional term to take into account changing linear
-  // velocity in the inertial frame.
-  Eigen::Vector6d accelWithInertialTerm = getAccelerationsStatic();
-
-  // Not sure if we need a different inertia than the one from the child body
-  // node.
-  const Eigen::Matrix6d& mI = getChildBodyNode()->getSpatialInertia();
-  const Eigen::Matrix6d& artInvProjI = getInvProjArtInertia();
-  // Remove Coriolis term because the velocity will be updated when integrating
-  // position and that will account for the rotation of the frame.
-  accelWithInertialTerm.tail<3>()
-      -= (artInvProjI * math::dad(vel, mI * vel)).tail<3>();
-
+  // Integrating the acceleration gives us the new velocity of child body frame.
+  // But if there is any linear acceleration, the frame will be displaced. If we
+  // apply euler integration direcly on the spatial acceleration, it will
+  // produce the velocity of a point that is instantaneously coincident with the
+  // previous location of the child body frame. However, we want to compute the
+  // spatial velocity at the current location of the child body frame. To
+  // accomplish this, we first convert the linear portion of the spatial
+  // acceleration into classical linear acceleration and apply the integration.
+  Eigen::Vector6d accel = getAccelerationsStatic();
+  const Eigen::Vector6d &velBefore = getVelocitiesStatic();
+  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
   setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
-      getVelocitiesStatic(), accelWithInertialTerm, _dt));
-  // vel now points to the updated velocity
-  accelWithInertialTerm.tail<3>()
-      += (artInvProjI * math::dad(vel, mI * vel)).tail<3>();
-  setAccelerationsStatic(accelWithInertialTerm);
+      getVelocitiesStatic(), accel, _dt));
+
+  // Since the velocity has been updated, we use the new velocity to recompute
+  // the spatial acceleration. This is needed to ensure that functions like
+  // BodyNode::getLinearAcceleration work properly.
+  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
+  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
+  setAccelerationsStatic(accel);
 }
 
+//==============================================================================
 void FreeJoint::updateConstrainedTerms(double timeStep)
 {
   const double invTimeStep = 1.0 / timeStep;
 
-  const Eigen::Vector6d& vel = getVelocitiesStatic();
-  Eigen::Vector6d accelWithInertialTerm = getAccelerationsStatic();
-  const Eigen::Matrix6d& mI = getChildBodyNode()->getSpatialInertia();
-  const Eigen::Matrix6d& artInvI = getInvProjArtInertia();
-  // Remove Coriolis term because the velocity will be updated when integrating
-  // position and that will account for the rotation of the frame.
-  accelWithInertialTerm.tail<3>()
-      -= (artInvI * math::dad(vel, mI * vel)).tail<3>();
+  const Eigen::Vector6d &velBefore = getVelocitiesStatic();
+  Eigen::Vector6d accel = getAccelerationsStatic();
+  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
 
   setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
 
-  // vel now points to the updated velocity
-  accelWithInertialTerm.tail<3>()
-      += (artInvI * math::dad(vel, mI * vel)).tail<3>();
-  setAccelerationsStatic(
-      accelWithInertialTerm + mVelocityChanges * invTimeStep);
-
+  const Eigen::Vector6d &velAfter = getVelocitiesStatic();
+  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
+  setAccelerationsStatic(accel + mVelocityChanges * invTimeStep);
   this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
   // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
