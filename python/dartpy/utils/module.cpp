@@ -37,16 +37,20 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
+void UtilsResourceRetriever(py::module& sm);
 void DartLoader(py::module& sm);
 void SkelParser(py::module& sm);
+void SdfParser(py::module& sm);
 void MjcfParser(py::module& sm);
 
 void dart_utils(py::module& m)
 {
   auto sm = m.def_submodule("utils");
 
+  UtilsResourceRetriever(sm);
   DartLoader(sm);
   SkelParser(sm);
+  SdfParser(sm);
   MjcfParser(sm);
 }
 

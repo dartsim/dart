@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,23 +39,43 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-
-void dart_common(py::module& m)
+void UtilsResourceRetriever(py::module& m)
 {
-  auto sm = m.def_submodule("common");
+  ::py::class_<
+      utils::CompositeResourceRetriever,
+      common::ResourceRetriever,
+      std::shared_ptr<utils::CompositeResourceRetriever>>(
+      m, "CompositeResourceRetriever")
+      .def(::py::init<>())
+      .def(
+          "addDefaultRetriever",
+          &utils::CompositeResourceRetriever::addDefaultRetriever,
+          ::py::arg("resourceRetriever"))
+      .def(
+          "addSchemaRetriever",
+          &utils::CompositeResourceRetriever::addSchemaRetriever,
+          ::py::arg("schema"),
+          ::py::arg("resourceRetriever"));
 
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
+  ::py::class_<
+      utils::DartResourceRetriever,
+      common::ResourceRetriever,
+      std::shared_ptr<utils::DartResourceRetriever>>(m, "DartResourceRetriever")
+      .def(::py::init<>());
+
+  ::py::class_<
+      utils::PackageResourceRetriever,
+      common::ResourceRetriever,
+      std::shared_ptr<utils::PackageResourceRetriever>>(
+      m, "PackageResourceRetriever")
+      .def(
+          ::py::init<const common::ResourceRetrieverPtr&>(),
+          ::py::arg("localRetriever"))
+      .def(
+          "addPackageDirectory",
+          &utils::PackageResourceRetriever::addPackageDirectory,
+          ::py::arg("packageName"),
+          ::py::arg("packageDirectory"));
 }
 
 } // namespace python

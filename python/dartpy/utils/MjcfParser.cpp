@@ -43,14 +43,29 @@ void MjcfParser(py::module& m)
 {
   auto sm = m.def_submodule("MjcfParser");
 
-  // TODO(JS): Add bindings for dart::utils::MjcfParser::Options and
+  ::py::class_<utils::MjcfParser::Options>(sm, "Options")
+      .def(
+          ::py::init<
+              const common::ResourceRetrieverPtr&,
+              const std::string&,
+              const std::string&>(),
+          ::py::arg("resourceRetretrieverOrNullptrriever") = nullptr,
+          ::py::arg("geomSkeletonNamePrefix") = "__geom_skel__",
+          ::py::arg("siteSkeletonNamePrefix") = "__site_skel__")
+      .def_readwrite("mRetriever", &utils::MjcfParser::Options::mRetriever)
+      .def_readwrite(
+          "mGeomSkeletonNamePrefix",
+          &utils::MjcfParser::Options::mGeomSkeletonNamePrefix)
+      .def_readwrite(
+          "mSiteSkeletonNamePrefix",
+          &utils::MjcfParser::Options::mSiteSkeletonNamePrefix);
+
   // resource retriever APIs
   sm.def(
       "readWorld",
-      +[](const common::Uri& uri) -> simulation::WorldPtr {
-        return utils::MjcfParser::readWorld(uri);
-      },
-      ::py::arg("uri"));
+      &utils::MjcfParser::readWorld,
+      ::py::arg("uri"),
+      ::py::arg("options") = utils::MjcfParser::Options());
 }
 
 } // namespace python
