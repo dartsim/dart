@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,6 +34,7 @@
 #define DART_UTILS_SKELPARSER_HPP_
 
 #include <string>
+
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/simulation/World.hpp"

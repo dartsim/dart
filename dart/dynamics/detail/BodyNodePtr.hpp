@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -110,9 +110,7 @@ class TemplateBodyNodePtr
 {
 public:
   /// Default constructor
-  TemplateBodyNodePtr() : mPtr(nullptr)
-  {
-  }
+  TemplateBodyNodePtr() : mPtr(nullptr) {}
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
@@ -227,9 +225,7 @@ public:
   friend class TemplateWeakBodyNodePtr;
 
   /// Default constructor
-  TemplateWeakBodyNodePtr() : mPtr(nullptr)
-  {
-  }
+  TemplateWeakBodyNodePtr() : mPtr(nullptr) {}
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor

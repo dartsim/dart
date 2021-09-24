@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -43,10 +43,9 @@
 #include <osg/Camera>
 #include <osg/RenderInfo>
 
+#include "dart/common/Console.hpp"
 #include "dart/external/imgui/imgui.h"
 #include "dart/external/imgui/imgui_impl_opengl2.h"
-
-#include "dart/common/Console.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
 
 namespace dart {
@@ -283,8 +282,7 @@ bool ImGuiHandler::handle(
 
   switch (eventAdapter.getEventType())
   {
-    case osgGA::GUIEventAdapter::KEYDOWN:
-    {
+    case osgGA::GUIEventAdapter::KEYDOWN: {
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
@@ -314,8 +312,7 @@ bool ImGuiHandler::handle(
 
       return wantCapureKeyboard;
     }
-    case osgGA::GUIEventAdapter::KEYUP:
-    {
+    case osgGA::GUIEventAdapter::KEYUP: {
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
@@ -345,30 +342,52 @@ bool ImGuiHandler::handle(
 
       return wantCapureKeyboard;
     }
-    case osgGA::GUIEventAdapter::PUSH:
-    {
+    case osgGA::GUIEventAdapter::PUSH: {
       io.MousePos
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
-      mMousePressed[0] = true;
+
+      if (eventAdapter.getButtonMask()
+          == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
+      {
+        mMousePressed[0] = true;
+      }
+      else if (
+          eventAdapter.getButtonMask()
+          == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+      {
+        mMousePressed[1] = true;
+      }
+      else if (
+          eventAdapter.getButtonMask()
+          == osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+      {
+        mMousePressed[2] = true;
+      }
+      else
+      {
+        // Shouldn't be reached to here. Mark left button by default.
+        mMousePressed[0] = true;
+      }
 
       return wantCapureMouse;
     }
     case osgGA::GUIEventAdapter::DRAG:
-    case osgGA::GUIEventAdapter::MOVE:
-    {
+    case osgGA::GUIEventAdapter::MOVE: {
       io.MousePos
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
 
       return wantCapureMouse;
     }
-    case osgGA::GUIEventAdapter::RELEASE:
-    {
+    case osgGA::GUIEventAdapter::RELEASE: {
+      // When a mouse button is released no button mask is set. So we mark all
+      // the buttons are released.
       mMousePressed[0] = false;
+      mMousePressed[1] = false;
+      mMousePressed[2] = false;
 
       return wantCapureMouse;
     }
-    case osgGA::GUIEventAdapter::SCROLL:
-    {
+    case osgGA::GUIEventAdapter::SCROLL: {
       constexpr float increment = 0.1f;
 
       switch (eventAdapter.getScrollingMotion())
@@ -392,8 +411,7 @@ bool ImGuiHandler::handle(
 
       return wantCapureMouse;
     }
-    default:
-    {
+    default: {
       return false;
     }
   }

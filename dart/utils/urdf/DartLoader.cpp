@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -62,8 +62,21 @@ namespace utils {
 
 using ModelInterfacePtr = urdf_shared_ptr<urdf::ModelInterface>;
 
-DartLoader::DartLoader()
-  : mLocalRetriever(new common::LocalResourceRetriever),
+DartLoader::Options::Options(
+    common::ResourceRetrieverPtr resourceRetriever,
+    RootJointType defaultRootJointType,
+    const dynamics::Inertia& defaultInertia)
+  : mResourceRetriever(std::move(resourceRetriever)),
+    mDefaultRootJointType(defaultRootJointType),
+    mDefaultInertia(defaultInertia)
+{
+  // Do nothing
+}
+
+//==============================================================================
+DartLoader::DartLoader(const Options& options)
+  : mOptions(options),
+    mLocalRetriever(new common::LocalResourceRetriever),
     mPackageRetriever(new utils::PackageResourceRetriever(mLocalRetriever)),
     mRetriever(new utils::CompositeResourceRetriever)
 {
@@ -72,22 +85,52 @@ DartLoader::DartLoader()
   mRetriever->addSchemaRetriever("dart", DartResourceRetriever::create());
 }
 
+//==============================================================================
+void DartLoader::setOptions(const Options& options)
+{
+  mOptions = options;
+}
+
+//==============================================================================
+const DartLoader::Options& DartLoader::getOptions() const
+{
+  return mOptions;
+}
+
+//==============================================================================
 void DartLoader::addPackageDirectory(
     const std::string& _packageName, const std::string& _packageDirectory)
 {
   mPackageRetriever->addPackageDirectory(_packageName, _packageDirectory);
 }
 
+//==============================================================================
 dynamics::SkeletonPtr DartLoader::parseSkeleton(
     const common::Uri& _uri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
+  const auto oldOptions = mOptions;
+  auto options = mOptions;
+  options.mResourceRetriever = _resourceRetriever;
+  if (flags & DartLoader::Flags::FIXED_BASE_LINK)
+    options.mDefaultRootJointType = RootJointType::FIXED;
+  else
+    options.mDefaultRootJointType = RootJointType::FLOATING;
+  mOptions = options;
+  auto out = parseSkeleton(_uri);
+  mOptions = oldOptions;
+  return out;
+}
+
+//==============================================================================
+dynamics::SkeletonPtr DartLoader::parseSkeleton(const common::Uri& uri)
+{
   const common::ResourceRetrieverPtr resourceRetriever
-      = getResourceRetriever(_resourceRetriever);
+      = getResourceRetriever(mOptions.mResourceRetriever);
 
   std::string content;
-  if (!readFileToString(resourceRetriever, _uri, content))
+  if (!readFileToString(resourceRetriever, uri, content))
     return nullptr;
 
   // Use urdfdom to load the URDF file.
@@ -95,28 +138,46 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   if (!urdfInterface)
   {
     dtwarn << "[DartLoader::readSkeleton] Failed loading URDF file '"
-           << _uri.toString() << "'.\n";
+           << uri.toString() << "'.\n";
     return nullptr;
   }
 
   return modelInterfaceToSkeleton(
-      urdfInterface.get(), _uri, resourceRetriever, flags);
+      urdfInterface.get(), uri, resourceRetriever, mOptions);
 }
 
+//==============================================================================
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     const std::string& _urdfString,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
-  if (_urdfString.empty())
+  const auto oldOptions = mOptions;
+  auto options = mOptions;
+  options.mResourceRetriever = _resourceRetriever;
+  if (flags & DartLoader::Flags::FIXED_BASE_LINK)
+    options.mDefaultRootJointType = RootJointType::FIXED;
+  else
+    options.mDefaultRootJointType = RootJointType::FLOATING;
+  mOptions = options;
+  auto out = parseSkeletonString(_urdfString, _baseUri);
+  mOptions = oldOptions;
+  return out;
+}
+
+//==============================================================================
+dynamics::SkeletonPtr DartLoader::parseSkeletonString(
+    const std::string& urdfString, const common::Uri& baseUri)
+{
+  if (urdfString.empty())
   {
     dtwarn << "[DartLoader::parseSkeletonString] A blank string cannot be "
            << "parsed into a Skeleton. Returning a nullptr\n";
     return nullptr;
   }
 
-  ModelInterfacePtr urdfInterface = urdf::parseURDF(_urdfString);
+  ModelInterfacePtr urdfInterface = urdf::parseURDF(urdfString);
   if (!urdfInterface)
   {
     dtwarn << "[DartLoader::parseSkeletonString] Failed loading URDF.\n";
@@ -125,36 +186,71 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
-      _baseUri,
-      getResourceRetriever(_resourceRetriever),
-      flags);
+      baseUri,
+      getResourceRetriever(mOptions.mResourceRetriever),
+      mOptions);
 }
 
+//==============================================================================
 simulation::WorldPtr DartLoader::parseWorld(
     const common::Uri& _uri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
-  const common::ResourceRetrieverPtr resourceRetriever
-      = getResourceRetriever(_resourceRetriever);
-
-  std::string content;
-  if (!readFileToString(resourceRetriever, _uri, content))
-    return nullptr;
-
-  return parseWorldString(content, _uri, _resourceRetriever, flags);
+  const auto oldOptions = mOptions;
+  auto options = mOptions;
+  options.mResourceRetriever = _resourceRetriever;
+  if (flags & DartLoader::Flags::FIXED_BASE_LINK)
+    options.mDefaultRootJointType = RootJointType::FIXED;
+  else
+    options.mDefaultRootJointType = RootJointType::FLOATING;
+  mOptions = options;
+  auto out = parseWorld(_uri);
+  mOptions = oldOptions;
+  return out;
 }
 
+//==============================================================================
+simulation::WorldPtr DartLoader::parseWorld(const common::Uri& uri)
+{
+  const common::ResourceRetrieverPtr resourceRetriever
+      = getResourceRetriever(mOptions.mResourceRetriever);
+
+  std::string content;
+  if (!readFileToString(resourceRetriever, uri, content))
+    return nullptr;
+
+  return parseWorldString(content, uri);
+}
+
+//==============================================================================
 simulation::WorldPtr DartLoader::parseWorldString(
     const std::string& _urdfString,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
-  const common::ResourceRetrieverPtr resourceRetriever
-      = getResourceRetriever(_resourceRetriever);
+  const auto oldOptions = mOptions;
+  auto options = mOptions;
+  options.mResourceRetriever = _resourceRetriever;
+  if (flags & DartLoader::Flags::FIXED_BASE_LINK)
+    options.mDefaultRootJointType = RootJointType::FIXED;
+  else
+    options.mDefaultRootJointType = RootJointType::FLOATING;
+  mOptions = options;
+  auto out = parseWorldString(_urdfString, _baseUri);
+  mOptions = oldOptions;
+  return out;
+}
 
-  if (_urdfString.empty())
+//==============================================================================
+simulation::WorldPtr DartLoader::parseWorldString(
+    const std::string& urdfString, const common::Uri& baseUri)
+{
+  const common::ResourceRetrieverPtr resourceRetriever
+      = getResourceRetriever(mOptions.mResourceRetriever);
+
+  if (urdfString.empty())
   {
     dtwarn << "[DartLoader::parseWorldString] A blank string cannot be "
            << "parsed into a World. Returning a nullptr\n";
@@ -162,7 +258,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
   }
 
   std::shared_ptr<urdf_parsing::World> worldInterface
-      = urdf_parsing::parseWorldURDF(_urdfString, _baseUri, resourceRetriever);
+      = urdf_parsing::parseWorldURDF(urdfString, baseUri, resourceRetriever);
 
   if (!worldInterface)
   {
@@ -176,7 +272,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
   {
     const urdf_parsing::Entity& entity = worldInterface->models[i];
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-        entity.model.get(), entity.uri, resourceRetriever, flags);
+        entity.model.get(), entity.uri, resourceRetriever, mOptions);
 
     if (!skeleton)
     {
@@ -207,7 +303,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     const urdf::ModelInterface* model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
-    unsigned int flags)
+    const Options& options)
 {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(model->getName());
 
@@ -237,7 +333,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
               nullptr,
               baseUri,
               resourceRetriever,
-              flags))
+              options))
       {
         return nullptr;
       }
@@ -246,7 +342,13 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   else
   {
     if (!createSkeletonRecursive(
-            model, skeleton, root, nullptr, baseUri, resourceRetriever, flags))
+            model,
+            skeleton,
+            root,
+            nullptr,
+            baseUri,
+            resourceRetriever,
+            options))
     {
       return nullptr;
     }
@@ -267,7 +369,7 @@ bool DartLoader::createSkeletonRecursive(
     dynamics::BodyNode* parentNode,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
-    unsigned int flags)
+    const Options& options)
 {
   assert(lk);
 
@@ -278,11 +380,12 @@ bool DartLoader::createSkeletonRecursive(
   }
 
   dynamics::BodyNode::Properties properties;
-  if (!createDartNodeProperties(lk, properties, baseUri, resourceRetriever))
+  if (!createDartNodeProperties(
+          lk, properties, baseUri, resourceRetriever, options))
     return false;
 
   dynamics::BodyNode* node = createDartJointAndNode(
-      lk->parent_joint.get(), properties, parentNode, skel, flags);
+      lk->parent_joint.get(), properties, parentNode, skel, options);
 
   if (!node)
     return false;
@@ -302,7 +405,7 @@ bool DartLoader::createSkeletonRecursive(
             node,
             baseUri,
             resourceRetriever,
-            flags))
+            options))
     {
       return false;
     }
@@ -380,23 +483,35 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    unsigned int flags)
+    const DartLoader::Options& options)
 {
   dynamics::Joint::Properties basicProperties("rootJoint");
 
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
-  if (flags & DartLoader::Flags::FIXED_BASE_LINK)
+  switch (options.mDefaultRootJointType)
   {
-    pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
-        _parent, basicProperties, _body);
-  }
-  else
-  {
-    dynamics::GenericJoint<math::SE3Space>::Properties properties(
-        basicProperties);
-    pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-        _parent, properties, _body);
+    case DartLoader::RootJointType::FLOATING: {
+      dynamics::GenericJoint<math::SE3Space>::Properties properties(
+          basicProperties);
+      pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          _parent, properties, _body);
+      break;
+    }
+    case DartLoader::RootJointType::FIXED: {
+      pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+          _parent, basicProperties, _body);
+      break;
+    }
+    default: {
+      dterr << "Unsupported RootJointType '"
+            << static_cast<int>(options.mDefaultRootJointType)
+            << "'. Using FLOATING instead.\n";
+      dynamics::GenericJoint<math::SE3Space>::Properties properties(
+          basicProperties);
+      pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          _parent, properties, _body);
+    }
   }
 
   return pair.second;
@@ -410,14 +525,14 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    unsigned int flags)
+    const Options& options)
 {
   // Special case for the root link (A root link doesn't have the parent joint).
   // We don't have sufficient information what the joint type should be for the
   // root link. So we create the root joint by the specified flgas.
   if (!_jt)
   {
-    return createDartJointAndNodeForRoot(_body, _parent, _skeleton, flags);
+    return createDartJointAndNodeForRoot(_body, _parent, _skeleton, options);
   }
 
   dynamics::Joint::Properties basicProperties;
@@ -466,8 +581,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch (_jt->type)
   {
-    case urdf::Joint::CONTINUOUS:
-    {
+    case urdf::Joint::CONTINUOUS: {
       // We overwrite joint position limits to negative/positive infinities
       // for "continuous" joint. The URDF parser, by default, either reads
       // the limits, if specified for this joint, or sets them to 0.
@@ -485,8 +599,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::REVOLUTE:
-    {
+    case urdf::Joint::REVOLUTE: {
       dynamics::RevoluteJoint::Properties properties(
           dynamics::GenericJoint<math::R1Space>::Properties(
               basicProperties, singleDof),
@@ -497,8 +610,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::PRISMATIC:
-    {
+    case urdf::Joint::PRISMATIC: {
       dynamics::PrismaticJoint::Properties properties(
           dynamics::GenericJoint<math::R1Space>::Properties(
               basicProperties, singleDof),
@@ -509,14 +621,12 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       break;
     }
-    case urdf::Joint::FIXED:
-    {
+    case urdf::Joint::FIXED: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
           _parent, basicProperties, _body);
       break;
     }
-    case urdf::Joint::FLOATING:
-    {
+    case urdf::Joint::FLOATING: {
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
 
@@ -524,8 +634,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
           _parent, properties, _body);
       break;
     }
-    case urdf::Joint::PLANAR:
-    {
+    case urdf::Joint::PLANAR: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
           _parent, dynamics::PlanarJoint::Properties(basicProperties), _body);
       // TODO(MXG): Should we read in position limits? The URDF limits
@@ -534,8 +643,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       // coordinates equally? Or just don't accept the position limits at all?
       break;
     }
-    default:
-    {
+    default: {
       dterr << "[DartLoader::createDartJoint] Unsupported joint type ("
             << _jt->type << ")\n";
       return nullptr;
@@ -552,7 +660,8 @@ bool DartLoader::createDartNodeProperties(
     const urdf::Link* _lk,
     dynamics::BodyNode::Properties& node,
     const common::Uri& /*_baseUri*/,
-    const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
+    const common::ResourceRetrieverPtr& /*_resourceRetriever*/,
+    const Options& options)
 {
   node.mName = _lk->name;
 
@@ -576,6 +685,10 @@ bool DartLoader::createDartNodeProperties(
 
     node.mInertia.setMoment(
         J(0, 0), J(1, 1), J(2, 2), J(0, 1), J(0, 2), J(1, 2));
+  }
+  else
+  {
+    node.mInertia = options.mDefaultInertia;
   }
 
   return true;
@@ -626,7 +739,7 @@ bool DartLoader::createShapeNodes(
     {
       auto shapeNode
           = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
-      if (not visual->name.empty())
+      if (!visual->name.empty())
         shapeNode->setName(visual->name);
       shapeNode->setRelativeTransform(toEigen(visual->origin));
       setMaterial(model, shapeNode->getVisualAspect(), visual.get());
@@ -648,7 +761,7 @@ bool DartLoader::createShapeNodes(
       auto shapeNode = bodyNode->createShapeNodeWith<
           dynamics::CollisionAspect,
           dynamics::DynamicsAspect>(shape);
-      if (not collision->name.empty())
+      if (!collision->name.empty())
         shapeNode->setName(collision->name);
       shapeNode->setRelativeTransform(toEigen(collision->origin));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,12 +34,11 @@
 
 #include <iostream>
 
-#include "dart/external/odelcpsolver/lcp.h"
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
@@ -365,8 +364,8 @@ void JointLimitConstraint::applyUnitImpulse(std::size_t index)
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
   {
-    if (not mIsPositionLimitViolated[static_cast<int>(i)]
-        && not mIsVelocityLimitViolated[static_cast<int>(i)])
+    if (!mIsPositionLimitViolated[static_cast<int>(i)]
+        && !mIsVelocityLimitViolated[static_cast<int>(i)])
     {
       continue;
     }
@@ -395,8 +394,8 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
   {
-    if (not mIsPositionLimitViolated[static_cast<int>(i)]
-        && not mIsVelocityLimitViolated[static_cast<int>(i)])
+    if (!mIsPositionLimitViolated[static_cast<int>(i)]
+        && !mIsVelocityLimitViolated[static_cast<int>(i)])
     {
       continue;
     }
@@ -439,8 +438,8 @@ void JointLimitConstraint::applyImpulse(double* lambda)
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
   {
-    if (not mIsPositionLimitViolated[static_cast<int>(i)]
-        && not mIsVelocityLimitViolated[static_cast<int>(i)])
+    if (!mIsPositionLimitViolated[static_cast<int>(i)]
+        && !mIsVelocityLimitViolated[static_cast<int>(i)])
     {
       continue;
     }

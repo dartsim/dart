@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -299,7 +299,7 @@ void PlanarJoint::updateRelativeJacobianTimeDeriv() const
       math::AdT(
           Joint::mAspectProperties.mT_ChildBodyToJoint
               * math::expAngular(
-                    mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
+                  mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
           J.col(0)));
 
   mJacobianDeriv.col(1) = -math::ad(
@@ -307,7 +307,7 @@ void PlanarJoint::updateRelativeJacobianTimeDeriv() const
       math::AdT(
           Joint::mAspectProperties.mT_ChildBodyToJoint
               * math::expAngular(
-                    mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
+                  mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
           J.col(1)));
 
   assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());

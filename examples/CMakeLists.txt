@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10.2)
 
 project(dart-examples)
 
@@ -20,6 +20,7 @@ add_subdirectory(operational_space_control)
 if(HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
+add_subdirectory(rigid_shapes)
 add_subdirectory(soft_bodies)
 add_subdirectory(tinkertoy)
 add_subdirectory(wam_ikfast)

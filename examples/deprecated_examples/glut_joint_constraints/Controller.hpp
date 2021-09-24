@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -36,7 +36,6 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include <dart/dart.hpp>
 
 class Controller
@@ -46,9 +45,7 @@ public:
       const dart::dynamics::SkeletonPtr& _skel,
       dart::constraint::ConstraintSolver* _collisionSolver,
       double _t);
-  virtual ~Controller()
-  {
-  }
+  virtual ~Controller() {}
 
   Eigen::VectorXd getTorques()
   {

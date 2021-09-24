@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2019, The DART development contributors
+# Copyright (c) 2011-2021, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(fcl 0.3.2 REQUIRED MODULE)
+find_package(fcl 0.5.0 REQUIRED MODULE)
 
 # Set target fcl if not set
 # Upstream provides the target since 0.5.0 but some package managers don't

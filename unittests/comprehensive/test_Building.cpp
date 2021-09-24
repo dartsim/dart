@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,14 +31,16 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

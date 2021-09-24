@@ -22,6 +22,13 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_Raycast dart-collision-bullet)
 endif()
 
+if(TARGET dart-collision-ode)
+  # This test doesn't work with FCL because it converts simple shapes to meshes, which makes
+  # it difficult to come up with correct test expectations.
+  dart_add_test("comprehensive" test_ForceDependentSlip)
+  target_link_libraries(test_ForceDependentSlip dart-collision-ode)
+endif()
+
 if(TARGET dart-utils)
 
   dart_add_test("comprehensive" test_Collision)

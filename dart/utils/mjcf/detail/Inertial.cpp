@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -54,7 +54,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   }
 
   // (required) pos
-  if (not hasAttribute(element, "pos"))
+  if (!hasAttribute(element, "pos"))
   {
     errors.emplace_back(
         ErrorCode::ATTRIBUTE_MISSING,
@@ -103,7 +103,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   }
 
   // (required) mass
-  if (not hasAttribute(element, "mass"))
+  if (!hasAttribute(element, "mass"))
   {
     errors.emplace_back(
         ErrorCode::ATTRIBUTE_MISSING,
@@ -129,7 +129,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   else
   {
     // If diaginertia is omitted, the next attribute becomes required.
-    if (not hasAttribute(element, "fullinertia"))
+    if (!hasAttribute(element, "fullinertia"))
     {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_MISSING,

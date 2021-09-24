@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2019, The DART development contributors
+# Copyright (c) 2011-2021, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -26,7 +26,10 @@ find_path(ASSIMP_INCLUDE_DIRS assimp/scene.h
 
 # Libraries
 if(MSVC)
-  set(ASSIMP_LIBRARIES "assimp$<$<CONFIG:Debug>:d>")
+  find_package(assimp QUIET CONFIG)
+  if(TARGET assimp::assimp)
+    set(ASSIMP_LIBRARIES "assimp::assimp")
+  endif()
 else()
   find_library(ASSIMP_LIBRARIES
       NAMES assimp
@@ -34,7 +37,9 @@ else()
 endif()
 
 # Version
-set(ASSIMP_VERSION ${PC_ASSIMP_VERSION})
+if(PC_ASSIMP_VERSION)
+  set(ASSIMP_VERSION ${PC_ASSIMP_VERSION})
+endif()
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)

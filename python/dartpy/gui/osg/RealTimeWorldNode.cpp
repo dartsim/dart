@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -170,9 +170,9 @@ void RealTimeWorldNode(py::module& m)
           +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
             return self->getHighestRealTimeFactor();
           })
-      .def("refresh", +[](dart::gui::osg::RealTimeWorldNode* self) {
-        self->refresh();
-      });
+      .def(
+          "refresh",
+          +[](dart::gui::osg::RealTimeWorldNode* self) { self->refresh(); });
 }
 
 } // namespace python

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -45,7 +45,8 @@ namespace python {
 void ImGuiWidget(py::module& m)
 {
   ::pybind11::class_<dart::gui::osg::ImGuiWidget>(m, "ImGuiWidget")
-      .def("render", +[](dart::gui::osg::ImGuiWidget* self) { self->render(); })
+      .def(
+          "render", +[](dart::gui::osg::ImGuiWidget* self) { self->render(); })
       .def(
           "setVisible",
           +[](dart::gui::osg::ImGuiWidget* self, bool visible) {
@@ -55,11 +56,14 @@ void ImGuiWidget(py::module& m)
       .def(
           "toggleVisible",
           +[](dart::gui::osg::ImGuiWidget* self) { self->toggleVisible(); })
-      .def("show", +[](dart::gui::osg::ImGuiWidget* self) { self->show(); })
-      .def("hide", +[](dart::gui::osg::ImGuiWidget* self) { self->hide(); })
-      .def("isVisible", +[](const dart::gui::osg::ImGuiWidget* self) -> bool {
-        return self->isVisible();
-      });
+      .def(
+          "show", +[](dart::gui::osg::ImGuiWidget* self) { self->show(); })
+      .def(
+          "hide", +[](dart::gui::osg::ImGuiWidget* self) { self->hide(); })
+      .def(
+          "isVisible", +[](const dart::gui::osg::ImGuiWidget* self) -> bool {
+            return self->isVisible();
+          });
 }
 
 } // namespace python

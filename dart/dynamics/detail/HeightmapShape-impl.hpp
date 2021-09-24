@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/HeightmapShape.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <limits>
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/HeightmapShape.hpp"
 
 namespace dart {
 namespace dynamics {

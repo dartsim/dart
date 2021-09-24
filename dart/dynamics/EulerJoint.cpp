@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -159,8 +159,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
       return math::eulerXYZToMatrix(_positions);
     case AxisOrder::ZYX:
       return math::eulerZYXToMatrix(_positions);
-    default:
-    {
+    default: {
       dterr << "[EulerJoint::convertToRotation] Invalid AxisOrder specified ("
             << static_cast<int>(_ordering) << ")\n";
       return Eigen::Matrix3d::Identity();
@@ -199,8 +198,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
 
   switch (getAxisOrder())
   {
-    case AxisOrder::XYZ:
-    {
+    case AxisOrder::XYZ: {
       //------------------------------------------------------------------------
       // S = [    c1*c2, s2,  0
       //       -(c1*s2), c2,  0
@@ -223,8 +221,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
 
       break;
     }
-    case AxisOrder::ZYX:
-    {
+    case AxisOrder::ZYX: {
       //------------------------------------------------------------------------
       // S = [   -s1,    0,   1
       //       s2*c1,   c2,   0
@@ -247,8 +244,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
 
       break;
     }
-    default:
-    {
+    default: {
       dterr << "Undefined Euler axis order\n";
       break;
     }
@@ -372,8 +368,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
 
   switch (getAxisOrder())
   {
-    case AxisOrder::XYZ:
-    {
+    case AxisOrder::XYZ: {
       //------------------------------------------------------------------------
       // dS = [  -(dq1*c2*s1) - dq2*c1*s2,    dq2*c2,  0
       //         -(dq2*c1*c2) + dq1*s1*s2, -(dq2*s2),  0
@@ -389,8 +384,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
 
       break;
     }
-    case AxisOrder::ZYX:
-    {
+    case AxisOrder::ZYX: {
       //------------------------------------------------------------------------
       // dS = [               -c1*dq1,        0,   0
       //          c2*c1*dq2-s2*s1*dq1,  -s2*dq2,   0
@@ -405,8 +399,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
       dJ2.setZero();
       break;
     }
-    default:
-    {
+    default: {
       dterr << "Undefined Euler axis order\n";
       break;
     }

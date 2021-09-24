@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,9 +34,9 @@
 #define DART_COMMON_OPTIONAL_HPP_
 
 #if __cplusplus >= 201703L
-#  include <optional>
+  #include <optional>
 #else
-#  include <boost/optional.hpp>
+  #include <boost/optional.hpp>
 #endif
 
 namespace dart {

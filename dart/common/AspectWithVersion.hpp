@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -91,7 +91,7 @@ public:
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
   using AspectStateImpl
-      = AspectWithState<Derived, StateData, CompositeType, updateState>;
+      = common::AspectWithState<Derived, StateData, CompositeType, updateState>;
 
   using AspectPropertiesImpl = detail::AspectWithVersionedProperties<
       AspectStateImpl,

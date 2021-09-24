@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,18 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
-
 #include "dart/dynamics/LineSegmentShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {
@@ -230,7 +230,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   if (mLineSegmentShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_VERTICES)
       || mLineSegmentShape->checkDataVariance(
-             dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+          dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime)
   {
     const std::vector<Eigen::Vector3d>& vertices

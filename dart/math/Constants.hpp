@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -41,7 +41,6 @@ namespace math {
 template <typename T>
 struct constants
 {
-
   static constexpr T pi()
   {
     return 3.141592653589793238462643383279502884197169399375105820974944592L;

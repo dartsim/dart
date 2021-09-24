@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -40,9 +40,7 @@ MyWindow::MyWindow() : SimWindow()
   mD = 0.005;
 }
 
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 void MyWindow::timeStepping()
 {
@@ -77,7 +75,6 @@ void MyWindow::drawWorld() const
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
-
   using namespace dart::math::suffixes;
 
   switch (_key)

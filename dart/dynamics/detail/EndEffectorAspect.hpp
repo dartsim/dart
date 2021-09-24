@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
 
 #include <Eigen/Geometry>
+
 #include "dart/common/SpecializedForAspect.hpp"
 #include "dart/dynamics/CompositeNode.hpp"
 
@@ -67,9 +68,7 @@ struct SupportStateData
   /// weight of the robot.
   bool mActive;
 
-  inline SupportStateData(bool active = false) : mActive(active)
-  {
-  }
+  inline SupportStateData(bool active = false) : mActive(active) {}
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

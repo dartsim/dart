@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -65,9 +65,9 @@ void ImGuiViewer(py::module& m)
       .def(
           "showAbout",
           +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
-      .def("hideAbout", +[](dart::gui::osg::ImGuiViewer* self) {
-        self->hideAbout();
-      });
+      .def(
+          "hideAbout",
+          +[](dart::gui::osg::ImGuiViewer* self) { self->hideAbout(); });
 }
 
 } // namespace python

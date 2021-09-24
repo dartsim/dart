@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,13 +32,9 @@
 
 #include "MyWindow.hpp"
 
-MyWindow::MyWindow() : SimWindow()
-{
-}
+MyWindow::MyWindow() : SimWindow() {}
 
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 void MyWindow::drawWorld() const
 {
@@ -57,9 +53,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       if (mSimulating)
         mPlay = false;
       break;
-    case 'q': // Spawn a cube
-    case 'Q':
-    { // Spawn a cube
+    case 'q':   // Spawn a cube
+    case 'Q': { // Spawn a cube
       Eigen::Vector3d position = Eigen::Vector3d(
           dart::math::Random::uniform(-1.0, 1.0),
           dart::math::Random::uniform(0.5, 1.0),
@@ -71,9 +66,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       spawnCube(position, size);
       break;
     }
-    case 'w': // Spawn a cube
-    case 'W':
-    { // Spawn a cube
+    case 'w':   // Spawn a cube
+    case 'W': { // Spawn a cube
       if (mWorld->getNumSkeletons() > 1)
         mWorld->removeSkeleton(
             mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));

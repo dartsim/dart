@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,10 +31,12 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/dart.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace dynamics;
@@ -90,9 +92,7 @@ public:
   {
   }
 
-  virtual ~SingleDofJointTest()
-  {
-  }
+  virtual ~SingleDofJointTest() {}
 
   /// Gets a string representing the joint type
   const std::string& getType() const override
@@ -126,24 +126,16 @@ protected:
   }
 
   // Documentation inherited
-  void updateDegreeOfFreedomNames() override
-  {
-  }
+  void updateDegreeOfFreedomNames() override {}
 
   // Documentation inherited
-  void updateRelativeTransform() const override
-  {
-  }
+  void updateRelativeTransform() const override {}
 
   // Documentation inherited
-  void updateRelativeJacobian(bool /*mandatory = true*/) const override
-  {
-  }
+  void updateRelativeJacobian(bool /*mandatory = true*/) const override {}
 
   // Documentation inherited
-  void updateRelativeJacobianTimeDeriv() const override
-  {
-  }
+  void updateRelativeJacobianTimeDeriv() const override {}
 };
 
 class MultiDofJointTest : public GenericJoint<RealVectorSpace<6>>
@@ -155,9 +147,7 @@ public:
   {
   }
 
-  virtual ~MultiDofJointTest()
-  {
-  }
+  virtual ~MultiDofJointTest() {}
 
   /// Gets a string representing the joint type
   const std::string& getType() const override
@@ -191,24 +181,16 @@ protected:
   }
 
   // Documentation inherited
-  void updateDegreeOfFreedomNames() override
-  {
-  }
+  void updateDegreeOfFreedomNames() override {}
 
   // Documentation inherited
-  void updateRelativeTransform() const override
-  {
-  }
+  void updateRelativeTransform() const override {}
 
   // Documentation inherited
-  void updateRelativeJacobian(bool /*mandatory = true*/) const override
-  {
-  }
+  void updateRelativeJacobian(bool /*mandatory = true*/) const override {}
 
   // Documentation inherited
-  void updateRelativeJacobianTimeDeriv() const override
-  {
-  }
+  void updateRelativeJacobianTimeDeriv() const override {}
 };
 
 class SO3JointTest : public GenericJoint<SO3Space>
@@ -220,9 +202,7 @@ public:
   {
   }
 
-  virtual ~SO3JointTest()
-  {
-  }
+  virtual ~SO3JointTest() {}
 
   /// Gets a string representing the joint type
   const std::string& getType() const override
@@ -256,24 +236,16 @@ protected:
   }
 
   // Documentation inherited
-  void updateDegreeOfFreedomNames() override
-  {
-  }
+  void updateDegreeOfFreedomNames() override {}
 
   // Documentation inherited
-  void updateRelativeTransform() const override
-  {
-  }
+  void updateRelativeTransform() const override {}
 
   // Documentation inherited
-  void updateRelativeJacobian(bool /*mandatory = true*/) const override
-  {
-  }
+  void updateRelativeJacobian(bool /*mandatory = true*/) const override {}
 
   // Documentation inherited
-  void updateRelativeJacobianTimeDeriv() const override
-  {
-  }
+  void updateRelativeJacobianTimeDeriv() const override {}
 };
 
 //==============================================================================

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -57,9 +57,7 @@ GraphWindow::GraphWindow() : Win2D()
   mBackground[3] = 1.0;
 }
 
-GraphWindow::~GraphWindow()
-{
-}
+GraphWindow::~GraphWindow() {}
 
 void GraphWindow::draw()
 {
@@ -126,11 +124,7 @@ void GraphWindow::draw()
 
 void GraphWindow::keyboard(unsigned char _key, int _x, int _y)
 {
-  switch (_key)
-  {
-    default:
-      Win2D::keyboard(_key, _x, _y);
-  }
+  Win2D::keyboard(_key, _x, _y);
   glutPostRedisplay();
 }
 

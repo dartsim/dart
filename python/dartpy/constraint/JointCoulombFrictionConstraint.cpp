@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -53,10 +53,11 @@ void JointCoulombFrictionConstraint(py::module& m)
                 setConstraintForceMixing(_cfm);
           },
           ::py::arg("cfm"))
-      .def_static("getConstraintForceMixing", +[]() -> double {
-        return dart::constraint::JointCoulombFrictionConstraint::
-            getConstraintForceMixing();
-      });
+      .def_static(
+          "getConstraintForceMixing", +[]() -> double {
+            return dart::constraint::JointCoulombFrictionConstraint::
+                getConstraintForceMixing();
+          });
 }
 
 } // namespace python

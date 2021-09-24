@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>bullet</collision_detector>
         </physics>
-        
+
         <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.375 0 0 0 0</transformation>
@@ -26,18 +26,18 @@
                             <size>10 0.01 10</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton> 
-        
+        </skeleton>
+
         <skeleton name="box skeleton">
             <body name="box">
                 <gravity>1</gravity>
-                <transformation>-0.4 -0.0 0 1 2 3</transformation>
+                <transformation>-0.6 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -58,19 +58,19 @@
                             <size>0.1 0.05 0.1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
             </joint>
         </skeleton>
-        
+
         <skeleton name="sphere skeleton">
             <body name="sphere">
                 <gravity>1</gravity>
-                <transformation>-0.2 -0.0 0 1 2 3</transformation>
+                <transformation>-0.4 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -91,19 +91,19 @@
                             <radius>0.05</radius>
                         </sphere>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>sphere</child>
             </joint>
         </skeleton>
-        
+
         <skeleton name="ellipsoid skeleton">
             <body name="ellipsoid">
                 <gravity>1</gravity>
-                <transformation>-0.0 -0.0 0 1 2 3</transformation>
+                <transformation>-0.2 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -124,9 +124,9 @@
                             <size>0.05 0.10 0.15</size>
                         </ellipsoid>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>ellipsoid</child>
@@ -136,7 +136,7 @@
         <skeleton name="cylinder skeleton">
             <body name="cylinder">
                 <gravity>1</gravity>
-                <transformation>0.2 -0.0 0 1 2 3</transformation>
+                <transformation>0.0 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -159,9 +159,9 @@
                             <radius>0.05</radius>
                         </cylinder>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>cylinder</child>
@@ -171,7 +171,7 @@
         <skeleton name="capsule skeleton">
             <body name="capsule">
                 <gravity>1</gravity>
-                <transformation>0.4 -0.0 0 1 2 3</transformation>
+                <transformation>0.2 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -194,9 +194,9 @@
                             <radius>0.05</radius>
                         </capsule>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>capsule</child>
@@ -206,7 +206,7 @@
         <skeleton name="cone skeleton">
             <body name="cone">
                 <gravity>1</gravity>
-                <transformation>0.6 -0.0 0 1 2 3</transformation>
+                <transformation>0.4 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -229,12 +229,58 @@
                             <radius>0.05</radius>
                         </cone>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>cone</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="pyramid skeleton">
+            <body name="pyramid">
+                <gravity>1</gravity>
+                <transformation>0.6 -0.0 0 1 2 3</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0</offset>
+                    <!-- MOI is not correct -->
+                    <moment_of_inertia>
+                        <ixx>0.01</ixx>
+                        <iyy>0.01</iyy>
+                        <izz>0.01</izz>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyz>0</iyz>
+                    </moment_of_inertia>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <pyramid>
+                            <base_width>0.05</base_width>
+                            <base_depth>0.1</base_depth>
+                            <height>0.1</height>
+                        </pyramid>
+                    </geometry>
+                    <color>0.6 0.6 0.8</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <pyramid>
+                            <base_width>0.05</base_width>
+                            <base_depth>0.1</base_depth>
+                            <height>0.1</height>
+                        </pyramid>
+                    </geometry>
+                </collision_shape>
+            </body>
+
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>pyramid</child>
             </joint>
         </skeleton>
 
@@ -258,6 +304,10 @@
                                 <radius>0.075</radius>
                                 <position>0.075 0.0 0.0</position>
                             </sphere>
+                            <sphere>
+                                <radius>0.1</radius>
+                                <position>0 0.1 0</position>
+                            </sphere>
                         </multi_sphere>
                     </geometry>
                     <color>0.6 0.6 0.8</color>
@@ -274,11 +324,15 @@
                                 <radius>0.075</radius>
                                 <position>0.075 0.0 0.0</position>
                             </sphere>
+                            <sphere>
+                                <radius>0.1</radius>
+                                <position>0 0.1 0</position>
+                            </sphere>
                         </multi_sphere>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>multi sphere</child>
@@ -311,9 +365,9 @@
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>mesh</child>

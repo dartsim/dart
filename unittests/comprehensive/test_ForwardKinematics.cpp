@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,10 +31,12 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/utils/urdf/DartLoader.hpp"
+
+#include "TestHelpers.hpp"
 
 std::vector<std::size_t> twoLinkIndices;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -94,25 +94,14 @@ Connection::~Connection()
 //==============================================================================
 bool Connection::isConnected() const
 {
-  std::shared_ptr<signal::detail::ConnectionBodyBase> connectionBody(
-      mWeakConnectionBody.lock());
-
-  if (nullptr == connectionBody)
-    return false;
-
-  return connectionBody->isConnected();
+  return !mWeakConnectionBody.expired();
 }
 
 //==============================================================================
 void Connection::disconnect() const
 {
-  std::shared_ptr<signal::detail::ConnectionBodyBase> connectionBody(
-      mWeakConnectionBody.lock());
-
-  if (nullptr == connectionBody)
-    return;
-
-  connectionBody->disconnect();
+  if (auto connectionBody = mWeakConnectionBody.lock())
+    connectionBody->disconnect();
 }
 
 //==============================================================================

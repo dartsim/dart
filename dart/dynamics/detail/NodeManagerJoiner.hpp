@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -110,9 +110,9 @@ template <typename... Args>
 NodeManagerJoinerForBodyNode<Base1, Base2, OtherBases...>::
     NodeManagerJoinerForBodyNode(Args&&... args)
   : NodeManagerJoinerForBodyNode<
-        Base1,
-        NodeManagerJoinerForBodyNode<Base2, OtherBases...>>(
-        std::forward<Args>(args)...)
+      Base1,
+      NodeManagerJoinerForBodyNode<Base2, OtherBases...>>(
+      std::forward<Args>(args)...)
 {
   // Do nothing
 }
@@ -170,9 +170,9 @@ template <typename... Args>
 NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>::
     NodeManagerJoinerForSkeleton(Args&&... args)
   : NodeManagerJoinerForSkeleton<
-        Base1,
-        NodeManagerJoinerForSkeleton<Base2, OtherBases...>>(
-        std::forward<Args>(args)...)
+      Base1,
+      NodeManagerJoinerForSkeleton<Base2, OtherBases...>>(
+      std::forward<Args>(args)...)
 {
   // Do nothing
 }

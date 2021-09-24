@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -151,7 +151,7 @@ const Eigen::Vector3d& Mesh::getScale() const
 //==============================================================================
 dynamics::MeshShapePtr Mesh::getMeshShape() const
 {
-  if (not mMeshShape && not mTriedToParse)
+  if (!mMeshShape && !mTriedToParse)
   {
     mMeshShape = createMeshShape();
     mTriedToParse = true;

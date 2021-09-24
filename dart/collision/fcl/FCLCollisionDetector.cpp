@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -43,10 +43,12 @@
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -487,6 +489,65 @@ template <class BV>
 }
 
 //==============================================================================
+template <typename BV>
+::fcl::BVHModel<BV>* createPyramid(
+    const dynamics::PyramidShape& shape, const fcl::Transform3& pose)
+{
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
+
+  std::vector<fcl::Vector3> points(5);
+  std::vector<::fcl::Triangle> faces(6);
+
+  const double w = shape.getBaseWidth();
+  const double d = shape.getBaseDepth();
+  const double h = shape.getHeight();
+
+  const double hTop = h / 2;
+  const double hBottom = -hTop;
+  const double left = -w / 2;
+  const double right = w / 2;
+  const double front = -d / 2;
+  const double back = d / 2;
+
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  points[0] << 0, 0, hTop;
+  points[1] << right, back, hBottom;
+  points[2] << left, back, hBottom;
+  points[3] << left, front, hBottom;
+  points[4] << right, front, hBottom;
+#else
+  points[0].setValue(0, 0, hTop);
+  points[1].setValue(right, back, hBottom);
+  points[2].setValue(left, back, hBottom);
+  points[3].setValue(left, front, hBottom);
+  points[4].setValue(right, front, hBottom);
+#endif
+
+  faces[0].set(0, 1, 2);
+  faces[1].set(0, 2, 3);
+  faces[2].set(0, 3, 4);
+  faces[3].set(0, 4, 1);
+  faces[4].set(1, 3, 2);
+  faces[5].set(1, 4, 3);
+
+  for (unsigned int i = 0; i < points.size(); ++i)
+  {
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+    points[i] = pose * points[i];
+#else
+    points[i] = pose.transform(points[i]);
+#endif
+  }
+
+  model->beginModel();
+  model->addSubModel(points, faces);
+  model->endModel();
+  model->computeLocalAABB();
+
+  return model;
+}
+
+//==============================================================================
 template <class BV>
 ::fcl::BVHModel<BV>* createMesh(
     float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
@@ -831,10 +892,12 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const FCLCollisionGeometryDeleter& deleter)
 {
   using dynamics::BoxShape;
+  using dynamics::ConeShape;
   using dynamics::CylinderShape;
   using dynamics::EllipsoidShape;
   using dynamics::MeshShape;
   using dynamics::PlaneShape;
+  using dynamics::PyramidShape;
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
@@ -913,6 +976,41 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
   }
+  else if (ConeShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const ConeShape*>(shape.get()));
+
+    const auto cone = std::static_pointer_cast<const ConeShape>(shape);
+    const auto radius = cone->getRadius();
+    const auto height = cone->getHeight();
+
+    if (FCLCollisionDetector::PRIMITIVE == type)
+    {
+      // TODO(JS): We still need to use mesh for cone because FCL 0.4.0
+      // returns single contact point for cone yet. Once FCL support
+      // multiple contact points then above code will be replaced by:
+      // fclCollGeom.reset(new fcl::Cone(radius, height));
+      auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
+      auto fclCone = fcl::Cone(radius, height);
+      ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
+      geom = fclMesh;
+    }
+    else
+    {
+      auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
+      auto fclCone = fcl::Cone(radius, height);
+      ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
+      geom = fclMesh;
+    }
+  }
+  else if (PyramidShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const PyramidShape*>(shape.get()));
+
+    const auto pyramid = std::static_pointer_cast<const PyramidShape>(shape);
+    // Use mesh since FCL doesn't support pyramid shape.
+    geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::Transform3());
+  }
   else if (PlaneShape::getStaticType() == shapeType)
   {
     if (FCLCollisionDetector::PRIMITIVE == type)
@@ -954,21 +1052,21 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 #if HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType)
   {
-#  if FCL_HAVE_OCTOMAP
+  #if FCL_HAVE_OCTOMAP
     assert(dynamic_cast<const VoxelGridShape*>(shape.get()));
 
     auto octreeShape = static_cast<const VoxelGridShape*>(shape.get());
     auto octree = octreeShape->getOctree();
 
     geom = new fcl::OcTree(octree);
-#  else
+  #else
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
           << "Attempting to create an collision geometry for VoxelGridShape, "
           << "but the installed FCL isn't built with Octomap support. "
           << "Creating a sphere with 0.1 radius instead.\n";
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
-#  endif // FCL_HAVE_OCTOMAP
+  #endif // FCL_HAVE_OCTOMAP
   }
 #endif // HAVE_OCTOMAP
   else
@@ -1490,17 +1588,17 @@ int FFtest(
     fcl::Vector3* res2)
 {
   float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
-  SET(U0, r1);
-  SET(U1, r2);
-  SET(U2, r3);
-  SET(V0, R1);
-  SET(V1, R2);
-  SET(V2, R3);
+  DART_SET(U0, r1);
+  DART_SET(U1, r2);
+  DART_SET(U2, r3);
+  DART_SET(V0, R1);
+  DART_SET(V1, R2);
+  DART_SET(V2, R3);
 
   int contactResult = tri_tri_intersect(V0, V1, V2, U0, U1, U2, RES1, RES2);
 
-  SET((*res1), RES1);
-  SET((*res2), RES2);
+  DART_SET((*res1), RES1);
+  DART_SET((*res2), RES2);
 
   return contactResult;
 }

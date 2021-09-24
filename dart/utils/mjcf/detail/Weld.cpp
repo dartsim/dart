@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -136,7 +136,7 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   {
     mBody2 = *mAttributes.mBody2;
   }
-  if (not mAttributes.mRelPose.tail<4>().isApprox(Eigen::Vector4d::Zero()))
+  if (!mAttributes.mRelPose.tail<4>().isApprox(Eigen::Vector4d::Zero()))
   {
     mRelativeTransfrom = Eigen::Isometry3d::Identity();
     Eigen::Quaterniond quat;

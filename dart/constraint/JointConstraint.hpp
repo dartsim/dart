@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,69 +33,132 @@
 #ifndef DART_CONSTRAINT_JOINTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_JOINTCONSTRAINT_HPP_
 
+#include <Eigen/Dense>
+
 #include "dart/constraint/ConstraintBase.hpp"
 
 namespace dart {
 
 namespace dynamics {
 class BodyNode;
+class Joint;
 } // namespace dynamics
 
 namespace constraint {
 
-/// class JointConstraint
+// TODO(JS): Merge JointCoulombFrictionConstraint into this class
+
+/// JointConstraint handles multiple constraints that are defined in the joint
+/// space, such as joint position/velocity limits and servo motor.
 class JointConstraint : public ConstraintBase
 {
 public:
-  /// Contructor
-  explicit JointConstraint(dynamics::BodyNode* _body);
-
-  /// Contructor
-  JointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2);
+  /// Constructor
+  explicit JointConstraint(dynamics::Joint* joint);
 
   /// Destructor
-  virtual ~JointConstraint();
+  ~JointConstraint() override = default;
+
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Returns constraint type for this class.
+  static const std::string& getStaticType();
 
   //----------------------------------------------------------------------------
   // Property settings
   //----------------------------------------------------------------------------
 
   /// Set global error reduction parameter
-  static void setErrorAllowance(double _allowance);
+  static void setErrorAllowance(double allowance);
 
   /// Get global error reduction parameter
   static double getErrorAllowance();
 
   /// Set global error reduction parameter
-  static void setErrorReductionParameter(double _erp);
+  static void setErrorReductionParameter(double erp);
 
   /// Get global error reduction parameter
   static double getErrorReductionParameter();
 
   /// Set global error reduction parameter
-  static void setMaxErrorReductionVelocity(double _erv);
+  static void setMaxErrorReductionVelocity(double erv);
 
   /// Get global error reduction parameter
   static double getMaxErrorReductionVelocity();
 
   /// Set global constraint force mixing parameter
-  static void setConstraintForceMixing(double _cfm);
+  static void setConstraintForceMixing(double cfm);
 
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
 
-  /// Get the first BodyNode that this constraint is associated with
-  dynamics::BodyNode* getBodyNode1() const;
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
 
-  /// Get the second BodyNode that this constraint is associated with
-  dynamics::BodyNode* getBodyNode2() const;
+  friend class ConstraintSolver;
+  friend class ConstrainedGroup;
 
 protected:
-  /// First body node
-  dynamics::BodyNode* mBodyNode1;
+  //----------------------------------------------------------------------------
+  // Constraint virtual functions
+  //----------------------------------------------------------------------------
 
-  /// Second body node
-  dynamics::BodyNode* mBodyNode2;
+  // Documentation inherited
+  void update() override;
+
+  // Documentation inherited
+  void getInformation(ConstraintInfo* lcp) override;
+
+  // Documentation inherited
+  void applyUnitImpulse(std::size_t index) override;
+
+  // Documentation inherited
+  void getVelocityChange(double* delVel, bool withCfm) override;
+
+  // Documentation inherited
+  void excite() override;
+
+  // Documentation inherited
+  void unexcite() override;
+
+  // Documentation inherited
+  void applyImpulse(double* lambda) override;
+
+  // Documentation inherited
+  dynamics::SkeletonPtr getRootSkeleton() const override;
+
+  // Documentation inherited
+  bool isActive() const override;
+
+private:
+  /// The Joint that this constraint is associated with.
+  dynamics::Joint* mJoint;
+
+  /// The child BodyNode of the Joint that this constraint is associated with.
+  dynamics::BodyNode* mBodyNode;
+
+  /// Index of applied impulse
+  std::size_t mAppliedImpulseIndex;
+
+  /// Life time of constraint of each DOF.
+  Eigen::Matrix<std::size_t, 6, 1> mLifeTime;
+
+  /// Whether any of the joint contraint is active of each joint.
+  Eigen::Matrix<bool, 6, 1> mActive;
+
+  /// The desired delta velocity to satisfy the joint limit constraint.
+  Eigen::Matrix<double, 6, 1> mDesiredVelocityChange;
+
+  /// Constraint impulse of the previous step.
+  Eigen::Matrix<double, 6, 1> mOldX;
+
+  /// Upper limit of the constraint impulse.
+  Eigen::Matrix<double, 6, 1> mImpulseUpperBound;
+
+  /// Lower limit of the constraint impulse.
+  Eigen::Matrix<double, 6, 1> mImpulseLowerBound;
 
   /// Global constraint error allowance
   static double mErrorAllowance;
@@ -116,4 +179,4 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif // DART_CONSTRAINT_CONSTRAINT_HPP_
+#endif // DART_CONSTRAINT_JOINTCONSTRAINT_HPP_

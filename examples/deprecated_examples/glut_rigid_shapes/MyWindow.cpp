@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -43,14 +43,10 @@ using namespace Eigen;
 using namespace dart;
 
 //==============================================================================
-MyWindow::MyWindow() : SimWindow()
-{
-}
+MyWindow::MyWindow() : SimWindow() {}
 
 //==============================================================================
-MyWindow::~MyWindow()
-{
-}
+MyWindow::~MyWindow() {}
 
 //==============================================================================
 void MyWindow::timeStepping()
@@ -122,30 +118,26 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       mShowMarkers = !mShowMarkers;
       break;
     case 'q': // Spawn a cube
-    case 'Q':
-    {
+    case 'Q': {
       spawnBox(
           getRandomTransform(), math::Random::uniform<Vector3d>(0.05, 0.25));
       break;
     }
     case 'w': // Spawn an ellipsoid
-    case 'W':
-    {
+    case 'W': {
       spawnEllipsoid(
           getRandomTransform(), math::Random::uniform<Vector3d>(0.025, 0.125));
       break;
     }
     case 'e': // Spawn an cylinder
-    case 'E':
-    {
+    case 'E': {
       const double radius = math::Random::uniform(0.05, 0.25);
       const double height = math::Random::uniform(0.1, 0.5);
       spawnCylinder(getRandomTransform(), radius, height);
       break;
     }
     case 'a': // Remove the skeleton added at last
-    case 'A':
-    {
+    case 'A': {
       if (mWorld->getNumSkeletons() > 1)
       {
         mWorld->removeSkeleton(

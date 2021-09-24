@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -51,14 +51,10 @@ double LCPSolver::getTimeStep() const
 }
 
 //==============================================================================
-LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep)
-{
-}
+LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep) {}
 
 //==============================================================================
-LCPSolver::~LCPSolver()
-{
-}
+LCPSolver::~LCPSolver() {}
 
 } // namespace constraint
 } // namespace dart

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -191,7 +191,7 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
 
   auto newDefault = Default();
   const Errors defaultErrors = newDefault.read(element, parent);
-  if (not defaultErrors.empty())
+  if (!defaultErrors.empty())
   {
     errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
     return errors;
@@ -203,7 +203,7 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
   while (defaultElements.next())
   {
     const Errors defaultErrors = read(defaultElements.get(), &newDefault);
-    if (not defaultErrors.empty())
+    if (!defaultErrors.empty())
     {
       errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
       return errors;

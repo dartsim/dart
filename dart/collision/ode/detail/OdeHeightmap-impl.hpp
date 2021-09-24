@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeHeightmap.hpp"
-
 #include <type_traits>
+
+#include "dart/collision/ode/detail/OdeHeightmap.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
 
 namespace dart {

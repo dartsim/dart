@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -36,6 +36,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/DistanceOption.hpp"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -35,9 +35,63 @@
 #include <dart/dart.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 #include <gtest/gtest.h>
+
 #include "TestHelpers.hpp"
 
 using namespace dart;
+
+//==============================================================================
+TEST(IkFast, WrapCyclicSolution)
+{
+  const auto pi = math::constantsd::pi();
+
+  double sol;
+
+  // Invalid bounds (lb > ub)
+  EXPECT_FALSE(dynamics::wrapCyclicSolution(0, 10, -10, sol));
+
+  // Current value is in the lmits, but solution is lesser than lower limit.
+  // Expect valid solution that is the cloest to the current value.
+  sol = -3 * pi;
+  EXPECT_TRUE(dynamics::wrapCyclicSolution(-pi / 2, -pi, +pi, sol));
+  EXPECT_DOUBLE_EQ(sol, -pi);
+  sol = -3 * pi;
+  EXPECT_TRUE(
+      dynamics::wrapCyclicSolution(-pi / 2, -(3.0 / 4.0) * pi, +pi, sol));
+  EXPECT_DOUBLE_EQ(sol, +pi);
+  sol = -3 * pi;
+  EXPECT_FALSE(
+      dynamics::wrapCyclicSolution(-pi / 2, -0.9 * pi, +0.9 * pi, sol));
+
+  // Current value is in the lmits, but solution is greater than upper limit.
+  // Expect valid solution that is the cloest to the current value.
+  sol = -3 * pi;
+  EXPECT_TRUE(dynamics::wrapCyclicSolution(+pi / 2, -pi, +pi, sol));
+  EXPECT_DOUBLE_EQ(sol, +pi);
+  sol = -3 * pi;
+  EXPECT_TRUE(
+      dynamics::wrapCyclicSolution(+pi / 2, -pi, +(3.0 / 4.0) * pi, sol));
+  EXPECT_DOUBLE_EQ(sol, -pi);
+  sol = -3 * pi;
+  EXPECT_FALSE(
+      dynamics::wrapCyclicSolution(+pi / 2, -0.9 * pi, +0.9 * pi, sol));
+
+  // Both current value and solution are lesser than lower limit.
+  // Expect least valid solution.
+  sol = -9 * pi;
+  EXPECT_TRUE(dynamics::wrapCyclicSolution(-5 * pi, -4 * pi, +4 * pi, sol));
+  EXPECT_DOUBLE_EQ(sol, -3 * pi);
+  sol = -9 * pi;
+  EXPECT_FALSE(dynamics::wrapCyclicSolution(-5 * pi, -4 * pi, -3.1 * pi, sol));
+
+  // Both current value and solution are greater than upper limit.
+  // Expect greatest valid solution.
+  sol = +9 * pi;
+  EXPECT_TRUE(dynamics::wrapCyclicSolution(+5 * pi, -4 * pi, +4 * pi, sol));
+  EXPECT_DOUBLE_EQ(sol, +3 * pi);
+  sol = +9 * pi;
+  EXPECT_FALSE(dynamics::wrapCyclicSolution(+5 * pi, +3.1 * pi, +4 * pi, sol));
+}
 
 //==============================================================================
 TEST(IkFast, FailedToLoadSharedLibrary)

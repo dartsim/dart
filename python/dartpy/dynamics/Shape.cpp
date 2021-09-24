@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,6 +32,8 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -322,7 +324,8 @@ void Shape(py::module& m)
             return self->getType();
           },
           ::py::return_value_policy::reference_internal)
-      .def("update", +[](dart::dynamics::MeshShape* self) { self->update(); })
+      .def(
+          "update", +[](dart::dynamics::MeshShape* self) { self->update(); })
       .def(
           "notifyAlphaUpdated",
           +[](dart::dynamics::MeshShape* self, double alpha) {
@@ -683,6 +686,164 @@ void Shape(py::module& m)
             return dart::dynamics::PlaneShape::getStaticType();
           },
           ::py::return_value_policy::reference_internal);
+  ::py::class_<
+      dart::dynamics::PointCloudShape,
+      dart::dynamics::Shape,
+      std::shared_ptr<dart::dynamics::PointCloudShape>>
+      pointCloudShape(m, "PointCloudShape");
+
+  pointCloudShape.def(::py::init<double>(), ::py::arg("visualSize") = 0.01)
+      .def(
+          "getType",
+          +[](const dart::dynamics::PointCloudShape* self)
+              -> const std::string& { return self->getType(); },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "computeInertia",
+          +[](const dart::dynamics::PointCloudShape* self, double mass)
+              -> Eigen::Matrix3d { return self->computeInertia(mass); },
+          ::py::arg("mass"))
+      .def(
+          "reserve",
+          +[](dart::dynamics::PointCloudShape* self, std::size_t size) -> void {
+            return self->reserve(size);
+          },
+          ::py::arg("size"))
+      .def(
+          "addPoint",
+          +[](dart::dynamics::PointCloudShape* self,
+              const Eigen::Vector3d& point) -> void {
+            return self->addPoint(point);
+          },
+          ::py::arg("point"))
+      .def(
+          "addPoint",
+          +[](dart::dynamics::PointCloudShape* self,
+              const std::vector<Eigen::Vector3d>& points) -> void {
+            return self->addPoint(points);
+          },
+          ::py::arg("points"))
+      .def(
+          "setPoint",
+          +[](dart::dynamics::PointCloudShape* self,
+              const std::vector<Eigen::Vector3d>& points) -> void {
+            return self->setPoint(points);
+          },
+          ::py::arg("points"))
+      .def(
+          "getPoints",
+          +[](const dart::dynamics::PointCloudShape* self)
+              -> const std::vector<Eigen::Vector3d>& {
+            return self->getPoints();
+          },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "getNumPoints",
+          +[](const dart::dynamics::PointCloudShape* self) -> std::size_t {
+            return self->getNumPoints();
+          })
+      .def(
+          "removeAllPoints",
+          +[](dart::dynamics::PointCloudShape* self) -> void {
+            return self->removeAllPoints();
+          })
+      .def(
+          "setPointShapeType",
+          +[](dart::dynamics::PointCloudShape* self,
+              dart::dynamics::PointCloudShape::PointShapeType type) -> void {
+            return self->setPointShapeType(type);
+          },
+          ::py::arg("type"))
+      .def(
+          "getPointShapeType",
+          +[](const dart::dynamics::PointCloudShape* self)
+              -> dart::dynamics::PointCloudShape::PointShapeType {
+            return self->getPointShapeType();
+          })
+      .def(
+          "setColorMode",
+          +[](dart::dynamics::PointCloudShape* self,
+              dart::dynamics::PointCloudShape::ColorMode mode) -> void {
+            return self->setColorMode(mode);
+          },
+          ::py::arg("mode"))
+      .def(
+          "getColorMode",
+          +[](const dart::dynamics::PointCloudShape* self)
+              -> dart::dynamics::PointCloudShape::ColorMode {
+            return self->getColorMode();
+          })
+      .def(
+          "setOverallColor",
+          +[](dart::dynamics::PointCloudShape* self,
+              const Eigen::Vector4d& color) -> void {
+            return self->setOverallColor(color);
+          },
+          ::py::arg("color"))
+      .def(
+          "getOverallColor",
+          +[](const dart::dynamics::PointCloudShape* self) -> Eigen::Vector4d {
+            return self->getOverallColor();
+          })
+      .def(
+          "setColors",
+          +[](dart::dynamics::PointCloudShape* self,
+              const std::vector<
+                  Eigen::Vector4d,
+                  Eigen::aligned_allocator<Eigen::Vector4d>>& colors) -> void {
+            return self->setColors(colors);
+          },
+          ::py::arg("colors"))
+      .def(
+          "getColors",
+          +[](const dart::dynamics::PointCloudShape* self)
+              -> const std::vector<
+                  Eigen::Vector4d,
+                  Eigen::aligned_allocator<Eigen::Vector4d>>& {
+            return self->getColors();
+          })
+      .def(
+          "setVisualSize",
+          +[](dart::dynamics::PointCloudShape* self, double size) -> void {
+            return self->setVisualSize(size);
+          },
+          ::py::arg("size"))
+      .def(
+          "getVisualSize",
+          +[](const dart::dynamics::PointCloudShape* self) -> double {
+            return self->getVisualSize();
+          })
+      .def(
+          "notifyColorUpdated",
+          +[](dart::dynamics::PointCloudShape* self,
+              const Eigen::Vector4d& color) {
+            self->notifyColorUpdated(color);
+          },
+          ::py::arg("color"));
+
+  ::py::enum_<dart::dynamics::PointCloudShape::ColorMode>(
+      pointCloudShape, "ColorMode")
+      .value(
+          "USE_SHAPE_COLOR",
+          dart::dynamics::PointCloudShape::ColorMode::USE_SHAPE_COLOR)
+      .value(
+          "BIND_OVERALL",
+          dart::dynamics::PointCloudShape::ColorMode::BIND_OVERALL)
+      .value(
+          "BIND_PER_POINT",
+          dart::dynamics::PointCloudShape::ColorMode::BIND_PER_POINT)
+      .export_values();
+
+  ::py::enum_<dart::dynamics::PointCloudShape::PointShapeType>(
+      pointCloudShape, "PointShapeType")
+      .value("BOX", dart::dynamics::PointCloudShape::PointShapeType::BOX)
+      .value(
+          "BILLBOARD_SQUARE",
+          dart::dynamics::PointCloudShape::PointShapeType::BILLBOARD_SQUARE)
+      .value(
+          "BILLBOARD_CIRCLE",
+          dart::dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE)
+      .export_values();
 
   ::py::class_<
       dart::dynamics::SphereShape,

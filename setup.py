@@ -44,8 +44,8 @@ class CMakeBuild(build_ext):
         if platform.system() == "Windows":
             cmake_version = LooseVersion(
                 re.search(r'version\s*([\d.]+)', out.decode()).group(1))
-            if cmake_version < '3.8.0':
-                raise RuntimeError("CMake >= 3.8.0 is required on Windows")
+            if cmake_version < '3.10.2':
+                raise RuntimeError("CMake >= 3.10.2 is required on Windows")
 
         distutils.log.set_verbosity(distutils.log.DEBUG)  # Set DEBUG level
 
@@ -54,7 +54,7 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         cmake_args = [
-            '-DDART_BUILD_DARTPY=ON', '-DPYTHON_EXECUTABLE=' + sys.executable
+            '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
 
         cfg = 'Debug' if self.debug else 'Release'

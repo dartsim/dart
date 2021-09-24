@@ -101,11 +101,11 @@ void MotionBlurSimWindow::render()
           static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
           0.1,
           10.0);
-      gluLookAt(
-          mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, mUp[0], mUp[1], mUp[2]);
 
       glMatrixMode(GL_MODELVIEW);
       glLoadIdentity();
+      gluLookAt(
+          mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, mUp[0], mUp[1], mUp[2]);
       initGL();
 
       mTrackBall.applyGLRotation();
@@ -165,11 +165,11 @@ void MotionBlurSimWindow::render()
         static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
         0.1,
         10.0);
-    gluLookAt(
-        mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, mUp[0], mUp[1], mUp[2]);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    gluLookAt(
+        mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, mUp[0], mUp[1], mUp[2]);
     initGL();
 
     mTrackBall.applyGLRotation();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,18 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/WorldNode.hpp"
+
 #include <deque>
 
 #include <osg/NodeCallback>
-
 #include <osgShadow/ShadowMap>
 #include <osgShadow/ShadowedScene>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/WorldNode.hpp"
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/simulation/World.hpp"
 
 namespace dart {

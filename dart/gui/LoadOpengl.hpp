@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,23 +34,23 @@
 #define DART_GUI_LOADOPENGL_HPP_
 
 #if defined(_WIN32)
-#  ifdef NOMINMAX
-#    include <windows.h>
-#  else
-#    define NOMINMAX
-#    include <windows.h>
-#    undef NOMINMAX
-#  endif
-#  include <GL/gl.h>
-#  include <GL/glu.h>
+  #ifdef NOMINMAX
+    #include <windows.h>
+  #else
+    #define NOMINMAX
+    #include <windows.h>
+    #undef NOMINMAX
+  #endif
+  #include <GL/gl.h>
+  #include <GL/glu.h>
 #elif defined(__linux__)
-#  include <GL/gl.h>
-#  include <GL/glu.h>
+  #include <GL/gl.h>
+  #include <GL/glu.h>
 #elif defined(__APPLE__)
-#  include <OpenGL/gl.h>
-#  include <OpenGL/glu.h>
+  #include <OpenGL/gl.h>
+  #include <OpenGL/glu.h>
 #else
-#  error "Load OpenGL Error: What's your operating system?"
+  #error "Load OpenGL Error: What's your operating system?"
 #endif
 
 #endif // DART_GUI_LOADOPENGL_HPP_

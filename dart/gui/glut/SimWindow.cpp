@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -54,6 +54,7 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -438,6 +439,7 @@ void SimWindow::drawShape(
   using dynamics::MeshShape;
   using dynamics::MultiSphereConvexHullShape;
   using dynamics::PlaneShape;
+  using dynamics::PyramidShape;
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
@@ -472,11 +474,17 @@ void SimWindow::drawShape(
     const auto* cone = static_cast<const ConeShape*>(shape);
     mRI->drawCone(cone->getRadius(), cone->getHeight());
   }
+  else if (shape->is<PyramidShape>())
+  {
+    const auto* pyramid = static_cast<const PyramidShape*>(shape);
+    mRI->drawPyramid(
+        pyramid->getBaseWidth(), pyramid->getBaseDepth(), pyramid->getHeight());
+  }
   else if (shape->is<MultiSphereConvexHullShape>())
   {
     const auto* multiSphere
         = static_cast<const MultiSphereConvexHullShape*>(shape);
-    mRI->drawMultiSphere(multiSphere->getSpheres());
+    mRI->drawMultiSphereConvexHull(multiSphere->getSpheres(), 3u);
   }
   else if (shape->is<MeshShape>())
   {

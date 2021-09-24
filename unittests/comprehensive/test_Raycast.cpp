@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,10 +31,11 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/dart.hpp"
 #if HAVE_BULLET
-#  include "dart/collision/bullet/bullet.hpp"
+  #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "TestHelpers.hpp"
 
@@ -83,6 +84,16 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(result.hasHit());
 
   RayHit rayHit;
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d(5.0, 0.0, 0.0));
+  cd->raycast(
+      group1.get(),
+      Eigen::Vector3d(-2, 0, 0),
+      Eigen::Vector3d(2, 0, 0),
+      option,
+      &result);
+  EXPECT_FALSE(result.hasHit());
 
   result.clear();
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));

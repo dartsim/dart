@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/optimizer/GradientDescentSolver.hpp"
+
 #include <iostream>
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/optimizer/GradientDescentSolver.hpp"
 #include "dart/optimizer/Problem.hpp"
 
 namespace dart {

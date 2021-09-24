@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,8 +34,8 @@
 
 #if HAVE_ODE
 
-#  include <dart/collision/ode/ode.hpp>
-#  include <pybind11/pybind11.h>
+  #include <dart/collision/ode/ode.hpp>
+  #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 

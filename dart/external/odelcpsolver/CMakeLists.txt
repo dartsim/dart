@@ -9,24 +9,18 @@ set(component_name external-odelcpsolver)
 dart_add_library(${target_name} ${hdrs} ${srcs})
 target_include_directories(${target_name}
   PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+    $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${DART_BINARY_DIR}>
 )
-if(CMAKE_VERSION VERSION_LESS 3.8.2)
-  target_compile_options(${target_name} PUBLIC -std=c++14)
-else()
-  target_compile_features(${target_name} PUBLIC cxx_std_14)
-endif()
+target_compile_features(${target_name} PUBLIC cxx_std_17)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 
 # Install
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${hdrs}
-    DESTINATION include/dart/external/odelcpsolver
-    COMPONENT headers
-  )
-endif()
+install(
+  FILES ${hdrs}
+  DESTINATION include/dart/external/odelcpsolver
+  COMPONENT headers
+)

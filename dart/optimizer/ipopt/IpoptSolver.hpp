@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,10 +33,16 @@
 #ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
-#include <coin/IpIpoptApplication.hpp>
-#include <coin/IpTNLP.hpp>
-
 #include <memory>
+
+#include "dart/optimizer/ipopt/BackwardCompatibility.hpp"
+#if IPOPT_VERSION_GE(3, 13, 0)
+  #include <IpIpoptApplication.hpp>
+  #include <IpTNLP.hpp>
+#else
+  #include <coin/IpIpoptApplication.hpp>
+  #include <coin/IpTNLP.hpp>
+#endif
 
 #include "dart/optimizer/Solver.hpp"
 

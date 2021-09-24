@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,6 +32,7 @@
 
 #include <dart/common/Factory.hpp>
 #include <gtest/gtest.h>
+
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -164,9 +165,7 @@ public:
     return SingletonFactory::getSingletonPtr();
   }
 
-  City(int year) : mYear(year)
-  {
-  }
+  City(int year) : mYear(year) {}
 
   virtual std::string getName() const = 0;
 
@@ -182,9 +181,7 @@ protected:
 class Atlanta : public City
 {
 public:
-  Atlanta(int year) : City(year)
-  {
-  }
+  Atlanta(int year) : City(year) {}
 
   std::string getName() const override
   {
@@ -199,9 +196,7 @@ City::Registrar<Atlanta> Atlanta::mRegistrar("Atlanta");
 class Pittsburgh : public City
 {
 public:
-  Pittsburgh(int year) : City(year)
-  {
-  }
+  Pittsburgh(int year) : City(year) {}
 
   std::string getName() const override
   {
@@ -216,9 +211,7 @@ City::Registrar<Pittsburgh> Pittsburgh::mRegistrar("Pittsburgh");
 class Seattle : public City
 {
 public:
-  Seattle(int year) : City(year)
-  {
-  }
+  Seattle(int year) : City(year) {}
 
   std::string getName() const override
   {

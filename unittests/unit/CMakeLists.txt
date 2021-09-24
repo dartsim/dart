@@ -1,9 +1,17 @@
 dart_add_test("unit" test_Aspect)
 dart_add_test("unit" test_CollisionGroups)
+foreach(collision_engine
+  dart-collision-bullet
+  dart-collision-ode)
+  if(TARGET ${collision_engine})
+    target_link_libraries(test_CollisionGroups ${collision_engine})
+  endif()
+endforeach()
 dart_add_test("unit" test_ContactConstraint)
 dart_add_test("unit" test_Factory)
 dart_add_test("unit" test_GenericJoints)
 dart_add_test("unit" test_Geometry)
+dart_add_test("unit" test_Icosphere)
 dart_add_test("unit" test_Inertia)
 dart_add_test("unit" test_Lemke)
 dart_add_test("unit" test_LocalResourceRetriever)
@@ -13,6 +21,7 @@ dart_add_test("unit" test_Random)
 dart_add_test("unit" test_ScrewJoint)
 dart_add_test("unit" test_Signal)
 dart_add_test("unit" test_Subscriptions)
+dart_add_test("unit" test_TriMesh)
 dart_add_test("unit" test_Uri)
 
 if(TARGET dart-optimizer-ipopt)
@@ -30,7 +39,7 @@ if(TARGET dart-utils)
 
   dart_add_test("unit" test_DartResourceRetriever)
   target_link_libraries(test_DartResourceRetriever dart-utils)
-
+  
   dart_add_test("unit" test_FileInfoWorld)
   target_link_libraries(test_FileInfoWorld dart-utils)
 
@@ -39,21 +48,25 @@ if(TARGET dart-utils)
 
   dart_add_test("unit" test_MjcfParser)
   target_link_libraries(test_MjcfParser dart-utils)
-
+  
   dart_add_test("unit" test_SdfParser)
   target_link_libraries(test_SdfParser dart-utils)
-
+  
   dart_add_test("unit" test_SkelParser)
   target_link_libraries(test_SkelParser dart-utils)
 
-  dart_add_test("unit" test_VskParser)
-  target_link_libraries(test_VskParser dart-utils)
+  if(NOT MSVC) 
+    dart_add_test("unit" test_VskParser)
+    target_link_libraries(test_VskParser dart-utils)
+  endif()
 
 endif()
 
 if(TARGET dart-utils-urdf)
-  dart_add_test("unit" test_DartLoader)
-  target_link_libraries(test_DartLoader dart-utils-urdf)
+  if(NOT MSVC)
+    dart_add_test("unit" test_DartLoader)
+    target_link_libraries(test_DartLoader dart-utils-urdf)
+  endif()
 
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
   target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
@@ -76,16 +89,6 @@ if(TARGET dart-planning)
   dart_add_test("unit" test_NearestNeighbor)
   target_link_libraries(test_NearestNeighbor dart-planning)
 endif()
-
-foreach(collision_engine
-    dart-collision-bullet
-    dart-collision-ode)
-
-  if(TARGET ${collision_engine})
-    target_link_libraries(test_CollisionGroups ${collision_engine})
-  endif()
-
-endforeach()
 
 dart_format_add(
   GeneratedWamIkFast.cpp

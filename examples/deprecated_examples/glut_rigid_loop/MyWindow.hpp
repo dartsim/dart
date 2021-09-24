@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -39,12 +39,8 @@
 class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
-  MyWindow() : SimWindow()
-  {
-  }
-  virtual ~MyWindow()
-  {
-  }
+  MyWindow() : SimWindow() {}
+  virtual ~MyWindow() {}
 
   void timeStepping() override;
   //  void drawSkels() override;

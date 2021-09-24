@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,10 +37,11 @@
 
 #if HAVE_OCTOMAP
 
-#  include <octomap/octomap.h>
-#  include "dart/collision/fcl/BackwardCompatibility.hpp"
-#  include "dart/dynamics/Frame.hpp"
-#  include "dart/dynamics/Shape.hpp"
+  #include <octomap/octomap.h>
+
+  #include "dart/collision/fcl/BackwardCompatibility.hpp"
+  #include "dart/dynamics/Frame.hpp"
+  #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {

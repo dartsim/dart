@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -35,8 +35,10 @@
 
 #include <memory>
 #include <string>
+
 #include <Eigen/Core>
 
+#include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -49,6 +51,7 @@ class BodyNode;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DegreeOfFreedom : public virtual common::Subject
 {
 public:
@@ -403,6 +406,7 @@ protected:
   // DegreeOfFreedom and every DegreeOfFreedom is deleted when its Joint is
   // destructed.
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

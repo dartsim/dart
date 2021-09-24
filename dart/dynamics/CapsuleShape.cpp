@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,6 +33,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 
 #include <cmath>
+
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
@@ -106,8 +107,8 @@ double CapsuleShape::computeVolume(double radius, double height)
 Eigen::Matrix3d CapsuleShape::computeInertia(
     double radius, double height, double mass)
 {
-  // Reference: http://www.gamedev.net/page/resources/_/technical/
-  // math-and-physics/capsule-inertia-tensor-r3856
+  // Reference:
+  // http://www.gamedev.net/page/resources/_/technical/math-and-physics/capsule-inertia-tensor-r3856
 
   const auto radius2 = radius * radius;
   const auto height2 = height * height;
@@ -120,10 +121,11 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
   const auto massCylinder = density * volumeCylinder;
   const auto massSphere = density * volumeSphere;
 
-  const auto Ixx = massCylinder * (height2 / 12.0 + radius2 / 4.0)
-                   + massSphere
-                         * (height2 + (3.0 / 8.0) * height * radius
-                            + (2.0 / 5.0) * radius2);
+  const auto Ixx
+      = massCylinder * (height2 / 12.0 + radius2 / 4.0)
+        + massSphere
+              * ((1.0 / 4.0) * height2 + (3.0 / 8.0) * height * radius
+                 + (2.0 / 5.0) * radius2);
   const auto Izz
       = massCylinder * (radius2 / 2.0) + massSphere * ((2.0 / 5.0) * radius2);
 

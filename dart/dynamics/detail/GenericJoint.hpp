@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,11 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 
-#include "dart/dynamics/GenericJoint.hpp"
-
 #include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 #include "dart/math/ConfigurationSpace.hpp"
 #include "dart/math/Helpers.hpp"
 
@@ -1548,11 +1547,10 @@ double GenericJoint<ConfigSpaceT>::computePotentialEnergy() const
   Vector displacement
       = getPositionsStatic() - Base::mAspectProperties.mRestPositions;
 
-  const double pe
-      = 0.5
-        * displacement.dot(
-              Base::mAspectProperties.mSpringStiffnesses.cwiseProduct(
-                  displacement));
+  const double pe = 0.5
+                    * displacement.dot(
+                        Base::mAspectProperties.mSpringStiffnesses.cwiseProduct(
+                            displacement));
 
   return pe;
 }
@@ -2324,22 +2322,25 @@ void GenericJoint<ConfigSpaceT>::updateForceID(
   this->mAspectState.mForces
       = getRelativeJacobianStatic().transpose() * bodyForce;
 
-  // Damping force
+  // Implicit damping force:
+  //   tau_d = -Kd * dq - Kd * h * ddq
   if (withDampingForces)
   {
     const typename ConfigSpaceT::Vector dampingForces
         = -Base::mAspectProperties.mDampingCoefficients.cwiseProduct(
-            getVelocitiesStatic());
+            getVelocitiesStatic() + getAccelerationsStatic() * timeStep);
     this->mAspectState.mForces -= dampingForces;
   }
 
-  // Spring force
+  // Implicit spring force:
+  //   tau_s = -Kp * (q - q0) - Kp * h * dq - Kp * h^2 * ddq
   if (withSpringForces)
   {
     const typename ConfigSpaceT::Vector springForces
         = -Base::mAspectProperties.mSpringStiffnesses.cwiseProduct(
             getPositionsStatic() - Base::mAspectProperties.mRestPositions
-            + getVelocitiesStatic() * timeStep);
+            + getVelocitiesStatic() * timeStep
+            + getAccelerationsStatic() * timeStep * timeStep);
     this->mAspectState.mForces -= springForces;
   }
 }

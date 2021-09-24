@@ -7,6 +7,9 @@ dart_check_optional_package(FLANN "dart-planning" "flann" "1.8.4")
 dart_find_package(lz4)
 dart_check_optional_package(lz4 "dart-planning" "lz4")
 
+# Print warning for use of deprecated component
+message(WARNING "The 'planning' component is deprecated and will be removed in DART 7.")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -34,12 +37,10 @@ dart_generate_include_header_file(
 )
 
 ## Install
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
-    DESTINATION include/dart/planning
-    COMPONENT headers
-  )
-endif()
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
+  DESTINATION include/dart/planning
+  COMPONENT headers
+)
 
 dart_format_add(${hdrs} ${srcs})

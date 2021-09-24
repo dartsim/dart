@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -50,6 +50,7 @@ class InverseKinematics;
 /// The JacobianNode class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
 /// abstract class.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class JacobianNode : public virtual Frame, public Node
 {
 public:
@@ -303,6 +304,7 @@ protected:
   /// JacobianNode children that descend from this JacobianNode
   std::unordered_set<JacobianNode*> mChildJacobianNodes;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

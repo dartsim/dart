@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2019, The DART development contributors
+# Copyright (c) 2011-2021, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -8,13 +8,17 @@
 
 cmake_policy(PUSH)
 
-# Stick to the legacy GL library until we need GLVND
-# (see: https://cmake.org/cmake/help/git-stage/policy/CMP0072.html)
+# Use GLVND over the legacy OpenGL libraries
 if(POLICY CMP0072)
-  cmake_policy(SET CMP0072 OLD)
+  cmake_policy(SET CMP0072 NEW)
 endif()
 
-find_package(OpenGL QUIET MODULE)
+# Use OpenGL config if available
+find_package(OpenGL QUIET CONFIG)
+# Otherwise, fall back to FindOpenGL.cmake provided by CMake
+if(NOT OPENGL_FOUND)
+  find_package(OpenGL QUIET MODULE)
+endif()
 
 cmake_policy(POP)
 

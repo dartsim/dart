@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -171,8 +171,7 @@ public:
     bool handled = false;
     switch (ea.getEventType())
     {
-      case ::osgGA::GUIEventAdapter::KEYDOWN:
-      {
+      case ::osgGA::GUIEventAdapter::KEYDOWN: {
         switch (ea.getKey())
         {
           case '1':
@@ -191,8 +190,7 @@ public:
         break;
       }
 
-      case ::osgGA::GUIEventAdapter::KEYUP:
-      {
+      case ::osgGA::GUIEventAdapter::KEYUP: {
         switch (ea.getKey())
         {
           case '1':

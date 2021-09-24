@@ -101,11 +101,10 @@ iterate through these two Shapes in each BodyNode, setting their colors to blue.
 for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
 {
   BodyNode* bn = mPendulum->getBodyNode(i);
-  for(size_t j = 0; j < 2; ++j)
+  auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
+  for(std::size_t j = 0; j < 2; ++j)
   {
-    const ShapePtr& shape = bn->getVisualizationShape(j);
-
-    shape->setColor(dart::Color::Blue());
+    visualShapeNodes[j]->getVisualAspect()->setColor(dart::Color::Blue());
   }
 
   // TODO: Remove any arrows
@@ -118,9 +117,9 @@ default, this arrow should not be attached, so in the outer for-loop, we should
 check for arrows and remove them:
 
 ```cpp
-if(bn->getNumVisualizationShapes() == 3)
+if(visualShapeNodes.size() == 3)
 {
-  bn->removeVisualizationShape(mArrow);
+  visualShapeNodes[2]->remove();
 }
 ```
 
@@ -159,7 +158,7 @@ that corresponds to this Joint:
 
 ```cpp
 BodyNode* bn = dof->getChildBodyNode();
-const ShapePtr& shape = bn->getVisualizationShape(0);
+auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
 ```
 
 Because of the way the pendulum bodies were constructed, we trust that the
@@ -167,7 +166,7 @@ zeroth indexed visualization shape will be the shape that depicts the joint.
 So now we will color it red:
 
 ```cpp
-shape->setColor(dart::Color::Red());
+shapeNodes[0]->getVisualAspect()->setColor(dart::Color::Red());
 ```
 
 ### Lesson 1c: Apply body forces based on user input
@@ -221,8 +220,8 @@ Now we'll want to visualize the force being applied to the body. First, we'll
 grab the Shape for the body and color it red:
 
 ```cpp
-const ShapePtr& shape = bn->getVisualizationShape(1);
-shape->setColor(dart::Color::Red());
+auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
+shapeNodes[1]->getVisualAspect()->setColor(dart::Color::Red());
 ```
 
 Last time we grabbed the 0-index visualization shape, because we trusted that
@@ -235,7 +234,7 @@ represent the applied force. The ``MyWindow`` class already provides the arrow
 shape; we just need to add it:
 
 ```cpp
-bn->addVisualizationShape(mArrow);
+bn->createShapeNodeWith<VisualAspect>(mArrow);
 ```
 
 # Lesson 2: Set spring and damping properties for joints

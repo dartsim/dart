@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,17 +32,16 @@
 
 #include "dart/constraint/WeldJointConstraint.hpp"
 
-#include "dart/external/odelcpsolver/lcp.h"
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 
 namespace dart {
 namespace constraint {
 
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
-  : JointConstraint(_body),
+  : DynamicJointConstraint(_body),
     mRelativeTransform(_body->getTransform()),
     mViolation(Eigen::Vector6d::Zero()),
     mJacobian1(Eigen::Matrix6d::Identity()),
@@ -61,7 +60,7 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(
     dynamics::BodyNode* _body1, dynamics::BodyNode* _body2)
-  : JointConstraint(_body1, _body2),
+  : DynamicJointConstraint(_body1, _body2),
     mRelativeTransform(
         _body2->getTransform().inverse() * _body1->getTransform()),
     mViolation(Eigen::Vector6d::Zero()),

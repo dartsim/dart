@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -128,7 +128,8 @@ void WorldNode(py::module& m)
               -> std::shared_ptr<dart::simulation::World> {
             return self->getWorld();
           })
-      .def("refresh", +[](dart::gui::osg::WorldNode* self) { self->refresh(); })
+      .def(
+          "refresh", +[](dart::gui::osg::WorldNode* self) { self->refresh(); })
       .def(
           "customPreRefresh",
           +[](dart::gui::osg::WorldNode* self) { self->customPreRefresh(); })

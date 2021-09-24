@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Light>
 #include <osg/Material>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
-
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

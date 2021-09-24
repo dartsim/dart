@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,10 +34,9 @@
 
 #include <cstdio>
 
+#include "dart/common/StlHelpers.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/external/odelcpsolver/misc.h"
-
-#include "dart/common/StlHelpers.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {

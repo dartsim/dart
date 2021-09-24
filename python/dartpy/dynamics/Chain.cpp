@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -134,9 +135,10 @@ void Chain(py::module& m)
             return self->cloneMetaSkeleton(cloneName);
           },
           ::py::arg("cloneName"))
-      .def("isStillChain", +[](const dart::dynamics::Chain* self) -> bool {
-        return self->isStillChain();
-      });
+      .def(
+          "isStillChain", +[](const dart::dynamics::Chain* self) -> bool {
+            return self->isStillChain();
+          });
 
   ::py::class_<dart::dynamics::Chain::Criteria>(m, "ChainCriteria")
       .def(

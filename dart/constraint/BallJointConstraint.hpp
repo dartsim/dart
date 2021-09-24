@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -35,7 +35,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/constraint/JointConstraint.hpp"
+#include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
@@ -43,7 +43,7 @@ namespace constraint {
 
 /// BallJointConstraint represents ball joint constraint between a body and the
 /// world or between two bodies
-class BallJointConstraint : public JointConstraint
+class BallJointConstraint : public DynamicJointConstraint
 {
 public:
   /// Constructor that takes one body and the joint position in the world frame

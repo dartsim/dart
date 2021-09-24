@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -53,15 +53,13 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
   static const double dDOF = 0.1;
   switch (_key)
   {
-    case '-':
-    {
+    case '-': {
       inverse = !inverse;
     }
     break;
     case '1':
     case '2':
-    case '3':
-    {
+    case '3': {
       std::size_t dofIdx = _key - 49;
       Eigen::VectorXd pose = skel->getPositions();
       pose(dofIdx) = pose(dofIdx) + (inverse ? -dDOF : dDOF);

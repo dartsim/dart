@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -189,12 +189,6 @@ void MeshShapeNode::refresh()
     return;
 
   extractData(false);
-}
-
-std::ostream& operator<<(std::ostream& str, const aiColor4D& c)
-{
-  str << c[0] << "\t " << c[1] << "\t " << c[2] << "\t " << c[3];
-  return str;
 }
 
 //==============================================================================
@@ -769,7 +763,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       const unsigned int matIndex = mAiMesh->mMaterialIndex;
       if (matIndex
           != static_cast<unsigned int>(
-                 -1)) // -1 is being used by us to indicate no material
+              -1)) // -1 is being used by us to indicate no material
       {
         isColored = true;
         auto material = mMainNode->getMaterial(matIndex);
@@ -834,8 +828,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     {
       switch (mAiMesh->mNumUVComponents[unit])
       {
-        case 1:
-        {
+        case 1: {
           ::osg::ref_ptr<::osg::FloatArray> texture
               = new ::osg::FloatArray(mAiMesh->mNumVertices);
           for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
@@ -843,8 +836,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
           setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
           break;
         }
-        case 2:
-        {
+        case 2: {
           ::osg::ref_ptr<::osg::Vec2Array> texture
               = new ::osg::Vec2Array(mAiMesh->mNumVertices);
           for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)
@@ -855,8 +847,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
           setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
           break;
         }
-        case 3:
-        {
+        case 3: {
           ::osg::ref_ptr<::osg::Vec3Array> texture
               = new ::osg::Vec3Array(mAiMesh->mNumVertices);
           for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i)

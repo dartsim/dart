@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -68,9 +68,7 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
   mPreOffset = 0.0;
 }
 
-Controller::~Controller()
-{
-}
+Controller::~Controller() {}
 
 Eigen::VectorXd Controller::getTorques()
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -35,8 +35,6 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "TestHelpers.hpp"
-
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -46,6 +44,8 @@
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
+
+#include "TestHelpers.hpp"
 
 //==============================================================================
 class ConstraintTest : public ::testing::Test

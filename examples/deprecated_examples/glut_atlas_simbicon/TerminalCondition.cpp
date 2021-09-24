@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -50,9 +50,7 @@ TerminalCondition::TerminalCondition(State* _state) : mState(_state)
 }
 
 //==============================================================================
-TerminalCondition::~TerminalCondition()
-{
-}
+TerminalCondition::~TerminalCondition() {}
 
 //==============================================================================
 TimerCondition::TimerCondition(State* _state, double _duration)
@@ -61,9 +59,7 @@ TimerCondition::TimerCondition(State* _state, double _duration)
 }
 
 //==============================================================================
-TimerCondition::~TimerCondition()
-{
-}
+TimerCondition::~TimerCondition() {}
 
 //==============================================================================
 bool TimerCondition::isSatisfied()
@@ -83,9 +79,7 @@ BodyContactCondition::BodyContactCondition(State* _state, BodyNode* _body)
 }
 
 //==============================================================================
-BodyContactCondition::~BodyContactCondition()
-{
-}
+BodyContactCondition::~BodyContactCondition() {}
 
 //==============================================================================
 bool BodyContactCondition::isSatisfied()

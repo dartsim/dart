@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -43,7 +43,6 @@ class CollisionFilter;
 
 struct CollisionOption
 {
-
   /// Flag whether the collision detector computes contact information (contact
   /// point, normal, and penetration depth). If it is set to false, only the
   /// result of that which pairs are colliding will be stored in the

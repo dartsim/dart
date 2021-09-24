@@ -42,13 +42,12 @@ get_property(dart_gui_sources GLOBAL PROPERTY DART_GUI_SOURCES)
 dart_add_library(${target_name}
   ${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
 )
-target_include_directories(${target_name} PUBLIC ${GLUT_INCLUDE_DIRS})
 target_link_libraries(${target_name}
   PUBLIC
     dart-utils
-    ${GLUT_LIBRARIES}
-    OpenGL::GLU
     OpenGL::GL
+    OpenGL::GLU
+    GLUT::GLUT
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
 )
@@ -99,12 +98,10 @@ dart_generate_include_header_file(
 )
 
 # Install
-if(NOT DART_BUILD_DARTPY)
-  install(
-    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
-    DESTINATION include/dart/gui
-    COMPONENT headers
-  )
-endif()
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
+  DESTINATION include/dart/gui
+  COMPONENT headers
+)
 
 dart_format_add(${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources})

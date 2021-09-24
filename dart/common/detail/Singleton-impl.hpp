@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_DETAIL_SINGLETON_HPP_
 #define DART_COMMON_DETAIL_SINGLETON_HPP_
 
-#include "dart/common/Singleton.hpp"
-
 #include <utility>
+
+#include "dart/common/Singleton.hpp"
 
 namespace dart {
 namespace common {

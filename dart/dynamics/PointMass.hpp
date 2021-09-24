@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,7 +34,9 @@
 #define DART_DYNAMICS_POINTMASS_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
+
 #include "dart/dynamics/Entity.hpp"
 #include "dart/math/Helpers.hpp"
 

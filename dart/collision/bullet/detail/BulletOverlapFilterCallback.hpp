@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,12 +34,11 @@
 #define DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
 #include <btBulletCollisionCommon.h>
 
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
+#include "dart/config.hpp"
 
 namespace dart {
 namespace collision {
@@ -49,7 +48,9 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
   // Constructor
   explicit BulletOverlapFilterCallback(
-      const std::shared_ptr<CollisionFilter>& filter = nullptr);
+      const std::shared_ptr<CollisionFilter>& filter = nullptr,
+      CollisionGroup* group1 = nullptr,
+      CollisionGroup* group2 = nullptr);
 
   /// Returns true when pairs need collision
   bool needBroadphaseCollision(
@@ -63,6 +64,8 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
   mutable bool done;
 
   std::shared_ptr<CollisionFilter> filter;
+  const CollisionGroup* group1;
+  const CollisionGroup* group2;
 };
 
 } // namespace detail

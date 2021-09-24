@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.hpp"
-
 #include <iostream>
 
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 #include <dart/utils/utils.hpp>
+
+#include "MyWindow.hpp"
 
 using namespace dart;
 using namespace dynamics;

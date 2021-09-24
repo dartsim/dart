@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,7 +34,9 @@
 #define DART_COMMON_DETAIL_ALIGNEDALLOCATOR_HPP_
 
 #include <memory>
+
 #include <Eigen/Core>
+
 #include "dart/config.hpp"
 
 namespace dart {
@@ -66,9 +68,7 @@ public:
     typedef aligned_allocator_cpp11<U> other;
   };
 
-  aligned_allocator_cpp11() : std::allocator<T>()
-  {
-  }
+  aligned_allocator_cpp11() : std::allocator<T>() {}
 
   aligned_allocator_cpp11(const aligned_allocator_cpp11& other)
     : std::allocator<T>(other)
@@ -81,9 +81,7 @@ public:
   {
   }
 
-  ~aligned_allocator_cpp11()
-  {
-  }
+  ~aligned_allocator_cpp11() {}
 
   pointer allocate(size_type num, const void* /*hint*/ = 0)
   {

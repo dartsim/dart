@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,8 +32,11 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
+#include "pointers.hpp"
 
 namespace py = pybind11;
 
@@ -94,6 +97,11 @@ void Node(py::module& m)
           +[](const dart::dynamics::Node* self)
               -> dart::dynamics::ConstBodyNodePtr {
             return self->getBodyNodePtr();
+          })
+      .def(
+          "getBodyNode",
+          +[](dart::dynamics::Node* self) -> dart::dynamics::BodyNode* {
+            return self->getBodyNodePtr().get();
           })
       .def(
           "isRemoved",

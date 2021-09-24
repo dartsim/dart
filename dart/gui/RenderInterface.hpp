@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,6 +34,7 @@
 #define DART_GUI_RENDERINTERFACE_HPP_
 
 #include <vector>
+
 #include <Eigen/Dense>
 #include <assimp/scene.h>
 
@@ -70,12 +71,8 @@ enum DecoDrawType
 class RenderInterface
 {
 public:
-  RenderInterface()
-  {
-  }
-  virtual ~RenderInterface()
-  {
-  }
+  RenderInterface() {}
+  virtual ~RenderInterface() {}
 
   virtual void initialize();
   virtual void destroy();
@@ -106,10 +103,14 @@ public:
   virtual void scale(const Eigen::Vector3d& _scale);           // glScale
 
   virtual void drawSphere(double radius, int slices = 16, int stacks = 16);
+  DART_DEPRECATED(6.11)
   virtual void drawMultiSphere(
       const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
       int slices = 16,
       int stacks = 16);
+  virtual void drawMultiSphereConvexHull(
+      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+      std::size_t subdivisions);
   virtual void drawEllipsoid(const Eigen::Vector3d& _size);
   virtual void drawCube(const Eigen::Vector3d& _size);
   virtual void drawOpenCylinder(
@@ -122,6 +123,7 @@ public:
       double _radius, double _height, int slices = 16, int stacks = 16);
   virtual void drawCapsule(double _radius, double _height);
   virtual void drawCone(double _radius, double _height);
+  virtual void drawPyramid(double baseWidth, double baseDepth, double height);
   virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
   virtual void drawSoftMesh(const aiMesh* mesh);
   virtual void drawList(unsigned int index);

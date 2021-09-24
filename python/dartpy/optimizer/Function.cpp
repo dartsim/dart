@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,6 +33,7 @@
 #include <dart/dart.hpp>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -159,9 +160,10 @@ void Function(py::module& m)
             self->setHessianFunction(_hessian);
           },
           ::py::arg("hessian"))
-      .def("clearHessianFunction", +[](dart::optimizer::ModularFunction* self) {
-        self->clearHessianFunction();
-      });
+      .def(
+          "clearHessianFunction", +[](dart::optimizer::ModularFunction* self) {
+            self->clearHessianFunction();
+          });
 }
 
 } // namespace python

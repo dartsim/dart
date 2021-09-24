@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,18 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/external/lodepng/lodepng.h"
 #include "dart/gui/glut/Window.hpp"
 
-#include "dart/external/lodepng/lodepng.h"
-
 #ifdef _WIN32
-#  include <direct.h>
-#  include <sys/stat.h>
-#  include <sys/types.h>
+  #include <direct.h>
+  #include <sys/stat.h>
+  #include <sys/types.h>
 #else
-#  include <dirent.h>
-#  include <sys/stat.h>
-#  include <sys/types.h>
+  #include <dirent.h>
+  #include <sys/stat.h>
+  #include <sys/types.h>
 #endif
 #include <cstdio>
 #include <iostream>
@@ -166,9 +165,7 @@ void Window::displayTimer(int _val)
   glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
-void Window::simTimer(int /*_val*/)
-{
-}
+void Window::simTimer(int /*_val*/) {}
 
 void Window::runTimer(int _val)
 {
@@ -187,8 +184,8 @@ bool Window::screenshot()
   Stat buff;
 
 #ifdef _WIN32
-#  define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
-#  define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
+  #define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
+  #define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
   if (stat(directory, &buff) != 0)
     _mkdir(directory);
 #else
@@ -272,21 +269,13 @@ void Window::keyboard(unsigned char /*_key*/, int /*_x*/, int /*_y*/)
   // TODO(JS): Is 2d point information necessary for keyboard event?
 }
 
-void Window::specKey(int /*_key*/, int /*_x*/, int /*_y*/)
-{
-}
+void Window::specKey(int /*_key*/, int /*_x*/, int /*_y*/) {}
 
-void Window::click(int /*_button*/, int /*_state*/, int /*_x*/, int /*_y*/)
-{
-}
+void Window::click(int /*_button*/, int /*_state*/, int /*_x*/, int /*_y*/) {}
 
-void Window::drag(int /*_x*/, int /*_y*/)
-{
-}
+void Window::drag(int /*_x*/, int /*_y*/) {}
 
-void Window::move(int /*_x*/, int /*_y*/)
-{
-}
+void Window::move(int /*_x*/, int /*_y*/) {}
 
 } // namespace glut
 } // namespace gui

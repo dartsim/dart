@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
 #include <Eigen/Core>
+
 #include "dart/common/Composite.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/ProxyAspect.hpp"

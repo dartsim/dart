@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -47,9 +47,9 @@ void ViewerAttachment(py::module& m)
   ::py::class_<
       dart::gui::osg::ViewerAttachment,
       ::osg::ref_ptr<dart::gui::osg::ViewerAttachment>>(m, "ViewerAttachment")
-      .def("refresh", +[](dart::gui::osg::ViewerAttachment* self) {
-        self->refresh();
-      });
+      .def(
+          "refresh",
+          +[](dart::gui::osg::ViewerAttachment* self) { self->refresh(); });
 }
 
 } // namespace python

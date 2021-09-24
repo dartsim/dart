@@ -1,4 +1,5 @@
 build/
+.build/
 syntax: glob
 *.swp
 *.swo

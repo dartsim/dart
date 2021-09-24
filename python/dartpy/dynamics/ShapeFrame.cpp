@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -134,9 +135,28 @@ void ShapeFrame(py::module& m)
       DARTPY_DEFINE_SPECIALIZED_ASPECT(CollisionAspect)
       DARTPY_DEFINE_SPECIALIZED_ASPECT(DynamicsAspect)
       // clang-format on
-      .def("isShapeNode", +[](const dart::dynamics::ShapeFrame* self) -> bool {
-        return self->isShapeNode();
-      });
+      .def(
+          "isShapeNode",
+          +[](const dart::dynamics::ShapeFrame* self) -> bool {
+            return self->isShapeNode();
+          })
+      .def(
+          "asShapeNode",
+          +[](dart::dynamics::ShapeFrame* self) -> dart::dynamics::ShapeNode* {
+            return self->asShapeNode();
+          },
+          ::py::return_value_policy::reference,
+          "Convert to a ShapeNode pointer if ShapeFrame is a ShapeNode, "
+          "otherwise return None.")
+      .def(
+          "asShapeNode",
+          +[](const dart::dynamics::ShapeFrame* self)
+              -> const dart::dynamics::ShapeNode* {
+            return self->asShapeNode();
+          },
+          ::py::return_value_policy::reference,
+          "Convert to a ShapeNode pointer if ShapeFrame is a ShapeNode, "
+          "otherwise return None.");
 
   ::py::class_<dart::dynamics::VisualAspect>(m, "VisualAspect")
       .def(::py::init<>())
@@ -217,11 +237,14 @@ void ShapeFrame(py::module& m)
           +[](const dart::dynamics::VisualAspect* self) -> double {
             return self->getAlpha();
           })
-      .def("hide", +[](dart::dynamics::VisualAspect* self) { self->hide(); })
-      .def("show", +[](dart::dynamics::VisualAspect* self) { self->show(); })
-      .def("isHidden", +[](const dart::dynamics::VisualAspect* self) -> bool {
-        return self->isHidden();
-      });
+      .def(
+          "hide", +[](dart::dynamics::VisualAspect* self) { self->hide(); })
+      .def(
+          "show", +[](dart::dynamics::VisualAspect* self) { self->show(); })
+      .def(
+          "isHidden", +[](const dart::dynamics::VisualAspect* self) -> bool {
+            return self->isHidden();
+          });
 
   ::py::class_<dart::dynamics::CollisionAspect>(m, "CollisionAspect")
       .def(::py::init<>())

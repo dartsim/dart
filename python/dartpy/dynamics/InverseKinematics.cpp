@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,6 +32,8 @@
 
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
@@ -42,6 +44,33 @@ namespace python {
 
 void InverseKinematics(py::module& m)
 {
+  ::py::class_<dart::dynamics::InverseKinematics::ErrorMethod::Properties>(
+      m, "InverseKinematicsErrorMethodProperties")
+      .def(
+          ::py::init<
+              const dart::dynamics::InverseKinematics::ErrorMethod::Bounds&,
+              double,
+              const Eigen::Vector6d&>(),
+          ::py::arg("bounds")
+          = dart::dynamics::InverseKinematics::ErrorMethod::Bounds(
+              Eigen::Vector6d::Constant(-dart::dynamics::DefaultIKTolerance),
+              Eigen::Vector6d::Constant(dart::dynamics::DefaultIKTolerance)),
+          ::py::arg("errorClamp") = dart::dynamics::DefaultIKErrorClamp,
+          ::py::arg("errorWeights") = Eigen::compose(
+              Eigen::Vector3d::Constant(dart::dynamics::DefaultIKAngularWeight),
+              Eigen::Vector3d::Constant(dart::dynamics::DefaultIKLinearWeight)))
+      .def_readwrite(
+          "mBounds",
+          &dart::dynamics::InverseKinematics::ErrorMethod::Properties::mBounds)
+      .def_readwrite(
+          "mErrorLengthClamp",
+          &dart::dynamics::InverseKinematics::ErrorMethod::Properties::
+              mErrorLengthClamp)
+      .def_readwrite(
+          "mErrorWeights",
+          &dart::dynamics::InverseKinematics::ErrorMethod::Properties::
+              mErrorWeights);
+
   ::py::class_<
       dart::dynamics::InverseKinematics::ErrorMethod,
       dart::common::Subject,
@@ -236,6 +265,80 @@ void InverseKinematics(py::module& m)
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self) {
             self->clearCache();
           });
+
+  ::py::class_<
+      dart::dynamics::InverseKinematics::TaskSpaceRegion::UniqueProperties>(
+      m, "InverseKinematicsTaskSpaceRegionUniqueProperties")
+      .def(
+          ::py::init<bool, dart::dynamics::SimpleFramePtr>(),
+          ::py::arg("computeErrorFromCenter") = true,
+          ::py::arg("referenceFrame") = nullptr)
+      .def_readwrite(
+          "mComputeErrorFromCenter",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              UniqueProperties::mComputeErrorFromCenter)
+      .def_readwrite(
+          "mReferenceFrame",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              UniqueProperties::mReferenceFrame);
+
+  ::py::class_<
+      dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties,
+      dart::dynamics::InverseKinematics::ErrorMethod::Properties,
+      dart::dynamics::InverseKinematics::TaskSpaceRegion::UniqueProperties>(
+      m, "InverseKinematicsTaskSpaceRegionProperties")
+      .def(
+          ::py::init<
+              const dart::dynamics::InverseKinematics::ErrorMethod::Properties&,
+              const dart::dynamics::InverseKinematics::TaskSpaceRegion::
+                  UniqueProperties&>(),
+          ::py::arg("errorProperties")
+          = dart::dynamics::InverseKinematics::ErrorMethod::Properties(),
+          ::py::arg("taskSpaceProperties") = dart::dynamics::InverseKinematics::
+              TaskSpaceRegion::UniqueProperties());
+
+  ::py::class_<
+      dart::dynamics::InverseKinematics::TaskSpaceRegion,
+      dart::dynamics::InverseKinematics::ErrorMethod,
+      std::shared_ptr<dart::dynamics::InverseKinematics::TaskSpaceRegion>>(
+      m, "InverseKinematicsTaskSpaceRegion")
+      .def(
+          ::py::init<
+              dart::dynamics::InverseKinematics*,
+              dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties>(),
+          ::py::arg("ik"),
+          ::py::arg("properties")
+          = dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties())
+      .def(
+          "setComputeFromCenter",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              setComputeFromCenter,
+          ::py::arg("computeFromCenter"),
+          "Set whether this TaskSpaceRegion should compute its error vector "
+          "from the center of the region.")
+      .def(
+          "isComputingFromCenter",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              isComputingFromCenter,
+          "Get whether this TaskSpaceRegion is set to compute its error vector "
+          "from the center of the region.")
+      .def(
+          "setReferenceFrame",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              setReferenceFrame,
+          ::py::arg("referenceFrame"),
+          "Set the reference frame that the task space region is expressed. "
+          "Pass None to use the parent frame of the target frame instead.")
+      .def(
+          "getReferenceFrame",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              getReferenceFrame,
+          "Get the reference frame that the task space region is expressed.")
+      .def(
+          "getTaskSpaceRegionProperties",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              getTaskSpaceRegionProperties,
+          "Get the Properties of this TaskSpaceRegion.");
 
   ::py::class_<
       dart::dynamics::InverseKinematics,
@@ -440,9 +543,10 @@ void InverseKinematics(py::module& m)
           +[](dart::dynamics::InverseKinematics* self,
               const Eigen::VectorXd& _q) { self->setPositions(_q); },
           ::py::arg("q"))
-      .def("clearCaches", +[](dart::dynamics::InverseKinematics* self) {
-        self->clearCaches();
-      });
+      .def(
+          "clearCaches", +[](dart::dynamics::InverseKinematics* self) {
+            self->clearCaches();
+          });
 }
 
 } // namespace python

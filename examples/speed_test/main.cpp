@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,6 +34,7 @@
 #include <numeric>
 
 #include <dart/dart.hpp>
+
 #include "dart/utils/utils.hpp"
 
 double testForwardKinematicSpeed(
@@ -164,7 +165,7 @@ void print_results(const std::vector<double>& result)
       result.begin(),
       result.end(),
       diff.begin(),
-      std::bind2nd(std::minus<double>(), mean));
+      std::bind(std::minus<double>(), mean, std::placeholders::_1));
   double stddev = std::sqrt(
       std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0)
       / result.size());

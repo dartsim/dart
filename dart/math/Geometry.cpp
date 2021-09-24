@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -2095,9 +2095,7 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
   return result;
 }
 
-BoundingBox::BoundingBox() : mMin(0, 0, 0), mMax(0, 0, 0)
-{
-}
+BoundingBox::BoundingBox() : mMin(0, 0, 0), mMax(0, 0, 0) {}
 BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
   : mMin(min), mMax(max)
 {

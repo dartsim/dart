@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,13 +34,15 @@
 #define DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 
 #include <memory>
+
 #include <Eigen/Core>
+
 #include "dart/config.hpp"
 
 #if EIGEN_VERSION_AT_LEAST(3, 2, 1) && EIGEN_VERSION_AT_MOST(3, 2, 8)
-#  include "dart/common/detail/AlignedAllocator.hpp"
+  #include "dart/common/detail/AlignedAllocator.hpp"
 #else
-#  include <Eigen/StdVector>
+  #include <Eigen/StdVector>
 #endif
 
 namespace dart {

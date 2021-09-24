@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,11 +31,9 @@
  */
 
 // Must be included before any Bullet headers.
-#include "dart/config.hpp"
+#include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <algorithm>
-
-#include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
@@ -48,6 +46,7 @@
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -284,18 +283,12 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  dtwarn << "[BulletCollisionDetector::collide] collide(group1, group2) "
-         << "supposed to check collisions of the objects in group1 against the "
-         << "objects in group2. However, the current implementation of this "
-         << "function checks for all the objects against each other of both "
-         << "group1 and group2, which is an incorrect behavior. This bug will "
-         << "be fixed in the next patch release. (see #717 for the details)\n";
-
+  // Create a new collision group, merging the two groups into
   mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
   auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback
-      = new detail::BulletOverlapFilterCallback(option.collisionFilter);
+  auto filterCallback = new detail::BulletOverlapFilterCallback(
+      option.collisionFilter, group1, group2);
   bulletPairCache->setOverlapFilterCallback(filterCallback);
 
   mGroupForFiltering->addShapeFramesOf(group1, group2);
@@ -321,8 +314,14 @@ double BulletCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning 0.0.\n";
+  static bool warned = false;
+  if (!warned)
+  {
+    dtwarn
+        << "[BulletCollisionDetector::distance] This collision detector does "
+        << "not support (signed) distance queries. Returning 0.0.\n";
+    warned = true;
+  }
 
   return 0.0;
 }
@@ -334,8 +333,14 @@ double BulletCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning.\n";
+  static bool warned = false;
+  if (!warned)
+  {
+    dtwarn
+        << "[BulletCollisionDetector::distance] This collision detector does "
+        << "not support (signed) distance queries. Returning.\n";
+    warned = true;
+  }
 
   return 0.0;
 }
@@ -367,14 +372,17 @@ bool BulletCollisionDetector::raycast(
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result)
+    if (result == nullptr)
+      return callback.hasHit();
+
+    if (callback.hasHit())
     {
       reportRayHits(callback, option, *result);
       return result->hasHit();
     }
     else
     {
-      return callback.hasHit();
+      return false;
     }
   }
   else
@@ -383,14 +391,17 @@ bool BulletCollisionDetector::raycast(
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result)
+    if (result == nullptr)
+      return callback.hasHit();
+
+    if (callback.hasHit())
     {
       reportRayHits(callback, option, *result);
       return result->hasHit();
     }
     else
     {
-      return callback.hasHit();
+      return false;
     }
   }
 }
@@ -791,6 +802,9 @@ void reportRayHits(
     const RaycastOption& /*option*/,
     RaycastResult& result)
 {
+  // This function shouldn't be called if callback has not ray hit.
+  assert(callback.hasHit());
+
   const auto rayHit = convertRayHit(
       callback.m_collisionObject,
       callback.m_hitPointWorld,

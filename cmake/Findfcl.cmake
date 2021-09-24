@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2019, The DART development contributors
+# Copyright (c) 2011-2021, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -28,7 +28,10 @@ find_path(FCL_INCLUDE_DIRS
 
 # Libraries
 if(MSVC)
-  set(FCL_LIBRARIES "fcl$<$<CONFIG:Debug>:d>")
+  find_package(fcl QUIET CONFIG)
+  if(TARGET fcl)
+    set(FCL_LIBRARIES fcl)
+  endif()
 else()
   # Give explicit precedence to ${PC_FCL_LIBDIR}
   find_library(FCL_LIBRARIES
@@ -44,7 +47,9 @@ else()
 endif()
 
 # Version
-set(FCL_VERSION ${PC_FCL_VERSION})
+if(PC_FCL_VERSION)
+  set(FCL_VERSION ${PC_FCL_VERSION})
+endif()
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -117,7 +117,7 @@ template <class Base1, class Base2, class... OtherBases>
 template <typename... Args>
 CompositeJoiner<Base1, Base2, OtherBases...>::CompositeJoiner(Args&&... args)
   : CompositeJoiner<Base1, CompositeJoiner<Base2, OtherBases...>>(
-        std::forward<Args>(args)...)
+      std::forward<Args>(args)...)
 {
   // Do nothing
 }

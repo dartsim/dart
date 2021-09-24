@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -208,7 +208,7 @@ Errors Body::compile(const Compiler& compiler)
       }
     }
 
-    if (not mGeoms.empty())
+    if (!mGeoms.empty())
     {
       mInertial = computeInertialFromGeoms(mGeoms, compiler);
     }

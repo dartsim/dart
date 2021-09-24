@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/OpenGLRenderInterface.hpp"
+
 #include <iostream>
+
 #include <assimp/cimport.h>
 
 #include "dart/common/Console.hpp"
@@ -44,7 +47,7 @@
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
-#include "dart/gui/OpenGLRenderInterface.hpp"
+#include "dart/math/Icosphere.hpp"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj* quadObj;
@@ -73,7 +76,7 @@ void OpenGLRenderInterface::initialize()
   glLoadIdentity();
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glCullFace(GL_FRONT);
+  glCullFace(GL_BACK);
   glDisable(GL_LIGHTING);
   glEnable(GL_DEPTH_TEST);
   // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
@@ -81,9 +84,7 @@ void OpenGLRenderInterface::initialize()
   clear(Eigen::Vector3d(1.0, 1.0, 1.0));
 }
 
-void OpenGLRenderInterface::destroy()
-{
-}
+void OpenGLRenderInterface::destroy() {}
 
 void OpenGLRenderInterface::setViewport(int _x, int _y, int _width, int _height)
 {
@@ -123,9 +124,7 @@ void OpenGLRenderInterface::getMaterial(
 {
 }
 
-void OpenGLRenderInterface::setDefaultMaterial()
-{
-}
+void OpenGLRenderInterface::setDefaultMaterial() {}
 
 void OpenGLRenderInterface::pushMatrix()
 {
@@ -237,24 +236,46 @@ void OpenGLRenderInterface::drawMultiSphere(
     }
     glPopMatrix();
   }
+}
 
-  if (spheres.size() < 2u)
-    return;
-
-  // Draw all the possible open cylinders that connects a pair of spheres in the
-  // list.
-  //
-  // TODO(JS): This is a workaround. The correct solution would be drawing the
-  // convex hull for the spheres, but we don't have a function computing convex
-  // hull yet.
-  for (auto i = 0u; i < spheres.size() - 1u; ++i)
+void OpenGLRenderInterface::drawMultiSphereConvexHull(
+    const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+    std::size_t subdivisions)
+{
+  // Create meshes of sphere and combine them into a single mesh
+  auto mesh = math::TriMeshf();
+  for (const auto& sphere : spheres)
   {
-    for (auto j = i + 1u; j < spheres.size(); ++j)
+    const double& radius = sphere.first;
+    const Eigen::Vector3d& center = sphere.second;
+
+    auto icosphere = math::Icospheref(radius, subdivisions);
+    icosphere.translate(center.cast<float>());
+
+    mesh += icosphere;
+  }
+
+  // Create a convex hull from the combined mesh
+  auto convexHull = mesh.generateConvexHull();
+  convexHull->computeVertexNormals();
+  const auto& meshVertices = convexHull->getVertices();
+  const auto& meshNormals = convexHull->getVertexNormals();
+  const auto& meshTriangles = convexHull->getTriangles();
+  assert(meshVertices.size() == meshNormals.size());
+
+  // Draw the triangles of the convex hull
+  glBegin(GL_TRIANGLES);
+  for (const auto& triangle : meshTriangles)
+  {
+    for (auto i = 0u; i < 3; ++i)
     {
-      drawOpenCylinderConnectingTwoSpheres(
-          this, spheres[i], spheres[j], slices, stacks);
+      const auto& normal = meshNormals[triangle[i]];
+      const auto& vertex = meshVertices[triangle[i]];
+      glNormal3fv(normal.data());
+      glVertex3fv(vertex.data());
     }
   }
+  glEnd();
 }
 
 void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters)
@@ -473,6 +494,62 @@ void OpenGLRenderInterface::drawCone(double radius, double height)
   gluDisk(quadObj, 0, radius, slices, stacks);
 }
 
+//==============================================================================
+Eigen::Vector3d computeNormal(
+    const Eigen::Vector3d& v1,
+    const Eigen::Vector3d& v2,
+    const Eigen::Vector3d& v3)
+{
+  return (v1 - v2).cross(v2 - v3).normalized();
+}
+
+//==============================================================================
+void OpenGLRenderInterface::drawPyramid(
+    double baseWidth, double baseDepth, double height)
+{
+  const double w = baseWidth;
+  const double d = baseDepth;
+  const double h = height;
+
+  const double hTop = h / 2;
+  const double hBottom = -hTop;
+  const double left = -w / 2;
+  const double right = w / 2;
+  const double front = -d / 2;
+  const double back = d / 2;
+
+  std::vector<Eigen::Vector3d> points(5);
+  std::vector<Eigen::Vector3i> faces(6);
+
+  points[0] << 0, 0, hTop;
+  points[1] << right, back, hBottom;
+  points[2] << left, back, hBottom;
+  points[3] << left, front, hBottom;
+  points[4] << right, front, hBottom;
+
+  faces[0] << 0, 1, 2;
+  faces[1] << 0, 2, 3;
+  faces[2] << 0, 3, 4;
+  faces[3] << 0, 4, 1;
+  faces[4] << 1, 3, 2;
+  faces[5] << 1, 4, 3;
+
+  glBegin(GL_TRIANGLES);
+  for (const auto& face : faces)
+  {
+    const auto& p1 = points[static_cast<size_t>(face[0])];
+    const auto& p2 = points[static_cast<size_t>(face[1])];
+    const auto& p3 = points[static_cast<size_t>(face[2])];
+    const Eigen::Vector3d n = computeNormal(p1, p2, p3);
+
+    glNormal3dv(n.data());
+    glVertex3dv(p1.data());
+    glVertex3dv(p2.data());
+    glVertex3dv(p3.data());
+  }
+  glEnd();
+}
+
 void OpenGLRenderInterface::color4_to_float4(const aiColor4D* c, float f[4])
 {
   f[0] = c->r;
@@ -550,7 +627,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
   max = 1;
   if (AI_SUCCESS
       == aiGetMaterialIntegerArray(
-             mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
+          mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
     fill_mode = wireframe ? GL_LINE : GL_FILL;
   else
     fill_mode = GL_FILL;

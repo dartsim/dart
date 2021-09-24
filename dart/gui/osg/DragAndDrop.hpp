@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -40,6 +40,7 @@
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Shape.hpp"
+
 #include "DefaultEventHandler.hpp"
 
 namespace dart {

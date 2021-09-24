@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,13 +31,14 @@
  */
 
 #include <iostream>
-#include <gtest/gtest.h>
 
-#include "GTestUtils.hpp"
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 #include "dart/dart.hpp"
 #include "dart/utils/utils.hpp"
+
+#include "GTestUtils.hpp"
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

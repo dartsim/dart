@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,16 +37,15 @@
 
 #include <gtest/gtest.h>
 
-#include "TestHelpers.hpp"
-
 #include "dart/common/Composite.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/sub_ptr.hpp"
-
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart::common;
 
@@ -234,13 +233,6 @@ public:
     : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(state)
   {
   }
-};
-
-class StateAndPropertiesAspectTest
-  : public dart::common::AspectWithVersionedProperties<
-        StateAndPropertiesAspectTest,
-        dart::common::Empty>
-{
 };
 
 class GenericAspect : public Aspect, public Subject

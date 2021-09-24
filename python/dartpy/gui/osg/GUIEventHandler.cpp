@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -92,9 +92,10 @@ void GUIEventHandler(py::module& m)
                         -> osgGA::GUIEventAdapter::EventType {
                       return self->getEventType();
                     })
-                .def("getKey", +[](const osgGA::GUIEventAdapter* self) -> int {
-                  return self->getKey();
-                });
+                .def(
+                    "getKey", +[](const osgGA::GUIEventAdapter* self) -> int {
+                      return self->getKey();
+                    });
 
 #define DARTPY_DEFINE_ENUM_MOUSE_BUTTON_MASK(val)                              \
   .value(#val, osgGA::GUIEventAdapter::MouseButtonMask::val)

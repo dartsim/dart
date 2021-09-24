@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/config.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
@@ -41,6 +41,8 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/VskParser.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;

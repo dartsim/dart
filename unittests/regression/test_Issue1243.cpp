@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,9 +31,8 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
 #include <dart/dart.hpp>
+#include <gtest/gtest.h>
 
 dart::dynamics::SkeletonPtr create_box(
     const Eigen::Vector3d& dims,

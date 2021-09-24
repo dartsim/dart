@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,16 +34,15 @@
 
 #include <cassert>
 #ifndef NDEBUG
-#  include <iomanip>
-#  include <iostream>
+  #include <iomanip>
+  #include <iostream>
 #endif
-
-#include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {
@@ -55,7 +54,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver,
     BoxedLcpSolverPtr secondaryBoxedLcpSolver)
   : BoxedLcpConstraintSolver(
-        std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
+      std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
 {
   setTimeStep(timeStep);
 }
@@ -71,7 +70,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver)
   : BoxedLcpConstraintSolver(
-        std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
+      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
 {
   // Do nothing
 }
@@ -102,7 +101,7 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
   if (!lcpSolver)
   {
     dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] "
-           << "nullptr for boxed LCP solver is not allowed.";
+           << "nullptr for boxed LCP solver is not allowed.\n";
     return;
   }
 
@@ -169,7 +168,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mFIndex.setConstant(n, -1); // set findex to -1
 
   // Compute offset indices
-  mOffset.resize(n);
+  mOffset.resize(numConstraints);
   mOffset[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i)
   {

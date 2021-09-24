@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,9 +33,8 @@
 #ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 
-#include "dart/constraint/ConstraintBase.hpp"
-
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {

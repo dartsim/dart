@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -327,6 +327,12 @@ void Viewer(py::module& m)
       .def(
           "run",
           +[](dart::gui::osg::Viewer* self) -> int { return self->run(); })
+      .def(
+          "frame", +[](dart::gui::osg::Viewer* self) { self->frame(); })
+      .def(
+          "frame",
+          +[](dart::gui::osg::Viewer* self,
+              double simulationTime) { self->frame(simulationTime); })
       .def(
           "setUpViewInWindow",
           +[](dart::gui::osg::Viewer* self,

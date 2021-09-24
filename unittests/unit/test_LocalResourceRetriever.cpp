@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,7 +31,9 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "dart/common/LocalResourceRetriever.hpp"
+
 #include "TestHelpers.hpp"
 
 using dart::common::LocalResourceRetriever;
@@ -39,9 +41,9 @@ using dart::common::Resource;
 using dart::common::Uri;
 
 #ifdef _WIN32
-#  define FILE_SCHEME "file:///"
+  #define FILE_SCHEME "file:///"
 #else
-#  define FILE_SCHEME "file://"
+  #define FILE_SCHEME "file://"
 #endif
 
 TEST(LocalResourceRetriever, exists_UnsupportedUri_ReturnsFalse)

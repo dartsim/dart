@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -35,8 +35,10 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
+
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -45,15 +47,16 @@
 #include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/GradientDescentSolver.hpp"
 #include "dart/optimizer/Problem.hpp"
+
 #include "TestHelpers.hpp"
 #if HAVE_NLOPT
-#  include "dart/optimizer/nlopt/NloptSolver.hpp"
+  #include "dart/optimizer/nlopt/NloptSolver.hpp"
 #endif
 #if HAVE_IPOPT
-#  include "dart/optimizer/ipopt/IpoptSolver.hpp"
+  #include "dart/optimizer/ipopt/IpoptSolver.hpp"
 #endif
 #if HAVE_SNOPT
-#  include "dart/optimizer/snopt/SnoptSolver.hpp"
+  #include "dart/optimizer/snopt/SnoptSolver.hpp"
 #endif
 
 using namespace std;
@@ -67,14 +70,10 @@ class SampleObjFunc : public Function
 {
 public:
   /// \brief Constructor
-  SampleObjFunc() : Function()
-  {
-  }
+  SampleObjFunc() : Function() {}
 
   /// \brief Destructor
-  virtual ~SampleObjFunc()
-  {
-  }
+  virtual ~SampleObjFunc() {}
 
   /// \copydoc Function::eval
   double eval(const Eigen::VectorXd& _x) override
@@ -96,14 +95,10 @@ class SampleConstFunc : public Function
 {
 public:
   /// \brief Constructor
-  SampleConstFunc(double _a, double _b) : Function(), mA(_a), mB(_b)
-  {
-  }
+  SampleConstFunc(double _a, double _b) : Function(), mA(_a), mB(_b) {}
 
   /// \brief Destructor
-  virtual ~SampleConstFunc()
-  {
-  }
+  virtual ~SampleConstFunc() {}
 
   /// \copydoc Function::eval
   double eval(const Eigen::VectorXd& _x) override

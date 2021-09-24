@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -49,21 +49,21 @@ IKFAST_COMPILE_ASSERT(IKFAST_VERSION == 71);
 #define IKFAST_STRINGIZE(s) IKFAST_STRINGIZE2(s)
 
 #ifndef IKFAST_ASSERT
-#  include <iostream>
-#  include <sstream>
-#  include <stdexcept>
+  #include <iostream>
+  #include <sstream>
+  #include <stdexcept>
 
-#  ifdef _MSC_VER
-#    ifndef __PRETTY_FUNCTION__
-#      define __PRETTY_FUNCTION__ __FUNCDNAME__
-#    endif
-#  endif
+  #ifdef _MSC_VER
+    #ifndef __PRETTY_FUNCTION__
+      #define __PRETTY_FUNCTION__ __FUNCDNAME__
+    #endif
+  #endif
 
-#  ifndef __PRETTY_FUNCTION__
-#    define __PRETTY_FUNCTION__ __func__
-#  endif
+  #ifndef __PRETTY_FUNCTION__
+    #define __PRETTY_FUNCTION__ __func__
+  #endif
 
-#  define IKFAST_ASSERT(b)                                                     \
+  #define IKFAST_ASSERT(b)                                                     \
     {                                                                          \
       if (!(b))                                                                \
       {                                                                        \
@@ -77,26 +77,14 @@ IKFAST_COMPILE_ASSERT(IKFAST_VERSION == 71);
 #endif
 
 #if defined(_MSC_VER)
-#  define IKFAST_ALIGNED16(x) __declspec(align(16)) x
+  #define IKFAST_ALIGNED16(x) __declspec(align(16)) x
 #else
-#  define IKFAST_ALIGNED16(x) x __attribute((aligned(16)))
+  #define IKFAST_ALIGNED16(x) x __attribute((aligned(16)))
 #endif
 
 #define IK2PI ((IkReal)6.28318530717959)
 #define IKPI ((IkReal)3.14159265358979)
 #define IKPI_2 ((IkReal)1.57079632679490)
-
-#ifdef _MSC_VER
-#  ifndef isnan
-#    define isnan _isnan
-#  endif
-#  ifndef isinf
-#    define isinf _isinf
-#  endif
-//#ifndef isfinite
-//#define isfinite _isfinite
-//#endif
-#endif // _MSC_VER
 
 // lapack routines
 extern "C" {
@@ -193,23 +181,23 @@ inline double IKlog(double f)
 
 // allows asin and acos to exceed 1
 #ifndef IKFAST_SINCOS_THRESH
-#  define IKFAST_SINCOS_THRESH ((IkReal)2e-6)
+  #define IKFAST_SINCOS_THRESH ((IkReal)2e-6)
 #endif
 
 // used to check input to atan2 for degenerate cases
 #ifndef IKFAST_ATAN2_MAGTHRESH
-#  define IKFAST_ATAN2_MAGTHRESH ((IkReal)2e-6)
+  #define IKFAST_ATAN2_MAGTHRESH ((IkReal)2e-6)
 #endif
 
 // minimum distance of separate solutions
 #ifndef IKFAST_SOLUTION_THRESH
-#  define IKFAST_SOLUTION_THRESH ((IkReal)1e-6)
+  #define IKFAST_SOLUTION_THRESH ((IkReal)1e-6)
 #endif
 
 // there are checkpoints in ikfast that are evaluated to make sure they are 0.
 // This threshold speicfies by how much they can deviate
 #ifndef IKFAST_EVALCOND_THRESH
-#  define IKFAST_EVALCOND_THRESH ((IkReal)0.000005)
+  #define IKFAST_EVALCOND_THRESH ((IkReal)0.000005)
 #endif
 
 inline float IKasin(float f)
@@ -785,11 +773,11 @@ public:
                 j6eval[1]
                     = ((((66.6666666666667)
                          * (IKabs(
-                               ((-0.55) + (((-1.0) * (0.3) * cj9))
-                                + (((-1.0) * (0.045) * sj9)))))))
+                             ((-0.55) + (((-1.0) * (0.3) * cj9))
+                              + (((-1.0) * (0.045) * sj9)))))))
                        + (IKabs(
-                             ((((-1.0) * cj9 * x73)) + x73
-                              + (((20.0) * cj8 * sj9))))));
+                           ((((-1.0) * cj9 * x73)) + x73
+                            + (((20.0) * cj8 * sj9))))));
                 if (IKabs(j6eval[0]) < 0.0000010000000000
                     || IKabs(j6eval[1]) < 0.0000010000000000)
                 {
@@ -1024,9 +1012,9 @@ public:
                                           evalcond[0]
                                               = ((-3.14159265358979)
                                                  + (IKfmod(
-                                                       ((3.14159265358979)
-                                                        + (IKabs(j8))),
-                                                       6.28318530717959)));
+                                                     ((3.14159265358979)
+                                                      + (IKabs(j8))),
+                                                     6.28318530717959)));
                                           evalcond[1]
                                               = ((0.39655) + (((0.0765) * sj9))
                                                  + (((0.32595) * cj9))
@@ -1213,11 +1201,11 @@ public:
                                                                 = ((IKabs((
                                                                        (-3.14159265358979)
                                                                        + (IKfmod(
-                                                                             ((3.14159265358979)
-                                                                              + j9),
-                                                                             6.28318530717959)))))
+                                                                           ((3.14159265358979)
+                                                                            + j9),
+                                                                           6.28318530717959)))))
                                                                    + (IKabs(
-                                                                         pz)));
+                                                                       pz)));
                                                             if (IKabs(
                                                                     evalcond[0])
                                                                 < 0.0000010000000000)
@@ -1472,7 +1460,7 @@ public:
                                                                                   = ((IKabs(
                                                                                          py))
                                                                                      + (IKabs(
-                                                                                           px)));
+                                                                                         px)));
                                                                               evalcond
                                                                                   [1]
                                                                                   = -0.85;
@@ -1609,13 +1597,13 @@ public:
                                                                                                  cj6array
                                                                                                      [ij6]
                                                                                                  - cj6array
-                                                                                                       [iij6])
+                                                                                                     [iij6])
                                                                                                  < IKFAST_SOLUTION_THRESH
                                                                                           && IKabs(
                                                                                                  sj6array
                                                                                                      [ij6]
                                                                                                  - sj6array
-                                                                                                       [iij6])
+                                                                                                     [iij6])
                                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                                       {
                                                                                         j6valid
@@ -1639,7 +1627,7 @@ public:
                                                                                           [0]
                                                                                           = ((0.85)
                                                                                              * (IKsin(
-                                                                                                   j6)));
+                                                                                                 j6)));
                                                                                       if (IKabs(
                                                                                               evalcond
                                                                                                   [0])
@@ -1668,11 +1656,11 @@ public:
                                                                                     = ((IKabs((
                                                                                            (-3.14159265358979)
                                                                                            + (IKfmod(
-                                                                                                 ((3.14159265358979)
-                                                                                                  + j4),
-                                                                                                 6.28318530717959)))))
+                                                                                               ((3.14159265358979)
+                                                                                                + j4),
+                                                                                               6.28318530717959)))))
                                                                                        + (IKabs(
-                                                                                             px)));
+                                                                                           px)));
                                                                                 evalcond
                                                                                     [1]
                                                                                     = -0.85;
@@ -1912,13 +1900,13 @@ public:
                                                                                                        cj6array
                                                                                                            [ij6]
                                                                                                        - cj6array
-                                                                                                             [iij6])
+                                                                                                           [iij6])
                                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                                 && IKabs(
                                                                                                        sj6array
                                                                                                            [ij6]
                                                                                                        - sj6array
-                                                                                                             [iij6])
+                                                                                                           [iij6])
                                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                                             {
                                                                                               j6valid
@@ -1942,7 +1930,7 @@ public:
                                                                                                 [0]
                                                                                                 = ((0.85)
                                                                                                    * (IKsin(
-                                                                                                         j6)));
+                                                                                                       j6)));
                                                                                             if (IKabs(
                                                                                                     evalcond
                                                                                                         [0])
@@ -1973,10 +1961,10 @@ public:
                                                                                       = ((IKabs((
                                                                                              (-3.14159265358979)
                                                                                              + (IKfmod(
-                                                                                                   j4,
-                                                                                                   6.28318530717959)))))
+                                                                                                 j4,
+                                                                                                 6.28318530717959)))))
                                                                                          + (IKabs(
-                                                                                               px)));
+                                                                                             px)));
                                                                                   evalcond
                                                                                       [1]
                                                                                       = -0.85;
@@ -2216,13 +2204,13 @@ public:
                                                                                                          cj6array
                                                                                                              [ij6]
                                                                                                          - cj6array
-                                                                                                               [iij6])
+                                                                                                             [iij6])
                                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                                   && IKabs(
                                                                                                          sj6array
                                                                                                              [ij6]
                                                                                                          - sj6array
-                                                                                                               [iij6])
+                                                                                                             [iij6])
                                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                                               {
                                                                                                 j6valid
@@ -2246,7 +2234,7 @@ public:
                                                                                                   [0]
                                                                                                   = ((0.85)
                                                                                                      * (IKsin(
-                                                                                                           j6)));
+                                                                                                         j6)));
                                                                                               if (IKabs(
                                                                                                       evalcond
                                                                                                           [0])
@@ -2277,11 +2265,11 @@ public:
                                                                                         = ((IKabs((
                                                                                                (-3.14159265358979)
                                                                                                + (IKfmod(
-                                                                                                     ((1.5707963267949)
-                                                                                                      + j4),
-                                                                                                     6.28318530717959)))))
+                                                                                                   ((1.5707963267949)
+                                                                                                    + j4),
+                                                                                                   6.28318530717959)))))
                                                                                            + (IKabs(
-                                                                                                 py)));
+                                                                                               py)));
                                                                                     evalcond
                                                                                         [1]
                                                                                         = -0.85;
@@ -2521,13 +2509,13 @@ public:
                                                                                                            cj6array
                                                                                                                [ij6]
                                                                                                            - cj6array
-                                                                                                                 [iij6])
+                                                                                                               [iij6])
                                                                                                            < IKFAST_SOLUTION_THRESH
                                                                                                     && IKabs(
                                                                                                            sj6array
                                                                                                                [ij6]
                                                                                                            - sj6array
-                                                                                                                 [iij6])
+                                                                                                               [iij6])
                                                                                                            < IKFAST_SOLUTION_THRESH)
                                                                                                 {
                                                                                                   j6valid
@@ -2551,7 +2539,7 @@ public:
                                                                                                     [0]
                                                                                                     = ((0.85)
                                                                                                        * (IKsin(
-                                                                                                             j6)));
+                                                                                                           j6)));
                                                                                                 if (IKabs(
                                                                                                         evalcond
                                                                                                             [0])
@@ -2582,11 +2570,11 @@ public:
                                                                                           = ((IKabs(
                                                                                                  py))
                                                                                              + (IKabs((
-                                                                                                   (-3.14159265358979)
-                                                                                                   + (IKfmod(
-                                                                                                         ((4.71238898038469)
-                                                                                                          + j4),
-                                                                                                         6.28318530717959))))));
+                                                                                                 (-3.14159265358979)
+                                                                                                 + (IKfmod(
+                                                                                                     ((4.71238898038469)
+                                                                                                      + j4),
+                                                                                                     6.28318530717959))))));
                                                                                       evalcond
                                                                                           [1]
                                                                                           = -0.85;
@@ -2826,13 +2814,13 @@ public:
                                                                                                              cj6array
                                                                                                                  [ij6]
                                                                                                              - cj6array
-                                                                                                                   [iij6])
+                                                                                                                 [iij6])
                                                                                                              < IKFAST_SOLUTION_THRESH
                                                                                                       && IKabs(
                                                                                                              sj6array
                                                                                                                  [ij6]
                                                                                                              - sj6array
-                                                                                                                   [iij6])
+                                                                                                                 [iij6])
                                                                                                              < IKFAST_SOLUTION_THRESH)
                                                                                                   {
                                                                                                     j6valid
@@ -2856,7 +2844,7 @@ public:
                                                                                                       [0]
                                                                                                       = ((0.85)
                                                                                                          * (IKsin(
-                                                                                                               j6)));
+                                                                                                             j6)));
                                                                                                   if (IKabs(
                                                                                                           evalcond
                                                                                                               [0])
@@ -2985,12 +2973,12 @@ public:
                                                                                            (17.0)
                                                                                            * (x626.value)))
                                                                                        + IKsqr((
-                                                                                             (x627.value)
-                                                                                             * (((48.1666666666667)
-                                                                                                 + (((-66.6666666666667)
-                                                                                                     * x625))
-                                                                                                 + (((-66.6666666666667)
-                                                                                                     * x624))))))
+                                                                                           (x627.value)
+                                                                                           * (((48.1666666666667)
+                                                                                               + (((-66.6666666666667)
+                                                                                                   * x625))
+                                                                                               + (((-66.6666666666667)
+                                                                                                   * x624))))))
                                                                                        - 1)
                                                                                        <= IKFAST_SINCOS_THRESH)
                                                                               continue;
@@ -3063,13 +3051,13 @@ public:
                                                                                            cj6array
                                                                                                [ij6]
                                                                                            - cj6array
-                                                                                                 [iij6])
+                                                                                               [iij6])
                                                                                            < IKFAST_SOLUTION_THRESH
                                                                                     && IKabs(
                                                                                            sj6array
                                                                                                [ij6]
                                                                                            - sj6array
-                                                                                                 [iij6])
+                                                                                               [iij6])
                                                                                            < IKFAST_SOLUTION_THRESH)
                                                                                 {
                                                                                   j6valid
@@ -3304,20 +3292,17 @@ public:
                                                                                        + (((1.17647058823529)
                                                                                            * x641))))
                                                                                    + IKsqr((
-                                                                                         (x645.value)
-                                                                                         * ((
-                                                                                               (((-1.0)
-                                                                                                 * (78.4313725490196)
-                                                                                                 * sj4
-                                                                                                 * (py
-                                                                                                    * py
-                                                                                                    * py)))
-                                                                                               + (((-78.4313725490196)
-                                                                                                   * x641
-                                                                                                   * x644))
-                                                                                               + (((-78.4313725490196) * x642 * x643)) + (((-1.0) * (78.4313725490196) * cj4 * (px * px * px))) + (((56.6666666666667) * x642))
-                                                                                               + (((56.6666666666667)
-                                                                                                   * x641))))))
+                                                                                       (x645.value)
+                                                                                       * (((((-1.0)
+                                                                                             * (78.4313725490196)
+                                                                                             * sj4
+                                                                                             * (py
+                                                                                                * py
+                                                                                                * py)))
+                                                                                           + (((-78.4313725490196)
+                                                                                               * x641
+                                                                                               * x644))
+                                                                                           + (((-78.4313725490196) * x642 * x643)) + (((-1.0) * (78.4313725490196) * cj4 * (px * px * px))) + (((56.6666666666667) * x642)) + (((56.6666666666667) * x641))))))
                                                                                    - 1)
                                                                                    <= IKFAST_SINCOS_THRESH)
                                                                           continue;
@@ -3409,13 +3394,13 @@ public:
                                                                                        cj6array
                                                                                            [ij6]
                                                                                        - cj6array
-                                                                                             [iij6])
+                                                                                           [iij6])
                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                 && IKabs(
                                                                                        sj6array
                                                                                            [ij6]
                                                                                        - sj6array
-                                                                                             [iij6])
+                                                                                           [iij6])
                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                             {
                                                                               j6valid
@@ -3643,20 +3628,20 @@ public:
                                                                                    + (((1.17647058823529)
                                                                                        * x659))))
                                                                                + IKsqr((
-                                                                                     (x664.value)
-                                                                                     * (((0.2125)
-                                                                                         + (((-2.58823529411765)
-                                                                                             * cj4
-                                                                                             * px
-                                                                                             * x660))
-                                                                                         + (((-0.294117647058824)
-                                                                                             * x662))
-                                                                                         + (((-1.0)
-                                                                                             * x661
-                                                                                             * x663))
-                                                                                         + ((x662
-                                                                                             * x663))
-                                                                                         + x661))))
+                                                                                   (x664.value)
+                                                                                   * (((0.2125)
+                                                                                       + (((-2.58823529411765)
+                                                                                           * cj4
+                                                                                           * px
+                                                                                           * x660))
+                                                                                       + (((-0.294117647058824)
+                                                                                           * x662))
+                                                                                       + (((-1.0)
+                                                                                           * x661
+                                                                                           * x663))
+                                                                                       + ((x662
+                                                                                           * x663))
+                                                                                       + x661))))
                                                                                - 1)
                                                                                <= IKFAST_SINCOS_THRESH)
                                                                       continue;
@@ -3731,13 +3716,13 @@ public:
                                                                                    cj6array
                                                                                        [ij6]
                                                                                    - cj6array
-                                                                                         [iij6])
+                                                                                       [iij6])
                                                                                    < IKFAST_SOLUTION_THRESH
                                                                             && IKabs(
                                                                                    sj6array
                                                                                        [ij6]
                                                                                    - sj6array
-                                                                                         [iij6])
+                                                                                       [iij6])
                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                         {
                                                                           j6valid
@@ -4063,13 +4048,13 @@ public:
                                                                          cj6array
                                                                              [ij6]
                                                                          - cj6array
-                                                                               [iij6])
+                                                                             [iij6])
                                                                          < IKFAST_SOLUTION_THRESH
                                                                   && IKabs(
                                                                          sj6array
                                                                              [ij6]
                                                                          - sj6array
-                                                                               [iij6])
+                                                                             [iij6])
                                                                          < IKFAST_SOLUTION_THRESH)
                                                               {
                                                                 j6valid[iij6]
@@ -4360,13 +4345,13 @@ public:
                                                                      cj6array
                                                                          [ij6]
                                                                      - cj6array
-                                                                           [iij6])
+                                                                         [iij6])
                                                                      < IKFAST_SOLUTION_THRESH
                                                               && IKabs(
                                                                      sj6array
                                                                          [ij6]
                                                                      - sj6array
-                                                                           [iij6])
+                                                                         [iij6])
                                                                      < IKFAST_SOLUTION_THRESH)
                                                           {
                                                             j6valid[iij6]
@@ -4625,12 +4610,12 @@ public:
                                                           && IKabs(
                                                                  cj6array[ij6]
                                                                  - cj6array
-                                                                       [iij6])
+                                                                     [iij6])
                                                                  < IKFAST_SOLUTION_THRESH
                                                           && IKabs(
                                                                  sj6array[ij6]
                                                                  - sj6array
-                                                                       [iij6])
+                                                                     [iij6])
                                                                  < IKFAST_SOLUTION_THRESH)
                                                       {
                                                         j6valid[iij6] = false;
@@ -4753,11 +4738,11 @@ public:
                                             evalcond[0]
                                                 = ((-3.14159265358979)
                                                    + (IKfmod(
-                                                         ((3.14159265358979)
-                                                          + (IKabs((
-                                                                (-3.14159265358979)
-                                                                + j8)))),
-                                                         6.28318530717959)));
+                                                       ((3.14159265358979)
+                                                        + (IKabs(
+                                                            ((-3.14159265358979)
+                                                             + j8)))),
+                                                       6.28318530717959)));
                                             evalcond[1]
                                                 = ((0.39655)
                                                    + (((0.0765) * sj9))
@@ -4922,11 +4907,11 @@ public:
                                                                   = ((IKabs((
                                                                          (-3.14159265358979)
                                                                          + (IKfmod(
-                                                                               ((3.14159265358979)
-                                                                                + j9),
-                                                                               6.28318530717959)))))
+                                                                             ((3.14159265358979)
+                                                                              + j9),
+                                                                             6.28318530717959)))))
                                                                      + (IKabs(
-                                                                           pz)));
+                                                                         pz)));
                                                               if (IKabs(evalcond
                                                                             [0])
                                                                   < 0.0000010000000000)
@@ -5186,7 +5171,7 @@ public:
                                                                                     = ((IKabs(
                                                                                            py))
                                                                                        + (IKabs(
-                                                                                             px)));
+                                                                                           px)));
                                                                                 evalcond
                                                                                     [1]
                                                                                     = -0.85;
@@ -5323,13 +5308,13 @@ public:
                                                                                                    cj6array
                                                                                                        [ij6]
                                                                                                    - cj6array
-                                                                                                         [iij6])
+                                                                                                       [iij6])
                                                                                                    < IKFAST_SOLUTION_THRESH
                                                                                             && IKabs(
                                                                                                    sj6array
                                                                                                        [ij6]
                                                                                                    - sj6array
-                                                                                                         [iij6])
+                                                                                                       [iij6])
                                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                                         {
                                                                                           j6valid
@@ -5353,7 +5338,7 @@ public:
                                                                                             [0]
                                                                                             = ((0.85)
                                                                                                * (IKsin(
-                                                                                                     j6)));
+                                                                                                   j6)));
                                                                                         if (IKabs(
                                                                                                 evalcond
                                                                                                     [0])
@@ -5382,11 +5367,11 @@ public:
                                                                                       = ((IKabs((
                                                                                              (-3.14159265358979)
                                                                                              + (IKfmod(
-                                                                                                   ((3.14159265358979)
-                                                                                                    + j4),
-                                                                                                   6.28318530717959)))))
+                                                                                                 ((3.14159265358979)
+                                                                                                  + j4),
+                                                                                                 6.28318530717959)))))
                                                                                          + (IKabs(
-                                                                                               px)));
+                                                                                             px)));
                                                                                   evalcond
                                                                                       [1]
                                                                                       = -0.85;
@@ -5626,13 +5611,13 @@ public:
                                                                                                          cj6array
                                                                                                              [ij6]
                                                                                                          - cj6array
-                                                                                                               [iij6])
+                                                                                                             [iij6])
                                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                                   && IKabs(
                                                                                                          sj6array
                                                                                                              [ij6]
                                                                                                          - sj6array
-                                                                                                               [iij6])
+                                                                                                             [iij6])
                                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                                               {
                                                                                                 j6valid
@@ -5656,7 +5641,7 @@ public:
                                                                                                   [0]
                                                                                                   = ((0.85)
                                                                                                      * (IKsin(
-                                                                                                           j6)));
+                                                                                                         j6)));
                                                                                               if (IKabs(
                                                                                                       evalcond
                                                                                                           [0])
@@ -5687,10 +5672,10 @@ public:
                                                                                         = ((IKabs((
                                                                                                (-3.14159265358979)
                                                                                                + (IKfmod(
-                                                                                                     j4,
-                                                                                                     6.28318530717959)))))
+                                                                                                   j4,
+                                                                                                   6.28318530717959)))))
                                                                                            + (IKabs(
-                                                                                                 px)));
+                                                                                               px)));
                                                                                     evalcond
                                                                                         [1]
                                                                                         = -0.85;
@@ -5930,13 +5915,13 @@ public:
                                                                                                            cj6array
                                                                                                                [ij6]
                                                                                                            - cj6array
-                                                                                                                 [iij6])
+                                                                                                               [iij6])
                                                                                                            < IKFAST_SOLUTION_THRESH
                                                                                                     && IKabs(
                                                                                                            sj6array
                                                                                                                [ij6]
                                                                                                            - sj6array
-                                                                                                                 [iij6])
+                                                                                                               [iij6])
                                                                                                            < IKFAST_SOLUTION_THRESH)
                                                                                                 {
                                                                                                   j6valid
@@ -5960,7 +5945,7 @@ public:
                                                                                                     [0]
                                                                                                     = ((0.85)
                                                                                                        * (IKsin(
-                                                                                                             j6)));
+                                                                                                           j6)));
                                                                                                 if (IKabs(
                                                                                                         evalcond
                                                                                                             [0])
@@ -5991,11 +5976,11 @@ public:
                                                                                           = ((IKabs((
                                                                                                  (-3.14159265358979)
                                                                                                  + (IKfmod(
-                                                                                                       ((1.5707963267949)
-                                                                                                        + j4),
-                                                                                                       6.28318530717959)))))
+                                                                                                     ((1.5707963267949)
+                                                                                                      + j4),
+                                                                                                     6.28318530717959)))))
                                                                                              + (IKabs(
-                                                                                                   py)));
+                                                                                                 py)));
                                                                                       evalcond
                                                                                           [1]
                                                                                           = -0.85;
@@ -6235,13 +6220,13 @@ public:
                                                                                                              cj6array
                                                                                                                  [ij6]
                                                                                                              - cj6array
-                                                                                                                   [iij6])
+                                                                                                                 [iij6])
                                                                                                              < IKFAST_SOLUTION_THRESH
                                                                                                       && IKabs(
                                                                                                              sj6array
                                                                                                                  [ij6]
                                                                                                              - sj6array
-                                                                                                                   [iij6])
+                                                                                                                 [iij6])
                                                                                                              < IKFAST_SOLUTION_THRESH)
                                                                                                   {
                                                                                                     j6valid
@@ -6265,7 +6250,7 @@ public:
                                                                                                       [0]
                                                                                                       = ((0.85)
                                                                                                          * (IKsin(
-                                                                                                               j6)));
+                                                                                                             j6)));
                                                                                                   if (IKabs(
                                                                                                           evalcond
                                                                                                               [0])
@@ -6296,11 +6281,11 @@ public:
                                                                                             = ((IKabs(
                                                                                                    py))
                                                                                                + (IKabs((
-                                                                                                     (-3.14159265358979)
-                                                                                                     + (IKfmod(
-                                                                                                           ((4.71238898038469)
-                                                                                                            + j4),
-                                                                                                           6.28318530717959))))));
+                                                                                                   (-3.14159265358979)
+                                                                                                   + (IKfmod(
+                                                                                                       ((4.71238898038469)
+                                                                                                        + j4),
+                                                                                                       6.28318530717959))))));
                                                                                         evalcond
                                                                                             [1]
                                                                                             = -0.85;
@@ -6540,13 +6525,13 @@ public:
                                                                                                                cj6array
                                                                                                                    [ij6]
                                                                                                                - cj6array
-                                                                                                                     [iij6])
+                                                                                                                   [iij6])
                                                                                                                < IKFAST_SOLUTION_THRESH
                                                                                                         && IKabs(
                                                                                                                sj6array
                                                                                                                    [ij6]
                                                                                                                - sj6array
-                                                                                                                     [iij6])
+                                                                                                                   [iij6])
                                                                                                                < IKFAST_SOLUTION_THRESH)
                                                                                                     {
                                                                                                       j6valid
@@ -6570,7 +6555,7 @@ public:
                                                                                                         [0]
                                                                                                         = ((0.85)
                                                                                                            * (IKsin(
-                                                                                                                 j6)));
+                                                                                                               j6)));
                                                                                                     if (IKabs(
                                                                                                             evalcond
                                                                                                                 [0])
@@ -6699,12 +6684,12 @@ public:
                                                                                              (17.0)
                                                                                              * (x802.value)))
                                                                                          + IKsqr((
-                                                                                               (x803.value)
-                                                                                               * (((-48.1666666666667)
-                                                                                                   + (((66.6666666666667)
-                                                                                                       * x800))
-                                                                                                   + (((66.6666666666667)
-                                                                                                       * x801))))))
+                                                                                             (x803.value)
+                                                                                             * (((-48.1666666666667)
+                                                                                                 + (((66.6666666666667)
+                                                                                                     * x800))
+                                                                                                 + (((66.6666666666667)
+                                                                                                     * x801))))))
                                                                                          - 1)
                                                                                          <= IKFAST_SINCOS_THRESH)
                                                                                 continue;
@@ -6777,13 +6762,13 @@ public:
                                                                                              cj6array
                                                                                                  [ij6]
                                                                                              - cj6array
-                                                                                                   [iij6])
+                                                                                                 [iij6])
                                                                                              < IKFAST_SOLUTION_THRESH
                                                                                       && IKabs(
                                                                                              sj6array
                                                                                                  [ij6]
                                                                                              - sj6array
-                                                                                                   [iij6])
+                                                                                                 [iij6])
                                                                                              < IKFAST_SOLUTION_THRESH)
                                                                                   {
                                                                                     j6valid
@@ -7009,18 +6994,8 @@ public:
                                                                                            * x816))
                                                                                          + (((1.17647058823529)
                                                                                              * x817))))
-                                                                                     + IKsqr(
-                                                                                           (
-                                                                                               (x820.value)
-                                                                                               * (((((78.4313725490196)
-                                                                                                     * x817
-                                                                                                     * x818))
-                                                                                                   + (((78.4313725490196) * sj4 * (py * py * py))) + (((78.4313725490196) * cj4 * (px * px * px))) + (((-56.6666666666667) * x816))
-                                                                                                   + (((-56.6666666666667)
-                                                                                                       * x817))
-                                                                                                   + (((78.4313725490196)
-                                                                                                       * x816
-                                                                                                       * x819))))))
+                                                                                     + IKsqr((
+                                                                                         (x820.value) * (((((78.4313725490196) * x817 * x818)) + (((78.4313725490196) * sj4 * (py * py * py))) + (((78.4313725490196) * cj4 * (px * px * px))) + (((-56.6666666666667) * x816)) + (((-56.6666666666667) * x817)) + (((78.4313725490196) * x816 * x819))))))
                                                                                      - 1)
                                                                                      <= IKFAST_SINCOS_THRESH)
                                                                             continue;
@@ -7110,13 +7085,13 @@ public:
                                                                                          cj6array
                                                                                              [ij6]
                                                                                          - cj6array
-                                                                                               [iij6])
+                                                                                             [iij6])
                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                   && IKabs(
                                                                                          sj6array
                                                                                              [ij6]
                                                                                          - sj6array
-                                                                                               [iij6])
+                                                                                             [iij6])
                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                               {
                                                                                 j6valid
@@ -7342,20 +7317,20 @@ public:
                                                                                      + (((1.17647058823529)
                                                                                          * x834))))
                                                                                  + IKsqr((
-                                                                                       (x838.value)
-                                                                                       * (((0.2125)
-                                                                                           + (((-0.294117647058824)
-                                                                                               * x836))
-                                                                                           + x835
-                                                                                           + (((-2.58823529411765)
-                                                                                               * cj4
-                                                                                               * px
-                                                                                               * x834))
-                                                                                           + ((x836
-                                                                                               * x837))
-                                                                                           + (((-1.0)
-                                                                                               * x835
-                                                                                               * x837))))))
+                                                                                     (x838.value)
+                                                                                     * (((0.2125)
+                                                                                         + (((-0.294117647058824)
+                                                                                             * x836))
+                                                                                         + x835
+                                                                                         + (((-2.58823529411765)
+                                                                                             * cj4
+                                                                                             * px
+                                                                                             * x834))
+                                                                                         + ((x836
+                                                                                             * x837))
+                                                                                         + (((-1.0)
+                                                                                             * x835
+                                                                                             * x837))))))
                                                                                  - 1)
                                                                                  <= IKFAST_SINCOS_THRESH)
                                                                         continue;
@@ -7433,13 +7408,13 @@ public:
                                                                                      cj6array
                                                                                          [ij6]
                                                                                      - cj6array
-                                                                                           [iij6])
+                                                                                         [iij6])
                                                                                      < IKFAST_SOLUTION_THRESH
                                                                               && IKabs(
                                                                                      sj6array
                                                                                          [ij6]
                                                                                      - sj6array
-                                                                                           [iij6])
+                                                                                         [iij6])
                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                           {
                                                                             j6valid
@@ -7765,13 +7740,13 @@ public:
                                                                            cj6array
                                                                                [ij6]
                                                                            - cj6array
-                                                                                 [iij6])
+                                                                               [iij6])
                                                                            < IKFAST_SOLUTION_THRESH
                                                                     && IKabs(
                                                                            sj6array
                                                                                [ij6]
                                                                            - sj6array
-                                                                                 [iij6])
+                                                                               [iij6])
                                                                            < IKFAST_SOLUTION_THRESH)
                                                                 {
                                                                   j6valid[iij6]
@@ -8077,13 +8052,13 @@ public:
                                                                        cj6array
                                                                            [ij6]
                                                                        - cj6array
-                                                                             [iij6])
+                                                                           [iij6])
                                                                        < IKFAST_SOLUTION_THRESH
                                                                 && IKabs(
                                                                        sj6array
                                                                            [ij6]
                                                                        - sj6array
-                                                                             [iij6])
+                                                                           [iij6])
                                                                        < IKFAST_SOLUTION_THRESH)
                                                             {
                                                               j6valid[iij6]
@@ -8334,12 +8309,12 @@ public:
                                                             && IKabs(
                                                                    cj6array[ij6]
                                                                    - cj6array
-                                                                         [iij6])
+                                                                       [iij6])
                                                                    < IKFAST_SOLUTION_THRESH
                                                             && IKabs(
                                                                    sj6array[ij6]
                                                                    - sj6array
-                                                                         [iij6])
+                                                                       [iij6])
                                                                    < IKFAST_SOLUTION_THRESH)
                                                         {
                                                           j6valid[iij6] = false;
@@ -9168,11 +9143,11 @@ public:
                                       evalcond[0]
                                           = ((-3.14159265358979)
                                              + (IKfmod(
-                                                   ((3.14159265358979)
-                                                    + (IKabs(
-                                                          ((-1.5707963267949)
-                                                           + j8)))),
-                                                   6.28318530717959)));
+                                                 ((3.14159265358979)
+                                                  + (IKabs(
+                                                      ((-1.5707963267949)
+                                                       + j8)))),
+                                                 6.28318530717959)));
                                       evalcond[1]
                                           = ((0.39655) + (((0.0765) * sj9))
                                              + (((0.32595) * cj9))
@@ -9216,11 +9191,11 @@ public:
                                                       + (((-1.0) * py * x1050))
                                                       + ((px * x1051)))))
                                                  + (IKabs(
-                                                       (((px * x1052))
-                                                        + ((px * x1050))
-                                                        + ((py * x1051))
-                                                        + (((-1.0) * px
-                                                            * x1053))))));
+                                                     (((px * x1052))
+                                                      + ((px * x1050))
+                                                      + ((py * x1051))
+                                                      + (((-1.0) * px
+                                                          * x1053))))));
                                           if (IKabs(j4eval[0])
                                                   < 0.0000010000000000
                                               || IKabs(j4eval[1])
@@ -9253,12 +9228,12 @@ public:
                                                               * x1054))
                                                           + (((-1.0) * px
                                                               * x1056)))))
-                                                     + (IKabs((
-                                                           ((py * x1056))
-                                                           + ((py * x1054))
-                                                           + (((-1.0) * py
-                                                               * x1057))
-                                                           + ((px * x1058))))));
+                                                     + (IKabs(
+                                                         (((py * x1056))
+                                                          + ((py * x1054))
+                                                          + (((-1.0) * py
+                                                              * x1057))
+                                                          + ((px * x1058))))));
                                               if (IKabs(j4eval[0])
                                                       < 0.0000010000000000
                                                   || IKabs(j4eval[1])
@@ -9303,15 +9278,15 @@ public:
                                                              + ((py * x1061))
                                                              + ((px * x1062)))))
                                                          + (IKabs((
-                                                               ((px * x1060))
-                                                               + (((-1.0) * px
-                                                                   * x1061))
-                                                               + (((1.51009803921569)
-                                                                   * px))
-                                                               + ((py * x1063))
-                                                               + ((py * x1062))
-                                                               + ((py
-                                                                   * x1064))))));
+                                                             ((px * x1060))
+                                                             + (((-1.0) * px
+                                                                 * x1061))
+                                                             + (((1.51009803921569)
+                                                                 * px))
+                                                             + ((py * x1063))
+                                                             + ((py * x1062))
+                                                             + ((py
+                                                                 * x1064))))));
                                                   j4eval[2] = IKsign(x1059);
                                                   if (IKabs(j4eval[0])
                                                           < 0.0000010000000000
@@ -9329,11 +9304,11 @@ public:
                                                         evalcond[0]
                                                             = ((-3.14159265358979)
                                                                + (IKfmod(
-                                                                     ((3.14159265358979)
-                                                                      + (IKabs((
-                                                                            (-1.5707963267949)
-                                                                            + j6)))),
-                                                                     6.28318530717959)));
+                                                                   ((3.14159265358979)
+                                                                    + (IKabs((
+                                                                        (-1.5707963267949)
+                                                                        + j6)))),
+                                                                   6.28318530717959)));
                                                         evalcond[1]
                                                             = ((-1.0)
                                                                * (((1.0)
@@ -9387,19 +9362,19 @@ public:
                                                                            * px
                                                                            * x1068)))))
                                                                    + (IKabs((
-                                                                         (((0.3)
-                                                                           * x1066))
-                                                                         + (((-1.0)
-                                                                             * (1.51009803921569)
-                                                                             * py))
-                                                                         + (((-1.32323529411765)
-                                                                             * x1067))
-                                                                         + (((0.55)
-                                                                             * px))
-                                                                         + ((py
-                                                                             * x1068))
-                                                                         + ((px
-                                                                             * x1069))))));
+                                                                       (((0.3)
+                                                                         * x1066))
+                                                                       + (((-1.0)
+                                                                           * (1.51009803921569)
+                                                                           * py))
+                                                                       + (((-1.32323529411765)
+                                                                           * x1067))
+                                                                       + (((0.55)
+                                                                           * px))
+                                                                       + ((py
+                                                                           * x1068))
+                                                                       + ((px
+                                                                           * x1069))))));
                                                             j4eval[2]
                                                                 = IKsign(x1065);
                                                             if (IKabs(j4eval[0])
@@ -9455,19 +9430,19 @@ public:
                                                                            + (((-3.92156862745098)
                                                                                * x1073)))))
                                                                        + (IKabs((
-                                                                             (((-1.32323529411765)
-                                                                               * x1072))
-                                                                             + (((0.588235294117647)
-                                                                                 * x1073))
-                                                                             + (((3.92156862745098)
-                                                                                 * x1074))
-                                                                             + (((0.316735294117647)
-                                                                                 * px))
-                                                                             + (((0.108264705882353)
-                                                                                 * x1071))
-                                                                             + (((-1.0)
-                                                                                 * (1.51009803921569)
-                                                                                 * py))))));
+                                                                           (((-1.32323529411765)
+                                                                             * x1072))
+                                                                           + (((0.588235294117647)
+                                                                               * x1073))
+                                                                           + (((3.92156862745098)
+                                                                               * x1074))
+                                                                           + (((0.316735294117647)
+                                                                               * px))
+                                                                           + (((0.108264705882353)
+                                                                               * x1071))
+                                                                           + (((-1.0)
+                                                                               * (1.51009803921569)
+                                                                               * py))))));
                                                                 j4eval[2]
                                                                     = IKsign(
                                                                         x1070);
@@ -9528,19 +9503,19 @@ public:
                                                                                + (((0.119091176470588)
                                                                                    * x1077)))))
                                                                            + (IKabs((
-                                                                                 (((0.348408823529412)
-                                                                                   * px))
-                                                                                 + (((-1.45555882352941)
-                                                                                     * x1077))
-                                                                                 + (((4.31372549019608)
-                                                                                     * x1079))
-                                                                                 + (((0.647058823529412)
-                                                                                     * x1078))
-                                                                                 + (((-1.0)
-                                                                                     * (1.66110784313725)
-                                                                                     * py))
-                                                                                 + (((0.119091176470588)
-                                                                                     * x1076))))));
+                                                                               (((0.348408823529412)
+                                                                                 * px))
+                                                                               + (((-1.45555882352941)
+                                                                                   * x1077))
+                                                                               + (((4.31372549019608)
+                                                                                   * x1079))
+                                                                               + (((0.647058823529412)
+                                                                                   * x1078))
+                                                                               + (((-1.0)
+                                                                                   * (1.66110784313725)
+                                                                                   * py))
+                                                                               + (((0.119091176470588)
+                                                                                   * x1076))))));
                                                                     j4eval[2] = IKsign((
                                                                         (((1.1)
                                                                           * pp))
@@ -9580,7 +9555,7 @@ public:
                                                                               = ((IKabs(
                                                                                      py))
                                                                                  + (IKabs(
-                                                                                       px)));
+                                                                                     px)));
                                                                           evalcond
                                                                               [1]
                                                                               = ((-0.55)
@@ -9810,13 +9785,13 @@ public:
                                                                                              cj4array
                                                                                                  [ij4]
                                                                                              - cj4array
-                                                                                                   [iij4])
+                                                                                                 [iij4])
                                                                                              < IKFAST_SOLUTION_THRESH
                                                                                       && IKabs(
                                                                                              sj4array
                                                                                                  [ij4]
                                                                                              - sj4array
-                                                                                                   [iij4])
+                                                                                                 [iij4])
                                                                                              < IKFAST_SOLUTION_THRESH)
                                                                                   {
                                                                                     j4valid
@@ -10007,13 +9982,13 @@ public:
                                                                                        cj4array
                                                                                            [ij4]
                                                                                        - cj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                 && IKabs(
                                                                                        sj4array
                                                                                            [ij4]
                                                                                        - sj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                             {
                                                                               j4valid
@@ -10263,13 +10238,13 @@ public:
                                                                                    cj4array
                                                                                        [ij4]
                                                                                    - cj4array
-                                                                                         [iij4])
+                                                                                       [iij4])
                                                                                    < IKFAST_SOLUTION_THRESH
                                                                             && IKabs(
                                                                                    sj4array
                                                                                        [ij4]
                                                                                    - sj4array
-                                                                                         [iij4])
+                                                                                       [iij4])
                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                         {
                                                                           j4valid
@@ -10511,13 +10486,13 @@ public:
                                                                                cj4array
                                                                                    [ij4]
                                                                                - cj4array
-                                                                                     [iij4])
+                                                                                   [iij4])
                                                                                < IKFAST_SOLUTION_THRESH
                                                                         && IKabs(
                                                                                sj4array
                                                                                    [ij4]
                                                                                - sj4array
-                                                                                     [iij4])
+                                                                                   [iij4])
                                                                                < IKFAST_SOLUTION_THRESH)
                                                                     {
                                                                       j4valid
@@ -10637,11 +10612,11 @@ public:
                                                           evalcond[0]
                                                               = ((-3.14159265358979)
                                                                  + (IKfmod(
-                                                                       ((3.14159265358979)
-                                                                        + (IKabs((
-                                                                              (1.5707963267949)
-                                                                              + j6)))),
-                                                                       6.28318530717959)));
+                                                                     ((3.14159265358979)
+                                                                      + (IKabs((
+                                                                          (1.5707963267949)
+                                                                          + j6)))),
+                                                                     6.28318530717959)));
                                                           evalcond[1] = pz;
                                                           if (IKabs(evalcond[0])
                                                                   < 0.0000010000000000
@@ -10694,21 +10669,21 @@ public:
                                                                              * (0.55)
                                                                              * py)))))
                                                                      + (IKabs((
-                                                                           (((-1.0)
-                                                                             * px
-                                                                             * x1121))
-                                                                           + (((-1.0)
-                                                                               * (0.55)
-                                                                               * px))
-                                                                           + (((-0.3)
-                                                                               * x1118))
-                                                                           + (((-1.0)
-                                                                               * (1.51009803921569)
-                                                                               * py))
-                                                                           + ((py
-                                                                               * x1120))
-                                                                           + (((-1.32323529411765)
-                                                                               * x1119))))));
+                                                                         (((-1.0)
+                                                                           * px
+                                                                           * x1121))
+                                                                         + (((-1.0)
+                                                                             * (0.55)
+                                                                             * px))
+                                                                         + (((-0.3)
+                                                                             * x1118))
+                                                                         + (((-1.0)
+                                                                             * (1.51009803921569)
+                                                                             * py))
+                                                                         + ((py
+                                                                             * x1120))
+                                                                         + (((-1.32323529411765)
+                                                                             * x1119))))));
                                                               j4eval[2]
                                                                   = IKsign(
                                                                       x1117);
@@ -10769,20 +10744,20 @@ public:
                                                                              + (((1.32323529411765)
                                                                                  * x1123)))))
                                                                          + (IKabs((
-                                                                               (((-0.108264705882353)
-                                                                                 * x1123))
-                                                                               + (((-1.0)
-                                                                                   * (1.51009803921569)
-                                                                                   * py))
-                                                                               + (((-1.0)
-                                                                                   * (0.316735294117647)
-                                                                                   * px))
-                                                                               + (((-0.588235294117647)
-                                                                                   * x1125))
-                                                                               + (((3.92156862745098)
-                                                                                   * x1126))
-                                                                               + (((-1.32323529411765)
-                                                                                   * x1124))))));
+                                                                             (((-0.108264705882353)
+                                                                               * x1123))
+                                                                             + (((-1.0)
+                                                                                 * (1.51009803921569)
+                                                                                 * py))
+                                                                             + (((-1.0)
+                                                                                 * (0.316735294117647)
+                                                                                 * px))
+                                                                             + (((-0.588235294117647)
+                                                                                 * x1125))
+                                                                             + (((3.92156862745098)
+                                                                                 * x1126))
+                                                                             + (((-1.32323529411765)
+                                                                                 * x1124))))));
                                                                   j4eval[2]
                                                                       = IKsign(
                                                                           x1122);
@@ -10854,19 +10829,19 @@ public:
                                                                                  + (((-4.31372549019608)
                                                                                      * x1131)))))
                                                                              + (IKabs((
-                                                                                   (((0.647058823529412)
-                                                                                     * x1131))
-                                                                                   + (((0.348408823529412)
-                                                                                       * py))
-                                                                                   + (((0.119091176470588)
-                                                                                       * x1129))
-                                                                                   + (((4.31372549019608)
-                                                                                       * x1130))
-                                                                                   + (((-1.0)
-                                                                                       * (1.66110784313725)
-                                                                                       * px))
-                                                                                   + (((-1.45555882352941)
-                                                                                       * x1128))))));
+                                                                                 (((0.647058823529412)
+                                                                                   * x1131))
+                                                                                 + (((0.348408823529412)
+                                                                                     * py))
+                                                                                 + (((0.119091176470588)
+                                                                                     * x1129))
+                                                                                 + (((4.31372549019608)
+                                                                                     * x1130))
+                                                                                 + (((-1.0)
+                                                                                     * (1.66110784313725)
+                                                                                     * px))
+                                                                                 + (((-1.45555882352941)
+                                                                                     * x1128))))));
                                                                       if (IKabs(
                                                                               j4eval
                                                                                   [0])
@@ -10901,7 +10876,7 @@ public:
                                                                                 = ((IKabs(
                                                                                        py))
                                                                                    + (IKabs(
-                                                                                         px)));
+                                                                                       px)));
                                                                             evalcond
                                                                                 [1]
                                                                                 = ((-0.55)
@@ -11133,13 +11108,13 @@ public:
                                                                                                cj4array
                                                                                                    [ij4]
                                                                                                - cj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH
                                                                                         && IKabs(
                                                                                                sj4array
                                                                                                    [ij4]
                                                                                                - sj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH)
                                                                                     {
                                                                                       j4valid
@@ -11330,13 +11305,13 @@ public:
                                                                                          cj4array
                                                                                              [ij4]
                                                                                          - cj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                   && IKabs(
                                                                                          sj4array
                                                                                              [ij4]
                                                                                          - sj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                               {
                                                                                 j4valid
@@ -11598,13 +11573,13 @@ public:
                                                                                      cj4array
                                                                                          [ij4]
                                                                                      - cj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH
                                                                               && IKabs(
                                                                                      sj4array
                                                                                          [ij4]
                                                                                      - sj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                           {
                                                                             j4valid
@@ -11861,13 +11836,13 @@ public:
                                                                                  cj4array
                                                                                      [ij4]
                                                                                  - cj4array
-                                                                                       [iij4])
+                                                                                     [iij4])
                                                                                  < IKFAST_SOLUTION_THRESH
                                                                           && IKabs(
                                                                                  sj4array
                                                                                      [ij4]
                                                                                  - sj4array
-                                                                                       [iij4])
+                                                                                     [iij4])
                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                       {
                                                                         j4valid
@@ -12010,7 +11985,7 @@ public:
                                                             evalcond[0]
                                                                 = ((IKabs(py))
                                                                    + (IKabs(
-                                                                         px)));
+                                                                       px)));
                                                             evalcond[1]
                                                                 = ((-0.55)
                                                                    + (((-1.0)
@@ -12204,13 +12179,13 @@ public:
                                                                                cj4array
                                                                                    [ij4]
                                                                                - cj4array
-                                                                                     [iij4])
+                                                                                   [iij4])
                                                                                < IKFAST_SOLUTION_THRESH
                                                                         && IKabs(
                                                                                sj4array
                                                                                    [ij4]
                                                                                - sj4array
-                                                                                     [iij4])
+                                                                                   [iij4])
                                                                                < IKFAST_SOLUTION_THRESH)
                                                                     {
                                                                       j4valid
@@ -12362,13 +12337,13 @@ public:
                                                                      cj4array
                                                                          [ij4]
                                                                      - cj4array
-                                                                           [iij4])
+                                                                         [iij4])
                                                                      < IKFAST_SOLUTION_THRESH
                                                               && IKabs(
                                                                      sj4array
                                                                          [ij4]
                                                                      - sj4array
-                                                                           [iij4])
+                                                                         [iij4])
                                                                      < IKFAST_SOLUTION_THRESH)
                                                           {
                                                             j4valid[iij4]
@@ -12561,12 +12536,12 @@ public:
                                                           && IKabs(
                                                                  cj4array[ij4]
                                                                  - cj4array
-                                                                       [iij4])
+                                                                     [iij4])
                                                                  < IKFAST_SOLUTION_THRESH
                                                           && IKabs(
                                                                  sj4array[ij4]
                                                                  - sj4array
-                                                                       [iij4])
+                                                                     [iij4])
                                                                  < IKFAST_SOLUTION_THRESH)
                                                       {
                                                         j4valid[iij4] = false;
@@ -12836,11 +12811,11 @@ public:
                                         evalcond[0]
                                             = ((-3.14159265358979)
                                                + (IKfmod(
-                                                     ((3.14159265358979)
-                                                      + (IKabs(
-                                                            ((1.5707963267949)
-                                                             + j8)))),
-                                                     6.28318530717959)));
+                                                   ((3.14159265358979)
+                                                    + (IKabs(
+                                                        ((1.5707963267949)
+                                                         + j8)))),
+                                                   6.28318530717959)));
                                         evalcond[1]
                                             = ((0.39655) + (((0.0765) * sj9))
                                                + (((0.32595) * cj9))
@@ -12885,11 +12860,10 @@ public:
                                                         + (((-1.0) * py
                                                             * x1224)))))
                                                    + (IKabs((
-                                                         (((-1.0) * px * x1221))
-                                                         + ((py * x1222))
-                                                         + (((-1.0) * px
-                                                             * x1223))
-                                                         + ((px * x1224))))));
+                                                       (((-1.0) * px * x1221))
+                                                       + ((py * x1222))
+                                                       + (((-1.0) * px * x1223))
+                                                       + ((px * x1224))))));
                                             j4eval[2] = IKsign(x1220);
                                             if (IKabs(j4eval[0])
                                                     < 0.0000010000000000
@@ -12926,13 +12900,13 @@ public:
                                                             + (((-1.0) * px
                                                                 * x1230)))))
                                                        + (IKabs(
-                                                             ((((-1.0) * px
-                                                                * x1228))
-                                                              + (((-1.0) * px
-                                                                  * x1226))
-                                                              + ((px * x1229))
-                                                              + (((-1.0) * py
-                                                                  * x1230))))));
+                                                           ((((-1.0) * px
+                                                              * x1228))
+                                                            + (((-1.0) * px
+                                                                * x1226))
+                                                            + ((px * x1229))
+                                                            + (((-1.0) * py
+                                                                * x1230))))));
                                                 if (IKabs(j4eval[0])
                                                         < 0.0000010000000000
                                                     || IKabs(j4eval[1])
@@ -12978,18 +12952,15 @@ public:
                                                                + ((py
                                                                    * x1235)))))
                                                            + (IKabs((
-                                                                 (((-1.0) * py
-                                                                   * x1233))
-                                                                 + ((py
-                                                                     * x1232))
-                                                                 + ((px
-                                                                     * x1236))
-                                                                 + ((px
-                                                                     * x1235))
-                                                                 + (((1.51009803921569)
-                                                                     * py))
-                                                                 + ((px
-                                                                     * x1234))))));
+                                                               (((-1.0) * py
+                                                                 * x1233))
+                                                               + ((py * x1232))
+                                                               + ((px * x1236))
+                                                               + ((px * x1235))
+                                                               + (((1.51009803921569)
+                                                                   * py))
+                                                               + ((px
+                                                                   * x1234))))));
                                                     j4eval[2] = IKsign(x1231);
                                                     if (IKabs(j4eval[0])
                                                             < 0.0000010000000000
@@ -13007,11 +12978,11 @@ public:
                                                           evalcond[0]
                                                               = ((-3.14159265358979)
                                                                  + (IKfmod(
-                                                                       ((3.14159265358979)
-                                                                        + (IKabs((
-                                                                              (-1.5707963267949)
-                                                                              + j6)))),
-                                                                       6.28318530717959)));
+                                                                     ((3.14159265358979)
+                                                                      + (IKabs((
+                                                                          (-1.5707963267949)
+                                                                          + j6)))),
+                                                                     6.28318530717959)));
                                                           evalcond[1] = pz;
                                                           if (IKabs(evalcond[0])
                                                                   < 0.0000010000000000
@@ -13062,19 +13033,19 @@ public:
                                                                          + (((-1.32323529411765)
                                                                              * x1238)))))
                                                                      + (IKabs((
-                                                                           ((px
-                                                                             * x1241))
-                                                                           + (((1.51009803921569)
-                                                                               * py))
-                                                                           + (((1.32323529411765)
-                                                                               * x1239))
-                                                                           + (((-1.0)
-                                                                               * py
-                                                                               * x1240))
-                                                                           + (((0.55)
-                                                                               * px))
-                                                                           + (((0.3)
-                                                                               * x1238))))));
+                                                                         ((px
+                                                                           * x1241))
+                                                                         + (((1.51009803921569)
+                                                                             * py))
+                                                                         + (((1.32323529411765)
+                                                                             * x1239))
+                                                                         + (((-1.0)
+                                                                             * py
+                                                                             * x1240))
+                                                                         + (((0.55)
+                                                                             * px))
+                                                                         + (((0.3)
+                                                                             * x1238))))));
                                                               j4eval[2]
                                                                   = IKsign(
                                                                       x1237);
@@ -13135,18 +13106,18 @@ public:
                                                                              + (((3.92156862745098)
                                                                                  * x1245)))))
                                                                          + (IKabs((
-                                                                               (((0.588235294117647)
-                                                                                 * x1245))
-                                                                               + (((1.32323529411765)
-                                                                                   * x1244))
-                                                                               + (((-3.92156862745098)
-                                                                                   * x1246))
-                                                                               + (((0.316735294117647)
-                                                                                   * px))
-                                                                               + (((1.51009803921569)
-                                                                                   * py))
-                                                                               + (((0.108264705882353)
-                                                                                   * x1243))))));
+                                                                             (((0.588235294117647)
+                                                                               * x1245))
+                                                                             + (((1.32323529411765)
+                                                                                 * x1244))
+                                                                             + (((-3.92156862745098)
+                                                                                 * x1246))
+                                                                             + (((0.316735294117647)
+                                                                                 * px))
+                                                                             + (((1.51009803921569)
+                                                                                 * py))
+                                                                             + (((0.108264705882353)
+                                                                                 * x1243))))));
                                                                   j4eval[2]
                                                                       = IKsign(
                                                                           x1242);
@@ -13212,18 +13183,18 @@ public:
                                                                                      * (1.66110784313725)
                                                                                      * px)))))
                                                                              + (IKabs((
-                                                                                   (((1.45555882352941)
-                                                                                     * x1249))
-                                                                                   + (((0.348408823529412)
-                                                                                       * px))
-                                                                                   + (((1.66110784313725)
-                                                                                       * py))
-                                                                                   + (((0.647058823529412)
-                                                                                       * x1250))
-                                                                                   + (((0.119091176470588)
-                                                                                       * x1248))
-                                                                                   + (((-4.31372549019608)
-                                                                                       * x1251))))));
+                                                                                 (((1.45555882352941)
+                                                                                   * x1249))
+                                                                                 + (((0.348408823529412)
+                                                                                     * px))
+                                                                                 + (((1.66110784313725)
+                                                                                     * py))
+                                                                                 + (((0.647058823529412)
+                                                                                     * x1250))
+                                                                                 + (((0.119091176470588)
+                                                                                     * x1248))
+                                                                                 + (((-4.31372549019608)
+                                                                                     * x1251))))));
                                                                       j4eval[2] = IKsign((
                                                                           (((1.1)
                                                                             * pp))
@@ -13263,7 +13234,7 @@ public:
                                                                                 = ((IKabs(
                                                                                        py))
                                                                                    + (IKabs(
-                                                                                         px)));
+                                                                                       px)));
                                                                             evalcond
                                                                                 [1]
                                                                                 = ((-0.55)
@@ -13499,13 +13470,13 @@ public:
                                                                                                cj4array
                                                                                                    [ij4]
                                                                                                - cj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH
                                                                                         && IKabs(
                                                                                                sj4array
                                                                                                    [ij4]
                                                                                                - sj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH)
                                                                                     {
                                                                                       j4valid
@@ -13696,13 +13667,13 @@ public:
                                                                                          cj4array
                                                                                              [ij4]
                                                                                          - cj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                   && IKabs(
                                                                                          sj4array
                                                                                              [ij4]
                                                                                          - sj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                               {
                                                                                 j4valid
@@ -13958,13 +13929,13 @@ public:
                                                                                      cj4array
                                                                                          [ij4]
                                                                                      - cj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH
                                                                               && IKabs(
                                                                                      sj4array
                                                                                          [ij4]
                                                                                      - sj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                           {
                                                                             j4valid
@@ -14213,13 +14184,13 @@ public:
                                                                                  cj4array
                                                                                      [ij4]
                                                                                  - cj4array
-                                                                                       [iij4])
+                                                                                     [iij4])
                                                                                  < IKFAST_SOLUTION_THRESH
                                                                           && IKabs(
                                                                                  sj4array
                                                                                      [ij4]
                                                                                  - sj4array
-                                                                                       [iij4])
+                                                                                     [iij4])
                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                       {
                                                                         j4valid
@@ -14349,11 +14320,11 @@ public:
                                                             evalcond[0]
                                                                 = ((-3.14159265358979)
                                                                    + (IKfmod(
-                                                                         ((3.14159265358979)
-                                                                          + (IKabs((
-                                                                                (1.5707963267949)
-                                                                                + j6)))),
-                                                                         6.28318530717959)));
+                                                                       ((3.14159265358979)
+                                                                        + (IKabs((
+                                                                            (1.5707963267949)
+                                                                            + j6)))),
+                                                                       6.28318530717959)));
                                                             evalcond[1]
                                                                 = ((-1.0)
                                                                    * (((1.0)
@@ -14415,21 +14386,21 @@ public:
                                                                                * (0.55)
                                                                                * py)))))
                                                                        + (IKabs((
-                                                                             (((-1.0)
-                                                                               * (0.55)
-                                                                               * px))
-                                                                             + (((-0.3)
-                                                                                 * x1291))
-                                                                             + (((-1.0)
-                                                                                 * px
-                                                                                 * x1294))
-                                                                             + (((1.51009803921569)
-                                                                                 * py))
-                                                                             + (((-1.0)
-                                                                                 * py
-                                                                                 * x1293))
-                                                                             + (((1.32323529411765)
-                                                                                 * x1292))))));
+                                                                           (((-1.0)
+                                                                             * (0.55)
+                                                                             * px))
+                                                                           + (((-0.3)
+                                                                               * x1291))
+                                                                           + (((-1.0)
+                                                                               * px
+                                                                               * x1294))
+                                                                           + (((1.51009803921569)
+                                                                               * py))
+                                                                           + (((-1.0)
+                                                                               * py
+                                                                               * x1293))
+                                                                           + (((1.32323529411765)
+                                                                               * x1292))))));
                                                                 j4eval[2]
                                                                     = IKsign(
                                                                         x1290);
@@ -14492,20 +14463,20 @@ public:
                                                                                + (((-0.588235294117647)
                                                                                    * x1298)))))
                                                                            + (IKabs((
-                                                                                 (((-0.588235294117647)
-                                                                                   * x1299))
-                                                                                 + (((-1.32323529411765)
-                                                                                     * x1296))
-                                                                                 + (((-1.0)
-                                                                                     * (1.51009803921569)
-                                                                                     * px))
-                                                                                 + (((-1.0)
-                                                                                     * (0.316735294117647)
-                                                                                     * py))
-                                                                                 + (((-0.108264705882353)
-                                                                                     * x1297))
-                                                                                 + (((3.92156862745098)
-                                                                                     * x1298))))));
+                                                                               (((-0.588235294117647)
+                                                                                 * x1299))
+                                                                               + (((-1.32323529411765)
+                                                                                   * x1296))
+                                                                               + (((-1.0)
+                                                                                   * (1.51009803921569)
+                                                                                   * px))
+                                                                               + (((-1.0)
+                                                                                   * (0.316735294117647)
+                                                                                   * py))
+                                                                               + (((-0.108264705882353)
+                                                                                   * x1297))
+                                                                               + (((3.92156862745098)
+                                                                                   * x1298))))));
                                                                     j4eval[2]
                                                                         = IKsign(
                                                                             x1295);
@@ -14580,18 +14551,18 @@ public:
                                                                                    + (((-1.45555882352941)
                                                                                        * x1302)))))
                                                                                + (IKabs((
-                                                                                     (((0.348408823529412)
-                                                                                       * py))
-                                                                                     + (((1.66110784313725)
-                                                                                         * px))
-                                                                                     + (((1.45555882352941)
-                                                                                         * x1301))
-                                                                                     + (((-4.31372549019608)
-                                                                                         * x1303))
-                                                                                     + (((0.647058823529412)
-                                                                                         * x1304))
-                                                                                     + (((0.119091176470588)
-                                                                                         * x1302))))));
+                                                                                   (((0.348408823529412)
+                                                                                     * py))
+                                                                                   + (((1.66110784313725)
+                                                                                       * px))
+                                                                                   + (((1.45555882352941)
+                                                                                       * x1301))
+                                                                                   + (((-4.31372549019608)
+                                                                                       * x1303))
+                                                                                   + (((0.647058823529412)
+                                                                                       * x1304))
+                                                                                   + (((0.119091176470588)
+                                                                                       * x1302))))));
                                                                         if (IKabs(
                                                                                 j4eval
                                                                                     [0])
@@ -14626,7 +14597,7 @@ public:
                                                                                   = ((IKabs(
                                                                                          py))
                                                                                      + (IKabs(
-                                                                                           px)));
+                                                                                         px)));
                                                                               evalcond
                                                                                   [1]
                                                                                   = ((-0.55)
@@ -14864,13 +14835,13 @@ public:
                                                                                                  cj4array
                                                                                                      [ij4]
                                                                                                  - cj4array
-                                                                                                       [iij4])
+                                                                                                     [iij4])
                                                                                                  < IKFAST_SOLUTION_THRESH
                                                                                           && IKabs(
                                                                                                  sj4array
                                                                                                      [ij4]
                                                                                                  - sj4array
-                                                                                                       [iij4])
+                                                                                                     [iij4])
                                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                                       {
                                                                                         j4valid
@@ -15061,13 +15032,13 @@ public:
                                                                                            cj4array
                                                                                                [ij4]
                                                                                            - cj4array
-                                                                                                 [iij4])
+                                                                                               [iij4])
                                                                                            < IKFAST_SOLUTION_THRESH
                                                                                     && IKabs(
                                                                                            sj4array
                                                                                                [ij4]
                                                                                            - sj4array
-                                                                                                 [iij4])
+                                                                                               [iij4])
                                                                                            < IKFAST_SOLUTION_THRESH)
                                                                                 {
                                                                                   j4valid
@@ -15336,13 +15307,13 @@ public:
                                                                                        cj4array
                                                                                            [ij4]
                                                                                        - cj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                 && IKabs(
                                                                                        sj4array
                                                                                            [ij4]
                                                                                        - sj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                             {
                                                                               j4valid
@@ -15601,13 +15572,13 @@ public:
                                                                                    cj4array
                                                                                        [ij4]
                                                                                    - cj4array
-                                                                                         [iij4])
+                                                                                       [iij4])
                                                                                    < IKFAST_SOLUTION_THRESH
                                                                             && IKabs(
                                                                                    sj4array
                                                                                        [ij4]
                                                                                    - sj4array
-                                                                                         [iij4])
+                                                                                       [iij4])
                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                         {
                                                                           j4valid
@@ -15749,7 +15720,7 @@ public:
                                                               evalcond[0]
                                                                   = ((IKabs(py))
                                                                      + (IKabs(
-                                                                           px)));
+                                                                         px)));
                                                               evalcond[1]
                                                                   = ((-0.55)
                                                                      + (((-1.0)
@@ -15956,13 +15927,13 @@ public:
                                                                                  cj4array
                                                                                      [ij4]
                                                                                  - cj4array
-                                                                                       [iij4])
+                                                                                     [iij4])
                                                                                  < IKFAST_SOLUTION_THRESH
                                                                           && IKabs(
                                                                                  sj4array
                                                                                      [ij4]
                                                                                  - sj4array
-                                                                                       [iij4])
+                                                                                     [iij4])
                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                       {
                                                                         j4valid
@@ -16110,13 +16081,13 @@ public:
                                                                        cj4array
                                                                            [ij4]
                                                                        - cj4array
-                                                                             [iij4])
+                                                                           [iij4])
                                                                        < IKFAST_SOLUTION_THRESH
                                                                 && IKabs(
                                                                        sj4array
                                                                            [ij4]
                                                                        - sj4array
-                                                                             [iij4])
+                                                                           [iij4])
                                                                        < IKFAST_SOLUTION_THRESH)
                                                             {
                                                               j4valid[iij4]
@@ -16327,12 +16298,12 @@ public:
                                                             && IKabs(
                                                                    cj4array[ij4]
                                                                    - cj4array
-                                                                         [iij4])
+                                                                       [iij4])
                                                                    < IKFAST_SOLUTION_THRESH
                                                             && IKabs(
                                                                    sj4array[ij4]
                                                                    - sj4array
-                                                                         [iij4])
+                                                                       [iij4])
                                                                    < IKFAST_SOLUTION_THRESH)
                                                         {
                                                           j4valid[iij4] = false;
@@ -16631,9 +16602,9 @@ public:
                                           evalcond[0]
                                               = ((-3.14159265358979)
                                                  + (IKfmod(
-                                                       ((3.14159265358979)
-                                                        + (IKabs(j6))),
-                                                       6.28318530717959)));
+                                                     ((3.14159265358979)
+                                                      + (IKabs(j6))),
+                                                     6.28318530717959)));
                                           evalcond[1]
                                               = ((0.39655) + (((0.0765) * sj9))
                                                  + (((0.32595) * cj9))
@@ -16688,16 +16659,15 @@ public:
                                                           + (((-1.0) * py
                                                               * x1400)))))
                                                      + (IKabs((
-                                                           (((-1.0) * px
-                                                             * x1400))
-                                                           + (((-1.0) * py
-                                                               * x1404))
-                                                           + (((-1.0) * px
-                                                               * x1402))
-                                                           + (((-1.0) * py
-                                                               * x1401))
-                                                           + ((py * x1405))
-                                                           + ((px * x1403))))));
+                                                         (((-1.0) * px * x1400))
+                                                         + (((-1.0) * py
+                                                             * x1404))
+                                                         + (((-1.0) * px
+                                                             * x1402))
+                                                         + (((-1.0) * py
+                                                             * x1401))
+                                                         + ((py * x1405))
+                                                         + ((px * x1403))))));
                                               j4eval[2] = IKsign(x1399);
                                               if (IKabs(j4eval[0])
                                                       < 0.0000010000000000
@@ -16749,10 +16719,10 @@ public:
                                                             evalcond[0]
                                                                 = ((-3.14159265358979)
                                                                    + (IKfmod(
-                                                                         ((3.14159265358979)
-                                                                          + (IKabs(
-                                                                                j8))),
-                                                                         6.28318530717959)));
+                                                                       ((3.14159265358979)
+                                                                        + (IKabs(
+                                                                            j8))),
+                                                                       6.28318530717959)));
                                                             if (IKabs(
                                                                     evalcond[0])
                                                                 < 0.0000010000000000)
@@ -16793,14 +16763,14 @@ public:
                                                                                * py
                                                                                * x1409)))))
                                                                        + (IKabs((
-                                                                             (((-1.0)
-                                                                               * px
-                                                                               * x1409))
-                                                                             + (((-1.0)
-                                                                                 * (15403.0)
-                                                                                 * px))
-                                                                             + ((px
-                                                                                 * x1410))))));
+                                                                           (((-1.0)
+                                                                             * px
+                                                                             * x1409))
+                                                                           + (((-1.0)
+                                                                               * (15403.0)
+                                                                               * px))
+                                                                           + ((px
+                                                                               * x1410))))));
                                                                 j4eval[2]
                                                                     = IKsign(
                                                                         x1408);
@@ -16850,13 +16820,13 @@ public:
                                                                                + (((17.0)
                                                                                    * px)))))
                                                                            + (IKabs((
-                                                                                 ((py
-                                                                                   * x1412))
-                                                                                 + (((17.0)
-                                                                                     * py))
-                                                                                 + (((-1.0)
-                                                                                     * py
-                                                                                     * x1413))))));
+                                                                               ((py
+                                                                                 * x1412))
+                                                                               + (((17.0)
+                                                                                   * py))
+                                                                               + (((-1.0)
+                                                                                   * py
+                                                                                   * x1413))))));
                                                                     j4eval[2] = IKsign((
                                                                         (((9.0)
                                                                           * pp))
@@ -16896,7 +16866,7 @@ public:
                                                                               = ((IKabs(
                                                                                      py))
                                                                                  + (IKabs(
-                                                                                       px)));
+                                                                                     px)));
                                                                           evalcond
                                                                               [1]
                                                                               = 0;
@@ -17111,13 +17081,13 @@ public:
                                                                                              cj4array
                                                                                                  [ij4]
                                                                                              - cj4array
-                                                                                                   [iij4])
+                                                                                                 [iij4])
                                                                                              < IKFAST_SOLUTION_THRESH
                                                                                       && IKabs(
                                                                                              sj4array
                                                                                                  [ij4]
                                                                                              - sj4array
-                                                                                                   [iij4])
+                                                                                                 [iij4])
                                                                                              < IKFAST_SOLUTION_THRESH)
                                                                                   {
                                                                                     j4valid
@@ -17289,13 +17259,13 @@ public:
                                                                                        cj4array
                                                                                            [ij4]
                                                                                        - cj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                 && IKabs(
                                                                                        sj4array
                                                                                            [ij4]
                                                                                        - sj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                             {
                                                                               j4valid
@@ -17502,13 +17472,13 @@ public:
                                                                                    cj4array
                                                                                        [ij4]
                                                                                    - cj4array
-                                                                                         [iij4])
+                                                                                       [iij4])
                                                                                    < IKFAST_SOLUTION_THRESH
                                                                             && IKabs(
                                                                                    sj4array
                                                                                        [ij4]
                                                                                    - sj4array
-                                                                                         [iij4])
+                                                                                       [iij4])
                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                         {
                                                                           j4valid
@@ -17610,11 +17580,11 @@ public:
                                                               evalcond[0]
                                                                   = ((-3.14159265358979)
                                                                      + (IKfmod(
-                                                                           ((3.14159265358979)
-                                                                            + (IKabs((
-                                                                                  (-3.14159265358979)
-                                                                                  + j8)))),
-                                                                           6.28318530717959)));
+                                                                         ((3.14159265358979)
+                                                                          + (IKabs((
+                                                                              (-3.14159265358979)
+                                                                              + j8)))),
+                                                                         6.28318530717959)));
                                                               if (IKabs(evalcond
                                                                             [0])
                                                                   < 0.0000010000000000)
@@ -17654,13 +17624,13 @@ public:
                                                                                  * px
                                                                                  * x1433)))))
                                                                          + (IKabs((
-                                                                               (((15403.0)
-                                                                                 * py))
-                                                                               + ((py
-                                                                                   * x1432))
-                                                                               + (((-1.0)
-                                                                                   * py
-                                                                                   * x1433))))));
+                                                                             (((15403.0)
+                                                                               * py))
+                                                                             + ((py
+                                                                                 * x1432))
+                                                                             + (((-1.0)
+                                                                                 * py
+                                                                                 * x1433))))));
                                                                   j4eval[2]
                                                                       = IKsign(
                                                                           x1431);
@@ -17718,14 +17688,14 @@ public:
                                                                                      * px
                                                                                      * x1435)))))
                                                                              + (IKabs((
-                                                                                   ((py
-                                                                                     * x1436))
-                                                                                   + (((-1.0)
-                                                                                       * py
-                                                                                       * x1435))
-                                                                                   + (((-1.0)
-                                                                                       * (17.0)
-                                                                                       * py))))));
+                                                                                 ((py
+                                                                                   * x1436))
+                                                                                 + (((-1.0)
+                                                                                     * py
+                                                                                     * x1435))
+                                                                                 + (((-1.0)
+                                                                                     * (17.0)
+                                                                                     * py))))));
                                                                       if (IKabs(
                                                                               j4eval
                                                                                   [0])
@@ -17760,7 +17730,7 @@ public:
                                                                                 = ((IKabs(
                                                                                        py))
                                                                                    + (IKabs(
-                                                                                         px)));
+                                                                                       px)));
                                                                             evalcond
                                                                                 [1]
                                                                                 = 0;
@@ -17981,13 +17951,13 @@ public:
                                                                                                cj4array
                                                                                                    [ij4]
                                                                                                - cj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH
                                                                                         && IKabs(
                                                                                                sj4array
                                                                                                    [ij4]
                                                                                                - sj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH)
                                                                                     {
                                                                                       j4valid
@@ -18161,13 +18131,13 @@ public:
                                                                                          cj4array
                                                                                              [ij4]
                                                                                          - cj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                   && IKabs(
                                                                                          sj4array
                                                                                              [ij4]
                                                                                          - sj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                               {
                                                                                 j4valid
@@ -18374,13 +18344,13 @@ public:
                                                                                      cj4array
                                                                                          [ij4]
                                                                                      - cj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH
                                                                               && IKabs(
                                                                                      sj4array
                                                                                          [ij4]
                                                                                      - sj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                           {
                                                                             j4valid
@@ -18480,11 +18450,11 @@ public:
                                                                 evalcond[0]
                                                                     = ((-3.14159265358979)
                                                                        + (IKfmod(
-                                                                             ((3.14159265358979)
-                                                                              + (IKabs((
-                                                                                    (-1.5707963267949)
-                                                                                    + j8)))),
-                                                                             6.28318530717959)));
+                                                                           ((3.14159265358979)
+                                                                            + (IKabs((
+                                                                                (-1.5707963267949)
+                                                                                + j8)))),
+                                                                           6.28318530717959)));
                                                                 if (IKabs(
                                                                         evalcond
                                                                             [0])
@@ -18526,14 +18496,14 @@ public:
                                                                                + ((px
                                                                                    * x1456)))))
                                                                            + (IKabs((
-                                                                                 (((-1.0)
-                                                                                   * py
-                                                                                   * x1456))
-                                                                                 + ((py
-                                                                                     * x1457))
-                                                                                 + (((-1.0)
-                                                                                     * (15403.0)
-                                                                                     * py))))));
+                                                                               (((-1.0)
+                                                                                 * py
+                                                                                 * x1456))
+                                                                               + ((py
+                                                                                   * x1457))
+                                                                               + (((-1.0)
+                                                                                   * (15403.0)
+                                                                                   * py))))));
                                                                     j4eval[2]
                                                                         = IKsign(
                                                                             x1455);
@@ -18592,14 +18562,14 @@ public:
                                                                                    + (((17.0)
                                                                                        * py)))))
                                                                                + (IKabs((
-                                                                                     (((-1.0)
-                                                                                       * (17.0)
-                                                                                       * px))
-                                                                                     + (((-1.0)
-                                                                                         * px
-                                                                                         * x1459))
-                                                                                     + ((px
-                                                                                         * x1460))))));
+                                                                                   (((-1.0)
+                                                                                     * (17.0)
+                                                                                     * px))
+                                                                                   + (((-1.0)
+                                                                                       * px
+                                                                                       * x1459))
+                                                                                   + ((px
+                                                                                       * x1460))))));
                                                                         if (IKabs(
                                                                                 j4eval
                                                                                     [0])
@@ -18634,7 +18604,7 @@ public:
                                                                                   = ((IKabs(
                                                                                          py))
                                                                                      + (IKabs(
-                                                                                           px)));
+                                                                                         px)));
                                                                               evalcond
                                                                                   [1]
                                                                                   = x1461;
@@ -18849,13 +18819,13 @@ public:
                                                                                                  cj4array
                                                                                                      [ij4]
                                                                                                  - cj4array
-                                                                                                       [iij4])
+                                                                                                     [iij4])
                                                                                                  < IKFAST_SOLUTION_THRESH
                                                                                           && IKabs(
                                                                                                  sj4array
                                                                                                      [ij4]
                                                                                                  - sj4array
-                                                                                                       [iij4])
+                                                                                                     [iij4])
                                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                                       {
                                                                                         j4valid
@@ -19028,13 +18998,13 @@ public:
                                                                                            cj4array
                                                                                                [ij4]
                                                                                            - cj4array
-                                                                                                 [iij4])
+                                                                                               [iij4])
                                                                                            < IKFAST_SOLUTION_THRESH
                                                                                     && IKabs(
                                                                                            sj4array
                                                                                                [ij4]
                                                                                            - sj4array
-                                                                                                 [iij4])
+                                                                                               [iij4])
                                                                                            < IKFAST_SOLUTION_THRESH)
                                                                                 {
                                                                                   j4valid
@@ -19249,13 +19219,13 @@ public:
                                                                                        cj4array
                                                                                            [ij4]
                                                                                        - cj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                 && IKabs(
                                                                                        sj4array
                                                                                            [ij4]
                                                                                        - sj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                             {
                                                                               j4valid
@@ -19355,11 +19325,11 @@ public:
                                                                   evalcond[0]
                                                                       = ((-3.14159265358979)
                                                                          + (IKfmod(
-                                                                               ((3.14159265358979)
-                                                                                + (IKabs((
-                                                                                      (1.5707963267949)
-                                                                                      + j8)))),
-                                                                               6.28318530717959)));
+                                                                             ((3.14159265358979)
+                                                                              + (IKabs((
+                                                                                  (1.5707963267949)
+                                                                                  + j8)))),
+                                                                             6.28318530717959)));
                                                                   if (IKabs(
                                                                           evalcond
                                                                               [0])
@@ -19403,14 +19373,14 @@ public:
                                                                                  + ((py
                                                                                      * x1479)))))
                                                                              + (IKabs((
-                                                                                   (((-1.0)
-                                                                                     * px
-                                                                                     * x1479))
-                                                                                   + ((px
-                                                                                       * x1480))
-                                                                                   + (((-1.0)
-                                                                                       * (15403.0)
-                                                                                       * px))))));
+                                                                                 (((-1.0)
+                                                                                   * px
+                                                                                   * x1479))
+                                                                                 + ((px
+                                                                                     * x1480))
+                                                                                 + (((-1.0)
+                                                                                     * (15403.0)
+                                                                                     * px))))));
                                                                       j4eval[2]
                                                                           = IKsign(
                                                                               x1478);
@@ -19465,13 +19435,13 @@ public:
                                                                                          * (17.0)
                                                                                          * py)))))
                                                                                  + (IKabs((
-                                                                                       (((17.0)
-                                                                                         * px))
-                                                                                       + ((px
-                                                                                           * x1482))
-                                                                                       + (((-1.0)
-                                                                                           * px
-                                                                                           * x1483))))));
+                                                                                     (((17.0)
+                                                                                       * px))
+                                                                                     + ((px
+                                                                                         * x1482))
+                                                                                     + (((-1.0)
+                                                                                         * px
+                                                                                         * x1483))))));
                                                                           j4eval[2] = IKsign((
                                                                               (((-9.0)
                                                                                 * x1481))
@@ -19511,7 +19481,7 @@ public:
                                                                                     = ((IKabs(
                                                                                            py))
                                                                                        + (IKabs(
-                                                                                             px)));
+                                                                                           px)));
                                                                                 evalcond
                                                                                     [1]
                                                                                     = ((1.51009803921569)
@@ -19732,13 +19702,13 @@ public:
                                                                                                    cj4array
                                                                                                        [ij4]
                                                                                                    - cj4array
-                                                                                                         [iij4])
+                                                                                                       [iij4])
                                                                                                    < IKFAST_SOLUTION_THRESH
                                                                                             && IKabs(
                                                                                                    sj4array
                                                                                                        [ij4]
                                                                                                    - sj4array
-                                                                                                         [iij4])
+                                                                                                       [iij4])
                                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                                         {
                                                                                           j4valid
@@ -19911,13 +19881,13 @@ public:
                                                                                              cj4array
                                                                                                  [ij4]
                                                                                              - cj4array
-                                                                                                   [iij4])
+                                                                                                 [iij4])
                                                                                              < IKFAST_SOLUTION_THRESH
                                                                                       && IKabs(
                                                                                              sj4array
                                                                                                  [ij4]
                                                                                              - sj4array
-                                                                                                   [iij4])
+                                                                                                 [iij4])
                                                                                              < IKFAST_SOLUTION_THRESH)
                                                                                   {
                                                                                     j4valid
@@ -20136,13 +20106,13 @@ public:
                                                                                          cj4array
                                                                                              [ij4]
                                                                                          - cj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                   && IKabs(
                                                                                          sj4array
                                                                                              [ij4]
                                                                                          - sj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                               {
                                                                                 j4valid
@@ -20253,7 +20223,7 @@ public:
                                                                         = ((IKabs(
                                                                                py))
                                                                            + (IKabs(
-                                                                                 px)));
+                                                                               px)));
                                                                     evalcond[1]
                                                                         = (((sj8
                                                                              * x1503))
@@ -20487,13 +20457,13 @@ public:
                                                                                        cj4array
                                                                                            [ij4]
                                                                                        - cj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                 && IKabs(
                                                                                        sj4array
                                                                                            [ij4]
                                                                                        - sj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                             {
                                                                               j4valid
@@ -20682,13 +20652,13 @@ public:
                                                                          cj4array
                                                                              [ij4]
                                                                          - cj4array
-                                                                               [iij4])
+                                                                             [iij4])
                                                                          < IKFAST_SOLUTION_THRESH
                                                                   && IKabs(
                                                                          sj4array
                                                                              [ij4]
                                                                          - sj4array
-                                                                               [iij4])
+                                                                             [iij4])
                                                                          < IKFAST_SOLUTION_THRESH)
                                                               {
                                                                 j4valid[iij4]
@@ -20948,13 +20918,13 @@ public:
                                                                      cj4array
                                                                          [ij4]
                                                                      - cj4array
-                                                                           [iij4])
+                                                                         [iij4])
                                                                      < IKFAST_SOLUTION_THRESH
                                                               && IKabs(
                                                                      sj4array
                                                                          [ij4]
                                                                      - sj4array
-                                                                           [iij4])
+                                                                         [iij4])
                                                                      < IKFAST_SOLUTION_THRESH)
                                                           {
                                                             j4valid[iij4]
@@ -21186,12 +21156,12 @@ public:
                                                           && IKabs(
                                                                  cj4array[ij4]
                                                                  - cj4array
-                                                                       [iij4])
+                                                                     [iij4])
                                                                  < IKFAST_SOLUTION_THRESH
                                                           && IKabs(
                                                                  sj4array[ij4]
                                                                  - sj4array
-                                                                       [iij4])
+                                                                     [iij4])
                                                                  < IKFAST_SOLUTION_THRESH)
                                                       {
                                                         j4valid[iij4] = false;
@@ -21313,11 +21283,11 @@ public:
                                             evalcond[0]
                                                 = ((-3.14159265358979)
                                                    + (IKfmod(
-                                                         ((3.14159265358979)
-                                                          + (IKabs((
-                                                                (-3.14159265358979)
-                                                                + j6)))),
-                                                         6.28318530717959)));
+                                                       ((3.14159265358979)
+                                                        + (IKabs(
+                                                            ((-3.14159265358979)
+                                                             + j6)))),
+                                                       6.28318530717959)));
                                             evalcond[1]
                                                 = ((0.39655)
                                                    + (((0.0765) * sj9))
@@ -21379,15 +21349,15 @@ public:
                                                             + ((py * x1576))
                                                             + ((px * x1580)))))
                                                        + (IKabs(
-                                                             (((px * x1578))
-                                                              + (((-1.0) * py
-                                                                  * x1580))
-                                                              + ((px * x1576))
-                                                              + (((-1.0) * px
-                                                                  * x1579))
-                                                              + ((py * x1581))
-                                                              + (((-1.0) * py
-                                                                  * x1577))))));
+                                                           (((px * x1578))
+                                                            + (((-1.0) * py
+                                                                * x1580))
+                                                            + ((px * x1576))
+                                                            + (((-1.0) * px
+                                                                * x1579))
+                                                            + ((py * x1581))
+                                                            + (((-1.0) * py
+                                                                * x1577))))));
                                                 j4eval[2] = IKsign(x1575);
                                                 if (IKabs(j4eval[0])
                                                         < 0.0000010000000000
@@ -21440,11 +21410,11 @@ public:
                                                               evalcond[0]
                                                                   = ((-3.14159265358979)
                                                                      + (IKfmod(
-                                                                           ((3.14159265358979)
-                                                                            + (IKabs((
-                                                                                  (-1.5707963267949)
-                                                                                  + j8)))),
-                                                                           6.28318530717959)));
+                                                                         ((3.14159265358979)
+                                                                          + (IKabs((
+                                                                              (-1.5707963267949)
+                                                                              + j8)))),
+                                                                         6.28318530717959)));
                                                               if (IKabs(evalcond
                                                                             [0])
                                                                   < 0.0000010000000000)
@@ -21484,14 +21454,14 @@ public:
                                                                                  * px
                                                                                  * x1586)))))
                                                                          + (IKabs((
-                                                                               (((-1.0)
-                                                                                 * py
-                                                                                 * x1585))
-                                                                               + ((py
-                                                                                   * x1586))
-                                                                               + (((-1.0)
-                                                                                   * (15403.0)
-                                                                                   * py))))));
+                                                                             (((-1.0)
+                                                                               * py
+                                                                               * x1585))
+                                                                             + ((py
+                                                                                 * x1586))
+                                                                             + (((-1.0)
+                                                                                 * (15403.0)
+                                                                                 * py))))));
                                                                   j4eval[2]
                                                                       = IKsign(
                                                                           x1584);
@@ -21542,12 +21512,12 @@ public:
                                                                                  + ((py
                                                                                      * x1588)))))
                                                                              + (IKabs((
-                                                                                   ((px
-                                                                                     * x1588))
-                                                                                   + (((17.0)
-                                                                                       * px))
-                                                                                   + ((px
-                                                                                       * x1589))))));
+                                                                                 ((px
+                                                                                   * x1588))
+                                                                                 + (((17.0)
+                                                                                     * px))
+                                                                                 + ((px
+                                                                                     * x1589))))));
                                                                       j4eval[2] = IKsign((
                                                                           (((9.0)
                                                                             * pp))
@@ -21587,7 +21557,7 @@ public:
                                                                                 = ((IKabs(
                                                                                        py))
                                                                                    + (IKabs(
-                                                                                         px)));
+                                                                                       px)));
                                                                             evalcond
                                                                                 [1]
                                                                                 = x1590;
@@ -21803,13 +21773,13 @@ public:
                                                                                                cj4array
                                                                                                    [ij4]
                                                                                                - cj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH
                                                                                         && IKabs(
                                                                                                sj4array
                                                                                                    [ij4]
                                                                                                - sj4array
-                                                                                                     [iij4])
+                                                                                                   [iij4])
                                                                                                < IKFAST_SOLUTION_THRESH)
                                                                                     {
                                                                                       j4valid
@@ -21982,13 +21952,13 @@ public:
                                                                                          cj4array
                                                                                              [ij4]
                                                                                          - cj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                   && IKabs(
                                                                                          sj4array
                                                                                              [ij4]
                                                                                          - sj4array
-                                                                                               [iij4])
+                                                                                             [iij4])
                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                               {
                                                                                 j4valid
@@ -22201,13 +22171,13 @@ public:
                                                                                      cj4array
                                                                                          [ij4]
                                                                                      - cj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH
                                                                               && IKabs(
                                                                                      sj4array
                                                                                          [ij4]
                                                                                      - sj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                           {
                                                                             j4valid
@@ -22312,11 +22282,11 @@ public:
                                                                 evalcond[0]
                                                                     = ((-3.14159265358979)
                                                                        + (IKfmod(
-                                                                             ((3.14159265358979)
-                                                                              + (IKabs((
-                                                                                    (1.5707963267949)
-                                                                                    + j8)))),
-                                                                             6.28318530717959)));
+                                                                           ((3.14159265358979)
+                                                                            + (IKabs((
+                                                                                (1.5707963267949)
+                                                                                + j8)))),
+                                                                           6.28318530717959)));
                                                                 if (IKabs(
                                                                         evalcond
                                                                             [0])
@@ -22358,14 +22328,14 @@ public:
                                                                                + ((py
                                                                                    * x1608)))))
                                                                            + (IKabs((
-                                                                                 (((-1.0)
-                                                                                   * px
-                                                                                   * x1608))
-                                                                                 + (((-1.0)
-                                                                                     * (15403.0)
-                                                                                     * px))
-                                                                                 + ((px
-                                                                                     * x1609))))));
+                                                                               (((-1.0)
+                                                                                 * px
+                                                                                 * x1608))
+                                                                               + (((-1.0)
+                                                                                   * (15403.0)
+                                                                                   * px))
+                                                                               + ((px
+                                                                                   * x1609))))));
                                                                     j4eval[2]
                                                                         = IKsign(
                                                                             x1607);
@@ -22418,12 +22388,12 @@ public:
                                                                                    + ((py
                                                                                        * x1611)))))
                                                                                + (IKabs((
-                                                                                     (((17.0)
-                                                                                       * px))
-                                                                                     + ((px
-                                                                                         * x1612))
-                                                                                     + ((px
-                                                                                         * x1611))))));
+                                                                                   (((17.0)
+                                                                                     * px))
+                                                                                   + ((px
+                                                                                       * x1612))
+                                                                                   + ((px
+                                                                                       * x1611))))));
                                                                         j4eval[2] = IKsign((
                                                                             (((-9.0)
                                                                               * x1610))
@@ -22463,7 +22433,7 @@ public:
                                                                                   = ((IKabs(
                                                                                          py))
                                                                                      + (IKabs(
-                                                                                           px)));
+                                                                                         px)));
                                                                               evalcond
                                                                                   [1]
                                                                                   = ((1.51009803921569)
@@ -22685,13 +22655,13 @@ public:
                                                                                                  cj4array
                                                                                                      [ij4]
                                                                                                  - cj4array
-                                                                                                       [iij4])
+                                                                                                     [iij4])
                                                                                                  < IKFAST_SOLUTION_THRESH
                                                                                           && IKabs(
                                                                                                  sj4array
                                                                                                      [ij4]
                                                                                                  - sj4array
-                                                                                                       [iij4])
+                                                                                                     [iij4])
                                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                                       {
                                                                                         j4valid
@@ -22864,13 +22834,13 @@ public:
                                                                                            cj4array
                                                                                                [ij4]
                                                                                            - cj4array
-                                                                                                 [iij4])
+                                                                                               [iij4])
                                                                                            < IKFAST_SOLUTION_THRESH
                                                                                     && IKabs(
                                                                                            sj4array
                                                                                                [ij4]
                                                                                            - sj4array
-                                                                                                 [iij4])
+                                                                                               [iij4])
                                                                                            < IKFAST_SOLUTION_THRESH)
                                                                                 {
                                                                                   j4valid
@@ -23086,13 +23056,13 @@ public:
                                                                                        cj4array
                                                                                            [ij4]
                                                                                        - cj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                 && IKabs(
                                                                                        sj4array
                                                                                            [ij4]
                                                                                        - sj4array
-                                                                                             [iij4])
+                                                                                           [iij4])
                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                             {
                                                                               j4valid
@@ -23200,7 +23170,7 @@ public:
                                                                       = ((IKabs(
                                                                              py))
                                                                          + (IKabs(
-                                                                               px)));
+                                                                             px)));
                                                                   evalcond[1]
                                                                       = ((((-1.0)
                                                                            * sj8
@@ -23409,13 +23379,13 @@ public:
                                                                                      cj4array
                                                                                          [ij4]
                                                                                      - cj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH
                                                                               && IKabs(
                                                                                      sj4array
                                                                                          [ij4]
                                                                                      - sj4array
-                                                                                           [iij4])
+                                                                                         [iij4])
                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                           {
                                                                             j4valid
@@ -23588,13 +23558,13 @@ public:
                                                                            cj4array
                                                                                [ij4]
                                                                            - cj4array
-                                                                                 [iij4])
+                                                                               [iij4])
                                                                            < IKFAST_SOLUTION_THRESH
                                                                     && IKabs(
                                                                            sj4array
                                                                                [ij4]
                                                                            - sj4array
-                                                                                 [iij4])
+                                                                               [iij4])
                                                                            < IKFAST_SOLUTION_THRESH)
                                                                 {
                                                                   j4valid[iij4]
@@ -23867,13 +23837,13 @@ public:
                                                                        cj4array
                                                                            [ij4]
                                                                        - cj4array
-                                                                             [iij4])
+                                                                           [iij4])
                                                                        < IKFAST_SOLUTION_THRESH
                                                                 && IKabs(
                                                                        sj4array
                                                                            [ij4]
                                                                        - sj4array
-                                                                             [iij4])
+                                                                           [iij4])
                                                                        < IKFAST_SOLUTION_THRESH)
                                                             {
                                                               j4valid[iij4]
@@ -24113,12 +24083,12 @@ public:
                                                             && IKabs(
                                                                    cj4array[ij4]
                                                                    - cj4array
-                                                                         [iij4])
+                                                                       [iij4])
                                                                    < IKFAST_SOLUTION_THRESH
                                                             && IKabs(
                                                                    sj4array[ij4]
                                                                    - sj4array
-                                                                         [iij4])
+                                                                       [iij4])
                                                                    < IKFAST_SOLUTION_THRESH)
                                                         {
                                                           j4valid[iij4] = false;
@@ -24933,9 +24903,8 @@ public:
                                   evalcond[0]
                                       = ((-3.14159265358979)
                                          + (IKfmod(
-                                               ((3.14159265358979)
-                                                + (IKabs(j8))),
-                                               6.28318530717959)));
+                                             ((3.14159265358979) + (IKabs(j8))),
+                                             6.28318530717959)));
                                   evalcond[1]
                                       = ((0.39655) + (((0.0765) * sj9))
                                          + (((0.32595) * cj9))
@@ -25090,9 +25059,9 @@ public:
                                                         = ((IKabs((
                                                                (-3.14159265358979)
                                                                + (IKfmod(
-                                                                     ((3.14159265358979)
-                                                                      + j9),
-                                                                     6.28318530717959)))))
+                                                                   ((3.14159265358979)
+                                                                    + j9),
+                                                                   6.28318530717959)))))
                                                            + (IKabs(pz)));
                                                     if (IKabs(evalcond[0])
                                                         < 0.0000010000000000)
@@ -25301,7 +25270,7 @@ public:
                                                                           = ((IKabs(
                                                                                  py))
                                                                              + (IKabs(
-                                                                                   px)));
+                                                                                 px)));
                                                                       evalcond
                                                                           [1]
                                                                           = -0.85;
@@ -25438,13 +25407,13 @@ public:
                                                                                          cj6array
                                                                                              [ij6]
                                                                                          - cj6array
-                                                                                               [iij6])
+                                                                                             [iij6])
                                                                                          < IKFAST_SOLUTION_THRESH
                                                                                   && IKabs(
                                                                                          sj6array
                                                                                              [ij6]
                                                                                          - sj6array
-                                                                                               [iij6])
+                                                                                             [iij6])
                                                                                          < IKFAST_SOLUTION_THRESH)
                                                                               {
                                                                                 j6valid
@@ -25468,7 +25437,7 @@ public:
                                                                                   [0]
                                                                                   = ((0.85)
                                                                                      * (IKsin(
-                                                                                           j6)));
+                                                                                         j6)));
                                                                               if (IKabs(
                                                                                       evalcond
                                                                                           [0])
@@ -25496,11 +25465,11 @@ public:
                                                                             = ((IKabs((
                                                                                    (-3.14159265358979)
                                                                                    + (IKfmod(
-                                                                                         ((3.14159265358979)
-                                                                                          + j4),
-                                                                                         6.28318530717959)))))
+                                                                                       ((3.14159265358979)
+                                                                                        + j4),
+                                                                                       6.28318530717959)))))
                                                                                + (IKabs(
-                                                                                     px)));
+                                                                                   px)));
                                                                         evalcond
                                                                             [1]
                                                                             = -0.85;
@@ -25742,13 +25711,13 @@ public:
                                                                                                cj6array
                                                                                                    [ij6]
                                                                                                - cj6array
-                                                                                                     [iij6])
+                                                                                                   [iij6])
                                                                                                < IKFAST_SOLUTION_THRESH
                                                                                         && IKabs(
                                                                                                sj6array
                                                                                                    [ij6]
                                                                                                - sj6array
-                                                                                                     [iij6])
+                                                                                                   [iij6])
                                                                                                < IKFAST_SOLUTION_THRESH)
                                                                                     {
                                                                                       j6valid
@@ -25772,7 +25741,7 @@ public:
                                                                                         [0]
                                                                                         = ((0.85)
                                                                                            * (IKsin(
-                                                                                                 j6)));
+                                                                                               j6)));
                                                                                     if (IKabs(
                                                                                             evalcond
                                                                                                 [0])
@@ -25803,10 +25772,10 @@ public:
                                                                               = ((IKabs((
                                                                                      (-3.14159265358979)
                                                                                      + (IKfmod(
-                                                                                           j4,
-                                                                                           6.28318530717959)))))
+                                                                                         j4,
+                                                                                         6.28318530717959)))))
                                                                                  + (IKabs(
-                                                                                       px)));
+                                                                                     px)));
                                                                           evalcond
                                                                               [1]
                                                                               = -0.85;
@@ -26048,13 +26017,13 @@ public:
                                                                                                  cj6array
                                                                                                      [ij6]
                                                                                                  - cj6array
-                                                                                                       [iij6])
+                                                                                                     [iij6])
                                                                                                  < IKFAST_SOLUTION_THRESH
                                                                                           && IKabs(
                                                                                                  sj6array
                                                                                                      [ij6]
                                                                                                  - sj6array
-                                                                                                       [iij6])
+                                                                                                     [iij6])
                                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                                       {
                                                                                         j6valid
@@ -26078,7 +26047,7 @@ public:
                                                                                           [0]
                                                                                           = ((0.85)
                                                                                              * (IKsin(
-                                                                                                   j6)));
+                                                                                                 j6)));
                                                                                       if (IKabs(
                                                                                               evalcond
                                                                                                   [0])
@@ -26109,11 +26078,11 @@ public:
                                                                                 = ((IKabs((
                                                                                        (-3.14159265358979)
                                                                                        + (IKfmod(
-                                                                                             ((1.5707963267949)
-                                                                                              + j4),
-                                                                                             6.28318530717959)))))
+                                                                                           ((1.5707963267949)
+                                                                                            + j4),
+                                                                                           6.28318530717959)))))
                                                                                    + (IKabs(
-                                                                                         py)));
+                                                                                       py)));
                                                                             evalcond
                                                                                 [1]
                                                                                 = -0.85;
@@ -26355,13 +26324,13 @@ public:
                                                                                                    cj6array
                                                                                                        [ij6]
                                                                                                    - cj6array
-                                                                                                         [iij6])
+                                                                                                       [iij6])
                                                                                                    < IKFAST_SOLUTION_THRESH
                                                                                             && IKabs(
                                                                                                    sj6array
                                                                                                        [ij6]
                                                                                                    - sj6array
-                                                                                                         [iij6])
+                                                                                                       [iij6])
                                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                                         {
                                                                                           j6valid
@@ -26385,7 +26354,7 @@ public:
                                                                                             [0]
                                                                                             = ((0.85)
                                                                                                * (IKsin(
-                                                                                                     j6)));
+                                                                                                   j6)));
                                                                                         if (IKabs(
                                                                                                 evalcond
                                                                                                     [0])
@@ -26416,11 +26385,11 @@ public:
                                                                                   = ((IKabs(
                                                                                          py))
                                                                                      + (IKabs((
-                                                                                           (-3.14159265358979)
-                                                                                           + (IKfmod(
-                                                                                                 ((4.71238898038469)
-                                                                                                  + j4),
-                                                                                                 6.28318530717959))))));
+                                                                                         (-3.14159265358979)
+                                                                                         + (IKfmod(
+                                                                                             ((4.71238898038469)
+                                                                                              + j4),
+                                                                                             6.28318530717959))))));
                                                                               evalcond
                                                                                   [1]
                                                                                   = -0.85;
@@ -26662,13 +26631,13 @@ public:
                                                                                                      cj6array
                                                                                                          [ij6]
                                                                                                      - cj6array
-                                                                                                           [iij6])
+                                                                                                         [iij6])
                                                                                                      < IKFAST_SOLUTION_THRESH
                                                                                               && IKabs(
                                                                                                      sj6array
                                                                                                          [ij6]
                                                                                                      - sj6array
-                                                                                                           [iij6])
+                                                                                                         [iij6])
                                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                                           {
                                                                                             j6valid
@@ -26692,7 +26661,7 @@ public:
                                                                                               [0]
                                                                                               = ((0.85)
                                                                                                  * (IKsin(
-                                                                                                       j6)));
+                                                                                                     j6)));
                                                                                           if (IKabs(
                                                                                                   evalcond
                                                                                                       [0])
@@ -26825,13 +26794,13 @@ public:
                                                                                    * (x1873
                                                                                           .value)))
                                                                                + IKsqr((
-                                                                                     (x1874
-                                                                                          .value)
-                                                                                     * (((48.1666666666667)
-                                                                                         + (((-66.6666666666667)
-                                                                                             * x1872))
-                                                                                         + (((-66.6666666666667)
-                                                                                             * x1871))))))
+                                                                                   (x1874
+                                                                                        .value)
+                                                                                   * (((48.1666666666667)
+                                                                                       + (((-66.6666666666667)
+                                                                                           * x1872))
+                                                                                       + (((-66.6666666666667)
+                                                                                           * x1871))))))
                                                                                - 1)
                                                                                <= IKFAST_SINCOS_THRESH)
                                                                       continue;
@@ -26898,13 +26867,13 @@ public:
                                                                                    cj6array
                                                                                        [ij6]
                                                                                    - cj6array
-                                                                                         [iij6])
+                                                                                       [iij6])
                                                                                    < IKFAST_SOLUTION_THRESH
                                                                             && IKabs(
                                                                                    sj6array
                                                                                        [ij6]
                                                                                    - sj6array
-                                                                                         [iij6])
+                                                                                       [iij6])
                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                         {
                                                                           j6valid
@@ -27134,30 +27103,30 @@ public:
                                                                                + (((1.17647058823529)
                                                                                    * x1889))))
                                                                            + IKsqr((
-                                                                                 (x1892
-                                                                                      .value)
-                                                                                 * (((((56.6666666666667)
-                                                                                       * x1889))
-                                                                                     + (((56.6666666666667)
-                                                                                         * x1888))
-                                                                                     + (((-1.0)
-                                                                                         * (78.4313725490196)
-                                                                                         * sj4
-                                                                                         * (py
-                                                                                            * py
-                                                                                            * py)))
-                                                                                     + (((-78.4313725490196)
-                                                                                         * x1888
-                                                                                         * x1891))
-                                                                                     + (((-1.0)
-                                                                                         * (78.4313725490196)
-                                                                                         * cj4
-                                                                                         * (px
-                                                                                            * px
-                                                                                            * px)))
-                                                                                     + (((-78.4313725490196)
-                                                                                         * x1889
-                                                                                         * x1890))))))
+                                                                               (x1892
+                                                                                    .value)
+                                                                               * (((((56.6666666666667)
+                                                                                     * x1889))
+                                                                                   + (((56.6666666666667)
+                                                                                       * x1888))
+                                                                                   + (((-1.0)
+                                                                                       * (78.4313725490196)
+                                                                                       * sj4
+                                                                                       * (py
+                                                                                          * py
+                                                                                          * py)))
+                                                                                   + (((-78.4313725490196)
+                                                                                       * x1888
+                                                                                       * x1891))
+                                                                                   + (((-1.0)
+                                                                                       * (78.4313725490196)
+                                                                                       * cj4
+                                                                                       * (px
+                                                                                          * px
+                                                                                          * px)))
+                                                                                   + (((-78.4313725490196)
+                                                                                       * x1889
+                                                                                       * x1890))))))
                                                                            - 1)
                                                                            <= IKFAST_SINCOS_THRESH)
                                                                   continue;
@@ -27237,13 +27206,13 @@ public:
                                                                                cj6array
                                                                                    [ij6]
                                                                                - cj6array
-                                                                                     [iij6])
+                                                                                   [iij6])
                                                                                < IKFAST_SOLUTION_THRESH
                                                                         && IKabs(
                                                                                sj6array
                                                                                    [ij6]
                                                                                - sj6array
-                                                                                     [iij6])
+                                                                                   [iij6])
                                                                                < IKFAST_SOLUTION_THRESH)
                                                                     {
                                                                       j6valid
@@ -27445,21 +27414,21 @@ public:
                                                                            + (((1.17647058823529)
                                                                                * x1906))))
                                                                        + IKsqr((
-                                                                             (x1911
-                                                                                  .value)
-                                                                             * (((0.2125)
-                                                                                 + (((-1.0)
-                                                                                     * x1908
-                                                                                     * x1910))
-                                                                                 + ((x1909
-                                                                                     * x1910))
-                                                                                 + x1908
-                                                                                 + (((-0.294117647058824)
-                                                                                     * x1909))
-                                                                                 + (((-2.58823529411765)
-                                                                                     * cj4
-                                                                                     * px
-                                                                                     * x1907))))))
+                                                                           (x1911
+                                                                                .value)
+                                                                           * (((0.2125)
+                                                                               + (((-1.0)
+                                                                                   * x1908
+                                                                                   * x1910))
+                                                                               + ((x1909
+                                                                                   * x1910))
+                                                                               + x1908
+                                                                               + (((-0.294117647058824)
+                                                                                   * x1909))
+                                                                               + (((-2.58823529411765)
+                                                                                   * cj4
+                                                                                   * px
+                                                                                   * x1907))))))
                                                                        - 1)
                                                                        <= IKFAST_SINCOS_THRESH)
                                                               continue;
@@ -27521,13 +27490,13 @@ public:
                                                                            cj6array
                                                                                [ij6]
                                                                            - cj6array
-                                                                                 [iij6])
+                                                                               [iij6])
                                                                            < IKFAST_SOLUTION_THRESH
                                                                     && IKabs(
                                                                            sj6array
                                                                                [ij6]
                                                                            - sj6array
-                                                                                 [iij6])
+                                                                               [iij6])
                                                                            < IKFAST_SOLUTION_THRESH)
                                                                 {
                                                                   j6valid[iij6]
@@ -27808,12 +27777,12 @@ public:
                                                           && IKabs(
                                                                  cj6array[ij6]
                                                                  - cj6array
-                                                                       [iij6])
+                                                                     [iij6])
                                                                  < IKFAST_SOLUTION_THRESH
                                                           && IKabs(
                                                                  sj6array[ij6]
                                                                  - sj6array
-                                                                       [iij6])
+                                                                     [iij6])
                                                                  < IKFAST_SOLUTION_THRESH)
                                                       {
                                                         j6valid[iij6] = false;
@@ -28359,11 +28328,11 @@ public:
                                     evalcond[0]
                                         = ((-3.14159265358979)
                                            + (IKfmod(
-                                                 ((3.14159265358979)
-                                                  + (IKabs(
-                                                        ((-3.14159265358979)
-                                                         + j8)))),
-                                                 6.28318530717959)));
+                                               ((3.14159265358979)
+                                                + (IKabs(
+                                                    ((-3.14159265358979)
+                                                     + j8)))),
+                                               6.28318530717959)));
                                     evalcond[1]
                                         = ((0.39655) + (((0.0765) * sj9))
                                            + (((0.32595) * cj9))
@@ -28508,9 +28477,9 @@ public:
                                                           = ((IKabs((
                                                                  (-3.14159265358979)
                                                                  + (IKfmod(
-                                                                       ((3.14159265358979)
-                                                                        + j9),
-                                                                       6.28318530717959)))))
+                                                                     ((3.14159265358979)
+                                                                      + j9),
+                                                                     6.28318530717959)))))
                                                              + (IKabs(pz)));
                                                       if (IKabs(evalcond[0])
                                                           < 0.0000010000000000)
@@ -28739,7 +28708,7 @@ public:
                                                                             = ((IKabs(
                                                                                    py))
                                                                                + (IKabs(
-                                                                                     px)));
+                                                                                   px)));
                                                                         evalcond
                                                                             [1]
                                                                             = -0.85;
@@ -28876,13 +28845,13 @@ public:
                                                                                            cj6array
                                                                                                [ij6]
                                                                                            - cj6array
-                                                                                                 [iij6])
+                                                                                               [iij6])
                                                                                            < IKFAST_SOLUTION_THRESH
                                                                                     && IKabs(
                                                                                            sj6array
                                                                                                [ij6]
                                                                                            - sj6array
-                                                                                                 [iij6])
+                                                                                               [iij6])
                                                                                            < IKFAST_SOLUTION_THRESH)
                                                                                 {
                                                                                   j6valid
@@ -28906,7 +28875,7 @@ public:
                                                                                     [0]
                                                                                     = ((0.85)
                                                                                        * (IKsin(
-                                                                                             j6)));
+                                                                                           j6)));
                                                                                 if (IKabs(
                                                                                         evalcond
                                                                                             [0])
@@ -28935,11 +28904,11 @@ public:
                                                                               = ((IKabs((
                                                                                      (-3.14159265358979)
                                                                                      + (IKfmod(
-                                                                                           ((3.14159265358979)
-                                                                                            + j4),
-                                                                                           6.28318530717959)))))
+                                                                                         ((3.14159265358979)
+                                                                                          + j4),
+                                                                                         6.28318530717959)))))
                                                                                  + (IKabs(
-                                                                                       px)));
+                                                                                     px)));
                                                                           evalcond
                                                                               [1]
                                                                               = -0.85;
@@ -29181,13 +29150,13 @@ public:
                                                                                                  cj6array
                                                                                                      [ij6]
                                                                                                  - cj6array
-                                                                                                       [iij6])
+                                                                                                     [iij6])
                                                                                                  < IKFAST_SOLUTION_THRESH
                                                                                           && IKabs(
                                                                                                  sj6array
                                                                                                      [ij6]
                                                                                                  - sj6array
-                                                                                                       [iij6])
+                                                                                                     [iij6])
                                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                                       {
                                                                                         j6valid
@@ -29211,7 +29180,7 @@ public:
                                                                                           [0]
                                                                                           = ((0.85)
                                                                                              * (IKsin(
-                                                                                                   j6)));
+                                                                                                 j6)));
                                                                                       if (IKabs(
                                                                                               evalcond
                                                                                                   [0])
@@ -29242,10 +29211,10 @@ public:
                                                                                 = ((IKabs((
                                                                                        (-3.14159265358979)
                                                                                        + (IKfmod(
-                                                                                             j4,
-                                                                                             6.28318530717959)))))
+                                                                                           j4,
+                                                                                           6.28318530717959)))))
                                                                                    + (IKabs(
-                                                                                         px)));
+                                                                                       px)));
                                                                             evalcond
                                                                                 [1]
                                                                                 = -0.85;
@@ -29487,13 +29456,13 @@ public:
                                                                                                    cj6array
                                                                                                        [ij6]
                                                                                                    - cj6array
-                                                                                                         [iij6])
+                                                                                                       [iij6])
                                                                                                    < IKFAST_SOLUTION_THRESH
                                                                                             && IKabs(
                                                                                                    sj6array
                                                                                                        [ij6]
                                                                                                    - sj6array
-                                                                                                         [iij6])
+                                                                                                       [iij6])
                                                                                                    < IKFAST_SOLUTION_THRESH)
                                                                                         {
                                                                                           j6valid
@@ -29517,7 +29486,7 @@ public:
                                                                                             [0]
                                                                                             = ((0.85)
                                                                                                * (IKsin(
-                                                                                                     j6)));
+                                                                                                   j6)));
                                                                                         if (IKabs(
                                                                                                 evalcond
                                                                                                     [0])
@@ -29548,11 +29517,11 @@ public:
                                                                                   = ((IKabs((
                                                                                          (-3.14159265358979)
                                                                                          + (IKfmod(
-                                                                                               ((1.5707963267949)
-                                                                                                + j4),
-                                                                                               6.28318530717959)))))
+                                                                                             ((1.5707963267949)
+                                                                                              + j4),
+                                                                                             6.28318530717959)))))
                                                                                      + (IKabs(
-                                                                                           py)));
+                                                                                         py)));
                                                                               evalcond
                                                                                   [1]
                                                                                   = -0.85;
@@ -29794,13 +29763,13 @@ public:
                                                                                                      cj6array
                                                                                                          [ij6]
                                                                                                      - cj6array
-                                                                                                           [iij6])
+                                                                                                         [iij6])
                                                                                                      < IKFAST_SOLUTION_THRESH
                                                                                               && IKabs(
                                                                                                      sj6array
                                                                                                          [ij6]
                                                                                                      - sj6array
-                                                                                                           [iij6])
+                                                                                                         [iij6])
                                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                                           {
                                                                                             j6valid
@@ -29824,7 +29793,7 @@ public:
                                                                                               [0]
                                                                                               = ((0.85)
                                                                                                  * (IKsin(
-                                                                                                       j6)));
+                                                                                                     j6)));
                                                                                           if (IKabs(
                                                                                                   evalcond
                                                                                                       [0])
@@ -29855,11 +29824,11 @@ public:
                                                                                     = ((IKabs(
                                                                                            py))
                                                                                        + (IKabs((
-                                                                                             (-3.14159265358979)
-                                                                                             + (IKfmod(
-                                                                                                   ((4.71238898038469)
-                                                                                                    + j4),
-                                                                                                   6.28318530717959))))));
+                                                                                           (-3.14159265358979)
+                                                                                           + (IKfmod(
+                                                                                               ((4.71238898038469)
+                                                                                                + j4),
+                                                                                               6.28318530717959))))));
                                                                                 evalcond
                                                                                     [1]
                                                                                     = -0.85;
@@ -30101,13 +30070,13 @@ public:
                                                                                                        cj6array
                                                                                                            [ij6]
                                                                                                        - cj6array
-                                                                                                             [iij6])
+                                                                                                           [iij6])
                                                                                                        < IKFAST_SOLUTION_THRESH
                                                                                                 && IKabs(
                                                                                                        sj6array
                                                                                                            [ij6]
                                                                                                        - sj6array
-                                                                                                             [iij6])
+                                                                                                           [iij6])
                                                                                                        < IKFAST_SOLUTION_THRESH)
                                                                                             {
                                                                                               j6valid
@@ -30131,7 +30100,7 @@ public:
                                                                                                 [0]
                                                                                                 = ((0.85)
                                                                                                    * (IKsin(
-                                                                                                         j6)));
+                                                                                                       j6)));
                                                                                             if (IKabs(
                                                                                                     evalcond
                                                                                                         [0])
@@ -30267,13 +30236,13 @@ public:
                                                                                      * (x2049
                                                                                             .value)))
                                                                                  + IKsqr((
-                                                                                       (x2050
-                                                                                            .value)
-                                                                                       * (((-48.1666666666667)
-                                                                                           + (((66.6666666666667)
-                                                                                               * x2047))
-                                                                                           + (((66.6666666666667)
-                                                                                               * x2048))))))
+                                                                                     (x2050
+                                                                                          .value)
+                                                                                     * (((-48.1666666666667)
+                                                                                         + (((66.6666666666667)
+                                                                                             * x2047))
+                                                                                         + (((66.6666666666667)
+                                                                                             * x2048))))))
                                                                                  - 1)
                                                                                  <= IKFAST_SINCOS_THRESH)
                                                                         continue;
@@ -30343,13 +30312,13 @@ public:
                                                                                      cj6array
                                                                                          [ij6]
                                                                                      - cj6array
-                                                                                           [iij6])
+                                                                                         [iij6])
                                                                                      < IKFAST_SOLUTION_THRESH
                                                                               && IKabs(
                                                                                      sj6array
                                                                                          [ij6]
                                                                                      - sj6array
-                                                                                           [iij6])
+                                                                                         [iij6])
                                                                                      < IKFAST_SOLUTION_THRESH)
                                                                           {
                                                                             j6valid
@@ -30574,28 +30543,28 @@ public:
                                                                                  + (((1.17647058823529)
                                                                                      * x2064))))
                                                                              + IKsqr((
-                                                                                   (x2067
-                                                                                        .value)
-                                                                                   * (((((-56.6666666666667)
-                                                                                         * x2064))
-                                                                                       + (((78.4313725490196)
-                                                                                           * sj4
-                                                                                           * (py
-                                                                                              * py
-                                                                                              * py)))
-                                                                                       + (((78.4313725490196)
-                                                                                           * cj4
-                                                                                           * (px
-                                                                                              * px
-                                                                                              * px)))
-                                                                                       + (((78.4313725490196)
-                                                                                           * x2063
-                                                                                           * x2066))
-                                                                                       + (((78.4313725490196)
-                                                                                           * x2064
-                                                                                           * x2065))
-                                                                                       + (((-56.6666666666667)
-                                                                                           * x2063))))))
+                                                                                 (x2067
+                                                                                      .value)
+                                                                                 * (((((-56.6666666666667)
+                                                                                       * x2064))
+                                                                                     + (((78.4313725490196)
+                                                                                         * sj4
+                                                                                         * (py
+                                                                                            * py
+                                                                                            * py)))
+                                                                                     + (((78.4313725490196)
+                                                                                         * cj4
+                                                                                         * (px
+                                                                                            * px
+                                                                                            * px)))
+                                                                                     + (((78.4313725490196)
+                                                                                         * x2063
+                                                                                         * x2066))
+                                                                                     + (((78.4313725490196)
+                                                                                         * x2064
+                                                                                         * x2065))
+                                                                                     + (((-56.6666666666667)
+                                                                                         * x2063))))))
                                                                              - 1)
                                                                              <= IKFAST_SINCOS_THRESH)
                                                                     continue;
@@ -30677,13 +30646,13 @@ public:
                                                                                  cj6array
                                                                                      [ij6]
                                                                                  - cj6array
-                                                                                       [iij6])
+                                                                                     [iij6])
                                                                                  < IKFAST_SOLUTION_THRESH
                                                                           && IKabs(
                                                                                  sj6array
                                                                                      [ij6]
                                                                                  - sj6array
-                                                                                       [iij6])
+                                                                                     [iij6])
                                                                                  < IKFAST_SOLUTION_THRESH)
                                                                       {
                                                                         j6valid
@@ -30896,21 +30865,21 @@ public:
                                                                              + (((1.17647058823529)
                                                                                  * x2081))))
                                                                          + IKsqr((
-                                                                               (x2085
-                                                                                    .value)
-                                                                               * (((0.2125)
-                                                                                   + (((-2.58823529411765)
-                                                                                       * cj4
-                                                                                       * px
-                                                                                       * x2081))
-                                                                                   + (((-0.294117647058824)
-                                                                                       * x2083))
-                                                                                   + ((x2083
-                                                                                       * x2084))
-                                                                                   + (((-1.0)
-                                                                                       * x2082
-                                                                                       * x2084))
-                                                                                   + x2082))))
+                                                                             (x2085
+                                                                                  .value)
+                                                                             * (((0.2125)
+                                                                                 + (((-2.58823529411765)
+                                                                                     * cj4
+                                                                                     * px
+                                                                                     * x2081))
+                                                                                 + (((-0.294117647058824)
+                                                                                     * x2083))
+                                                                                 + ((x2083
+                                                                                     * x2084))
+                                                                                 + (((-1.0)
+                                                                                     * x2082
+                                                                                     * x2084))
+                                                                                 + x2082))))
                                                                          - 1)
                                                                          <= IKFAST_SINCOS_THRESH)
                                                                 continue;
@@ -30977,13 +30946,13 @@ public:
                                                                              cj6array
                                                                                  [ij6]
                                                                              - cj6array
-                                                                                   [iij6])
+                                                                                 [iij6])
                                                                              < IKFAST_SOLUTION_THRESH
                                                                       && IKabs(
                                                                              sj6array
                                                                                  [ij6]
                                                                              - sj6array
-                                                                                   [iij6])
+                                                                                 [iij6])
                                                                              < IKFAST_SOLUTION_THRESH)
                                                                   {
                                                                     j6valid
@@ -31270,12 +31239,12 @@ public:
                                                             && IKabs(
                                                                    cj6array[ij6]
                                                                    - cj6array
-                                                                         [iij6])
+                                                                       [iij6])
                                                                    < IKFAST_SOLUTION_THRESH
                                                             && IKabs(
                                                                    sj6array[ij6]
                                                                    - sj6array
-                                                                         [iij6])
+                                                                       [iij6])
                                                                    < IKFAST_SOLUTION_THRESH)
                                                         {
                                                           j6valid[iij6] = false;
@@ -32491,8 +32460,8 @@ public:
                       evalcond[0]
                           = ((-3.14159265358979)
                              + (IKfmod(
-                                   ((3.14159265358979) + (IKabs(j11))),
-                                   6.28318530717959)));
+                                 ((3.14159265358979) + (IKabs(j11))),
+                                 6.28318530717959)));
                       evalcond[1] = ((-1.0) + new_r22);
                       evalcond[2] = new_r20;
                       evalcond[3] = new_r02;
@@ -32596,8 +32565,8 @@ public:
                                               + (((-1.0) * (1.0) * new_r00
                                                   * sj10))))
                                          + IKsqr(
-                                               ((((-1.0) * sj10 * x211))
-                                                + ((cj10 * new_r00))))
+                                             ((((-1.0) * sj10 * x211))
+                                              + ((cj10 * new_r00))))
                                          - 1)
                                          <= IKFAST_SINCOS_THRESH)
                                 continue;
@@ -32750,9 +32719,9 @@ public:
                         evalcond[0]
                             = ((-3.14159265358979)
                                + (IKfmod(
-                                     ((3.14159265358979)
-                                      + (IKabs(((-3.14159265358979) + j11)))),
-                                     6.28318530717959)));
+                                   ((3.14159265358979)
+                                    + (IKabs(((-3.14159265358979) + j11)))),
+                                   6.28318530717959)));
                         evalcond[1] = ((1.0) + new_r22);
                         evalcond[2] = new_r20;
                         evalcond[3] = new_r02;
@@ -32858,9 +32827,9 @@ public:
                                                ((((-1.0) * sj10 * x221))
                                                 + ((cj10 * new_r01))))
                                            + IKsqr(
-                                                 ((((-1.0) * cj10 * x221))
-                                                  + (((-1.0) * (1.0) * new_r01
-                                                      * sj10))))
+                                               ((((-1.0) * cj10 * x221))
+                                                + (((-1.0) * (1.0) * new_r01
+                                                    * sj10))))
                                            - 1)
                                            <= IKFAST_SINCOS_THRESH)
                                   continue;
@@ -33324,11 +33293,11 @@ public:
                                       evalcond[0]
                                           = ((-3.14159265358979)
                                              + (IKfmod(
-                                                   ((3.14159265358979)
-                                                    + (IKabs(
-                                                          ((-1.5707963267949)
-                                                           + j10)))),
-                                                   6.28318530717959)));
+                                                 ((3.14159265358979)
+                                                  + (IKabs(
+                                                      ((-1.5707963267949)
+                                                       + j10)))),
+                                                 6.28318530717959)));
                                       evalcond[1] = x292;
                                       evalcond[2] = x292;
                                       evalcond[3] = new_r02;
@@ -33553,11 +33522,11 @@ public:
                                         evalcond[0]
                                             = ((-3.14159265358979)
                                                + (IKfmod(
-                                                     ((3.14159265358979)
-                                                      + (IKabs(
-                                                            ((1.5707963267949)
-                                                             + j10)))),
-                                                     6.28318530717959)));
+                                                   ((3.14159265358979)
+                                                    + (IKabs(
+                                                        ((1.5707963267949)
+                                                         + j10)))),
+                                                   6.28318530717959)));
                                         evalcond[1] = x303;
                                         evalcond[2] = x303;
                                         evalcond[3] = new_r02;
@@ -33775,11 +33744,11 @@ public:
                                           evalcond[0]
                                               = ((-3.14159265358979)
                                                  + (IKfmod(
-                                                       ((3.14159265358979)
-                                                        + (IKabs((
-                                                              (-1.5707963267949)
-                                                              + j11)))),
-                                                       6.28318530717959)));
+                                                     ((3.14159265358979)
+                                                      + (IKabs(
+                                                          ((-1.5707963267949)
+                                                           + j11)))),
+                                                     6.28318530717959)));
                                           evalcond[1] = new_r22;
                                           evalcond[2]
                                               = ((((-1.0) * x310)) + new_r02);
@@ -33845,10 +33814,10 @@ public:
                                                          < IKFAST_ATAN2_MAGTHRESH
                                                   && IKabs(
                                                          IKsqr(new_r21)
-                                                         + IKsqr((
-                                                               (-1.0)
-                                                               * (((1.0)
-                                                                   * new_r20))))
+                                                         + IKsqr(
+                                                             ((-1.0)
+                                                              * (((1.0)
+                                                                  * new_r20))))
                                                          - 1)
                                                          <= IKFAST_SINCOS_THRESH)
                                                 continue;
@@ -34043,11 +34012,11 @@ public:
                                             evalcond[0]
                                                 = ((-3.14159265358979)
                                                    + (IKfmod(
-                                                         ((3.14159265358979)
-                                                          + (IKabs((
-                                                                (1.5707963267949)
-                                                                + j11)))),
-                                                         6.28318530717959)));
+                                                       ((3.14159265358979)
+                                                        + (IKabs(
+                                                            ((1.5707963267949)
+                                                             + j11)))),
+                                                       6.28318530717959)));
                                             evalcond[1] = new_r22;
                                             evalcond[2] = (cj10 + new_r02);
                                             evalcond[3] = (sj10 + new_r12);
@@ -34138,12 +34107,12 @@ public:
                                                         && IKabs(
                                                                cj12array[ij12]
                                                                - cj12array
-                                                                     [iij12])
+                                                                   [iij12])
                                                                < IKFAST_SOLUTION_THRESH
                                                         && IKabs(
                                                                sj12array[ij12]
                                                                - sj12array
-                                                                     [iij12])
+                                                                   [iij12])
                                                                < IKFAST_SOLUTION_THRESH)
                                                     {
                                                       j12valid[iij12] = false;
@@ -34299,9 +34268,9 @@ public:
                                               evalcond[0]
                                                   = ((-3.14159265358979)
                                                      + (IKfmod(
-                                                           ((3.14159265358979)
-                                                            + (IKabs(j11))),
-                                                           6.28318530717959)));
+                                                         ((3.14159265358979)
+                                                          + (IKabs(j11))),
+                                                         6.28318530717959)));
                                               evalcond[1] = ((-1.0) + new_r22);
                                               evalcond[2] = new_r20;
                                               evalcond[3] = new_r02;
@@ -34361,12 +34330,12 @@ public:
                                                                      * (1.0)
                                                                      * new_r00
                                                                      * sj10))))
-                                                             + IKsqr((
-                                                                   ((cj10
-                                                                     * new_r00))
-                                                                   + (((-1.0)
-                                                                       * sj10
-                                                                       * x331))))
+                                                             + IKsqr(
+                                                                 (((cj10
+                                                                    * new_r00))
+                                                                  + (((-1.0)
+                                                                      * sj10
+                                                                      * x331))))
                                                              - 1)
                                                              <= IKFAST_SINCOS_THRESH)
                                                     continue;
@@ -34407,12 +34376,12 @@ public:
                                                           && IKabs(
                                                                  cj12array[ij12]
                                                                  - cj12array
-                                                                       [iij12])
+                                                                     [iij12])
                                                                  < IKFAST_SOLUTION_THRESH
                                                           && IKabs(
                                                                  sj12array[ij12]
                                                                  - sj12array
-                                                                       [iij12])
+                                                                     [iij12])
                                                                  < IKFAST_SOLUTION_THRESH)
                                                       {
                                                         j12valid[iij12] = false;
@@ -34577,11 +34546,11 @@ public:
                                                 evalcond[0]
                                                     = ((-3.14159265358979)
                                                        + (IKfmod(
-                                                             ((3.14159265358979)
-                                                              + (IKabs((
-                                                                    (-3.14159265358979)
-                                                                    + j11)))),
-                                                             6.28318530717959)));
+                                                           ((3.14159265358979)
+                                                            + (IKabs((
+                                                                (-3.14159265358979)
+                                                                + j11)))),
+                                                           6.28318530717959)));
                                                 evalcond[1] = ((1.0) + new_r22);
                                                 evalcond[2] = new_r20;
                                                 evalcond[3] = new_r02;
@@ -34644,13 +34613,13 @@ public:
                                                                        * sj10
                                                                        * x342))))
                                                                + IKsqr((
-                                                                     (((-1.0)
-                                                                       * cj10
-                                                                       * x342))
-                                                                     + (((-1.0)
-                                                                         * (1.0)
-                                                                         * new_r01
-                                                                         * sj10))))
+                                                                   (((-1.0)
+                                                                     * cj10
+                                                                     * x342))
+                                                                   + (((-1.0)
+                                                                       * (1.0)
+                                                                       * new_r01
+                                                                       * sj10))))
                                                                - 1)
                                                                <= IKFAST_SINCOS_THRESH)
                                                       continue;
@@ -34695,13 +34664,13 @@ public:
                                                                    cj12array
                                                                        [ij12]
                                                                    - cj12array
-                                                                         [iij12])
+                                                                       [iij12])
                                                                    < IKFAST_SOLUTION_THRESH
                                                             && IKabs(
                                                                    sj12array
                                                                        [ij12]
                                                                    - sj12array
-                                                                         [iij12])
+                                                                       [iij12])
                                                                    < IKFAST_SOLUTION_THRESH)
                                                         {
                                                           j12valid[iij12]
@@ -34885,9 +34854,9 @@ public:
                                                   evalcond[0]
                                                       = ((-3.14159265358979)
                                                          + (IKfmod(
-                                                               ((3.14159265358979)
-                                                                + (IKabs(j10))),
-                                                               6.28318530717959)));
+                                                             ((3.14159265358979)
+                                                              + (IKabs(j10))),
+                                                             6.28318530717959)));
                                                   evalcond[1] = x351;
                                                   evalcond[2] = x351;
                                                   evalcond[3] = x353;
@@ -34949,7 +34918,7 @@ public:
                                                           && IKabs(
                                                                  IKsqr(new_r10)
                                                                  + IKsqr(
-                                                                       new_r11)
+                                                                     new_r11)
                                                                  - 1)
                                                                  <= IKFAST_SINCOS_THRESH)
                                                         continue;
@@ -34989,13 +34958,13 @@ public:
                                                                      cj12array
                                                                          [ij12]
                                                                      - cj12array
-                                                                           [iij12])
+                                                                         [iij12])
                                                                      < IKFAST_SOLUTION_THRESH
                                                               && IKabs(
                                                                      sj12array
                                                                          [ij12]
                                                                      - sj12array
-                                                                           [iij12])
+                                                                         [iij12])
                                                                      < IKFAST_SOLUTION_THRESH)
                                                           {
                                                             j12valid[iij12]
@@ -35186,11 +35155,11 @@ public:
                                                     evalcond[0]
                                                         = ((-3.14159265358979)
                                                            + (IKfmod(
-                                                                 ((3.14159265358979)
-                                                                  + (IKabs((
-                                                                        (-3.14159265358979)
-                                                                        + j10)))),
-                                                                 6.28318530717959)));
+                                                               ((3.14159265358979)
+                                                                + (IKabs((
+                                                                    (-3.14159265358979)
+                                                                    + j10)))),
+                                                               6.28318530717959)));
                                                     evalcond[1] = x360;
                                                     evalcond[2] = x360;
                                                     evalcond[3]
@@ -35309,13 +35278,13 @@ public:
                                                                        cj12array
                                                                            [ij12]
                                                                        - cj12array
-                                                                             [iij12])
+                                                                           [iij12])
                                                                        < IKFAST_SOLUTION_THRESH
                                                                 && IKabs(
                                                                        sj12array
                                                                            [ij12]
                                                                        - sj12array
-                                                                             [iij12])
+                                                                           [iij12])
                                                                        < IKFAST_SOLUTION_THRESH)
                                                             {
                                                               j12valid[iij12]
@@ -35336,7 +35305,7 @@ public:
                                                             IkReal x365
                                                                 = ((1.0)
                                                                    * (IKcos(
-                                                                         j12)));
+                                                                       j12)));
                                                             IkReal x366
                                                                 = ((-1.0)
                                                                    * x365);
@@ -35589,7 +35558,7 @@ public:
                                                           * new_r01 * sj11))
                                                         + ((new_r20 * sj10))))))
                                                + IKsqr(
-                                                     ((-1.0) * new_r20 * x369))
+                                                   ((-1.0) * new_r20 * x369))
                                                - 1)
                                                <= IKFAST_SINCOS_THRESH)
                                       continue;
@@ -36423,11 +36392,10 @@ public:
                                   evalcond[0]
                                       = ((-3.14159265358979)
                                          + (IKfmod(
-                                               ((3.14159265358979)
-                                                + (IKabs(
-                                                      ((-1.5707963267949)
-                                                       + j10)))),
-                                               6.28318530717959)));
+                                             ((3.14159265358979)
+                                              + (IKabs(
+                                                  ((-1.5707963267949) + j10)))),
+                                             6.28318530717959)));
                                   evalcond[1] = x480;
                                   evalcond[2] = x480;
                                   evalcond[3] = new_r02;
@@ -36633,11 +36601,10 @@ public:
                                     evalcond[0]
                                         = ((-3.14159265358979)
                                            + (IKfmod(
-                                                 ((3.14159265358979)
-                                                  + (IKabs(
-                                                        ((1.5707963267949)
-                                                         + j10)))),
-                                                 6.28318530717959)));
+                                               ((3.14159265358979)
+                                                + (IKabs((
+                                                    (1.5707963267949) + j10)))),
+                                               6.28318530717959)));
                                     evalcond[1] = x491;
                                     evalcond[2] = x491;
                                     evalcond[3] = new_r02;
@@ -36845,11 +36812,11 @@ public:
                                       evalcond[0]
                                           = ((-3.14159265358979)
                                              + (IKfmod(
-                                                   ((3.14159265358979)
-                                                    + (IKabs(
-                                                          ((-1.5707963267949)
-                                                           + j11)))),
-                                                   6.28318530717959)));
+                                                 ((3.14159265358979)
+                                                  + (IKabs(
+                                                      ((-1.5707963267949)
+                                                       + j11)))),
+                                                 6.28318530717959)));
                                       evalcond[1] = new_r22;
                                       evalcond[2]
                                           = ((((-1.0) * x498)) + new_r02);
@@ -36914,10 +36881,9 @@ public:
                                                      < IKFAST_ATAN2_MAGTHRESH
                                               && IKabs(
                                                      IKsqr(new_r21)
-                                                     + IKsqr(
-                                                           ((-1.0)
-                                                            * (((1.0)
-                                                                * new_r20))))
+                                                     + IKsqr((
+                                                         (-1.0)
+                                                         * (((1.0) * new_r20))))
                                                      - 1)
                                                      <= IKFAST_SINCOS_THRESH)
                                             continue;
@@ -37085,11 +37051,11 @@ public:
                                         evalcond[0]
                                             = ((-3.14159265358979)
                                                + (IKfmod(
-                                                     ((3.14159265358979)
-                                                      + (IKabs(
-                                                            ((1.5707963267949)
-                                                             + j11)))),
-                                                     6.28318530717959)));
+                                                   ((3.14159265358979)
+                                                    + (IKabs(
+                                                        ((1.5707963267949)
+                                                         + j11)))),
+                                                   6.28318530717959)));
                                         evalcond[1] = new_r22;
                                         evalcond[2] = (cj10 + new_r02);
                                         evalcond[3] = (sj10 + new_r12);
@@ -37308,9 +37274,9 @@ public:
                                           evalcond[0]
                                               = ((-3.14159265358979)
                                                  + (IKfmod(
-                                                       ((3.14159265358979)
-                                                        + (IKabs(j11))),
-                                                       6.28318530717959)));
+                                                     ((3.14159265358979)
+                                                      + (IKabs(j11))),
+                                                     6.28318530717959)));
                                           evalcond[1] = ((-1.0) + new_r22);
                                           evalcond[2] = new_r20;
                                           evalcond[3] = new_r02;
@@ -37365,11 +37331,10 @@ public:
                                                               + (((-1.0) * (1.0)
                                                                   * new_r00
                                                                   * sj10))))
-                                                         + IKsqr((
-                                                               ((cj10
-                                                                 * new_r00))
-                                                               + (((-1.0) * sj10
-                                                                   * x519))))
+                                                         + IKsqr(
+                                                             (((cj10 * new_r00))
+                                                              + (((-1.0) * sj10
+                                                                  * x519))))
                                                          - 1)
                                                          <= IKFAST_SINCOS_THRESH)
                                                 continue;
@@ -37563,11 +37528,11 @@ public:
                                             evalcond[0]
                                                 = ((-3.14159265358979)
                                                    + (IKfmod(
-                                                         ((3.14159265358979)
-                                                          + (IKabs((
-                                                                (-3.14159265358979)
-                                                                + j11)))),
-                                                         6.28318530717959)));
+                                                       ((3.14159265358979)
+                                                        + (IKabs(
+                                                            ((-3.14159265358979)
+                                                             + j11)))),
+                                                       6.28318530717959)));
                                             evalcond[1] = ((1.0) + new_r22);
                                             evalcond[2] = new_r20;
                                             evalcond[3] = new_r02;
@@ -37624,13 +37589,13 @@ public:
                                                                  * x530))
                                                                + ((cj10
                                                                    * new_r01))))
-                                                           + IKsqr((
-                                                                 (((-1.0) * cj10
-                                                                   * x530))
-                                                                 + (((-1.0)
-                                                                     * (1.0)
-                                                                     * new_r01
-                                                                     * sj10))))
+                                                           + IKsqr(
+                                                               ((((-1.0) * cj10
+                                                                  * x530))
+                                                                + (((-1.0)
+                                                                    * (1.0)
+                                                                    * new_r01
+                                                                    * sj10))))
                                                            - 1)
                                                            <= IKFAST_SINCOS_THRESH)
                                                   continue;
@@ -37670,12 +37635,12 @@ public:
                                                         && IKabs(
                                                                cj12array[ij12]
                                                                - cj12array
-                                                                     [iij12])
+                                                                   [iij12])
                                                                < IKFAST_SOLUTION_THRESH
                                                         && IKabs(
                                                                sj12array[ij12]
                                                                - sj12array
-                                                                     [iij12])
+                                                                   [iij12])
                                                                < IKFAST_SOLUTION_THRESH)
                                                     {
                                                       j12valid[iij12] = false;
@@ -37840,9 +37805,9 @@ public:
                                               evalcond[0]
                                                   = ((-3.14159265358979)
                                                      + (IKfmod(
-                                                           ((3.14159265358979)
-                                                            + (IKabs(j10))),
-                                                           6.28318530717959)));
+                                                         ((3.14159265358979)
+                                                          + (IKabs(j10))),
+                                                         6.28318530717959)));
                                               evalcond[1] = x539;
                                               evalcond[2] = x539;
                                               evalcond[3] = x541;
@@ -37935,12 +37900,12 @@ public:
                                                           && IKabs(
                                                                  cj12array[ij12]
                                                                  - cj12array
-                                                                       [iij12])
+                                                                     [iij12])
                                                                  < IKFAST_SOLUTION_THRESH
                                                           && IKabs(
                                                                  sj12array[ij12]
                                                                  - sj12array
-                                                                       [iij12])
+                                                                     [iij12])
                                                                  < IKFAST_SOLUTION_THRESH)
                                                       {
                                                         j12valid[iij12] = false;
@@ -38096,11 +38061,11 @@ public:
                                                 evalcond[0]
                                                     = ((-3.14159265358979)
                                                        + (IKfmod(
-                                                             ((3.14159265358979)
-                                                              + (IKabs((
-                                                                    (-3.14159265358979)
-                                                                    + j10)))),
-                                                             6.28318530717959)));
+                                                           ((3.14159265358979)
+                                                            + (IKabs((
+                                                                (-3.14159265358979)
+                                                                + j10)))),
+                                                           6.28318530717959)));
                                                 evalcond[1] = x548;
                                                 evalcond[2] = x548;
                                                 evalcond[3] = (sj11 + new_r02);
@@ -38212,13 +38177,13 @@ public:
                                                                    cj12array
                                                                        [ij12]
                                                                    - cj12array
-                                                                         [iij12])
+                                                                       [iij12])
                                                                    < IKFAST_SOLUTION_THRESH
                                                             && IKabs(
                                                                    sj12array
                                                                        [ij12]
                                                                    - sj12array
-                                                                         [iij12])
+                                                                       [iij12])
                                                                    < IKFAST_SOLUTION_THRESH)
                                                         {
                                                           j12valid[iij12]

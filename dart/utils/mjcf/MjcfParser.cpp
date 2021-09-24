@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -61,7 +61,7 @@ dynamics::BodyNode::Properties createBodyProperties(
   dynamics::BodyNode::Properties bodyProps;
 
   // Name
-  if (not mjcfBody.getName().empty())
+  if (!mjcfBody.getName().empty())
   {
     bodyProps.mName = mjcfBody.getName();
   }
@@ -92,7 +92,7 @@ void createJointCommonProperties(
     const detail::Joint& mjcfJoint)
 {
   // Name
-  if (not mjcfJoint.getName().empty())
+  if (!mjcfJoint.getName().empty())
   {
     props.mName = mjcfJoint.getName();
   }
@@ -409,39 +409,33 @@ dynamics::ShapePtr createShape(const GeomOrSite& geomOrSite)
 
   switch (geomOrSite.getType())
   {
-    case detail::GeomType::SPHERE:
-    {
+    case detail::GeomType::SPHERE: {
       shape = std::make_shared<dynamics::SphereShape>(
           geomOrSite.getSphereRadius());
       break;
     }
-    case detail::GeomType::CAPSULE:
-    {
+    case detail::GeomType::CAPSULE: {
       shape = std::make_shared<dynamics::CapsuleShape>(
           geomOrSite.getCapsuleRadius(), geomOrSite.getCapsuleLength());
       break;
     }
-    case detail::GeomType::ELLIPSOID:
-    {
+    case detail::GeomType::ELLIPSOID: {
       // DART takes diameters while MJCF has radii
       shape = std::make_shared<dynamics::EllipsoidShape>(
           geomOrSite.getEllipsoidDiameters());
       break;
     }
-    case detail::GeomType::CYLINDER:
-    {
+    case detail::GeomType::CYLINDER: {
       shape = std::make_shared<dynamics::CylinderShape>(
           geomOrSite.getCylinderRadius(), geomOrSite.getCylinderLength());
       break;
     }
-    case detail::GeomType::BOX:
-    {
+    case detail::GeomType::BOX: {
       // DART takes full-sizes while MJCF has half-sizes
       shape = std::make_shared<dynamics::BoxShape>(geomOrSite.getBoxSize());
       break;
     }
-    default:
-    {
+    default: {
       break;
     }
   }
@@ -457,8 +451,7 @@ dynamics::ShapePtr createShape(
 
   switch (geom.getType())
   {
-    case detail::GeomType::PLANE:
-    {
+    case detail::GeomType::PLANE: {
       // TODO(JS): Needs to properly parse PLANE.
       Eigen::Vector3d size;
       size.head<2>() = 2.0 * geom.getPlaneHalfSize();
@@ -466,21 +459,18 @@ dynamics::ShapePtr createShape(
       shape = std::make_shared<dynamics::BoxShape>(size);
       break;
     }
-    case detail::GeomType::HFIELD:
-    {
+    case detail::GeomType::HFIELD: {
       dterr << "[MjcfParser] Not implemented for 'HFIELD' geom type.\n";
       break;
     }
-    case detail::GeomType::MESH:
-    {
+    case detail::GeomType::MESH: {
       const detail::Mesh* mjcfMesh = mjcfAsset.getMesh(geom.getMesh());
       assert(mjcfMesh);
       shape = mjcfMesh->getMeshShape();
       assert(shape);
       break;
     }
-    default:
-    {
+    default: {
       return createShape(geom);
     }
   }
@@ -639,12 +629,12 @@ bool populateSkeletonRecurse(
   assert(joint != nullptr);
 
   // Create ShapeNodes for the current BodyNode
-  if (not createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
+  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
     return false;
 
   for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i)
   {
-    if (not populateSkeletonRecurse(
+    if (!populateSkeletonRecurse(
             skel, bodyNode, mjcfBody.getChildBody(i), mjcfAsset))
     {
       return false;
@@ -662,7 +652,7 @@ dynamics::SkeletonPtr createSkeleton(
 
   const bool success
       = populateSkeletonRecurse(skel, nullptr, mjcfBody, mjcfAsset);
-  if (not success)
+  if (!success)
   {
     const std::string bodyName
         = mjcfBody.getName().empty() ? "(noname)" : mjcfBody.getName();
@@ -726,7 +716,7 @@ simulation::WorldPtr createWorld(
     std::tie(joint, body)
         = skel->createJointAndBodyNodePair<dynamics::WeldJoint>();
 
-    if (not mjcfGeom.getName().empty())
+    if (!mjcfGeom.getName().empty())
     {
       skel->setName(options.mGeomSkeletonNamePrefix + mjcfGeom.getName());
     }
@@ -764,7 +754,7 @@ simulation::WorldPtr createWorld(
     std::tie(joint, body)
         = skel->createJointAndBodyNodePair<dynamics::WeldJoint>();
 
-    if (not mjcfSite.getName().empty())
+    if (!mjcfSite.getName().empty())
     {
       skel->setName(options.mSiteSkeletonNamePrefix + mjcfSite.getName());
     }
@@ -828,7 +818,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 {
   auto mujoco = detail::MujocoModel();
   const detail::Errors errors = mujoco.read(uri, options.mRetriever);
-  if (not errors.empty())
+  if (!errors.empty())
   {
     dterr << "[MjcfParser] Failed to parse MJCF file for the following "
              "reason(s):\n";
@@ -858,7 +848,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
     // Body2
     dynamics::BodyNode* body2 = nullptr;
     const std::string& bodyName2 = weld.getBody2();
-    if (not bodyName2.empty())
+    if (!bodyName2.empty())
     {
       body2 = getUniqueBodyOrNull(*world, bodyName2);
       if (body2 == nullptr)

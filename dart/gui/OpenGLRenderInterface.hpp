@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -35,6 +35,7 @@
 
 #include <list>
 #include <vector>
+
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/RenderInterface.hpp"
 
@@ -50,7 +51,6 @@ class ShapeFrame;
 namespace gui {
 class OpenGLRenderInterface : public RenderInterface
 {
-
 public:
   OpenGLRenderInterface()
     : mViewportX(0.0),
@@ -59,9 +59,7 @@ public:
       mViewportHeight(0.0)
   {
   }
-  virtual ~OpenGLRenderInterface()
-  {
-  }
+  virtual ~OpenGLRenderInterface() {}
 
   void initialize() override;
   void destroy() override;
@@ -101,6 +99,9 @@ public:
       const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
       int slices = 16,
       int stacks = 16) override;
+  void drawMultiSphereConvexHull(
+      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+      std::size_t subdivisions) override;
   void drawEllipsoid(const Eigen::Vector3d& _diameters) override;
   void drawCube(const Eigen::Vector3d& _size) override;
   void drawOpenCylinder(
@@ -116,6 +117,7 @@ public:
       int stacks = 16) override;
   void drawCapsule(double radius, double height) override;
   void drawCone(double radius, double height) override;
+  void drawPyramid(double baseWidth, double baseDepth, double height) override;
   void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
   void drawSoftMesh(const aiMesh* mesh) override;
   void drawList(GLuint index) override;

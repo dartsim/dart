@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -49,6 +49,9 @@ class CollisionObject;
 class CollisionFilter
 {
 public:
+  /// Destructor.
+  virtual ~CollisionFilter();
+
   /// Returns true if the given two CollisionObjects should be checked by the
   /// collision detector, false otherwise.
   /// \deprecated Deprecated in 6.3.0. Please use ignoreCollision instead. Note

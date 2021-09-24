@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,10 +33,10 @@
 #include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
-
-PYBIND11_DECLARE_HOLDER_TYPE(T, dart::dynamics::TemplateBodyNodePtr<T>, true);
+#include "pointers.hpp"
 
 namespace py = pybind11;
 
@@ -1085,6 +1085,13 @@ void BodyNode(py::module& m)
             return self->getExternalForceGlobal();
           })
       .def(
+          "getBodyForce",
+          &dart::dynamics::BodyNode::getBodyForce,
+          "Get spatial body force transmitted from the parent joint. \n\nThe "
+          "spatial body force is transmitted to this BodyNode from the parent "
+          "body through the connecting joint. It is expressed in this "
+          "BodyNode's frame.")
+      .def(
           "isReactive",
           +[](const dart::dynamics::BodyNode* self)
               -> bool { return self->isReactive(); })
@@ -1190,9 +1197,9 @@ void BodyNode(py::module& m)
       .def(
           "dirtyExternalForces",
           +[](dart::dynamics::BodyNode* self) { self->dirtyExternalForces(); })
-      .def("dirtyCoriolisForces", +[](dart::dynamics::BodyNode* self) {
-        self->dirtyCoriolisForces();
-      });
+      .def(
+          "dirtyCoriolisForces",
+          +[](dart::dynamics::BodyNode* self) { self->dirtyCoriolisForces(); });
 }
 
 } // namespace python

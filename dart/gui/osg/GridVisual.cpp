@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -266,20 +266,17 @@ void setVertices(
 
   switch (planeType)
   {
-    case GridVisual::PlaneType::XY:
-    {
+    case GridVisual::PlaneType::XY: {
       axis1 = 0;
       axis2 = 1;
       break;
     }
-    case GridVisual::PlaneType::YZ:
-    {
+    case GridVisual::PlaneType::YZ: {
       axis1 = 1;
       axis2 = 2;
       break;
     }
-    case GridVisual::PlaneType::ZX:
-    {
+    case GridVisual::PlaneType::ZX: {
       axis1 = 2;
       axis2 = 0;
       break;
@@ -458,20 +455,17 @@ void GridVisual::refresh()
 
     switch (mPlaneType)
     {
-      case GridVisual::PlaneType::XY:
-      {
+      case GridVisual::PlaneType::XY: {
         mAxisLineColor->at(0) = xAxisLineColor;
         mAxisLineColor->at(2) = yAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::YZ:
-      {
+      case GridVisual::PlaneType::YZ: {
         mAxisLineColor->at(0) = yAxisLineColor;
         mAxisLineColor->at(2) = zAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::ZX:
-      {
+      case GridVisual::PlaneType::ZX: {
         mAxisLineColor->at(0) = zAxisLineColor;
         mAxisLineColor->at(2) = xAxisLineColor;
         break;

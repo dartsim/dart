@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -2265,7 +2265,11 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
 #endif // ------- Debug mode
 
+  _newBodyNode->incrementVersion();
   _newBodyNode->mStructuralChangeSignal.raise(_newBodyNode);
+  // We don't need to explicitly increment the version of this Skeleton here
+  // because the BodyNode will increment the version of its dependent, which is
+  // this Skeleton.
 }
 
 //==============================================================================
@@ -2437,6 +2441,12 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
   }
 
   updateTotalMass();
+
+  _oldBodyNode->incrementVersion();
+  _oldBodyNode->mStructuralChangeSignal.raise(_oldBodyNode);
+  // We don't need to explicitly increment the version of this Skeleton here
+  // because the BodyNode will increment the version of its dependent, which is
+  // this Skeleton.
 }
 
 //==============================================================================

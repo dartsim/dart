@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -986,7 +986,7 @@ bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
   for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
        node = node->NextSibling())
   {
-    if (not copyNode(copy, *node))
+    if (!copyNode(copy, *node))
     {
       return false;
     }
@@ -1001,7 +1001,7 @@ bool copyChildNodes(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src)
   for (const tinyxml2::XMLNode* node = src.FirstChild(); node != nullptr;
        node = node->NextSibling())
   {
-    if (not copyNode(destParent, *node))
+    if (!copyNode(destParent, *node))
     {
       return false;
     }

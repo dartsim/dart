@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,6 +32,8 @@
 
 #include "dart/constraint/ConstraintSolver.hpp"
 
+#include <algorithm>
+
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -41,11 +43,10 @@
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
+#include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
-#include "dart/constraint/JointLimitConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
-#include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -478,6 +479,29 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous soft contact constraints
   mSoftContactConstraints.clear();
 
+  // Create a mapping of contact pairs to the number of contacts between them
+  using ContactPair
+      = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+
+  // Compare contact pairs while ignoring their order in the pair.
+  struct ContactPairCompare
+  {
+    ContactPair getSortedPair(const ContactPair& a) const
+    {
+      if (a.first < a.second)
+        return std::make_pair(a.second, a.first);
+      return a;
+    }
+
+    bool operator()(const ContactPair& a, const ContactPair& b) const
+    {
+      // Sort each pair and then do a lexicographical comparison
+      return getSortedPair(a) < getSortedPair(b);
+    }
+  };
+
+  std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
+
   // Create new contact constraints
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
@@ -515,6 +539,10 @@ void ConstraintSolver::updateConstraints()
     }
     else
     {
+      // Increment the count of contacts between the two collision objects
+      ++contactPairMap[std::make_pair(
+          contact.collisionObject1, contact.collisionObject2)];
+
       mContactConstraints.push_back(
           std::make_shared<ContactConstraint>(contact, mTimeStep));
     }
@@ -523,6 +551,23 @@ void ConstraintSolver::updateConstraints()
   // Add the new contact constraints to dynamic constraint list
   for (const auto& contactConstraint : mContactConstraints)
   {
+    // update the slip compliances of the contact constraints based on the
+    // number of contacts between the collision objects.
+    auto& contact = contactConstraint->getContact();
+    std::size_t numContacts = 1;
+    auto it = contactPairMap.find(
+        std::make_pair(contact.collisionObject1, contact.collisionObject2));
+    if (it != contactPairMap.end())
+      numContacts = it->second;
+
+    // The slip compliance acts like a damper at each contact point so the total
+    // damping for each collision is multiplied by the number of contact points
+    // (numContacts). To eliminate this dependence on numContacts, the inverse
+    // damping is multiplied by numContacts.
+    contactConstraint->setPrimarySlipCompliance(
+        contactConstraint->getPrimarySlipCompliance() * numContacts);
+    contactConstraint->setSecondarySlipCompliance(
+        contactConstraint->getSecondarySlipCompliance() * numContacts);
     contactConstraint->update();
 
     if (contactConstraint->isActive())
@@ -542,8 +587,7 @@ void ConstraintSolver::updateConstraints()
   // Update automatic constraints: joint constraints
   //----------------------------------------------------------------------------
   // Destroy previous joint constraints
-  mJointLimitConstraints.clear();
-  mServoMotorConstraints.clear();
+  mJointConstraints.clear();
   mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
@@ -569,16 +613,10 @@ void ConstraintSolver::updateConstraints()
         }
       }
 
-      if (joint->areLimitsEnforced())
+      if (joint->areLimitsEnforced()
+          || joint->getActuatorType() == dynamics::Joint::SERVO)
       {
-        mJointLimitConstraints.push_back(
-            std::make_shared<JointLimitConstraint>(joint));
-      }
-
-      if (joint->getActuatorType() == dynamics::Joint::SERVO)
-      {
-        mServoMotorConstraints.push_back(
-            std::make_shared<ServoMotorConstraint>(joint));
+        mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
       if (joint->getActuatorType() == dynamics::Joint::MIMIC
@@ -594,20 +632,12 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add active joint limit
-  for (auto& jointLimitConstraint : mJointLimitConstraints)
+  for (auto& jointLimitConstraint : mJointConstraints)
   {
     jointLimitConstraint->update();
 
     if (jointLimitConstraint->isActive())
       mActiveConstraints.push_back(jointLimitConstraint);
-  }
-
-  for (auto& servoMotorConstraint : mServoMotorConstraints)
-  {
-    servoMotorConstraint->update();
-
-    if (servoMotorConstraint->isActive())
-      mActiveConstraints.push_back(servoMotorConstraint);
   }
 
   for (auto& mimicMotorConstraint : mMimicMotorConstraints)

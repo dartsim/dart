@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,7 +32,6 @@
 
 #include <dart/dart.hpp>
 #include <dart/simulation/World.hpp>
-
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 

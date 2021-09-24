@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -65,11 +65,10 @@ enum TypeOfDOF
 
 //==============================================================================
 // Deprecated. Use dart::test::equals() instead.
-template <class MATRIX>
-bool equals(const Eigen::DenseBase<MATRIX>& _expected,
-            const Eigen::DenseBase<MATRIX>& _actual, double tol = 1e-5)
+template <class MatrixA, class MatrixB>
+bool equals(const MatrixA& expected, const MatrixB& actual, double tol = 1e-5)
 {
-  return dart::test::equals(_expected, _actual, tol);
+  return dart::test::equals(expected, actual, tol);
 }
 
 //==============================================================================

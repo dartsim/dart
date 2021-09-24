@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/Node>
 
-#include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/render/BoxShapeNode.hpp"
 #include "dart/gui/osg/render/CapsuleShapeNode.hpp"
@@ -46,15 +47,13 @@
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 #include "dart/gui/osg/render/PlaneShapeNode.hpp"
 #include "dart/gui/osg/render/PointCloudShapeNode.hpp"
+#include "dart/gui/osg/render/PyramidShapeNode.hpp"
 #include "dart/gui/osg/render/ShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/SphereShapeNode.hpp"
 #if HAVE_OCTOMAP
-#  include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
+  #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 #endif
-#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
-#include "dart/gui/osg/render/WarningShapeNode.hpp"
-
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -67,11 +66,14 @@
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PointCloudShape.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/gui/osg/render/HeightmapShapeNode.hpp"
+#include "dart/gui/osg/render/WarningShapeNode.hpp"
 #if HAVE_OCTOMAP
-#  include "dart/dynamics/VoxelGridShape.hpp"
+  #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 #include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -261,6 +263,15 @@ void ShapeFrameNode::createShapeNode(
     std::shared_ptr<ConeShape> cs = std::dynamic_pointer_cast<ConeShape>(shape);
     if (cs)
       mRenderShapeNode = new render::ConeShapeNode(cs, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  else if (PyramidShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<PyramidShape> cs
+        = std::dynamic_pointer_cast<PyramidShape>(shape);
+    if (cs)
+      mRenderShapeNode = new render::PyramidShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }

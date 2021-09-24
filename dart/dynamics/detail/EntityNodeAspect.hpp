@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -86,7 +86,7 @@ public:
   template <typename... Args>
   EntityNodeBase(Args&&... args)
     : common::CompositeJoiner<Base, EntityNodeAspectBase<Base>>(
-          common::NoArg, std::forward<Args>(args)...)
+        common::NoArg, std::forward<Args>(args)...)
   {
     // Do nothing
   }

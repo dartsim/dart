@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -97,6 +97,12 @@ struct DynamicsAspectProperties
   /// Secondary coefficient of friction
   double mSecondaryFrictionCoeff;
 
+  /// Primary slip compliance coefficient
+  double mPrimarySlipCompliance;
+
+  /// Secondary slip compliance coefficient
+  double mSecondarySlipCompliance;
+
   /// First friction direction unit vector
   Eigen::Vector3d mFirstFrictionDirection;
 
@@ -128,6 +134,8 @@ struct DynamicsAspectProperties
       const double primaryFrictionCoeff,
       const double secondaryFrictionCoeff,
       const double restitutionCoeff,
+      const double primarySlipCompliance = -1.0,
+      const double secondarySlipCompliance = -1.0,
       const Eigen::Vector3d& firstFrictionDirection = Eigen::Vector3d::Zero(),
       const Frame* firstFrictionDirectionFrame = nullptr);
 

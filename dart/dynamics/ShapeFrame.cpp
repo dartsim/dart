@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -58,6 +58,8 @@ DynamicsAspectProperties::DynamicsAspectProperties(
   : mFrictionCoeff(frictionCoeff),
     mRestitutionCoeff(restitutionCoeff),
     mSecondaryFrictionCoeff(frictionCoeff),
+    mPrimarySlipCompliance(-1.0),
+    mSecondarySlipCompliance(-1.0),
     mFirstFrictionDirection(Eigen::Vector3d::Zero()),
     mFirstFrictionDirectionFrame(nullptr)
 {
@@ -69,11 +71,15 @@ DynamicsAspectProperties::DynamicsAspectProperties(
     const double primaryFrictionCoeff,
     const double secondaryFrictionCoeff,
     const double restitutionCoeff,
+    const double primarySlipCompliance,
+    const double secondarySlipCompliance,
     const Eigen::Vector3d& firstFrictionDirection,
     const Frame* firstFrictionDirectionFrame)
   : mFrictionCoeff(primaryFrictionCoeff),
     mRestitutionCoeff(restitutionCoeff),
     mSecondaryFrictionCoeff(secondaryFrictionCoeff),
+    mPrimarySlipCompliance(primarySlipCompliance),
+    mSecondarySlipCompliance(secondarySlipCompliance),
     mFirstFrictionDirection(firstFrictionDirection),
     mFirstFrictionDirectionFrame(firstFrictionDirectionFrame)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,22 +31,18 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
+#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
-
-#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/simulation/World.hpp>
-
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
-
 #include <dart/utils/DartResourceRetriever.hpp>
+#include <gtest/gtest.h>
 
 //==============================================================================
 bool runIssue1234Subtest(

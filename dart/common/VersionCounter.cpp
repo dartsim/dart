@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,10 +31,11 @@
  */
 
 #include "dart/common/VersionCounter.hpp"
-#include "dart/common/Console.hpp"
 
 #include <cassert>
 #include <iostream>
+
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {

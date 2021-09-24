@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_SKELETON_HPP_
 
 #include <mutex>
+
 #include "dart/common/NameManager.hpp"
 #include "dart/common/VersionCounter.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -51,6 +52,7 @@ namespace dart {
 namespace dynamics {
 
 /// class Skeleton
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Skeleton : public virtual common::VersionCounter,
                  public MetaSkeleton,
                  public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
@@ -646,7 +648,32 @@ public:
   /// Compute forward dynamics
   void computeForwardDynamics();
 
-  /// Compute inverse dynamics
+  /// Computes inverse dynamics.
+  ///
+  /// The inverse dynamics is computed according to the following equations of
+  /// motion:
+  ///
+  /// \f$ M(q) \ddot{q} + C(q, \dot{q}) + N(q) - \tau_{\text{ext}} - \tau_d -
+  /// \tau_s = \tau \f$
+  ///
+  /// where \f$ \tau_{\text{ext}} \f$, \f$ \tau_d \f$, and \f$ \tau_s \f$ are
+  /// external forces, joint damping forces, and joint spring forces projected
+  /// on to the joint space, respectively. This function provides three flags
+  /// whether to take into account each forces in computing the joint forces,
+  /// \f$ \tau_d \f$. Not accounting each forces implies that the forces is
+  /// added to \f$ \tau \f$ in order to keep the equation equivalent. If there
+  /// forces are zero (by setting external forces, damping coeff, spring
+  /// stiffness zeros), these flags have no effect.
+  ///
+  /// Once this function is called, the joint forces, \f$ \tau \f$, can be
+  /// obtained by calling getForces().
+  ///
+  /// \param[in] _withExternalForces Set \c true to take external forces into
+  /// account.
+  /// \param[in] _withDampingForces  Set \c true to take damping forces into
+  /// account.
+  /// \param[in] _withSpringForces   Set \c true to take spring forces into
+  /// account.
   void computeInverseDynamics(
       bool _withExternalForces = false,
       bool _withDampingForces = false,
@@ -1312,6 +1339,7 @@ public:
   ///
   std::size_t mUnionIndex;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

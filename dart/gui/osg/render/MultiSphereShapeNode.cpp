@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,17 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
+
 #include <osg/CullFace>
 #include <osg/Geode>
+#include <osg/Geometry>
 #include <osg/Light>
 #include <osg/Material>
-#include <osg/ShapeDrawable>
-
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
+#include "dart/math/Icosphere.hpp"
 
 namespace dart {
 namespace gui {
@@ -68,7 +69,7 @@ protected:
 };
 
 //==============================================================================
-class MultiSphereShapeDrawable : public ::osg::ShapeDrawable
+class MultiSphereShapeDrawable : public ::osg::Geometry
 {
 public:
   MultiSphereShapeDrawable(
@@ -84,6 +85,9 @@ protected:
   dart::dynamics::MultiSphereConvexHullShape* mMultiSphereShape;
   dart::dynamics::VisualAspect* mVisualAspect;
   MultiSphereShapeGeode* mParent;
+  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
+  ::osg::ref_ptr<::osg::Vec3Array> mNormals;
+  ::osg::ref_ptr<::osg::Vec4Array> mColors;
 };
 
 //==============================================================================
@@ -179,7 +183,12 @@ MultiSphereShapeDrawable::MultiSphereShapeDrawable(
     dart::dynamics::MultiSphereConvexHullShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     MultiSphereShapeGeode* parent)
-  : mMultiSphereShape(shape), mVisualAspect(visualAspect), mParent(parent)
+  : mMultiSphereShape(shape),
+    mVisualAspect(visualAspect),
+    mParent(parent),
+    mVertices(new ::osg::Vec3Array),
+    mNormals(new ::osg::Vec3Array),
+    mColors(new ::osg::Vec4Array)
 {
   refresh(true);
 }
@@ -196,27 +205,68 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime)
   {
-    ::osg::ref_ptr<::osg::CompositeShape> osg_shape = nullptr;
-    osg_shape = new ::osg::CompositeShape();
-
+    const auto subdivisions = 3; // TODO(JS): Make this configurable
     const auto& spheres = mMultiSphereShape->getSpheres();
+    auto numVertices
+        = spheres.size() * math::Icosphered::getNumVertices(subdivisions);
+    mVertices->resize(numVertices);
+
+    // Create meshes of sphere and combine them into a single mesh
+    auto mesh = math::TriMeshd();
     for (const auto& sphere : spheres)
     {
-      ::osg::ref_ptr<::osg::Sphere> osg_sphere = nullptr;
-      osg_sphere = new ::osg::Sphere(
-          ::osg::Vec3(sphere.second.x(), sphere.second.y(), sphere.second.z()),
-          sphere.first);
-      osg_shape->addChild(osg_sphere);
+      const double& radius = sphere.first;
+      const Eigen::Vector3d& center = sphere.second;
+
+      auto icosphere = math::Icosphered(radius, subdivisions);
+      icosphere.translate(center);
+
+      mesh += icosphere;
     }
 
-    setShape(osg_shape);
+    // Create a convex hull from the combined mesh
+    auto convexHull = mesh.generateConvexHull();
+    convexHull->computeVertexNormals();
+    const auto& meshVertices = convexHull->getVertices();
+    const auto& meshNormals = convexHull->getVertexNormals();
+    const auto& meshTriangles = convexHull->getTriangles();
+    assert(meshVertices.size() == meshNormals.size());
+
+    // Convert the convex hull to OSG data types
+    mVertices->resize(meshVertices.size());
+    mNormals->resize(meshVertices.size());
+    for (auto i = 0u; i < meshVertices.size(); ++i)
+    {
+      const auto& v = meshVertices[i];
+      const auto& n = meshNormals[i];
+      (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
+      (*mNormals)[i] = ::osg::Vec3(n[0], n[1], n[2]);
+    }
+    setVertexArray(mVertices);
+    setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
+
+    ::osg::ref_ptr<::osg::DrawElementsUInt> drawElements
+        = new ::osg::DrawElementsUInt(GL_TRIANGLES);
+    drawElements->resize(3 * meshTriangles.size());
+    for (auto i = 0u; i < meshTriangles.size(); ++i)
+    {
+      const auto& triangle = meshTriangles[i];
+      (*drawElements)[3 * i] = triangle[0];
+      (*drawElements)[3 * i + 1] = triangle[1];
+      (*drawElements)[3 * i + 2] = triangle[2];
+    }
+    addPrimitiveSet(drawElements);
+
     dirtyDisplayList();
   }
 
   if (mMultiSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
       || firstTime)
   {
-    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
+    (*mColors).resize(1);
+    (*mColors)[0] = eigToOsgVec4f(mVisualAspect->getRGBA());
+    setColorArray(mColors);
+    setColorBinding(::osg::Geometry::BIND_OVERALL);
   }
 }
 

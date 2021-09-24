@@ -1,0 +1,208 @@
+#!/bin/sh
+set -e
+
+script_path="$(
+  cd "$(dirname "$0")"
+  pwd -P
+)"
+
+os=ubuntu-focal
+dart_version=v6.12
+build_dir_prefix=.build/
+project_dir=/opt/dart/
+cleanup_command=""
+use_dev_image=false
+build_mode="Release"
+build_test=true
+build_example=true
+build_tutorial=true
+build_dartpy=true
+codecov_option=""
+num_cores=1
+
+help() {
+  cat <<EOF
+  Usage: ${0##*/} <routine> [<options>...]
+
+  Example: ${0##*/} build  # Build with the default settings
+
+  Routines:
+    build      Build DART and run its tests
+    clean      Remove build directory for a specific build configuration
+    clean_all  Remove all the build directories
+    launch     Launch Docker image for DART build
+
+  Options:
+    -o <name>       OS version. Available <name>: {ubuntu-bionic, ubuntu-focal (default), ubuntu-impish}
+    -v <version>    DART version. Available <version>: {v6.10, v7.0 (default)}
+    -c              Clean build. Empty the build directory before building.
+    -j <num_cores>  Number of cores to use for build. Use -j 1 to disable parallel build. Single core will be used if this option is not specified.
+    --dev           Use Docker image for development rather than release image.
+    --no-test       Skip building and running tests
+    --no-example    Skip building examples
+    --no-tutorial   Skip building tutorials
+    --no-dartpy     Skip building dartpy
+    --codecov       Enable code coverage (experimental)
+    --mode <mode>   Build mode. Available <mode>: {Release (default), Debug}
+EOF
+}
+
+if [ "$#" -lt 1 ]; then
+  help
+  exit
+else
+  routine=$1
+  shift
+fi
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -o)
+    os=$2
+    shift
+    ;;
+  -v)
+    dart_version=$2
+    shift
+    ;;
+  -c)
+    cleanup_command="&& rm -rf *"
+    ;;
+  --dev)
+    use_dev_image=true
+    ;;
+  --no-test)
+    build_test=false
+    ;;
+  --no-example)
+    build_example=false
+    ;;
+  --no-tutorial)
+    build_tutorial=false
+    ;;
+  --no-dartpy)
+    build_dartpy=false
+    ;;
+  --mode)
+    build_mode=$2
+    shift
+    ;;
+  -j)
+    num_cores=$2
+    shift
+    ;;
+  --codecov)
+    codecov_option="-DDART_CODECOV=ON"
+    ;;
+  *)
+    bash_command=$@
+    break
+    ;;
+  esac
+  shift
+done
+
+full_image_name_deploy=dartsim/dart:$os-$dart_version
+full_image_name_dev=dartsim/dart-dev:$os-$dart_version
+
+if [ "$build_test" = true ]; then
+  test_command="&& make -j$num_cores tests && ctest --output-on-failure"
+else
+  test_command=""
+fi
+
+if [ "$build_example" = true ]; then
+  example_command="&& make -j$num_cores examples"
+else
+  example_command=""
+fi
+
+if [ "$build_tutorial" = true ]; then
+  tutorial_command="&& make -j$num_cores tutorials"
+else
+  tutorial_command=""
+fi
+
+if [ "$build_dartpy" = true ]; then
+  dartpy_command="&& make -j30 dartpy && make pytest"
+else
+  dartpy_command=""
+fi
+
+full_build_dir=$project_dir$build_dir_prefix$os-$dart_version-$build_mode/
+
+launch() {
+  if [ "$use_dev_image" = true ]; then
+    full_image_name=$full_image_name_dev
+  else
+    full_image_name=$full_image_name_deploy
+  fi
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --privileged \
+    --volume $(pwd):$project_dir \
+    -w $project_dir \
+    -t $full_image_name \
+    /bin/bash
+}
+
+clean() {
+  full_image_name=$full_image_name_dev
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --volume $(pwd):$project_dir \
+    -w $project_dir/ \
+    $full_image_name /bin/bash -c \
+    "rm -rf $full_build_dir"
+}
+
+clean_all() {
+  full_image_name=$full_image_name_dev
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --volume $(pwd):$project_dir \
+    -w $project_dir/ \
+    $full_image_name /bin/bash -c \
+    "rm -rf $project_dir$build_dir_prefix"
+}
+
+build() {
+  full_image_name=$full_image_name_dev
+
+  echo "======================================================================="
+  echo " [Build] "
+  echo " Docker   : $full_image_name"
+  echo " Num cores: $num_cores / $(nproc)"
+  echo "======================================================================="
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --volume $(pwd):$project_dir \
+    -w $project_dir/ \
+    $full_image_name /bin/bash -c \
+    "mkdir -p $full_build_dir \
+    && cd $full_build_dir \
+    $cleanup_command \
+    && cmake $project_dir \
+    -DCMAKE_BUILD_TYPE=$build_mode \
+    $codecov_option \
+    && make -j$num_cores \
+    $test_command \
+    $example_command \
+    $tutorial_command \
+    $dartpy_command"
+}
+
+# Run the selected routine
+"$routine"

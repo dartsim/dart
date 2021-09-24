@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,16 +31,13 @@
  */
 
 #include <TestHelpers.hpp>
-#include <gtest/gtest.h>
-
+#include <dart/collision/CollisionResult.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
-
 #include <dart/simulation/World.hpp>
-
-#include <dart/collision/CollisionResult.hpp>
+#include <gtest/gtest.h>
 
 //==============================================================================
 TEST(Issue1231, NoContacts)

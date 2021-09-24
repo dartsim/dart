@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,14 +31,16 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/dart.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
 #include "dart/utils/utils.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace utils::MjcfParser::detail;

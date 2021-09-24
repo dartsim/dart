@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -36,7 +36,7 @@
 #include "dart/dynamics/Shape.hpp"
 
 #if HAVE_OCTOMAP
-#  include <octomap/Pointcloud.h>
+  #include <octomap/Pointcloud.h>
 #endif
 
 namespace dart {
@@ -97,10 +97,10 @@ public:
 
 #if HAVE_OCTOMAP
   /// Replaces points with \c pointCloud.
-  void setPoints(::octomap::Pointcloud& pointCloud);
+  void setPoints(const ::octomap::Pointcloud& pointCloud);
 
   /// Adds points from Octomap PointCloud.
-  void addPoints(::octomap::Pointcloud& pointCloud);
+  void addPoints(const ::octomap::Pointcloud& pointCloud);
 #endif
 
   /// Returns the list of points.

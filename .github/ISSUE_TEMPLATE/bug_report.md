@@ -17,7 +17,7 @@ assignees: ''
 #### Environment
 > Select the following information.
 * DART version: [e.g., master, 6.8.3]
-* OS name and version name(or number): [e.g., Ubuntu 18.04, macOS Mojav, Windows 10]
+* OS name and version name(or number): [e.g., Ubuntu 18.04, macOS Catalina, Windows 10]
 * Compiler name and version number: [e.g., GCC 7.4.0, Clang 3.9.1]
 
 #### Expected Behavior

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,8 +31,8 @@
  */
 
 #include <iostream>
+
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
 
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -41,6 +41,8 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
+
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;
@@ -144,7 +146,11 @@ TEST(Skeleton, Restructuring)
     BodyNode* child = bn1->descendsFrom(bn2) ? bn1 : bn2;
     BodyNode* parent = child == bn1 ? bn2 : bn1;
 
+    auto skelVer = skeleton->getVersion();
+    auto childVer = child->getVersion();
     child->moveTo(parent);
+    EXPECT_NE(skeleton->getVersion(), skelVer);
+    EXPECT_NE(child->getVersion(), childVer);
 
     EXPECT_TRUE(skeleton->getNumBodyNodes() == original->getNumBodyNodes());
     if (skeleton->getNumBodyNodes() == original->getNumBodyNodes())
@@ -263,7 +269,13 @@ TEST(Skeleton, Restructuring)
     constructSubtree(subtree, childBn);
 
     // Move to a new Skeleton
+    auto fromSkelVer = fromSkel->getVersion();
+    auto toSkelVer = toSkel->getVersion();
+    auto child_ver = childBn->getVersion();
     childBn->moveTo(parentBn);
+    EXPECT_NE(fromSkel->getVersion(), fromSkelVer);
+    EXPECT_NE(toSkel->getVersion(), toSkelVer);
+    EXPECT_NE(childBn->getVersion(), child_ver);
     EXPECT_TRUE(childBn->getSkeleton()->checkIndexingConsistency());
     EXPECT_TRUE(parentBn->getSkeleton()->checkIndexingConsistency());
 
@@ -569,9 +581,7 @@ class GenericNode final : public dart::dynamics::Node,
                           public AccessoryNode<GenericNode>
 {
 public:
-  GenericNode(BodyNode* bn, const std::string& name) : Node(bn), mName(name)
-  {
-  }
+  GenericNode(BodyNode* bn, const std::string& name) : Node(bn), mName(name) {}
 
   const std::string& setName(const std::string& newName) override
   {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -49,7 +49,8 @@ void DragAndDrop(py::module& m)
       dart::common::Observer,
       dart::common::Subject,
       ::std::shared_ptr<dart::gui::osg::DragAndDrop>>(m, "DragAndDrop")
-      .def("update", +[](dart::gui::osg::DragAndDrop* self) { self->update(); })
+      .def(
+          "update", +[](dart::gui::osg::DragAndDrop* self) { self->update(); })
       .def(
           "setObstructable",
           +[](dart::gui::osg::DragAndDrop* self, bool _obstructable) {
@@ -61,7 +62,8 @@ void DragAndDrop(py::module& m)
           +[](const dart::gui::osg::DragAndDrop* self) -> bool {
             return self->isObstructable();
           })
-      .def("move", +[](dart::gui::osg::DragAndDrop* self) { self->move(); })
+      .def(
+          "move", +[](dart::gui::osg::DragAndDrop* self) { self->move(); })
       .def(
           "saveState",
           +[](dart::gui::osg::DragAndDrop* self) { self->saveState(); })
@@ -147,10 +149,11 @@ void DragAndDrop(py::module& m)
           ::py::init<dart::gui::osg::Viewer*, dart::dynamics::SimpleFrame*>(),
           ::py::arg("viewer"),
           ::py::arg("frame"))
-      .def("move", +[](dart::gui::osg::SimpleFrameDnD* self) { self->move(); })
-      .def("saveState", +[](dart::gui::osg::SimpleFrameDnD* self) {
-        self->saveState();
-      });
+      .def(
+          "move", +[](dart::gui::osg::SimpleFrameDnD* self) { self->move(); })
+      .def(
+          "saveState",
+          +[](dart::gui::osg::SimpleFrameDnD* self) { self->saveState(); });
 
   ::py::class_<
       dart::gui::osg::SimpleFrameShapeDnD,
@@ -165,9 +168,9 @@ void DragAndDrop(py::module& m)
           ::py::arg("viewer"),
           ::py::arg("frame"),
           ::py::arg("shape"))
-      .def("update", +[](dart::gui::osg::SimpleFrameShapeDnD* self) {
-        self->update();
-      });
+      .def(
+          "update",
+          +[](dart::gui::osg::SimpleFrameShapeDnD* self) { self->update(); });
 
   ::py::class_<
       dart::gui::osg::BodyNodeDnD,
@@ -193,8 +196,10 @@ void DragAndDrop(py::module& m)
           ::py::arg("bn"),
           ::py::arg("useExternalIK"),
           ::py::arg("useWholeBody"))
-      .def("update", +[](dart::gui::osg::BodyNodeDnD* self) { self->update(); })
-      .def("move", +[](dart::gui::osg::BodyNodeDnD* self) { self->move(); })
+      .def(
+          "update", +[](dart::gui::osg::BodyNodeDnD* self) { self->update(); })
+      .def(
+          "move", +[](dart::gui::osg::BodyNodeDnD* self) { self->move(); })
       .def(
           "saveState",
           +[](dart::gui::osg::BodyNodeDnD* self) { self->saveState(); })
@@ -267,9 +272,10 @@ void DragAndDrop(py::module& m)
       .def(
           "move",
           +[](dart::gui::osg::InteractiveFrameDnD* self) { self->move(); })
-      .def("saveState", +[](dart::gui::osg::InteractiveFrameDnD* self) {
-        self->saveState();
-      });
+      .def(
+          "saveState", +[](dart::gui::osg::InteractiveFrameDnD* self) {
+            self->saveState();
+          });
 }
 
 } // namespace python

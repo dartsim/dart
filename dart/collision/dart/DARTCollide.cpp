@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,10 +31,10 @@
  */
 
 #include "dart/collision/dart/DARTCollide.hpp"
-#include "dart/collision/CollisionObject.hpp"
 
 #include <memory>
 
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -1392,7 +1392,7 @@ int collideCylinderSphere(
     contact.point
         = T0
           * Eigen::Vector3d(
-                center[0], center[1], half_height - contact.penetrationDepth);
+              center[0], center[1], half_height - contact.penetrationDepth);
     contact.normal
         = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
     result.addContact(contact);

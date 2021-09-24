@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -39,8 +39,8 @@ namespace python {
 
 void ConstraintBase(py::module& sm);
 void JointConstraint(py::module& sm);
-void JointLimitConstraint(py::module& sm);
 void JointCoulombFrictionConstraint(py::module& sm);
+void DynamicJointConstraint(py::module& sm);
 
 void BoxedLcpSolver(py::module& sm);
 void DantzigBoxedLcpSolver(py::module& sm);
@@ -49,18 +49,14 @@ void PgsBoxedLcpSolver(py::module& sm);
 void ConstraintSolver(py::module& sm);
 void BoxedLcpConstraintSolver(py::module& sm);
 
-// void ConstraintBase(py::module& sm);
-// void ConstraintBase(py::module& sm);
-// void ConstraintBase(py::module& sm);
-
 void dart_constraint(py::module& m)
 {
   auto sm = m.def_submodule("constraint");
 
   ConstraintBase(sm);
   JointConstraint(sm);
-  JointLimitConstraint(sm);
   JointCoulombFrictionConstraint(sm);
+  DynamicJointConstraint(sm);
 
   BoxedLcpSolver(sm);
   DantzigBoxedLcpSolver(sm);
@@ -68,14 +64,6 @@ void dart_constraint(py::module& m)
 
   ConstraintSolver(sm);
   BoxedLcpConstraintSolver(sm);
-
-  // ConstraintBase(sm);
-  // ConstraintBase(sm);
-  // ConstraintBase(sm);
-  // ConstraintBase(sm);
-  // ConstraintBase(sm);
-  // ConstraintBase(sm);
-  // ConstraintBase(sm);
 }
 
 } // namespace python

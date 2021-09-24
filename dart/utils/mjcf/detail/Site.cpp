@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -180,7 +180,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
 static bool canUseFromTo(
     GeomType type, const common::optional<Eigen::Vector6d>& fromto)
 {
-  if (not fromto)
+  if (!fromto)
     return false;
 
   switch (type)
@@ -216,14 +216,12 @@ Errors Site::preprocess(const Compiler& compiler)
   {
     case GeomType::PLANE:
     case GeomType::HFIELD:
-    case GeomType::SPHERE:
-    {
+    case GeomType::SPHERE: {
       mSize = mData.mSize;
       break;
     }
     case GeomType::CAPSULE:
-    case GeomType::CYLINDER:
-    {
+    case GeomType::CYLINDER: {
       if (mData.mFromTo)
       {
         const double radius = mData.mSize[0];
@@ -241,8 +239,7 @@ Errors Site::preprocess(const Compiler& compiler)
       break;
     }
     case GeomType::ELLIPSOID:
-    case GeomType::BOX:
-    {
+    case GeomType::BOX: {
       if (mData.mFromTo)
       {
         const double halfLengthX = mData.mSize[0];
@@ -262,8 +259,7 @@ Errors Site::preprocess(const Compiler& compiler)
       }
       break;
     }
-    case GeomType::MESH:
-    {
+    case GeomType::MESH: {
       break;
     }
   }

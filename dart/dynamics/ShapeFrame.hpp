@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -159,6 +159,18 @@ public:
   // void setRestitutionCoeff(const double& value);
   // const double& getRestitutionCoeff() const;
 
+  /// Slip compliance parameters act as constraint force mixing (cfm)
+  /// for the friction constraints.
+  /// They start with a default value of -1.0 and will be ignored
+  /// in favor of the global default value unless explicitly
+  /// set to a positive value.
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimarySlipCompliance)
+  // void sePrimarytSlipCompliance(const double& value);
+  // const double& getPrimarySlipCompliance() const;
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondarySlipCompliance)
+  // void setSecondarySlipCompliance(const double& value);
+  // const double& getSecondarySlipCompliance() const;
+
   /// Set the frame for interpreting the first friction direction vector.
   /// The frame pointer defaults to nullptr, which is interpreted as this
   /// ShapeFrame.
@@ -173,6 +185,7 @@ public:
 };
 
 //==============================================================================
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class ShapeFrame : public virtual common::VersionCounter,
                    public detail::ShapeFrameCompositeBase,
                    public virtual Frame
@@ -269,6 +282,7 @@ public:
   common::SlotRegister<RelativeTransformUpdatedSignal>
       onRelativeTransformUpdated;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart

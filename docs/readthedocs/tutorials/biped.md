@@ -64,7 +64,7 @@ SkeletonPtr loadBiped()
 {
 ...
     for(size_t i = 0; i < biped->getNumJoints(); ++i)
-        biped->getJoint(i)->setPositionLimited(true);
+        biped->getJoint(i)->setLimitEnforcement(true);
 ...
 }
 ```
@@ -75,15 +75,15 @@ a skeleton. You can enable self-collision checking on the biped by
 SkeletonPtr loadBiped()
 {
 ...
-    biped->enableSelfCollision();
+    biped->enableSelfCollisionCheck();
 ...
 }
 ```
-This function will enable self-collision on every non-adjacent pair of
-body nodes. If you wish to also enable self-collision on adjacent body
-nodes, set the optional parameter to true:
+This function will enable self-collision on every pair of
+body nodes. If you wish to disable self-collisions on adjacent body
+nodes, call the following function
 ```cpp
-biped->enableSelfCollision(true);
+biped->disableAdjacentBodyCheck();
 ```
 Running the program again, you should see that the character is still
 floppy like a ragdoll, but now the joints do not bend backward and the

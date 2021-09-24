@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -36,24 +36,16 @@ namespace dart {
 namespace integration {
 
 //==============================================================================
-IntegrableSystem::IntegrableSystem()
-{
-}
+IntegrableSystem::IntegrableSystem() {}
 
 //==============================================================================
-IntegrableSystem::~IntegrableSystem()
-{
-}
+IntegrableSystem::~IntegrableSystem() {}
 
 //==============================================================================
-Integrator::Integrator()
-{
-}
+Integrator::Integrator() {}
 
 //==============================================================================
-Integrator::~Integrator()
-{
-}
+Integrator::~Integrator() {}
 
 } // namespace integration
 } // namespace dart

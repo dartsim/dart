@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/InverseKinematics.hpp"
+
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -436,8 +437,9 @@ void InverseKinematics::ErrorMethod::clearCache()
 
 //==============================================================================
 InverseKinematics::TaskSpaceRegion::UniqueProperties::UniqueProperties(
-    bool computeErrorFromCenter)
-  : mComputeErrorFromCenter(computeErrorFromCenter)
+    bool computeErrorFromCenter, SimpleFramePtr referenceFrame)
+  : mComputeErrorFromCenter(computeErrorFromCenter),
+    mReferenceFrame(std::move(referenceFrame))
 {
   // Do nothing
 }
@@ -508,11 +510,17 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   // valid constraint manifold faster than computing it from the edge of the
   // Task Space Region.
 
+  const Frame* referenceFrame = mTaskSpaceP.mReferenceFrame.get();
+  if (referenceFrame == nullptr)
+    referenceFrame = mIK->getTarget()->getParentFrame();
+  assert(referenceFrame != nullptr);
+
   // Use the target's transform with respect to its reference frame
-  const Eigen::Isometry3d& targetTf = mIK->getTarget()->getRelativeTransform();
+  const Eigen::Isometry3d targetTf
+      = mIK->getTarget()->getTransform(referenceFrame);
   // Use the actual transform with respect to the target's reference frame
-  const Eigen::Isometry3d& actualTf
-      = mIK->getNode()->getTransform(mIK->getTarget()->getParentFrame());
+  const Eigen::Isometry3d actualTf
+      = mIK->getNode()->getTransform(referenceFrame);
 
   // ^ This scheme makes it so that the bounds are expressed in the reference
   // frame of the target
@@ -521,11 +529,11 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   if (mIK->hasOffset())
     p_error += actualTf.linear() * mIK->getOffset();
 
-  Eigen::Matrix3d R_error = actualTf.linear() * targetTf.linear().transpose();
+  const Eigen::Matrix3d R_error
+      = actualTf.linear() * targetTf.linear().transpose();
 
   Eigen::Vector6d displacement;
-  displacement.head<3>() = math::matrixToEulerXYZ(R_error);
-  displacement.tail<3>() = p_error;
+  displacement << math::matrixToEulerXYZ(R_error), p_error;
 
   Eigen::Vector6d error;
   const Eigen::Vector6d& min = mErrorP.mBounds.first;
@@ -570,11 +578,10 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   if (error.norm() > mErrorP.mErrorLengthClamp)
     error = error.normalized() * mErrorP.mErrorLengthClamp;
 
-  if (!mIK->getTarget()->getParentFrame()->isWorld())
+  if (!referenceFrame->isWorld())
   {
     // Transform the error term into the world frame if it's not already
-    const Eigen::Isometry3d& R
-        = mIK->getTarget()->getParentFrame()->getWorldTransform();
+    const Eigen::Isometry3d& R = referenceFrame->getWorldTransform();
     error.head<3>() = R.linear() * error.head<3>();
     error.tail<3>() = R.linear() * error.tail<3>();
   }
@@ -593,6 +600,20 @@ void InverseKinematics::TaskSpaceRegion::setComputeFromCenter(
 bool InverseKinematics::TaskSpaceRegion::isComputingFromCenter() const
 {
   return mTaskSpaceP.mComputeErrorFromCenter;
+}
+
+//==============================================================================
+void InverseKinematics::TaskSpaceRegion::setReferenceFrame(
+    SimpleFramePtr referenceFrame)
+{
+  mTaskSpaceP.mReferenceFrame = std::move(referenceFrame);
+}
+
+//==============================================================================
+ConstSimpleFramePtr InverseKinematics::TaskSpaceRegion::getReferenceFrame()
+    const
+{
+  return mTaskSpaceP.mReferenceFrame;
 }
 
 //==============================================================================

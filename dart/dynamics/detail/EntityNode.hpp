@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,9 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_
 #define DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_
 
-#include "dart/dynamics/EntityNode.hpp"
-
 #include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/EntityNode.hpp"
 
 namespace dart {
 namespace dynamics {

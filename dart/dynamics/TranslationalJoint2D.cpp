@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -224,7 +224,7 @@ void TranslationalJoint2D::updateRelativeTransform() const
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(
-             mAspectProperties.getTranslationalAxes() * positions)
+           mAspectProperties.getTranslationalAxes() * positions)
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification

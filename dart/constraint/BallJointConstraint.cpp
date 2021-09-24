@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 #include "dart/constraint/BallJointConstraint.hpp"
-#include <iostream>
 
-#include "dart/external/odelcpsolver/lcp.h"
+#include <iostream>
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 
 namespace dart {
 namespace constraint {
@@ -43,7 +43,7 @@ namespace constraint {
 //==============================================================================
 BallJointConstraint::BallJointConstraint(
     dynamics::BodyNode* _body, const Eigen::Vector3d& _jointPos)
-  : JointConstraint(_body),
+  : DynamicJointConstraint(_body),
     mOffset1(_body->getTransform().inverse() * _jointPos),
     mOffset2(_jointPos),
     mViolation(Eigen::Vector3d::Zero()),
@@ -65,7 +65,7 @@ BallJointConstraint::BallJointConstraint(
     dynamics::BodyNode* _body1,
     dynamics::BodyNode* _body2,
     const Eigen::Vector3d& _jointPos)
-  : JointConstraint(_body1, _body2),
+  : DynamicJointConstraint(_body1, _body2),
     mOffset1(_body1->getTransform().inverse() * _jointPos),
     mOffset2(_body2->getTransform().inverse() * _jointPos),
     mViolation(Eigen::Vector3d::Zero()),
@@ -86,9 +86,7 @@ BallJointConstraint::BallJointConstraint(
 }
 
 //==============================================================================
-BallJointConstraint::~BallJointConstraint()
-{
-}
+BallJointConstraint::~BallJointConstraint() {}
 
 //==============================================================================
 const std::string& BallJointConstraint::getType() const

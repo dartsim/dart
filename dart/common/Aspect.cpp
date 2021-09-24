@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Aspect.hpp"
+
 #include <cassert>
 #include <iostream>
 #include <string>
 
-#include "dart/common/Aspect.hpp"
 #include "dart/common/Console.hpp"
 
 namespace dart {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -195,7 +195,7 @@ Errors MujocoModel::read(
   }
 
   tinyxml2::XMLDocument mjcfDoc;
-  if (not readXmlFile(mjcfDoc, uri, retriever))
+  if (!readXmlFile(mjcfDoc, uri, retriever))
   {
     errors.emplace_back(
         ErrorCode::FILE_READ, "Failed to load '" + uri.toString() + "'.");

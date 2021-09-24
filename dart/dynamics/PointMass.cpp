@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -595,7 +595,6 @@ void PointMass::clearConstraintImpulse()
 //==============================================================================
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
 {
-
   Eigen::Vector3d& mRest
       = mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mX0;
   if (_p == mRest)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -33,29 +33,24 @@
 #include "dart/constraint/PGSLCPSolver.hpp"
 
 #ifndef NDEBUG
-#  include <iomanip>
-#  include <iostream>
+  #include <iomanip>
+  #include <iostream>
 #endif
-
-#include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
+#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {
 namespace constraint {
 
 //==============================================================================
-PGSLCPSolver::PGSLCPSolver(double _timestep) : LCPSolver(_timestep)
-{
-}
+PGSLCPSolver::PGSLCPSolver(double _timestep) : LCPSolver(_timestep) {}
 
 //==============================================================================
-PGSLCPSolver::~PGSLCPSolver()
-{
-}
+PGSLCPSolver::~PGSLCPSolver() {}
 
 //==============================================================================
 void PGSLCPSolver::solve(ConstrainedGroup* _group)
