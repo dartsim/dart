@@ -1117,31 +1117,19 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
           = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
       VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
 
-      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE));
-      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD1, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD2, TOLERANCE));
+      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE))
+          << "dq0  : " << dq0.transpose() << "\ndq0FD: " << dq0FD.transpose();
 
-      if (!equals(dq0FD, dq0, TOLERANCE))
-      {
-        std::cout << "dq0  : " << dq0.transpose() << std::endl;
-        std::cout << "dq0FD: " << dq0FD.transpose() << std::endl;
-      }
-      if (!equals(dq1, dq1FD, TOLERANCE))
-      {
-        std::cout << "dq1  : " << dq1.transpose() << std::endl;
-        std::cout << "dq1FD: " << dq1FD.transpose() << std::endl;
-      }
-      if (!equals(ddq0, ddqFD1, TOLERANCE))
-      {
-        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
-        std::cout << "ddqFD1: " << ddqFD1.transpose() << std::endl;
-      }
-      if (!equals(ddq0, ddqFD2, TOLERANCE))
-      {
-        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
-        std::cout << "ddqFD2: " << ddqFD2.transpose() << std::endl;
-      }
+      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE))
+          << "dq1  : " << dq1.transpose() << "\ndq1FD: " << dq1FD.transpose();
+
+      EXPECT_TRUE(equals(ddq0, ddqFD1, 10 * TOLERANCE))
+          << "ddq0  : " << ddq0.transpose()
+          << "\nddqFD1: " << ddqFD1.transpose();
+
+      EXPECT_TRUE(equals(ddq0, ddqFD2, 10 * TOLERANCE))
+          << "ddq0  : " << ddq0.transpose()
+          << "\nddqFD2: " << ddqFD2.transpose() << std::endl;
     }
   }
 }
