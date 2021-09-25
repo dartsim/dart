@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,23 +38,31 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-
-void dart_common(py::module& m)
+void Resource(py::module& m)
 {
-  auto sm = m.def_submodule("common");
+  ::py::class_<dart::common::Resource, std::shared_ptr<dart::common::Resource>>(
+      m, "Resource")
+      .def("getSize", &common::Resource::getSize)
+      .def("tell", &common::Resource::tell)
+      .def(
+          "seek",
+          &common::Resource::seek,
+          ::py::arg("offset"),
+          ::py::arg("origin"))
+      .def(
+          "read",
+          &common::Resource::read,
+          ::py::arg("buffer"),
+          ::py::arg("size"),
+          ::py::arg("count"))
+      .def("readAll", &common::Resource::readAll);
 
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
+  ::py::class_<
+      dart::common::LocalResource,
+      dart::common::Resource,
+      std::shared_ptr<dart::common::LocalResource>>(m, "LocalResource")
+      .def(::py::init<const std::string&>(), ::py::arg("path"))
+      .def("isGood", &common::LocalResource::isGood);
 }
 
 } // namespace python

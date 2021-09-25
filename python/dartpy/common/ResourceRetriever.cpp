@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,23 +38,25 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-
-void dart_common(py::module& m)
+void ResourceRetriever(py::module& m)
 {
-  auto sm = m.def_submodule("common");
+  ::py::class_<
+      dart::common::ResourceRetriever,
+      std::shared_ptr<dart::common::ResourceRetriever>>(m, "ResourceRetriever")
+      .def("exists", &common::ResourceRetriever::exists, ::py::arg("uri"))
+      .def("retrieve", &common::ResourceRetriever::retrieve, ::py::arg("uri"))
+      .def("readAll", &common::ResourceRetriever::readAll, ::py::arg("uri"))
+      .def(
+          "getFilePath",
+          &common::ResourceRetriever::getFilePath,
+          ::py::arg("uri"));
 
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
+  ::py::class_<
+      dart::common::LocalResourceRetriever,
+      dart::common::ResourceRetriever,
+      std::shared_ptr<dart::common::LocalResourceRetriever>>(
+      m, "LocalResourceRetriever")
+      .def(::py::init<>());
 }
 
 } // namespace python

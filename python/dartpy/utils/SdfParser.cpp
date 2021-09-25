@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,23 +39,20 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-
-void dart_common(py::module& m)
+void SdfParser(py::module& m)
 {
-  auto sm = m.def_submodule("common");
+  auto sm = m.def_submodule("SdfParser");
 
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
+  sm.def(
+      "readWorld",
+      &utils::SdfParser::readWorld,
+      ::py::arg("uri"),
+      ::py::arg("retriever") = nullptr);
+  sm.def(
+      "readSkeleton",
+      &utils::SdfParser::readSkeleton,
+      ::py::arg("uri"),
+      ::py::arg("retriever") = nullptr);
 }
 
 } // namespace python

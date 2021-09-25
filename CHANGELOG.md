@@ -21,6 +21,10 @@
 
   * Updated ImGui to 1.84.2: [#1608](https://github.com/dartsim/dart/pull/1608)
 
+* dartpy
+
+  * Added Python bindings for ResourceRetriever and SdfParser: [#1610](https://github.com/dartsim/dart/pull/1610)
+
 ### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
 
 * Dynamics
