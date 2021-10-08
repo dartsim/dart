@@ -32,8 +32,6 @@
 
 #include "dart/dynamics/MeshShape.hpp"
 
-#include <iostream>
-
 #include <limits>
 #include <string>
 
@@ -425,11 +423,15 @@ aiScene* MeshShape::copyMesh() const
   for (unsigned int i = 0; i < new_scene->mNumTextures; i++)
   {
     new_scene->mTextures[i] = new aiTexture();
-    memcpy(new_scene->mTextures[i]->achFormatHint, mMesh->mTextures[i]->achFormatHint, 4 * sizeof(char));
+    strcpy(new_scene->mTextures[i]->achFormatHint, mMesh->mTextures[i]->achFormatHint);
     new_scene->mTextures[i]->mHeight = mMesh->mTextures[i]->mHeight;
     new_scene->mTextures[i]->mWidth = mMesh->mTextures[i]->mWidth;
-    new_scene->mTextures[i]->pcData = new aiTexel[new_scene->mTextures[i]->mHeight * new_scene->mTextures[i]->mWidth];
-    memcpy(new_scene->mTextures[i]->pcData, mMesh->mTextures[i]->pcData, new_scene->mTextures[i]->mHeight * new_scene->mTextures[i]->mWidth * sizeof(aiTexel));
+    new_scene->mTextures[i]->mFilename = mMesh->mTextures[i]->mFilename;
+    unsigned int size = new_scene->mTextures[i]->mWidth;
+    if (new_scene->mTextures[i]->mHeight > 0)
+      size *= new_scene->mTextures[i]->mHeight;
+    new_scene->mTextures[i]->pcData = new aiTexel[size];
+    memcpy(new_scene->mTextures[i]->pcData, mMesh->mTextures[i]->pcData, size * sizeof(aiTexel));
   }
 
   // Copy meshes
