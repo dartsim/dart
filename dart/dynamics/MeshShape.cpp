@@ -420,6 +420,18 @@ aiScene* MeshShape::copyMesh() const
     }
   }
 
+  // Copy textures
+  new_scene->mTextures = new aiTexture*[new_scene->mNumTextures];
+  for (unsigned int i = 0; i < new_scene->mNumTextures; i++)
+  {
+    new_scene->mTextures[i] = new aiTexture();
+    memcpy(new_scene->mTextures[i]->achFormatHint, mMesh->mTextures[i]->achFormatHint, 4 * sizeof(char));
+    new_scene->mTextures[i]->mHeight = mMesh->mTextures[i]->mHeight;
+    new_scene->mTextures[i]->mWidth = mMesh->mTextures[i]->mWidth;
+    new_scene->mTextures[i]->pcData = new aiTexel[new_scene->mTextures[i]->mHeight * new_scene->mTextures[i]->mWidth];
+    memcpy(new_scene->mTextures[i]->pcData, mMesh->mTextures[i]->pcData, new_scene->mTextures[i]->mHeight * new_scene->mTextures[i]->mWidth * sizeof(aiTexel));
+  }
+
   // Copy meshes
   new_scene->mMeshes = new aiMesh*[new_scene->mNumMeshes];
   for (unsigned int i = 0; i < new_scene->mNumMeshes; i++)
