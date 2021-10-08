@@ -38,6 +38,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
+#include <assimp/version.h>
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
@@ -426,7 +427,8 @@ aiScene* MeshShape::copyMesh() const
     strcpy(new_scene->mTextures[i]->achFormatHint, mMesh->mTextures[i]->achFormatHint);
     new_scene->mTextures[i]->mHeight = mMesh->mTextures[i]->mHeight;
     new_scene->mTextures[i]->mWidth = mMesh->mTextures[i]->mWidth;
-    new_scene->mTextures[i]->mFilename = mMesh->mTextures[i]->mFilename;
+    if (aiGetVersionMajor() > 4)
+      new_scene->mTextures[i]->mFilename = mMesh->mTextures[i]->mFilename;
     unsigned int size = new_scene->mTextures[i]->mWidth;
     if (new_scene->mTextures[i]->mHeight > 0)
       size *= new_scene->mTextures[i]->mHeight;
