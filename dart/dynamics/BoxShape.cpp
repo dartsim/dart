@@ -109,6 +109,12 @@ Eigen::Matrix3d BoxShape::computeInertia(double mass) const
 }
 
 //==============================================================================
+ShapePtr BoxShape::copy() const
+{
+  return std::make_shared<BoxShape>(mSize);
+}
+
+//==============================================================================
 void BoxShape::updateBoundingBox() const
 {
   mBoundingBox.setMin(-mSize * 0.5);

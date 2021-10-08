@@ -133,6 +133,12 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
 }
 
 //==============================================================================
+ShapePtr CapsuleShape::copy() const
+{
+  return std::make_shared<CapsuleShape>(mRadius, mHeight);
+}
+
+//==============================================================================
 void CapsuleShape::updateBoundingBox() const
 {
   const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5 * mHeight);

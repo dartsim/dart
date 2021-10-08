@@ -124,6 +124,12 @@ double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
 }
 
 //==============================================================================
+ShapePtr PlaneShape::copy() const
+{
+  return std::make_shared<PlaneShape>(mNormal, mOffset);
+}
+
+//==============================================================================
 void PlaneShape::updateBoundingBox() const
 {
   mBoundingBox.setMin(

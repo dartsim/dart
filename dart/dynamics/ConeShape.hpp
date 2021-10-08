@@ -83,6 +83,9 @@ public:
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
+  // Documentation inherited.
+  ShapePtr copy() const override;
+
 protected:
   // Documentation inherited.
   void updateBoundingBox() const override;

@@ -254,6 +254,29 @@ void ArrowShape::configureArrow(
 }
 
 //==============================================================================
+ShapePtr ArrowShape::copy() const
+{
+  aiScene* new_scene = copyMesh();
+  auto new_shape = std::make_shared<ArrowShape>();
+
+  new_shape->mTail = mTail;
+  new_shape->mHead = mHead;
+  new_shape->mProperties = mProperties;
+
+  new_shape->mMesh = new_scene;
+  new_shape->mMeshUri = mMeshUri;
+  new_shape->mMeshPath = mMeshPath;
+  new_shape->mResourceRetriever = mResourceRetriever;
+  new_shape->mDisplayList = mDisplayList;
+  new_shape->mScale = mScale;
+  new_shape->mColorMode = mColorMode;
+  new_shape->mAlphaMode = mAlphaMode;
+  new_shape->mColorIndex = mColorIndex;
+
+  return new_shape;
+}
+
+//==============================================================================
 void ArrowShape::instantiate(std::size_t resolution)
 {
   aiNode* node = new aiNode;

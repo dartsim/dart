@@ -153,6 +153,9 @@ public:
   // Documentation inherited.
   void notifyColorUpdated(const Eigen::Vector4d& color) override;
 
+  // Documentation inherited.
+  ShapePtr copy() const override;
+
 protected:
   // Documentation inherited.
   void updateVolume() const override;

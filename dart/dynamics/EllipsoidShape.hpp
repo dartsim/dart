@@ -91,6 +91,9 @@ public:
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
+  // Documentation inherited.
+  ShapePtr copy() const override;
+
   /// \brief True if all the radii are exactly eqaul.
   bool isSphere(void) const;
 

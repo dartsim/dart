@@ -239,6 +239,18 @@ void PointCloudShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 }
 
 //==============================================================================
+ShapePtr PointCloudShape::copy() const
+{
+  auto new_shape = std::make_shared<PointCloudShape>(mVisualSize);
+  new_shape->mPoints = mPoints;
+  new_shape->mPointShapeType = mPointShapeType;
+  new_shape->mColorMode = mColorMode;
+  new_shape->mColors = mColors;
+
+  return new_shape;
+}
+
+//==============================================================================
 void PointCloudShape::updateVolume() const
 {
   mVolume = 0.0;

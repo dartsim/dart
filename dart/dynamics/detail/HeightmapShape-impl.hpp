@@ -186,6 +186,17 @@ void HeightmapShape<S>::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 
 //==============================================================================
 template <typename S>
+ShapePtr HeightmapShape<S>::copy() const
+{
+  auto new_mesh = std::make_shared<HeightmapShape<S>>();
+  new_mesh->mScale = mScale;
+  new_mesh->setHeightField(mHeights);
+
+  return new_mesh;
+}
+
+//==============================================================================
+template <typename S>
 Eigen::Matrix3d HeightmapShape<S>::computeInertia(double mass) const
 {
   if (mIsBoundingBoxDirty)

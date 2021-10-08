@@ -118,6 +118,12 @@ Eigen::Matrix3d ConeShape::computeInertia(
 }
 
 //==============================================================================
+ShapePtr ConeShape::copy() const
+{
+  return std::make_shared<ConeShape>(mRadius, mHeight);
+}
+
+//==============================================================================
 void ConeShape::updateBoundingBox() const
 {
   const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5 * mHeight);
