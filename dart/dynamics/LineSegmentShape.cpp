@@ -361,7 +361,7 @@ Eigen::Matrix3d LineSegmentShape::computeInertia(double _mass) const
 }
 
 //==============================================================================
-ShapePtr LineSegmentShape::copy() const
+ShapePtr LineSegmentShape::clone() const
 {
   auto new_shape = std::make_shared<LineSegmentShape>(mThickness);
   new_shape->mVertices = mVertices;

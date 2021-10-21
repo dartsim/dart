@@ -155,7 +155,7 @@ Eigen::Matrix3d PyramidShape::computeInertia(double /*mass*/) const
 }
 
 //==============================================================================
-ShapePtr PyramidShape::copy() const
+ShapePtr PyramidShape::clone() const
 {
   return std::make_shared<PyramidShape>(mBaseWidth, mBaseDepth, mHeight);
 }

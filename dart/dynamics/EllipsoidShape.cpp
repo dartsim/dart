@@ -140,7 +140,7 @@ Eigen::Matrix3d EllipsoidShape::computeInertia(
 }
 
 //==============================================================================
-ShapePtr EllipsoidShape::copy() const
+ShapePtr EllipsoidShape::clone() const
 {
   return std::make_shared<EllipsoidShape>(mDiameters);
 }

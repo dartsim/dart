@@ -118,7 +118,7 @@ Eigen::Matrix3d ConeShape::computeInertia(
 }
 
 //==============================================================================
-ShapePtr ConeShape::copy() const
+ShapePtr ConeShape::clone() const
 {
   return std::make_shared<ConeShape>(mRadius, mHeight);
 }

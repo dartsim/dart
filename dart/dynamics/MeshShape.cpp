@@ -38,7 +38,6 @@
 #include <assimp/Importer.hpp>
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
-#include <assimp/version.h>
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
@@ -309,9 +308,9 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 }
 
 //==============================================================================
-ShapePtr MeshShape::copy() const
+ShapePtr MeshShape::clone() const
 {
-  aiScene* new_scene = copyMesh();
+  aiScene* new_scene = cloneMesh();
 
   auto new_shape = std::make_shared<MeshShape>(mScale, new_scene, mMeshUri, mResourceRetriever);
   new_shape->mMeshPath = mMeshPath;
@@ -376,7 +375,7 @@ void MeshShape::updateVolume() const
 }
 
 //==============================================================================
-aiScene* MeshShape::copyMesh() const
+aiScene* MeshShape::cloneMesh() const
 {
   // Create new assimp mesh
   aiScene* new_scene = new aiScene();

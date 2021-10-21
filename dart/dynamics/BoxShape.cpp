@@ -109,7 +109,7 @@ Eigen::Matrix3d BoxShape::computeInertia(double mass) const
 }
 
 //==============================================================================
-ShapePtr BoxShape::copy() const
+ShapePtr BoxShape::clone() const
 {
   return std::make_shared<BoxShape>(mSize);
 }

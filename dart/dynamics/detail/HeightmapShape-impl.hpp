@@ -186,7 +186,7 @@ void HeightmapShape<S>::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 
 //==============================================================================
 template <typename S>
-ShapePtr HeightmapShape<S>::copy() const
+ShapePtr HeightmapShape<S>::clone() const
 {
   auto new_mesh = std::make_shared<HeightmapShape<S>>();
   new_mesh->mScale = mScale;

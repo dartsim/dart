@@ -128,7 +128,7 @@ Eigen::Matrix3d MultiSphereConvexHullShape::computeInertia(double mass) const
 }
 
 //==============================================================================
-ShapePtr MultiSphereConvexHullShape::copy() const
+ShapePtr MultiSphereConvexHullShape::clone() const
 {
   return std::make_shared<MultiSphereConvexHullShape>(mSpheres);
 }

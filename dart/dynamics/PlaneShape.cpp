@@ -124,7 +124,7 @@ double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
 }
 
 //==============================================================================
-ShapePtr PlaneShape::copy() const
+ShapePtr PlaneShape::clone() const
 {
   return std::make_shared<PlaneShape>(mNormal, mOffset);
 }

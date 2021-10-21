@@ -239,7 +239,7 @@ void PointCloudShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 }
 
 //==============================================================================
-ShapePtr PointCloudShape::copy() const
+ShapePtr PointCloudShape::clone() const
 {
   auto new_shape = std::make_shared<PointCloudShape>(mVisualSize);
   new_shape->mPoints = mPoints;

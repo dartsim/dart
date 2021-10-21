@@ -164,7 +164,7 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
-  virtual ShapePtr copy() const override;
+  virtual ShapePtr clone() const override;
 
 protected:
   // Documentation inherited.
@@ -173,7 +173,7 @@ protected:
   // Documentation inherited.
   void updateVolume() const override;
 
-  aiScene* copyMesh() const;
+  aiScene* cloneMesh() const;
 
   const aiScene* mMesh;
 

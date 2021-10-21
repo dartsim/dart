@@ -115,7 +115,7 @@ Eigen::Matrix3d CylinderShape::computeInertia(
 }
 
 //==============================================================================
-ShapePtr CylinderShape::copy() const
+ShapePtr CylinderShape::clone() const
 {
   return std::make_shared<CylinderShape>(mRadius, mHeight);
 }

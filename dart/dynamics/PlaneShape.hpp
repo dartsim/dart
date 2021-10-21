@@ -83,7 +83,7 @@ public:
   double computeSignedDistance(const Eigen::Vector3d& _point) const;
 
   // Documentation inherited.
-  ShapePtr copy() const override;
+  ShapePtr clone() const override;
 
 private:
   // Documentation inherited.

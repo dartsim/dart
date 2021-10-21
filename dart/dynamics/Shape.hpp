@@ -192,7 +192,7 @@ public:
   std::size_t incrementVersion() override final;
 
   /// Deep copy shape
-  virtual ShapePtr copy() const = 0;
+  virtual ShapePtr clone() const = 0;
 
 protected:
   /// Updates volume

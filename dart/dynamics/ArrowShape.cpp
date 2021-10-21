@@ -55,6 +55,9 @@ ArrowShape::Properties::Properties(
 }
 
 //==============================================================================
+ArrowShape::ArrowShape() : MeshShape(Eigen::Vector3d::Ones(), nullptr) {}
+
+//==============================================================================
 ArrowShape::ArrowShape(
     const Eigen::Vector3d& _tail,
     const Eigen::Vector3d& _head,
@@ -254,9 +257,9 @@ void ArrowShape::configureArrow(
 }
 
 //==============================================================================
-ShapePtr ArrowShape::copy() const
+ShapePtr ArrowShape::clone() const
 {
-  aiScene* new_scene = copyMesh();
+  aiScene* new_scene = cloneMesh();
   auto new_shape = std::make_shared<ArrowShape>();
 
   new_shape->mTail = mTail;

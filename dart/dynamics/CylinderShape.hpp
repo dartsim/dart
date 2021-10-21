@@ -73,7 +73,7 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
-  ShapePtr copy() const override;
+  ShapePtr clone() const override;
 
 protected:
   // Documentation inherited.

@@ -100,7 +100,7 @@ Eigen::Matrix3d SphereShape::computeInertia(double radius, double mass)
 }
 
 //==============================================================================
-ShapePtr SphereShape::copy() const
+ShapePtr SphereShape::clone() const
 {
   return std::make_shared<SphereShape>(mRadius);
 }

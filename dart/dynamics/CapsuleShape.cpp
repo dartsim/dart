@@ -133,7 +133,7 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
 }
 
 //==============================================================================
-ShapePtr CapsuleShape::copy() const
+ShapePtr CapsuleShape::clone() const
 {
   return std::make_shared<CapsuleShape>(mRadius, mHeight);
 }

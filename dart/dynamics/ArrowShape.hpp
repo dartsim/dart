@@ -67,8 +67,8 @@ public:
     bool mDoubleArrow;
   };
 
-  // Empty constructor (for copying)
-  ArrowShape() : MeshShape(Eigen::Vector3d::Ones(), nullptr) {}
+  /// Empty constructor (for copying)
+  ArrowShape();
 
   /// This will produce an arrow that reaches from _tail to _head with the given
   /// properties.
@@ -104,7 +104,7 @@ public:
       const Properties& _properties);
 
   // Documentation inherited.
-  ShapePtr copy() const override;
+  ShapePtr clone() const override;
 
 protected:
   void instantiate(std::size_t resolution);
