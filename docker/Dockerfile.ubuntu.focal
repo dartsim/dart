@@ -1,0 +1,20 @@
+FROM dartsim/dart-dev:ubuntu-focal-v8.0
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Compile and install DART and dartpy
+COPY . /opt/dart
+WORKDIR /opt/dart
+RUN cd /opt/dart \
+    && mkdir __build \
+    && cd __build \
+    && cmake \
+    -DCMAKE_INSTALL_PREFIX=/usr/ \
+    -DCMAKE_BUILD_TYPE=Release .. \
+    -DDART_DEBUG=ON \
+    -DDART_TRACE=ON \
+    && make ALL -j \
+    && cd .. \
+    && rm -rf __build
+
+WORKDIR "/"

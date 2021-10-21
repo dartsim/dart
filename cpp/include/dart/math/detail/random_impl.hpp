@@ -1,0 +1,382 @@
+/*
+ * Copyright (c) 2011-2021, The DART development contributors:
+ * https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#pragma once
+
+#include "dart/math/constant.hpp"
+#include "dart/math/random.hpp"
+
+namespace dart {
+namespace math {
+
+namespace detail {
+
+//==============================================================================
+template <template <typename...> class C, typename... Ts>
+std::true_type is_base_of_template_impl(const C<Ts...>*);
+
+template <template <typename...> class C>
+std::false_type is_base_of_template_impl(...);
+
+template <template <typename...> class C, typename T>
+using is_base_of_template
+    = decltype(is_base_of_template_impl<C>(std::declval<T*>()));
+
+template <typename T>
+using is_base_of_matrix = is_base_of_template<Eigen::MatrixBase, T>;
+
+//==============================================================================
+/// Check whether \c T can be used for std::uniform_int_distribution<T>
+/// Reference:
+/// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
+template <typename T, typename Enable = void>
+struct is_compatible_to_uniform_int_distribution : std::false_type
+{
+  // Define nothing
+};
+
+// clang-format off
+
+template <typename T>
+struct is_compatible_to_uniform_int_distribution<
+    T, typename std::enable_if<
+        std::is_same<typename std::remove_cv<T>::type, short>::value
+        || std::is_same<typename std::remove_cv<T>::type, int>::value
+        || std::is_same<typename std::remove_cv<T>::type, long>::value
+        || std::is_same<typename std::remove_cv<T>::type, long long>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned short>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned int>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned long>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned long long>::value
+        >::type
+    > : std::true_type
+{
+  // Define nothing
+};
+
+// clang-format on
+
+//==============================================================================
+template <typename Scalar, typename Enable = void>
+struct UniformScalarImpl
+{
+  // Define nothing
+};
+
+//==============================================================================
+// Floating-point case
+template <typename Scalar>
+struct UniformScalarImpl<
+    Scalar,
+    typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+{
+  static Scalar run(Scalar min, Scalar max)
+  {
+    // Distribution objects are lightweight so we simply construct a new
+    // distribution for each random number generation.
+    Random::UniformRealDist<Scalar> d(min, max);
+    return d(Random::getGenerator());
+  }
+};
+
+//==============================================================================
+// Floating-point case
+template <typename Scalar>
+struct UniformScalarImpl<
+    Scalar,
+    typename std::enable_if<
+        is_compatible_to_uniform_int_distribution<Scalar>::value>::type>
+{
+  static Scalar run(Scalar min, Scalar max)
+  {
+    // Distribution objects are lightweight so we simply construct a new
+    // distribution for each random number generation.
+    Random::UniformIntDist<Scalar> d(min, max);
+    return d(Random::getGenerator());
+  }
+};
+
+//==============================================================================
+template <typename Derived, typename Enable = void>
+struct UniformMatrixImpl
+{
+  // Define nothing
+};
+
+//==============================================================================
+// Dynamic matrix case
+template <typename Derived>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        !Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
+{
+  static typename Derived::PlainObject run(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+  {
+    const auto uniformFunc = [&](int i, int j) {
+      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
+    };
+    return Derived::PlainObject::NullaryExpr(
+        min.rows(), min.cols(), uniformFunc);
+  }
+};
+
+//==============================================================================
+// Dynamic vector case
+template <typename Derived>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
+{
+  static typename Derived::PlainObject run(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+  {
+    const auto uniformFunc = [&](int i) {
+      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
+    };
+    return Derived::PlainObject::NullaryExpr(min.size(), uniformFunc);
+  }
+};
+
+//==============================================================================
+// Fixed matrix case
+template <typename Derived>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        !Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
+{
+  static typename Derived::PlainObject run(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+  {
+    const auto uniformFunc = [&](int i, int j) {
+      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
+    };
+    return Derived::PlainObject::NullaryExpr(uniformFunc);
+  }
+};
+
+//==============================================================================
+// Fixed vector case
+template <typename Derived>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
+{
+  static typename Derived::PlainObject run(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+  {
+    const auto uniformFunc = [&](int i) {
+      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
+    };
+    return Derived::PlainObject::NullaryExpr(uniformFunc);
+  }
+};
+
+//==============================================================================
+template <typename T, typename Enable = void>
+struct UniformImpl
+{
+  // Define nothing
+};
+
+//==============================================================================
+template <typename T>
+struct UniformImpl<
+    T,
+    typename std::enable_if<std::is_arithmetic<T>::value>::type>
+{
+  static T run(T min, T max)
+  {
+    return UniformScalarImpl<T>::run(min, max);
+  }
+};
+
+//==============================================================================
+template <typename T>
+struct UniformImpl<
+    T,
+    typename std::enable_if<is_base_of_matrix<T>::value>::type>
+{
+  static T run(const Eigen::MatrixBase<T>& min, const Eigen::MatrixBase<T>& max)
+  {
+    return UniformMatrixImpl<T>::run(min, max);
+  }
+};
+
+//==============================================================================
+template <typename Scalar, typename Enable = void>
+struct NormalScalarImpl
+{
+  // Define nothing
+};
+
+//==============================================================================
+// Floating-point case
+template <typename Scalar>
+struct NormalScalarImpl<
+    Scalar,
+    typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+{
+  static Scalar run(Scalar mean, Scalar sigma)
+  {
+    Random::NormalRealDist<Scalar> d(mean, sigma);
+    return d(Random::getGenerator());
+  }
+};
+
+//==============================================================================
+// Floating-point case
+template <typename Scalar>
+struct NormalScalarImpl<
+    Scalar,
+    typename std::enable_if<
+        is_compatible_to_uniform_int_distribution<Scalar>::value>::type>
+{
+  static Scalar run(Scalar mean, Scalar sigma)
+  {
+    using DefaultFloatType = float;
+    const DefaultFloatType realNormal = Random::normal(
+        static_cast<DefaultFloatType>(mean),
+        static_cast<DefaultFloatType>(sigma));
+    return static_cast<Scalar>(std::round(realNormal));
+  }
+};
+
+//==============================================================================
+template <typename T, typename Enable = void>
+struct NormalImpl
+{
+  // Define nothing
+};
+
+//==============================================================================
+template <typename T>
+struct NormalImpl<
+    T,
+    typename std::enable_if<std::is_arithmetic<T>::value>::type>
+{
+  static T run(T min, T max)
+  {
+    return NormalScalarImpl<T>::run(min, max);
+  }
+};
+
+} // namespace detail
+
+//==============================================================================
+template <typename Scalar>
+Scalar Random::uniform(Scalar min, Scalar max)
+{
+  return detail::UniformImpl<Scalar>::run(min, max);
+}
+
+//==============================================================================
+template <typename FixedSizeT>
+FixedSizeT Random::uniform(
+    typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max)
+{
+  return uniform<FixedSizeT>(
+      FixedSizeT::Constant(min), FixedSizeT::Constant(max));
+}
+
+//==============================================================================
+template <typename DynamicSizeVectorT>
+DynamicSizeVectorT Random::uniform(
+    int size,
+    typename DynamicSizeVectorT::Scalar min,
+    typename DynamicSizeVectorT::Scalar max)
+{
+  return uniform<DynamicSizeVectorT>(
+      DynamicSizeVectorT::Constant(size, min),
+      DynamicSizeVectorT::Constant(size, max));
+}
+
+//==============================================================================
+template <typename DynamicSizeMatrixT>
+DynamicSizeMatrixT Random::uniform(
+    int rows,
+    int cols,
+    typename DynamicSizeMatrixT::Scalar min,
+    typename DynamicSizeMatrixT::Scalar max)
+{
+  return uniform<DynamicSizeMatrixT>(
+      DynamicSizeMatrixT::Constant(rows, cols, min),
+      DynamicSizeMatrixT::Constant(rows, cols, max));
+}
+
+//==============================================================================
+template <typename Scalar>
+::Eigen::Quaternion<Scalar> Random::uniformUnitQuaternion()
+{
+  // "Uniform Random Rotations" of Shoemake:
+  // http://planning.cs.uiuc.edu/node198.html
+
+  static_assert(
+      std::is_floating_point_v<Scalar>,
+      "Non-floating point type is not supported");
+
+  const Scalar u1 = uniform<Scalar>(0, 1);
+  const Scalar u2 = uniform<Scalar>(0, 1);
+  const Scalar u3 = uniform<Scalar>(0, 1);
+
+  const Scalar a = std::sqrt(1. - u1);
+  const Scalar b = Scalar(2) * pi<Scalar>() * u2;
+  const Scalar c = std::sqrt(u1);
+  const Scalar d = Scalar(2) * pi<Scalar>() * u3;
+
+  return ::Eigen::Quaternion<Scalar>(
+      a * std::sin(b), a * std::cos(b), c * std::sin(d), c * std::cos(d));
+}
+
+//==============================================================================
+template <typename Scalar>
+::Eigen::Matrix<Scalar, 3, 3> Random::uniformRotationMatrix3()
+{
+  return uniformUnitQuaternion<Scalar>().toRotationMatrix();
+}
+
+//==============================================================================
+template <typename Scalar>
+Scalar Random::normal(Scalar min, Scalar max)
+{
+  return detail::NormalImpl<Scalar>::run(min, max);
+}
+
+} // namespace math
+} // namespace dart

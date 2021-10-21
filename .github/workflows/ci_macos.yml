@@ -1,0 +1,30 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI macOS
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build:
+    name: ${{ matrix.build_type }}
+    runs-on: macos-11
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release]
+    env:
+      COMPILER: clang
+      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_DARTPY: ON
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Dependencies
+        env:
+          INSTALL_OSG_HEAD: OFF  # To avoid building OSG, until 3.7 is released.
+        run: .ci/install_osx.sh
+      - name: Build
+        run: sudo -E .ci/build.sh

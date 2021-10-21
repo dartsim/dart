@@ -1,0 +1,54 @@
+# Copyright (c) 2011-2021, The DART development contributors
+
+# CMake 3.10.2, the default version of Ubuntu 18.04 LTS
+cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+
+# ==============================================================================
+# Helpers to Make Relocatable
+# ==============================================================================
+@PACKAGE_INIT@
+
+# ==============================================================================
+# Dependencies
+# ==============================================================================
+
+# Include CMake macros
+include(CMakeFindDependencyMacro)
+include(CMakePushCheckState)
+
+# To keep the old value of CMAKE_MODULE_PATH
+cmake_push_check_state()
+
+# Add the current directory as a temporary CMake module path
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
+# fmt
+find_dependency(fmt)
+
+# spdlog
+find_dependency(spdlog)
+
+# Eigen3
+find_dependency(Eigen3 3.3.4)
+if(Eigen3_FOUND AND NOT TARGET Eigen3::Eigen)
+  add_library(Eigen3::Eigen INTERFACE IMPORTED)
+  set_target_properties(
+    Eigen3::Eigen PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+                             "${EIGEN3_INCLUDE_DIRS}"
+  )
+endif()
+
+# Restore the original CMAKE_MODULE_PATH
+cmake_pop_check_state()
+
+# ==============================================================================
+# Include target files
+# ==============================================================================
+set(modules @DART_BUILT_MODULES@)
+foreach(module ${modules})
+  set(target_file
+      "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@@DART_VERSION_MAJOR@-${module}-targets.cmake"
+  )
+  set_and_check(target_file ${target_file})
+  include(${target_file})
+endforeach()

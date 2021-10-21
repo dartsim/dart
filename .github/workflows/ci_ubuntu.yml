@@ -1,0 +1,58 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI Ubuntu
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_dispatch'
+    name: ${{ matrix.os }}.${{ matrix.build_type }}
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # Supported LTS versions
+        os: [ubuntu-bionic, ubuntu-focal]
+        build_type: [Release]
+        codecov: [OFF]
+        check_format: [OFF]
+        build_dartpy: [ON]
+        include:
+          # For code coverage report to Codecov
+          - os: ubuntu-focal
+            build_type: Debug
+            codecov: ON
+            check_format: ON
+            build_dartpy: ON
+    env:
+      # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
+      DART_DEV_IMAGE: dartsim/dart-dev
+      DOCKER_TAG: ${{ matrix.os }}-v8.0
+      COMPILER: gcc
+      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_DARTPY: "${{ matrix.build_dartpy }}"
+      CODECOV: ${{ matrix.codecov }}
+      CHECK_FORMAT: ${{ matrix.check_format }}
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Pull dev container
+        run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
+      - name: Build
+        run: |
+          if [ "$CODECOV" = "ON" ]; then
+            ci_env=`bash <(curl -s https://codecov.io/env)`
+          fi
+          docker run \
+            $ci_env -e CI=true \
+            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+            --env-file ./.ci/docker/env.list \
+            $DART_DEV_IMAGE:$DOCKER_TAG \
+            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"

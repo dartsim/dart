@@ -1,0 +1,272 @@
+#!/bin/sh
+set -e
+
+script_path="$(
+  cd "$(dirname "$0")"
+  pwd -P
+)"
+
+os=ubuntu-focal
+dart_version=v8.0
+build_dir_prefix=.build/
+project_dir=/opt/dart/
+cleanup_command=""
+use_dev_image=false
+build_mode="Release"
+build_test=true
+build_benchmark=true
+build_example=true
+build_tutorial=true
+build_dartpy=true
+codecov_option=""
+num_cores=1
+os_list="ubuntu-focal ubuntu-impish"
+compiler_envs="CC=/usr/bin/gcc CXX=/usr/bin/g++"
+compiler="gcc"
+
+help() {
+  cat <<EOF
+  Usage: ${0##*/} <routine> [<options>...]
+
+  Example: ${0##*/} build  # Build with the default settings
+
+  Routines:
+    build      Build DART and run its tests
+    build_all  Build DART on all the supported platforms
+    clean      Remove build directory for a specific build configuration
+    clean_all  Remove all the build directories
+    launch     Launch Docker image for DART build
+
+  Options:
+    -o <name>       OS version. Available <name>: {ubuntu-focal (default), ubuntu-impish, ubuntu-jammy, archlinux}
+    -v <version>    DART version. Available <version>: {v8.0 (default)}
+    -c              Clean build. Empty the build directory before building.
+    -j <num_cores>  Number of cores to use for build. Use -j 1 to disable parallel build. Single core will be used if this option is not specified.
+    --dev           Use Docker image for development rather than release image.
+    --no-test       Skip building and running tests
+    --no-benchmark  Skip building benchmarks
+    --no-example    Skip building examples
+    --no-tutorial   Skip building tutorials
+    --no-dartpy     Skip building dartpy
+    --codecov       Enable code coverage (experimental)
+    --mode <mode>   Build mode. Available <mode>: {Release (default), Debug}
+    --compiler <compiler> Compiler. Available <compiler>: {gcc (default), clang}
+EOF
+}
+
+if [ "$#" -lt 1 ]; then
+  help
+  exit
+else
+  routine=$1
+  shift
+fi
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -o)
+    os=$2
+    shift
+    ;;
+  -v)
+    dart_version=$2
+    shift
+    ;;
+  -c)
+    cleanup_command="&& rm -rf *"
+    ;;
+  --dev)
+    use_dev_image=true
+    ;;
+  --no-test)
+    build_test=false
+    ;;
+  --no-benchmark)
+    build_benchmark=false
+    ;;
+  --no-example)
+    build_example=false
+    ;;
+  --no-tutorial)
+    build_tutorial=false
+    ;;
+  --no-dartpy)
+    build_dartpy=false
+    ;;
+  --mode)
+    build_mode=$2
+    shift
+    ;;
+  --compiler)
+    compiler=$2
+    shift
+    ;;
+  -j)
+    num_cores=$2
+    shift
+    ;;
+  --codecov)
+    codecov_option="-DDART_CODECOV=ON"
+    ;;
+  *)
+    bash_command=$@
+    break
+    ;;
+  esac
+  shift
+done
+
+full_image_name_deploy=dartsim/dart:$os-$dart_version
+full_image_name_dev=dartsim/dart-dev:$os-$dart_version
+
+if [ "$compiler" = clang ]; then
+  compiler_envs="CC=/usr/bin/clang CXX=/usr/bin/clang++"
+fi
+
+if [ "$build_test" = true ]; then
+  test_command="&& make -j$num_cores tests && ctest --output-on-failure"
+else
+  test_command=""
+fi
+
+# if [ "$build_benchmark" = true ]; then
+#   benchmark_command="&& make -j$num_cores benchmarks"
+# else
+#   benchmark_command=""
+# fi
+
+# if [ "$build_example" = true ]; then
+#   example_command="&& make -j$num_cores examples"
+# else
+#   example_command=""
+# fi
+
+# if [ "$build_tutorial" = true ]; then
+#   tutorial_command="&& make -j$num_cores tutorials"
+# else
+#   tutorial_command=""
+# fi
+
+if [ "$build_dartpy" = true ]; then
+  dartpy_command="&& make -j$num_cores dartpy8 && make test-dartpy8"
+else
+  dartpy_command=""
+fi
+
+full_build_dir=$project_dir$build_dir_prefix$os-$dart_version-$build_mode/
+
+_print_time() {
+    echo "Total build time: $(( ${1} / 3600 ))h $(( (${1} / 60) % 60 ))m $(( ${1} % 60 ))s"
+}
+
+launch() {
+  if [ "$use_dev_image" = true ]; then
+    full_image_name=$full_image_name_dev
+  else
+    full_image_name=$full_image_name_deploy
+  fi
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --privileged \
+    --network="host" \
+    --volume $(pwd):$project_dir \
+    -w $project_dir \
+    -t $full_image_name \
+    /bin/bash
+}
+
+clean() {
+  full_image_name=$full_image_name_dev
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --privileged \
+    --network="host" \
+    --volume $(pwd):$project_dir \
+    -w $project_dir/ \
+    $full_image_name /bin/bash -c \
+    "rm -rf $full_build_dir"
+}
+
+clean_all() {
+  full_image_name=$full_image_name_dev
+
+  docker pull $full_image_name
+
+  docker run \
+    -it \
+    --volume $(pwd):$project_dir \
+    -w $project_dir/ \
+    $full_image_name /bin/bash -c \
+    "rm -rf $project_dir$build_dir_prefix"
+}
+
+if [[ $OSTYPE == 'darwin'* ]]; then
+  num_cores_available=$(sysctl -n hw.logicalcpu)
+else
+  num_cores_available=$(nproc)
+fi
+
+_build() {
+  full_image_name=$1
+
+  echo "======================================================================="
+  echo " [Build] "
+  echo " Docker   : $full_image_name"
+  echo " Num cores: $num_cores / $num_cores_available"
+  echo " Compiler : $compiler"
+  echo "======================================================================="
+
+  docker pull $full_image_name
+
+  start_time=$(date +%s)
+
+  docker run \
+    -it \
+    --privileged \
+    --volume $(pwd):$project_dir \
+    --network="host" \
+    -w $project_dir/ \
+    $full_image_name /bin/bash -c \
+    "mkdir -p $full_build_dir \
+    && cd $full_build_dir \
+    $cleanup_command \
+    && $compiler_envs cmake $project_dir \
+    -DDART_DEBUG=ON \
+    -DCMAKE_BUILD_TYPE=$build_mode \
+    $codecov_option \
+    && make -j$num_cores \
+    $test_command \
+    $benchmark_command \
+    $example_command \
+    $tutorial_command \
+    $dartpy_command"
+  
+  end_time=$(date +%s)
+  _print_time $(($end_time - $start_time))
+}
+
+build() {
+  _build $full_image_name_dev
+}
+
+build_all() {
+  echo "======================================================================="
+  echo " [Build on $os_list]"
+  echo " Caution: This could take time to finish"
+  echo "======================================================================="
+
+  for val in $os_list; do
+    echo $val
+    full_image_name_dev=dartsim/dart-dev:$val-$dart_version
+    _build $full_image_name_dev
+  done
+}
+
+# Run the selected routine
+"$routine"

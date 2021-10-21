@@ -1,0 +1,9 @@
+# https://docs.codecov.io/docs/codecov-yaml
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+ignore:
+  - "python"
