@@ -1,10 +1,16 @@
 ## DART 6
 
+### [DART 6.11.2 (2021-10-29)](https://github.com/dartsim/dart/milestone/68?closed=1)
+
+* dartpy
+
+  * Added Python binding for global lighting mode setting: [#1615](https://github.com/dartsim/dart/pull/1615)
+
 ### [DART 6.11.1 (2021-08-23)](https://github.com/dartsim/dart/milestone/67?closed=1)
 
 * Dynamics
 
-  * Fixed incorrect LCP construction in JointConstraint for multi-DOFs joints : [#1597](https://github.com/dartsim/dart/pull/1597)
+  * Fixed incorrect LCP construction in JointConstraint for multi-DOFs joints: [#1597](https://github.com/dartsim/dart/pull/1597)
 
 ### [DART 6.11.0 (2021-07-15)](https://github.com/dartsim/dart/milestone/64?closed=1)
 
