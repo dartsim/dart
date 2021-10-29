@@ -49,7 +49,9 @@ using namespace dart::utils;
 //==============================================================================
 WorldPtr readWorld(const common::Uri& uri)
 {
-  WorldPtr world = SdfParser::readWorld(uri);
+  SdfParser::Options options;
+  options.mDefaultRootJointType = SdfParser::RootJointType::FIXED;
+  WorldPtr world = SdfParser::readWorld(uri, options);
   for (auto i = 0u; i < world->getNumSkeletons(); ++i)
   {
     auto skel = world->getSkeleton(i);
@@ -111,7 +113,8 @@ TEST(JointForceTorqueTest, Static)
     // Test joint_01 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo and DART
+    // Reference adjustment for different joint frame conventions between Gazebo
+    // and DART
     tf.setIdentity();
     tf.translation() = joint_01->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame01
@@ -121,7 +124,8 @@ TEST(JointForceTorqueTest, Static)
     SimpleFramePtr childFrame01
         = std::make_shared<SimpleFrame>(link_1, "childFrame01", tf);
 
-    const Eigen::Vector6d parentF01 = joint_01->getWrenchToParentBodyNode(parentFrame01.get());
+    const Eigen::Vector6d parentF01
+        = joint_01->getWrenchToParentBodyNode(parentFrame01.get());
     EXPECT_DOUBLE_EQ(parentF01[0], 0); // torque
     EXPECT_DOUBLE_EQ(parentF01[1], 0);
     EXPECT_DOUBLE_EQ(parentF01[2], 0);
@@ -129,14 +133,16 @@ TEST(JointForceTorqueTest, Static)
     EXPECT_DOUBLE_EQ(parentF01[4], 0);
     EXPECT_DOUBLE_EQ(parentF01[5], 1000);
 
-    const Eigen::Vector6d childF01 = joint_01->getWrenchToChildBodyNode(childFrame01.get());
+    const Eigen::Vector6d childF01
+        = joint_01->getWrenchToChildBodyNode(childFrame01.get());
     EXPECT_EQ(childF01, -parentF01);
 
     //----------------------
     // Test joint_12 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo and DART
+    // Reference adjustment for different joint frame conventions between Gazebo
+    // and DART
     tf.setIdentity();
     tf.translation() = joint_12->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame12
@@ -146,7 +152,8 @@ TEST(JointForceTorqueTest, Static)
     SimpleFramePtr childFrame12
         = std::make_shared<SimpleFrame>(link_2, "childFrame12", tf);
 
-    const Eigen::Vector6d parentF12 = joint_12->getWrenchToParentBodyNode(parentFrame12.get());
+    const Eigen::Vector6d parentF12
+        = joint_12->getWrenchToParentBodyNode(parentFrame12.get());
     EXPECT_DOUBLE_EQ(parentF12[0], 0); // torque
     EXPECT_DOUBLE_EQ(parentF12[1], 0);
     EXPECT_DOUBLE_EQ(parentF12[2], 0);
@@ -154,7 +161,8 @@ TEST(JointForceTorqueTest, Static)
     EXPECT_DOUBLE_EQ(parentF12[4], 0);
     EXPECT_DOUBLE_EQ(parentF12[5], 500);
 
-    const Eigen::Vector6d childF12 = joint_12->getWrenchToChildBodyNode(childFrame01.get());
+    const Eigen::Vector6d childF12
+        = joint_12->getWrenchToChildBodyNode(childFrame01.get());
     EXPECT_EQ(childF12, -parentF12);
   }
 }
@@ -217,7 +225,8 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimits)
     // Test joint_01 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo and DART
+    // Reference adjustment for different joint frame conventions between Gazebo
+    // and DART
     tf.setIdentity();
     tf.translation() = joint_01->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame01
@@ -249,7 +258,8 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimits)
     // Test joint_12 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo and DART
+    // Reference adjustment for different joint frame conventions between Gazebo
+    // and DART
     tf.setIdentity();
     tf.translation() = joint_12->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame12
@@ -272,4 +282,139 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimits)
         = joint_12->getWrenchToChildBodyNode(childFrame12.get());
     EXPECT_TRUE(childF12.isApprox(-parentF12));
   }
+}
+
+//==============================================================================
+TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
+{
+  // Load world
+  WorldPtr world = readWorld("dart://sample/sdf/test/force_torque_test2.world");
+  ASSERT_NE(world, nullptr);
+
+  // Check if the world is correct loaded
+  ASSERT_EQ(world->getNumSkeletons(), 1);
+  SkeletonPtr model_1 = world->getSkeleton(0);
+  ASSERT_NE(model_1, nullptr);
+  ASSERT_EQ(model_1->getName(), "boxes");
+  ASSERT_EQ(model_1->getNumBodyNodes(), 3);
+  ASSERT_EQ(model_1->getNumJoints(), 3);
+  ASSERT_EQ(model_1->getNumDofs(), 2);
+  // The first joint is fixed joint
+  EXPECT_EQ(
+      model_1->getRootJoint()->getType(),
+      dart::dynamics::WeldJoint::getStaticType());
+
+  world->setGravity(Eigen::Vector3d(0, 0, -50));
+
+  // Simulate 1 step
+  world->step();
+  double t = world->getTime();
+
+  // Get time step size
+  double dt = world->getTimeStep();
+  EXPECT_GT(dt, 0);
+
+  // Check that time moves forward
+  EXPECT_DOUBLE_EQ(t, dt);
+
+  // Get joint and get force torque
+  auto link_1 = model_1->getBodyNode("link1");
+  ASSERT_NE(link_1, nullptr);
+  auto link_2 = model_1->getBodyNode("link2");
+  ASSERT_NE(link_2, nullptr);
+  auto link_3 = model_1->getBodyNode("link3");
+  ASSERT_NE(link_3, nullptr);
+  auto joint_12 = model_1->getJoint("joint1");
+  ASSERT_NE(joint_12, nullptr);
+  auto joint_23 = model_1->getJoint("joint2");
+  ASSERT_NE(joint_23, nullptr);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+
+  // Run 5 steps
+  const double kp1 = 5e+4;
+  const double kp2 = 1e+4;
+  const double target1 = 0;
+  const double target2 = -0.25 * math::constantsd::pi();
+  const auto steps = 4500u;
+  for (auto i = 0u; i < steps; ++i)
+  {
+    // PD control
+    const double j1State = joint_12->getPosition(0);
+    const double j2State = joint_23->getPosition(0);
+    const double p1Error = target1 - j1State;
+    const double p2Error = target2 - j2State;
+    const double effort1 = kp1 * p1Error;
+    const double effort2 = kp2 * p2Error;
+    joint_12->setForce(0, effort1);
+    joint_23->setForce(0, effort2);
+
+    world->step();
+  }
+
+  EXPECT_NEAR(joint_12->getPosition(0), target1, 0.1);
+  EXPECT_NEAR(joint_23->getPosition(0), target2, 0.1);
+
+  const double tol = 2;
+
+  //----------------------
+  // Test joint_01 wrench
+  //----------------------
+
+  // Reference adjustment for different joint frame conventions between Gazebo
+  // and DART
+  tf.setIdentity();
+  tf.translation() = joint_12->getTransformFromParentBodyNode().translation();
+  SimpleFramePtr parentFrame01
+      = std::make_shared<SimpleFrame>(link_1, "parentFrame01", tf);
+  tf.setIdentity();
+  tf.translation() = joint_12->getTransformFromChildBodyNode().translation();
+  SimpleFramePtr childFrame01
+      = std::make_shared<SimpleFrame>(link_2, "childFrame01", tf);
+
+  const Eigen::Vector6d parentF01
+      = joint_12->getWrenchToParentBodyNode(parentFrame01.get());
+    EXPECT_NEAR(parentF01[0], 25, tol); // torque
+  EXPECT_NEAR(parentF01[1], -175, tol);
+  EXPECT_NEAR(parentF01[2], 0, tol);
+  EXPECT_NEAR(parentF01[3], 0, tol); // force
+  EXPECT_NEAR(parentF01[4], 0, tol);
+  EXPECT_NEAR(parentF01[5], 300, tol);
+
+  const Eigen::Vector6d childF01
+      = joint_12->getWrenchToChildBodyNode(childFrame01.get());
+  EXPECT_TRUE(childF01.isApprox(-parentF01, tol));
+
+  //----------------------
+  // Test joint_12 wrench
+  //----------------------
+
+  // Reference adjustment for different joint frame conventions between Gazebo
+  // and DART
+  tf.setIdentity();
+  tf.translation() = joint_23->getTransformFromParentBodyNode().translation();
+  SimpleFramePtr parentFrame12
+      = std::make_shared<SimpleFrame>(link_2, "parentFrame12", tf);
+  tf.setIdentity();
+  tf.translation() = joint_23->getTransformFromChildBodyNode().translation();
+  SimpleFramePtr childFrame12
+      = std::make_shared<SimpleFrame>(link_3, "childFrame12", tf);
+
+  const Eigen::Vector6d parentF12
+      = joint_23->getWrenchToParentBodyNode(parentFrame12.get());
+  EXPECT_NEAR(parentF12[0], 25, tol); // torque
+  EXPECT_NEAR(parentF12[1], 0, tol);
+  EXPECT_NEAR(parentF12[2], 0, tol);
+  EXPECT_NEAR(parentF12[3], 0, tol); // force
+  EXPECT_NEAR(parentF12[4], 0, tol);
+  EXPECT_NEAR(parentF12[5], 50, tol);
+
+  const Eigen::Vector6d childF12
+      = joint_23->getWrenchToChildBodyNode(childFrame12.get());
+  EXPECT_NEAR(childF12[0], -17.678, tol); // torque
+  EXPECT_NEAR(childF12[1], 0, tol);
+  EXPECT_NEAR(childF12[2], 17.678, tol);
+  EXPECT_NEAR(childF12[3], -35.355, tol); // force
+  EXPECT_NEAR(childF12[4], 0, tol);
+  EXPECT_NEAR(childF12[5], -35.355, tol);
 }

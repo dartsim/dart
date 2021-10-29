@@ -43,18 +43,52 @@ namespace utils {
 
 namespace SdfParser {
 
+/// Root joint type to be used when the parent joint of the root link is not
+/// specified in the URDF file.
+enum class RootJointType
+{
+  /// Floating joint type of URDF.
+  FLOATING = 0,
+
+  /// Fixed joint type of URDF.
+  FIXED = 1,
+};
+
+struct Options
+{
+  /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
+  common::ResourceRetrieverPtr mResourceRetriever;
+
+  /// Default root joint type to be used when the parent joint of the root
+  /// link is not specified in the URDF file.
+  RootJointType mDefaultRootJointType;
+
+  /// Default constructor
+  Options(
+      common::ResourceRetrieverPtr resourceRetriever = nullptr,
+      RootJointType defaultRootJointType = RootJointType::FLOATING);
+};
+
 DART_DEPRECATED(6.0)
 simulation::WorldPtr readSdfFile(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
 simulation::WorldPtr readWorld(
+    const common::Uri& uri, const Options& options = Options());
+
+DART_DEPRECATED(6.12)
+simulation::WorldPtr readWorld(
     const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retriever = nullptr);
+    const common::ResourceRetrieverPtr& retriever);
 
 dynamics::SkeletonPtr readSkeleton(
+    const common::Uri& uri, const Options& options = Options());
+
+DART_DEPRECATED(6.12)
+dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retriever = nullptr);
+    const common::ResourceRetrieverPtr& retrievers);
 
 } // namespace SdfParser
 
