@@ -41,6 +41,7 @@
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/dynamics/detail/JointAspect.hpp"
 #include "dart/math/MathTypes.hpp"
@@ -724,6 +725,30 @@ public:
   /// forward dynamics algorithm, and it affects on the articulated inertia.
   /// \sa BodyNode::updateArticulatedInertia(double).
   //  Eigen::VectorXd getDampingForces() const;
+
+  /// Returns wrench exerted to the child body node to satisfy the joint
+  /// constraint.
+  ///
+  /// \param[in] withRespectTo: The reference frame where the wrench is
+  /// measured. The default (i.e., nullptr) is to get the wrench measured in the
+  /// joint frame.
+  /// \return Wrench where the first three elements represent torque and the
+  /// last three elements represent force. Zero vector if this joint has no
+  /// child body node defined.
+  Eigen::Vector6d getWrenchToChildBodyNode(
+      const Frame* withRespectTo = nullptr) const;
+
+  /// Returns wrench exerted to the parent body node to satisfy the joint
+  /// constraint.
+  ///
+  /// \param[in] withRespectTo: The reference frame where the wrench is
+  /// measured. The default (i.e., nullptr) is to get the wrench measured in the
+  /// joint frame.
+  /// \return Wrench where the first three elements represent torque and the
+  /// last three elements represent force. Zero vector if this joint has no
+  /// child body node defined.
+  Eigen::Vector6d getWrenchToParentBodyNode(
+      const Frame* withRespectTo = nullptr) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Update Notifiers

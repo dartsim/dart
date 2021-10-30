@@ -46,6 +46,9 @@ if(TARGET dart-utils)
   dart_add_test("comprehensive" test_Joints)
   target_link_libraries(test_Joints dart-utils)
 
+  dart_add_test("comprehensive" test_JointForceTorque)
+  target_link_libraries(test_JointForceTorque dart-utils)
+
   dart_add_test("comprehensive" test_Skeleton)
   target_link_libraries(test_Skeleton dart-utils)
 

@@ -388,6 +388,52 @@ const Eigen::Vector6d& Joint::getRelativePrimaryAcceleration() const
 }
 
 //==============================================================================
+Eigen::Vector6d Joint::getWrenchToChildBodyNode(
+    const Frame* withRespectTo) const
+{
+  const BodyNode* childBodyNode = getChildBodyNode();
+  if (!childBodyNode)
+  {
+    return Eigen::Vector6d::Zero();
+  }
+
+  const Eigen::Vector6d& F2 = childBodyNode->getBodyForce();
+  const BodyNode* parentBodyNode = getParentBodyNode();
+
+  if (withRespectTo == nullptr)
+  {
+    // (Default) Wrench applying to the child body node, where the reference
+    // frame is the joint frame
+    return math::dAdT(getTransformFromChildBodyNode(), -F2);
+  }
+  else if (withRespectTo == childBodyNode)
+  {
+    // Wrench applying to the child body node, where the reference frame is the
+    // child body frame
+    return -F2;
+  }
+  else if (withRespectTo == parentBodyNode)
+  {
+    // Wrench applying to the child body node, where the reference frame is the
+    // parent body frame
+    return math::dAdInvT(getRelativeTransform(), -F2);
+  }
+  else
+  {
+    // Wrench applying to the child body node, where the reference frame is an
+    // arbitrary frame
+    return math::dAdT(withRespectTo->getTransform(childBodyNode), -F2);
+  }
+}
+
+//==============================================================================
+Eigen::Vector6d Joint::getWrenchToParentBodyNode(
+    const Frame* withRespectTo) const
+{
+  return -getWrenchToChildBodyNode(withRespectTo);
+}
+
+//==============================================================================
 void Joint::setPositionLimitEnforced(bool enforced)
 {
   setLimitEnforcement(enforced);
