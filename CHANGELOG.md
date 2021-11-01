@@ -19,7 +19,8 @@
 
 * Parsers
 
-  * Added default options to DartLoader for missing properties in URDF files: : [#1605](https://github.com/dartsim/dart/pull/1605)
+  * Added default options to DartLoader for missing properties in URDF files: [#1605](https://github.com/dartsim/dart/pull/1605)
+  * Allowed SdfParser to set default root joint type: [#1617](https://github.com/dartsim/dart/pull/1617)
 
 * GUI
 

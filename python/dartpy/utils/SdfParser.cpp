@@ -43,16 +43,56 @@ void SdfParser(py::module& m)
 {
   auto sm = m.def_submodule("SdfParser");
 
+  ::py::enum_<utils::SdfParser::RootJointType>(m, "RootJointType")
+      .value("FLOATING", utils::SdfParser::RootJointType::FLOATING)
+      .value("FIXED", utils::SdfParser::RootJointType::FIXED);
+
+  ::py::class_<utils::SdfParser::Options>(m, "Options")
+      .def(
+          ::py::init<
+              common::ResourceRetrieverPtr,
+              utils::SdfParser::RootJointType>(),
+          ::py::arg("resourceRetriever") = nullptr,
+          ::py::arg("defaultRootJointType")
+          = utils::SdfParser::RootJointType::FLOATING)
+      .def_readwrite(
+          "mResourceRetriever", &utils::SdfParser::Options::mResourceRetriever)
+      .def_readwrite(
+          "mDefaultRootJointType",
+          &utils::SdfParser::Options::mDefaultRootJointType);
+
   sm.def(
       "readWorld",
-      &utils::SdfParser::readWorld,
+      +[](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+          -> simulation::WorldPtr {
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        return utils::SdfParser::readWorld(uri, retriever);
+        DART_SUPPRESS_DEPRECATED_END
+      },
       ::py::arg("uri"),
-      ::py::arg("retriever") = nullptr);
+      ::py::arg("retriever"));
+  sm.def(
+      "readWorld",
+      ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
+          &utils::SdfParser::readWorld),
+      ::py::arg("uri"),
+      ::py::arg("options") = utils::SdfParser::Options());
   sm.def(
       "readSkeleton",
-      &utils::SdfParser::readSkeleton,
+      +[](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+          -> dynamics::SkeletonPtr {
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        return utils::SdfParser::readSkeleton(uri, retriever);
+        DART_SUPPRESS_DEPRECATED_END
+      },
       ::py::arg("uri"),
-      ::py::arg("retriever") = nullptr);
+      ::py::arg("retriever"));
+  sm.def(
+      "readSkeleton",
+      ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
+          &utils::SdfParser::readSkeleton),
+      ::py::arg("uri"),
+      ::py::arg("options") = utils::SdfParser::Options());
 }
 
 } // namespace python
