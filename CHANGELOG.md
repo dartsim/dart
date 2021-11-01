@@ -13,6 +13,10 @@
 
   * Remove DART_BUILD_DARTPY option: [#1600](https://github.com/dartsim/dart/pull/1600)
 
+* Dynamics
+
+  * Added joint force/torque getter: [#1616](https://github.com/dartsim/dart/pull/1616)
+
 * Parsers
 
   * Added default options to DartLoader for missing properties in URDF files: : [#1605](https://github.com/dartsim/dart/pull/1605)
