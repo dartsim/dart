@@ -33,62 +33,167 @@
 #include <gtest/gtest.h>
 
 #include "dart/math/all.hpp"
+#include "dart/math/lie_group/se3.hpp"
 #include "dart/test/math/GTestUtils.hpp"
 
 using namespace dart;
 using namespace math;
 
-////==============================================================================
-// template <typename T>
-// struct SE3Test : public testing::Test
-//{
-//  using Type = T;
-//};
+//==============================================================================
+template <typename T>
+struct SE3Test : public testing::Test
+{
+  using Type = T;
+};
 
-////==============================================================================
-// using Types = testing::Types<float, double, long double>;
+//==============================================================================
+using Types = testing::Types<float /*, double, long double*/>;
 
-////==============================================================================
-// TYPED_TEST_SUITE(SE3Test, Types);
+//==============================================================================
+TYPED_TEST_SUITE(SE3Test, Types);
 
-////==============================================================================
-// TYPED_TEST(SE3Test, StaticProperties)
-//{
-//  using Scalar = typename TestFixture::Type;
+//==============================================================================
+TYPED_TEST(SE3Test, StaticProperties)
+{
+  using Scalar = typename TestFixture::Type;
 
-//  EXPECT_EQ(SE3<Scalar>::SpaceDim, 3);
-//  EXPECT_EQ(SE3<Scalar>::GroupDim, 6);
-//  EXPECT_EQ(SE3<Scalar>::MatrixDim, 4);
-//}
+  EXPECT_EQ(SE3<Scalar>::SpaceDim, 3);
+  EXPECT_EQ(SE3<Scalar>::GroupDim, 6);
+  EXPECT_EQ(SE3<Scalar>::MatrixDim, 4);
+  EXPECT_EQ(SE3<Scalar>::DataDim, SO3<Scalar>::DataDim + R3<Scalar>::DataDim);
+}
 
-////==============================================================================
-// TYPED_TEST(SE3Test, Constructors)
-//{
-//  using Scalar = typename TestFixture::Type;
+//==============================================================================
+TYPED_TEST(SE3Test, Constructors)
+{
+  using Scalar = typename TestFixture::Type;
 
-//  // Default constructor
-//  SE3<Scalar> a;
+  // Default constructor
+  {
+    SE3<Scalar> a;
+    (void)a;
+  }
 
-//  // Copy constructor
-//  SE3<Scalar> b = a;
+  // Copy/move constructors
+  {
+    auto a = SE3<Scalar>();
+    auto b = SE3<Scalar>(a);
+    auto c = SE3<Scalar>(std::move(a));
+    DART_UNUSED(a, b, c);
+  }
 
-//  // Move constructor
-//  SE3<Scalar> c = std::move(a);
+  // Copy/move constructors for SO3Base
+  {
+      // TODO(JS)
+  }
 
-//  // From quaternions
-//  SE3<Scalar> d(
-//      Eigen::Quaternion<Scalar>::Identity(),
-//      Eigen::Matrix<Scalar, 3, 1>::Zero());
-//  Eigen::Quaternion<Scalar> quat = Eigen::Quaternion<Scalar>::Identity();
-//  Eigen::Matrix<Scalar, 3, 1> vec = Eigen::Matrix<Scalar, 3, 1>::Zero();
-//  SE3<Scalar> e(std::move(quat), std::move(vec));
+  // Copy/move constructors for LieGroupBase
+  {
+      // TODO(JS)
+  }
 
-//  // Using static functions
-//  SE3<Scalar> f = SE3<Scalar>::Identity();
-//  SE3<Scalar> g = SE3<Scalar>::Random();
+  // From Eigen::Isometry3
+  {
+    Eigen::Transform<Scalar, 3, Eigen::Isometry> tf;
+    auto a = SE3<Scalar>(tf);
+    DART_UNUSED(a);
+  }
 
-//  DART_UNUSED(b, c, f, g);
-//}
+  // From quaternion types
+  {
+    Eigen::Quaternion<Scalar> quat;
+    Eigen::Matrix<Scalar, 3, 1> trans;
+    auto a = SE3<Scalar>(quat, trans);
+    auto b = SE3<Scalar>(std::move(quat), std::move(trans));
+    auto c = SE3<Scalar>(
+        Eigen::Quaternion<Scalar>::Identity(),
+        Eigen::Matrix<Scalar, 3, 1>::Random());
+    auto d = SE3<Scalar>(
+        Eigen::Quaternion<Scalar>::UnitRandom(),
+        Eigen::Matrix<Scalar, 3, 1>::Random());
+    auto e = SE3<Scalar>(
+        Eigen::Quaternion<Scalar>::UnitRandom().toRotationMatrix(),
+        Eigen::Matrix<Scalar, 3, 1>::Random());
+    DART_UNUSED(a, b, c, d, e);
+  }
+
+  {
+    auto a = SE3<Scalar>(0, 1, 2);
+  }
+}
+
+//==============================================================================
+TYPED_TEST(SE3Test, ComponentAccessors)
+{
+  using Scalar = typename TestFixture::Type;
+
+  auto a = SE3<Scalar>::Random();
+  a.x() = 3;
+  a.y() = 4;
+  a.z() = 5;
+  a.quat_x() = 6;
+  a.quat_y() = 7;
+  a.quat_z() = 8;
+  a.quat_w() = 9;
+  EXPECT_S_EQ(a.x(), 3);
+  EXPECT_S_EQ(a.y(), 4);
+  EXPECT_S_EQ(a.z(), 5);
+  EXPECT_S_EQ(a.quat_x(), 6);
+  EXPECT_S_EQ(a.quat_y(), 7);
+  EXPECT_S_EQ(a.quat_z(), 8);
+  EXPECT_S_EQ(a.quat_w(), 9);
+}
+
+//==============================================================================
+TYPED_TEST(SE3Test, OrientationAccessors)
+{
+  using Scalar = typename TestFixture::Type;
+
+  auto a = SE3<Scalar>::Random();
+  EXPECT_S_EQ(a.quat_x(), a.to_quaternion().x());
+  EXPECT_S_EQ(a.quat_y(), a.to_quaternion().y());
+  EXPECT_S_EQ(a.quat_z(), a.to_quaternion().z());
+  EXPECT_S_EQ(a.quat_w(), a.to_quaternion().w());
+
+  a.orientation().coeffs().x() = 1;
+  a.orientation().coeffs().y() = 2;
+  a.orientation().coeffs().z() = 3;
+  a.orientation().coeffs().w() = 4;
+  EXPECT_S_EQ(a.quat_x(), 1);
+  EXPECT_S_EQ(a.quat_y(), 2);
+  EXPECT_S_EQ(a.quat_z(), 3);
+  EXPECT_S_EQ(a.quat_w(), 4);
+}
+
+//==============================================================================
+TYPED_TEST(SE3Test, Inverse)
+{
+  using Scalar = typename TestFixture::Type;
+
+  SE3<Scalar> a = SE3<Scalar>::Random();
+  SE3<Scalar> a_inv = a.inverse();
+  DART_UNUSED(a_inv);
+
+  SO3<Scalar> o = a.orientation();
+  //  R3<Scalar> p = a.position();
+  DART_UNUSED(o);
+
+  SE3<Scalar> b = SE3<Scalar>::Random();
+  b.orientation().inverse_in_place();
+}
+
+//==============================================================================
+TYPED_TEST(SE3Test, GroupOperations)
+{
+  using Scalar = typename TestFixture::Type;
+
+  SE3<Scalar> a = SE3<Scalar>::Random();
+  SE3<Scalar> b = SE3<Scalar>::Random();
+  SO3<Scalar> c = a.orientation() * b.orientation();
+  DART_UNUSED(c);
+
+  // auto tmp = a * R3<Scalar>::Random();
+}
 
 ////==============================================================================
 // TYPED_TEST(SE3Test, Inverse)

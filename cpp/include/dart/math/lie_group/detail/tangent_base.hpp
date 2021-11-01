@@ -27,54 +27,32 @@
 
 #pragma once
 
-#include <cmath>
-
-#include "dart/common/logging.hpp"
-#include "dart/math/constant.hpp"
-#include "dart/math/linear_algebra.hpp"
+#include "dart/math/lie_group/type.hpp"
+#include "dart/math/type.hpp"
 
 namespace dart::math {
 
 //==============================================================================
 template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 3> skew(
-    const math::MatrixBase<Derived>& vec)
+class TangentBase
 {
-  using Scalar = typename Derived::Scalar;
+public:
+  DART_LIE_GROUP_BASE_TYPES
 
-  // clang-format off
-#if EIGEN_VERSION_AT_LEAST(3, 4, 0)
-  return math::Matrix<Scalar, 3, 3>()(
-    {       0, -vec[2], +vec[1]},
-    { +vec[2],       0, -vec[0]},
-    { -vec[1], +vec[0],       0}
-  );
-#else
-  return (math::Matrix<Scalar, 3, 3>() <<
-          0, -vec[2], +vec[1],
-    +vec[2],       0, -vec[0],
-    -vec[1], +vec[0],       0
-  ).finished();
-#endif
-  // clang-format on
-}
+protected:
+  /// Default constructor
+  TangentBase() = default;
 
-//==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 1> unskew(
-    const math::MatrixBase<Derived>& mat)
-{
-  using Scalar = typename Derived::Scalar;
+  /// Destructor
+  ~TangentBase() = default;
 
-#ifndef NDEBUG
-  if (std::abs(mat(0, 0)) > eps<Scalar>() || std::abs(mat(1, 1)) > eps<Scalar>()
-      || std::abs(mat(2, 2)) > eps<Scalar>()) {
-    DART_DEBUG("Not skew a symmetric matrix");
-  }
+public:
+  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(TangentBase)
 
-  // TODO(JS): Check skew-symmetry
-#endif
-  return math::Vector3<Scalar>(mat(2, 1), mat(0, 2), mat(1, 0));
-}
+  DART_LIE_GROUP_BASE_DATA(TangentData)
+
+protected:
+  DART_LIE_GROUP_BASE_DERIVED
+};
 
 } // namespace dart::math

@@ -48,6 +48,7 @@ dart_option(
 )
 dart_option(DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE "Build instantiation of template code for double" ON)
 dart_option(DART_BUILD_TEMPLATE_CODE_FOR_FLOAT  "Build instantiation of template code for double" OFF)
+dart_option(DART_ENABLE_NATIVE_ARCH  "Wheter to use -march=native" ON)
 dart_print_options()
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL Debug AND DART_ENABLE_CODECOV)
@@ -64,6 +65,18 @@ endif()
 # cmake/dart-config.cmake.in as well.
 # ==============================================================================
 include(DARTDependencies)
+
+# ==============================================================================
+# Compiler settings
+# ==============================================================================
+
+if(DART_ENABLE_NATIVE_ARCH)
+  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  else()
+    message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
+  endif()
+endif()
 
 # ==============================================================================
 # C++ Project Build
@@ -137,7 +150,7 @@ if(TARGET tests)
 endif()
 if(TARGET dartpy${DART_VERSION_MAJOR})
   message(STATUS "- 'dartpy${DART_VERSION_MAJOR}'        : build dartpy${DART_VERSION_MAJOR}")
-  message(STATUS "- 'test-dartpy${DART_VERSION_MAJOR}'   : build and run dartpy${DART_VERSION_MAJOR} tests")
-  message(STATUS "- 'install-dartpy${DART_VERSION_MAJOR}': install dartpy${DART_VERSION_MAJOR}")
+  message(STATUS "- 'dartpy${DART_VERSION_MAJOR}-test'   : build and run dartpy${DART_VERSION_MAJOR} tests")
+  message(STATUS "- 'dartpy${DART_VERSION_MAJOR}-install': install dartpy${DART_VERSION_MAJOR}")
 endif()
 message(STATUS "")

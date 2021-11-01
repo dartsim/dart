@@ -1,9 +1,7 @@
 # Copyright (c) 2011-2021, The DART development contributors
 
-find_package(PythonInterp 3 REQUIRED)
-execute_process(
-  COMMAND ${PYTHON_EXECUTABLE} -c
-          "from distutils.sysconfig import get_python_lib;\
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+  "from distutils.sysconfig import get_python_lib;\
   print(get_python_lib(plat_specific=True, prefix=''))"
   OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -11,42 +9,9 @@ execute_process(
 if(NOT IS_ABSOLUTE PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
 endif()
-if(NOT PythonInterp_FOUND)
-  message(
-    FATAL_ERROR
-      "DART_BUILD_PYTHON_BINDING is ON, but failed to find PythonInterp. "
-      "Disabling dartpy${DART_VERSION_MAJOR}."
-  )
-  return()
-endif()
-
-find_package(PythonLibs 3 QUIET)
-if(NOT PythonLibs_FOUND)
-  message(
-    FATAL_ERROR
-      "DART_BUILD_PYTHON_BINDING is ON, but failed to find PythonLibs. "
-      "Disabling dartpy${DART_VERSION_MAJOR}."
-  )
-  return()
-endif()
-
-# Find pybind11 Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
-set(PYBIND11_PYTHON_VERSION 3)
-find_package(pybind11 2.2.0 QUIET)
-if(NOT pybind11_FOUND)
-  message(
-    FATAL_ERROR
-      "DART_BUILD_PYTHON_BINDING is ON, but failed to find pybind11 >= "
-      "2.2.0. Disabling dartpy${DART_VERSION_MAJOR}."
-  )
-  return()
-endif()
 
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
-
-# Python binding module name
-set(pybind_module dartpy${DART_VERSION_MAJOR})
 
 # Build a Python extension module
 pybind11_add_module(${pybind_module} MODULE ${dartpy_headers} ${dartpy_sources})
@@ -80,7 +45,7 @@ if(BUILD_SHARED_LIBS)
   )
 endif()
 add_custom_target(
-  install-${pybind_module} COMMENT "${install_comment}"
+  ${pybind_module}-install COMMENT "${install_comment}"
   COMMAND ${CMAKE_COMMAND} -E copy ${PYBIND_MODULE} ${PYTHON_SITE_PACKAGES}
   DEPENDS ${install_dartpy_deps}
 )

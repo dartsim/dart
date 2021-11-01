@@ -7,5 +7,39 @@
 set(DART_PYTHON_PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(DART_PYTHON_PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
+# Python binding module name
+set(pybind_module dartpy${DART_VERSION_MAJOR})
+
+# ==============================================================================
+# Dependency Check
+# ==============================================================================
+
+if(NOT DARTPY_PYTHON_VERSION)
+  set(DARTPY_PYTHON_VERSION 3.4 CACHE STRING "Choose the target Python version (e.g., 3.4, 2.7)" FORCE)
+endif()
+
+# Find pybind11, including PythonInterp and PythonLibs
+# Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
+set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
+find_package(pybind11 2.2.0 QUIET)
+if(NOT pybind11_FOUND)
+  message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
+  return()
+endif()
+
+if(NOT PythonInterp_FOUND AND NOT PYTHONINTERP_FOUND)
+  message(WARNING "Disabling [dartpy] due to missing [PythonInterp].")
+  return()
+endif()
+
+if(NOT PythonLibs_FOUND AND NOT PYTHONLIBS_FOUND)
+  message(WARNING "Disabling [dartpy] due to missing [PythonLibs].")
+  return()
+endif()
+
+# ==============================================================================
+# Add subdirectories
+# ==============================================================================
+
 add_subdirectory(src)
 add_subdirectory(test)

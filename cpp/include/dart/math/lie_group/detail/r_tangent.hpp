@@ -27,54 +27,49 @@
 
 #pragma once
 
-#include <cmath>
+#include "dart/math/lie_group/detail/r_tangent_base.hpp"
 
-#include "dart/common/logging.hpp"
-#include "dart/math/constant.hpp"
-#include "dart/math/linear_algebra.hpp"
+namespace Eigen::internal {
+
+//==============================================================================
+template <typename Scalar_, int Dim, int Options_>
+struct traits<::dart::math::RTangent<Scalar_, Dim, Options_>>
+{
+  static constexpr int Options = Options_;
+  static constexpr int SpaceDim = Dim;
+  static constexpr int GroupDim = Dim;
+  static constexpr int MatrixDim = GroupDim + 1;
+  static constexpr int DataDim = Dim;
+
+  DART_LIE_GROUP_TRAITS_TYPES(R)
+};
+
+//==============================================================================
+template <typename Scalar_, int Options_>
+struct traits<::dart::math::RTangent<Scalar_, Eigen::Dynamic, Options_>>
+{
+  static constexpr int Options = Options_;
+  static constexpr int SpaceDim = 3;
+  static constexpr int GroupDim = Eigen::Dynamic;
+  static constexpr int MatrixDim = Eigen::Dynamic;
+  static constexpr int DataDim = Eigen::Dynamic;
+
+  DART_LIE_GROUP_TRAITS_TYPES(R)
+};
+
+} // namespace Eigen::internal
 
 namespace dart::math {
 
 //==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 3> skew(
-    const math::MatrixBase<Derived>& vec)
+template <typename Scalar_, int Dim, int Options_>
+class RTangent : public RTangentBase<RTangent<Scalar_, Dim, Options_>>
 {
-  using Scalar = typename Derived::Scalar;
+public:
+  using This = RTangent<Scalar_, Dim, Options_>;
+  using Base = RTangentBase<RTangent<Scalar_, Dim, Options_>>;
 
-  // clang-format off
-#if EIGEN_VERSION_AT_LEAST(3, 4, 0)
-  return math::Matrix<Scalar, 3, 3>()(
-    {       0, -vec[2], +vec[1]},
-    { +vec[2],       0, -vec[0]},
-    { -vec[1], +vec[0],       0}
-  );
-#else
-  return (math::Matrix<Scalar, 3, 3>() <<
-          0, -vec[2], +vec[1],
-    +vec[2],       0, -vec[0],
-    -vec[1], +vec[0],       0
-  ).finished();
-#endif
-  // clang-format on
-}
-
-//==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 1> unskew(
-    const math::MatrixBase<Derived>& mat)
-{
-  using Scalar = typename Derived::Scalar;
-
-#ifndef NDEBUG
-  if (std::abs(mat(0, 0)) > eps<Scalar>() || std::abs(mat(1, 1)) > eps<Scalar>()
-      || std::abs(mat(2, 2)) > eps<Scalar>()) {
-    DART_DEBUG("Not skew a symmetric matrix");
-  }
-
-  // TODO(JS): Check skew-symmetry
-#endif
-  return math::Vector3<Scalar>(mat(2, 1), mat(0, 2), mat(1, 0));
-}
+  DART_LIE_GROUP_USE_BASE_TYPES
+};
 
 } // namespace dart::math

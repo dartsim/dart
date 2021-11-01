@@ -27,54 +27,41 @@
 
 #pragma once
 
-#include <cmath>
+#include "dart/math/lie_group/detail/so3_tangent_base.hpp"
 
-#include "dart/common/logging.hpp"
-#include "dart/math/constant.hpp"
-#include "dart/math/linear_algebra.hpp"
+namespace Eigen::internal {
+
+//==============================================================================
+template <typename Scalar_, int Options_>
+struct traits<dart::math::SO3Tangent<Scalar_, Options_>>
+{
+  static constexpr int Options = Options_;
+  static constexpr int SpaceDim = 3;
+  static constexpr int GroupDim = 3;
+  static constexpr int MatrixDim = 3;
+  static constexpr int DataDim = 4;
+
+  DART_LIE_GROUP_TRAITS_TYPES(SO3)
+};
+
+} // namespace Eigen::internal
 
 namespace dart::math {
 
 //==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 3> skew(
-    const math::MatrixBase<Derived>& vec)
+template <typename Scalar_, int Options_>
+class SO3Tangent : public SO3TangentBase<SO3Tangent<Scalar_, Options_>>
 {
-  using Scalar = typename Derived::Scalar;
+public:
+  using Base = SO3TangentBase<SO3Tangent<Scalar_, Options_>>;
+  using This = SO3Tangent<Scalar_, Options_>;
 
-  // clang-format off
-#if EIGEN_VERSION_AT_LEAST(3, 4, 0)
-  return math::Matrix<Scalar, 3, 3>()(
-    {       0, -vec[2], +vec[1]},
-    { +vec[2],       0, -vec[0]},
-    { -vec[1], +vec[0],       0}
-  );
-#else
-  return (math::Matrix<Scalar, 3, 3>() <<
-          0, -vec[2], +vec[1],
-    +vec[2],       0, -vec[0],
-    -vec[1], +vec[0],       0
-  ).finished();
-#endif
-  // clang-format on
-}
+  DART_LIE_GROUP_USE_BASE_TYPES
 
-//==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 1> unskew(
-    const math::MatrixBase<Derived>& mat)
-{
-  using Scalar = typename Derived::Scalar;
+  /// Default constructor
+  SO3Tangent() = default;
+};
 
-#ifndef NDEBUG
-  if (std::abs(mat(0, 0)) > eps<Scalar>() || std::abs(mat(1, 1)) > eps<Scalar>()
-      || std::abs(mat(2, 2)) > eps<Scalar>()) {
-    DART_DEBUG("Not skew a symmetric matrix");
-  }
-
-  // TODO(JS): Check skew-symmetry
-#endif
-  return math::Vector3<Scalar>(mat(2, 1), mat(0, 2), mat(1, 0));
-}
+DART_TEMPLATE_CLASS_SCALAR(SO3Tangent)
 
 } // namespace dart::math

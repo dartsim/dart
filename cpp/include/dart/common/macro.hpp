@@ -49,6 +49,8 @@
   (void)(a), DETAIL_DART_UNUSED_3(b, c, d)
 #define DETAIL_DART_UNUSED_5(a, b, c, d, e)                                    \
   (void)(a), DETAIL_DART_UNUSED_4(b, c, d, e)
+#define DETAIL_DART_UNUSED_6(a, b, c, d, e, f)                                 \
+  (void)(a), DETAIL_DART_UNUSED_5(b, c, d, e, f)
 #define DART_UNUSED(...)                                                       \
   DART_CONCAT(DETAIL_DART_UNUSED_, DART_NUM_ARGS(__VA_ARGS__))(__VA_ARGS__)
 

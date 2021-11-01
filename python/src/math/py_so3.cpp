@@ -30,20 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "py_module.hpp"
+#include <pybind11/pybind11.h>
+
+#include "dart/math/all.hpp"
 
 namespace py = pybind11;
 
 namespace dart::python {
 
-void py_so3(py::module& sm);
-void py_se3(py::module& sm);
-
-void add_math_module(py::module& m)
+void py_so3(py::module& m)
 {
-  auto sm = m.def_submodule("math");
-  py_so3(sm);
-  py_se3(sm);
+  py::class_<math::SO3d>(m, "SO3")
+      .def(py::init<>())
+      .def("set_identity", &math::SO3d::set_identity)
+      .def("set_random", &math::SO3d::set_random)
+      .def_static("Identity", &math::SO3d::Identity)
+      .def_static("Random", &math::SO3d::Random);
 }
 
 } // namespace dart::python

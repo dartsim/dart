@@ -17,6 +17,9 @@ target_include_directories(
 
 # TODO(JS): Check dependencies
 target_link_libraries(${target_name} PUBLIC OpenGL::GL glfw ${CMAKE_DL_LIBS})
+if(APPLE)
+  target_link_libraries(${target_name} PUBLIC "-framework Cocoa")
+endif()
 
 target_compile_options(${target_name} PRIVATE -w -fPIC)
 

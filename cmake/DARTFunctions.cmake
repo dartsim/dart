@@ -648,6 +648,7 @@ function(dart_component_setup)
 
   # Set context properties
   set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_HEADERS ${include_headers})
+  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_DETAIL_HEADERS ${include_detail_headers})
   set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SRC_HEADERS ${src_headers})
   set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SRC_SOURCES ${src_sources})
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_NAME ${target_name})
@@ -664,6 +665,7 @@ function(dart_component_setup)
 
   # Get context properties
   get_property(current_component_include_headers         GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_HEADERS)
+  get_property(current_component_include_detail_headers  GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_DETAIL_HEADERS)
   get_property(current_component_src_headers             GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SRC_SOURCES)
   get_property(current_component_src_sources             GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SRC_SOURCES)
   get_property(current_component_dependency_packages     GLOBAL PROPERTY _DART_CURRENT_COMPONENT_DEPENDENT_PACKAGES)
@@ -682,7 +684,8 @@ function(dart_component_setup)
     message("[TRACE] relative_include_source_dir: ${relative_include_source_dir}")
     message("[TRACE] relative_src_source_dir    : ${relative_src_source_dir}\n")
 
-    message("[TRACE] current_component_include_headers: ${current_component_include_headers}")
+    message("[TRACE] current_component_include_headers       : ${current_component_include_headers}")
+    message("[TRACE] current_component_include_detail_headers: ${current_component_include_detail_headers}")
     message("[TRACE] current_component_src_headers: ${current_component_src_headers}")
     message("[TRACE] current_component_src_sources: ${current_component_src_sources}")
     message("[TRACE] current_component_dependency_packages: ${current_component_dependency_packages}")
@@ -705,11 +708,13 @@ function(dart_component_setup)
   target_sources(${target_name}
     PRIVATE
       ${current_component_include_headers}
+      ${current_component_include_detail_headers}
       ${current_component_src_headers}
       ${current_component_src_sources}
   )
   dart_clang_format_add(
     ${current_component_include_headers}
+    ${current_component_include_detail_headers}
     ${include_detail_headers}
     ${current_component_src_headers}
     ${current_component_src_sources}
@@ -787,7 +792,7 @@ function(dart_component_setup)
     dart_generate_meta_header_from_abs_paths(
       ${current_include_binary_dir}/all.hpp
       ${project_include_source_base_dir}
-      ${include_headers}
+      ${current_component_include_headers}
     )
     install(
       FILES ${current_include_binary_dir}/all.hpp
@@ -931,11 +936,8 @@ function(dart_component_setup_subdirectory)
   file(GLOB src_headers "*.hpp")
   file(GLOB src_sources "*.cpp")
 
-  dart_clang_format_add(
-    ${include_detail_headers}
-  )
-
   set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_HEADERS ${include_headers})
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_DETAIL_HEADERS ${include_detail_headers})
   set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_SRC_HEADERS ${src_headers})
   set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_SRC_SOURCES ${src_sources})
 

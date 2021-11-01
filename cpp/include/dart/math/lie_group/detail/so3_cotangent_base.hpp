@@ -27,54 +27,19 @@
 
 #pragma once
 
-#include <cmath>
-
-#include "dart/common/logging.hpp"
-#include "dart/math/constant.hpp"
-#include "dart/math/linear_algebra.hpp"
+#include "dart/math/lie_group/detail/cotangent_base.hpp"
 
 namespace dart::math {
 
 //==============================================================================
 template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 3> skew(
-    const math::MatrixBase<Derived>& vec)
+class SO3CotangentBase : public CotangentBase<Derived>
 {
-  using Scalar = typename Derived::Scalar;
+public:
+  using This = SO3CotangentBase<Derived>;
+  using Base = CotangentBase<Derived>;
 
-  // clang-format off
-#if EIGEN_VERSION_AT_LEAST(3, 4, 0)
-  return math::Matrix<Scalar, 3, 3>()(
-    {       0, -vec[2], +vec[1]},
-    { +vec[2],       0, -vec[0]},
-    { -vec[1], +vec[0],       0}
-  );
-#else
-  return (math::Matrix<Scalar, 3, 3>() <<
-          0, -vec[2], +vec[1],
-    +vec[2],       0, -vec[0],
-    -vec[1], +vec[0],       0
-  ).finished();
-#endif
-  // clang-format on
-}
-
-//==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 1> unskew(
-    const math::MatrixBase<Derived>& mat)
-{
-  using Scalar = typename Derived::Scalar;
-
-#ifndef NDEBUG
-  if (std::abs(mat(0, 0)) > eps<Scalar>() || std::abs(mat(1, 1)) > eps<Scalar>()
-      || std::abs(mat(2, 2)) > eps<Scalar>()) {
-    DART_DEBUG("Not skew a symmetric matrix");
-  }
-
-  // TODO(JS): Check skew-symmetry
-#endif
-  return math::Vector3<Scalar>(mat(2, 1), mat(0, 2), mat(1, 0));
-}
+  DART_LIE_GROUP_USE_BASE_TYPES
+};
 
 } // namespace dart::math

@@ -175,8 +175,8 @@ make -j$num_threads install
 if [ "$BUILD_DARTPY" = "ON" ]; then
   # TODO(JS): Enable this
   make -j$num_threads dartpy8
-  make test-dartpy8
-  make -j$num_threads install-dartpy8
+  make dartpy8-test
+  make -j$num_threads dartpy8-install
 fi
 
 # Codecov

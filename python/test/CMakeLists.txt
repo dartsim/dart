@@ -22,7 +22,7 @@ list(FILTER test_files EXCLUDE REGEX ".*__init__.py$")
 
 # Add custom target to run the tests
 add_custom_target(
-  test-dartpy8
+  dartpy8-test
   COMMAND
     ${CMAKE_COMMAND} -E echo
     "Running pytest by: PYTHONPATH=${DART_PYTHON_PROJECT_BINARY_DIR}/src ${PYTHON_EXECUTABLE} -m pytest [sources]"

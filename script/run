@@ -148,7 +148,7 @@ fi
 # fi
 
 if [ "$build_dartpy" = true ]; then
-  dartpy_command="&& make -j$num_cores dartpy8 && make test-dartpy8"
+  dartpy_command="&& make -j$num_cores dartpy8 && make dartpy8-test"
 else
   dartpy_command=""
 fi

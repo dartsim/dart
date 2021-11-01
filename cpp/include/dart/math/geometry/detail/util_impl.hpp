@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include "dart/math/geometry/util.hpp"
-
 #include <unordered_map>
+
+#include "dart/math/geometry/util.hpp"
 
 #include "convhull_3d.h"
 

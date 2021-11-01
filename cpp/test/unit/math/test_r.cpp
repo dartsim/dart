@@ -27,7 +27,8 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/math/r.hpp"
+#include "dart/common/macro.hpp"
+#include "dart/math/lie_group/r.hpp"
 
 using namespace dart;
 using namespace math;
@@ -40,7 +41,7 @@ struct RTest : public testing::Test
 };
 
 //==============================================================================
-using Types = testing::Types<float, double>;
+using Types = testing::Types<float, double, long double>;
 
 //==============================================================================
 TYPED_TEST_SUITE(RTest, Types);
@@ -87,12 +88,14 @@ void test_constructors_fixed_size()
   RN d(Eigen::Matrix<Scalar, Dim, 1>::Random());
   Eigen::Matrix<Scalar, Dim, 1> vec = Eigen::Matrix<Scalar, Dim, 1>::Random();
   RN e = std::move(vec);
-  EXPECT_TRUE(e.vector().isApprox(vec));
+  EXPECT_TRUE(e.coeffs().isApprox(vec));
 
   // Using static functions
   RN f = RN::Zero();
   RN g = RN::Identity();
   RN h = RN::Random();
+
+  DART_UNUSED(f, g, h);
 }
 
 //==============================================================================
@@ -100,7 +103,7 @@ TYPED_TEST(RTest, Constructors)
 {
   using Scalar = typename TestFixture::Type;
 
-  // Fixed size
+  // Dynamic size
   {
     // Default constructor
     RX<Scalar> a;
@@ -113,7 +116,7 @@ TYPED_TEST(RTest, Constructors)
     RX<Scalar> c = std::move(a);
   }
 
-  // Dynamic size
+  // Fixed size
   test_constructors_fixed_size<Scalar, 0>();
   test_constructors_fixed_size<Scalar, 1>();
   test_constructors_fixed_size<Scalar, 2>();
@@ -121,4 +124,76 @@ TYPED_TEST(RTest, Constructors)
   test_constructors_fixed_size<Scalar, 4>();
   test_constructors_fixed_size<Scalar, 5>();
   test_constructors_fixed_size<Scalar, 6>();
+}
+
+//==============================================================================
+template <typename Scalar, int Dim>
+void test_identity_fixed_size()
+{
+  using RN = R<Scalar, Dim>;
+
+  RN a;
+  a.set_identity();
+
+  RN h = RN::Identity();
+  (void)h;
+}
+
+//==============================================================================
+TYPED_TEST(RTest, Identity)
+{
+  using Scalar = typename TestFixture::Type;
+
+  RX<Scalar> a;
+  a.set_identity();
+
+  RX<Scalar> b(1);
+  b.set_identity();
+
+  RX<Scalar> h = RX<Scalar>::Identity();
+  (void)h;
+
+  test_identity_fixed_size<Scalar, 0>();
+  test_identity_fixed_size<Scalar, 1>();
+  test_identity_fixed_size<Scalar, 2>();
+  test_identity_fixed_size<Scalar, 3>();
+  test_identity_fixed_size<Scalar, 4>();
+  test_identity_fixed_size<Scalar, 5>();
+  test_identity_fixed_size<Scalar, 6>();
+}
+
+//==============================================================================
+template <typename Scalar, int Dim>
+void test_random_fixed_size()
+{
+  using RN = R<Scalar, Dim>;
+
+  RN a;
+  a.set_random();
+
+  RN h = RN::Random();
+  (void)h;
+}
+
+//==============================================================================
+TYPED_TEST(RTest, Random)
+{
+  using Scalar = typename TestFixture::Type;
+
+  RX<Scalar> a;
+  a.set_random();
+
+  RX<Scalar> b(1);
+  b.set_random();
+
+  RX<Scalar> h = RX<Scalar>::Random();
+  (void)h;
+
+  test_random_fixed_size<Scalar, 0>();
+  test_random_fixed_size<Scalar, 1>();
+  test_random_fixed_size<Scalar, 2>();
+  test_random_fixed_size<Scalar, 3>();
+  test_random_fixed_size<Scalar, 4>();
+  test_random_fixed_size<Scalar, 5>();
+  test_random_fixed_size<Scalar, 6>();
 }

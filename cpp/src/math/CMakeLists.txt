@@ -11,5 +11,5 @@ dart_component_setup(
   GENERATE_EXPORT_HEADER
   GENERATE_COMPONENT_ALL_HEADER
   SUB_DIRECTORIES
-    geometry
+    geometry lie_group
 )

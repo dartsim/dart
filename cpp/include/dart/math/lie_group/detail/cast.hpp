@@ -27,54 +27,35 @@
 
 #pragma once
 
-#include <cmath>
-
-#include "dart/common/logging.hpp"
-#include "dart/math/constant.hpp"
-#include "dart/math/linear_algebra.hpp"
-
-namespace dart::math {
+namespace dart::math::detail {
 
 //==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 3> skew(
-    const math::MatrixBase<Derived>& vec)
-{
-  using Scalar = typename Derived::Scalar;
-
-  // clang-format off
-#if EIGEN_VERSION_AT_LEAST(3, 4, 0)
-  return math::Matrix<Scalar, 3, 3>()(
-    {       0, -vec[2], +vec[1]},
-    { +vec[2],       0, -vec[0]},
-    { -vec[1], +vec[0],       0}
-  );
-#else
-  return (math::Matrix<Scalar, 3, 3>() <<
-          0, -vec[2], +vec[1],
-    +vec[2],       0, -vec[0],
-    -vec[1], +vec[0],       0
-  ).finished();
-#endif
-  // clang-format on
-}
+template <typename Class, typename OtherDerived>
+struct ScalarCast;
 
 //==============================================================================
-template <typename Derived>
-math::Matrix<typename Derived::Scalar, 3, 1> unskew(
-    const math::MatrixBase<Derived>& mat)
+template <
+    template <typename, template <typename> class...>
+    class Class,
+    typename Scalar,
+    typename OtherScalar,
+    template <typename>
+    class... Ts>
+struct ScalarCast<Class<Scalar, Ts...>, OtherScalar>
 {
-  using Scalar = typename Derived::Scalar;
+  using type = Class<OtherScalar, Ts...>;
+};
 
-#ifndef NDEBUG
-  if (std::abs(mat(0, 0)) > eps<Scalar>() || std::abs(mat(1, 1)) > eps<Scalar>()
-      || std::abs(mat(2, 2)) > eps<Scalar>()) {
-    DART_DEBUG("Not skew a symmetric matrix");
-  }
+//==============================================================================
+template <
+    template <typename, int>
+    class Class,
+    typename Scalar,
+    typename OtherScalar,
+    int Dim>
+struct ScalarCast<Class<Scalar, Dim>, OtherScalar>
+{
+  using type = Class<OtherScalar, Dim>;
+};
 
-  // TODO(JS): Check skew-symmetry
-#endif
-  return math::Vector3<Scalar>(mat(2, 1), mat(0, 2), mat(1, 0));
-}
-
-} // namespace dart::math
+} // namespace dart::math::detail

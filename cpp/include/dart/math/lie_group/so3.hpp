@@ -27,10 +27,6 @@
 
 #pragma once
 
-#include "dart/math/lie_group_base.hpp"
-
-namespace dart::math {
-
-//==============================================================================
-
-} // namespace dart::math
+#include "dart/math/lie_group/detail/so3.hpp"
+#include "dart/math/lie_group/detail/so3_map.hpp"
+#include "dart/math/lie_group/detail/so3_tangent.hpp"
