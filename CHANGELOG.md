@@ -1,6 +1,6 @@
 ## DART 6
 
-### [DART 6.12.0 (TBD)](https://github.com/dartsim/dart/milestone/66?closed=1)
+### [DART 6.12.0 (2021-11-1)](https://github.com/dartsim/dart/milestone/66?closed=1)
 
 * API Breaking Changes
 
