@@ -32,7 +32,6 @@
 
 #include <TestHelpers.hpp>
 #include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
 #include <dart/utils/sdf/sdf.hpp>
 #include <gtest/gtest.h>
 

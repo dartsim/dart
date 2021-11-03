@@ -33,16 +33,14 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_
 
-// Must be included before any Bullet headers.
 #include <vector>
 
 #include <assimp/scene.h>
-#include <btBulletCollisionCommon.h>
 
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 #include "dart/collision/bullet/BulletCollisionShape.hpp"
-#include "dart/config.hpp"
+#include "dart/collision/bullet/BulletInclude.hpp"
 
 namespace dart {
 namespace collision {

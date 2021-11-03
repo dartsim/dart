@@ -30,23 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Must be included before any Bullet headers.
 #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <algorithm>
-
-#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
-#include <BulletCollision/Gimpact/btGImpactShape.h>
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/bullet/BulletInclude.hpp"
 #include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Console.hpp"
-#include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
