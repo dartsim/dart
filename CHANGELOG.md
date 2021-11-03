@@ -1,5 +1,11 @@
 ## DART 6
 
+### [DART 6.12.1 (TBD)](https://github.com/dartsim/dart/milestone/71?closed=1)
+
+* Build
+
+  * Fixed bullet header include: [#1620](https://github.com/dartsim/dart/pull/1620)
+
 ### [DART 6.12.0 (2021-11-1)](https://github.com/dartsim/dart/milestone/66?closed=1)
 
 * API Breaking Changes
