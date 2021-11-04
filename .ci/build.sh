@@ -164,14 +164,13 @@ if [ "$BUILD_TUTORIALS" = "ON" ]; then
   make -j$num_threads all tutorials
 fi
 
-make -j$num_threads install
-
 # dartpy: build, test, and install
 if [ "$BUILD_DARTPY" = "ON" ]; then
   make -j$num_threads dartpy
   make pytest
-  make -j$num_threads install-dartpy
 fi
+
+make -j$num_threads install
 
 # Codecov
 if [ "$CODECOV" = "ON" ]; then
