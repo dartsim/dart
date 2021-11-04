@@ -2,7 +2,7 @@
 
 ### [DART 6.13.0 (TBD)](https://github.com/dartsim/dart/milestone/69?closed=1)
 
-### [DART 6.12.1 (TBD)](https://github.com/dartsim/dart/milestone/71?closed=1)
+### [DART 6.12.1 (2021-11-04)](https://github.com/dartsim/dart/milestone/71?closed=1)
 
 * Build
 
@@ -12,7 +12,7 @@
 
   * Added Python bindings for Joint::getWrenchTo{Child|Parent}BodyNode: [#1621](https://github.com/dartsim/dart/pull/1621)
 
-### [DART 6.12.0 (2021-11-1)](https://github.com/dartsim/dart/milestone/66?closed=1)
+### [DART 6.12.0 (2021-11-01)](https://github.com/dartsim/dart/milestone/66?closed=1)
 
 * API Breaking Changes
 
