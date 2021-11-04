@@ -608,7 +608,7 @@ message(STATUS "Run 'make view_docs' to see the API documentation")
 message(STATUS "Run 'make install' to install all the C++ components")
 if(TARGET dartpy)
   message(STATUS "Run 'make dartpy' to build dartpy")
-  message(STATUS "Run 'make install-dartpy' to install dartpy")
+  message(STATUS "Run 'make install' to install dartpy")
 endif()
 
 #===============================================================================

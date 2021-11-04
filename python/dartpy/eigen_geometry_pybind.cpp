@@ -167,6 +167,9 @@ void eigen_geometry(pybind11::module& parent_m)
       .def("matrix", [](const Class* self) -> Eigen::Matrix<T, 4, 4> {
         return self->matrix();
       })
+      .def("set_identity", [](Class* self) {
+        self->setIdentity();
+      })
       .def("set_matrix", [](Class* self, const Eigen::Matrix<T, 4, 4>& matrix) {
         Class update(matrix);
         CheckIsometry(update);
