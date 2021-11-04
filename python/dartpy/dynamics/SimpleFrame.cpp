@@ -47,15 +47,21 @@ void SimpleFrame(py::module& m)
       dart::dynamics::SimpleFrame,
       dart::dynamics::ShapeFrame,
       dart::dynamics::Detachable,
-      std::shared_ptr<dart::dynamics::SimpleFrame> >(m, "SimpleFrame")
+      std::shared_ptr<dart::dynamics::SimpleFrame>>(m, "SimpleFrame")
+      .def(::py::init<>())
+      .def(::py::init<dart::dynamics::Frame*>(), ::py::arg("refFrame"))
+      .def(
+          ::py::init<dart::dynamics::Frame*, const std::string&>(),
+          ::py::arg("refFrame"),
+          ::py::arg("name"))
       .def(
           ::py::init<
               dart::dynamics::Frame*,
               const std::string&,
               const Eigen::Isometry3d&>(),
-          ::py::arg("refFrame") = dart::dynamics::Frame::World(),
-          ::py::arg("name") = "simple_frame",
-          ::py::arg("relativeTransform") = Eigen::Isometry3d::Identity())
+          ::py::arg("refFrame"),
+          ::py::arg("name"),
+          ::py::arg("relativeTransform"))
       .def(
           "setName",
           +[](dart::dynamics::SimpleFrame* self, const std::string& _name)
