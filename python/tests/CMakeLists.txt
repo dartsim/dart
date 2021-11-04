@@ -50,6 +50,7 @@ function(dartpy_add_test test_name) # ARGN for source file
     COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
+    DEPENDS dartpy
   )
 endfunction()
 

@@ -70,9 +70,9 @@ TEST(JointForceTorqueTest, Static)
   // Load world
   WorldPtr world = readWorld("dart://sample/sdf/test/force_torque_test.world");
   ASSERT_NE(world, nullptr);
-
-  // Check if the world is correct loaded
   ASSERT_EQ(world->getNumSkeletons(), 1);
+
+  // Check if the world is correctly loaded
   SkeletonPtr model_1 = world->getSkeleton(0);
   ASSERT_NE(model_1, nullptr);
   EXPECT_EQ(model_1->getName(), "model_1");
@@ -113,8 +113,8 @@ TEST(JointForceTorqueTest, Static)
     // Test joint_01 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo
-    // and DART
+    // Reference adjustment for the difference of the joint frame conventions
+    // between Gazebo and DART
     tf.setIdentity();
     tf.translation() = joint_01->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame01
@@ -141,8 +141,8 @@ TEST(JointForceTorqueTest, Static)
     // Test joint_12 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo
-    // and DART
+    // Reference adjustment for the difference of the joint frame conventions
+    // between Gazebo and DART
     tf.setIdentity();
     tf.translation() = joint_12->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame12
@@ -168,14 +168,14 @@ TEST(JointForceTorqueTest, Static)
 }
 
 //==============================================================================
-TEST(JointForceTorqueTest, ForceTorqeAtJointLimits)
+TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
 {
   // Load world
   WorldPtr world = readWorld("dart://sample/sdf/test/force_torque_test.world");
   ASSERT_NE(world, nullptr);
-
-  // Check if the world is correct loaded
   ASSERT_EQ(world->getNumSkeletons(), 1);
+
+  // Check if the world is correctly loaded
   SkeletonPtr model_1 = world->getSkeleton(0);
   ASSERT_NE(model_1, nullptr);
   EXPECT_EQ(model_1->getName(), "model_1");
@@ -225,8 +225,8 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimits)
     // Test joint_01 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo
-    // and DART
+    // Reference adjustment for the difference of the joint frame conventions
+    // between Gazebo and DART
     tf.setIdentity();
     tf.translation() = joint_01->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame01
@@ -258,8 +258,8 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimits)
     // Test joint_12 wrench
     //----------------------
 
-    // Reference adjustment for different joint frame conventions between Gazebo
-    // and DART
+    // Reference adjustment for the difference of the joint frame conventions
+    // between Gazebo and DART
     tf.setIdentity();
     tf.translation() = joint_12->getTransformFromParentBodyNode().translation();
     SimpleFramePtr parentFrame12
@@ -290,9 +290,9 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   // Load world
   WorldPtr world = readWorld("dart://sample/sdf/test/force_torque_test2.world");
   ASSERT_NE(world, nullptr);
-
-  // Check if the world is correct loaded
   ASSERT_EQ(world->getNumSkeletons(), 1);
+
+  // Check if the world is correctly loaded
   SkeletonPtr model_1 = world->getSkeleton(0);
   ASSERT_NE(model_1, nullptr);
   ASSERT_EQ(model_1->getName(), "boxes");
@@ -331,7 +331,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
 
-  // Run 5 steps
+  // Run 4500 steps
   const double kp1 = 5e+4;
   const double kp2 = 1e+4;
   const double target1 = 0;
@@ -358,7 +358,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   const double tol = 2;
 
   //----------------------
-  // Test joint_01 wrench
+  // Test joint_12 wrench
   //----------------------
 
   // Reference adjustment for different joint frame conventions between Gazebo
@@ -374,7 +374,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
 
   const Eigen::Vector6d parentF01
       = joint_12->getWrenchToParentBodyNode(parentFrame01.get());
-    EXPECT_NEAR(parentF01[0], 25, tol); // torque
+  EXPECT_NEAR(parentF01[0], 25, tol); // torque
   EXPECT_NEAR(parentF01[1], -175, tol);
   EXPECT_NEAR(parentF01[2], 0, tol);
   EXPECT_NEAR(parentF01[3], 0, tol); // force
@@ -386,7 +386,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   EXPECT_TRUE(childF01.isApprox(-parentF01, tol));
 
   //----------------------
-  // Test joint_12 wrench
+  // Test joint_23 wrench
   //----------------------
 
   // Reference adjustment for different joint frame conventions between Gazebo

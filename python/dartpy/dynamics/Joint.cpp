@@ -893,6 +893,14 @@ void Joint(py::module& m)
             return self->getBodyConstraintWrench();
           })
       .def(
+          "getWrenchToChildBodyNode",
+          &dart::dynamics::Joint::getWrenchToChildBodyNode,
+          ::py::arg("withRespectTo") = nullptr)
+      .def(
+          "getWrenchToParentBodyNode",
+          &dart::dynamics::Joint::getWrenchToParentBodyNode,
+          ::py::arg("withRespectTo") = nullptr)
+      .def(
           "notifyPositionUpdated",
           +[](dart::dynamics::Joint* self)
               -> void { return self->notifyPositionUpdated(); })
