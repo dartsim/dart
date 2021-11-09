@@ -81,6 +81,20 @@ public:
 
   DART_LIE_GROUP_CONSTRUCTORS(R)
 
+  /** Copy constructor from LieGroupBase*/
+  template <typename OtherDerived>
+  R(const LieGroupBase<OtherDerived>& other) : m_data(other.coeffs())
+  {
+    /* Do nothing */
+  }
+
+  /** Move constructor from LieGroupBase */
+  template <typename OtherDerived>
+  R(LieGroupBase<OtherDerived>&& other) : m_data(std::move(other.coeffs()))
+  {
+    /* Do nothing */
+  }
+
   /// Destructor
   ~R() = default;
 

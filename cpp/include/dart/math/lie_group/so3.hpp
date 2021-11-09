@@ -28,5 +28,9 @@
 #pragma once
 
 #include "dart/math/lie_group/detail/so3.hpp"
+#include "dart/math/lie_group/detail/so3_algebra.hpp"
+#include "dart/math/lie_group/detail/so3_cotangent.hpp"
+#include "dart/math/lie_group/detail/so3_cotangent_map.hpp"
 #include "dart/math/lie_group/detail/so3_map.hpp"
 #include "dart/math/lie_group/detail/so3_tangent.hpp"
+#include "dart/math/lie_group/detail/so3_tangent_map.hpp"

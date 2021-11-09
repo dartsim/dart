@@ -91,6 +91,20 @@ public:
 
   DART_LIE_GROUP_CONSTRUCTORS(SE3)
 
+  /** Copy constructor from LieGroupBase*/
+  template <typename OtherDerived>
+  SE3(const LieGroupBase<OtherDerived>& other) : m_data(other.coeffs())
+  {
+    /* Do nothing */
+  }
+
+  /** Move constructor from LieGroupBase */
+  template <typename OtherDerived>
+  SE3(LieGroupBase<OtherDerived>&& other) : m_data(std::move(other.coeffs()))
+  {
+    /* Do nothing */
+  }
+
   //  /// Constructs from orientation and position
   //  SE3(const SO3<Scalar>& orientation, const R3<Scalar>& position);
 
@@ -188,7 +202,7 @@ public:
 
   /// @{ @name Group operation
 
-  DART_LIE_GROUP_USE_BASE_GROUP_OPERATIONS
+  DART_LIE_GROUP_USE_BASE_GROUP_OPERATIONS;
 
   /// @}
 

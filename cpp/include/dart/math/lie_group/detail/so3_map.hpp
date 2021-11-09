@@ -40,7 +40,6 @@ struct traits<Eigen::Map<dart::math::SO3<Scalar_, Options_>>>
 {
   using Base = traits<dart::math::SO3<Scalar_, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
@@ -54,7 +53,6 @@ struct traits<Eigen::Map<const dart::math::SO3<Scalar_, Options_>>>
 {
   using Base = traits<const dart::math::SO3<Scalar_, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
@@ -87,10 +85,9 @@ public:
 
   DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(SO3)
 
-  DART_LIE_GROUP_USE_BASE_GROUP_OPERATIONS
+  DART_LIE_GROUP_USE_BASE_GROUP_OPERATIONS;
 
-      [[nodiscard]] LieGroupData&
-      coeffs();
+  [[nodiscard]] LieGroupData& coeffs();
 
   [[nodiscard]] const LieGroupData& coeffs() const;
 
@@ -122,11 +119,6 @@ public:
   DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(SO3)
 
   DART_LIE_GROUP_USE_BASE_GROUP_CONST_OPERATIONS;
-
-  [[nodiscard]] LieGroupData& coeffs()
-  {
-    return m_data;
-  }
 
   [[nodiscard]] const LieGroupData& coeffs() const;
 

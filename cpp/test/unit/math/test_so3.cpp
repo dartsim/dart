@@ -106,6 +106,8 @@ template <typename S>
 struct SE3A
 {
   using Quaternion = Eigen::Quaternion<S>;
+  using QuaternionMap = Eigen::Map<Eigen::Quaternion<S>>;
+  using ConstQuaternionMap = Eigen::Map<const Eigen::Quaternion<S>>;
 
   SE3A() : m_data(1, 0, 0, 0, 0, 0, 0)
   {
@@ -173,24 +175,44 @@ struct SE3A
         orientation() * other.position() + position());
   }
 
-  Eigen::Map<const Eigen::Quaternion<S>> orientation() const
+  //  Eigen::Map<const Eigen::Quaternion<S>> orientation() const
+  //  {
+  //    return Eigen::Map<const Eigen::Quaternion<S>>(m_data.data());
+  //  }
+
+  //  Eigen::Map<Eigen::Quaternion<S>> orientation()
+  //  {
+  //    return Eigen::Map<Eigen::Quaternion<S>>(m_data.data());
+  //  }
+
+  //  Eigen::Map<const Eigen::Matrix<S, 3, 1>> position() const
+  //  {
+  //    return Eigen::Map<const Eigen::Matrix<S, 3, 1>>(m_data.data() + 4);
+  //  }
+
+  //  Eigen::Map<Eigen::Matrix<S, 3, 1>> position()
+  //  {
+  //    return Eigen::Map<Eigen::Matrix<S, 3, 1>>(m_data.data() + 4);
+  //  }
+
+  Quaternion orientation() const
   {
-    return Eigen::Map<const Eigen::Quaternion<S>>(m_data.data());
+    return Quaternion(m_data.template head<4>());
   }
 
-  Eigen::Map<Eigen::Quaternion<S>> orientation()
+  Quaternion orientation()
   {
-    return Eigen::Map<Eigen::Quaternion<S>>(m_data.data());
+    return Quaternion(m_data.template head<4>());
   }
 
-  Eigen::Map<const Eigen::Matrix<S, 3, 1>> position() const
+  Eigen::Matrix<S, 3, 1> position() const
   {
-    return Eigen::Map<const Eigen::Matrix<S, 3, 1>>(m_data.data() + 4);
+    return Eigen::Matrix<S, 3, 1>(m_data.template tail<3>());
   }
 
-  Eigen::Map<Eigen::Matrix<S, 3, 1>> position()
+  Eigen::Matrix<S, 3, 1> position()
   {
-    return Eigen::Map<Eigen::Matrix<S, 3, 1>>(m_data.data() + 4);
+    return Eigen::Matrix<S, 3, 1>(m_data.template tail<3>());
   }
 
   Eigen::Matrix<S, 7, 1> m_data;
@@ -397,6 +419,9 @@ TYPED_TEST(SO3Test, GroupOperations)
   SO3<Scalar> b = SO3<Scalar>::Random();
   SO3<Scalar> c = a * b;
   DART_UNUSED(c);
+
+  auto c_log = c.log();
+  DART_UNUSED(c_log);
 }
 
 //==============================================================================
@@ -501,12 +526,38 @@ TYPED_TEST(SO3Test, Conversions)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, EulerAngles)
+{
+  using Scalar = typename TestFixture::Type;
+
+  SO3<Scalar> a;
+  SO3<Scalar> b;
+
+  const Eigen::Matrix<Scalar, 3, 1> angles
+      = Eigen::Matrix<Scalar, 3, 1>::Random();
+
+  a.set_from_rpy(angles);
+  b.set_from_rpy(a.rpy());
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, Tangent)
 {
   using Scalar = typename TestFixture::Type;
 
   auto a = SO3Tangent<Scalar>();
   (void)a;
+}
+
+//==============================================================================
+TYPED_TEST(SO3Test, Algebra)
+{
+  using Scalar = typename TestFixture::Type;
+
+  auto a = SO3Tangent<Scalar>::Random();
+  auto a_hat = a.hat();
+  auto b = a_hat.vee();
+  DART_UNUSED(a_hat, b);
 }
 
 //==============================================================================

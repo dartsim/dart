@@ -40,12 +40,32 @@ namespace dart::python {
 
 void py_so3(py::module& m)
 {
-  py::class_<math::SO3d>(m, "SO3")
-      .def(py::init<>())
-      .def("set_identity", &math::SO3d::set_identity)
-      .def("set_random", &math::SO3d::set_random)
-      .def_static("Identity", &math::SO3d::Identity)
-      .def_static("Random", &math::SO3d::Random);
+  auto so3 = py::class_<math::SO3d>(m, "SO3")
+                 .def(py::init<>())
+                 .def("set_identity", &math::SO3d::set_identity)
+                 .def("set_random", &math::SO3d::set_random)
+                 .def_static("Identity", &math::SO3d::Identity)
+                 .def_static("Random", &math::SO3d::Random);
+
+  auto so3_algebra = py::class_<math::SO3Algebrad>(m, "SO3Algebra")
+                         .def(py::init<>())
+                         .def_static("Identity", &math::SO3Algebrad::Identity)
+                         .def_static("Random", &math::SO3Algebrad::Random);
+
+  auto so3_tangent = py::class_<math::SO3Tangentd>(m, "SO3Tangent")
+                         .def(py::init<>())
+                         .def_static("Identity", &math::SO3Tangentd::Identity)
+                         .def_static("Random", &math::SO3Tangentd::Random);
+
+  auto so3_cotangent
+      = py::class_<math::SO3Cotangentd>(m, "SO3Cotangent")
+            .def(py::init<>())
+            .def_static("Identity", &math::SO3Cotangentd::Identity)
+            .def_static("Random", &math::SO3Cotangentd::Random);
+
+  so3.attr("Algebra") = so3_algebra;
+  so3.attr("Tangent") = so3_tangent;
+  so3.attr("Cotangent") = so3_cotangent;
 }
 
 } // namespace dart::python

@@ -40,7 +40,6 @@ struct traits<Eigen::Map<dart::math::SE3<Scalar_, Options_>>>
 {
   using Base = traits<dart::math::SE3<Scalar_, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
@@ -54,7 +53,6 @@ struct traits<Eigen::Map<const dart::math::SE3<Scalar_, Options_>>>
 {
   using Base = traits<const dart::math::SE3<Scalar_, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
@@ -76,8 +74,6 @@ public:
   using This = Map<dart::math::SE3<Scalar_, Options_>, Options_>;
 
   DART_LIE_GROUP_USE_BASE_TYPES
-
-  // using LieGroupData = typename internal::traits<This>::LieGroupData;
 
   /// Constructor
   ///
@@ -106,18 +102,11 @@ public:
 
   DART_LIE_GROUP_USE_BASE_TYPES
 
-  // using LieGroupData = typename internal::traits<This>::LieGroupData;
-
   /// Constructor
   ///
   /// @param[in] data: Pointer to an array of scalar values that this map to use
   /// as its underlying data. The size should be at least 4.
   explicit Map(const Scalar* data);
-
-  [[nodiscard]] LieGroupData& coeffs()
-  {
-    return m_data;
-  }
 
   [[nodiscard]] const LieGroupData& coeffs() const;
 

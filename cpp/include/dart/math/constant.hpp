@@ -37,11 +37,11 @@ template <typename S = double>
 static constexpr S eps()
 {
   if constexpr (std::is_same_v<S, float>) {
-    return 1e-4;
+    return 1e-6;
   } else if constexpr (std::is_same_v<S, double>) {
     return 1e-8;
   } else if constexpr (std::is_same_v<S, long double>) {
-    return 1e-16;
+    return 1e-14;
   } else {
     return 0;
   }

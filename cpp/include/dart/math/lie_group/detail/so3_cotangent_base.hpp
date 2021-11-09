@@ -40,6 +40,38 @@ public:
   using Base = CotangentBase<Derived>;
 
   DART_LIE_GROUP_USE_BASE_TYPES
+
+  Scalar x() const
+  {
+    return coeffs().x();
+  }
+
+  Scalar y() const
+  {
+    return coeffs().y();
+  }
+
+  Scalar z() const
+  {
+    return coeffs().z();
+  }
+
+  Scalar& x()
+  {
+    return coeffs().x();
+  }
+
+  Scalar& y()
+  {
+    return coeffs().y();
+  }
+
+  Scalar& z()
+  {
+    return coeffs().z();
+  }
+
+  using Base::coeffs;
 };
 
 } // namespace dart::math

@@ -37,7 +37,13 @@ template <typename Derived>
 class CotangentBase
 {
 public:
-  DART_LIE_GROUP_BASE_TYPES
+  DART_LIE_GROUP_BASE_TYPES;
+
+  /// Creates an identity element
+  [[nodiscard]] static Cotangent Identity();
+
+  /// Creates a random element
+  [[nodiscard]] static Cotangent Random();
 
 protected:
   /// Default constructor
@@ -51,8 +57,44 @@ public:
 
   DART_LIE_GROUP_BASE_DATA(CotangentData)
 
+  Derived& set_identity();
+
+  Derived& set_random();
+
 protected:
   DART_LIE_GROUP_BASE_DERIVED
 };
+
+//==============================================================================
+template <typename Derived>
+typename CotangentBase<Derived>::Cotangent CotangentBase<Derived>::Identity()
+{
+  // Assumed the default constructor creates the identity element
+  const static Cotangent identity;
+  return identity;
+}
+
+//==============================================================================
+template <typename Derived>
+typename CotangentBase<Derived>::Cotangent CotangentBase<Derived>::Random()
+{
+  return Cotangent().set_random();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& CotangentBase<Derived>::set_identity()
+{
+  coeffs().set_zero();
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& CotangentBase<Derived>::set_random()
+{
+  coeffs().setRandom();
+  return derived();
+}
 
 } // namespace dart::math

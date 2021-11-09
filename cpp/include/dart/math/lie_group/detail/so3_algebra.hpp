@@ -27,13 +27,13 @@
 
 #pragma once
 
-#include "dart/math/lie_group/detail/so3_tangent_base.hpp"
+#include "dart/math/lie_group/detail/so3_algebra_base.hpp"
 
 namespace Eigen::internal {
 
 //==============================================================================
 template <typename Scalar_, int Options_>
-struct traits<dart::math::SO3Tangent<Scalar_, Options_>>
+struct traits<dart::math::SO3Algebra<Scalar_, Options_>>
 {
   static constexpr int Options = Options_;
   static constexpr int SpaceDim = 3;
@@ -50,11 +50,11 @@ namespace dart::math {
 
 //==============================================================================
 template <typename Scalar_, int Options_>
-class SO3Tangent : public SO3TangentBase<SO3Tangent<Scalar_, Options_>>
+class SO3Algebra : public SO3AlgebraBase<SO3Algebra<Scalar_, Options_>>
 {
 public:
-  using Base = SO3TangentBase<SO3Tangent<Scalar_, Options_>>;
-  using This = SO3Tangent<Scalar_, Options_>;
+  using Base = SO3AlgebraBase<SO3Algebra<Scalar_, Options_>>;
+  using This = SO3Algebra<Scalar_, Options_>;
 
   DART_LIE_GROUP_USE_BASE_TYPES
 
@@ -63,39 +63,35 @@ public:
   using ConstQuaternionMap = typename Base::ConstQuaternionMap;
 
   /// Default constructor
-  SO3Tangent() : m_data(TangentData::Zero())
+  SO3Algebra() : m_data(LieAlgebraData::Zero())
   {
     // Do nothing
   }
 
-  DART_LIE_GROUP_CONSTRUCTORS(SO3Tangent)
+  DART_LIE_GROUP_CONSTRUCTORS(SO3Algebra)
 
-  SO3Tangent(Scalar x, Scalar y, Scalar z) : m_data(x, y, z)
-  {
-    // Do nothing
-  }
-
-  /** Copy constructor from LieGroupBase */
+  /** Copy constructor from LieAlgebraBase */
   template <typename OtherDerived>
-  SO3Tangent(const TangentBase<OtherDerived>& other) : m_data(other.coeffs())
+  SO3Algebra(const LieAlgebraBase<OtherDerived>& other) : m_data(other.coeffs())
   {
     /* Do nothing */
   }
 
-  /** Move constructor from LieGroupBase */
+  /** Move constructor from LieAlgebraBase */
   template <typename OtherDerived>
-  SO3Tangent(TangentBase<OtherDerived>&& other)
+  SO3Algebra(LieAlgebraBase<OtherDerived>&& other)
     : m_data(std::move(other.coeffs()))
   {
     /* Do nothing */
   }
 
-  const TangentData& coeffs() const
+  const LieAlgebraData& coeffs() const
   {
     return m_data;
   }
+  // TODO(JS): Rename to matrix()
 
-  TangentData& coeffs()
+  LieAlgebraData& coeffs()
   {
     return m_data;
   }
@@ -103,9 +99,9 @@ public:
   using Base::data;
 
 private:
-  TangentData m_data;
+  LieAlgebraData m_data;
 };
 
-DART_TEMPLATE_CLASS_SCALAR(SO3Tangent)
+DART_TEMPLATE_CLASS_SCALAR(SO3Algebra)
 
 } // namespace dart::math

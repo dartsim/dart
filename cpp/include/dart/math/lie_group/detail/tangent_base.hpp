@@ -37,7 +37,13 @@ template <typename Derived>
 class TangentBase
 {
 public:
-  DART_LIE_GROUP_BASE_TYPES
+  DART_LIE_GROUP_BASE_TYPES;
+
+  /// Creates an identity element
+  [[nodiscard]] static Tangent Identity();
+
+  /// Creates a random element
+  [[nodiscard]] static Tangent Random();
 
 protected:
   /// Default constructor
@@ -51,8 +57,120 @@ public:
 
   DART_LIE_GROUP_BASE_DATA(TangentData)
 
+  [[nodiscard]] Tangent operator-() const
+  {
+    return Tangent(-coeffs());
+  }
+
+  template <typename OtherDerived>
+  Derived& operator+=(const TangentBase<OtherDerived>& other)
+  {
+    coeffs() += other.coeffs();
+    return derived();
+  }
+
+  template <typename OtherDerived>
+  Derived& operator-=(const TangentBase<OtherDerived>& other)
+  {
+    coeffs() -= other.coeffs();
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator+=(const Eigen::MatrixBase<MatrixDerived>& other)
+  {
+    coeffs() += other;
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator-=(const Eigen::MatrixBase<MatrixDerived>& other)
+  {
+    coeffs() -= other;
+    return derived();
+  }
+
+  Derived& operator*=(Scalar scalar)
+  {
+    coeffs() *= scalar;
+    return derived();
+  }
+
+  Derived& operator/=(Scalar scalar)
+  {
+    coeffs() /= scalar;
+    return derived();
+  }
+
+  Derived& set_identity();
+
+  Derived& set_random();
+
+  template <typename OtherDerived>
+  [[nodiscard]] Scalar dot(const TangentBase<OtherDerived>& other) const
+  {
+    return coeffs().dot(other.coeffs());
+  }
+
+  template <typename CotangentDerived>
+  [[nodiscard]] Scalar dot(const CotangentBase<CotangentDerived>& other) const
+  {
+    return coeffs().dot(other.coeffs());
+  }
+
+  [[nodiscard]] Scalar operator[](int i) const;
+
+  [[nodiscard]] Scalar& operator[](int i);
+
 protected:
   DART_LIE_GROUP_BASE_DERIVED
 };
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::Identity()
+{
+  // Assumed the default constructor creates the identity element
+  const static Tangent identity;
+  return identity;
+}
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::Random()
+{
+  return Tangent().set_random();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& TangentBase<Derived>::set_identity()
+{
+  coeffs().set_zero();
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& TangentBase<Derived>::set_random()
+{
+  coeffs().setRandom();
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::Scalar TangentBase<Derived>::operator[](
+    int i) const
+{
+  return coeffs()[i];
+}
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::Scalar& TangentBase<Derived>::operator[](int i)
+{
+  return coeffs()[i];
+}
 
 } // namespace dart::math

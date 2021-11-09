@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include "dart/common/macro.hpp"
+#include "dart/math/constant.hpp"
 #include "dart/math/lie_group/detail/cast.hpp"
 #include "dart/math/lie_group/detail/normalization.hpp"
 #include "dart/math/lie_group/detail/random_setter.hpp"
@@ -41,17 +43,17 @@ template <typename Derived>
 class LieGroupBase
 {
 public:
-  DART_LIE_GROUP_BASE_TYPES
+  DART_LIE_GROUP_BASE_TYPES;
 
   template <typename OtherScalar>
   using ScalarCastType =
       typename detail::ScalarCast<LieGroup, OtherScalar>::type;
 
   /// Creates an identity element
-  static LieGroup Identity();
+  [[nodiscard]] static LieGroup Identity();
 
   /// Creates a random element
-  static LieGroup Random();
+  [[nodiscard]] static LieGroup Random();
 
 protected:
   /// Default constructor
@@ -63,44 +65,45 @@ protected:
 public:
   DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(LieGroupBase)
 
+  template <typename OtherDerived>
+  [[nodiscard]] bool operator==(const LieGroupBase<OtherDerived>& other) const;
+
+  template <typename OtherDerived>
+  [[nodiscard]] LieGroup operator*(
+      const LieGroupBase<OtherDerived>& other) const;
+
+  [[nodiscard]] Scalar operator[](int i) const;
+
+  [[nodiscard]] Scalar& operator[](int i);
+
+  template <typename OtherDerived>
+  [[nodiscard]] bool is_approx(
+      const LieGroupBase<OtherDerived>& other,
+      const Scalar tol = eps<Scalar>()) const
+  {
+    DART_UNUSED(other, tol);
+    DART_NOT_IMPLEMENTED;
+    return false;
+  }
+
   Derived& set_identity();
 
   Derived& set_random();
 
-  [[nodiscard]] Derived inverse() const
+  [[nodiscard]] Derived inverse() const;
+
+  Derived& inverse_in_place();
+
+  template <typename OtherDerived>
+  [[nodiscard]] Tangent difference(
+      const LieGroupBase<OtherDerived>& other) const
   {
-    return derived().inverse();
+    DART_UNUSED(other);
+    DART_NOT_IMPLEMENTED;
+    return Tangent();
   }
 
-  Derived& inverse_in_place()
-  {
-    return derived().inverse_in_place();
-  }
-
-  // DART_LIE_GROUP_BASE_DATA(LieGroupData)
-  /** Returns the data of the drived class */
-  [[nodiscard]] const LieGroupData& coeffs() const
-  {
-    return derived().coeffs();
-  }
-
-  /** Returns the mutable data of the drived class */
-  [[nodiscard]] LieGroupData& coeffs()
-  {
-    return derived().coeffs();
-  }
-
-  /** Returns the pointer to the data of the drived class */
-  [[nodiscard]] const Scalar* data() const
-  {
-    return coeffs().data();
-  }
-
-  /** Returns the pointer to the mutable data of the drived class */
-  [[nodiscard]] Scalar* data()
-  {
-    return coeffs().data();
-  }
+  DART_LIE_GROUP_BASE_DATA(LieGroupData)
 
   /// Creates the group element with a different scalar type
   template <typename OtherScalar>
@@ -128,6 +131,39 @@ typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::Random()
 
 //==============================================================================
 template <typename Derived>
+template <typename OtherDerived>
+bool LieGroupBase<Derived>::operator==(
+    const LieGroupBase<OtherDerived>& other) const
+{
+  return is_approx(other);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::operator*(
+    const LieGroupBase<OtherDerived>& other) const
+{
+  return derived() * other.derived();
+}
+
+//==============================================================================
+template <typename Derived>
+typename LieGroupBase<Derived>::Scalar LieGroupBase<Derived>::operator[](
+    int i) const
+{
+  return coeffs()[i];
+}
+
+//==============================================================================
+template <typename Derived>
+typename LieGroupBase<Derived>::Scalar& LieGroupBase<Derived>::operator[](int i)
+{
+  return coeffs()[i];
+}
+
+//==============================================================================
+template <typename Derived>
 Derived& LieGroupBase<Derived>::set_identity()
 {
   // Assumed the default constructor creates the identity element
@@ -142,6 +178,20 @@ Derived& LieGroupBase<Derived>::set_random()
   detail::RandomSetter<typename Derived::Base>::run(derived());
   detail::NormalizationOperator<typename Derived::Base>::run(derived());
   return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived LieGroupBase<Derived>::inverse() const
+{
+  return derived().inverse();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& LieGroupBase<Derived>::inverse_in_place()
+{
+  return derived().inverse_in_place();
 }
 
 //==============================================================================

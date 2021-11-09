@@ -81,6 +81,20 @@ public:
 
   DART_LIE_GROUP_CONSTRUCTORS(SO3)
 
+  /** Copy constructor from LieGroupBase*/
+  template <typename OtherDerived>
+  SO3(const LieGroupBase<OtherDerived>& other) : m_data(other.coeffs())
+  {
+    /* Do nothing */
+  }
+
+  /** Move constructor from LieGroupBase */
+  template <typename OtherDerived>
+  SO3(LieGroupBase<OtherDerived>&& other) : m_data(std::move(other.coeffs()))
+  {
+    /* Do nothing */
+  }
+
   /// Constructs from quaternion
   template <typename QuatDerived>
   SO3(const Eigen::QuaternionBase<QuatDerived>& quat);
@@ -96,7 +110,7 @@ public:
 
   /// @{ @name Group operation
 
-  DART_LIE_GROUP_USE_BASE_GROUP_OPERATIONS
+  DART_LIE_GROUP_USE_BASE_GROUP_OPERATIONS;
 
   /// @}
 

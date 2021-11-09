@@ -59,7 +59,48 @@ public:
   DART_LIE_GROUP_USE_BASE_TYPES
 
   /// Default constructor
-  SO3Cotangent() = default;
+  SO3Cotangent() : m_data(CotangentData::Zero())
+  {
+    // Do nothing
+  }
+
+  DART_LIE_GROUP_CONSTRUCTORS(SO3Cotangent)
+
+  SO3Cotangent(Scalar x, Scalar y, Scalar z) : m_data(x, y, z)
+  {
+    // Do nothing
+  }
+
+  /** Copy constructor from LieGroupBase */
+  template <typename OtherDerived>
+  SO3Cotangent(const CotangentBase<OtherDerived>& other)
+    : m_data(other.coeffs())
+  {
+    /* Do nothing */
+  }
+
+  /** Move constructor from LieGroupBase */
+  template <typename OtherDerived>
+  SO3Cotangent(CotangentBase<OtherDerived>&& other)
+    : m_data(std::move(other.coeffs()))
+  {
+    /* Do nothing */
+  }
+
+  const CotangentData& coeffs() const
+  {
+    return m_data;
+  }
+
+  CotangentData& coeffs()
+  {
+    return m_data;
+  }
+
+  using Base::data;
+
+private:
+  CotangentData m_data;
 };
 
 DART_TEMPLATE_CLASS_SCALAR(SO3Cotangent)

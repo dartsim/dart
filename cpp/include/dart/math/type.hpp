@@ -185,6 +185,8 @@ template <typename Derived>
 class SO3TangentBase;
 template <typename Scalar, int Options = 0>
 class SO3Tangent;
+template <typename Derived>
+class SO3CotangentBase;
 template <typename Scalar, int Options = 0>
 class SO3Cotangent;
 
@@ -199,6 +201,8 @@ template <typename Derived>
 class SE3TangentBase;
 template <typename Scalar, int Options = 0>
 class SE3Tangent;
+template <typename Derived>
+class SE3CotangentBase;
 template <typename Scalar, int Options = 0>
 class SE3Cotangent;
 

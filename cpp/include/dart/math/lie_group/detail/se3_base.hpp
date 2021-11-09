@@ -68,18 +68,6 @@ public:
 
   /// @{ @name Group operations
 
-  [[nodiscard]] LieGroup inverse() const
-  {
-    const SO3<Scalar> r_inv = orientation().inverse();
-    return LieGroup(r_inv, -(r_inv * position()));
-  }
-
-  LieGroup& inverse_in_place()
-  {
-    derived() = inverse();
-    return derived();
-  }
-
   template <typename OtherDerived>
   [[nodiscard]] LieGroup operator*(const SE3Base<OtherDerived>& other) const
   {
@@ -95,6 +83,26 @@ public:
     return typename RDerived::LieGroup(orientation() * vector + position());
   }
 
+  [[nodiscard]] LieGroup inverse() const
+  {
+    const SO3<Scalar> r_inv = orientation().inverse();
+    return LieGroup(r_inv, -(r_inv * position()));
+  }
+
+  LieGroup& inverse_in_place()
+  {
+    derived() = inverse();
+    return derived();
+  }
+
+  [[nodiscard]] Tangent log(
+      Jacobian* jacobian, Scalar tolerance = eps<Scalar>()) const
+  {
+    DART_UNUSED(jacobian, tolerance);
+    DART_NOT_IMPLEMENTED;
+    return Tangent();
+  }
+
   /// @}
 
   //  EvalReturnType eval() const
@@ -107,77 +115,77 @@ public:
   //    return LieGroupNoAlias<Derived, SE3Base>(derived());
   //  }
 
-  Eigen::Map<const SO3<Scalar>> orientation() const;
+  [[nodiscard]] Eigen::Map<const SO3<Scalar>> orientation() const;
 
-  Eigen::Map<SO3<Scalar>> orientation();
+  [[nodiscard]] Eigen::Map<SO3<Scalar>> orientation();
 
-  Eigen::Map<const R3<Scalar>> position() const;
+  [[nodiscard]] Eigen::Map<const R3<Scalar>> position() const;
 
-  Eigen::Map<R3<Scalar>> position();
+  [[nodiscard]] Eigen::Map<R3<Scalar>> position();
 
-  Transformation to_transformation() const;
+  [[nodiscard]] Transformation to_transformation() const;
 
-  Eigen::Matrix<Scalar, 4, 4> to_transformation_matrix() const;
+  [[nodiscard]] Eigen::Matrix<Scalar, 4, 4> to_transformation_matrix() const;
 
-  Quaternion to_quaternion() const;
+  [[nodiscard]] Quaternion to_quaternion() const;
 
-  Rotation to_rotation() const;
+  [[nodiscard]] Rotation to_rotation() const;
 
-  Translation to_translation() const;
-
-  /// Returns the x component of the orientation part in quaternion.
-  Scalar quat_x() const;
-
-  /// Returns the y component of the orientation part in quaternion.
-  Scalar quat_y() const;
-
-  /// Returns the z component of the orientation part in quaternion.
-  Scalar quat_z() const;
-
-  /// Returns the w component of the orientation part in quaternion.
-  Scalar quat_w() const;
+  [[nodiscard]] Translation to_translation() const;
 
   /// Returns the x component of the orientation part in quaternion.
-  Scalar& quat_x();
+  [[nodiscard]] Scalar quat_x() const;
 
   /// Returns the y component of the orientation part in quaternion.
-  Scalar& quat_y();
+  [[nodiscard]] Scalar quat_y() const;
 
   /// Returns the z component of the orientation part in quaternion.
-  Scalar& quat_z();
+  [[nodiscard]] Scalar quat_z() const;
 
   /// Returns the w component of the orientation part in quaternion.
-  Scalar& quat_w();
+  [[nodiscard]] Scalar quat_w() const;
+
+  /// Returns the x component of the orientation part in quaternion.
+  [[nodiscard]] Scalar& quat_x();
+
+  /// Returns the y component of the orientation part in quaternion.
+  [[nodiscard]] Scalar& quat_y();
+
+  /// Returns the z component of the orientation part in quaternion.
+  [[nodiscard]] Scalar& quat_z();
+
+  /// Returns the w component of the orientation part in quaternion.
+  [[nodiscard]] Scalar& quat_w();
 
   /// Returns the x component of the position part.
-  Scalar x() const;
+  [[nodiscard]] Scalar x() const;
 
   /// Returns the y component of the position part.
-  Scalar y() const;
+  [[nodiscard]] Scalar y() const;
 
   /// Returns the z component of the position part.
-  Scalar z() const;
+  [[nodiscard]] Scalar z() const;
 
   /// Returns the x component of the position part.
-  Scalar& x();
+  [[nodiscard]] Scalar& x();
 
   /// Returns the y component of the position part.
-  Scalar& y();
+  [[nodiscard]] Scalar& y();
 
   /// Returns the z component of the position part.
-  Scalar& z();
+  [[nodiscard]] Scalar& z();
 
   using Base::coeffs;
   using Base::data;
 
 protected:
-  ConstQuaternionMap quaternion() const;
+  [[nodiscard]] const ConstQuaternionMap quaternion() const;
 
-  QuaternionMap quaternion();
+  [[nodiscard]] QuaternionMap quaternion();
 
-  ConstTranslationMap translation() const;
+  [[nodiscard]] const ConstTranslationMap translation() const;
 
-  TranslationMap translation();
+  [[nodiscard]] TranslationMap translation();
 
   using Base::derived;
 };
@@ -353,8 +361,8 @@ typename SE3Base<Derived>::Scalar& SE3Base<Derived>::z()
 
 //==============================================================================
 template <typename Derived>
-typename SE3Base<Derived>::ConstQuaternionMap SE3Base<Derived>::quaternion()
-    const
+const typename SE3Base<Derived>::ConstQuaternionMap
+SE3Base<Derived>::quaternion() const
 {
   return ConstQuaternionMap(data());
 }
@@ -368,8 +376,8 @@ typename SE3Base<Derived>::QuaternionMap SE3Base<Derived>::quaternion()
 
 //==============================================================================
 template <typename Derived>
-typename SE3Base<Derived>::ConstTranslationMap SE3Base<Derived>::translation()
-    const
+const typename SE3Base<Derived>::ConstTranslationMap
+SE3Base<Derived>::translation() const
 {
   return ConstTranslationMap(data() + 4);
 }

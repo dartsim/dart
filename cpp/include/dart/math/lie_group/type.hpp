@@ -81,7 +81,9 @@
   using CotangentData =                                                        \
       typename ::Eigen::internal::traits<Derived>::CotangentData;              \
                                                                                \
-  using Jacobian = typename ::Eigen::internal::traits<Derived>::Jacobian;
+  using Jacobian = typename ::Eigen::internal::traits<Derived>::Jacobian;      \
+                                                                               \
+  void _ANONYMOUS_FUNCTION_1()
 
 #define DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(X)                                \
   Derived& operator=(const X& other)                                           \
@@ -175,7 +177,7 @@
   using TangentData = Eigen::Matrix<Scalar, SpaceDim, 1>;                      \
                                                                                \
   using Cotangent = dart::math::X##Cotangent<Scalar, Options>;                 \
-  using CotangentData = Eigen::Matrix<Scalar, SpaceDim, 1>;                    \
+  using CotangentData = Eigen::Matrix<Scalar, 1, SpaceDim>;                    \
                                                                                \
   using Jacobian = Eigen::Matrix<Scalar, GroupDim, GroupDim, Options>;
 
@@ -219,7 +221,8 @@
 
 #define DART_LIE_GROUP_USE_BASE_GROUP_OPERATIONS                               \
   DART_LIE_GROUP_USE_BASE_GROUP_CONST_OPERATIONS                               \
-  using Base::inverse_in_place;
+  using Base::inverse_in_place;                                                \
+  void _ANONYMOUS_FUNCTION_9()
 
 #define DART_LIE_GROUP_USE_BASE_OPERATORS                                      \
   using Base::operator=;                                                       \
@@ -248,20 +251,6 @@
   /** Move constructor from X##Base */                                         \
   template <typename OtherDerived>                                             \
   X(X##Base<OtherDerived>&& other) : m_data(std::move(other.coeffs()))         \
-  {                                                                            \
-    /* Do nothing */                                                           \
-  }                                                                            \
-                                                                               \
-  /** Copy constructor from LieGroupBase*/                                     \
-  template <typename OtherDerived>                                             \
-  X(const LieGroupBase<OtherDerived>& other) : m_data(other.coeffs())          \
-  {                                                                            \
-    /* Do nothing */                                                           \
-  }                                                                            \
-                                                                               \
-  /** Move constructor from LieGroupBase */                                    \
-  template <typename OtherDerived>                                             \
-  X(LieGroupBase<OtherDerived>&& other) : m_data(std::move(other.coeffs()))    \
   {                                                                            \
     /* Do nothing */                                                           \
   }                                                                            \

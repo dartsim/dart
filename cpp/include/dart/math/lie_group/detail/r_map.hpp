@@ -40,7 +40,6 @@ struct traits<Eigen::Map<dart::math::R<Scalar_, Dim, Options_>>>
 {
   using Base = traits<dart::math::R<Scalar_, Dim, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
@@ -54,7 +53,6 @@ struct traits<Eigen::Map<const dart::math::R<Scalar_, Dim, Options_>>>
 {
   using Base = traits<const dart::math::R<Scalar_, Dim, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
@@ -69,7 +67,6 @@ struct traits<Eigen::Map<dart::math::R<Scalar_, Eigen::Dynamic, Options_>>>
 {
   using Base = traits<dart::math::R<Scalar_, Eigen::Dynamic, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
@@ -85,7 +82,6 @@ struct traits<
 {
   using Base = traits<const dart::math::R<Scalar_, Eigen::Dynamic, Options_>>;
 
-  // DART_LIE_GROUP_USE_BASE_TYPES
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
