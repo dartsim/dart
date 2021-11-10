@@ -39,7 +39,7 @@ public:
   using This = RCotangentBase<Derived>;
   using Base = CotangentBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 };
 
 } // namespace dart::math

@@ -43,7 +43,9 @@ struct traits<::dart::math::R<Scalar_, Dim, Options_>>
   static constexpr int MatrixDim = Dim + 1;
   static constexpr int DataDim = Dim;
 
-  DART_LIE_GROUP_TRAITS_TYPES_FOR_R(R)
+  DART_LIE_GROUP_TRAITS_TYPES_FOR_R(R);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, 1>;
 };
 
 //==============================================================================
@@ -56,7 +58,9 @@ struct traits<::dart::math::R<Scalar_, Eigen::Dynamic, Options_>>
   static constexpr int MatrixDim = Eigen::Dynamic;
   static constexpr int DataDim = Eigen::Dynamic;
 
-  DART_LIE_GROUP_TRAITS_TYPES_FOR_R(R)
+  DART_LIE_GROUP_TRAITS_TYPES_FOR_R(R);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, 1>;
 };
 
 } // namespace Eigen::internal
@@ -72,14 +76,12 @@ public:
   using Base = RBase<R<Scalar_, N_, Options_>>;
   using This = R<Scalar_, N_, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
-
-  static R Zero();
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   /// Default constructor
   R();
 
-  DART_LIE_GROUP_CONSTRUCTORS(R)
+  DART_LIE_GROUP_CONSTRUCTORS(R);
 
   /** Copy constructor from LieGroupBase*/
   template <typename OtherDerived>
@@ -98,19 +100,13 @@ public:
   /// Destructor
   ~R() = default;
 
-  DART_LIE_GROUP_ASSIGN_OPERATORS(R)
+  DART_LIE_GROUP_ASSIGN_OPERATORS(R);
 
   template <typename OtherDerived>
   bool operator!=(const RBase<OtherDerived>& other) const
   {
     return m_data != other.vector();
   }
-
-  R operator-() const;
-
-  R operator+(const R& other) const;
-
-  R operator-(const R& other) const;
 
   constexpr int dimension() const;
 
@@ -119,12 +115,12 @@ public:
     return this->is_zero();
   }
 
-  const LieGroupData& coeffs() const
+  const DataType& coeffs() const
   {
     return m_data;
   }
 
-  LieGroupData& coeffs()
+  DataType& coeffs()
   {
     return m_data;
   }
@@ -134,7 +130,7 @@ public:
 protected:
   using Base::derived;
 
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 //==============================================================================
@@ -147,22 +143,19 @@ public:
   using Base = RBase<R<Scalar_, Eigen::Dynamic>>;
   using This = R<Scalar_, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
-
-  /// Default constructor
-  R();
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   /// Constructor
   ///
-  /// @param[in] dim: Dimension of this group.
-  explicit R(int dim);
+  /// @param[in] size: Dimension of this group.
+  explicit R(int size = 0);
 
-  DART_LIE_GROUP_CONSTRUCTORS(R)
+  DART_LIE_GROUP_CONSTRUCTORS(R);
 
   /// Destructor
   ~R() = default;
 
-  DART_LIE_GROUP_ASSIGN_OPERATORS(R)
+  DART_LIE_GROUP_ASSIGN_OPERATORS(R);
 
   //  /// Assign operator
   //  template <typename Derived>
@@ -172,22 +165,18 @@ public:
   //  template <typename Derived>
   //  R& operator=(Eigen::MatrixBase<Derived>&& matrix);
 
-  const R& operator+() const;
-
-  R operator-() const;
-
   int dimension() const;
 
   //  const Vector& vector() const;
 
   //  Vector& mutable_vector();
 
-  const LieGroupData& coeffs() const
+  const DataType& coeffs() const
   {
     return m_data;
   }
 
-  LieGroupData& coeffs()
+  DataType& coeffs()
   {
     return m_data;
   }
@@ -197,45 +186,15 @@ public:
 protected:
   using Base::derived;
 
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 //==============================================================================
 template <typename Scalar, int N, int Options>
-R<Scalar, N, Options> R<Scalar, N, Options>::Zero()
-{
-  return R<Scalar, N, Options>(Eigen::Matrix<Scalar, N, 1, Options>::Zero());
-}
-
-//==============================================================================
-template <typename Scalar, int N, int Options>
-R<Scalar, N, Options>::R() : m_data(LieGroupData::Zero())
+R<Scalar, N, Options>::R() : m_data(DataType::Zero())
 {
   // Do nothing
 }
-
-//==============================================================================
-template <typename Scalar, int N, int Options>
-R<Scalar, N, Options> R<Scalar, N, Options>::operator-() const
-{
-  return R<Scalar, N, Options>(-m_data);
-}
-
-//==============================================================================
-// template <typename Scalar, int N, int Options>
-// R<Scalar, N, Options> R<Scalar, N, Options>::operator+(
-//    const R<Scalar, N, Options>& other) const
-//{
-//  return R<Scalar, N, Options>(m_data + other.m_data);
-//}
-
-//==============================================================================
-// template <typename Scalar, int N, int Options>
-// R<Scalar, N, Options> R<Scalar, N, Options>::operator-(
-//    const R<Scalar, N, Options>& other) const
-//{
-//  return R<Scalar, N, Options>(m_data - other.m_data);
-//}
 
 //==============================================================================
 template <typename Scalar, int N, int Options>
@@ -246,32 +205,9 @@ constexpr int R<Scalar, N, Options>::dimension() const
 
 //==============================================================================
 template <typename Scalar, int Options>
-R<Scalar, Eigen::Dynamic, Options>::R() : m_data(LieGroupData())
+R<Scalar, Eigen::Dynamic, Options>::R(int size) : m_data(DataType::Zero(size))
 {
   // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar, int Options>
-R<Scalar, Eigen::Dynamic, Options>::R(int dim) : m_data(LieGroupData::Zero(dim))
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar, int Options>
-const R<Scalar, Eigen::Dynamic, Options>&
-R<Scalar, Eigen::Dynamic, Options>::operator+() const
-{
-  return *this;
-}
-
-//==============================================================================
-template <typename Scalar, int Options>
-R<Scalar, Eigen::Dynamic, Options>
-R<Scalar, Eigen::Dynamic, Options>::operator-() const
-{
-  return R<Scalar, Eigen::Dynamic, Options>(m_data);
 }
 
 //==============================================================================

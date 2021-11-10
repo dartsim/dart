@@ -23,8 +23,11 @@ target_include_directories(
 
 target_link_libraries(
   ${pybind_module}
-  PUBLIC ${PROJECT_NAME}${DART_VERSION_MAJOR}-common
-         ${PROJECT_NAME}${DART_VERSION_MAJOR}-math ${PYTHON_LIBRARIES}
+  PUBLIC
+    ${PROJECT_NAME}${DART_VERSION_MAJOR}-common
+    ${PROJECT_NAME}${DART_VERSION_MAJOR}-math
+    ${PROJECT_NAME}${DART_VERSION_MAJOR}-multibody
+    ${PYTHON_LIBRARIES}
 )
 
 # Remove debug postfix for dartpy
@@ -50,4 +53,4 @@ add_custom_target(
   DEPENDS ${install_dartpy_deps}
 )
 
- dart_clang_format_add(${dartpy_headers} ${dartpy_sources})
+dart_clang_format_add(${dartpy_headers} ${dartpy_sources})

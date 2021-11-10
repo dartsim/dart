@@ -39,7 +39,7 @@ public:
   using This = RTangentBase<Derived>;
   using Base = TangentBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 };
 
 } // namespace dart::math

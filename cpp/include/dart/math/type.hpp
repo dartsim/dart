@@ -176,6 +176,11 @@ DART_MATH_REAL_VECTOR_SPACE(4);
 DART_MATH_REAL_VECTOR_SPACE(5);
 DART_MATH_REAL_VECTOR_SPACE(6);
 
+template <typename Derived>
+class TangentBase;
+template <typename Derived>
+class CotangentBase;
+
 // Forward declarations of SO3 types
 template <typename Scalar, int Options = 0>
 class SO3;

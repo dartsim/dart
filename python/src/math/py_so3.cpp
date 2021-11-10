@@ -43,25 +43,37 @@ void py_so3(py::module& m)
   auto so3 = py::class_<math::SO3d>(m, "SO3")
                  .def(py::init<>())
                  .def("set_identity", &math::SO3d::set_identity)
+                 .def(
+                     "is_identity",
+                     &math::SO3d::is_identity,
+                     py::arg("tolerance") = math::eps<double>())
                  .def("set_random", &math::SO3d::set_random)
+                 .def("inverse", &math::SO3d::inverse)
                  .def_static("Identity", &math::SO3d::Identity)
                  .def_static("Random", &math::SO3d::Random);
 
   auto so3_algebra = py::class_<math::SO3Algebrad>(m, "SO3Algebra")
                          .def(py::init<>())
-                         .def_static("Identity", &math::SO3Algebrad::Identity)
+                         .def_static("Zero", &math::SO3Algebrad::Zero)
                          .def_static("Random", &math::SO3Algebrad::Random);
 
   auto so3_tangent = py::class_<math::SO3Tangentd>(m, "SO3Tangent")
                          .def(py::init<>())
-                         .def_static("Identity", &math::SO3Tangentd::Identity)
+                         .def(
+                             "is_zero",
+                             &math::SO3Tangentd::is_zero,
+                             py::arg("tolerance") = math::eps<double>())
+                         .def_static("Zero", &math::SO3Tangentd::Zero)
                          .def_static("Random", &math::SO3Tangentd::Random);
 
-  auto so3_cotangent
-      = py::class_<math::SO3Cotangentd>(m, "SO3Cotangent")
-            .def(py::init<>())
-            .def_static("Identity", &math::SO3Cotangentd::Identity)
-            .def_static("Random", &math::SO3Cotangentd::Random);
+  auto so3_cotangent = py::class_<math::SO3Cotangentd>(m, "SO3Cotangent")
+                           .def(py::init<>())
+                           .def(
+                               "is_zero",
+                               &math::SO3Cotangentd::is_zero,
+                               py::arg("tolerance") = math::eps<double>())
+                           .def_static("Zero", &math::SO3Cotangentd::Zero)
+                           .def_static("Random", &math::SO3Cotangentd::Random);
 
   so3.attr("Algebra") = so3_algebra;
   so3.attr("Tangent") = so3_tangent;

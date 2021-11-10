@@ -47,7 +47,9 @@ struct traits<dart::math::SE3<Scalar_, Options_>>
   static constexpr int DataDim = traits<dart::math::SO3<Scalar_>>::DataDim
                                  + traits<dart::math::R3<Scalar_>>::DataDim;
 
-  DART_LIE_GROUP_TRAITS_TYPES(SE3)
+  DART_LIE_GROUP_TRAITS_TYPES(SE3);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, 1>;
 };
 
 } // namespace Eigen::internal
@@ -62,7 +64,7 @@ public:
   using Base = SE3Base<SE3<Scalar_, Options_>>;
   using This = SE3<Scalar_, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = typename Base::Quaternion;
   using QuaternionMap = typename Base::QuaternionMap;
@@ -78,18 +80,18 @@ public:
 
   //  using EvalReturnType = typename Base::EvalReturnType;
 
-  //  template <typename DerivedA, typename DerivedB>
-  //  static Tangent Ad(
-  //      const SE3Base<DerivedA>& T, const SE3TangentBase<DerivedB>& V);
+  template <typename DerivedA, typename DerivedB>
+  static Tangent Ad(
+      const SE3Base<DerivedA>& T, const SE3TangentBase<DerivedB>& V);
 
-  //  template <typename DerivedA, typename DerivedB>
-  //  static Tangent Ad_R(
-  //      const SE3Base<DerivedA>& T, const SE3TangentBase<DerivedB>& V);
+  template <typename DerivedA, typename DerivedB>
+  static Tangent Ad_R(
+      const SE3Base<DerivedA>& T, const SE3TangentBase<DerivedB>& V);
 
   /// Default constructor
   SE3();
 
-  DART_LIE_GROUP_CONSTRUCTORS(SE3)
+  DART_LIE_GROUP_CONSTRUCTORS(SE3);
 
   /** Copy constructor from LieGroupBase*/
   template <typename OtherDerived>
@@ -104,12 +106,6 @@ public:
   {
     /* Do nothing */
   }
-
-  //  /// Constructs from orientation and position
-  //  SE3(const SO3<Scalar>& orientation, const R3<Scalar>& position);
-
-  //  /// Constructs from orientation and position
-  //  SE3(SO3<Scalar>&& orientation, R3<Scalar>&& position);
 
   /// Constructs from orientation and position from SO3Derived and RDerived.
   template <typename SO3Derived, typename RDerived>
@@ -154,51 +150,7 @@ public:
   /// Destructor
   ~SE3() = default;
 
-  DART_LIE_GROUP_ASSIGN_OPERATORS(SE3)
-
-  /// Assign operator for Eigen::Isometry3
-  SE3& operator=(
-      const Eigen::Transform<Scalar, 3, Eigen::Isometry, Options>& tf);
-
-  /// Move operator for Eigen::Isometry3
-  SE3& operator=(Eigen::Transform<Scalar, 3, Eigen::Isometry, Options>&& tf);
-
-  //  /// Transforms a 3D point
-  //  R3<Scalar> operator*(const R3<Scalar>& position) const;
-
-  //  SE3Algebra<Scalar, Options> operator*(
-  //      const SE3Algebra<Scalar, Options>& dx) const;
-
-  //  SE3Inverse<Scalar, Options> inverse() const;
-
-  //  SE3& inverse_in_place();
-
-  //  SE3& rotate(const SO3<Scalar, Options>& orientation);
-
-  //  bool is_identity() const
-  //  {
-  //    if (!m_position.is_zero()) {
-  //      return false;
-  //    }
-
-  //    if (!m_orientation.is_identity()) {
-  //      return false;
-  //    }
-
-  //    return true;
-  //  }
-
-  //  Tangent log(
-  //      Jacobian* jacobian = nullptr, Scalar tolerance = eps<Scalar>()) const;
-
-  //  Tangent ad(const Tangent& V) const;
-
-  //  Jacobian ad_matrix() const;
-
-  //  const EvalReturnType& eval() const
-  //  {
-  //    return *this;
-  //  }
+  DART_LIE_GROUP_ASSIGN_OPERATORS(SE3);
 
   /// @{ @name Group operation
 
@@ -211,9 +163,9 @@ public:
   using Base::to_transformation_matrix;
   using Base::to_translation;
 
-  const LieGroupData& coeffs() const;
+  const DataType& coeffs() const;
 
-  LieGroupData& coeffs();
+  DataType& coeffs();
 
   using Base::data;
 
@@ -222,34 +174,61 @@ protected:
   using Base::quaternion;
   using Base::translation;
 
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 DART_TEMPLATE_CLASS_SCALAR(SE3)
 
 //==============================================================================
 template <typename Scalar, int Options>
-SE3<Scalar, Options>::SE3() : m_data(LieGroupData::Zero())
+template <typename DerivedA, typename DerivedB>
+typename SE3<Scalar, Options>::Tangent SE3<Scalar, Options>::Ad(
+    const SE3Base<DerivedA>& T, const SE3TangentBase<DerivedB>& V)
 {
-  // Do nothing
+  const auto& orientation = T.orientation();
+  const auto& position = T.position();
+
+  // Using rotation matrix is more efficient when multiplying 3d vector more
+  // than once
+  const Eigen::Matrix<Scalar, 3, 3> rotation
+      = orientation.to_quaternion().toRotationMatrix();
+  const auto& translation = position.coeffs();
+
+  typename Tangent::DataType data;
+  data.template head<3>().noalias() = rotation * V.angular_coeffs();
+  data.template tail<3>().noalias()
+      = rotation * V.linear_coeffs()
+        + translation.cross(data.template head<3>());
+
+  return Tangent(std::move(data));
 }
 
-////==============================================================================
-// template <typename Scalar, int Options>
-// SE3<Scalar, Options>::SE3(
-//    const SO3<Scalar>& orientation, const R3<Scalar>& position)
-//  : SE3(orientation.coeffs(), position.coeffs())
-//{
-//  // Do nothing
-//}
+//==============================================================================
+template <typename Scalar, int Options>
+template <typename DerivedA, typename DerivedB>
+typename SE3<Scalar, Options>::Tangent SE3<Scalar, Options>::Ad_R(
+    const SE3Base<DerivedA>& T, const SE3TangentBase<DerivedB>& V)
+{
+  const auto& orientation = T.orientation();
 
-////==============================================================================
-// template <typename Scalar, int Options>
-// SE3<Scalar, Options>::SE3(SO3<Scalar>&& orientation, R3<Scalar>&& position)
-//  : SE3(std::move(orientation.coeffs()), std::move(position.coeffs()))
-//{
-//  // Do nothing
-//}
+  // Using rotation matrix is more efficient when multiplying 3d vector more
+  // than once
+  const Eigen::Matrix<Scalar, 3, 3> rotation
+      = orientation.to_quaternion().toRotationMatrix();
+
+  typename Tangent::DataType data;
+  data.template head<3>().noalias() = rotation * V.angular_coeffs();
+  data.template tail<3>().noalias() = rotation * V.linear_coeffs();
+
+  return Tangent(std::move(data));
+}
+
+//==============================================================================
+template <typename Scalar, int Options>
+SE3<Scalar, Options>::SE3() : m_data(DataType::Zero())
+{
+  this->quat_w() = 1;
+}
 
 //==============================================================================
 template <typename Scalar, int Options>
@@ -386,33 +365,15 @@ SE3<Scalar, Options>::SE3(Scalar x, Scalar y, Scalar z)
 
 //==============================================================================
 template <typename Scalar, int Options>
-SE3<Scalar, Options>& SE3<Scalar, Options>::operator=(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry, Options>& tf)
-{
-  *this = SE3(tf);
-  return *this;
-}
-
-//==============================================================================
-template <typename Scalar, int Options>
-SE3<Scalar, Options>& SE3<Scalar, Options>::operator=(
-    Eigen::Transform<Scalar, 3, Eigen::Isometry, Options>&& tf)
-{
-  *this = SE3(std::move(tf));
-  return *this;
-}
-
-//==============================================================================
-template <typename Scalar, int Options>
-const typename SE3<Scalar, Options>::LieGroupData&
-SE3<Scalar, Options>::coeffs() const
+const typename SE3<Scalar, Options>::DataType& SE3<Scalar, Options>::coeffs()
+    const
 {
   return m_data;
 }
 
 //==============================================================================
 template <typename Scalar, int Options>
-typename SE3<Scalar, Options>::LieGroupData& SE3<Scalar, Options>::coeffs()
+typename SE3<Scalar, Options>::DataType& SE3<Scalar, Options>::coeffs()
 {
   return m_data;
 }

@@ -30,7 +30,7 @@
 #include <Eigen/Geometry>
 
 #include "dart/math/lie_group/detail/lie_group_base.hpp"
-#include "dart/math/lie_group/type.hpp"
+#include "dart/math/lie_group/detail/macro.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {
@@ -43,7 +43,7 @@ public:
   using This = SO3Base<Derived>;
   using Base = LieGroupBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = math::Quaternion<Scalar, Options>;
   using QuaternionMap = Eigen::Map<Quaternion>;
@@ -58,7 +58,7 @@ public:
   using Transformation
       = Eigen::Transform<Scalar, SpaceDim, Eigen::Isometry, Options>;
 
-  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(SO3Base)
+  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(SO3Base);
 
   /// @{ @name Group operations
 
@@ -74,33 +74,34 @@ public:
   Derived& inverse_in_place();
 
   [[nodiscard]] Tangent log(
-      Jacobian* jacobian = nullptr, Scalar tolerance = eps<Scalar>()) const
-  {
-    const Scalar theta = 2 * std::acos(w());
-    DART_ASSERT(!std::isnan(theta));
-
-    typename Tangent::TangentData data;
-    if (theta < tolerance) {
-      data.noalias() = 2 * quaternion().vec();
-    } else {
-      DART_ASSERT(std::sin(0.5 * theta));
-      data.noalias() = theta * quaternion().vec() / std::sin(0.5 * theta);
-    }
-
-    const Tangent out = Tangent(std::move(data));
-
-    DART_NOT_IMPLEMENTED;
-    DART_UNUSED(jacobian, tolerance);
-    if (jacobian) {
-      (*jacobian) = out.left_jacobian(tolerance);
-    }
-
-    return out;
-  }
+      Jacobian* jacobian = nullptr, Scalar tolerance = eps<Scalar>()) const;
 
   /// @}
 
+  void set_from_quaternion(Scalar w, Scalar x, Scalar y, Scalar z);
+
+  void set_from_quaternion(const Eigen::Quaternion<Scalar>& q);
+
   /// @{ @name Euler angles
+
+  /// @return Euler angles in the ranges [0,pi]x[-pi,pi]x[-pi,pi]
+  [[nodiscard]] Eigen::Matrix<Scalar, 3, 1> rpy() const;
+
+  void set_from_euler_angles_intrinsic(
+      Scalar angle0,
+      Scalar angle1,
+      Scalar angle2,
+      int axis0 = 0,
+      int axis1 = 1,
+      int axis2 = 2);
+
+  void set_from_euler_angles_extrinsic(
+      Scalar angle0,
+      Scalar angle1,
+      Scalar angle2,
+      int axis0 = 0,
+      int axis1 = 1,
+      int axis2 = 2);
 
   /// @return Euler angles in the ranges [0,pi]x[-pi,pi]x[-pi,pi]
   [[nodiscard]] Eigen::Matrix<Scalar, 3, 1> euler_angles(
@@ -117,36 +118,33 @@ public:
   template <typename MatrixDrived>
   void set_from_rpy(const Eigen::MatrixBase<MatrixDrived>& angles);
 
-  /// @return Euler angles in the ranges [0,pi]x[-pi,pi]x[-pi,pi]
-  [[nodiscard]] Eigen::Matrix<Scalar, 3, 1> rpy() const;
-
   /// @}
 
   void normalize();
 
   /// Returns the w component of the in quaternion.
-  Scalar w() const;
+  [[nodiscard]] Scalar w() const;
 
   /// Returns the x component of the in quaternion.
-  Scalar x() const;
+  [[nodiscard]] Scalar x() const;
 
   /// Returns the y component of the in quaternion.
-  Scalar y() const;
+  [[nodiscard]] Scalar y() const;
 
   /// Returns the z component of the in quaternion.
-  Scalar z() const;
+  [[nodiscard]] Scalar z() const;
 
   /// Returns the w component of the in quaternion.
-  Scalar& w();
+  [[nodiscard]] Scalar& w();
 
   /// Returns the x component of the in quaternion.
-  Scalar& x();
+  [[nodiscard]] Scalar& x();
 
   /// Returns the y component of the in quaternion.
-  Scalar& y();
+  [[nodiscard]] Scalar& y();
 
   /// Returns the z component of the in quaternion.
-  Scalar& z();
+  [[nodiscard]] Scalar& z();
 
   using Base::coeffs;
   using Base::data;
@@ -155,11 +153,11 @@ public:
 
   Rotation to_rotation_matrix() const;
 
-protected:
   const ConstQuaternionMap quaternion() const;
 
   QuaternionMap quaternion();
 
+protected:
   using Base::derived;
 };
 
@@ -195,6 +193,51 @@ Derived& SO3Base<Derived>::inverse_in_place()
 {
   quaternion() = quaternion().conjugate();
   return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(
+    Jacobian* jacobian, Scalar tolerance) const
+{
+  const Scalar theta = 2 * std::acos(w());
+  DART_ASSERT(!std::isnan(theta));
+
+  typename Tangent::DataType data;
+  if (theta < tolerance) {
+    data.noalias() = 2 * quaternion().vec();
+  } else {
+    DART_ASSERT(std::sin(0.5 * theta));
+    data.noalias() = theta * quaternion().vec() / std::sin(0.5 * theta);
+  }
+
+  const Tangent out = Tangent(std::move(data));
+
+  if (jacobian) {
+    (*jacobian) = out.left_jacobian(tolerance);
+  }
+
+  return out;
+}
+
+//==============================================================================
+template <typename Derived>
+void SO3Base<Derived>::set_from_quaternion(
+    Scalar w, Scalar x, Scalar y, Scalar z)
+{
+  w() = w;
+  x() = x;
+  y() = y;
+  z() = z;
+  normalize();
+}
+
+//==============================================================================
+template <typename Derived>
+void SO3Base<Derived>::set_from_quaternion(const Eigen::Quaternion<Scalar>& q)
+{
+  coeffs() = q.coeffs();
+  normalize();
 }
 
 //==============================================================================
@@ -236,6 +279,7 @@ void SO3Base<Derived>::set_from_rpy(
           angles[1], Eigen::Matrix<Scalar, 3, 1>::UnitY())
       * Eigen::AngleAxis<Scalar>(
           angles[0], Eigen::Matrix<Scalar, 3, 1>::UnitZ()));
+  normalize();
 }
 
 //==============================================================================
@@ -244,6 +288,41 @@ Eigen::Matrix<typename SO3Base<Derived>::Scalar, 3, 1> SO3Base<Derived>::rpy()
     const
 {
   return euler_angles_intrinsic(2, 1, 0);
+}
+
+//==============================================================================
+template <typename Derived>
+void SO3Base<Derived>::set_from_euler_angles_intrinsic(
+    Scalar angle0,
+    Scalar angle1,
+    Scalar angle2,
+    int axis0,
+    int axis1,
+    int axis2)
+{
+  Eigen::Matrix<Scalar, 3, 1> a0 = Eigen::Matrix<Scalar, 3, 1>::Zero();
+  Eigen::Matrix<Scalar, 3, 1> a1 = Eigen::Matrix<Scalar, 3, 1>::Zero();
+  Eigen::Matrix<Scalar, 3, 1> a2 = Eigen::Matrix<Scalar, 3, 1>::Zero();
+  a0(axis0) = 1;
+  a1(axis1) = 1;
+  a2(axis2) = 1;
+  set_from_quaternion(
+      Eigen::AngleAxis<Scalar>(angle0, a0)
+      * Eigen::AngleAxis<Scalar>(angle1, a1)
+      * Eigen::AngleAxis<Scalar>(angle2, a2));
+}
+
+//==============================================================================
+template <typename Derived>
+void SO3Base<Derived>::set_from_euler_angles_extrinsic(
+    Scalar angle0,
+    Scalar angle1,
+    Scalar angle2,
+    int axis0,
+    int axis1,
+    int axis2)
+{
+  set_from_euler_angles_intrinsic(angle2, angle1, angle0, axis2, axis1, axis0);
 }
 
 //==============================================================================

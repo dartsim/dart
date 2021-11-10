@@ -30,9 +30,9 @@
 #include "dart/common/macro.hpp"
 #include "dart/math/constant.hpp"
 #include "dart/math/lie_group/detail/cast.hpp"
+#include "dart/math/lie_group/detail/macro.hpp"
 #include "dart/math/lie_group/detail/normalization.hpp"
 #include "dart/math/lie_group/detail/random_setter.hpp"
-#include "dart/math/lie_group/type.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {
@@ -63,7 +63,7 @@ protected:
   ~LieGroupBase() = default;
 
 public:
-  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(LieGroupBase)
+  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(LieGroupBase);
 
   template <typename OtherDerived>
   [[nodiscard]] bool operator==(const LieGroupBase<OtherDerived>& other) const;
@@ -76,19 +76,16 @@ public:
 
   [[nodiscard]] Scalar& operator[](int i);
 
-  template <typename OtherDerived>
-  [[nodiscard]] bool is_approx(
-      const LieGroupBase<OtherDerived>& other,
-      const Scalar tol = eps<Scalar>()) const
-  {
-    DART_UNUSED(other, tol);
-    DART_NOT_IMPLEMENTED;
-    return false;
-  }
-
   Derived& set_identity();
 
   Derived& set_random();
+
+  template <typename OtherDerived>
+  [[nodiscard]] bool is_approx(
+      const LieGroupBase<OtherDerived>& other,
+      const Scalar tolerance = eps<Scalar>()) const;
+
+  [[nodiscard]] bool is_identity(const Scalar tolerance = eps<Scalar>()) const;
 
   [[nodiscard]] Derived inverse() const;
 
@@ -103,14 +100,14 @@ public:
     return Tangent();
   }
 
-  DART_LIE_GROUP_BASE_DATA(LieGroupData)
+  DART_LIE_GROUP_BASE_DATA(DataType);
 
   /// Creates the group element with a different scalar type
   template <typename OtherScalar>
   [[nodiscard]] ScalarCastType<OtherScalar> cast() const;
 
 protected:
-  DART_LIE_GROUP_BASE_DERIVED
+  DART_LIE_GROUP_BASE_DERIVED;
 };
 
 //==============================================================================
@@ -178,6 +175,22 @@ Derived& LieGroupBase<Derived>::set_random()
   detail::RandomSetter<typename Derived::Base>::run(derived());
   detail::NormalizationOperator<typename Derived::Base>::run(derived());
   return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+bool LieGroupBase<Derived>::is_approx(
+    const LieGroupBase<OtherDerived>& other, const Scalar tolerance) const
+{
+  return (other.inverse() * derived()).log().is_zero(tolerance);
+}
+
+//==============================================================================
+template <typename Derived>
+bool LieGroupBase<Derived>::is_identity(const Scalar tolerance) const
+{
+  return is_approx(LieGroup::Identity(), tolerance);
 }
 
 //==============================================================================

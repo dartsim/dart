@@ -39,7 +39,7 @@ public:
   using This = SO3AlgebraBase<Derived>;
   using Base = LieAlgebraBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = math::Quaternion<Scalar, Options>;
   using QuaternionMap = Eigen::Map<Quaternion>;

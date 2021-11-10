@@ -39,9 +39,11 @@ struct traits<dart::math::SO3Algebra<Scalar_, Options_>>
   static constexpr int SpaceDim = 3;
   static constexpr int GroupDim = 3;
   static constexpr int MatrixDim = 3;
-  static constexpr int DataDim = 4;
+  static constexpr int DataDim = 3;
 
-  DART_LIE_GROUP_TRAITS_TYPES(SO3)
+  DART_LIE_GROUP_TRAITS_TYPES(SO3);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, DataDim>;
 };
 
 } // namespace Eigen::internal
@@ -56,19 +58,19 @@ public:
   using Base = SO3AlgebraBase<SO3Algebra<Scalar_, Options_>>;
   using This = SO3Algebra<Scalar_, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = typename Base::Quaternion;
   using QuaternionMap = typename Base::QuaternionMap;
   using ConstQuaternionMap = typename Base::ConstQuaternionMap;
 
   /// Default constructor
-  SO3Algebra() : m_data(LieAlgebraData::Zero())
+  SO3Algebra() : m_data(DataType::Zero())
   {
     // Do nothing
   }
 
-  DART_LIE_GROUP_CONSTRUCTORS(SO3Algebra)
+  DART_LIE_GROUP_CONSTRUCTORS(SO3Algebra);
 
   /** Copy constructor from LieAlgebraBase */
   template <typename OtherDerived>
@@ -85,13 +87,13 @@ public:
     /* Do nothing */
   }
 
-  const LieAlgebraData& coeffs() const
+  const DataType& coeffs() const
   {
     return m_data;
   }
   // TODO(JS): Rename to matrix()
 
-  LieAlgebraData& coeffs()
+  DataType& coeffs()
   {
     return m_data;
   }
@@ -99,7 +101,7 @@ public:
   using Base::data;
 
 private:
-  LieAlgebraData m_data;
+  DataType m_data;
 };
 
 DART_TEMPLATE_CLASS_SCALAR(SO3Algebra)

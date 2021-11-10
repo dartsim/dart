@@ -43,7 +43,7 @@ struct traits<Eigen::Map<dart::math::SO3Cotangent<Scalar_, Options_>>>
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
-  using CotangentData = Eigen::Map<Eigen::Matrix<Scalar, DataDim, 1>, Options>;
+  using DataType = Eigen::Map<Eigen::Matrix<Scalar, DataDim, 1>, Options>;
 };
 
 //==============================================================================
@@ -56,8 +56,7 @@ struct traits<Eigen::Map<const dart::math::SO3Cotangent<Scalar_, Options_>>>
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
-  using CotangentData
-      = Eigen::Map<const Eigen::Matrix<Scalar, DataDim, 1>, Options>;
+  using DataType = Eigen::Map<const Eigen::Matrix<Scalar, DataDim, 1>, Options>;
 };
 
 } // namespace internal
@@ -73,7 +72,7 @@ public:
       Map<dart::math::SO3Cotangent<Scalar_, Options_>, Options_>>;
   using This = Map<dart::math::SO3Cotangent<Scalar_, Options_>, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   /// Constructor
   explicit Map(Scalar* data) : m_data(data)
@@ -81,20 +80,20 @@ public:
     // Do nohting
   }
 
-  DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(SO3Cotangent)
+  DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(SO3Cotangent);
 
-  [[nodiscard]] CotangentData& coeffs()
+  [[nodiscard]] DataType& coeffs()
   {
     return m_data;
   }
 
-  [[nodiscard]] const CotangentData& coeffs() const
+  [[nodiscard]] const DataType& coeffs() const
   {
     return m_data;
   }
 
 private:
-  CotangentData m_data;
+  DataType m_data;
 };
 
 //==============================================================================
@@ -108,7 +107,7 @@ public:
       Map<const dart::math::SO3Cotangent<Scalar_, Options_>, Options_>>;
   using This = Map<const dart::math::SO3Cotangent<Scalar_, Options_>, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   /// Constructor
   explicit Map(const Scalar* data) : m_data(data)
@@ -116,15 +115,13 @@ public:
     // Do nohting
   }
 
-  DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(SO3Cotangent)
-
-  [[nodiscard]] const CotangentData& coeffs() const
+  [[nodiscard]] const DataType& coeffs() const
   {
     return m_data;
   }
 
 private:
-  CotangentData m_data;
+  DataType m_data;
 };
 
 } // namespace Eigen

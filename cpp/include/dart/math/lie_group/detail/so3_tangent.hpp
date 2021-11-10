@@ -39,9 +39,11 @@ struct traits<dart::math::SO3Tangent<Scalar_, Options_>>
   static constexpr int SpaceDim = 3;
   static constexpr int GroupDim = 3;
   static constexpr int MatrixDim = 3;
-  static constexpr int DataDim = 4;
+  static constexpr int DataDim = 3;
 
-  DART_LIE_GROUP_TRAITS_TYPES(SO3)
+  DART_LIE_GROUP_TRAITS_TYPES(SO3);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, 1>;
 };
 
 } // namespace Eigen::internal
@@ -56,19 +58,19 @@ public:
   using Base = SO3TangentBase<SO3Tangent<Scalar_, Options_>>;
   using This = SO3Tangent<Scalar_, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = typename Base::Quaternion;
   using QuaternionMap = typename Base::QuaternionMap;
   using ConstQuaternionMap = typename Base::ConstQuaternionMap;
 
   /// Default constructor
-  SO3Tangent() : m_data(TangentData::Zero())
+  SO3Tangent() : m_data(DataType::Zero())
   {
     // Do nothing
   }
 
-  DART_LIE_GROUP_CONSTRUCTORS(SO3Tangent)
+  DART_LIE_GROUP_CONSTRUCTORS(SO3Tangent);
 
   SO3Tangent(Scalar x, Scalar y, Scalar z) : m_data(x, y, z)
   {
@@ -90,12 +92,12 @@ public:
     /* Do nothing */
   }
 
-  const TangentData& coeffs() const
+  const DataType& coeffs() const
   {
     return m_data;
   }
 
-  TangentData& coeffs()
+  DataType& coeffs()
   {
     return m_data;
   }
@@ -103,7 +105,7 @@ public:
   using Base::data;
 
 private:
-  TangentData m_data;
+  DataType m_data;
 };
 
 DART_TEMPLATE_CLASS_SCALAR(SO3Tangent)

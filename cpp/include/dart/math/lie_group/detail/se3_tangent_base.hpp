@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include "dart/math/lie_group/detail/r_tangent.hpp"
+#include "dart/math/lie_group/detail/so3_tangent.hpp"
 #include "dart/math/lie_group/detail/tangent_base.hpp"
 
 namespace dart::math {
@@ -39,18 +41,68 @@ public:
   using This = SE3TangentBase<Derived>;
   using Base = TangentBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
-};
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
-//==============================================================================
-template <typename Derived>
-class SE3CotangentBase : public CotangentBase<Derived>
-{
-public:
-  using This = SE3CotangentBase<Derived>;
-  using Base = CotangentBase<Derived>;
+  using AngularBlock =
+      typename DataType::template FixedSegmentReturnType<3>::Type;
+  using LinearBlock =
+      typename DataType::template FixedSegmentReturnType<3>::Type;
+  using ConstAngularBlock =
+      typename DataType::template ConstFixedSegmentReturnType<3>::Type;
+  using ConstLinearBlock =
+      typename DataType::template ConstFixedSegmentReturnType<3>::Type;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  using Quaternion = math::Quaternion<Scalar, Options>;
+  using QuaternionMap = Eigen::Map<Quaternion>;
+  using ConstQuaternionMap = Eigen::Map<const Quaternion>;
+
+  template <typename OtherTangent>
+  Tangent ad(const SE3TangentBase<OtherTangent>& other) const
+  {
+    //--------------------------------------------------------------------------
+    // ad(s1, s2) = | [w1]    0 | | w2 |
+    //              | [v1] [w1] | | v2 |
+    //
+    //            = |          [w1]w2 |
+    //              | [v1]w2 + [w1]v2 |
+    //--------------------------------------------------------------------------
+    return Tangent(
+        angular_coeffs().cross(other.angular_coeffs()),
+        angular_coeffs().cross(other.linear_coeffs())
+            + linear_coeffs().cross(other.angular_coeffs()));
+  }
+
+  const Eigen::Map<const SO3Tangent<Scalar>> angular() const
+  {
+    return Eigen::Map<const SO3Tangent<Scalar>>(angular_coeffs().data());
+  }
+
+  const Eigen::Map<const R3Tangent<Scalar>> linear() const
+  {
+    return Eigen::Map<const R3Tangent<Scalar>>(linear_coeffs().data());
+  }
+
+  const ConstAngularBlock angular_coeffs() const
+  {
+    return coeffs().template head<3>();
+  }
+
+  AngularBlock angular_coeffs()
+  {
+    return coeffs().template head<3>();
+  }
+
+  const ConstLinearBlock linear_coeffs() const
+  {
+    return coeffs().template tail<3>();
+  }
+
+  LinearBlock linear_coeffs()
+  {
+    return coeffs().template tail<3>();
+  }
+
+  using Base::coeffs;
 };
 
 } // namespace dart::math

@@ -39,9 +39,9 @@ static constexpr S eps()
   if constexpr (std::is_same_v<S, float>) {
     return 1e-6;
   } else if constexpr (std::is_same_v<S, double>) {
-    return 1e-8;
+    return 1e-12;
   } else if constexpr (std::is_same_v<S, long double>) {
-    return 1e-14;
+    return 1e-24;
   } else {
     return 0;
   }

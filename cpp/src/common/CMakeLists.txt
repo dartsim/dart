@@ -29,6 +29,8 @@ else()
   list(APPEND compile_definitions_public -DDART_BUILD_TEMPLATE_CODE_FOR_FLOAT=0)
 endif()
 
+set(compile_options_public -fPIC)
+
 # Code coverage settings
 if(DART_ENABLE_CODECOV)
   set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O0")

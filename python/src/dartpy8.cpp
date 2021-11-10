@@ -34,6 +34,7 @@
 
 #include "common/py_module.hpp"
 #include "math/py_module.hpp"
+#include "multibody/py_module.hpp"
 
 namespace py = pybind11;
 
@@ -43,6 +44,7 @@ PYBIND11_MODULE(dartpy8, m)
 {
   add_common_module(m);
   add_math_module(m);
+  add_multibody_module(m);
 }
 
 } // namespace dart::python

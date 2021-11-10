@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "dart/math/lie_group/type.hpp"
+#include "dart/math/lie_group/detail/macro.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {
@@ -39,8 +39,8 @@ class CotangentBase
 public:
   DART_LIE_GROUP_BASE_TYPES;
 
-  /// Creates an identity element
-  [[nodiscard]] static Cotangent Identity();
+  /// Creates a zero element
+  [[nodiscard]] static Cotangent Zero();
 
   /// Creates a random element
   [[nodiscard]] static Cotangent Random();
@@ -53,25 +53,133 @@ protected:
   ~CotangentBase() = default;
 
 public:
-  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(CotangentBase)
+  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(CotangentBase);
 
-  DART_LIE_GROUP_BASE_DATA(CotangentData)
+  [[nodiscard]] const Derived& operator+() const
+  {
+    return derived();
+  }
 
-  Derived& set_identity();
+  [[nodiscard]] Cotangent operator-() const
+  {
+    return Cotangent(-coeffs());
+  }
+
+  template <typename OtherDerived>
+  Cotangent operator+(const CotangentBase<OtherDerived>& other) const
+  {
+    return Cotangent(coeffs() + other.coeffs());
+  }
+
+  template <typename OtherDerived>
+  Cotangent operator-(const CotangentBase<OtherDerived>& other) const
+  {
+    return Cotangent(coeffs() - other.coeffs());
+  }
+
+  template <typename OtherDerived>
+  Derived& operator+=(const CotangentBase<OtherDerived>& other)
+  {
+    coeffs() += other.coeffs();
+    return derived();
+  }
+
+  template <typename OtherDerived>
+  Derived& operator-=(const CotangentBase<OtherDerived>& other)
+  {
+    coeffs() -= other.coeffs();
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator+=(const Eigen::MatrixBase<MatrixDerived>& other)
+  {
+    coeffs() += other;
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator-=(const Eigen::MatrixBase<MatrixDerived>& other)
+  {
+    coeffs() -= other;
+    return derived();
+  }
+
+  Derived& operator*=(Scalar scalar)
+  {
+    coeffs() *= scalar;
+    return derived();
+  }
+
+  Derived& operator/=(Scalar scalar)
+  {
+    coeffs() /= scalar;
+    return derived();
+  }
+
+  Derived& set_zero();
 
   Derived& set_random();
 
+  template <typename OtherDerived>
+  [[nodiscard]] Scalar dot(const CotangentBase<OtherDerived>& other) const
+  {
+    return coeffs().dot(other.coeffs());
+  }
+
+  template <typename TangentDerived>
+  [[nodiscard]] Scalar dot(const TangentBase<TangentDerived>& other) const
+  {
+    return coeffs().dot(other.coeffs());
+  }
+
+  [[nodiscard]] Scalar operator[](int i) const;
+
+  [[nodiscard]] Scalar& operator[](int i);
+
+  template <typename MatrixDerived>
+  [[nodiscard]] bool is_approx(
+      const Eigen::MatrixBase<MatrixDerived>& other,
+      const Scalar tolerance = eps<Scalar>()) const
+  {
+    // TODO(JS): Improve
+    if (std::min(coeffs().norm(), other.norm()) < tolerance) {
+      return (coeffs() - other).isZero(tolerance);
+    } else {
+      return coeffs().isApprox(other, tolerance);
+    }
+  }
+
+  template <typename OtherDerived>
+  [[nodiscard]] bool is_approx(
+      const CotangentBase<OtherDerived>& other,
+      const Scalar tolerance = eps<Scalar>()) const
+  {
+    return is_approx(other.coeffs(), tolerance);
+  }
+
+  [[nodiscard]] bool is_zero(const Scalar tolerance = eps<Scalar>()) const
+  {
+    if constexpr (DataDim >= 0) {
+      return is_approx(DataType::Zero(), tolerance);
+    } else {
+      return is_approx(DataType::Zero(coeffs().size()), tolerance);
+    }
+  }
+
+  DART_LIE_GROUP_BASE_DATA(DataType);
+
 protected:
-  DART_LIE_GROUP_BASE_DERIVED
+  DART_LIE_GROUP_BASE_DERIVED;
 };
 
 //==============================================================================
 template <typename Derived>
-typename CotangentBase<Derived>::Cotangent CotangentBase<Derived>::Identity()
+typename CotangentBase<Derived>::Cotangent CotangentBase<Derived>::Zero()
 {
-  // Assumed the default constructor creates the identity element
-  const static Cotangent identity;
-  return identity;
+  // Assumed the default constructor creates the zero element
+  const static Cotangent zero;
+  return zero;
 }
 
 //==============================================================================
@@ -83,7 +191,7 @@ typename CotangentBase<Derived>::Cotangent CotangentBase<Derived>::Random()
 
 //==============================================================================
 template <typename Derived>
-Derived& CotangentBase<Derived>::set_identity()
+Derived& CotangentBase<Derived>::set_zero()
 {
   coeffs().set_zero();
   return derived();
@@ -95,6 +203,22 @@ Derived& CotangentBase<Derived>::set_random()
 {
   coeffs().setRandom();
   return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+typename CotangentBase<Derived>::Scalar CotangentBase<Derived>::operator[](
+    int i) const
+{
+  return coeffs()[i];
+}
+
+//==============================================================================
+template <typename Derived>
+typename CotangentBase<Derived>::Scalar& CotangentBase<Derived>::operator[](
+    int i)
+{
+  return coeffs()[i];
 }
 
 } // namespace dart::math

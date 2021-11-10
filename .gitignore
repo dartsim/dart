@@ -38,3 +38,6 @@ dist/
 # Build directories
 build/
 .build/
+
+# CMake intermediate files
+CMakeLists.txt.user

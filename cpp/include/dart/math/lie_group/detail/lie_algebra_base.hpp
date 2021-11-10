@@ -28,7 +28,7 @@
 #pragma once
 
 #include "dart/common/macro.hpp"
-#include "dart/math/lie_group/type.hpp"
+#include "dart/math/lie_group/detail/macro.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {
@@ -41,8 +41,8 @@ class LieAlgebraBase
 public:
   DART_LIE_GROUP_BASE_TYPES;
 
-  /// Creates an identity element
-  [[nodiscard]] static LieAlgebra Identity();
+  /// Creates a zero element
+  [[nodiscard]] static LieAlgebra Zero();
 
   /// Creates a random element
   [[nodiscard]] static LieAlgebra Random();
@@ -55,25 +55,25 @@ protected:
   ~LieAlgebraBase() = default;
 
 public:
-  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(LieAlgebraBase)
+  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(LieAlgebraBase);
 
-  DART_LIE_GROUP_BASE_DATA(LieAlgebraData)
+  DART_LIE_GROUP_BASE_DATA(DataType);
 
-  Derived& set_identity();
+  Derived& set_zero();
 
   Derived& set_random();
 
 protected:
-  DART_LIE_GROUP_BASE_DERIVED
+  DART_LIE_GROUP_BASE_DERIVED;
 };
 
 //==============================================================================
 template <typename Derived>
-typename LieAlgebraBase<Derived>::LieAlgebra LieAlgebraBase<Derived>::Identity()
+typename LieAlgebraBase<Derived>::LieAlgebra LieAlgebraBase<Derived>::Zero()
 {
   // Assumed the default constructor creates the identity element
-  const static LieAlgebra identity = Tangent::Identity().hat();
-  return identity;
+  const static LieAlgebra zero = LieAlgebra();
+  return zero;
 }
 
 //==============================================================================
@@ -85,7 +85,7 @@ typename LieAlgebraBase<Derived>::LieAlgebra LieAlgebraBase<Derived>::Random()
 
 //==============================================================================
 template <typename Derived>
-Derived& LieAlgebraBase<Derived>::set_identity()
+Derived& LieAlgebraBase<Derived>::set_zero()
 {
   coeffs().set_zero();
   return derived();

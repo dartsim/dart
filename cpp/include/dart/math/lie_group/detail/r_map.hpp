@@ -43,7 +43,7 @@ struct traits<Eigen::Map<dart::math::R<Scalar_, Dim, Options_>>>
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
-  using LieGroupData = Eigen::Map<Eigen::Matrix<Scalar, DataDim, 1>, Options>;
+  using DataType = Eigen::Map<Eigen::Matrix<Scalar, DataDim, 1>, Options>;
 };
 
 //==============================================================================
@@ -56,8 +56,7 @@ struct traits<Eigen::Map<const dart::math::R<Scalar_, Dim, Options_>>>
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
-  using LieGroupData
-      = Eigen::Map<const Eigen::Matrix<Scalar, DataDim, 1>, Options>;
+  using DataType = Eigen::Map<const Eigen::Matrix<Scalar, DataDim, 1>, Options>;
 };
 
 //==============================================================================
@@ -70,7 +69,7 @@ struct traits<Eigen::Map<dart::math::R<Scalar_, Eigen::Dynamic, Options_>>>
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
-  using LieGroupData
+  using DataType
       = Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1>, Options>;
 };
 
@@ -85,7 +84,7 @@ struct traits<
   using Base::DataDim;
   using Base::Options;
   using typename Base::Scalar;
-  using LieGroupData
+  using DataType
       = Eigen::Map<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>, Options>;
 };
 
@@ -102,9 +101,9 @@ public:
       = dart::math::RBase<Map<dart::math::R<Scalar_, Dim, Options_>, Options_>>;
   using This = Map<dart::math::R<Scalar_, Dim, Options_>, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
-  // using LieGroupData = typename internal::traits<This>::LieGroupData;
+  // using DataType = typename internal::traits<This>::DataType;
 
   /// Constructor
   ///
@@ -112,12 +111,14 @@ public:
   /// as its underlying data. The size should be at least 4.
   explicit Map(Scalar* data);
 
-  [[nodiscard]] LieGroupData& coeffs();
+  DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(R);
 
-  [[nodiscard]] const LieGroupData& coeffs() const;
+  [[nodiscard]] DataType& coeffs();
+
+  [[nodiscard]] const DataType& coeffs() const;
 
 private:
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 //==============================================================================
@@ -131,9 +132,9 @@ public:
       Map<const dart::math::R<Scalar_, Dim, Options_>, Options_>>;
   using This = Map<const dart::math::R<Scalar_, Dim, Options_>, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
-  // using LieGroupData = typename internal::traits<This>::LieGroupData;
+  // using DataType = typename internal::traits<This>::DataType;
 
   /// Constructor
   ///
@@ -141,15 +142,10 @@ public:
   /// as its underlying data. The size should be at least 4.
   explicit Map(const Scalar* data);
 
-  [[nodiscard]] LieGroupData& coeffs()
-  {
-    return m_data;
-  }
-
-  [[nodiscard]] const LieGroupData& coeffs() const;
+  [[nodiscard]] const DataType& coeffs() const;
 
 private:
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 //==============================================================================
@@ -163,9 +159,7 @@ public:
       Map<dart::math::R<Scalar_, Eigen::Dynamic, Options_>, Options_>>;
   using This = Map<dart::math::R<Scalar_, Eigen::Dynamic, Options_>, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
-
-  // using LieGroupData = typename internal::traits<This>::LieGroupData;
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   /// Constructor
   ///
@@ -173,12 +167,14 @@ public:
   /// as its underlying data. The size should be at least 4.
   explicit Map(Scalar* data);
 
-  [[nodiscard]] LieGroupData& coeffs();
+  DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(R);
 
-  [[nodiscard]] const LieGroupData& coeffs() const;
+  [[nodiscard]] DataType& coeffs();
+
+  [[nodiscard]] const DataType& coeffs() const;
 
 private:
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 //==============================================================================
@@ -193,9 +189,7 @@ public:
   using This
       = Map<const dart::math::R<Scalar_, Eigen::Dynamic, Options_>, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
-
-  // using LieGroupData = typename internal::traits<This>::LieGroupData;
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   /// Constructor
   ///
@@ -203,15 +197,10 @@ public:
   /// as its underlying data. The size should be at least 4.
   explicit Map(const Scalar* data);
 
-  [[nodiscard]] LieGroupData& coeffs()
-  {
-    return m_data;
-  }
-
-  [[nodiscard]] const LieGroupData& coeffs() const;
+  [[nodiscard]] const DataType& coeffs() const;
 
 private:
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 //==============================================================================
@@ -224,7 +213,7 @@ Map<dart::math::R<Scalar, Dim, Options>, Options>::Map(Scalar* data)
 
 //==============================================================================
 template <typename Scalar, int Dim, int Options>
-typename Map<dart::math::R<Scalar, Dim, Options>, Options>::LieGroupData&
+typename Map<dart::math::R<Scalar, Dim, Options>, Options>::DataType&
 Map<dart::math::R<Scalar, Dim, Options>, Options>::coeffs()
 {
   return m_data;
@@ -232,7 +221,7 @@ Map<dart::math::R<Scalar, Dim, Options>, Options>::coeffs()
 
 //==============================================================================
 template <typename Scalar, int Dim, int Options>
-const typename Map<dart::math::R<Scalar, Dim, Options>, Options>::LieGroupData&
+const typename Map<dart::math::R<Scalar, Dim, Options>, Options>::DataType&
 Map<dart::math::R<Scalar, Dim, Options>, Options>::coeffs() const
 {
   return m_data;
@@ -249,7 +238,7 @@ Map<const dart::math::R<Scalar, Dim, Options>, Options>::Map(const Scalar* data)
 //==============================================================================
 template <typename Scalar, int Dim, int Options>
 const typename Map<const dart::math::R<Scalar, Dim, Options>, Options>::
-    LieGroupData&
+    DataType&
     Map<const dart::math::R<Scalar, Dim, Options>, Options>::coeffs() const
 {
   return m_data;
@@ -265,9 +254,8 @@ Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::Map(Scalar* data)
 
 //==============================================================================
 template <typename Scalar, int Options>
-typename Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::
-    LieGroupData&
-    Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::coeffs()
+typename Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::DataType&
+Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::coeffs()
 {
   return m_data;
 }
@@ -275,7 +263,7 @@ typename Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::
 //==============================================================================
 template <typename Scalar, int Options>
 const typename Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::
-    LieGroupData&
+    DataType&
     Map<dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::coeffs() const
 {
   return m_data;
@@ -294,7 +282,7 @@ Map<const dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::Map(
 template <typename Scalar, int Options>
 const typename Map<
     const dart::math::R<Scalar, Eigen::Dynamic, Options>,
-    Options>::LieGroupData&
+    Options>::DataType&
 Map<const dart::math::R<Scalar, Eigen::Dynamic, Options>, Options>::coeffs()
     const
 {

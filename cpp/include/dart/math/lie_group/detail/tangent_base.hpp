@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "dart/math/lie_group/type.hpp"
+#include "dart/math/lie_group/detail/macro.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {
@@ -39,8 +39,8 @@ class TangentBase
 public:
   DART_LIE_GROUP_BASE_TYPES;
 
-  /// Creates an identity element
-  [[nodiscard]] static Tangent Identity();
+  /// Creates a zero element
+  [[nodiscard]] static Tangent Zero();
 
   /// Creates a random element
   [[nodiscard]] static Tangent Random();
@@ -53,13 +53,28 @@ protected:
   ~TangentBase() = default;
 
 public:
-  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(TangentBase)
+  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(TangentBase);
 
-  DART_LIE_GROUP_BASE_DATA(TangentData)
+  [[nodiscard]] const Derived& operator+() const
+  {
+    return derived();
+  }
 
   [[nodiscard]] Tangent operator-() const
   {
     return Tangent(-coeffs());
+  }
+
+  template <typename OtherDerived>
+  Tangent operator+(const TangentBase<OtherDerived>& other) const
+  {
+    return Tangent(coeffs() + other.coeffs());
+  }
+
+  template <typename OtherDerived>
+  Tangent operator-(const TangentBase<OtherDerived>& other) const
+  {
+    return Tangent(coeffs() - other.coeffs());
   }
 
   template <typename OtherDerived>
@@ -102,7 +117,7 @@ public:
     return derived();
   }
 
-  Derived& set_identity();
+  Derived& set_zero();
 
   Derived& set_random();
 
@@ -122,17 +137,49 @@ public:
 
   [[nodiscard]] Scalar& operator[](int i);
 
+  template <typename MatrixDerived>
+  [[nodiscard]] bool is_approx(
+      const Eigen::MatrixBase<MatrixDerived>& other,
+      const Scalar tolerance = eps<Scalar>()) const
+  {
+    // TODO(JS): Improve
+    if (std::min(coeffs().norm(), other.norm()) < tolerance) {
+      return (coeffs() - other).isZero(tolerance);
+    } else {
+      return coeffs().isApprox(other, tolerance);
+    }
+  }
+
+  template <typename OtherDerived>
+  [[nodiscard]] bool is_approx(
+      const TangentBase<OtherDerived>& other,
+      const Scalar tolerance = eps<Scalar>()) const
+  {
+    return is_approx(other.coeffs(), tolerance);
+  }
+
+  [[nodiscard]] bool is_zero(const Scalar tolerance = eps<Scalar>()) const
+  {
+    if constexpr (DataDim >= 0) {
+      return is_approx(DataType::Zero(), tolerance);
+    } else {
+      return is_approx(DataType::Zero(coeffs().size()), tolerance);
+    }
+  }
+
+  DART_LIE_GROUP_BASE_DATA(DataType);
+
 protected:
-  DART_LIE_GROUP_BASE_DERIVED
+  DART_LIE_GROUP_BASE_DERIVED;
 };
 
 //==============================================================================
 template <typename Derived>
-typename TangentBase<Derived>::Tangent TangentBase<Derived>::Identity()
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::Zero()
 {
-  // Assumed the default constructor creates the identity element
-  const static Tangent identity;
-  return identity;
+  // Assumed the default constructor creates the zero element
+  const static Tangent zero;
+  return zero;
 }
 
 //==============================================================================
@@ -144,7 +191,7 @@ typename TangentBase<Derived>::Tangent TangentBase<Derived>::Random()
 
 //==============================================================================
 template <typename Derived>
-Derived& TangentBase<Derived>::set_identity()
+Derived& TangentBase<Derived>::set_zero()
 {
   coeffs().set_zero();
   return derived();

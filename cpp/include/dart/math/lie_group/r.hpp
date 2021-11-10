@@ -29,5 +29,7 @@
 
 #include "dart/math/lie_group/detail/r.hpp"
 #include "dart/math/lie_group/detail/r_cotangent.hpp"
+#include "dart/math/lie_group/detail/r_cotangent_map.hpp"
 #include "dart/math/lie_group/detail/r_map.hpp"
 #include "dart/math/lie_group/detail/r_tangent.hpp"
+#include "dart/math/lie_group/detail/r_tangent_map.hpp"

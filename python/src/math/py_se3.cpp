@@ -40,12 +40,33 @@ namespace dart::python {
 
 void py_se3(py::module& m)
 {
-  py::class_<math::SE3d>(m, "SE3")
-      .def(py::init<>())
-      .def("set_identity", &math::SE3d::set_identity)
-      .def("set_random", &math::SE3d::set_random)
-      .def_static("Identity", &math::SE3d::Identity)
-      .def_static("Random", &math::SE3d::Random);
+  auto se3 = py::class_<math::SE3d>(m, "SE3")
+                 .def(py::init<>())
+                 .def("set_identity", &math::SE3d::set_identity)
+                 .def(
+                     "is_identity",
+                     &math::SE3d::is_identity,
+                     py::arg("tolerance") = math::eps<double>())
+                 .def("set_random", &math::SE3d::set_random)
+                 .def_static("Identity", &math::SE3d::Identity)
+                 .def_static("Random", &math::SE3d::Random);
+
+  auto se3_tangent = py::class_<math::SE3Tangentd>(m, "SE3Tangent")
+                         .def(py::init<>())
+                         .def(
+                             "is_zero",
+                             &math::SE3Tangentd::is_zero,
+                             py::arg("tolerance") = math::eps<double>());
+
+  auto se3_cotangent = py::class_<math::SE3Cotangentd>(m, "SE3Cotangent")
+                           .def(py::init<>())
+                           .def(
+                               "is_zero",
+                               &math::SE3Cotangentd::is_zero,
+                               py::arg("tolerance") = math::eps<double>());
+
+  se3.attr("Tangent") = se3_tangent;
+  se3.attr("Cotangent") = se3_cotangent;
 }
 
 } // namespace dart::python

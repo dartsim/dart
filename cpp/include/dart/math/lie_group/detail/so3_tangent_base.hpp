@@ -40,7 +40,7 @@ public:
   using This = SO3TangentBase<Derived>;
   using Base = TangentBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = math::Quaternion<Scalar, Options>;
   using QuaternionMap = Eigen::Map<Quaternion>;
@@ -112,12 +112,12 @@ typename SO3TangentBase<Derived>::LieGroup SO3TangentBase<Derived>::exp(
     Jacobian* jacobian, Scalar tolerance) const
 {
   const Scalar theta = coeffs().norm();
-  LieGroupData coeffs;
+  DataType coeffs;
   if (theta < tolerance) {
-    const TangentData vec = 0.5 * coeffs();
+    const DataType vec = 0.5 * coeffs();
     coeffs << 1, vec;
   } else {
-    const TangentData vec = std::sin(0.5 * theta) * (coeffs() / theta);
+    const DataType vec = std::sin(0.5 * theta) * (coeffs() / theta);
     coeffs << std::cos(0.5 * theta), vec;
   }
 

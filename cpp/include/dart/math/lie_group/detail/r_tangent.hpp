@@ -41,7 +41,9 @@ struct traits<::dart::math::RTangent<Scalar_, Dim, Options_>>
   static constexpr int MatrixDim = GroupDim + 1;
   static constexpr int DataDim = Dim;
 
-  DART_LIE_GROUP_TRAITS_TYPES(R)
+  DART_LIE_GROUP_TRAITS_TYPES_FOR_R(R);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, 1>;
 };
 
 //==============================================================================
@@ -49,12 +51,14 @@ template <typename Scalar_, int Options_>
 struct traits<::dart::math::RTangent<Scalar_, Eigen::Dynamic, Options_>>
 {
   static constexpr int Options = Options_;
-  static constexpr int SpaceDim = 3;
+  static constexpr int SpaceDim = Eigen::Dynamic;
   static constexpr int GroupDim = Eigen::Dynamic;
   static constexpr int MatrixDim = Eigen::Dynamic;
   static constexpr int DataDim = Eigen::Dynamic;
 
-  DART_LIE_GROUP_TRAITS_TYPES(R)
+  DART_LIE_GROUP_TRAITS_TYPES_FOR_R(R);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, 1>;
 };
 
 } // namespace Eigen::internal
@@ -69,7 +73,65 @@ public:
   using This = RTangent<Scalar_, Dim, Options_>;
   using Base = RTangentBase<RTangent<Scalar_, Dim, Options_>>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
+
+  /// Default constructor
+  RTangent() : m_data(DataType::Zero())
+  {
+    // Do nothing
+  }
+
+  DART_LIE_GROUP_CONSTRUCTORS(RTangent);
+
+  const DataType& coeffs() const
+  {
+    return m_data;
+  }
+
+  DataType& coeffs()
+  {
+    return m_data;
+  }
+
+  using Base::data;
+
+private:
+  DataType m_data;
+};
+
+//==============================================================================
+template <typename Scalar_, int Options_>
+class RTangent<Scalar_, Eigen::Dynamic, Options_>
+  : public RTangentBase<RTangent<Scalar_, Eigen::Dynamic, Options_>>
+{
+public:
+  using This = RTangent<Scalar_, Eigen::Dynamic, Options_>;
+  using Base = RTangentBase<RTangent<Scalar_, Eigen::Dynamic, Options_>>;
+
+  DART_LIE_GROUP_USE_BASE_TYPES;
+
+  /// Constructor
+  explicit RTangent(int size = 0) : m_data(DataType::Zero(size))
+  {
+    // Do nothing
+  }
+
+  DART_LIE_GROUP_CONSTRUCTORS(RTangent);
+
+  const DataType& coeffs() const
+  {
+    return m_data;
+  }
+
+  DataType& coeffs()
+  {
+    return m_data;
+  }
+
+  using Base::data;
+
+private:
+  DataType m_data;
 };
 
 } // namespace dart::math

@@ -3,6 +3,7 @@
 add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(collision)
+add_subdirectory(multibody)
 add_subdirectory(simulation)
 add_subdirectory(rendering)
 add_subdirectory(gui)

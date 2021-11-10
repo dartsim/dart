@@ -42,7 +42,7 @@ public:
   using This = SE3Base<Derived>;
   using Base = LieGroupBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = math::Quaternion<Scalar, Options>;
   using QuaternionMap = Eigen::Map<Quaternion>;
@@ -69,39 +69,18 @@ public:
   /// @{ @name Group operations
 
   template <typename OtherDerived>
-  [[nodiscard]] LieGroup operator*(const SE3Base<OtherDerived>& other) const
-  {
-    const ConstQuaternionMap& q = quaternion();
-    return LieGroup(q * other.quaternion(), q * other.position() + position());
-  }
+  [[nodiscard]] LieGroup operator*(const SE3Base<OtherDerived>& other) const;
 
   template <typename RDerived>
   [[nodiscard]] typename RDerived::LieGroup operator*(
-      const RBase<RDerived>& vector) const
-  {
-    // TODO(JS): Check if the dimension of vector is (3x1)
-    return typename RDerived::LieGroup(orientation() * vector + position());
-  }
+      const RBase<RDerived>& vector) const;
 
-  [[nodiscard]] LieGroup inverse() const
-  {
-    const SO3<Scalar> r_inv = orientation().inverse();
-    return LieGroup(r_inv, -(r_inv * position()));
-  }
+  [[nodiscard]] LieGroup inverse() const;
 
-  LieGroup& inverse_in_place()
-  {
-    derived() = inverse();
-    return derived();
-  }
+  LieGroup& inverse_in_place();
 
   [[nodiscard]] Tangent log(
-      Jacobian* jacobian, Scalar tolerance = eps<Scalar>()) const
-  {
-    DART_UNUSED(jacobian, tolerance);
-    DART_NOT_IMPLEMENTED;
-    return Tangent();
-  }
+      Jacobian* jacobian = nullptr, Scalar tolerance = eps<Scalar>()) const;
 
   /// @}
 
@@ -132,6 +111,20 @@ public:
   [[nodiscard]] Rotation to_rotation() const;
 
   [[nodiscard]] Translation to_translation() const;
+
+  void set_orientation_from_quaternion(Scalar w, Scalar x, Scalar y, Scalar z);
+
+  void set_orientation_from_rpy(Scalar r, Scalar p, Scalar y);
+
+  void set_orientation_from_euler_angles_intrinsic(
+      Scalar angle0,
+      Scalar angle1,
+      Scalar angle2,
+      int axis0 = 0,
+      int axis1 = 1,
+      int axis2 = 2);
+
+  void set_position(Scalar x, Scalar y, Scalar z);
 
   /// Returns the x component of the orientation part in quaternion.
   [[nodiscard]] Scalar quat_x() const;
@@ -189,6 +182,61 @@ protected:
 
   using Base::derived;
 };
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+typename SE3Base<Derived>::LieGroup SE3Base<Derived>::operator*(
+    const SE3Base<OtherDerived>& other) const
+{
+  const Eigen::Map<const SO3<Scalar>>& o = orientation();
+  return LieGroup(o * other.orientation(), o * other.position() + position());
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename RDerived>
+typename RDerived::LieGroup SE3Base<Derived>::operator*(
+    const RBase<RDerived>& vector) const
+{
+  // TODO(JS): Check if the dimension of vector is (3x1)
+  return typename RDerived::LieGroup(orientation() * vector + position());
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::LieGroup SE3Base<Derived>::inverse() const
+{
+  const SO3<Scalar> r_inv = orientation().inverse();
+  return LieGroup(r_inv, -(r_inv * position()));
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::LieGroup& SE3Base<Derived>::inverse_in_place()
+{
+  derived() = inverse();
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Tangent SE3Base<Derived>::log(
+    Jacobian* jacobian, Scalar tolerance) const
+{
+  Tangent out;
+  out.angular_coeffs() = orientation().log(nullptr, tolerance).coeffs();
+  out.linear_coeffs() = SO3Tangent<Scalar>(out.angular_coeffs())
+                            .left_jacobian_inverse(tolerance)
+                        * position().coeffs();
+
+  if (jacobian) {
+    DART_NOT_IMPLEMENTED;
+    //(*jacobian) = out.right_jacobian_inverse(tolerance);
+  }
+
+  return out;
+}
 
 //==============================================================================
 template <typename Derived>
@@ -259,6 +307,50 @@ template <typename Derived>
 typename SE3Base<Derived>::Translation SE3Base<Derived>::to_translation() const
 {
   return Translation(coeffs());
+}
+
+//==============================================================================
+template <typename Derived>
+void SE3Base<Derived>::set_orientation_from_quaternion(
+    Scalar w, Scalar x, Scalar y, Scalar z)
+{
+  SO3<Scalar> o;
+  o().set_from_quaternion(w, x, y, z);
+  orientation() = o;
+}
+
+//==============================================================================
+template <typename Derived>
+void SE3Base<Derived>::set_orientation_from_rpy(Scalar r, Scalar p, Scalar y)
+{
+  SO3<Scalar> o;
+  o().set_from_rpy(r, p, y);
+  orientation() = o;
+}
+
+//==============================================================================
+template <typename Derived>
+void SE3Base<Derived>::set_orientation_from_euler_angles_intrinsic(
+    Scalar angle0,
+    Scalar angle1,
+    Scalar angle2,
+    int axis0,
+    int axis1,
+    int axis2)
+{
+  SO3<Scalar> o;
+  o().set_from_euler_angles_intrinsic(
+      angle0, angle1, angle2, axis0, axis1, axis2);
+  orientation() = o;
+}
+
+//==============================================================================
+template <typename Derived>
+void SE3Base<Derived>::set_position(Scalar x, Scalar y, Scalar z)
+{
+  x() = x;
+  y() = y;
+  z() = z;
 }
 
 //==============================================================================

@@ -36,12 +36,16 @@ namespace py = pybind11;
 
 namespace dart::python {
 
+void py_lie_group(py::module& sm);
+void py_r(py::module& sm);
 void py_so3(py::module& sm);
 void py_se3(py::module& sm);
 
 void add_math_module(py::module& m)
 {
   auto sm = m.def_submodule("math");
+  py_lie_group(sm);
+  py_r(sm);
   py_so3(sm);
   py_se3(sm);
 }

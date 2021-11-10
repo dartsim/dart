@@ -47,7 +47,48 @@ public:
   using This = RBase<Derived>;
   using Base = LieGroupBase<Derived>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
+
+  [[nodiscard]] static LieGroup Zero()
+  {
+    const static LieGroup zero;
+    return zero;
+  }
+
+  DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(RBase);
+
+  /// @{ @name Group operations
+
+  template <typename OtherDerived>
+  [[nodiscard]] LieGroup operator*(const RBase<OtherDerived>& other) const
+  {
+    return LieGroup(coeffs() + other.coeffs());
+  }
+
+  [[nodiscard]] LieGroup inverse() const
+  {
+    return LieGroup(-coeffs());
+  }
+
+  Derived& inverse_in_place()
+  {
+    coeffs() *= -1;
+    return derived();
+  }
+
+  [[nodiscard]] Tangent log(
+      Jacobian* jacobian = nullptr, Scalar tolerance = eps<Scalar>()) const
+  {
+    DART_UNUSED(tolerance);
+
+    if (jacobian) {
+      (*jacobian).setIdentity();
+    }
+
+    return Tangent(coeffs());
+  }
+
+  /// @}
 
   //  template <typename OtherDerived>
   //  bool operator==(const RBase<OtherDerived>& other) const
@@ -59,6 +100,83 @@ public:
   //  {
   //    return derived().vector().isZero();
   //  }
+
+  [[nodiscard]] const LieGroup& operator+() const
+  {
+    return derived();
+  }
+
+  [[nodiscard]] LieGroup operator-() const
+  {
+    return LieGroup(-coeffs());
+  }
+
+  template <typename RDerived>
+  [[nodiscard]] LieGroup operator+(const RBase<RDerived>& other) const
+  {
+    return LieGroup(coeffs() + other.coeffs());
+  }
+
+  template <typename RDerived>
+  [[nodiscard]] LieGroup operator-(const RBase<RDerived>& other) const
+  {
+    return LieGroup(coeffs() - other.coeffs());
+  }
+
+  template <typename OtherDerived>
+  Derived& operator+=(const RBase<OtherDerived>& other)
+  {
+    coeffs() += other.coeffs();
+    return derived();
+  }
+
+  template <typename OtherDerived>
+  Derived& operator-=(const RBase<OtherDerived>& other)
+  {
+    coeffs() -= other.coeffs();
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator+=(const Eigen::MatrixBase<MatrixDerived>& other)
+  {
+    coeffs() += other;
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator-=(const Eigen::MatrixBase<MatrixDerived>& other)
+  {
+    coeffs() -= other;
+    return derived();
+  }
+
+  [[nodiscard]] LieGroup operator*(Scalar scalar) const
+  {
+    return LieGroup(coeffs() * scalar);
+  }
+
+  [[nodiscard]] LieGroup operator/(Scalar scalar) const
+  {
+    return LieGroup(coeffs() / scalar);
+  }
+
+  Derived& operator*=(Scalar scalar)
+  {
+    coeffs() *= scalar;
+    return derived();
+  }
+
+  Derived& operator/=(Scalar scalar)
+  {
+    coeffs() /= scalar;
+    return derived();
+  }
+
+  [[nodiscard]] bool is_zero(const Scalar tolerance = eps<Scalar>()) const
+  {
+    return this->is_approx(LieGroup::Zero(), tolerance);
+  }
 
   using Base::coeffs;
   using Base::data;
@@ -89,13 +207,13 @@ struct RandomSetter<RBase<Derived>>
   static void run(T& x)
   {
     using LieGroup = typename RBase<Derived>::LieGroup;
-    using LieGroupData = typename RBase<Derived>::LieGroupData;
+    using DataType = typename RBase<Derived>::DataType;
 
     if constexpr (RBase<Derived>::GroupDim > 0) {
-      x = LieGroup(LieGroupData::Random());
+      x = LieGroup(DataType::Random());
     } else {
       if (x.coeffs().size() > 0) {
-        x = LieGroup(LieGroupData::Random(x.coeffs().size()));
+        x = LieGroup(DataType::Random(x.coeffs().size()));
       }
     }
   }

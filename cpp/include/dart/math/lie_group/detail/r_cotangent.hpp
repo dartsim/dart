@@ -41,7 +41,9 @@ struct traits<::dart::math::RCotangent<Scalar_, Dim, Options_>>
   static constexpr int MatrixDim = GroupDim + 1;
   static constexpr int DataDim = Dim;
 
-  DART_LIE_GROUP_TRAITS_TYPES(R)
+  DART_LIE_GROUP_TRAITS_TYPES(R);
+
+  using DataType = Eigen::Matrix<Scalar, 1, DataDim>;
 };
 
 //==============================================================================
@@ -54,7 +56,9 @@ struct traits<::dart::math::RCotangent<Scalar_, Eigen::Dynamic, Options_>>
   static constexpr int MatrixDim = Eigen::Dynamic;
   static constexpr int DataDim = Eigen::Dynamic;
 
-  DART_LIE_GROUP_TRAITS_TYPES(R)
+  DART_LIE_GROUP_TRAITS_TYPES(R);
+
+  using DataType = Eigen::Matrix<Scalar, 1, DataDim>;
 };
 
 } // namespace Eigen::internal
@@ -63,13 +67,71 @@ namespace dart::math {
 
 //==============================================================================
 template <typename Scalar_, int Dim, int Options_>
-class RCotangent : public RCotangentBase<RTangent<Scalar_, Dim, Options_>>
+class RCotangent : public RCotangentBase<RCotangent<Scalar_, Dim, Options_>>
 {
 public:
   using This = RCotangent<Scalar_, Dim, Options_>;
-  using Base = RCotangentBase<RTangent<Scalar_, Dim, Options_>>;
+  using Base = RCotangentBase<RCotangent<Scalar_, Dim, Options_>>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
+
+  /// Default constructor
+  RCotangent() : m_data(DataType::Zero())
+  {
+    // Do nothing
+  }
+
+  DART_LIE_GROUP_CONSTRUCTORS(RCotangent);
+
+  const DataType& coeffs() const
+  {
+    return m_data;
+  }
+
+  DataType& coeffs()
+  {
+    return m_data;
+  }
+
+  using Base::data;
+
+private:
+  DataType m_data;
+};
+
+//==============================================================================
+template <typename Scalar_, int Options_>
+class RCotangent<Scalar_, Eigen::Dynamic, Options_>
+  : public RCotangentBase<RCotangent<Scalar_, Eigen::Dynamic, Options_>>
+{
+public:
+  using This = RCotangent<Scalar_, Eigen::Dynamic, Options_>;
+  using Base = RCotangentBase<RCotangent<Scalar_, Eigen::Dynamic, Options_>>;
+
+  DART_LIE_GROUP_USE_BASE_TYPES;
+
+  /// Constructor
+  explicit RCotangent(int size = 0) : m_data(DataType::Zero(size))
+  {
+    // Do nothing
+  }
+
+  DART_LIE_GROUP_CONSTRUCTORS(RCotangent);
+
+  const DataType& coeffs() const
+  {
+    return m_data;
+  }
+
+  DataType& coeffs()
+  {
+    return m_data;
+  }
+
+  using Base::data;
+
+private:
+  DataType m_data;
 };
 
 } // namespace dart::math

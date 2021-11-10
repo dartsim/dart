@@ -47,7 +47,9 @@ struct traits<dart::math::SO3<Scalar_, Options_>>
   static constexpr int MatrixDim = 3;
   static constexpr int DataDim = 4;
 
-  DART_LIE_GROUP_TRAITS_TYPES(SO3)
+  DART_LIE_GROUP_TRAITS_TYPES(SO3);
+
+  using DataType = Eigen::Matrix<Scalar, DataDim, 1>;
 };
 
 } // namespace Eigen::internal
@@ -62,7 +64,7 @@ public:
   using Base = SO3Base<SO3<Scalar_, Options_>>;
   using This = SO3<Scalar_, Options_>;
 
-  DART_LIE_GROUP_USE_BASE_TYPES
+  DART_LIE_GROUP_USE_BASE_TYPES;
 
   using Quaternion = typename Base::Quaternion;
   using QuaternionMap = typename Base::QuaternionMap;
@@ -79,7 +81,7 @@ public:
   /// Default constructor
   SO3();
 
-  DART_LIE_GROUP_CONSTRUCTORS(SO3)
+  DART_LIE_GROUP_CONSTRUCTORS(SO3);
 
   /** Copy constructor from LieGroupBase*/
   template <typename OtherDerived>
@@ -106,7 +108,7 @@ public:
   /// Destructor
   ~SO3() = default;
 
-  DART_LIE_GROUP_ASSIGN_OPERATORS(SO3)
+  DART_LIE_GROUP_ASSIGN_OPERATORS(SO3);
 
   /// @{ @name Group operation
 
@@ -119,9 +121,9 @@ public:
   using Base::to_quaternion;
   using Base::to_rotation_matrix;
 
-  const LieGroupData& coeffs() const;
+  const DataType& coeffs() const;
 
-  LieGroupData& coeffs();
+  DataType& coeffs();
 
   using Base::data;
 
@@ -129,7 +131,7 @@ protected:
   using Base::derived;
   using Base::quaternion;
 
-  LieGroupData m_data;
+  DataType m_data;
 };
 
 DART_TEMPLATE_CLASS_SCALAR(SO3)
@@ -161,15 +163,15 @@ SO3<Scalar, Options>::SO3(Eigen::QuaternionBase<QuatDerived>&& quat)
 
 //==============================================================================
 template <typename Scalar, int Options>
-const typename SO3<Scalar, Options>::LieGroupData&
-SO3<Scalar, Options>::coeffs() const
+const typename SO3<Scalar, Options>::DataType& SO3<Scalar, Options>::coeffs()
+    const
 {
   return m_data;
 }
 
 //==============================================================================
 template <typename Scalar, int Options>
-typename SO3<Scalar, Options>::LieGroupData& SO3<Scalar, Options>::coeffs()
+typename SO3<Scalar, Options>::DataType& SO3<Scalar, Options>::coeffs()
 {
   return m_data;
 }
