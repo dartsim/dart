@@ -288,7 +288,7 @@
   template <typename MatrixDerived_>                                           \
   X& operator=(const Eigen::MatrixBase<MatrixDerived_>& other)                 \
   {                                                                            \
-    coeffs() = other.coeffs();                                                 \
+    coeffs() = other;                                                          \
     detail::NormalizationOperator<typename X::Base>::run(*this);               \
     return derived();                                                          \
   }                                                                            \
@@ -296,7 +296,7 @@
   template <typename MatrixDerived_>                                           \
   X& operator=(Eigen::MatrixBase<MatrixDerived_>&& other)                      \
   {                                                                            \
-    coeffs() = std::move(other.coeffs());                                      \
+    coeffs() = std::move(other);                                               \
     detail::NormalizationOperator<typename X::Base>::run(*this);               \
     return derived();                                                          \
   }                                                                            \
@@ -304,27 +304,47 @@
 
 #define DART_LIE_GROUP_MAP_ASSIGN_OPERATORS(X)                                 \
   Map(const Map& other) : Base(), m_data(other.m_data) {}                      \
+                                                                               \
   Map(Map&& other) : Base(), m_data(std::move(other.m_data)) {}                \
+                                                                               \
   Map& operator=(const Map& other)                                             \
+                                                                               \
   {                                                                            \
     coeffs() = other.coeffs();                                                 \
     return *this;                                                              \
   }                                                                            \
+                                                                               \
   Map& operator=(Map&& other)                                                  \
   {                                                                            \
     coeffs() = std::move(other.coeffs());                                      \
     return *this;                                                              \
   }                                                                            \
+                                                                               \
   template <typename OtherDerived>                                             \
   Map& operator=(const ::dart::math::X##Base<OtherDerived>& other)             \
   {                                                                            \
     coeffs() = other.coeffs();                                                 \
     return *this;                                                              \
   }                                                                            \
+                                                                               \
   template <typename OtherDerived>                                             \
   Map& operator=(::dart::math::X##Base<OtherDerived>&& other)                  \
   {                                                                            \
     coeffs() = std::move(other.coeffs());                                      \
+    return *this;                                                              \
+  }                                                                            \
+                                                                               \
+  template <typename MatrixDerived_>                                           \
+  Map& operator=(const ::Eigen::MatrixBase<MatrixDerived_>& other)             \
+  {                                                                            \
+    coeffs() = other;                                                          \
+    return *this;                                                              \
+  }                                                                            \
+                                                                               \
+  template <typename MatrixDerived_>                                           \
+  Map& operator=(::Eigen::MatrixBase<MatrixDerived_>&& other)                  \
+  {                                                                            \
+    coeffs() = std::move(other);                                               \
     return *this;                                                              \
   }                                                                            \
   void _ANONYMOUS_FUNCTION_13()

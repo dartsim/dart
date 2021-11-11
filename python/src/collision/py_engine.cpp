@@ -32,32 +32,44 @@
 
 #include <pybind11/pybind11.h>
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
-
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+#include "dart/collision/all.hpp"
 
 namespace py = pybind11;
 
 namespace dart::python {
 
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
+void py_engine(py::module& m)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-  eigen_geometry(m);
-
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
+  py::class_<collision::Engined, std::shared_ptr<collision::Engined>>(
+      m, "Engine")
+      .def(
+          py::init(
+              [](const std::string& engine_name)
+                  -> std::shared_ptr<collision::Engined> {
+                if (engine_name == collision::DartEngined::GetType()) {
+                  return collision::DartEngined::Create();
+#if DART_HAVE_fcl
+                } else if (engine_name == collision::FclEngined::GetType()) {
+                  return collision::FclEngined::Create();
+#endif
+                } else {
+                  DART_WARN(
+                      "Unsupported collision engine '{}'. Creating DART "
+                      "collision engine.",
+                      engine_name);
+                  return collision::DartEngined::Create();
+                }
+              }),
+          py::arg("engine_name") = collision::DartEngined::GetType())
+      .def("get_type", &collision::Engined::get_type)
+      .def("create_scene", &collision::Engined::create_scene)
+      .def(
+          "create_sphere_object",
+          [](collision::Engined* self,
+             double radius) -> collision::ObjectPtr<double> {
+            return self->create_sphere_object(radius);
+          },
+          py::arg("radius") = 0.5);
 }
 
 } // namespace dart::python

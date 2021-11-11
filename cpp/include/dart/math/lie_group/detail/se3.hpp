@@ -32,7 +32,7 @@
 #include "dart/math/lie_group/detail/se3_base.hpp"
 #include "dart/math/lie_group/r.hpp"
 #include "dart/math/lie_group/so3.hpp"
-#include "dart/math/type.hpp"
+#include "dart/math/lie_group/type.hpp"
 
 namespace Eigen::internal {
 

@@ -90,17 +90,6 @@ public:
 
   /// @}
 
-  //  template <typename OtherDerived>
-  //  bool operator==(const RBase<OtherDerived>& other) const
-  //  {
-  //    return vector() == other.vector();
-  //  }
-
-  //  bool is_zero() const
-  //  {
-  //    return derived().vector().isZero();
-  //  }
-
   [[nodiscard]] const LieGroup& operator+() const
   {
     return derived();

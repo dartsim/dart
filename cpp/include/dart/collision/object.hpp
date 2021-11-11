@@ -72,6 +72,9 @@ public:
   /// Sets the position os this object in world coordinates
   virtual void set_position(const math::Vector3<Scalar>& pos) = 0;
 
+  /// Sets the position os this object in world coordinates
+  void set_position(Scalar x, Scalar y, Scalar z);
+
 protected:
   /// Contructor
   Object(Scene<Scalar>* group, math::GeometryPtr shape);

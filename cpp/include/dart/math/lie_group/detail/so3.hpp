@@ -33,7 +33,7 @@
 #include "dart/math/lie_group/detail/so3_base.hpp"
 #include "dart/math/lie_group/detail/so3_tangent.hpp"
 #include "dart/math/lie_group/r.hpp"
-#include "dart/math/type.hpp"
+#include "dart/math/lie_group/type.hpp"
 
 namespace Eigen::internal {
 

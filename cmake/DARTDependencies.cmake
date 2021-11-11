@@ -20,18 +20,18 @@ if(Eigen3_FOUND AND NOT TARGET Eigen3::Eigen)
   )
 endif()
 
-# ccd
-find_package(ccd MODULE REQUIRED)
-
-# fcl
-find_package(fcl MODULE REQUIRED)
-
 #===============================================================================
 # Optional dependencies
 #===============================================================================
 
 # spdlog
 find_package(spdlog 1.3.0 QUIET)
+
+# ccd
+find_package(ccd MODULE QUIET)
+
+# fcl
+find_package(fcl MODULE QUIET)
 
 find_package(OpenGL QUIET MODULE REQUIRED)
 

@@ -29,7 +29,7 @@
 
 #include "dart/math/constant.hpp"
 #include "dart/math/lie_group/detail/r_base.hpp"
-#include "dart/math/type.hpp"
+#include "dart/math/lie_group/type.hpp"
 
 namespace Eigen::internal {
 

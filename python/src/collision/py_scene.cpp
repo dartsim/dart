@@ -32,32 +32,15 @@
 
 #include <pybind11/pybind11.h>
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
-
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+#include "dart/collision/all.hpp"
 
 namespace py = pybind11;
 
 namespace dart::python {
 
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
+void py_scene(py::module& m)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-  eigen_geometry(m);
-
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
+  py::class_<collision::Scened, std::shared_ptr<collision::Scened>>(m, "Scene");
 }
 
 } // namespace dart::python

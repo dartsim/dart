@@ -30,34 +30,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#pragma once
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
+#include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/object.hpp"
+#include "dart/math/lie_group/se3.hpp"
+#include "dart/math/type.hpp"
 
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+namespace dart {
+namespace collision {
 
-namespace py = pybind11;
-
-namespace dart::python {
-
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
+template <typename Scalar_>
+class DartObject : public Object<Scalar_>
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+public:
+  using Scalar = Scalar_;
 
-  eigen_geometry(m);
+  // Documentation inherited
+  math::Isometry3<Scalar> get_pose() const override;
 
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
-}
+  // Documentation inherited
+  void set_pose(const math::Isometry3<Scalar>& tf) override;
 
-} // namespace dart::python
+  // Documentation inherited
+  math::Vector3<Scalar> get_position() const override;
+
+  // Documentation inherited
+  void set_position(const math::Vector3<Scalar>& pos) override;
+
+protected:
+  /// Constructor
+  DartObject(DartScene<Scalar>* group, math::GeometryPtr shape);
+
+  // Documentation inherited
+  void update_engine_data() override;
+
+private:
+  friend class DartEngine<Scalar>;
+  friend class DartScene<Scalar>;
+
+  /// Pose of the collision object
+  math::SE3<Scalar> m_pose;
+};
+
+DART_TEMPLATE_CLASS_HEADER(COLLISION, DartObject)
+
+} // namespace collision
+} // namespace dart
+
+#include "dart/collision/dart/detail/dart_object_impl.hpp"

@@ -87,8 +87,10 @@ TYPED_TEST(NarrowPhaseTest, Collide)
 {
   using Scalar = typename TestFixture::Type;
 
-  //  test_collide(collision::DartEngine<Scalar>::Create());
+  test_collide(collision::DartEngine<Scalar>::Create());
+#if DART_HAVE_fcl
   test_collide(collision::FclEngine<Scalar>::Create());
+#endif
 #if DART_HAVE_ODE
   test_collide(collision::OdeEngine<Scalar>::Create());
 #endif

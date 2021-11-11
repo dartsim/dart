@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,32 +32,26 @@
 
 #include <pybind11/pybind11.h>
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
-
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+#include "dart/collision/all.hpp"
 
 namespace py = pybind11;
 
 namespace dart::python {
 
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
+void py_collision_option(py::module& m)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-  eigen_geometry(m);
-
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
+  (void)m;
+  //  ::py::class_<collision::CollisionOption<double>>(m, "CollisionOption")
+  //      .def(
+  //          ::py::init<bool, int>(),
+  //          ::py::arg("enable_contact") = true,
+  //          ::py::arg("max_num_contacts") = 1000)
+  //      .def_readwrite(
+  //          "enable_contact",
+  //          &collision::CollisionOption<double>::enable_contact)
+  //      .def_readwrite(
+  //          "max_num_contacts",
+  //          &collision::CollisionOption<double>::max_num_contacts);
 }
 
 } // namespace dart::python

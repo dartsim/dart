@@ -30,34 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#pragma once
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
+#include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/scene.hpp"
+#include "dart/collision/type.hpp"
 
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+namespace dart {
+namespace collision {
 
-namespace py = pybind11;
-
-namespace dart::python {
-
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
+template <typename Scalar_>
+class DartScene : public Scene<Scalar_>
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+public:
+  using Scalar = Scalar_;
 
-  eigen_geometry(m);
+  friend class DartEngine<Scalar>;
 
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
-}
+  /// Constructor
+  DartScene(Engine<Scalar>* engine);
 
-} // namespace dart::python
+  /// Destructor
+  ~DartScene() override;
+
+  ObjectPtr<Scalar> create_object(math::GeometryPtr shape) override;
+
+protected:
+  DartEngine<Scalar>* get_mutable_dart_engine();
+
+  const DartEngine<Scalar>* get_dart_engine() const;
+
+private:
+  friend class DartObject<Scalar>;
+};
+
+DART_TEMPLATE_CLASS_HEADER(COLLISION, DartScene)
+
+} // namespace collision
+} // namespace dart
+
+#include "dart/collision/dart/detail/dart_scene_impl.hpp"

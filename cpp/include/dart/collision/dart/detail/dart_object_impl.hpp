@@ -30,34 +30,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#pragma once
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
+#include "dart/collision/dart/dart_object.hpp"
+#include "dart/collision/dart/dart_scene.hpp"
 
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+namespace dart {
+namespace collision {
 
-namespace py = pybind11;
-
-namespace dart::python {
-
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
+//==============================================================================
+template <typename Scalar>
+math::Isometry3<Scalar> DartObject<Scalar>::get_pose() const
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-  eigen_geometry(m);
-
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
+  return m_pose.to_transformation();
 }
 
-} // namespace dart::python
+//==============================================================================
+template <typename Scalar>
+void DartObject<Scalar>::set_pose(const math::Isometry3<Scalar>& tf)
+{
+  m_pose = tf;
+}
+
+//==============================================================================
+template <typename Scalar>
+math::Vector3<Scalar> DartObject<Scalar>::get_position() const
+{
+  return m_pose.to_translation();
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartObject<Scalar>::set_position(const math::Vector3<Scalar>& pos)
+{
+  m_pose.position() = pos;
+}
+
+//==============================================================================
+template <typename Scalar>
+DartObject<Scalar>::DartObject(
+    DartScene<Scalar>* group, math::GeometryPtr shape)
+  : Object<Scalar>(group, shape)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartObject<Scalar>::update_engine_data()
+{
+  // Do nothing
+}
+
+} // namespace collision
+} // namespace dart

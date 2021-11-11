@@ -30,34 +30,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#pragma once
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
+#include <map>
 
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+#include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/engine.hpp"
 
-namespace py = pybind11;
+namespace dart {
+namespace collision {
 
-namespace dart::python {
-
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
+template <typename Scalar_>
+class DartEngine : public Engine<Scalar_>
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+public:
+  // Type aliases
+  using Scalar = Scalar_;
 
-  eigen_geometry(m);
+  static std::shared_ptr<DartEngine> Create();
 
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
-}
+  /// Constructor
+  ~DartEngine() override;
 
-} // namespace dart::python
+  // Documentation inherited
+  const std::string& get_type() const override;
+
+  /// Get collision detector type for this class
+  static const std::string& GetType();
+
+  // Documentation inherited
+  ScenePtr<Scalar> create_scene() override;
+
+  // Documentation inherited
+  bool collide(
+      ObjectPtr<Scalar> object1,
+      ObjectPtr<Scalar> object2,
+      const CollisionOption<Scalar>& option = {},
+      CollisionResult<Scalar>* result = nullptr) override;
+
+protected:
+  /// Constructor
+  DartEngine() = default;
+
+private:
+  friend class DartScene<Scalar>;
+
+  // DART_REGISTER_ENGINE_IN_HEADER(DartEngine<Scalar>);
+};
+
+// DART_REGISTER_ENGINE_OUT_HEADER(DartEngine<Scalar>);
+DART_TEMPLATE_CLASS_HEADER(COLLISION, DartEngine)
+
+} // namespace collision
+} // namespace dart
+
+#include "dart/collision/dart/detail/dart_engine_impl.hpp"

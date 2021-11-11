@@ -31,6 +31,7 @@
 
 #include "dart/math/lie_group/detail/lie_group_base.hpp"
 #include "dart/math/lie_group/detail/macro.hpp"
+#include "dart/math/lie_group/type.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {

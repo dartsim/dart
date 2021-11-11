@@ -274,7 +274,8 @@ template <typename Derived>
 typename SE3Base<Derived>::Transformation SE3Base<Derived>::to_transformation()
     const
 {
-  Transformation out = Transformation::Identity();
+  Transformation out;
+  out.makeAffine();
   out.linear() = to_quaternion().toRotationMatrix();
   out.translation() = to_translation();
   return out;
@@ -306,7 +307,7 @@ typename SE3Base<Derived>::Rotation SE3Base<Derived>::to_rotation() const
 template <typename Derived>
 typename SE3Base<Derived>::Translation SE3Base<Derived>::to_translation() const
 {
-  return Translation(coeffs());
+  return Translation(coeffs().template tail<3>());
 }
 
 //==============================================================================

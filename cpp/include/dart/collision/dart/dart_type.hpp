@@ -30,34 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#pragma once
 
-// clang-format off
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-// clang-format on
+#include "dart/common/memory.hpp"
 
-#include "collision/py_module.hpp"
-#include "common/py_module.hpp"
-#include "math/py_module.hpp"
-#include "multibody/py_module.hpp"
+namespace dart {
+namespace collision {
 
-namespace py = pybind11;
+DART_DEFINE_CLASS_POINTERS_T1(DartEngine);
+DART_DEFINE_CLASS_POINTERS_T1(DartObject);
+DART_DEFINE_CLASS_POINTERS_T1(DartScene);
 
-namespace dart::python {
-
-void eigen_geometry(py::module& m);
-
-PYBIND11_MODULE(dartpy8, m)
-{
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-  eigen_geometry(m);
-
-  add_common_module(m);
-  add_math_module(m);
-  add_collision_module(m);
-  add_multibody_module(m);
-}
-
-} // namespace dart::python
+} // namespace collision
+} // namespace dart

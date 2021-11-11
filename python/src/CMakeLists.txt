@@ -26,7 +26,10 @@ target_link_libraries(
   PUBLIC
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-common
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-math
+    ${PROJECT_NAME}${DART_VERSION_MAJOR}-collision
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-multibody
+    ${PROJECT_NAME}${DART_VERSION_MAJOR}-rendering
+    ${PROJECT_NAME}${DART_VERSION_MAJOR}-gui
     ${PYTHON_LIBRARIES}
 )
 

@@ -76,6 +76,13 @@ math::ConstGeometryPtr Object<Scalar>::get_geometry() const
 
 //==============================================================================
 template <typename Scalar>
+void Object<Scalar>::set_position(Scalar x, Scalar y, Scalar z)
+{
+  set_position(math::Vector3<Scalar>(x, y, z));
+}
+
+//==============================================================================
+template <typename Scalar>
 Object<Scalar>::Object(Scene<Scalar>* collisionGroup, math::GeometryPtr shape)
   : m_scene(collisionGroup), m_geometry(std::move(shape))
 {
