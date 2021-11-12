@@ -40,4 +40,6 @@ DART_DEFINE_CLASS_POINTERS_T1(CollisionFilter);
 DART_DEFINE_STRUCT_POINTERS_T1(CollisionOption);
 DART_DEFINE_CLASS_POINTERS_T1(CollisionResult);
 
+using ObjectId = uint64_t;
+
 } // namespace dart::collision

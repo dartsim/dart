@@ -32,14 +32,57 @@
 
 #pragma once
 
-namespace dart::collision {
+#include "dart/collision/dart/broad_phase/simple_broad_phase.hpp"
 
+namespace dart::collision::detail {
+
+//==============================================================================
 template <typename Scalar>
-class BroadPhase
+bool SimpleBroadPhaseAlgorithm<Scalar>::add_object(DartObjectPtr<Scalar> object)
 {
-public:
-protected:
-private:
-};
+  if (!object) {
+    DART_DEBUG("Cannot add null object to broad phase algorithm.");
+    return false;
+  }
 
-} // namespace dart::collision
+  if (std::find(m_objects.begin(), m_objects.end(), object.get())
+      != m_objects.end()) {
+    DART_DEBUG("Cannot add the same object twice to broad phase algorithm.");
+    return false;
+  }
+
+  m_objects.push_back(object.get());
+  return true;
+}
+
+//==============================================================================
+template <typename Scalar>
+void SimpleBroadPhaseAlgorithm<Scalar>::compute_overlapping_pairs(
+    Scalar time_step, BroadPhaseCallback<Scalar>&& callback)
+{
+  (void)time_step;
+  (void)callback;
+  DART_NOT_IMPLEMENTED;
+
+  // TODO(JS): Update AABB (or any BV)
+
+  for (auto it_a = m_objects.cbegin(); it_a != m_objects.cend(); ++it_a) {
+    DartObject<Scalar>* object_a = *it_a;
+    auto it_b = it_a;
+    it_b++;
+    for (; it_b != m_objects.cend(); ++it_b) {
+      DartObject<Scalar>* object_b = *it_b;
+      if (object_a->get_aabb().overlaps(object_b->get_aabb())) {
+        if (callback.add_pair(object_a, object_b)) {
+          return;
+        }
+      } else {
+        if (callback.remove_pair(object_a, object_b)) {
+          return;
+        }
+      }
+    }
+  }
+}
+
+} // namespace dart::collision::detail

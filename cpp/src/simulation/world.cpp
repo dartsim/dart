@@ -29,12 +29,15 @@
 
 #include "dart/common/logging.hpp"
 #include "dart/common/macro.hpp"
+#include "dart/simulation/system/collision_detection_system.hpp"
 
 namespace dart::simulation {
 
 //==============================================================================
 struct World::Implementation
 {
+  CollisionDetectionSystem collision_detection_system;
+
   Implementation()
   {
     // Do nothing
@@ -42,9 +45,54 @@ struct World::Implementation
 };
 
 //==============================================================================
-World::World() : m_impl(std::make_unique<Implementation>()) {}
+World::World() : m_impl(std::make_unique<Implementation>())
+{
+  // Do nothing
+}
 
 //==============================================================================
-World::~World() {}
+World::~World()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void World::update(double time_step)
+{
+  // Perform broad-phase collision detection (rough collision detection)
+  m_impl->collision_detection_system.update(time_step);
+
+  // Update islands (active system groups) based on the broad-phase result
+
+  // Perform narrow-phase collision detection
+
+  // Report the collision results to the subscribers
+
+  // Update physics objects
+
+  // Update constraint activations
+
+  // Proceed unconstrained systems
+
+  // Solve the contacts and constraints
+
+  // Integrate the position and orientation of the systems
+
+  // Correct the positions
+
+  // Update kinematics
+
+  // Update collision objects
+
+  // Update sleeping objects
+
+  // Reset inputs
+
+  // Reset the islands
+
+  // Update memory allocator
+
+  DART_NOT_IMPLEMENTED;
+}
 
 } // namespace dart::simulation

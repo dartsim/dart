@@ -56,7 +56,9 @@ public:
   ~FclScene() override = default;
 
   // Documentation inherited
-  ObjectPtr<Scalar> create_object(math::GeometryPtr shape) override;
+  ObjectPtr<Scalar> create_object_impl(math::GeometryPtr shape) override;
+
+  void update(Scalar time_step = 1e-3) override;
 
 protected:
   FclEngine<Scalar>* get_mutable_fcl_engine();

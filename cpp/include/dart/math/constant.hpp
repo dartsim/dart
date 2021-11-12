@@ -47,6 +47,52 @@ static constexpr S eps()
   }
 }
 
+template <typename T = double>
+constexpr T default_absolute_tolerance()
+{
+  if constexpr (std::is_same_v<T, float>) {
+    return 1e-3;
+  } else if constexpr (std::is_same_v<T, double>) {
+    return 1e-6;
+  } else if constexpr (std::is_same_v<T, long double>) {
+    return 1e-12;
+  } else {
+    return 0;
+  }
+}
+
+template <typename T = double>
+constexpr T atol()
+{
+  return default_absolute_tolerance<T>();
+}
+
+template <typename T = double>
+constexpr T default_relative_tolerance()
+{
+  if constexpr (std::is_same_v<T, float>) {
+    return 1e-2;
+  } else if constexpr (std::is_same_v<T, double>) {
+    return 1e-4;
+  } else if constexpr (std::is_same_v<T, long double>) {
+    return 1e-8;
+  } else {
+    return 0;
+  }
+}
+
+template <typename T = double>
+constexpr T rtol()
+{
+  return default_relative_tolerance<T>();
+}
+
+template <typename T = double>
+constexpr T e()
+{
+  return 2.718281828459045235360287471352662498L;
+}
+
 template <typename S = double>
 static constexpr S pi()
 {
@@ -54,39 +100,94 @@ static constexpr S pi()
       3.141592653589793238462643383279502884197169399375105820974944592L);
 }
 
-template <typename S = double>
-static constexpr S phi()
+/// Pi/2 for type T.
+template <typename T = double>
+constexpr T half_pi()
 {
-  return static_cast<S>(
-      1.618033988749894848204586834365638117720309179805762862135448623L);
+  return 0.5L
+         * 3.141592653589793238462643383279502884197169399375105820974944592L;
 }
 
-/// Returns the smallest finite value close to zero
-template <typename S = double>
-static constexpr S min()
+/// Pi/4 for type T.
+template <typename T = double>
+constexpr T quarter_pi()
 {
-  return std::numeric_limits<S>::min();
+  return 0.25L
+         * 3.141592653589793238462643383279502884197169399375105820974944592L;
 }
 
-/// Returns the lowest finite value
-template <typename S = double>
-static constexpr S lowest()
+/// 2*Pi for type T.
+template <typename T = double>
+constexpr T two_pi()
 {
-  return std::numeric_limits<S>::lowest();
+  return 2.0L
+         * 3.141592653589793238462643383279502884197169399375105820974944592L;
 }
 
-/// Returns the largest finite value
-template <typename S = double>
-static constexpr S max()
+/// 4*Pi for type T.
+template <typename T = double>
+constexpr T four_pi()
 {
-  return std::numeric_limits<S>::max();
+  return 4.0L
+         * 3.141592653589793238462643383279502884197169399375105820974944592L;
 }
 
-/// Returns the positive infinity value
-template <typename S = double>
-static constexpr S inf()
+/// 1/Pi for type T.
+template <typename T = double>
+constexpr T inv_pi()
 {
-  return std::numeric_limits<S>::infinity();
+  return 1.0L
+         / 3.141592653589793238462643383279502884197169399375105820974944592L;
+}
+
+/// 1/(2*Pi) for type T.
+template <typename T = double>
+constexpr T inv_two_pi()
+{
+  return 1.0L
+         / (2.0L
+            * 3.141592653589793238462643383279502884197169399375105820974944592L);
+}
+
+/// 1/(4*Pi) for type T.
+template <typename T = double>
+constexpr T inv_four_pi()
+{
+  return 1.0L
+         / (4.0L
+            * 3.141592653589793238462643383279502884197169399375105820974944592L);
+}
+
+/// The golden ratio
+template <typename T = double>
+constexpr T phi()
+{
+  return 1.618033988749894848204586834365638117720309179805762862135448623L;
+}
+
+//------------------------------------------------------------------------------
+// Physics
+//------------------------------------------------------------------------------
+
+/// Gravity.
+template <typename T = double>
+constexpr T gravity()
+{
+  return -9.8L; // TODO: Find higher precision value
+}
+
+/// Water density.
+template <typename T = double>
+constexpr T water_density()
+{
+  return 1000L; // TODO: Find higher precision value
+}
+
+/// Speed of sound in water at 20 degrees celcius.
+template <typename T = double>
+constexpr T speed_of_sound_in_water()
+{
+  return 1482.0L; // TODO: Find higher precision value
 }
 
 } // namespace dart::math

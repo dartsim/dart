@@ -53,7 +53,7 @@ FclScene<Scalar>::FclScene(Engine<Scalar>* engine)
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> FclScene<Scalar>::create_object(math::GeometryPtr shape)
+ObjectPtr<Scalar> FclScene<Scalar>::create_object_impl(math::GeometryPtr shape)
 {
   if (!shape) {
     DART_WARN("Not allowed to create a collision object for a null shape");
@@ -69,6 +69,14 @@ ObjectPtr<Scalar> FclScene<Scalar>::create_object(math::GeometryPtr shape)
 
   return std::shared_ptr<FclObject<Scalar>>(
       new FclObject<Scalar>(this, std::move(shape), fcl_collision_geometry));
+}
+
+//==============================================================================
+template <typename Scalar>
+void FclScene<Scalar>::update(Scalar time_step)
+{
+  (void)time_step;
+  DART_NOT_IMPLEMENTED;
 }
 
 //==============================================================================

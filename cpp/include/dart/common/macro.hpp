@@ -136,5 +136,11 @@
   using class_name##ld = class_name<long double>;
 
 #define DART_NOT_IMPLEMENTED                                                   \
-  DART_ERROR("Not implemented: {}:{}", __FILE__, __LINE__);                    \
+  DART_FATAL("Not implemented: {}:{}", __FILE__, __LINE__);                    \
   void(0)
+
+#define DART_SCALAR_SHOULD_BE_FLOATING_POINT(class_name, scalar_type)          \
+  static_assert(                                                               \
+      ::std::is_floating_point_v<scalar_type>,                                 \
+      "#class_name only can instantiated with floating point types");          \
+  void _ANONYMOUS_FUNCTION_11()

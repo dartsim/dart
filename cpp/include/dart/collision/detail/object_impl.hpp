@@ -34,16 +34,16 @@ namespace dart::collision {
 
 //==============================================================================
 template <typename Scalar>
-Object<Scalar>::Object()
+Object<Scalar>::~Object()
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename Scalar>
-Object<Scalar>::~Object()
+ObjectId Object<Scalar>::get_id() const
 {
-  // Do nothing
+  return m_id;
 }
 
 //==============================================================================
@@ -62,7 +62,28 @@ const Engine<Scalar>* Object<Scalar>::get_engine() const
 
 //==============================================================================
 template <typename Scalar>
+Scene<Scalar>* Object<Scalar>::get_mutable_scene()
+{
+  return m_scene;
+}
+
+//==============================================================================
+template <typename Scalar>
+const Scene<Scalar>* Object<Scalar>::get_scene() const
+{
+  return m_scene;
+}
+
+//==============================================================================
+template <typename Scalar>
 const void* Object<Scalar>::get_user_data() const
+{
+  return m_user_data;
+}
+
+//==============================================================================
+template <typename Scalar>
+void* Object<Scalar>::get_mutable_user_data()
 {
   return m_user_data;
 }
@@ -83,11 +104,10 @@ void Object<Scalar>::set_position(Scalar x, Scalar y, Scalar z)
 
 //==============================================================================
 template <typename Scalar>
-Object<Scalar>::Object(Scene<Scalar>* collisionGroup, math::GeometryPtr shape)
-  : m_scene(collisionGroup), m_geometry(std::move(shape))
+Object<Scalar>::Object(Scene<Scalar>* scene, math::GeometryPtr geometry)
+  : m_scene(scene), m_geometry(std::move(geometry))
 {
-  DART_ASSERT(m_scene);
-  DART_ASSERT(m_geometry);
+  // Do nothing
 }
 
 } // namespace dart::collision

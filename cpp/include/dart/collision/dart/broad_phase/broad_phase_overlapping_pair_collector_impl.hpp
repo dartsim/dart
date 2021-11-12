@@ -25,4 +25,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/world.hpp"
+#pragma once
+
+#include "dart/collision/dart/broad_phase/broad_phase_overlapping_pair_collector.hpp"
+
+namespace dart::collision::detail {
+
+//==============================================================================
+
+} // namespace dart::collision::detail

@@ -27,10 +27,43 @@
 
 #pragma once
 
-#include "dart/simulation/export.hpp"
+#include "dart/common/macro.hpp"
+#include "dart/math/type.hpp"
 
-namespace dart::simulation {
+namespace dart::math {
 
-//
+template <typename Scalar_>
+struct Line3
+{
+public:
+  using Scalar = Scalar_;
 
-} // namespace dart::simulation
+  DART_SCALAR_SHOULD_BE_FLOATING_POINT(Line3, Scalar);
+
+  /// The origin of the ray.
+  Vector3<Scalar> from;
+
+  /// The direction of the ray.
+  Vector3<Scalar> to;
+
+  /// Constructs an empty ray that points from (0, 0, 0) to (1, 0, 0).
+  Line3();
+
+  /// Constructs a ray with given origin and riection.
+  Line3(const Vector3<Scalar>& from, const Vector3<Scalar>& to);
+
+  /// Copy constructor.
+  Line3(const Line3& other);
+
+  Vector3<Scalar> get_direction(bool normalized = true) const;
+
+  /// Returns a point on the ray at distance \p t.
+  Vector3<Scalar> get_point_at(Scalar t) const;
+};
+
+using Line3d = Line3<double>;
+using Line3f = Line3<float>;
+
+} // namespace dart::math
+
+#include "dart/math/geometry/detail/line3_impl.hpp"

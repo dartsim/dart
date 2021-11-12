@@ -35,8 +35,7 @@
 #include "dart/common/eigen_include.hpp"
 #include "dart/math/geometry/convex3.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 template <typename S_>
 class Sphere : public Convex3<S_>
@@ -84,7 +83,6 @@ using Sphered = Sphere<double>;
 
 extern template class DART_MATH_API Sphere<double>;
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math
 
 #include "dart/math/geometry/detail/sphere_impl.hpp"

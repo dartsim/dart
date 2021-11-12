@@ -50,7 +50,7 @@ template <typename Scalar>
 template <typename GeometryType, typename... Args>
 ObjectPtr<Scalar> Engine<Scalar>::create_object(Args&&... args)
 {
-  return get_default_scene()->template create_object<GeometryType>(
+  return get_default_scene()->template create_object_impl<GeometryType>(
       std::forward<Args>(args)...);
 }
 

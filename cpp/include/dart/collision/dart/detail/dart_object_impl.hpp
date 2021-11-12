@@ -70,7 +70,7 @@ void DartObject<Scalar>::set_position(const math::Vector3<Scalar>& pos)
 template <typename Scalar>
 DartObject<Scalar>::DartObject(
     DartScene<Scalar>* group, math::GeometryPtr shape)
-  : Object<Scalar>(group, shape)
+  : Object<Scalar>(group, std::move(shape))
 {
   // Do nothing
 }

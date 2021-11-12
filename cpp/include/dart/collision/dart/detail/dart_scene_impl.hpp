@@ -32,10 +32,11 @@
 
 #pragma once
 
+#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
+#include "dart/collision/dart/broad_phase/simple_broad_phase.hpp"
 #include "dart/collision/dart/dart_engine.hpp"
 #include "dart/collision/dart/dart_object.hpp"
 #include "dart/collision/dart/dart_scene.hpp"
-#include "dart/collision/object.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macro.hpp"
 #include "dart/math/geometry/sphere.hpp"
@@ -47,7 +48,7 @@ namespace collision {
 template <typename Scalar>
 DartScene<Scalar>::DartScene(Engine<Scalar>* engine) : Scene<Scalar>(engine)
 {
-  // Do nothing
+  m_broad_phase = std::make_shared<detail::SimpleBroadPhaseAlgorithm<Scalar>>();
 }
 
 //==============================================================================
@@ -59,15 +60,22 @@ DartScene<Scalar>::~DartScene()
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> DartScene<Scalar>::create_object(math::GeometryPtr shape)
+ObjectPtr<Scalar> DartScene<Scalar>::create_object_impl(math::GeometryPtr shape)
 {
   if (!shape) {
     DART_WARN("Not allowed to create a collision object for a null shape");
     return nullptr;
   }
 
-  return std::shared_ptr<DartObject<Scalar>>(
+  auto object = std::shared_ptr<DartObject<Scalar>>(
       new DartObject<Scalar>(this, std::move(shape)));
+
+  if (!m_broad_phase->add_object(object)) {
+    DART_DEBUG("Failed to add collision object to broad phase algorithm.");
+    return nullptr;
+  }
+
+  return object;
 }
 
 //==============================================================================
@@ -82,6 +90,16 @@ template <typename Scalar>
 const DartEngine<Scalar>* DartScene<Scalar>::get_dart_engine() const
 {
   return static_cast<const DartEngine<Scalar>*>(this->m_engine);
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartScene<Scalar>::update(Scalar time_step)
+{
+  (void)time_step;
+  DART_NOT_IMPLEMENTED;
+
+  m_broad_phase->update_overlapping_pairs(time_step);
 }
 
 } // namespace collision

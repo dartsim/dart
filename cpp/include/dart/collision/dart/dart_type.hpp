@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "dart/collision/type.hpp"
 #include "dart/common/memory.hpp"
 
 namespace dart {

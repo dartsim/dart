@@ -36,6 +36,9 @@ add_subdirectory(src)
 # Unit tests
 add_subdirectory(unit)
 
+# Integration tests
+add_subdirectory(integration)
+
 # Add custom target to build all the tests as a single target
 dart_get_test_list(test_targets)
 add_custom_target(tests DEPENDS ${test_targets})

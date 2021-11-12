@@ -925,7 +925,7 @@ function(dart_component_setup_subdirectory)
   endforeach()
 
   # Add sub-directories
-  foreach(sub_directory ${sub_directories})
+  foreach(sub_directory ${_ARG_SUB_DIRECTORIES})
     add_subdirectory(${sub_directory})
   endforeach()
 
@@ -975,10 +975,10 @@ endfunction()
 
 # ==============================================================================
 # cmake-format: off
-# dart_build_tests()
+# dart_build_unit_tests()
 # cmake-format: on
 
-function(dart_build_tests)
+function(dart_build_unit_tests)
   set(prefix _ARG)
   set(options
   )
@@ -998,7 +998,7 @@ function(dart_build_tests)
   endif()
 
   if(NOT _ARG_TARGET_PREFIX)
-    set(_ARG_TARGET_PREFIX TEST)
+    set(_ARG_TARGET_PREFIX UNIT)
   endif()
 
   # Get global properties
@@ -1082,6 +1082,111 @@ function(dart_build_tests)
 
 endfunction()
 
+# ==============================================================================
+# cmake-format: off
+# dart_build_unit_tests()
+# cmake-format: on
+
+function(dart_build_integration_tests)
+  set(prefix _ARG)
+  set(options
+  )
+  set(oneValueArgs
+    COMPONENTS_REQUIRED
+    TARGET_PREFIX
+  )
+  set(multiValueArgs
+    INCLUDE_DIRS
+    SOURCES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT _ARG_TARGET_PREFIX)
+    set(_ARG_TARGET_PREFIX INTEGRATION)
+  endif()
+
+  # Get global properties
+  get_property(
+    project_include_source_base_dir GLOBAL PROPERTY DART_GLOBAL_PROPERTY_PROJECT_INCLUDE_SOURCE_BASE_DIR
+  )
+  get_property(
+    project_include_binary_base_dir GLOBAL PROPERTY DART_GLOBAL_PROPERTY_PROJECT_INCLUDE_BINARY_BASE_DIR
+  )
+  get_property(
+    project_src_source_base_dir GLOBAL PROPERTY DART_GLOBAL_PROPERTY_PROJECT_SRC_SOURCE_BASE_DIR
+  )
+
+  # Get component targets
+  set(component_targets)
+  set(dependent_component_targets)
+  foreach(comp_name ${_ARG_COMPONENTS_REQUIRED})
+    dart_get_component_target_name(
+      COMPONENT_NAME ${comp_name}
+      OUTPUT_VAR component_target
+    )
+    list(APPEND component_targets ${component_target})
+    dart_get_component_dependent_component_targets(
+      COMPONENT_NAME ${comp_name}
+      OUTPUT_VAR targets
+    )
+    list(APPEND dependent_component_targets ${targets})
+  endforeach()
+
+  foreach(dep ${component_targets} ${dependent_component_targets})
+    if(NOT TARGET ${dep})
+      message(WARNING "[WARN] Skipping tests due to missing component target [${dep}]")
+      return()
+    endif()
+  endforeach()
+
+  foreach(source ${_ARG_SOURCES})
+    # Set target name
+    if(_ARG_TARGET_PREFIX)
+      set(target_name ${_ARG_TARGET_PREFIX}_)
+    else()
+      set(target_name )
+    endif()
+    get_filename_component(source_name ${source} NAME_WE)
+    string(REPLACE "test_" "" source_name ${source_name})
+    get_filename_component(source_dir ${source} DIRECTORY)
+    if(source_dir)
+      string(REPLACE "/" "_" source_prefix ${source_dir})
+      set(target_name "${target_name}${source_prefix}_${source_name}")
+    else()
+      set(target_name "${target_name}${source_name}")
+    endif()
+
+    add_executable(${target_name} EXCLUDE_FROM_ALL ${source})
+    add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
+
+    # Include directories
+    target_include_directories(
+      ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
+    )
+
+    # Link libraries
+    target_link_libraries(${target_name} PRIVATE gtest gtest_main)
+    target_link_libraries(
+      ${target_name} PRIVATE ${component_targets} ${dependent_component_targets}
+    )
+    target_link_libraries(
+      ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
+    )
+    if(UNIX)
+      # gtest requies pthread when compiled on a Unix machine
+      target_link_libraries(${target_name} PRIVATE pthread)
+    endif()
+
+    # Add the test target to the list
+    dart_property_add(DART_GLOBAL_PROPERTY_TEST_LIST ${target_name})
+
+  endforeach()
+
+  dart_clang_format_add(${test_files})
+
+endfunction()
 
 # ==============================================================================
 # cmake-format: off

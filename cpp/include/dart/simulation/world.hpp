@@ -43,7 +43,10 @@ public:
   }
 
   World();
+
   ~World();
+
+  void update(double time_step = 1e-3);
 
 private:
   struct Implementation;

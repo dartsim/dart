@@ -31,6 +31,7 @@
 
 #include "dart/collision/export.hpp"
 #include "dart/collision/type.hpp"
+#include "dart/math/bounding_volume/aabb3.hpp"
 #include "dart/math/geometry/type.hpp"
 
 namespace dart::collision {
@@ -42,11 +43,10 @@ public:
   // Type aliases
   using Scalar = Scalar_;
 
-  /// Constructor
-  Object();
-
   /// Destructor
   virtual ~Object();
+
+  ObjectId get_id() const;
 
   /// Returns collision detection engine associated with this object
   Engine<Scalar>* get_mutable_engine();
@@ -54,8 +54,14 @@ public:
   /// Returns collision detection engine associated with this object
   const Engine<Scalar>* get_engine() const;
 
+  Scene<Scalar>* get_mutable_scene();
+
+  const Scene<Scalar>* get_scene() const;
+
   /// Returns the user data associated with this object.
   const void* get_user_data() const;
+
+  void* get_mutable_user_data();
 
   /// Returns the associated geometry
   math::ConstGeometryPtr get_geometry() const;
@@ -75,9 +81,18 @@ public:
   /// Sets the position os this object in world coordinates
   void set_position(Scalar x, Scalar y, Scalar z);
 
+  /// @{ @name AABB
+
+  const math::Aabb3<Scalar>& get_aabb() const
+  {
+    return m_aabb;
+  }
+
+  /// @}
+
 protected:
   /// Contructor
-  Object(Scene<Scalar>* group, math::GeometryPtr shape);
+  Object(Scene<Scalar>* scene, math::GeometryPtr geometry);
 
   /// Update the collision object of the collision detection engine. This
   /// function will be called ahead of every collision checking by
@@ -88,6 +103,8 @@ protected:
   /// Collision group
   Scene<Scalar>* m_scene;
 
+  math::Aabb3<Scalar> m_aabb;
+
   /// Geometry
   const math::GeometryPtr m_geometry;
 
@@ -95,6 +112,8 @@ protected:
 
 private:
   friend class Scene<Scalar>;
+
+  ObjectId m_id = 0;
 };
 
 DART_TEMPLATE_CLASS_HEADER(COLLISION, Object)

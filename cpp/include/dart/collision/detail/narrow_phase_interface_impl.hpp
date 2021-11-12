@@ -45,19 +45,15 @@ bool collide(
     const CollisionOption<Scalar>& option,
     CollisionResult<Scalar>* result)
 {
-  if (!object1) {
+  if (!object1 || !object2) {
     return false;
   }
 
-  if (!object2) {
-    return false;
-  }
-
-  assert(object1->get_engine());
-  assert(object2->get_engine());
+  DART_ASSERT(object1->get_engine());
+  DART_ASSERT(object2->get_engine());
 
   Engine<Scalar>* engine = object1->get_mutable_engine();
-  assert(engine);
+  DART_ASSERT(engine);
 
   if (engine != object2->get_engine()) {
     DART_ERROR(

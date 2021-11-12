@@ -31,7 +31,6 @@
 
 #include "dart/collision/export.hpp"
 #include "dart/collision/type.hpp"
-#include "dart/common/macro.hpp"
 #include "dart/math/geometry/type.hpp"
 
 namespace dart::collision {
@@ -54,11 +53,15 @@ public:
   const Engine<Scalar>* get_engine() const;
 
   /// Creates a collision object.
-  virtual ObjectPtr<Scalar> create_object(math::GeometryPtr shape) = 0;
+  ObjectPtr<Scalar> create_object(math::GeometryPtr shape);
+
+  void remove_object(ObjectPtr<Scalar> object);
 
   /// Creates a collision object with sphere
   template <typename... Args>
   ObjectPtr<Scalar> create_sphere_object(Args&&... args);
+
+  virtual void update(Scalar time_step = 1e-3) = 0;
 
 protected:
   /// Constructor
@@ -66,13 +69,13 @@ protected:
   /// \param[in] collisionDetector: Collision detector that created this group.
   Scene(Engine<Scalar>* engine);
 
+  virtual ObjectPtr<Scalar> create_object_impl(math::GeometryPtr shape) = 0;
+
   /// The parent collision engine that created this scene
   Engine<Scalar>* m_engine;
 
 private:
-  /// Set this to true to have this Scene check for updates
-  /// automatically. Default is true.
-  bool m_update_automatically;
+  ObjectId m_next_collision_object_id = 0;
 };
 
 DART_TEMPLATE_CLASS_HEADER(COLLISION, Scene)
