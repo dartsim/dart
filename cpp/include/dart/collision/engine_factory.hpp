@@ -27,30 +27,10 @@
 
 #pragma once
 
-#include <memory>
+#include "dart/collision/engine.hpp"
 
-#include "dart/simulation/export.hpp"
+namespace dart::collision {
 
-namespace dart::simulation {
+//
 
-class DART_SIMULATION_API World
-{
-public:
-  template <typename... Args>
-  static std::shared_ptr<World> Create(Args&&... args)
-  {
-    return std::make_shared<World>(std::forward<Args>(args)...);
-  }
-
-  World();
-
-  ~World();
-
-  void update(double time_step = 1e-3);
-
-private:
-  struct Implementation;
-  std::unique_ptr<Implementation> m_impl;
-};
-
-} // namespace dart::simulation
+} // namespace dart::collision

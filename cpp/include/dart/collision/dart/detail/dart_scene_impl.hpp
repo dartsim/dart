@@ -84,5 +84,13 @@ const DartEngine<Scalar>* DartScene<Scalar>::get_dart_engine() const
   return static_cast<const DartEngine<Scalar>*>(this->m_engine);
 }
 
+//==============================================================================
+template <typename Scalar>
+void DartScene<Scalar>::update(Scalar time_step)
+{
+  (void)time_step;
+  DART_NOT_IMPLEMENTED;
+}
+
 } // namespace collision
 } // namespace dart

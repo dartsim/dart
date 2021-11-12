@@ -25,32 +25,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include <memory>
+#include "dart/simulation/all.hpp"
 
-#include "dart/simulation/export.hpp"
+using namespace dart;
+using namespace simulation;
 
-namespace dart::simulation {
-
-class DART_SIMULATION_API World
+//==============================================================================
+TEST(WorldTest, Basics)
 {
-public:
-  template <typename... Args>
-  static std::shared_ptr<World> Create(Args&&... args)
-  {
-    return std::make_shared<World>(std::forward<Args>(args)...);
-  }
-
-  World();
-
-  ~World();
-
-  void update(double time_step = 1e-3);
-
-private:
-  struct Implementation;
-  std::unique_ptr<Implementation> m_impl;
-};
-
-} // namespace dart::simulation
+  auto world = World::Create();
+  world->update();
+  (void)world;
+}

@@ -5,7 +5,7 @@ dart_component_setup(
   COMPONENT_NAME
     simulation
   DEPENDENT_COMPONENTS
-    common math
+    common math collision
   DEPENDENT_PACKAGES_OPTIONAL
   TARGET_LINK_LIBRARIES_PUBLIC
   TARGET_COMPILE_FEATURES_PUBLIC

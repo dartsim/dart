@@ -55,6 +55,8 @@ public:
 
   ObjectPtr<Scalar> create_object(math::GeometryPtr shape) override;
 
+  void update(Scalar time_step = 1e-3) override;
+
 protected:
   DartEngine<Scalar>* get_mutable_dart_engine();
 

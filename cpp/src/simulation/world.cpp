@@ -27,6 +27,9 @@
 
 #include "dart/simulation/world.hpp"
 
+#include "dart/collision/engine.hpp"
+#include "dart/collision/dart/dart_engine.hpp"
+#include "dart/collision/scene.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macro.hpp"
 
@@ -35,6 +38,9 @@ namespace dart::simulation {
 //==============================================================================
 struct World::Implementation
 {
+  collision::EnginePtr<double> collision_engine;
+  collision::ScenePtr<double> collision_scene;
+
   Implementation()
   {
     // Do nothing
@@ -42,9 +48,55 @@ struct World::Implementation
 };
 
 //==============================================================================
-World::World() : m_impl(std::make_unique<Implementation>()) {}
+World::World() : m_impl(std::make_unique<Implementation>())
+{
+  m_impl->collision_engine = collision::DartEngine<double>::Create();
+  m_impl->collision_scene = m_impl->collision_engine->create_scene();
+}
 
 //==============================================================================
-World::~World() {}
+World::~World()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void World::update(double time_step)
+{
+  // Perform broad-phase collision detection (rough collision detection)
+  m_impl->collision_scene->update(time_step);
+
+  // Update islands (active system groups) based on the broad-phase result
+
+  // Perform narrow-phase collision detection
+
+  // Report the collision results to the subscribers
+
+  // Update physics objects
+
+  // Update constraint activations
+
+  // Proceed unconstrained systems
+
+  // Solve the contacts and constraints
+
+  // Integrate the position and orientation of the systems
+
+  // Correct the positions
+
+  // Update kinematics
+
+  // Update collision objects
+
+  // Update sleeping objects
+
+  // Reset inputs
+
+  // Reset the islands
+
+  // Update memory allocator
+
+  DART_NOT_IMPLEMENTED;
+}
 
 } // namespace dart::simulation

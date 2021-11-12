@@ -73,6 +73,14 @@ ObjectPtr<Scalar> FclScene<Scalar>::create_object(math::GeometryPtr shape)
 
 //==============================================================================
 template <typename Scalar>
+void FclScene<Scalar>::update(Scalar time_step)
+{
+  (void)time_step;
+  DART_NOT_IMPLEMENTED;
+}
+
+//==============================================================================
+template <typename Scalar>
 FclEngine<Scalar>* FclScene<Scalar>::get_mutable_fcl_engine()
 {
   return static_cast<FclEngine<Scalar>*>(this->m_engine);

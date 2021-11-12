@@ -60,6 +60,8 @@ public:
   template <typename... Args>
   ObjectPtr<Scalar> create_sphere_object(Args&&... args);
 
+  virtual void update(Scalar time_step = 1e-3) = 0;
+
 protected:
   /// Constructor
   ///

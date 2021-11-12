@@ -58,6 +58,8 @@ public:
   // Documentation inherited
   ObjectPtr<Scalar> create_object(math::GeometryPtr shape) override;
 
+  void update(Scalar time_step = 1e-3) override;
+
 protected:
   FclEngine<Scalar>* get_mutable_fcl_engine();
 
