@@ -25,34 +25,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/logging.hpp"
+#include <gtest/gtest.h>
 
-namespace dart::common {
+#include "dart/common/all.hpp"
 
-//========================================================================================
-#if DART_HAVE_spdlog
-LogLevel convert_log_level(spdlog::level::level_enum level)
+using namespace dart;
+using namespace common;
+
+//==============================================================================
+TEST(HeapAllocatorTest, Basics)
 {
-  switch (level) {
-    case spdlog::level::trace:
-      return LogLevel::LOGLEVEL_TRACE;
-    case spdlog::level::debug:
-      return LogLevel::LOGLEVEL_DEBUG;
-    case spdlog::level::info:
-      return LogLevel::LOGLEVEL_INFO;
-    case spdlog::level::warn:
-      return LogLevel::LOGLEVEL_WARN;
-    case spdlog::level::err:
-      return LogLevel::LOGLEVEL_ERROR;
-    case spdlog::level::critical:
-      return LogLevel::LOGLEVEL_FATAL;
-    case spdlog::level::off:
-      return LogLevel::LOGLEVEL_OFF;
-    default:
-      return LogLevel::LOGLEVEL_UNKNOWN;
-  }
+  auto alloc = HeapAllocator();
+
+  //---------------------
+  // Invalid allocations
+  //---------------------
+
+  // size must not be zero
+  EXPECT_TRUE(alloc.allocate(0) == nullptr);
+
+  // alignment must be power of 2
+  EXPECT_TRUE(alloc.allocate(8, 9) == nullptr);
+
+  // alignment must be greater than sizeof(void*)
+  EXPECT_TRUE(alloc.allocate(8, sizeof(void*) - 1) == nullptr);
+
+  //-------------------
+  // Valid allocations
+  //-------------------
+
+  auto mem1 = alloc.allocate(2);
+  EXPECT_TRUE(mem1 != nullptr);
+
+  alloc.deallocate(mem1, 2);
 }
-
-#endif
-
-} // namespace dart::common

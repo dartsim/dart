@@ -25,34 +25,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/logging.hpp"
+#pragma once
 
 namespace dart::common {
 
-//========================================================================================
-#if DART_HAVE_spdlog
-LogLevel convert_log_level(spdlog::level::level_enum level)
+template <typename T>
+constexpr bool ispow2(T x) noexcept
 {
-  switch (level) {
-    case spdlog::level::trace:
-      return LogLevel::LOGLEVEL_TRACE;
-    case spdlog::level::debug:
-      return LogLevel::LOGLEVEL_DEBUG;
-    case spdlog::level::info:
-      return LogLevel::LOGLEVEL_INFO;
-    case spdlog::level::warn:
-      return LogLevel::LOGLEVEL_WARN;
-    case spdlog::level::err:
-      return LogLevel::LOGLEVEL_ERROR;
-    case spdlog::level::critical:
-      return LogLevel::LOGLEVEL_FATAL;
-    case spdlog::level::off:
-      return LogLevel::LOGLEVEL_OFF;
-    default:
-      return LogLevel::LOGLEVEL_UNKNOWN;
-  }
+  return (x & (x - 1)) == 0;
 }
 
-#endif
+template <typename T>
+constexpr T next_power_of_2(T x)
+{
+  return (x & (x - 1)) == 0 ? x : next_power_of_2((x | (x >> 1)) + 1);
+}
+
+template <typename T>
+constexpr T next_multiple_of(T x, T base)
+{
+  return x + (base - x % base);
+}
 
 } // namespace dart::common

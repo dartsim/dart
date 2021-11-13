@@ -377,16 +377,14 @@ void FreeFrame<Scalar>::set_orientation(math::SO3Base<Derived>&& orientation)
 
 //==============================================================================
 template <typename Scalar>
-template <typename Derived>
-void FreeFrame<Scalar>::set_position(const math::RBase<Derived>& position)
+void FreeFrame<Scalar>::set_position(const math::R3<Scalar>& position)
 {
   m_pose.position() = position;
 }
 
 //==============================================================================
 template <typename Scalar>
-template <typename Derived>
-void FreeFrame<Scalar>::set_position(math::RBase<Derived>&& position)
+void FreeFrame<Scalar>::set_position(math::R3<Scalar>&& position)
 {
   m_pose.position() = std::move(position);
 }

@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <vector>
@@ -38,11 +39,11 @@ namespace dart {
 namespace common {
 
 template <typename _Tp, typename... _Args>
-std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
+[[nodiscard]] std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
 /// Returns the distance from the base address to the next aligned address of
 /// the base address, so that base_address + padding = aligned_address.
-constexpr std::size_t get_padding(
+[[nodiscard]] constexpr std::size_t get_padding(
     const std::size_t base_address, const std::size_t alignment);
 
 /// A portable function to allocate memory on a specified alignment boundary.
@@ -52,7 +53,8 @@ constexpr std::size_t get_padding(
 /// \param[in] size: Size of the requested memory allocation.
 /// \returns A pointer to the memory block that was allocated or nullptr if the
 /// operation failed. The pointer is a multiple of alignment.
-DART_COMMON_API void* aligned_alloc(std::size_t alignment, std::size_t size);
+[[nodiscard]] DART_COMMON_API void* aligned_alloc(
+    std::size_t alignment, std::size_t size);
 
 /// A portable function to releases a block of memory that was allocated with
 /// aligned_alloc()
@@ -61,39 +63,25 @@ DART_COMMON_API void* aligned_alloc(std::size_t alignment, std::size_t size);
 /// aligned_alloc()
 DART_COMMON_API void aligned_free(void* ptr);
 
-DART_COMMON_API bool is_aligned(void* ptr, std::size_t alignment) noexcept;
+[[nodiscard]] DART_COMMON_API bool is_aligned(
+    void* ptr, std::size_t alignment) noexcept;
+
+template <class T>
+[[nodiscard]] bool is_aligned(const void* ptr) noexcept;
 
 namespace literals {
 
-constexpr std::size_t operator"" _KiB(unsigned long long value) noexcept
-{
-  return std::size_t(value * 1024);
-}
+constexpr std::size_t operator"" _KiB(unsigned long long value) noexcept;
 
-constexpr std::size_t operator"" _KB(unsigned long long value) noexcept
-{
-  return std::size_t(value * 1000);
-}
+constexpr std::size_t operator"" _KB(unsigned long long value) noexcept;
 
-constexpr std::size_t operator"" _MiB(unsigned long long value) noexcept
-{
-  return std::size_t(value * 1024 * 1024);
-}
+constexpr std::size_t operator"" _MiB(unsigned long long value) noexcept;
 
-constexpr std::size_t operator"" _MB(unsigned long long value) noexcept
-{
-  return std::size_t(value * 1000 * 1000);
-}
+constexpr std::size_t operator"" _MB(unsigned long long value) noexcept;
 
-constexpr std::size_t operator"" _GiB(unsigned long long value) noexcept
-{
-  return std::size_t(value * 1024 * 1024 * 1024);
-}
+constexpr std::size_t operator"" _GiB(unsigned long long value) noexcept;
 
-constexpr std::size_t operator"" _GB(unsigned long long value) noexcept
-{
-  return std::size_t(value * 1000 * 1000 * 1000);
-}
+constexpr std::size_t operator"" _GB(unsigned long long value) noexcept;
 
 } // namespace literals
 

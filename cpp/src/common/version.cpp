@@ -25,34 +25,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/logging.hpp"
+#include "dart/common/version.hpp"
 
 namespace dart::common {
 
-//========================================================================================
-#if DART_HAVE_spdlog
-LogLevel convert_log_level(spdlog::level::level_enum level)
-{
-  switch (level) {
-    case spdlog::level::trace:
-      return LogLevel::LOGLEVEL_TRACE;
-    case spdlog::level::debug:
-      return LogLevel::LOGLEVEL_DEBUG;
-    case spdlog::level::info:
-      return LogLevel::LOGLEVEL_INFO;
-    case spdlog::level::warn:
-      return LogLevel::LOGLEVEL_WARN;
-    case spdlog::level::err:
-      return LogLevel::LOGLEVEL_ERROR;
-    case spdlog::level::critical:
-      return LogLevel::LOGLEVEL_FATAL;
-    case spdlog::level::off:
-      return LogLevel::LOGLEVEL_OFF;
-    default:
-      return LogLevel::LOGLEVEL_UNKNOWN;
-  }
-}
-
-#endif
+//==============================================================================
 
 } // namespace dart::common

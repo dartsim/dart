@@ -5,12 +5,12 @@ dart_component_setup(
   COMPONENT_NAME
     simulation
   DEPENDENT_COMPONENTS
-    common math collision
+    common math collision multibody
   DEPENDENT_PACKAGES_OPTIONAL
   TARGET_LINK_LIBRARIES_PUBLIC
   TARGET_COMPILE_FEATURES_PUBLIC
   GENERATE_EXPORT_HEADER
   GENERATE_COMPONENT_ALL_HEADER
   SUB_DIRECTORIES
-    system
+    model system
 )

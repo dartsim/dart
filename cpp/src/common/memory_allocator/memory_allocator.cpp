@@ -25,10 +25,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/model.hpp"
+#include "dart/common/memory_allocator/memory_allocator.hpp"
 
-namespace dart::simulation {
+#include "dart/common/bit.hpp"
+#include "dart/common/memory_allocator/heap_allocator.hpp"
+
+namespace dart::common {
 
 //==============================================================================
-
+MemoryAllocator& get_default_allocator()
+{
+  static HeapAllocator default_allocator;
+  return default_allocator;
 }
+
+//==============================================================================
+bool MemoryAllocator::is_valid_alignment(size_t size, size_t alignment) const
+{
+  if (alignment == 0) {
+    return true;
+  }
+
+  if (alignment < sizeof(void*)) {
+    DART_DEBUG("Alignment '{}' must be greater than sizeof(void*).", alignment);
+    return false;
+  }
+
+  if (!ispow2(alignment)) {
+    DART_DEBUG("Alignment '{}' must be a power of 2.", alignment);
+    return false;
+  }
+
+  if (size % alignment != 0) {
+    DART_DEBUG(
+        "Size '{}' must be a multiple of alignment '{}'.", size, alignment);
+    return false;
+  }
+
+  return true;
+}
+
+} // namespace dart::common

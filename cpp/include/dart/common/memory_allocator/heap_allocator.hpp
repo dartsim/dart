@@ -25,34 +25,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/logging.hpp"
+#pragma once
+
+#include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
 
-//========================================================================================
-#if DART_HAVE_spdlog
-LogLevel convert_log_level(spdlog::level::level_enum level)
+class DART_COMMON_API HeapAllocator : public MemoryAllocator
 {
-  switch (level) {
-    case spdlog::level::trace:
-      return LogLevel::LOGLEVEL_TRACE;
-    case spdlog::level::debug:
-      return LogLevel::LOGLEVEL_DEBUG;
-    case spdlog::level::info:
-      return LogLevel::LOGLEVEL_INFO;
-    case spdlog::level::warn:
-      return LogLevel::LOGLEVEL_WARN;
-    case spdlog::level::err:
-      return LogLevel::LOGLEVEL_ERROR;
-    case spdlog::level::critical:
-      return LogLevel::LOGLEVEL_FATAL;
-    case spdlog::level::off:
-      return LogLevel::LOGLEVEL_OFF;
-    default:
-      return LogLevel::LOGLEVEL_UNKNOWN;
-  }
-}
+public:
+  /// Constructor
+  HeapAllocator();
 
-#endif
+  /// Destructor
+  ~HeapAllocator() override;
+
+  [[nodiscard]] void* allocate(size_t size, size_t alignment = 0) override;
+
+  void deallocate(void* pointer, size_t) override;
+};
 
 } // namespace dart::common

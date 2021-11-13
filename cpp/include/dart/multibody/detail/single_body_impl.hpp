@@ -33,54 +33,9 @@ namespace dart::multibody {
 
 //==============================================================================
 template <typename Scalar>
-SingleBody<Scalar>::SingleBody() : RelativeFrame<Scalar>()
+SingleBody<Scalar>::SingleBody() : FreeFrame<Scalar>()
 {
   // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar>
-void SingleBody<Scalar>::set_name(const std::string& name)
-{
-  m_name = name;
-}
-
-//==============================================================================
-template <typename Scalar>
-const std::string& SingleBody<Scalar>::get_name() const
-{
-  return m_name;
-}
-
-//==============================================================================
-template <typename Scalar>
-const math::SE3<Scalar>& SingleBody<Scalar>::get_local_pose() const
-{
-  return m_local_pose;
-}
-
-//==============================================================================
-template <typename Scalar>
-const math::SE3Tangent<Scalar>& SingleBody<Scalar>::get_local_spatial_velocity()
-    const
-{
-  return m_local_spatial_velocity;
-}
-
-//==============================================================================
-template <typename Scalar>
-const math::SE3Tangent<Scalar>&
-SingleBody<Scalar>::get_local_spatial_acceleration() const
-{
-  return m_local_spatial_acceleration;
-}
-
-//==============================================================================
-template <typename Scalar>
-void SingleBody<Scalar>::set_pose(const math::SE3<Scalar>& pose)
-{
-  m_local_pose = pose;
-  this->dirty_pose();
 }
 
 } // namespace dart::multibody

@@ -27,15 +27,22 @@
 
 #pragma once
 
-#include "dart/simulation/export.hpp"
+#include "dart/multibody/single_body.hpp"
+#include "dart/simulation/model/model.hpp"
 
 namespace dart::simulation {
 
-class DART_SIMULATION_API Model
+class DART_SIMULATION_API RigidBody : public Model
 {
 public:
-protected:
+  RigidBody();
+  ~RigidBody() override;
+
+  void set_position(const math::Vector3d& position);
+  math::Vector3d get_position() const;
+
 private:
+  multibody::SingleBody<double> m_single_body;
 };
 
 } // namespace dart::simulation

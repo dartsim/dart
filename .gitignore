@@ -41,3 +41,6 @@ build/
 
 # CMake intermediate files
 CMakeLists.txt.user
+
+# Coverage
+*.gcov

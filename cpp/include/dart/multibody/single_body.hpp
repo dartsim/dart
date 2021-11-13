@@ -32,34 +32,14 @@
 namespace dart::multibody {
 
 template <typename Scalar_>
-class SingleBody : public RelativeFrame<Scalar_>
+class SingleBody : public FreeFrame<Scalar_>
 {
 public:
   using Scalar = Scalar_;
 
   SingleBody();
 
-  // Implementation of Frame<Scalar>
-  void set_name(const std::string& name) override;
-  const std::string& get_name() const override;
-
-private:
-  // Implementation of Frame<Scalar>
-  const math::SE3<Scalar>& get_local_pose() const override;
-  const math::SE3Tangent<Scalar>& get_local_spatial_velocity() const override;
-  const math::SE3Tangent<Scalar>& get_local_spatial_acceleration()
-      const override;
-
-public:
-  void set_pose(const math::SE3<Scalar>& pose);
-
 protected:
-  std::string m_name;
-
-  math::SE3<Scalar> m_local_pose;
-  math::SE3Tangent<Scalar> m_local_spatial_velocity;
-  math::SE3Tangent<Scalar> m_local_spatial_acceleration;
-
 private:
 };
 

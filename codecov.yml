@@ -7,4 +7,5 @@ coverage:
 
 ignore:
   - "cpp/test"
+  - "cpp/external"
   - "python"

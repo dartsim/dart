@@ -125,6 +125,8 @@ set(all_target_candidates
   benchmarks
   dartpy${DART_VERSION_MAJOR}
   test-dartpy${DART_VERSION_MAJOR}
+  doc
+  coverage_html
 )
 foreach(target_candidate ${all_target_candidates})
   if(TARGET ${target_candidate})

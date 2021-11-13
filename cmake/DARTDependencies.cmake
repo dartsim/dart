@@ -33,9 +33,9 @@ find_package(ccd MODULE QUIET)
 # fcl
 find_package(fcl MODULE QUIET)
 
-find_package(OpenGL QUIET MODULE REQUIRED)
+find_package(OpenGL QUIET MODULE)
 
-find_package(OpenSceneGraph 3.2.3 QUIET REQUIRED
+find_package(OpenSceneGraph 3.2.3 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
 )
 if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
@@ -46,7 +46,7 @@ if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
   )
 endif()
 
-find_package(GLEW MODULE QUIET REQUIRED)
+find_package(GLEW MODULE QUIET)
 if(GLEW_FOUND AND NOT TARGET GLEW::glew)
   add_library(GLEW::glew INTERFACE IMPORTED)
   set_target_properties(GLEW::glew PROPERTIES
@@ -56,7 +56,7 @@ if(GLEW_FOUND AND NOT TARGET GLEW::glew)
 endif()
 
 # GLFW3 (optional)
-find_package(glfw3 QUIET CONFIG REQUIRED)
+find_package(glfw3 QUIET CONFIG)
 if(glfw3_FOUND AND NOT TARGET glfw)
   add_library(glfw INTERFACE IMPORTED)
   set_target_properties(glfw PROPERTIES

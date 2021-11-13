@@ -25,34 +25,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/logging.hpp"
+#pragma once
 
-namespace dart::common {
+#include <string>
 
-//========================================================================================
-#if DART_HAVE_spdlog
-LogLevel convert_log_level(spdlog::level::level_enum level)
+#include "dart/simulation/export.hpp"
+
+namespace dart::simulation {
+
+class DART_SIMULATION_API Model
 {
-  switch (level) {
-    case spdlog::level::trace:
-      return LogLevel::LOGLEVEL_TRACE;
-    case spdlog::level::debug:
-      return LogLevel::LOGLEVEL_DEBUG;
-    case spdlog::level::info:
-      return LogLevel::LOGLEVEL_INFO;
-    case spdlog::level::warn:
-      return LogLevel::LOGLEVEL_WARN;
-    case spdlog::level::err:
-      return LogLevel::LOGLEVEL_ERROR;
-    case spdlog::level::critical:
-      return LogLevel::LOGLEVEL_FATAL;
-    case spdlog::level::off:
-      return LogLevel::LOGLEVEL_OFF;
-    default:
-      return LogLevel::LOGLEVEL_UNKNOWN;
-  }
-}
+public:
+  Model() = default;
+  virtual ~Model() = default;
 
-#endif
+  void set_name(const std::string& name);
+  const std::string& get_name() const;
 
-} // namespace dart::common
+private:
+  std::string m_name;
+};
+
+} // namespace dart::simulation

@@ -108,8 +108,6 @@ public:
 
   DART_LIE_GROUP_USE_BASE_TYPES;
 
-  // using DataType = typename internal::traits<This>::DataType;
-
   /// Constructor
   ///
   /// @param[in] data: Pointer to an array of scalar values that this map to use

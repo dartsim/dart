@@ -29,7 +29,11 @@ else()
   list(APPEND compile_definitions_public -DDART_BUILD_TEMPLATE_CODE_FOR_FLOAT=0)
 endif()
 
-set(compile_options_public -fPIC)
+if(MSVC)
+  set(compile_options_public )
+else()
+  set(compile_options_public -fPIC)
+endif()
 
 # Code coverage settings
 if(DART_ENABLE_CODECOV)
@@ -45,6 +49,12 @@ if(DART_ENABLE_CODECOV)
     --coverage  # sets all required flags
   )
   list(APPEND target_link_library_public gcov)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+  list(APPEND compile_definitions_public -DDART_ACTIVE_LOG_LEVEL=1)
+else()
+  list(APPEND compile_definitions_public -DDART_ACTIVE_LOG_LEVEL=2)
 endif()
 
 # Set up component
@@ -66,4 +76,6 @@ dart_component_setup(
     ${link_options_public}
   GENERATE_EXPORT_HEADER
   GENERATE_COMPONENT_ALL_HEADER
+  SUB_DIRECTORIES
+    memory_allocator
 )

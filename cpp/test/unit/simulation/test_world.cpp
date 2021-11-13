@@ -36,6 +36,11 @@ using namespace simulation;
 TEST(WorldTest, Basics)
 {
   auto world = World::Create();
+  EXPECT_EQ(world->get_rigid_body_count(), 0);
+
+  auto body1 = std::make_shared<RigidBody>();
+  world->add_rigid_body(body1);
+  EXPECT_EQ(world->get_rigid_body_count(), 1);
+
   world->update();
-  (void)world;
 }

@@ -16,8 +16,7 @@ jobs:
       matrix:
         toolset: [""]
         build_type: [Release]
-        # build_shared_libs: [ON, OFF]  # TODO(JS): Enable once shared lib build is resolved
-        build_shared_libs: [OFF]
+        build_shared_libs: [ON, OFF]
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
       VCPKG_ROOT: "C:/dartsim/vcpkg"
@@ -47,4 +46,5 @@ jobs:
             -DDART_DEBUG=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
           cmake --build . --config %BUILD_TYPE% --target ALL_BUILD --parallel
+          cmake --build . --config %BUILD_TYPE% --target tests --parallel
           ctest --rerun-failed --output-on-failure -C %BUILD_TYPE%

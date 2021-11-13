@@ -57,6 +57,12 @@ public:
 
   DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(RBase);
 
+  /// Implicit conversion to Eigen::Matrix<Scalar, Dim, 1>
+  operator Eigen::Matrix<Scalar, GroupDim, 1>() const
+  {
+    return coeffs();
+  }
+
   /// @{ @name Group operations
 
   template <typename OtherDerived>

@@ -257,16 +257,22 @@ function(dart_set_project)
     message("[TRACE] PROJECT SRC SOURCE DIR : ${_ARG_SRC_SOURCE_BASE_DIR}\n")
   endif()
 
-  add_compile_options(
-    -Wall
-    $<$<NOT:$<CONFIG:DEBUG>>:-Werror>
-    -Wextra
-    $<$<CONFIG:DEBUG>:-g>
-    $<$<CONFIG:RELEASE>:-O3>
-    $<$<CONFIG:RELWITHDEBINFO>:-g>
-    $<$<CONFIG:RELWITHDEBINFO>:-O3>
-    $<$<CONFIG:MINSIZEREL>:-O3>
-  )
+  if(MSVC)
+#    add_compile_options(
+#      $<$<NOT:$<CONFIG:DEBUG>>:/WX>
+#    )
+  else()
+    add_compile_options(
+      -Wall
+      $<$<NOT:$<CONFIG:DEBUG>>:-Werror>
+      -Wextra
+      $<$<CONFIG:DEBUG>:-g>
+      $<$<CONFIG:RELEASE>:-O3>
+      $<$<CONFIG:RELWITHDEBINFO>:-g>
+      $<$<CONFIG:RELWITHDEBINFO>:-O3>
+      $<$<CONFIG:MINSIZEREL>:-O3>
+    )
+  endif()
 endfunction()
 
 # ==============================================================================
@@ -589,20 +595,10 @@ function(dart_component_setup)
     message(FATAL_ERROR "[ERROR] COMPONENT_NAME is not set!")
   endif()
 
-  if(DART_DEBUG OR DART_TRACE)
-    message("[DEBUG] ================================================")
-    message("[DEBUG]  Component: ${_ARG_COMPONENT_NAME}")
-    message("[DEBUG] =================================================")
-    message("[DEBUG]")
-  endif()
-
-  dart_add_component(COMPONENT_NAME ${_ARG_COMPONENT_NAME})
-  dart_add_component_dependent_components(
-    COMPONENT_NAME ${_ARG_COMPONENT_NAME}
-    DEPENDENT_COMPONENTS ${_ARG_DEPENDENT_COMPONENTS}
-  )
-
   # Get global properties
+  get_property(
+    component_list GLOBAL PROPERTY DART_GLOBAL_PROPERTY_COMPONENT_LIST
+  )
   get_property(
     project_include_source_base_dir GLOBAL PROPERTY DART_GLOBAL_PROPERTY_PROJECT_INCLUDE_SOURCE_BASE_DIR
   )
@@ -613,15 +609,50 @@ function(dart_component_setup)
     project_src_source_base_dir GLOBAL PROPERTY DART_GLOBAL_PROPERTY_PROJECT_SRC_SOURCE_BASE_DIR
   )
 
+  if(DART_DEBUG OR DART_TRACE)
+    message("[DEBUG] ================================================")
+    message("[DEBUG]  Component: ${_ARG_COMPONENT_NAME}")
+    message("[DEBUG] =================================================")
+    message("[DEBUG]")
+  endif()
+
+  # Check dependency component
+  foreach(dep_component ${_ARG_DEPENDENT_COMPONENTS})
+    if(NOT ${dep_component} IN_LIST component_list)
+      message(WARNING "Skipped [${_ARG_COMPONENT_NAME}] due to missing component [${dep_component}].")
+      return()
+    endif()
+  endforeach()
+
+  dart_add_component(COMPONENT_NAME ${_ARG_COMPONENT_NAME})
+  dart_add_component_dependent_components(
+    COMPONENT_NAME ${_ARG_COMPONENT_NAME}
+    DEPENDENT_COMPONENTS ${_ARG_DEPENDENT_COMPONENTS}
+  )
+
   # Set target name
   set(target_name ${PROJECT_NAME}${DART_VERSION_MAJOR}-${_ARG_COMPONENT_NAME})
 
-  # Check dependencies
+  # Check required dependencies
+  foreach(package ${_ARG_DEPENDENT_PACKAGES_REQUIRED})
+    if(${package}_FOUND)
+      if(NOT DART_SKIP_${package})
+        list(APPEND _ARG_DEPENDENT_PACKAGES_REQUIRED ${package})
+      else()
+        message("[WARN] Skipped component [${_ARG_COMPONENT_NAME}] as [DART_SKIP_${package}=ON] is set")
+        return()
+      endif()
+    else()
+      message("[WARN] Skipped component [${_ARG_COMPONENT_NAME}] due to missing [${package}]")
+      return()
+    endif()
+  endforeach()
+
+  # Check optional dependencies
   foreach(package ${_ARG_DEPENDENT_PACKAGES_OPTIONAL})
     if(${package}_FOUND)
       if(NOT DART_SKIP_${package})
         list(APPEND _ARG_TARGET_COMPILE_DEFINITIONS_PUBLIC -DDART_HAVE_${package}=1)
-        list(APPEND _ARG_DEPENDENT_PACKAGES_REQUIRED ${package})
       else()
         list(APPEND _ARG_TARGET_COMPILE_DEFINITIONS_PUBLIC -DDART_HAVE_${package}=0)
         message("[WARN] Building component [${_ARG_COMPONENT_NAME}] without [${package}] as [DART_SKIP_${package}=ON] is set")
@@ -892,7 +923,7 @@ function(dart_component_setup_subdirectory)
   # Context variables
   get_property(current_target_name    GLOBAL PROPERTY _DART_CURRENT_TARGET_NAME)
 
-  # Check dependencies
+  # Check required dependencies
   foreach(package ${_ARG_DEPENDENT_PACKAGES_REQUIRED})
     if(${package}_FOUND)
       if(NOT DART_SKIP_${package})
@@ -1228,6 +1259,58 @@ function(dart_build_executable)
 endfunction()
 
 # ==============================================================================
+# cmake-format: off
+# dart_build_example()
+# cmake-format: on
+
+function(dart_build_example)
+  set(prefix _ARG)
+  set(options
+  )
+  set(oneValueArgs
+    TARGET_NAME
+  )
+  set(multiValueArgs
+    DEPENDENT_COMPONENTS
+    INCLUDE_DIRS
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  # Get global properties
+  get_property(
+    component_list GLOBAL PROPERTY DART_GLOBAL_PROPERTY_COMPONENT_LIST
+  )
+
+  # Check dependency component
+  foreach(dep_component ${_ARG_DEPENDENT_COMPONENTS})
+    if(NOT ${dep_component} IN_LIST component_list)
+      message(WARNING "Skipped [${_ARG_TARGET_NAME}] due to missing component [${dep_component}].")
+      return()
+    endif()
+  endforeach()
+
+  file(GLOB_RECURSE headers "*.hpp")
+  file(GLOB_RECURSE sources "*.cpp")
+
+  add_executable(${_ARG_TARGET_NAME} EXCLUDE_FROM_ALL ${headers} ${sources})
+
+  foreach(comp ${_ARG_DEPENDENT_COMPONENTS})
+    dart_get_component_target_name(
+      COMPONENT_NAME ${comp}
+      OUTPUT_VAR component_target
+    )
+    list(APPEND component_dependent_component_targets ${component_target})
+  endforeach()
+
+  target_link_libraries(${_ARG_TARGET_NAME} PRIVATE ${component_dependent_component_targets})
+
+  dart_clang_format_add(${header} ${sources})
+
+endfunction()
+
+# ==============================================================================
 function(dart_get_test_list output_var)
   dart_property_get(DART_GLOBAL_PROPERTY_TEST_LIST test_list)
   set(${output_var} ${test_list} PARENT_SCOPE)
@@ -1411,11 +1494,14 @@ function(dart_documentation)
       doc_view
       COMMAND ${open_command} ${index_path}
       COMMENT "Opening documentation in a web browser"
+      DEPENDS doc
     )
   endif()
 
   # Install
-  install(DIRECTORY ${html_path} DESTINATION ${_ARG_INSTALL_DIR})
+  if(EXISTS ${gcovr_html_dir})
+    install(DIRECTORY ${html_path} DESTINATION ${_ARG_INSTALL_DIR})
+  endif()
 endfunction()
 
 #===============================================================================
@@ -1533,7 +1619,7 @@ function(dart_coverage)
       DEPENDS coverage_html
       COMMENT "Opening documentation in a web browser."
     )
-    else()
+  else()
     if(_ARG_VERBOSE)
       message(STATUS "Failed to find ${open_command_name}, to enable "
         "'view_docs', please install xdg-utils"
@@ -1543,8 +1629,8 @@ function(dart_coverage)
 
   # Remove all gcovr data and delete the html directory
   add_custom_target(coverage_cleanup
-    COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/*.gcno
-    COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/*.gcda
+    COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcno
+    COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcda
     COMMAND rm -rf ${gcovr_html_dir}
     COMMENT "Removing stored coverage files..."
   )
@@ -1554,5 +1640,7 @@ function(dart_coverage)
   file(MAKE_DIRECTORY ${gcovr_html_dir})
 
   # Install
-  install(DIRECTORY ${gcovr_html_dir}/ DESTINATION ${_ARG_INSTALL_DIR})
+  if(EXISTS ${gcovr_html_dir})
+    install(DIRECTORY ${gcovr_html_dir}/ DESTINATION ${_ARG_INSTALL_DIR})
+  endif()
 endfunction()

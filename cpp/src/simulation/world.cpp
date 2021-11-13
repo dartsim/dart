@@ -27,6 +27,7 @@
 
 #include "dart/simulation/world.hpp"
 
+#include "dart/collision/all.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macro.hpp"
 #include "dart/simulation/system/collision_detection_system.hpp"
@@ -38,6 +39,14 @@ struct World::Implementation
 {
   CollisionDetectionSystem collision_detection_system;
 
+  collision::EnginePtr<double> collision_engine;
+
+  collision::ScenePtr<double> collision_scene;
+
+  math::Vector3d gravity = math::Vector3d(0, 0, -9.81);
+
+  std::vector<RigidBodyPtr> rigid_bodies;
+
   Implementation()
   {
     // Do nothing
@@ -47,7 +56,8 @@ struct World::Implementation
 //==============================================================================
 World::World() : m_impl(std::make_unique<Implementation>())
 {
-  // Do nothing
+  m_impl->collision_engine = collision::DartEngine<double>::Create();
+  m_impl->collision_scene = m_impl->collision_engine->create_scene();
 }
 
 //==============================================================================
@@ -60,7 +70,7 @@ World::~World()
 void World::update(double time_step)
 {
   // Perform broad-phase collision detection (rough collision detection)
-  m_impl->collision_detection_system.update(time_step);
+  m_impl->collision_scene->update(time_step);
 
   // Update islands (active system groups) based on the broad-phase result
 
@@ -93,6 +103,31 @@ void World::update(double time_step)
   // Update memory allocator
 
   DART_NOT_IMPLEMENTED;
+}
+
+//==============================================================================
+void World::set_gravity(const math::Vector3d& gravity)
+{
+  m_impl->gravity = gravity;
+}
+
+//==============================================================================
+math::Vector3d& World::get_gravity() const
+{
+  return m_impl->gravity;
+}
+
+//==============================================================================
+bool World::add_rigid_body(RigidBodyPtr rigid_body)
+{
+  m_impl->rigid_bodies.push_back(rigid_body);
+  return true;
+}
+
+//==============================================================================
+int World::get_rigid_body_count() const
+{
+  return m_impl->rigid_bodies.size();
 }
 
 } // namespace dart::simulation

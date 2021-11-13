@@ -83,10 +83,7 @@ public:
 
   /// @{ @name AABB
 
-  const math::Aabb3<Scalar>& get_aabb() const
-  {
-    return m_aabb;
-  }
+  const math::Aabb3<Scalar>& get_aabb() const;
 
   /// @}
 

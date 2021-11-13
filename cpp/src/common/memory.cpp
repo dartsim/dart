@@ -29,6 +29,7 @@
 
 #include <cstdlib>
 
+#include "dart/common/bit.hpp"
 #include "dart/common/compiler.hpp"
 #include "dart/common/platform.hpp"
 
@@ -39,8 +40,6 @@ void* aligned_alloc(std::size_t alignment, std::size_t size)
 {
 #if DART_COMPILER_MSVC
   return _aligned_malloc(size, alignment);
-#elif DART_OS_MACOS
-  return ::aligned_alloc(alignment, size);
 #else
   return std::aligned_alloc(alignment, size);
 #endif

@@ -25,34 +25,59 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/logging.hpp"
+#pragma once
+
+#include <string>
+#include <vector>
+
+#define DART_MAJOR_VERSION 8
+#define DART_MINOR_VERSION 0
+#define DART_PATCH_VERSION 0
+
+#define DART_VERSION_STRING "8.0.0"
 
 namespace dart::common {
 
-//========================================================================================
-#if DART_HAVE_spdlog
-LogLevel convert_log_level(spdlog::level::level_enum level)
+class Version
 {
-  switch (level) {
-    case spdlog::level::trace:
-      return LogLevel::LOGLEVEL_TRACE;
-    case spdlog::level::debug:
-      return LogLevel::LOGLEVEL_DEBUG;
-    case spdlog::level::info:
-      return LogLevel::LOGLEVEL_INFO;
-    case spdlog::level::warn:
-      return LogLevel::LOGLEVEL_WARN;
-    case spdlog::level::err:
-      return LogLevel::LOGLEVEL_ERROR;
-    case spdlog::level::critical:
-      return LogLevel::LOGLEVEL_FATAL;
-    case spdlog::level::off:
-      return LogLevel::LOGLEVEL_OFF;
-    default:
-      return LogLevel::LOGLEVEL_UNKNOWN;
-  }
+public:
+  static constexpr const char* AsConstChar();
+  static const std::string& AsString();
+
+  static constexpr int GetMajor();
+  static constexpr int GetMinor();
+  static constexpr int GetPatch();
+};
+
+//==============================================================================
+inline constexpr const char* Version::AsConstChar()
+{
+  return DART_VERSION_STRING;
 }
 
-#endif
+//==============================================================================
+inline const std::string& Version::AsString()
+{
+  static const std::string version(AsConstChar());
+  return version;
+}
+
+//==============================================================================
+inline constexpr int Version::GetMajor()
+{
+  return DART_MAJOR_VERSION;
+}
+
+//==============================================================================
+inline constexpr int Version::GetMinor()
+{
+  return DART_MINOR_VERSION;
+}
+
+//==============================================================================
+inline constexpr int Version::GetPatch()
+{
+  return DART_PATCH_VERSION;
+}
 
 } // namespace dart::common

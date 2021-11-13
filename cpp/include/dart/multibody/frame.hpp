@@ -256,14 +256,12 @@ public:
   /// Sets the global position.
   ///
   /// @param[in] position: Global position.
-  template <typename Derived>
-  void set_position(const math::RBase<Derived>& position);
+  void set_position(const math::R3<Scalar>& position);
 
   /// Sets the global position.
   ///
   /// @param[in] position: Global position.
-  template <typename Derived>
-  void set_position(math::RBase<Derived>&& position);
+  void set_position(math::R3<Scalar>&& position);
 
   /// Sets the global spatial velocity in the coordinates of this frame.
   ///

@@ -21,7 +21,11 @@ if(APPLE)
   target_link_libraries(${target_name} PUBLIC "-framework Cocoa")
 endif()
 
-target_compile_options(${target_name} PRIVATE -w -fPIC)
+if(MSVC)
+  target_compile_options(${target_name} PRIVATE /W0)
+else()
+  target_compile_options(${target_name} PRIVATE -w -fPIC)
+endif()
 
 # Install targets
 install(

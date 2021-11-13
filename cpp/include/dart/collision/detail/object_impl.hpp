@@ -104,6 +104,13 @@ void Object<Scalar>::set_position(Scalar x, Scalar y, Scalar z)
 
 //==============================================================================
 template <typename Scalar>
+const math::Aabb3<Scalar>& Object<Scalar>::get_aabb() const
+{
+  return m_aabb;
+}
+
+//==============================================================================
+template <typename Scalar>
 Object<Scalar>::Object(Scene<Scalar>* scene, math::GeometryPtr geometry)
   : m_scene(scene), m_geometry(std::move(geometry))
 {

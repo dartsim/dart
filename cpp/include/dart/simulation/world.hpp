@@ -29,7 +29,9 @@
 
 #include <memory>
 
+#include "dart/math/type.hpp"
 #include "dart/simulation/export.hpp"
+#include "dart/simulation/model/type.hpp"
 
 namespace dart::simulation {
 
@@ -47,6 +49,14 @@ public:
   ~World();
 
   void update(double time_step = 1e-3);
+
+  void set_gravity(const math::Vector3d& gravity);
+
+  math::Vector3d& get_gravity() const;
+
+  bool add_rigid_body(RigidBodyPtr rigid_body);
+
+  int get_rigid_body_count() const;
 
 private:
   struct Implementation;
