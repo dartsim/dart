@@ -93,6 +93,14 @@ dart_set_project(
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/src
 )
 
+# Coverage
+if(DART_ENABLE_CODECOV)
+  dart_coverage(
+    INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cpp/src
+  )
+endif()
+
 # Include the C++ project directory
 include(CTest)
 enable_testing()
@@ -152,5 +160,14 @@ if(TARGET dartpy${DART_VERSION_MAJOR})
   message(STATUS "- 'dartpy${DART_VERSION_MAJOR}'        : build dartpy${DART_VERSION_MAJOR}")
   message(STATUS "- 'dartpy${DART_VERSION_MAJOR}-test'   : build and run dartpy${DART_VERSION_MAJOR} tests")
   message(STATUS "- 'dartpy${DART_VERSION_MAJOR}-install': install dartpy${DART_VERSION_MAJOR}")
+endif()
+if(TARGET doc)
+  message(STATUS "- 'doc'     : generage API doc")
+  message(STATUS "- 'doc_view': view generaged API doc in a browser")
+endif()
+if(TARGET coverage)
+  message(STATUS "- 'coverage'     : generage coverage report")
+  message(STATUS "- 'coverage_html': generage coverage report in html")
+  message(STATUS "- 'coverage_view': view generaged coverage report in a browser")
 endif()
 message(STATUS "")
