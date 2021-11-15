@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,21 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <pybind11/chrono.h>
+#include <pybind11/iostream.h>
+#include <pybind11/pybind11.h>
 
-#include <cstddef>
+#include "dart/common/all.hpp"
 
-#include "dart/common/macro.hpp"
-#include "dart/common/stl_utility.hpp"
+namespace py = pybind11;
 
-namespace dart::common {
+namespace dart::python {
 
-//==============================================================================
-template <bool Flag>
-void static_assert_no_match()
+void py_stopwatch(py::module& m)
 {
-  // https://stackoverflow.com/a/64354296
-  static_assert(Flag, "No match in constexpr if statement.");
+  py::class_<common::StopwatchNS>(m, "Stopwatch")
+      .def(py::init<bool>(), py::arg("start") = true)
+      .def("is_started", &common::StopwatchNS::is_started)
+      .def("start", &common::StopwatchNS::start)
+      .def("stop", &common::StopwatchNS::stop)
+      .def("reset", &common::StopwatchNS::reset)
+      .def("elapsed_s", &common::StopwatchNS::elapsed_s)
+      .def("print", [](const common::StopwatchNS* self) {
+        py::scoped_ostream_redirect stream(
+            std::cout, py::module::import("sys").attr("stdout"));
+        self->print();
+      });
+
+  m.def("tic", &common::tic);
+  m.def("toc", &common::toc, py::arg("print") = false);
+  m.def("toc_s", &common::toc_s, py::arg("print") = false);
+  m.def("toc_ms", &common::toc_ms, py::arg("print") = false);
+  m.def("toc_us", &common::toc_us, py::arg("print") = false);
+  m.def("toc_ns", &common::toc_ns, py::arg("print") = false);
 }
 
-} // namespace dart::common
+} // namespace dart::python

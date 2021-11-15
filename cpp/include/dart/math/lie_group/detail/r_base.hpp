@@ -168,9 +168,24 @@ public:
     return derived();
   }
 
+  void set_zero()
+  {
+    coeffs().setZero();
+  }
+
   [[nodiscard]] bool is_zero(const Scalar tolerance = eps<Scalar>()) const
   {
     return this->is_approx(LieGroup::Zero(), tolerance);
+  }
+
+  [[nodiscard]] Scalar squared_norm() const
+  {
+    return coeffs().squaredNorm();
+  }
+
+  [[nodiscard]] Scalar norm() const
+  {
+    return coeffs().norm();
   }
 
   using Base::coeffs;
@@ -179,6 +194,14 @@ public:
 protected:
   using Base::derived;
 };
+
+//==============================================================================
+template <typename Derived>
+[[nodiscard]] typename Derived::LieGroup operator*(
+    typename Derived::Scalar scalar, const RBase<Derived>& r)
+{
+  return typename Derived::LieGroup(scalar * r.coeffs());
+}
 
 namespace detail {
 

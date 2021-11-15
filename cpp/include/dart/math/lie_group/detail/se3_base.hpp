@@ -94,11 +94,11 @@ public:
   //    return LieGroupNoAlias<Derived, SE3Base>(derived());
   //  }
 
-  [[nodiscard]] Eigen::Map<const SO3<Scalar>> orientation() const;
+  [[nodiscard]] const Eigen::Map<const SO3<Scalar>> orientation() const;
 
   [[nodiscard]] Eigen::Map<SO3<Scalar>> orientation();
 
-  [[nodiscard]] Eigen::Map<const R3<Scalar>> position() const;
+  [[nodiscard]] const Eigen::Map<const R3<Scalar>> position() const;
 
   [[nodiscard]] Eigen::Map<R3<Scalar>> position();
 
@@ -240,7 +240,7 @@ typename SE3Base<Derived>::Tangent SE3Base<Derived>::log(
 
 //==============================================================================
 template <typename Derived>
-Eigen::Map<const SO3<typename SE3Base<Derived>::Scalar>>
+const Eigen::Map<const SO3<typename SE3Base<Derived>::Scalar>>
 SE3Base<Derived>::orientation() const
 {
   return Eigen::Map<const SO3<Scalar>>(data());
@@ -256,7 +256,7 @@ SE3Base<Derived>::orientation()
 
 //==============================================================================
 template <typename Derived>
-Eigen::Map<const R3<typename SE3Base<Derived>::Scalar>>
+const Eigen::Map<const R3<typename SE3Base<Derived>::Scalar>>
 SE3Base<Derived>::position() const
 {
   return Eigen::Map<const R3<Scalar>>(data() + 4);

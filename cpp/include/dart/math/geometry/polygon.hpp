@@ -38,16 +38,15 @@
 #include "dart/common/eigen_include.hpp"
 #include "dart/math/geometry/geometry2.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-template <typename S_>
-class Polygon : public Geometry2
+template <typename Scalar_>
+class Polygon : public Geometry2<Scalar_>
 {
 public:
-  using S = S_;
+  using Scalar = Scalar_;
   using Index = std::size_t;
-  using Vector2 = Eigen::Matrix<S, 2, 1>;
+  using Vector2 = Eigen::Matrix<Scalar, 2, 1>;
 
   static const std::string& getStaticType();
 
@@ -58,7 +57,7 @@ public:
   Vector2 computeCentroid();
 
   /// Generates a convex hull that encloses the trimesh.
-  std::shared_ptr<Polygon<S>> generateConvexHull() const;
+  std::shared_ptr<Polygon<Scalar>> generateConvexHull() const;
 
 private:
   std::vector<Vector2> mPoints;
@@ -70,7 +69,6 @@ using Polygond = Polygon<double>;
 
 extern template class Polygon<double>;
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math
 
 #include "dart/math/geometry/detail/polygon_impl.hpp"

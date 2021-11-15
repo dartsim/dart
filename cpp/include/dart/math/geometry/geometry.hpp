@@ -35,11 +35,12 @@
 #include <memory>
 #include <string>
 
+#include "dart/common/castable.hpp"
 #include "dart/math/export.hpp"
 
 namespace dart::math {
 
-class DART_MATH_API Geometry
+class DART_MATH_API Geometry : public common::Castable<Geometry>
 {
 public:
   /// DataVariance can be used by renderers to determine whether it should
@@ -79,28 +80,14 @@ public:
   }
   // TODO(JS): Make this a pure virtual function
 
-  /// Returns true if the types of this Geometry and the template parameter (a
-  /// geometry class) are identical. This function is a syntactic sugar, which
-  /// is identical to: (getType() == GeometryType::getStaticType()).
-  ///
-  /// Example code:
-  /// \code
-  /// if (geometry->is<Sphere>())
-  ///   std::cout << "The geometry type is sphere!\n";
-  /// \endcode
-  ///
-  /// \sa getType()
-  template <typename GeometryType>
-  bool is() const;
-
-  template <typename GeometryType>
-  const GeometryType* as() const;
-
   /// Sets the name of this geometry.
   void set_name(const std::string& name);
 
   /// Returns the name of this geometry.
   const std::string& get_name() const;
+
+  /// Returns whether this geometry is convex
+  virtual bool is_convex() const;
 
 private:
   /// Name of this geometry.

@@ -33,6 +33,7 @@
 #pragma once
 
 #include "dart/collision/dart/narrow_phase/collision_algorithm.hpp"
+#include "dart/collision/dart/narrow_phase/type.hpp"
 
 namespace dart::collision::detail {
 
@@ -50,6 +51,9 @@ public:
       const Object<Scalar>& o1,
       const Object<Scalar>& o2,
       NarrowPhaseCallback<Scalar>* callback) override;
+
+  using Factory = StatelessCollisionAlgorithmCreateFunc<
+      SphereSphereCollisionAlgorithm<Scalar>>;
 
 protected:
 private:

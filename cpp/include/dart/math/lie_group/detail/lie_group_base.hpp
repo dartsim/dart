@@ -76,9 +76,9 @@ public:
 
   [[nodiscard]] Scalar& operator[](int i);
 
-  Derived& set_identity();
+  void set_identity();
 
-  Derived& set_random();
+  void set_random();
 
   template <typename OtherDerived>
   [[nodiscard]] bool is_approx(
@@ -123,7 +123,9 @@ typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::Identity()
 template <typename Derived>
 typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::Random()
 {
-  return LieGroup().set_random();
+  auto out = LieGroup();
+  out.set_random();
+  return out;
 }
 
 //==============================================================================
@@ -161,20 +163,18 @@ typename LieGroupBase<Derived>::Scalar& LieGroupBase<Derived>::operator[](int i)
 
 //==============================================================================
 template <typename Derived>
-Derived& LieGroupBase<Derived>::set_identity()
+void LieGroupBase<Derived>::set_identity()
 {
   // Assumed the default constructor creates the identity element
   derived() = LieGroup();
-  return derived();
 }
 
 //==============================================================================
 template <typename Derived>
-Derived& LieGroupBase<Derived>::set_random()
+void LieGroupBase<Derived>::set_random()
 {
   detail::RandomSetter<typename Derived::Base>::run(derived());
   detail::NormalizationOperator<typename Derived::Base>::run(derived());
-  return derived();
 }
 
 //==============================================================================

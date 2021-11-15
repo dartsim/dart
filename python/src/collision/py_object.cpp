@@ -43,9 +43,11 @@ void py_object(py::module& m)
 {
   ::py::class_<collision::Objectd, std::shared_ptr<collision::Objectd>>(
       m, "Object")
+      .def("set_pose", &collision::Objectd::set_pose, py::arg("pose"))
+      .def("get_pose", &collision::Objectd::get_pose)
       .def(
           "set_position",
-          py::overload_cast<const math::Vector3d&>(
+          py::overload_cast<const math::R3d&>(
               &collision::Objectd::set_position))
       .def(
           "set_position",
@@ -53,7 +55,14 @@ void py_object(py::module& m)
               &collision::Objectd::set_position),
           py::arg("x"),
           py::arg("y"),
-          py::arg("z"));
+          py::arg("z"))
+      .def("get_position", &collision::Objectd::get_position)
+      .def(
+          "collide",
+          &collision::Objectd::collide,
+          py::arg("other"),
+          py::arg("option") = collision::CollisionOptiond(),
+          py::arg("result") = nullptr);
 }
 
 } // namespace dart::python

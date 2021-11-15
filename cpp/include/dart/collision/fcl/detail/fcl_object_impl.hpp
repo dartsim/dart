@@ -40,28 +40,28 @@ namespace collision {
 
 //==============================================================================
 template <typename Scalar>
-math::Isometry3<Scalar> FclObject<Scalar>::get_pose() const
+math::SE3<Scalar> FclObject<Scalar>::get_pose() const
 {
-  return to_pose3<Scalar>(m_fcl_collision_object->getTransform());
+  return to_se3<Scalar>(m_fcl_collision_object->getTransform());
 }
 
 //==============================================================================
 template <typename Scalar>
-void FclObject<Scalar>::set_pose(const math::Isometry3<Scalar>& tf)
+void FclObject<Scalar>::set_pose(const math::SE3<Scalar>& tf)
 {
   m_fcl_collision_object->setTransform(to_fcl_pose3<Scalar>(tf));
 }
 
 //==============================================================================
 template <typename Scalar>
-math::Vector3<Scalar> FclObject<Scalar>::get_position() const
+math::R3<Scalar> FclObject<Scalar>::get_position() const
 {
   return to_vector3<Scalar>(m_fcl_collision_object->getTranslation());
 }
 
 //==============================================================================
 template <typename Scalar>
-void FclObject<Scalar>::set_position(const math::Vector3<Scalar>& pos)
+void FclObject<Scalar>::set_position(const math::R3<Scalar>& pos)
 {
   m_fcl_collision_object->setTranslation(to_fcl_vector3<Scalar>(pos));
 }
@@ -85,9 +85,9 @@ const FclCollisionObject<Scalar>* FclObject<Scalar>::get_fcl_collision_object()
 template <typename Scalar>
 FclObject<Scalar>::FclObject(
     Scene<Scalar>* collision_scene,
-    math::GeometryPtr shape,
+    math::Geometry3Ptr<Scalar> geometry,
     const std::shared_ptr<FclCollisionGeometry<Scalar>>& fcl_coll_geom)
-  : Object<Scalar>(collision_scene, shape),
+  : Object<Scalar>(collision_scene, std::move(geometry)),
     m_fcl_collision_object(new FclCollisionObject<Scalar>(fcl_coll_geom))
 {
   assert(fcl_coll_geom);

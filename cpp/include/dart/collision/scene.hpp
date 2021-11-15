@@ -53,7 +53,7 @@ public:
   const Engine<Scalar>* get_engine() const;
 
   /// Creates a collision object.
-  ObjectPtr<Scalar> create_object(math::GeometryPtr shape);
+  ObjectPtr<Scalar> create_object(math::Geometry3Ptr<Scalar> geometry);
 
   void remove_object(ObjectPtr<Scalar> object);
 
@@ -69,7 +69,9 @@ protected:
   /// \param[in] collisionDetector: Collision detector that created this group.
   Scene(Engine<Scalar>* engine);
 
-  virtual ObjectPtr<Scalar> create_object_impl(math::GeometryPtr shape) = 0;
+  virtual ObjectPtr<Scalar> create_object_impl(
+      math::Geometry3Ptr<Scalar> geometry)
+      = 0;
 
   /// The parent collision engine that created this scene
   Engine<Scalar>* m_engine;

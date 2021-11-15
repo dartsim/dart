@@ -32,25 +32,57 @@
 
 #pragma once
 
+#include "dart/math/bounding_volume/aabb3.hpp"
 #include "dart/math/geometry/geometry.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-template <typename S_>
+template <typename Scalar_>
 class Geometry3 : public Geometry
 {
 public:
   // Type aliases
-  using S = S_;
+  using Scalar = Scalar_;
 
   /// Computes the volume of this 3D geometry.
-  virtual S get_volume() const
+  virtual Scalar get_volume() const
   {
     return 0;
   }
   // TODO(JS): Make pure virtual
+
+  /// @{ @name AABB
+
+  const Aabb3<Scalar>& get_local_aabb() const;
+
+  virtual bool is_local_aabb_rotation_invariant() const;
+
+  /// @}
+
+protected:
+  virtual void update_local_aabb_impl() const {}
+  // TODO(JS): Make pure virtual
+
+  mutable Aabb3<Scalar> m_local_aabb;
+  mutable bool m_local_aabb_dirty{true};
 };
 
-} // namespace math
-} // namespace dart
+//==============================================================================
+template <typename Scalar>
+const Aabb3<Scalar>& Geometry3<Scalar>::get_local_aabb() const
+{
+  if (m_local_aabb_dirty) {
+    update_local_aabb_impl();
+    m_local_aabb_dirty = false;
+  }
+  return m_local_aabb;
+}
+
+//==============================================================================
+template <typename Scalar>
+bool Geometry3<Scalar>::is_local_aabb_rotation_invariant() const
+{
+  return false;
+}
+
+} // namespace dart::math

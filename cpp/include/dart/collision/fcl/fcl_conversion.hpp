@@ -33,6 +33,7 @@
 #pragma once
 
 #include "dart/collision/fcl/backward_compatibility.hpp"
+#include "dart/math/lie_group/type.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart {
@@ -61,6 +62,22 @@ FclTransform3<Scalar> to_fcl_pose3(const math::Isometry3<Scalar>& T);
 /// Converts FCL transform to Eigen transform
 template <typename Scalar>
 math::Isometry3<Scalar> to_pose3(const FclTransform3<Scalar>& T);
+
+/// Converts FCL vector3 to R3
+template <typename Scalar>
+math::R3<Scalar> to_r3(const FclVector3<Scalar>& vec);
+
+/// Converts FCL matrix3x3 to SO3
+template <typename Scalar>
+math::SO3<Scalar> to_so3(const FclMatrix3<Scalar>& R);
+
+/// Converts Eigen transform to FCL transform
+template <typename Scalar>
+FclTransform3<Scalar> to_fcl_pose3(const math::SE3<Scalar>& T);
+
+/// Converts FCL transform to SE3
+template <typename Scalar>
+math::SE3<Scalar> to_se3(const FclTransform3<Scalar>& T);
 
 } // namespace collision
 } // namespace dart

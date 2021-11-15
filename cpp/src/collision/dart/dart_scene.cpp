@@ -32,10 +32,8 @@
 
 #include "dart/collision/dart/dart_scene.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::collision {
 
 DART_TEMPLATE_CLASS_SOURCE(DartScene)
 
-} // namespace collision
-} // namespace dart
+} // namespace dart::collision

@@ -40,18 +40,15 @@ namespace dart::python {
 
 void py_collision_option(py::module& m)
 {
-  (void)m;
-  //  ::py::class_<collision::CollisionOption<double>>(m, "CollisionOption")
-  //      .def(
-  //          ::py::init<bool, int>(),
-  //          ::py::arg("enable_contact") = true,
-  //          ::py::arg("max_num_contacts") = 1000)
-  //      .def_readwrite(
-  //          "enable_contact",
-  //          &collision::CollisionOption<double>::enable_contact)
-  //      .def_readwrite(
-  //          "max_num_contacts",
-  //          &collision::CollisionOption<double>::max_num_contacts);
+  ::py::class_<collision::CollisionOptiond>(m, "CollisionOption")
+      .def(
+          ::py::init<bool, int>(),
+          ::py::arg("enable_contact") = true,
+          ::py::arg("max_num_contacts") = 1000)
+      .def_readwrite(
+          "enable_contact", &collision::CollisionOptiond::enable_contact)
+      .def_readwrite(
+          "max_num_contacts", &collision::CollisionOptiond::max_num_contacts);
 }
 
 } // namespace dart::python

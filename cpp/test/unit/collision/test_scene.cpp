@@ -49,19 +49,29 @@ TYPED_TEST_SUITE(SceneTest, Types);
 template <typename EngineT>
 void test_scene(const EngineT& engine)
 {
-  // using Scalar = typename EngineT::element_type::Scalar;
+  using Scalar = typename EngineT::element_type::Scalar;
 
   if (!engine) {
     return;
   }
 
-  auto sphere1 = engine->create_sphere_object(0.5);
-  auto sphere2 = engine->create_sphere_object(0.5);
+  auto scene = engine->create_scene();
+  ASSERT_TRUE(scene);
+
+  auto sphere1 = scene->create_sphere_object(0.5);
+  auto sphere2 = scene->create_sphere_object(0.5);
   ASSERT_TRUE(sphere1);
   ASSERT_TRUE(sphere2);
 
   EXPECT_EQ(sphere1->get_id(), 0);
   EXPECT_EQ(sphere2->get_id(), 1);
+
+  scene->update();
+
+  sphere1->set_position(math::Vector3<Scalar>::Random());
+  sphere2->set_position(math::Vector3<Scalar>::Random());
+
+  scene->update();
 }
 
 //==============================================================================

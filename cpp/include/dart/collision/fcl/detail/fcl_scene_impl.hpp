@@ -53,22 +53,23 @@ FclScene<Scalar>::FclScene(Engine<Scalar>* engine)
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> FclScene<Scalar>::create_object_impl(math::GeometryPtr shape)
+ObjectPtr<Scalar> FclScene<Scalar>::create_object_impl(
+    math::Geometry3Ptr<Scalar> geometry)
 {
-  if (!shape) {
+  if (!geometry) {
     DART_WARN("Not allowed to create a collision object for a null shape");
     return nullptr;
   }
 
   auto fcl_collision_geometry
-      = get_mutable_fcl_engine()->create_fcl_collision_geometry(shape);
+      = get_mutable_fcl_engine()->create_fcl_collision_geometry(geometry);
   if (!fcl_collision_geometry) {
     DART_WARN("Failed to create FCL collision geometry.");
     return nullptr;
   }
 
   return std::shared_ptr<FclObject<Scalar>>(
-      new FclObject<Scalar>(this, std::move(shape), fcl_collision_geometry));
+      new FclObject<Scalar>(this, std::move(geometry), fcl_collision_geometry));
 }
 
 //==============================================================================

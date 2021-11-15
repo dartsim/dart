@@ -30,6 +30,7 @@
 #include <memory>
 
 #include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/dart/narrow_phase/type.hpp"
 #include "dart/collision/export.hpp"
 
 namespace dart::collision::detail {
@@ -41,6 +42,8 @@ struct ObjectPair
 
   DartObject<Scalar>* object_a;
   DartObject<Scalar>* object_b;
+
+  CollisionAlgorithm<Scalar>* algorithm;
 
   ObjectPair();
 

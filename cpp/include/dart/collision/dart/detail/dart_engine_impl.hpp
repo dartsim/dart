@@ -48,14 +48,14 @@ int collide_sphere_sphere(
     DartObject<Scalar>* o1,
     DartObject<Scalar>* o2,
     Scalar r0,
-    const math::Isometry3<Scalar>& c0,
+    const math::SE3<Scalar>& c0,
     Scalar r1,
-    const math::Isometry3<Scalar>& c1,
+    const math::SE3<Scalar>& c1,
     CollisionResult<Scalar>* result)
 {
   Scalar rsum = r0 + r1;
-  math::Vector3<Scalar> normal = c0.translation() - c1.translation();
-  Scalar normal_sqr = normal.squaredNorm();
+  math::R3<Scalar> normal = c0.position() - c1.position();
+  Scalar normal_sqr = normal.squared_norm();
 
   if (normal_sqr > rsum * rsum) {
     return 0;
@@ -64,11 +64,11 @@ int collide_sphere_sphere(
   r0 /= rsum;
   r1 /= rsum;
 
-  math::Vector3<Scalar> point = r1 * c0.translation() + r0 * c1.translation();
+  const math::R3<Scalar> point = r1 * c0.position() + r0 * c1.position();
   double penetration;
 
   if (normal_sqr < 1e-6) {
-    normal.setZero();
+    normal.set_zero();
     penetration = rsum;
 
     if (result) {
@@ -113,8 +113,8 @@ int collide_pair(
   const auto& shape1 = o1->get_geometry();
   const auto& shape2 = o2->get_geometry();
 
-  const math::Isometry3<Scalar>& T1 = o1->get_pose();
-  const math::Isometry3<Scalar>& T2 = o2->get_pose();
+  const math::SE3<Scalar>& T1 = o1->get_pose();
+  const math::SE3<Scalar>& T2 = o2->get_pose();
 
   if (const auto& sphere1 = shape1->template as<math::Sphere<Scalar>>()) {
     if (const auto& sphere2 = shape2->template as<math::Sphere<Scalar>>()) {
@@ -170,24 +170,24 @@ ScenePtr<Scalar> DartEngine<Scalar>::create_scene()
 //==============================================================================
 template <typename Scalar>
 bool DartEngine<Scalar>::collide(
-    ObjectPtr<Scalar> object1,
-    ObjectPtr<Scalar> object2,
+    Object<Scalar>* object1,
+    Object<Scalar>* object2,
     const CollisionOption<Scalar>& option,
     CollisionResult<Scalar>* result)
 {
-  auto derived1 = std::dynamic_pointer_cast<DartObject<Scalar>>(object1);
+  auto derived1 = object1->template as<DartObject<Scalar>>();
   if (!derived1) {
     DART_ERROR("Invalid object");
     return false;
   }
 
-  auto derived2 = std::dynamic_pointer_cast<DartObject<Scalar>>(object2);
+  auto derived2 = object2->template as<DartObject<Scalar>>();
   if (!derived2) {
     DART_ERROR("Invalid object");
     return false;
   }
 
-  const int num_contacts = collide_pair(derived1.get(), derived2.get(), result);
+  const int num_contacts = collide_pair(derived1, derived2, result);
 
   DART_UNUSED(option);
 

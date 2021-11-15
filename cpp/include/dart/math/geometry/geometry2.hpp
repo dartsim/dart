@@ -34,14 +34,13 @@
 
 #include "dart/math/geometry/geometry.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
+template <typename Scalar_>
 class Geometry2 : public Geometry
 {
 public:
 private:
 };
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math

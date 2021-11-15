@@ -69,7 +69,14 @@ void py_engine(py::module& m)
              double radius) -> collision::ObjectPtr<double> {
             return self->create_sphere_object(radius);
           },
-          py::arg("radius") = 0.5);
+          py::arg("radius") = 0.5)
+      .def(
+          "collide",
+          &collision::Engined::collide,
+          py::arg("object_a"),
+          py::arg("object_b"),
+          py::arg("option") = collision::CollisionOptiond(),
+          py::arg("result") = nullptr);
 }
 
 } // namespace dart::python

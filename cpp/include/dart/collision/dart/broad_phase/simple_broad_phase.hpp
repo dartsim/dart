@@ -42,12 +42,22 @@ class SimpleBroadPhaseAlgorithm : public BroadPhaseAlgorithm<Scalar_>
 public:
   using Scalar = Scalar_;
 
-  bool add_object(DartObjectPtr<Scalar> object) override;
+  // Documentation inherited
+  bool add_object(DartObject<Scalar>* object) override;
 
+  // Documentation inherited
+  void remove_object(DartObject<Scalar>* object) override;
+
+  // Documentation inherited
+  int get_object_count() const override;
+
+  // Documentation inherited
+  void clear() override;
+
+  // Documentation inherited
   void compute_overlapping_pairs(
       Scalar time_step, BroadPhaseCallback<Scalar>&& callback) override;
 
-protected:
 private:
   std::vector<DartObject<Scalar>*> m_objects;
 };

@@ -48,16 +48,16 @@ public:
   using Scalar = Scalar_;
 
   // Documentation inherited
-  math::Isometry3<Scalar> get_pose() const override;
+  math::SE3<Scalar> get_pose() const override;
 
   // Documentation inherited
-  void set_pose(const math::Isometry3<Scalar>& tf) override;
+  void set_pose(const math::SE3<Scalar>& tf) override;
 
   // Documentation inherited
-  math::Vector3<Scalar> get_position() const override;
+  math::R3<Scalar> get_position() const override;
 
   // Documentation inherited
-  void set_position(const math::Vector3<Scalar>& pos) override;
+  void set_position(const math::R3<Scalar>& pos) override;
 
   /// Return FCL collision object
   FclCollisionObject<Scalar>* get_fcl_collision_object();
@@ -69,7 +69,7 @@ protected:
   /// Constructor
   FclObject(
       Scene<Scalar>* collision_scene,
-      math::GeometryPtr shape,
+      math::Geometry3Ptr<Scalar> geometry,
       const std::shared_ptr<FclCollisionGeometry<Scalar>>& fcl_coll_geom);
 
   // Documentation inherited

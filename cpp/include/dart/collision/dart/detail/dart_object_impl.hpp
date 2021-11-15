@@ -40,36 +40,71 @@ namespace collision {
 
 //==============================================================================
 template <typename Scalar>
-math::Isometry3<Scalar> DartObject<Scalar>::get_pose() const
+math::SE3<Scalar> DartObject<Scalar>::get_pose() const
 {
   return m_pose.to_transformation();
 }
 
 //==============================================================================
 template <typename Scalar>
-void DartObject<Scalar>::set_pose(const math::Isometry3<Scalar>& tf)
+void DartObject<Scalar>::set_pose(const math::SE3<Scalar>& tf)
 {
   m_pose = tf;
+  m_aabb_dirty = true;
 }
 
 //==============================================================================
 template <typename Scalar>
-math::Vector3<Scalar> DartObject<Scalar>::get_position() const
+math::R3<Scalar> DartObject<Scalar>::get_position() const
 {
-  return m_pose.to_translation();
+  return m_pose.position();
 }
 
 //==============================================================================
 template <typename Scalar>
-void DartObject<Scalar>::set_position(const math::Vector3<Scalar>& pos)
+void DartObject<Scalar>::set_position(const math::R3<Scalar>& pos)
 {
   m_pose.position() = pos;
+  m_aabb_dirty = true;
+}
+
+//==============================================================================
+template <typename Scalar>
+const math::Aabb3<Scalar>& DartObject<Scalar>::get_aabb() const
+{
+  if (m_aabb_dirty) {
+    update_aabb();
+    m_aabb_dirty = false;
+  }
+
+  return m_aabb;
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartObject<Scalar>::update_aabb() const
+{
+  if (!this->m_geometry) {
+    m_aabb.reset();
+    m_aabb_dirty = false;
+    return;
+  }
+
+  const math::Aabb3<Scalar>& local_aabb = this->m_geometry->get_local_aabb();
+  if (this->m_geometry->is_local_aabb_rotation_invariant()) {
+    m_aabb.setTransformed(local_aabb, m_pose.to_transformation());
+  } else {
+    const math::Vector3<Scalar> center
+        = local_aabb.get_center() + m_pose.to_translation();
+    const Scalar radius = local_aabb.radius();
+    m_aabb.set_from_sphere(center, radius);
+  }
 }
 
 //==============================================================================
 template <typename Scalar>
 DartObject<Scalar>::DartObject(
-    DartScene<Scalar>* group, math::GeometryPtr shape)
+    DartScene<Scalar>* group, math::Geometry3Ptr<Scalar> shape)
   : Object<Scalar>(group, std::move(shape))
 {
   // Do nothing

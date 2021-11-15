@@ -25,48 +25,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/memory_allocator/heap_allocator.hpp"
+#include <gtest/gtest.h>
 
-#include <algorithm>
-#include <cstdlib>
+#include "dart/common/all.hpp"
 
-namespace dart::common {
+using namespace dart;
+using namespace common;
 
 //==============================================================================
-HeapAllocator::HeapAllocator()
+TEST(ObjectPoolTest, Basics)
 {
-  // Do nothing
+  auto alloc = ObjectPool<double>(2);
+  EXPECT_EQ(alloc.size(), 0);
+
+  auto o1 = alloc.construct();
+  EXPECT_EQ(alloc.size(), 1);
+  EXPECT_EQ(o1, alloc.get_front());
+
+  auto o2 = alloc.construct();
+  EXPECT_EQ(alloc.size(), 2);
+  EXPECT_EQ(o2, alloc.get_front() + 1);
+
+  auto o3 = alloc.construct();
+  EXPECT_EQ(alloc.size(), 2);
+  EXPECT_EQ(o3, nullptr);
+
+  alloc.destroy(o1);
+  alloc.destroy(o2);
+
+#ifndef NDEBUG
+  alloc.print_free_object_stack();
+#endif
 }
 
 //==============================================================================
-HeapAllocator::~HeapAllocator()
-{
-  // Do nothing
-}
-
-//==============================================================================
-void* HeapAllocator::allocate(size_t size, size_t alignment)
-{
-  if (size == 0) {
-    return nullptr;
-  }
-
-  if (alignment == 0) {
-    return std::malloc(size);
-  }
-
-  if (!is_valid_alignment(size, alignment)) {
-    return nullptr;
-  }
-
-  return common::aligned_alloc(alignment, size);
-}
-
-//==============================================================================
-void HeapAllocator::deallocate(void* pointer, size_t size)
-{
-  DART_UNUSED(size);
-  std::free(pointer);
-}
-
-} // namespace dart::common
+// TEST(ObjectPoolTest, DynamicObjectPool)
+//{
+//  auto alloc = DynamicObjectPool<double>(2);
+//}

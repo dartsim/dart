@@ -34,8 +34,47 @@
 
 #include "dart/collision/dart/dart_type.hpp"
 #include "dart/collision/dart/narrow_phase/narrow_phase_callback.hpp"
+#include "dart/collision/dart/narrow_phase/type.hpp"
 
 namespace dart::collision::detail {
+
+template <typename Scalar_>
+struct CollisionAlgorithmCreateFunc
+{
+  using Scalar = Scalar_;
+
+  bool swapped;
+
+  CollisionAlgorithmCreateFunc() : swapped(false)
+  {
+    // Do nothing
+  }
+
+  virtual ~CollisionAlgorithmCreateFunc() = default;
+
+  virtual CollisionAlgorithm<Scalar>* create(
+      const Object<Scalar>* object_a,
+      const Object<Scalar>* object_b,
+      CollisionAlgorithmManager<Scalar>* manager)
+      = 0;
+};
+
+template <typename AlgorithmT>
+struct StatelessCollisionAlgorithmCreateFunc
+  : public CollisionAlgorithmCreateFunc<typename AlgorithmT::Scalar>
+{
+  using Scalar = typename AlgorithmT::Scalar;
+
+  CollisionAlgorithm<Scalar>* create(
+      const Object<Scalar>* object_a,
+      const Object<Scalar>* object_b,
+      CollisionAlgorithmManager<Scalar>* manager) final
+  {
+    DART_UNUSED(object_a, object_b, manager);
+    static AlgorithmT algorithm;
+    return &algorithm;
+  }
+};
 
 template <typename Scalar_>
 class CollisionAlgorithm

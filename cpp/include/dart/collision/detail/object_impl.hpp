@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "dart/collision/engine.hpp"
 #include "dart/collision/object.hpp"
 #include "dart/collision/scene.hpp"
 
@@ -99,19 +100,32 @@ math::ConstGeometryPtr Object<Scalar>::get_geometry() const
 template <typename Scalar>
 void Object<Scalar>::set_position(Scalar x, Scalar y, Scalar z)
 {
-  set_position(math::Vector3<Scalar>(x, y, z));
+  set_position(math::R3<Scalar>(x, y, z));
 }
 
 //==============================================================================
 template <typename Scalar>
-const math::Aabb3<Scalar>& Object<Scalar>::get_aabb() const
+bool Object<Scalar>::collide(
+    Object<Scalar>* other,
+    const CollisionOption<Scalar>& option,
+    CollisionResult<Scalar>* result)
 {
-  return m_aabb;
+  auto engine = get_mutable_engine();
+  auto other_engine = other->get_engine();
+  DART_ASSERT(engine);
+  DART_ASSERT(other_engine);
+  if (engine != other_engine) {
+    DART_WARN("Cannot check collision for objects from different engines.");
+    return false;
+  }
+
+  return engine->collide(this, other, option, result);
 }
 
 //==============================================================================
 template <typename Scalar>
-Object<Scalar>::Object(Scene<Scalar>* scene, math::GeometryPtr geometry)
+Object<Scalar>::Object(
+    Scene<Scalar>* scene, math::Geometry3Ptr<Scalar> geometry)
   : m_scene(scene), m_geometry(std::move(geometry))
 {
   // Do nothing

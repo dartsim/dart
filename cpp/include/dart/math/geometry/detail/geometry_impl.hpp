@@ -34,26 +34,8 @@
 
 #include "dart/math/geometry/geometry.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 //==============================================================================
-template <typename GeometryType>
-bool Geometry::is() const
-{
-  return get_type() == GeometryType::GetType();
-}
 
-//==============================================================================
-template <typename GeometryType>
-const GeometryType* Geometry::as() const
-{
-  if (!this->is<GeometryType>()) {
-    return nullptr;
-  }
-
-  return static_cast<const GeometryType*>(this);
-}
-
-} // namespace math
-} // namespace dart
+} // namespace dart::math

@@ -31,6 +31,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "dart/collision/collision_option.hpp"
 #include "dart/collision/export.hpp"
 #include "dart/collision/type.hpp"
 #include "dart/common/macro.hpp"
@@ -63,9 +64,9 @@ public:
 
   /// Performs narrow phase collision detection
   virtual bool collide(
-      ObjectPtr<Scalar> object1,
-      ObjectPtr<Scalar> object2,
-      const CollisionOption<Scalar>& option = {},
+      Object<Scalar>* object_a,
+      Object<Scalar>* object_b,
+      const CollisionOption<Scalar>& option = CollisionOption<Scalar>(),
       CollisionResult<Scalar>* result = nullptr)
       = 0;
 

@@ -32,9 +32,11 @@
 
 #pragma once
 
-#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
 #include "dart/collision/dart/broad_phase/broad_phase_overlapping_pairs.hpp"
+#include "dart/collision/dart/broad_phase/type.hpp"
 #include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/dart/narrow_phase/collision_algorithm_manager.hpp"
+#include "dart/collision/dart/narrow_phase/type.hpp"
 #include "dart/collision/scene.hpp"
 #include "dart/collision/type.hpp"
 #include "dart/math/geometry/type.hpp"
@@ -55,11 +57,13 @@ public:
   /// Destructor
   ~DartScene() override;
 
-  ObjectPtr<Scalar> create_object_impl(math::GeometryPtr shape) override;
-
   void update(Scalar time_step = 1e-3) override;
 
 protected:
+  // Documentation inherited
+  ObjectPtr<Scalar> create_object_impl(
+      math::Geometry3Ptr<Scalar> geometry) override;
+
   DartEngine<Scalar>* get_mutable_dart_engine();
 
   const DartEngine<Scalar>* get_dart_engine() const;
@@ -70,6 +74,8 @@ private:
   std::shared_ptr<detail::BroadPhaseAlgorithm<Scalar>> m_broad_phase;
 
   detail::BroadPhaseOverlappingPairs<Scalar> m_overlapping_pairs;
+
+  detail::CollisionAlgorithmManager<Scalar> m_collision_algorithm_manager;
 };
 
 DART_TEMPLATE_CLASS_HEADER(COLLISION, DartScene)

@@ -126,18 +126,18 @@ ScenePtr<Scalar> FclEngine<Scalar>::create_scene()
 //==============================================================================
 template <typename Scalar>
 bool FclEngine<Scalar>::collide(
-    ObjectPtr<Scalar> object1,
-    ObjectPtr<Scalar> object2,
+    Object<Scalar>* object1,
+    Object<Scalar>* object2,
     const CollisionOption<Scalar>& option,
     CollisionResult<Scalar>* result)
 {
-  auto derived1 = std::dynamic_pointer_cast<FclObject<Scalar>>(object1);
+  auto derived1 = object1->template as<FclObject<Scalar>>();
   if (!derived1) {
     DART_ERROR("Invalid object");
     return false;
   }
 
-  auto derived2 = std::dynamic_pointer_cast<FclObject<Scalar>>(object2);
+  auto derived2 = object2->template as<FclObject<Scalar>>();
   if (!derived2) {
     DART_ERROR("Invalid object");
     return false;
@@ -166,12 +166,7 @@ bool FclEngine<Scalar>::collide(
 
   if (num_contacts > 0 && result) {
     report_contacts(
-        num_contacts,
-        fcl_result,
-        derived1.get(),
-        derived2.get(),
-        option,
-        *result);
+        num_contacts, fcl_result, derived1, derived2, option, *result);
   }
 
   return (num_contacts > 0);

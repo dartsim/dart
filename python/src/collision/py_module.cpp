@@ -36,18 +36,24 @@ namespace py = pybind11;
 
 namespace dart::python {
 
+void py_collision_option(py::module& sm);
+void py_collision_result(py::module& sm);
 void py_engine(py::module& sm);
 void py_object(py::module& sm);
 void py_scene(py::module& sm);
 void py_narrow_phase_interface(py::module& sm);
+void py_api(py::module& sm);
 
 void add_collision_module(py::module& m)
 {
   auto sm = m.def_submodule("collision");
+  py_collision_option(sm);
+  py_collision_result(sm);
   py_engine(sm);
   py_object(sm);
   py_scene(sm);
   py_narrow_phase_interface(sm);
+  py_api(sm);
 }
 
 } // namespace dart::python

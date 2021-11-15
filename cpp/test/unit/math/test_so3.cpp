@@ -30,6 +30,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include "dart/common/stopwatch.hpp"
 #include "dart/math/all.hpp"
 #include "dart/test/math/GTestUtils.hpp"
 
@@ -309,7 +310,7 @@ struct SO3Test : public testing::Test
 };
 
 //==============================================================================
-using Types = testing::Types<float, double>;
+using Types = testing::Types<float, double, long double>;
 
 //==============================================================================
 TYPED_TEST_SUITE(SO3Test, Types);
@@ -593,84 +594,59 @@ TYPED_TEST(SO3Test, Benchmark)
   SE3C<Scalar> se3c_3(q3, p3);
 
   {
-    auto start = std::chrono::steady_clock::now();
+    common::tic();
     for (auto i = 0; i < num; ++i) {
       so3a_2 = so3a_1 * so3a_2;
       so3a_3 = so3a_3 * so3a_2 * so3a_1;
     }
-    auto end = std::chrono::steady_clock::now();
     std::cout << "[DEBUG] A: " << so3a_3.quat().coeffs().transpose()
               << std::endl;
-    std::cout << "A "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     end - start)
-                     .count()
-              << " us" << std::endl;
+    common::toc_us(true);
   }
 
   {
-    auto start = std::chrono::steady_clock::now();
+    common::tic();
     for (auto i = 0; i < num; ++i) {
       so3b_2 = so3b_1 * so3b_2;
       so3b_3 = so3b_3 * so3b_2 * so3b_1;
     }
-    auto end = std::chrono::steady_clock::now();
     std::cout << "[DEBUG] B: " << so3b_3.m_data.coeffs().transpose()
               << std::endl;
-    std::cout << "B: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     end - start)
-                     .count()
-              << " us" << std::endl;
+    common::toc_us(true);
   }
 
   {
-    auto start = std::chrono::steady_clock::now();
+    common::tic();
     for (auto i = 0; i < num; ++i) {
       se3a_2 = se3a_1 * se3a_2;
       se3a_3 = se3a_3 * se3a_2 * se3a_1;
     }
-    auto end = std::chrono::steady_clock::now();
     std::cout << "[DEBUG] A: " << se3a_3.m_data.template head<4>().transpose()
               << std::endl;
-    std::cout << "A "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     end - start)
-                     .count()
-              << " us" << std::endl;
+    common::toc_us(true);
   }
 
   {
-    auto start = std::chrono::steady_clock::now();
+    common::tic();
     for (auto i = 0; i < num; ++i) {
       se3b_2 = se3b_1 * se3b_2;
       se3b_3 = se3b_3 * se3b_2 * se3b_1;
     }
-    auto end = std::chrono::steady_clock::now();
     std::cout << "[DEBUG] B: " << se3b_3.m_orientation.coeffs().transpose()
               << std::endl;
-    std::cout << "B: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     end - start)
-                     .count()
-              << " us" << std::endl;
+    common::toc_us(true);
   }
 
   {
-    auto start = std::chrono::steady_clock::now();
+    common::tic();
     for (auto i = 0; i < num; ++i) {
       se3c_2 = se3c_1 * se3c_2;
       se3c_3 = se3c_3 * se3c_2 * se3c_1;
     }
-    auto end = std::chrono::steady_clock::now();
     std::cout
         << "[DEBUG] C: "
         << Eigen::Quaternion<Scalar>(se3c_3.m_tf.linear()).coeffs().transpose()
         << std::endl;
-    std::cout << "C: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     end - start)
-                     .count()
-              << " us" << std::endl;
+    common::toc_us(true);
   }
 }

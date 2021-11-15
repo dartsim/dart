@@ -33,49 +33,51 @@
 
 namespace dart::common {
 
-class DART_COMMON_API FreeListAllocator : public MemoryAllocator
-{
-public:
-  FreeListAllocator(
-      MemoryAllocator& base_allocator, size_t initial_allocation = 0);
+// template <typename T>
+// class FreeListAllocator : public MemoryAllocator<T>
+//{
+// public:
+//  FreeListAllocator(
+//      MemoryAllocator<T>& base_allocator, size_t initial_allocation = 0);
 
-  ~FreeListAllocator() override = default;
+//  ~FreeListAllocator() override = default;
 
-  [[nodiscard]] void* allocate(size_t size, size_t alignment = 0) override;
+//  [[nodiscard]] T* allocate(size_t size, size_t alignment = 0) override;
 
-  void deallocate(void* pointer, size_t) override;
+//  void deallocate(T* pointer, size_t) override;
 
-private:
-  struct Header
-  {
-    size_t size;
-    bool is_allocated;
-    Header* previous;
-    Header* next;
-    bool has_next_allocator;
+// private:
+//  struct Header
+//  {
+//    size_t size;
+//    bool is_allocated;
+//    Header* previous;
+//    Header* next;
+//    bool has_next_allocator;
 
-    Header(size_t size, Header* previous, Header* next, bool has_next_allocator)
-      : size(size),
-        is_allocated(false),
-        previous(previous),
-        next(next),
-        has_next_allocator(has_next_allocator)
-    {
-      // Do nothing
-    }
-  };
+//    Header(size_t size, Header* previous, Header* next, bool
+//    has_next_allocator)
+//      : size(size),
+//        is_allocated(false),
+//        previous(previous),
+//        next(next),
+//        has_next_allocator(has_next_allocator)
+//    {
+//      // Do nothing
+//    }
+//  };
 
-  bool allocate_new_block(size_t size);
+//  bool allocate_new_block(size_t size);
 
-  MemoryAllocator& m_base_allocator;
+//  MemoryAllocator<T>& m_base_allocator;
 
-  size_t m_allocated_size;
+//  size_t m_allocated_size;
 
-  Header* m_current_block;
+//  Header* m_current_block;
 
-  Header* m_free;
+//  Header* m_free;
 
-  std::mutex m_mutex;
-};
+//  std::mutex m_mutex;
+//};
 
 } // namespace dart::common

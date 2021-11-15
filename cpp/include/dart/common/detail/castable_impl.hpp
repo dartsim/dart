@@ -31,6 +31,67 @@
 
 namespace dart::common {
 
-//
+//==============================================================================
+DART_CREATE_MEMBER_CHECK(get_type);
+DART_CREATE_MEMBER_CHECK(GetType);
+
+//==============================================================================
+template <typename Base>
+template <typename Derived>
+bool Castable<Base>::is() const
+{
+  if constexpr (
+      has_member_get_type<Base>::value && has_member_GetType<Derived>::value) {
+    return (base().get_type() == Derived::GetType());
+  } else {
+    return (dynamic_cast<const Derived*>(&base()) != nullptr);
+  }
+}
+
+//==============================================================================
+template <typename Base>
+template <typename Derived>
+const Derived* Castable<Base>::as() const
+{
+  return is<Derived>() ? static_cast<const Derived*>(&base()) : nullptr;
+}
+
+//==============================================================================
+template <typename Base>
+template <typename Derived>
+Derived* Castable<Base>::as()
+{
+  return is<Derived>() ? static_cast<Derived*>(&base()) : nullptr;
+}
+
+//==============================================================================
+template <typename Base>
+template <typename Derived>
+const Derived& Castable<Base>::as_ref() const
+{
+  return *as<Derived>();
+}
+
+//==============================================================================
+template <typename Base>
+template <typename Derived>
+Derived& Castable<Base>::as_ref()
+{
+  return *as<Derived>();
+}
+
+//==============================================================================
+template <typename Base>
+const Base& Castable<Base>::base() const
+{
+  return *static_cast<const Base*>(this);
+}
+
+//==============================================================================
+template <typename Base>
+Base& Castable<Base>::base()
+{
+  return *static_cast<Base*>(this);
+}
 
 } // namespace dart::common

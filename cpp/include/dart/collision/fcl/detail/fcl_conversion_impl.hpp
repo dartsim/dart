@@ -83,8 +83,12 @@ math::Matrix3<Scalar> to_matrix3(const FclMatrix3<Scalar>& R)
   return R;
 #else
   math::Matrix3<Scalar> out;
-  out << R(0, 0), R(0, 1), R(0, 2), R(1, 0), R(1, 1), R(1, 2), R(2, 0), R(2, 1),
-      R(2, 2);
+  // clang-format off
+  out <<
+     R(0, 0), R(0, 1), R(0, 2),
+     R(1, 0), R(1, 1), R(1, 2),
+     R(2, 0), R(2, 1), R(2, 2);
+  // clang-format on
   return out;
 #endif
 }
@@ -118,6 +122,54 @@ math::Isometry3<Scalar> to_pose3(const FclTransform3<Scalar>& T)
   trans.linear() = to_matrix3<Scalar>(T.getRotation());
 
   return trans;
+#endif
+}
+
+//==============================================================================
+template <typename Scalar>
+math::R3<Scalar> to_r3(const FclVector3<Scalar>& vec)
+{
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return math::R3<Scalar>(vec);
+#else
+  return math::R3<Scalar>(vec[0], vec[1], vec[2]);
+#endif
+}
+
+//==============================================================================
+template <typename Scalar>
+math::SO3<Scalar> to_so3(const FclMatrix3<Scalar>& R)
+{
+  math::SO3<Scalar> out;
+  out.set_from_rotation_matrix(to_matrix3<Scalar>(R));
+  return out;
+}
+
+//==============================================================================
+template <typename Scalar>
+FclTransform3<Scalar> to_fcl_pose3(const math::SE3<Scalar>& T)
+{
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return T.to_transformation();
+#else
+  FclTransform3<Scalar> out;
+  out.setTranslation(to_fcl_vector3<Scalar>(T.to_translation()));
+  out.setRotation(to_fcl_matrix3<Scalar>(T.to_rotation()));
+  return out;
+#endif
+}
+
+//==============================================================================
+template <typename Scalar>
+math::SE3<Scalar> to_se3(const FclTransform3<Scalar>& T)
+{
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return math::SE3<Scalar>(T);
+#else
+  math::SE3<Scalar> out;
+  out.position() = to_r3<Scalar>(T.getTranslation());
+  out.orientation() = to_so3<Scalar>(T.getRotation());
+  return out;
 #endif
 }
 

@@ -32,8 +32,7 @@
 
 #include "dart/math/geometry/geometry.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 //==============================================================================
 Geometry::Geometry()
@@ -59,5 +58,10 @@ const std::string& Geometry::get_name() const
   return m_name;
 }
 
-} // namespace math
-} // namespace dart
+//==============================================================================
+bool Geometry::is_convex() const
+{
+  return false;
+}
+
+} // namespace dart::math

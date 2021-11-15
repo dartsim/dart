@@ -34,6 +34,7 @@
 
 #include "dart/collision/dart/narrow_phase/analytic_method/sphere_sphere_collision_algorithm.hpp"
 #include "dart/math/geometry/sphere.hpp"
+#include "dart/math/lie_group/r.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::collision::detail {
@@ -61,12 +62,11 @@ bool SphereSphereCollisionAlgorithm<Scalar>::run(
 {
   DART_NOT_IMPLEMENTED;
 
-  math::Vector3<Scalar> diff
-      = object_b.get_position() - object_a.get_position();
+  math::R3<Scalar> diff = object_b.get_position() - object_a.get_position();
   const Scalar len = diff.norm();
 
-  auto sphere_a = object_a.get_shape()->template as<math::Sphere<Scalar>>();
-  auto sphere_b = object_b.get_shape()->template as<math::Sphere<Scalar>>();
+  auto sphere_a = object_a.get_geometry()->template as<math::Sphere<Scalar>>();
+  auto sphere_b = object_b.get_geometry()->template as<math::Sphere<Scalar>>();
 
   assert(sphere_a);
   assert(sphere_b);
@@ -81,7 +81,7 @@ bool SphereSphereCollisionAlgorithm<Scalar>::run(
 
   const math::Vector3<Scalar> normal = len > 0 ? (diff / len) : diff;
   const math::Vector3<Scalar> point
-      = object_a->get_position() + diff * sphere_a->get_radius() / 1;
+      = object_a.get_position() + diff * sphere_a->get_radius() / 1;
   const Scalar depth = sphere_a->get_radius() + sphere_b->get_radius() - len;
 
   (*callback)(point, normal, depth);

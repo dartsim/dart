@@ -74,6 +74,12 @@ public:
   // Documentation inherited
   Vector3 get_local_support_point(const Vector3& direction) const override;
 
+  bool is_local_aabb_rotation_invariant() const override;
+
+protected:
+  // Documentation inherited
+  void update_local_aabb_impl() const override;
+
 private:
   S m_radius;
 };

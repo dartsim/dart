@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,15 +32,50 @@
 
 #pragma once
 
-#include <cstddef>
-#include <vector>
+#include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/dart/narrow_phase/type.hpp"
 
-namespace dart::common {
+namespace dart::collision::detail {
 
-//==============================================================================
-template <bool Flag = false>
-void static_assert_no_match();
+template <typename Scalar_>
+class CollisionAlgorithmManager
+{
+public:
+  using Scalar = Scalar_;
 
-} // namespace dart::common
+  CollisionAlgorithmManager();
 
-#include "dart/common/detail/stl_utility_impl.hpp"
+  ~CollisionAlgorithmManager() = default;
+
+  CollisionAlgorithm<Scalar>* create_algorithm(
+      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b)
+  {
+    DART_ASSERT(object_a);
+    DART_ASSERT(object_b);
+
+    DART_ASSERT(object_a->get_geometry());
+    DART_ASSERT(object_b->get_geometry());
+
+    const auto type_a = object_a->get_geometry()->get_type();
+    const auto type_b = object_b->get_geometry()->get_type();
+
+    auto& create_function = m_collision_matrix[type_a][type_b];
+    DART_ASSERT(create_function);
+
+    return create_function->create(object_a, object_b, this);
+  }
+
+  bool destroy_algorithm(CollisionAlgorithm<Scalar>* algorithm)
+  {
+    return true;
+  }
+
+protected:
+  CollisionAlgorithmCreateFunc<Scalar>* m_collision_matrix[100][100];
+
+private:
+};
+
+} // namespace dart::collision::detail
+
+#include "dart/collision/dart/narrow_phase/collision_algorithm_manager_impl.hpp"

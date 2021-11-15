@@ -117,9 +117,9 @@ public:
     return derived();
   }
 
-  Derived& set_zero();
+  void set_zero();
 
-  Derived& set_random();
+  void set_random();
 
   template <typename OtherDerived>
   [[nodiscard]] Scalar dot(const CotangentBase<OtherDerived>& other) const
@@ -186,23 +186,23 @@ typename CotangentBase<Derived>::Cotangent CotangentBase<Derived>::Zero()
 template <typename Derived>
 typename CotangentBase<Derived>::Cotangent CotangentBase<Derived>::Random()
 {
-  return Cotangent().set_random();
+  auto out = Cotangent();
+  out.set_random();
+  return out;
 }
 
 //==============================================================================
 template <typename Derived>
-Derived& CotangentBase<Derived>::set_zero()
+void CotangentBase<Derived>::set_zero()
 {
   coeffs().set_zero();
-  return derived();
 }
 
 //==============================================================================
 template <typename Derived>
-Derived& CotangentBase<Derived>::set_random()
+void CotangentBase<Derived>::set_random()
 {
   coeffs().setRandom();
-  return derived();
 }
 
 //==============================================================================

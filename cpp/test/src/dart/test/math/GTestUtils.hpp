@@ -37,7 +37,7 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
-#include "dart/common/stl_utility.hpp"
+#include "dart/common/stl_util.hpp"
 #include "dart/math/constant.hpp"
 
 //==============================================================================

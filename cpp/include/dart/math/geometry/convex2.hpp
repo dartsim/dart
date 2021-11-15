@@ -33,17 +33,23 @@
 #pragma once
 
 #include "dart/common/eigen_include.hpp"
-#include "dart/math/geometry/geometry.hpp"
+#include "dart/math/geometry/geometry2.hpp"
 
 namespace dart {
 namespace math {
 
-template <typename S>
-class Convex2
+template <typename Scalar_>
+class Convex2 : public Geometry2<Scalar_>
 {
 public:
-  using Vector2 = Eigen::Matrix<S, 2, 1>;
+  using Scalar = Scalar_;
+  using Vector2 = Eigen::Matrix<Scalar, 2, 1>;
   virtual Vector2 getSupport(const Vector2& direction) const = 0;
+
+  bool is_convex() const final
+  {
+    return true;
+  }
 };
 
 } // namespace math

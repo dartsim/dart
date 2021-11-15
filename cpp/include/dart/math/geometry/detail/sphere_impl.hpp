@@ -112,5 +112,19 @@ typename Sphere<S>::Vector3 Sphere<S>::get_local_support_point(
   return m_radius * direction.normalized();
 }
 
+//==============================================================================
+template <typename Scalar>
+bool Sphere<Scalar>::is_local_aabb_rotation_invariant() const
+{
+  return true;
+}
+
+//==============================================================================
+template <typename Scalar>
+void Sphere<Scalar>::update_local_aabb_impl() const
+{
+  this->m_local_aabb.set_from_sphere(math::Vector3<Scalar>::Zero(), m_radius);
+}
+
 } // namespace math
 } // namespace dart

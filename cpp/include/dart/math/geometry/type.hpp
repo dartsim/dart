@@ -33,5 +33,6 @@
 namespace dart::math {
 
 DART_COMMON_DECLARE_SMART_POINTERS(Geometry)
+DART_DEFINE_CLASS_POINTERS_T1(Geometry3);
 
 } // namespace dart::math

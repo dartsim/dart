@@ -50,10 +50,8 @@ if(BUILD_SHARED_LIBS)
       "Install the shared libraries to be able to import ${pybind_module}."
   )
 endif()
-add_custom_target(
-  ${pybind_module}-install COMMENT "${install_comment}"
-  COMMAND ${CMAKE_COMMAND} -E copy ${PYBIND_MODULE} ${PYTHON_SITE_PACKAGES}
-  DEPENDS ${install_dartpy_deps}
+install(TARGETS ${pybind_module}
+  LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/"
 )
 
 dart_clang_format_add(${dartpy_headers} ${dartpy_sources})

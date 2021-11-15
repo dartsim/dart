@@ -85,6 +85,12 @@ public:
 
   /// @}
 
+  template <typename MatrixDerived>
+  void set_from_rotation_matrix(const Eigen::MatrixBase<MatrixDerived>& mat)
+  {
+    set_from_quaternion(Eigen::Quaternion<Scalar>(mat));
+  }
+
   void set_from_quaternion(Scalar w, Scalar x, Scalar y, Scalar z);
 
   void set_from_quaternion(const Eigen::Quaternion<Scalar>& q);

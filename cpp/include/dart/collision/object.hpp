@@ -31,13 +31,17 @@
 
 #include "dart/collision/export.hpp"
 #include "dart/collision/type.hpp"
+#include "dart/common/castable.hpp"
 #include "dart/math/bounding_volume/aabb3.hpp"
 #include "dart/math/geometry/type.hpp"
+#include "dart/math/lie_group/r.hpp"
+#include "dart/math/lie_group/se3.hpp"
+#include "dart/math/lie_group/so3.hpp"
 
 namespace dart::collision {
 
 template <typename Scalar_>
-class Object
+class Object : public common::Castable<Object<Scalar_>>
 {
 public:
   // Type aliases
@@ -66,30 +70,29 @@ public:
   /// Returns the associated geometry
   math::ConstGeometryPtr get_geometry() const;
 
-  /// Returns the pose of this object in world coordinates
-  virtual math::Isometry3<Scalar> get_pose() const = 0;
-
   /// Sets the pose of this object
-  virtual void set_pose(const math::Isometry3<Scalar>& tf) = 0;
+  virtual void set_pose(const math::SE3<Scalar>& tf) = 0;
 
-  /// Returns the position of this object in world coordinates
-  virtual math::Vector3<Scalar> get_position() const = 0;
+  /// Returns the pose of this object in world coordinates
+  virtual math::SE3<Scalar> get_pose() const = 0;
 
   /// Sets the position os this object in world coordinates
-  virtual void set_position(const math::Vector3<Scalar>& pos) = 0;
+  virtual void set_position(const math::R3<Scalar>& pos) = 0;
 
   /// Sets the position os this object in world coordinates
   void set_position(Scalar x, Scalar y, Scalar z);
 
-  /// @{ @name AABB
+  /// Returns the position of this object in world coordinates
+  virtual math::R3<Scalar> get_position() const = 0;
 
-  const math::Aabb3<Scalar>& get_aabb() const;
-
-  /// @}
+  bool collide(
+      Object<Scalar>* other,
+      const CollisionOption<Scalar>& option,
+      CollisionResult<Scalar>* result = nullptr);
 
 protected:
   /// Contructor
-  Object(Scene<Scalar>* scene, math::GeometryPtr geometry);
+  Object(Scene<Scalar>* scene, math::Geometry3Ptr<Scalar> geometry);
 
   /// Update the collision object of the collision detection engine. This
   /// function will be called ahead of every collision checking by
@@ -100,10 +103,8 @@ protected:
   /// Collision group
   Scene<Scalar>* m_scene;
 
-  math::Aabb3<Scalar> m_aabb;
-
   /// Geometry
-  const math::GeometryPtr m_geometry;
+  const math::Geometry3Ptr<Scalar> m_geometry;
 
   void* m_user_data = nullptr;
 

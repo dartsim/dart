@@ -38,11 +38,14 @@ namespace dart::common {
 ///
 /// \note The derived classes should be thread safe when DART_ENABLE_THREAD_SAFE
 /// is defined to 1
-class DART_COMMON_API MemoryAllocator
+template <typename T = void>
+class MemoryAllocator
 {
 public:
+  using value_type = T;
+
   /// Default constructor
-  MemoryAllocator() = default;
+  MemoryAllocator() noexcept = default;
 
   /// Destructor
   virtual ~MemoryAllocator() = default;
@@ -54,30 +57,27 @@ public:
   /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// @return On failure, a null pointer
-  [[nodiscard]] virtual void* allocate(size_t size, size_t alignment = 0) = 0;
+  [[nodiscard]] virtual T* allocate(size_t size, size_t alignment = 0) = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Releases previously allocated memory.
-  virtual void deallocate(void* pointer, size_t) = 0;
+  virtual void deallocate(T* pointer, size_t) = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Creates an object.
-  template <typename T, typename... Args>
+  template <typename... Args>
   [[nodiscard]] T* construct(Args&&... args) noexcept;
 
   /// Creates an object to an aligned memory.
-  template <typename T, typename... Args>
+  template <typename... Args>
   [[nodiscard]] T* aligned_construct(size_t alignment, Args&&... args) noexcept;
 
   /// Destroys an object created by this allocator.
-  template <typename T>
   void destroy(T* object) noexcept;
 
 protected:
   bool is_valid_alignment(size_t size, size_t alignment) const;
 };
-
-DART_COMMON_API MemoryAllocator& get_default_allocator();
 
 } // namespace dart::common
 

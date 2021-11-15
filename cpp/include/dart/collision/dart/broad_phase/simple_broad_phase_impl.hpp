@@ -33,26 +33,56 @@
 #pragma once
 
 #include "dart/collision/dart/broad_phase/simple_broad_phase.hpp"
+#include "dart/common/limit.hpp"
+#include "dart/common/stl_util.hpp"
 
 namespace dart::collision::detail {
 
 //==============================================================================
 template <typename Scalar>
-bool SimpleBroadPhaseAlgorithm<Scalar>::add_object(DartObjectPtr<Scalar> object)
+bool SimpleBroadPhaseAlgorithm<Scalar>::add_object(DartObject<Scalar>* object)
 {
+  DART_ASSERT(static_cast<int>(m_objects.size()) <= common::max<int>());
+
   if (!object) {
     DART_DEBUG("Cannot add null object to broad phase algorithm.");
     return false;
   }
 
-  if (std::find(m_objects.begin(), m_objects.end(), object.get())
+  if (std::find(m_objects.begin(), m_objects.end(), object)
       != m_objects.end()) {
     DART_DEBUG("Cannot add the same object twice to broad phase algorithm.");
     return false;
   }
 
-  m_objects.push_back(object.get());
+  m_objects.push_back(object);
   return true;
+}
+
+//==============================================================================
+template <typename Scalar>
+void SimpleBroadPhaseAlgorithm<Scalar>::remove_object(
+    DartObject<Scalar>* object)
+{
+  if (!object) {
+    return;
+  }
+
+  common::erase(m_objects, object);
+}
+
+//==============================================================================
+template <typename Scalar>
+int SimpleBroadPhaseAlgorithm<Scalar>::get_object_count() const
+{
+  return m_objects.size();
+}
+
+//==============================================================================
+template <typename Scalar>
+void SimpleBroadPhaseAlgorithm<Scalar>::clear()
+{
+  return m_objects.clear();
 }
 
 //==============================================================================
@@ -60,11 +90,7 @@ template <typename Scalar>
 void SimpleBroadPhaseAlgorithm<Scalar>::compute_overlapping_pairs(
     Scalar time_step, BroadPhaseCallback<Scalar>&& callback)
 {
-  (void)time_step;
-  (void)callback;
-  DART_NOT_IMPLEMENTED;
-
-  // TODO(JS): Update AABB (or any BV)
+  DART_UNUSED(time_step);
 
   for (auto it_a = m_objects.cbegin(); it_a != m_objects.cend(); ++it_a) {
     DartObject<Scalar>* object_a = *it_a;

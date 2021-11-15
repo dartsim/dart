@@ -32,108 +32,109 @@
 
 namespace dart::common {
 
-//==============================================================================
-FreeListAllocator::FreeListAllocator(
-    MemoryAllocator& base_allocator, size_t initial_allocation)
-  : m_base_allocator(base_allocator),
-    m_allocated_size(0),
-    m_current_block(nullptr),
-    m_free(nullptr)
-{
-  DART_NOT_IMPLEMENTED;
-  allocate_new_block(std::min<size_t>(initial_allocation, 1024u));
-}
+////==============================================================================
+// FreeListAllocator::FreeListAllocator(
+//    MemoryAllocator& base_allocator, size_t initial_allocation)
+//  : m_base_allocator(base_allocator),
+//    m_allocated_size(0),
+//    m_current_block(nullptr),
+//    m_free(nullptr)
+//{
+//  DART_NOT_IMPLEMENTED;
+//  allocate_new_block(std::min<size_t>(initial_allocation, 1024u));
+//}
 
-//==============================================================================
-void* FreeListAllocator::allocate(size_t size, size_t alignment)
-{
-  DART_NOT_IMPLEMENTED;
+////==============================================================================
+// void* FreeListAllocator::allocate(size_t size, size_t alignment)
+//{
+//  DART_NOT_IMPLEMENTED;
 
-  if (size == 0) {
-    return nullptr;
-  }
+//  if (size == 0) {
+//    return nullptr;
+//  }
 
-  if (m_current_block == nullptr) {
-    return nullptr;
-  }
+//  if (m_current_block == nullptr) {
+//    return nullptr;
+//  }
 
-  if (!is_valid_alignment(size, alignment)) {
-    return nullptr;
-  }
+//  if (!is_valid_alignment(size, alignment)) {
+//    return nullptr;
+//  }
 
-  std::lock_guard<std::mutex> lock(m_mutex);
+//  std::lock_guard<std::mutex> lock(m_mutex);
 
-  Header* current = m_current_block;
-  DART_ASSERT(m_current_block->previous == nullptr);
+//  Header* current = m_current_block;
+//  DART_ASSERT(m_current_block->previous == nullptr);
 
-  if (m_free) {
-    DART_ASSERT(!m_free->is_allocated);
+//  if (m_free) {
+//    DART_ASSERT(!m_free->is_allocated);
 
-    if (size <= m_free->size) {
-      current = m_free;
-      m_free = nullptr;
-    }
-  }
+//    if (size <= m_free->size) {
+//      current = m_free;
+//      m_free = nullptr;
+//    }
+//  }
 
-  while (current) {
-    if (current->is_allocated && size <= current->size) {
-      // split_memory_block(current, size);
-      break;
-    }
-    current = current->previous;
-  }
+//  while (current) {
+//    if (current->is_allocated && size <= current->size) {
+//      // split_memory_block(current, size);
+//      break;
+//    }
+//    current = current->previous;
+//  }
 
-  if (current == nullptr) {
-    if (!allocate_new_block((m_allocated_size + size) * 2)) {
-      return nullptr;
-    }
+//  if (current == nullptr) {
+//    if (!allocate_new_block((m_allocated_size + size) * 2)) {
+//      return nullptr;
+//    }
 
-    DART_ASSERT(m_free != nullptr);
-    DART_ASSERT(!m_free->is_allocated);
+//    DART_ASSERT(m_free != nullptr);
+//    DART_ASSERT(!m_free->is_allocated);
 
-    current = m_free;
-    DART_ASSERT(current->size >= size);
+//    current = m_free;
+//    DART_ASSERT(current->size >= size);
 
-    // split_memory_block(current, size);
-  }
+//    // split_memory_block(current, size);
+//  }
 
-  current->is_allocated = true;
+//  current->is_allocated = true;
 
-  if (current->next != nullptr && !current->next->is_allocated) {
-    m_free = current->next;
-  }
+//  if (current->next != nullptr && !current->next->is_allocated) {
+//    m_free = current->next;
+//  }
 
-  return static_cast<void*>(
-      reinterpret_cast<unsigned char*>(current) + sizeof(Header));
-}
+//  return static_cast<void*>(
+//      reinterpret_cast<unsigned char*>(current) + sizeof(Header));
+//}
 
-//==============================================================================
-void FreeListAllocator::deallocate(void* pointer, size_t)
-{
-  DART_NOT_IMPLEMENTED;
-  std::free(pointer);
-}
+////==============================================================================
+// void FreeListAllocator::deallocate(void* pointer, size_t)
+//{
+//  DART_NOT_IMPLEMENTED;
+//  std::free(pointer);
+//}
 
-//==============================================================================
-bool FreeListAllocator::allocate_new_block(size_t size)
-{
-  void* new_block_void_ptr = m_base_allocator.allocate(size + sizeof(Header));
-  if (!new_block_void_ptr) {
-    return false;
-  }
+////==============================================================================
+// bool FreeListAllocator::allocate_new_block(size_t size)
+//{
+//  void* new_block_void_ptr = m_base_allocator.allocate(size + sizeof(Header));
+//  if (!new_block_void_ptr) {
+//    return false;
+//  }
 
-  Header* new_block
-      = new (new_block_void_ptr) Header(size, nullptr, m_current_block, false);
+//  Header* new_block
+//      = new (new_block_void_ptr) Header(size, nullptr, m_current_block,
+//      false);
 
-  if (m_current_block) {
-    m_current_block->previous = new_block;
-  }
+//  if (m_current_block) {
+//    m_current_block->previous = new_block;
+//  }
 
-  m_current_block = new_block;
-  m_free = m_current_block;
-  m_allocated_size += size;
+//  m_current_block = new_block;
+//  m_free = m_current_block;
+//  m_allocated_size += size;
 
-  return true;
-}
+//  return true;
+//}
 
 } // namespace dart::common

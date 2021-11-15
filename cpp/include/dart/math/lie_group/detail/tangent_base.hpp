@@ -117,9 +117,9 @@ public:
     return derived();
   }
 
-  Derived& set_zero();
+  void set_zero();
 
-  Derived& set_random();
+  void set_random();
 
   template <typename OtherDerived>
   [[nodiscard]] Scalar dot(const TangentBase<OtherDerived>& other) const
@@ -186,23 +186,23 @@ typename TangentBase<Derived>::Tangent TangentBase<Derived>::Zero()
 template <typename Derived>
 typename TangentBase<Derived>::Tangent TangentBase<Derived>::Random()
 {
-  return Tangent().set_random();
+  auto out = Tangent();
+  out.set_random();
+  return out;
 }
 
 //==============================================================================
 template <typename Derived>
-Derived& TangentBase<Derived>::set_zero()
+void TangentBase<Derived>::set_zero()
 {
   coeffs().set_zero();
-  return derived();
 }
 
 //==============================================================================
 template <typename Derived>
-Derived& TangentBase<Derived>::set_random()
+void TangentBase<Derived>::set_random()
 {
   coeffs().setRandom();
-  return derived();
 }
 
 //==============================================================================

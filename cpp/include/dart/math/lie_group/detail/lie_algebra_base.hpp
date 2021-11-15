@@ -59,9 +59,9 @@ public:
 
   DART_LIE_GROUP_BASE_DATA(DataType);
 
-  Derived& set_zero();
+  void set_zero();
 
-  Derived& set_random();
+  void set_random();
 
 protected:
   DART_LIE_GROUP_BASE_DERIVED;
@@ -85,18 +85,16 @@ typename LieAlgebraBase<Derived>::LieAlgebra LieAlgebraBase<Derived>::Random()
 
 //==============================================================================
 template <typename Derived>
-Derived& LieAlgebraBase<Derived>::set_zero()
+void LieAlgebraBase<Derived>::set_zero()
 {
   coeffs().set_zero();
-  return derived();
 }
 
 //==============================================================================
 template <typename Derived>
-Derived& LieAlgebraBase<Derived>::set_random()
+void LieAlgebraBase<Derived>::set_random()
 {
   derived() = Random();
-  return derived();
 }
 
 } // namespace dart::math

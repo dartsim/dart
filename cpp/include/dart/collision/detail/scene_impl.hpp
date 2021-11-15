@@ -64,7 +64,8 @@ const Engine<Scalar>* Scene<Scalar>::get_engine() const
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> Scene<Scalar>::create_object(math::GeometryPtr shape)
+ObjectPtr<Scalar> Scene<Scalar>::create_object(
+    math::Geometry3Ptr<Scalar> geometry)
 {
   // Check object ID
   if (m_next_collision_object_id == std::numeric_limits<ObjectId>::max()) {
@@ -74,7 +75,7 @@ ObjectPtr<Scalar> Scene<Scalar>::create_object(math::GeometryPtr shape)
   }
 
   // Create new object
-  auto new_object = create_object_impl(std::move(shape));
+  auto new_object = create_object_impl(std::move(geometry));
   if (!new_object) {
     DART_WARN(
         "Failed to create a new collision object by the underlying collision "

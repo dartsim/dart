@@ -27,14 +27,9 @@
 
 #pragma once
 
-#include <string>
-
 #include "dart/common/metaprogramming.hpp"
 
 namespace dart::common {
-
-DART_CREATE_MEMBER_CHECK(get_type);
-DART_CREATE_MEMBER_CHECK(GetType);
 
 template <typename Base>
 class Castable
@@ -52,51 +47,24 @@ public:
   ///
   /// \sa get_type()
   template <typename Derived>
-  bool is() const
-  {
-    if constexpr (
-        has_member_get_type<Base>::value
-        && has_member_GetType<Derived>::value) {
-      return (base().get_type() == Derived::GetType());
-    } else {
-      return (dynamic_cast<const Derived*>(this) != nullptr);
-    }
-  }
+  bool is() const;
 
   template <typename Derived>
-  const Derived* as() const
-  {
-    return is<Derived>() ? static_cast<const Derived*>(this) : nullptr;
-  }
+  const Derived* as() const;
 
   template <typename Derived>
-  Derived* as()
-  {
-    return is<Derived>() ? static_cast<Derived*>(this) : nullptr;
-  }
+  Derived* as();
 
   template <typename Derived>
-  const Derived& as_ref() const
-  {
-    return *as<Derived>();
-  }
+  const Derived& as_ref() const;
 
   template <typename Derived>
-  Derived& as_ref()
-  {
-    return *as<Derived>();
-  }
+  Derived& as_ref();
 
 private:
-  const Base& base() const
-  {
-    return *static_cast<const Base*>(this);
-  }
+  const Base& base() const;
 
-  Base& base()
-  {
-    return *static_cast<Base*>(this);
-  }
+  Base& base();
 };
 
 } // namespace dart::common

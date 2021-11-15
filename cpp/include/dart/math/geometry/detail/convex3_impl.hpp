@@ -35,17 +35,22 @@
 #include "dart/common/logging.hpp"
 #include "dart/math/geometry/convex3.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 //==============================================================================
-template <typename S>
-typename Convex3<S>::Vector3 Convex3<S>::get_local_support_point(
+template <typename Scalar>
+typename Convex3<Scalar>::Vector3 Convex3<Scalar>::get_local_support_point(
     const Vector3& /*direction*/) const
 {
   DART_ERROR("Not implemented for [{}]", this->get_type());
   return Vector3::UnitX();
 };
 
-} // namespace math
-} // namespace dart
+//==============================================================================
+template <typename Scalar>
+bool Convex3<Scalar>::is_convex() const
+{
+  return true;
+}
+
+} // namespace dart::math

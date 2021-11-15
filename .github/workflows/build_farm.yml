@@ -15,21 +15,21 @@ jobs:
     if: github.event_name == 'push'
     name: Trigger Build Farm
     runs-on: ubuntu-latest
-    steps:
-      - name: Send request to dartsim/dart-build-farm to build a commit
-        run: |
-          curl -X POST https://api.github.com/repos/dartsim/dart-build-farm/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.ACCESS_TOKEN }} \
-          --data '{"event_type": "Build Commit", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'", "ref": "'"$GITHUB_REF"'" }}'
+    # steps:
+    #   - name: Send request to dartsim/dart-build-farm to build a commit
+    #     run: |
+    #       curl -X POST https://api.github.com/repos/dartsim/dart-build-farm/dispatches \
+    #       -H 'Accept: application/vnd.github.everest-preview+json' \
+    #       -u ${{ secrets.ACCESS_TOKEN }} \
+    #       --data '{"event_type": "Build Commit", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'", "ref": "'"$GITHUB_REF"'" }}'
   build_farm_on_schedule:
     if: github.event_name == 'schedule'
     name: Trigger Build Farm
     runs-on: ubuntu-latest
-    steps:
-      - name: Send request to dartsim/dart-build-farm to build dart8/main
-        run: |
-          curl -X POST https://api.github.com/repos/dartsim/dart-build-farm/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.ACCESS_TOKEN }} \
-          --data '{"event_type": "Build Commit", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'", "ref": "dart8/main" }}'
+    # steps:
+    #   - name: Send request to dartsim/dart-build-farm to build dart8/main
+    #     run: |
+    #       curl -X POST https://api.github.com/repos/dartsim/dart-build-farm/dispatches \
+    #       -H 'Accept: application/vnd.github.everest-preview+json' \
+    #       -u ${{ secrets.ACCESS_TOKEN }} \
+    #       --data '{"event_type": "Build Commit", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'", "ref": "dart8/main" }}'

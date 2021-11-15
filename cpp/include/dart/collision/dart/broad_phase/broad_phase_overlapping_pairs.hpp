@@ -35,14 +35,6 @@
 
 namespace dart::collision::detail {
 
-struct ObjectPairHash
-{
-  std::size_t operator()(const std::pair<ObjectId, ObjectId>& key) const
-  {
-    return common::hash_pair_szudzik(key.first, key.second);
-  }
-};
-
 /// Container specialized for storing collision object pairs that are usually
 /// detected by the broad phase collision detection
 template <typename Scalar_>
@@ -62,8 +54,15 @@ public:
 
   bool remove(DartObject<Scalar>* object_a, DartObject<Scalar>* object_b);
 
-protected:
 private:
+  struct ObjectPairHash
+  {
+    std::size_t operator()(const std::pair<ObjectId, ObjectId>& key) const
+    {
+      return common::hash_pair_szudzik(key.first, key.second);
+    }
+  };
+
   std::unordered_map<
       std::pair<ObjectId, ObjectId>,
       ObjectPair<Scalar>,
@@ -73,4 +72,4 @@ private:
 
 } // namespace dart::collision::detail
 
-#include "dart/collision/dart/broad_phase/broad_phase_overlapping_pairs.hpp"
+#include "dart/collision/dart/broad_phase/broad_phase_overlapping_pairs_impl.hpp"

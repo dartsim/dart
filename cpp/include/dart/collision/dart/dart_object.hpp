@@ -47,30 +47,42 @@ public:
   using Scalar = Scalar_;
 
   // Documentation inherited
-  math::Isometry3<Scalar> get_pose() const override;
+  math::SE3<Scalar> get_pose() const override;
 
   // Documentation inherited
-  void set_pose(const math::Isometry3<Scalar>& tf) override;
+  void set_pose(const math::SE3<Scalar>& tf) override;
 
   // Documentation inherited
-  math::Vector3<Scalar> get_position() const override;
+  math::R3<Scalar> get_position() const override;
 
   // Documentation inherited
-  void set_position(const math::Vector3<Scalar>& pos) override;
+  void set_position(const math::R3<Scalar>& pos) override;
+
+  /// @{ @name AABB
+
+  const math::Aabb3<Scalar>& get_aabb() const;
+
+  /// @}
 
 protected:
   /// Constructor
-  DartObject(DartScene<Scalar>* group, math::GeometryPtr shape);
+  DartObject(DartScene<Scalar>* group, math::Geometry3Ptr<Scalar> shape);
 
   // Documentation inherited
   void update_engine_data() override;
 
 private:
+  void update_aabb() const;
+
   friend class DartEngine<Scalar>;
   friend class DartScene<Scalar>;
 
   /// Pose of the collision object
   math::SE3<Scalar> m_pose;
+
+  mutable math::Aabb3<Scalar> m_aabb;
+
+  mutable bool m_aabb_dirty{true};
 };
 
 DART_TEMPLATE_CLASS_HEADER(COLLISION, DartObject)

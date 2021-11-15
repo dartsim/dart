@@ -41,8 +41,7 @@
 #include "dart/common/macro.hpp"
 #include "dart/math/geometry/sphere.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::collision {
 
 //==============================================================================
 template <typename Scalar>
@@ -60,17 +59,18 @@ DartScene<Scalar>::~DartScene()
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> DartScene<Scalar>::create_object_impl(math::GeometryPtr shape)
+ObjectPtr<Scalar> DartScene<Scalar>::create_object_impl(
+    math::Geometry3Ptr<Scalar> geometry)
 {
-  if (!shape) {
+  if (!geometry) {
     DART_WARN("Not allowed to create a collision object for a null shape");
     return nullptr;
   }
 
   auto object = std::shared_ptr<DartObject<Scalar>>(
-      new DartObject<Scalar>(this, std::move(shape)));
+      new DartObject<Scalar>(this, std::move(geometry)));
 
-  if (!m_broad_phase->add_object(object)) {
+  if (!m_broad_phase->add_object(object.get())) {
     DART_DEBUG("Failed to add collision object to broad phase algorithm.");
     return nullptr;
   }
@@ -96,11 +96,9 @@ const DartEngine<Scalar>* DartScene<Scalar>::get_dart_engine() const
 template <typename Scalar>
 void DartScene<Scalar>::update(Scalar time_step)
 {
-  (void)time_step;
   DART_NOT_IMPLEMENTED;
 
-  m_broad_phase->update_overlapping_pairs(time_step);
+  m_broad_phase->update_overlapping_pairs(time_step, m_overlapping_pairs);
 }
 
-} // namespace collision
-} // namespace dart
+} // namespace dart::collision

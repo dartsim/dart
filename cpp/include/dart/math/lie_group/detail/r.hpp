@@ -97,6 +97,11 @@ public:
     /* Do nothing */
   }
 
+  R(Scalar x, Scalar y, Scalar z) : m_data(x, y, z)
+  {
+    // Do nothing
+  }
+
   /// Destructor
   ~R() = default;
 

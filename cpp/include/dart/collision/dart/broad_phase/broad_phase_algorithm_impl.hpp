@@ -36,6 +36,37 @@
 
 namespace dart::collision::detail {
 
+namespace {
+
+template <typename Scalar>
+class Callback : public BroadPhaseCallback<Scalar>
+{
+public:
+  Callback(detail::BroadPhaseOverlappingPairs<Scalar>& pairs) : m_pairs(pairs)
+  {
+    // Do nothing
+  }
+
+  bool add_pair(
+      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
+  {
+    m_pairs.add(object_a, object_b);
+    return false;
+  }
+
+  bool remove_pair(
+      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
+  {
+    m_pairs.remove(object_a, object_b);
+    return false;
+  }
+
+private:
+  detail::BroadPhaseOverlappingPairs<Scalar>& m_pairs;
+};
+
+} // namespace
+
 //==============================================================================
 template <typename Scalar>
 BroadPhaseAlgorithm<Scalar>::BroadPhaseAlgorithm()
@@ -52,10 +83,10 @@ BroadPhaseAlgorithm<Scalar>::~BroadPhaseAlgorithm()
 
 //==============================================================================
 template <typename Scalar>
-void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(Scalar time_step)
+void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(
+    Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs)
 {
-  (void)time_step;
-  DART_NOT_IMPLEMENTED;
+  compute_overlapping_pairs(time_step, Callback(pairs));
 }
 
 } // namespace dart::collision::detail

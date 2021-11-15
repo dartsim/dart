@@ -40,6 +40,13 @@ namespace dart::collision {
 
 template <typename Scalar>
 bool collide(
+    Object<Scalar>* object1,
+    Object<Scalar>* object2,
+    const CollisionOption<Scalar>& option = {},
+    CollisionResult<Scalar>* result = nullptr);
+
+template <typename Scalar>
+bool collide(
     ObjectPtr<Scalar> object1,
     ObjectPtr<Scalar> object2,
     const CollisionOption<Scalar>& option = {},

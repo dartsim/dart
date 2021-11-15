@@ -37,31 +37,30 @@
 #include "dart/math/constant.hpp"
 #include "dart/math/geometry/polygon.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 //==============================================================================
-template <typename S>
-const std::string& Polygon<S>::getStaticType()
+template <typename Scalar>
+const std::string& Polygon<Scalar>::getStaticType()
 {
   static const std::string type("Polygon");
   return type;
 }
 
 //==============================================================================
-template <typename S>
-const std::string& Polygon<S>::get_type() const
+template <typename Scalar>
+const std::string& Polygon<Scalar>::get_type() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-template <typename S>
-std::shared_ptr<Polygon<S>> Polygon<S>::generateConvexHull() const
+template <typename Scalar>
+std::shared_ptr<Polygon<Scalar>> Polygon<Scalar>::generateConvexHull() const
 {
   //  mIndices.clear();
 
-  auto polygon = std::make_shared<Polygon<S>>();
+  auto polygon = std::make_shared<Polygon<Scalar>>();
 
   if (mPoints.size() <= 3) {
     // Three or fewer points is already a convex hull
@@ -74,5 +73,4 @@ std::shared_ptr<Polygon<S>> Polygon<S>::generateConvexHull() const
   return polygon;
 }
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math

@@ -32,24 +32,25 @@
 
 #pragma once
 
-#include "dart/common/eigen_include.hpp"
 #include "dart/math/geometry/geometry3.hpp"
+#include "dart/math/type.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-template <typename S>
-class Convex3 : public Geometry3<S>
+template <typename Scalar_>
+class Convex3 : public Geometry3<Scalar_>
 {
 public:
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
+  using Scalar = Scalar_;
+  using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
 
   /// Returns the support point given direction
   virtual Vector3 get_local_support_point(const Vector3& direction) const;
   // TODO(JS): Make this pure virtual
+
+  bool is_convex() const final;
 };
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math
 
 #include "dart/math/geometry/detail/convex3_impl.hpp"

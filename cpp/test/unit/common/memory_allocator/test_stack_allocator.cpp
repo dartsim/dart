@@ -34,7 +34,7 @@
 using namespace dart;
 using namespace common;
 
-class NullAllocator : public dart::common::MemoryAllocator
+class NullAllocator : public dart::common::MemoryAllocator<void>
 {
 public:
   [[nodiscard]] void* allocate(size_t size, size_t alignment = 0) override

@@ -33,6 +33,7 @@
 #pragma once
 
 #include "dart/collision/dart/broad_phase/broad_phase_callback.hpp"
+#include "dart/collision/dart/broad_phase/broad_phase_overlapping_pairs.hpp"
 #include "dart/collision/dart/dart_type.hpp"
 
 namespace dart::collision::detail {
@@ -47,13 +48,20 @@ public:
 
   virtual ~BroadPhaseAlgorithm();
 
-  virtual bool add_object(DartObjectPtr<Scalar> object) = 0;
+  virtual bool add_object(DartObject<Scalar>* object) = 0;
+
+  virtual void remove_object(DartObject<Scalar>* object) = 0;
+
+  virtual int get_object_count() const = 0;
+
+  virtual void clear() = 0;
 
   virtual void compute_overlapping_pairs(
       Scalar time_step, BroadPhaseCallback<Scalar>&& callback)
       = 0;
 
-  void update_overlapping_pairs(Scalar time_step);
+  void update_overlapping_pairs(
+      Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs);
 
 protected:
 private:

@@ -25,24 +25,55 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include "dart/common/memory_allocator/memory_allocator.hpp"
+#include "dart/common/stopwatch.hpp"
 
-namespace dart::common {
+using namespace dart;
+using namespace common;
 
-class DART_COMMON_API HeapAllocator : public MemoryAllocator
+//==============================================================================
+TEST(StopwatchTest, Basics)
 {
-public:
-  /// Constructor
-  HeapAllocator();
+  auto sw = StopwatchNS();
 
-  /// Destructor
-  ~HeapAllocator() override;
+  // Stopwatch is started by default
+  EXPECT_TRUE(sw.is_started());
+  EXPECT_TRUE(common::StopwatchNS(true).is_started());
+  EXPECT_FALSE(common::StopwatchNS(false).is_started());
 
-  [[nodiscard]] void* allocate(size_t size, size_t alignment = 0) override;
+  // Stop the stopwatch
+  sw.stop();
+  EXPECT_FALSE(sw.is_started());
 
-  void deallocate(void* pointer, size_t) override;
-};
+  // Elapsed time should be the same
+  auto elapsed1 = sw.elapsed_s();
+  EXPECT_DOUBLE_EQ(elapsed1, sw.elapsed_s());
+  EXPECT_DOUBLE_EQ(elapsed1, sw.elapsed_s());
 
-} // namespace dart::common
+  // Elapsed time monotonically increase while the stopwatch is running
+  sw.start();
+  EXPECT_GE(sw.elapsed_s(), elapsed1);
+  EXPECT_GE(sw.elapsed_s(), elapsed1);
+
+  // Starting a stopwatch already started doesn't have any effect
+  sw.start();
+  EXPECT_TRUE(sw.is_started());
+
+  // Restting a started stopwatch resets the elapsed time but doesn't stop the
+  // stopwatch
+  sw.start();
+  sw.reset();
+  EXPECT_TRUE(sw.is_started());
+  EXPECT_GE(sw.elapsed_s(), 0.0);
+  EXPECT_GE(sw.elapsed_s(), 0.0);
+
+  // Restting a stopped stopwatch resets the elapsed time but doesn't start the
+  // stopwatch
+  sw.stop();
+  sw.reset();
+  EXPECT_FALSE(sw.is_started());
+  EXPECT_DOUBLE_EQ(sw.elapsed_s(), 0.0);
+
+  sw.print();
+}

@@ -32,20 +32,25 @@
 
 #pragma once
 
+#include "dart/common/bit.hpp"
+#include "dart/common/memory_allocator/c_allocator.hpp"
 #include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::construct(Args&&... args) noexcept
+template <typename T>
+template <typename... Args>
+T* MemoryAllocator<T>::construct(Args&&... args) noexcept
 {
   return aligned_construct<T>(0, std::forward<Args>(args)...);
 }
 
 //==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::aligned_construct(size_t alignment, Args&&... args) noexcept
+template <typename T>
+template <typename... Args>
+T* MemoryAllocator<T>::aligned_construct(
+    size_t alignment, Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
   void* object = allocate(sizeof(T), alignment);
@@ -66,13 +71,40 @@ T* MemoryAllocator::aligned_construct(size_t alignment, Args&&... args) noexcept
 
 //==============================================================================
 template <typename T>
-void MemoryAllocator::destroy(T* object) noexcept
+void MemoryAllocator<T>::destroy(T* object) noexcept
 {
   if (!object) {
     return;
   }
   object->~T();
   deallocate(object, sizeof(T));
+}
+
+//==============================================================================
+template <typename T>
+bool MemoryAllocator<T>::is_valid_alignment(size_t size, size_t alignment) const
+{
+  if (alignment == 0) {
+    return true;
+  }
+
+  if (alignment < sizeof(void*)) {
+    DART_DEBUG("Alignment '{}' must be greater than sizeof(void*).", alignment);
+    return false;
+  }
+
+  if (!ispow2(alignment)) {
+    DART_DEBUG("Alignment '{}' must be a power of 2.", alignment);
+    return false;
+  }
+
+  if (size % alignment != 0) {
+    DART_DEBUG(
+        "Size '{}' must be a multiple of alignment '{}'.", size, alignment);
+    return false;
+  }
+
+  return true;
 }
 
 } // namespace dart::common
