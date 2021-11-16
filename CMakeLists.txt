@@ -38,6 +38,13 @@ include(DARTFunctions)
 # Build Options
 # ==============================================================================
 
+# Print the header
+message(STATUS "[ Build Tools ]")
+
+message(STATUS "- CMake: ${CMAKE_VERSION}")
+message(STATUS "- C++  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "")
+
 # Binary options
 dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 dart_option(DOWNLOAD_DEPENDENT_PACKAGES "Whether to download dependent package" ON)
@@ -67,8 +74,22 @@ endif()
 include(DARTDependencies)
 
 # ==============================================================================
-# Compiler settings
+# Compiler settings and compiler specific settings
 # ==============================================================================
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0.0)
+    message("[DEBUG] GCC version is less than 9.0.0")
+    set(DART_ENABLE_TBB FALSE)
+  else()
+    message("[DEBUG] GCC version is equal to or greater than 9.0.0")
+    if(TBB_FOUND)
+      set(DART_ENABLE_TBB TRUE)
+    else()
+      set(DART_ENABLE_TBB FALSE)
+    endif()
+  endif()
+endif()
 
 if(DART_ENABLE_NATIVE_ARCH)
   if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

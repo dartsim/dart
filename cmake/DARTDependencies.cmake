@@ -24,6 +24,14 @@ endif()
 # Optional dependencies
 #===============================================================================
 
+# TBB
+find_package(TBB QUIET)  # TODO(JS): Make optional
+message("[DEBUG] TBB_FOUND: ${TBB_FOUND}")
+
+# OpenMP
+find_package(OpenMP QUIET REQUIRED)  # TODO(JS): Make optional
+message("[DEBUG] OpenMP_FOUND: ${OpenMP_FOUND}")
+
 # spdlog
 find_package(spdlog 1.3.0 QUIET)
 
@@ -33,8 +41,10 @@ find_package(ccd MODULE QUIET)
 # fcl
 find_package(fcl MODULE QUIET)
 
+# OpenMP
 find_package(OpenGL QUIET MODULE)
 
+# OpenSceneGraph
 find_package(OpenSceneGraph 3.2.3 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
 )
@@ -46,6 +56,7 @@ if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
   )
 endif()
 
+# GLEW
 find_package(GLEW MODULE QUIET)
 if(GLEW_FOUND AND NOT TARGET GLEW::glew)
   add_library(GLEW::glew INTERFACE IMPORTED)

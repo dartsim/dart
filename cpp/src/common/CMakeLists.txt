@@ -4,6 +4,7 @@
 set(target_link_library_public
   Eigen3::Eigen
   ${CMAKE_DL_LIBS}
+  OpenMP::OpenMP_CXX  # TODO(JS): Make optional
 )
 if(TARGET fmt::fmt-header-only)
   list(APPEND target_link_library_public fmt::fmt-header-only)
@@ -80,3 +81,15 @@ dart_component_setup(
   SUB_DIRECTORIES
     memory_allocator resource
 )
+
+# TODO(JS): Fix this
+message("[DEBUG] TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIRS}")
+message("[DEBUG] TBB_LIBRARIES   : ${TBB_LIBRARIES}")
+# TODO(JS): Make TBB imported target
+if(DART_ENABLE_TBB)
+  target_include_directories(dart8-common PUBLIC ${TBB_INCLUDE_DIRS})
+  target_link_libraries(dart8-common PUBLIC ${TBB_LIBRARIES})
+  target_compile_definitions(dart8-common PUBLIC -DDART_ENABLE_TBB=1)
+else()
+  target_compile_definitions(dart8-common PUBLIC -DDART_ENABLE_TBB=0)
+endif()

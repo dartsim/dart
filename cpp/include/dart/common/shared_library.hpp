@@ -134,4 +134,4 @@ private:
   HandlePtr m_handle{nullptr};
 };
 
-} // namespace dart
+} // namespace dart::common
