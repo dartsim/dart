@@ -1,0 +1,1390 @@
+<?xml version='1.0'?>
+<skel version="1.0">
+    <world name="world 1">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 0 -9.81</gravity>
+            <collision_detector>fcl_mesh</collision_detector>
+        </physics>
+
+        <skeleton name="ground skeleton">
+            <body name="ground">
+                <transformation>0 0 -0.55 0 0 0</transformation>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>10.0 10.0 0.1</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>10.0 10.0 0.1</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <joint type="weld" name="joint 1">
+                <parent>world</parent>
+                <child>ground</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>0 2.1 0 0 0 0</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>0 -2.1 0 0 0 3.1416</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>-2.1 0 0 0 0 1.5708</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>2.1 0 0 0 0 -1.5708</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>1.48 1.48 0 0 0 -0.7854</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>1.48 -1.48 0 0 0 -2.3562</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>-1.48 -1.48 0 0 0 2.3562</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+        <skeleton name="double_pendulum_with_base">
+            <transformation>-1.48 1.48 0 0 0 0.7854</transformation>
+            <body name="base">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>100</mass>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.01 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.8</radius>
+                            <height>0.02</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>-0.275 0 1.1 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 2.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <body name="upper_link">
+                <transformation>0 0 2.1 -1.5708 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>-0.05 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 1.0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.2</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                             
+            </body>
+            <body name="lower_link">
+                <transformation>0.25 1.0 2.1 -2 0 0</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0.5</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 1.5708 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.08</radius>
+                            <height>0.3</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.1</radius>
+                            <height>0.9</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                     
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>base</child>
+                <transformation>0 0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>base</parent>
+                <child>upper_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>upper_link</parent>
+                <child>lower_link</child>
+                <transformation>0 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>1 0 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>
+
+	
+    </world>
+</skel>

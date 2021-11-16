@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/uri.hpp"
+#include "dart/common/resource/uri.hpp"
 
 #include <cassert>
 #include <regex>

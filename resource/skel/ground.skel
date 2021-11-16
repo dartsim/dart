@@ -1,0 +1,31 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world 1">
+    <skeleton name="ground skeleton">
+      <body name="ground">
+        <transformation>0 -0.975 0 0 0 0</transformation>
+        <visualization_shape>
+          <transformation>0 0 0 0 0 0</transformation>
+          <geometry>
+            <box>
+              <size>2.5 0.05 2.5</size>
+            </box>
+          </geometry>
+          <color>0.95 0.95 0.95</color>
+        </visualization_shape>
+        <collision_shape>
+          <transformation>0 0 0 0 0 0</transformation>
+          <geometry>
+            <box>
+              <size>2.5 0.05 2.5</size>
+            </box>
+          </geometry>
+        </collision_shape>                                
+      </body>
+      <joint type="weld" name="joint 1">
+        <parent>world</parent>
+        <child>ground</child>
+      </joint>
+    </skeleton>	
+  </world>
+</skel>

@@ -79,6 +79,14 @@ if(DART_ENABLE_NATIVE_ARCH)
 endif()
 
 # ==============================================================================
+# Definitions
+# ==============================================================================
+# Definitions intended to be used by only docs, examples, and tests, but
+# not the library.
+set(DART_RESOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resource/")
+add_definitions(-DDART_RESOURCE_DIR="${DART_RESOURCE_DIR}")
+
+# ==============================================================================
 # C++ Project Build
 # ==============================================================================
 

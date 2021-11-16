@@ -1,0 +1,101 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="world 1">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 -9.81 0</gravity>
+        </physics>
+        <skeleton name="skeleton 1">
+            <body name="link 1">
+                <gravity>1</gravity>
+                <transformation>0.1 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <soft>
+                    <total_mass>0.5</total_mass>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.05 0.05</size>
+                        </box>
+                    </geometry>
+		<kv>10</kv>
+		<ke>10</ke>
+		<damp>0.05</damp>
+                </soft>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.05 0.05</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.05 0.05</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <body name="link 2">
+                <gravity>1</gravity>
+                <transformation>0.3 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <soft_shape>
+                    <total_mass>0.5</total_mass>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.05 0.05</size>
+                        </box>
+                    </geometry>
+		<kv>100</kv>
+		<ke>10</ke>
+		<damp>0.10</damp>
+                </soft_shape>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.05 0.05</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.05 0.05</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <joint type="revolute" name="joint 1">
+                <parent>world</parent>
+                <child>link 1</child>
+                <transformation>-0.1 0 0 0 0 0</transformation>
+                <!--transformation>0 -0.1 0 0 0 0</transformation-->
+                <axis>
+                    <xyz>0 0 1</xyz>
+		    <damping>0.1</damping>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>link 1</parent>
+                <child>link 2</child>
+                <transformation>-0.1 0 0 0 0 0</transformation>
+                <!--transformation>0 -0.1 0 0 0 0</transformation-->
+                <axis>
+                    <xyz>0 0 1</xyz>
+		    <damping>0.1</damping>
+                </axis>
+            </joint>
+        </skeleton>	
+    </world>
+</skel>

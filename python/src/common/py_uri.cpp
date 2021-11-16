@@ -33,7 +33,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
-#include "dart/common/uri.hpp"
+#include "dart/common/resource/uri.hpp"
 
 namespace py = pybind11;
 

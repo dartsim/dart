@@ -27,7 +27,7 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/common/uri.hpp"
+#include "dart/common/resource/uri.hpp"
 
 using namespace dart;
 using namespace common;

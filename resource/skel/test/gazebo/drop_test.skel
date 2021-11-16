@@ -1,0 +1,161 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="default">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 0 -9.81</gravity>
+            <collision_detector>fcl_mesh</collision_detector>
+        </physics>
+        <skeleton name="grount skeleton">
+            <body name="ground">
+                <transformation>0 0 0 0 0 0</transformation>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>10.0 10.0 0.01</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>10.0 10.0 0.01</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <joint type="weld" name="joint 1">
+                <parent>world</parent>
+                <child>ground</child>
+            </joint>
+        </skeleton>	
+        
+        <skeleton name="box">
+            <transformation>0 0 10.5 0 0 0</transformation>
+            <body name="link">
+                <gravity>1</gravity>
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>1.0</mass>
+                    <offset>0 0 0</offset>
+                    <moment_of_inertia>
+                        <ixx>1</ixx>
+                        <iyy>1</iyy>
+                        <izz>1</izz>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyz>0</iyz>
+                    </moment_of_inertia>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>1 1 1</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>1 1 1</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>link</child>
+            </joint>
+        </skeleton>	
+        
+        <skeleton name="sphere">
+            <transformation>0 1.5 10.5 0 0 0</transformation>
+            <body name="link">
+                <gravity>1</gravity>
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>1.0</mass>
+                    <offset>0 0 0</offset>
+                    <moment_of_inertia>
+                        <ixx>1</ixx>
+                        <iyy>1</iyy>
+                        <izz>1</izz>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyz>0</iyz>
+                    </moment_of_inertia>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <ellipsoid>
+                            <size>1 1 1</size>
+                        </ellipsoid>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <ellipsoid>
+                            <size>1 1 1</size>
+                        </ellipsoid>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>link</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="cylinder">
+            <transformation>0 -1.5 10.5 0 0 0</transformation>
+            <body name="link">
+                <gravity>1</gravity>
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>1.0</mass>
+                    <offset>0 0 0</offset>
+                    <moment_of_inertia>
+                        <ixx>1</ixx>
+                        <iyy>1</iyy>
+                        <izz>1</izz>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyz>0</iyz>
+                    </moment_of_inertia>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.5</radius>
+                            <height>1.0</height>
+                        </cylinder>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.5</radius>
+                            <height>1.0</height>
+                        </cylinder>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>link</child>
+            </joint>
+        </skeleton>
+        
+    </world>
+</skel>

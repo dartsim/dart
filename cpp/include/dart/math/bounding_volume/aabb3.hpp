@@ -152,7 +152,7 @@ public:
 
   S get_volume() const;
 
-  S getSize() const;
+  S get_size() const;
 
   /// Return true if this Aabb3 overlaps with other Aabb3.
   bool overlaps(const Aabb3& other) const;

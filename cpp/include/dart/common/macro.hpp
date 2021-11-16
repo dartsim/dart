@@ -144,3 +144,14 @@
       ::std::is_floating_point_v<scalar_type>,                                 \
       "#class_name only can instantiated with floating point types");          \
   void _ANONYMOUS_FUNCTION_11()
+
+// This macro is used to mark all the class that inherit
+// virtually from another to avoid problems on MSVC
+// See https://github.com/dartsim/dart/issues/1522
+#if defined(_MSC_VER)
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN __pragma(vtordisp(push, 2))
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END __pragma(vtordisp(pop))
+#else
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+  #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
+#endif

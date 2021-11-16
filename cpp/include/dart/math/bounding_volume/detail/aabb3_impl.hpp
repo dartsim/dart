@@ -121,7 +121,7 @@ Vector3<S> Aabb3<S>::get_extent() const
 
 //==============================================================================
 template <typename S>
-S Aabb3<S>::getSize() const
+S Aabb3<S>::get_size() const
 {
   return get_extent().squaredNorm();
 }

@@ -1,0 +1,134 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="world 1">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>-30 10 -50</gravity>
+            <collision_detector>fcl_mesh</collision_detector>
+        </physics>
+        
+        <skeleton name="grount skeleton">
+            <body name="ground">
+                <transformation>0 0 0 0 0 0</transformation>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>10.0 10.0 0.05</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>10.0 10.0 0.05</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <joint type="weld" name="joint 1">
+                <parent>world</parent>
+                <child>ground</child>
+            </joint>
+        </skeleton>	
+
+        <!-- to demonstrate force torque, we'll construct a model with
+    	two bodies stacked vertically, with a x-revolute joint connecting
+	.  The joint has 90 degree limit.  We'll test force
+    	torque readings and characterize them. -->
+        <skeleton name="model_1">
+            <body name="link_1">
+                <gravity>1</gravity>
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>10.0</mass>
+                    <offset>0 0 0.5</offset>
+                    <moment_of_inertia>
+                        <ixx>0.1</ixx>
+                        <iyy>0.1</iyy>
+                        <izz>0.1</izz>
+                        <ixy>0.0</ixy>
+                        <ixz>0.0</ixz>
+                        <iyz>0.0</iyz>
+                    </moment_of_inertia>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <ellipsoid>
+                            <size>0.1 0.1 0.1</size>
+                        </ellipsoid>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <ellipsoid>
+                            <size>0.1 0.1 0.1</size>
+                        </ellipsoid>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <body name="link_2">
+                <gravity>1</gravity>
+                <transformation>0 0 1.5 0 0 0</transformation>
+                <inertia>
+                    <mass>10.0</mass>
+                    <offset>0 0 0.5</offset>
+                    <moment_of_inertia>
+                        <ixx>0.1</ixx>
+                        <iyy>0.1</iyy>
+                        <izz>0.1</izz>
+                        <ixy>0.0</ixy>
+                        <ixz>0.0</ixz>
+                        <iyz>0.0</iyz>
+                    </moment_of_inertia>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.4</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0.5 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.4</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+
+            <joint type="revolute" name="joint1">
+                <transformation>0 0 0.5 0 0 0</transformation>
+                <parent>world</parent>
+                <child>link_1</child>
+                <axis>
+                    <xyz>1 0 0</xyz>
+		    <damping>0.0</damping>
+                    <limit>
+                        <lower>-1.57079</lower>
+                        <upper>1.57079</upper>
+                    </limit>
+                </axis>
+            </joint>
+
+            <joint type="revolute" name="joint2">
+                <transformation>0 0 0 0 0 0</transformation>
+                <parent>link_1</parent>
+                <child>link_2</child>
+                <axis>
+                    <xyz>0 0 1</xyz>
+		    <damping>0.0</damping>
+                </axis>
+            </joint>
+
+        </skeleton>	
+
+    </world>
+</skel>
