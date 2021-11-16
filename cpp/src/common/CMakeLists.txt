@@ -3,6 +3,7 @@
 # Target link libraries
 set(target_link_library_public
   Eigen3::Eigen
+  ${CMAKE_DL_LIBS}
 )
 if(TARGET fmt::fmt-header-only)
   list(APPEND target_link_library_public fmt::fmt-header-only)
