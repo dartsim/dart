@@ -37,12 +37,14 @@ namespace py = pybind11;
 namespace dart::python {
 
 void py_stopwatch(py::module& sm);
+void py_uri(py::module& sm);
 
 void add_common_module(py::module& m)
 {
   auto sm = m.def_submodule("common");
 
   py_stopwatch(sm);
+  py_uri(sm);
 }
 
 } // namespace dart::python
