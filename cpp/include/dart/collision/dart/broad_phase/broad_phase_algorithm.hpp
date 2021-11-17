@@ -60,6 +60,11 @@ public:
       Scalar time_step, BroadPhaseCallback<Scalar>&& callback)
       = 0;
 
+  virtual void compute_overlapping_pairs(
+      Scalar time_step,
+      std::function<void(DartObject<Scalar>*, DartObject<Scalar>*)>&& callback)
+      = 0;
+
   void update_overlapping_pairs(
       Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs);
 

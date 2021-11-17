@@ -49,7 +49,10 @@ public:
   // Type aliases
   using Scalar = Scalar_;
 
-  static std::shared_ptr<FclEngine> Create();
+  /// Creates a new FclEngine
+  static std::shared_ptr<FclEngine> Create(
+      common::MemoryManager& memory_manager
+      = common::MemoryManager::GetDefault());
 
   /// Whether to use analytic collision checking for primitive shapes.
   ///
@@ -82,6 +85,14 @@ public:
     DART
   };
 
+  /// Constructor
+  ///
+  /// @param[in] memory_manager: Memory manager to use for all memory
+  /// allocations of the engine.
+  FclEngine(
+      common::MemoryManager& memory_manager
+      = common::MemoryManager::GetDefault());
+
   /// Destructor
   ~FclEngine() override;
 
@@ -92,6 +103,12 @@ public:
   static const std::string& GetType();
 
   // Documentation inherited
+  Scene<Scalar>* create_scene() override;
+
+  // Documentation inherited
+  void destroy_scene(Scene<Scalar>* scene) override;
+
+  // Documentation inherited
   bool collide(
       Object<Scalar>* object1,
       Object<Scalar>* object2,
@@ -99,22 +116,11 @@ public:
       CollisionResult<Scalar>* result = nullptr) override;
 
 protected:
-  /// Constructor
-  FclEngine(
-      common::MemoryManager& memory_manager
-      = common::MemoryManager::GetDefault());
+  // Documentation inherited
+  const FclSceneArray<Scalar>& get_scenes() const override;
 
   // Documentation inherited
-  Scene<Scalar>* create_scene_impl() override;
-
-  // Documentation inherited
-  void destroy_scene_impl(Scene<Scalar>* scene) override;
-
-  // Documentation inherited
-  const common::ArrayForBasePtr<Scene<Scalar>>& get_scenes() const override;
-
-  // Documentation inherited
-  common::ArrayForBasePtr<Scene<Scalar>>& get_mutable_scenes() override;
+  FclSceneArray<Scalar>& get_mutable_scenes() override;
 
   /// Returns fcl::CollisionGeometry for a shape
   std::shared_ptr<FclCollisionGeometry<Scalar>> create_fcl_collision_geometry(
@@ -123,7 +129,8 @@ protected:
 private:
   friend class FclScene<Scalar>;
 
-  common::ArrayForDerivedPtr<Scene<Scalar>, FclScene<Scalar>> m_scenes;
+  /// Collision scenes created by this engine.
+  FclSceneArray<Scalar> m_scenes;
 
   PrimitiveShape m_primitive_shape_type = PrimitiveShape::PRIMITIVE;
 

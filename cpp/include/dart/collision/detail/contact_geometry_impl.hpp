@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,59 +32,10 @@
 
 #pragma once
 
-#include "dart/collision/export.hpp"
-#include "dart/collision/type.hpp"
-#include "dart/common/macro.hpp"
-#include "dart/math/type.hpp"
+#include "dart/collision/contact_geometry.hpp"
 
 namespace dart::collision {
 
-/// Contact information of a pair of collision objects
-template <typename Scalar_>
-struct Contact
-{
-  using Scalar = Scalar_;
-
-  /// Default constructor
-  Contact();
-
-  /// Contact point w.r.t. the world frame
-  math::Vector3<Scalar> point;
-
-  /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
-  math::Vector3<Scalar> normal;
-
-  /// Contact force acting on bodyNode1 w.r.t. the world frame
-  ///
-  /// The contact force acting on bodyNode2 is -force, which is the opposite
-  /// direction of the force.
-  math::Vector3<Scalar> force;
-
-  /// First colliding collision object
-  Object<Scalar>* collision_object1;
-
-  /// Second colliding collision object
-  Object<Scalar>* collision_object2;
-
-  /// Penetration depth
-  Scalar depth;
-
-  /// Returns the epsilon to be used for determination of zero-length normal.
-  constexpr static Scalar get_normal_epsilon();
-
-  /// Returns the squired epsilon to be used for determination of zero-length
-  /// normal.
-  constexpr static Scalar get_normal_epsilon_squared();
-
-  /// Returns true if the length of a normal is less than the epsilon.
-  static bool is_zero_normal(const math::Vector3<Scalar>& normal);
-
-  /// Returns !isZeroNormal().
-  static bool is_non_zero_normal(const math::Vector3<Scalar>& normal);
-};
-
-DART_TEMPLATE_STRUCT_HEADER(COLLISION, Contact)
+//==============================================================================
 
 } // namespace dart::collision
-
-#include "dart/collision/detail/contact_impl.hpp"

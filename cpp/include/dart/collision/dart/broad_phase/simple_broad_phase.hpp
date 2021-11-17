@@ -42,6 +42,11 @@ class SimpleBroadPhaseAlgorithm : public BroadPhaseAlgorithm<Scalar_>
 public:
   using Scalar = Scalar_;
 
+  /// Constructor
+  SimpleBroadPhaseAlgorithm(
+      common::MemoryAllocator& allocator
+      = common::MemoryAllocator::GetDefault());
+
   // Documentation inherited
   bool add_object(DartObject<Scalar>* object) override;
 
@@ -58,8 +63,14 @@ public:
   void compute_overlapping_pairs(
       Scalar time_step, BroadPhaseCallback<Scalar>&& callback) override;
 
+  // Documentation inherited
+  void compute_overlapping_pairs(
+      Scalar time_step,
+      std::function<void(DartObject<Scalar>*, DartObject<Scalar>*)>&& callback)
+      override;
+
 private:
-  std::vector<DartObject<Scalar>*> m_objects;
+  common::vector<DartObject<Scalar>*> m_objects;
 };
 
 } // namespace dart::collision::detail

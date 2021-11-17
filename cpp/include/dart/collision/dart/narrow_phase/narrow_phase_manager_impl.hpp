@@ -32,62 +32,10 @@
 
 #pragma once
 
-#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
+#include "dart/collision/dart/narrow_phase/narrow_phase_manager.hpp"
 
 namespace dart::collision::detail {
 
-namespace {
-
-template <typename Scalar>
-class Callback : public BroadPhaseCallback<Scalar>
-{
-public:
-  Callback(detail::BroadPhaseOverlappingPairs<Scalar>& pairs) : m_pairs(pairs)
-  {
-    // Do nothing
-  }
-
-  bool add_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    m_pairs.add(object_a, object_b);
-    return false;
-  }
-
-  bool remove_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    DART_UNUSED(object_a, object_b);
-    // m_pairs.remove(object_a, object_b);
-    return false;
-  }
-
-private:
-  detail::BroadPhaseOverlappingPairs<Scalar>& m_pairs;
-};
-
-} // namespace
-
-//==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::BroadPhaseAlgorithm()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::~BroadPhaseAlgorithm()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar>
-void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(
-    Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs)
-{
-  compute_overlapping_pairs(time_step, Callback(pairs));
-}
+//
 
 } // namespace dart::collision::detail

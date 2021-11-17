@@ -32,10 +32,13 @@
 
 #pragma once
 
+#include "dart/collision/contact_geometry.hpp"
 #include "dart/collision/dart/broad_phase/broad_phase_overlapping_pairs.hpp"
 #include "dart/collision/dart/broad_phase/type.hpp"
 #include "dart/collision/dart/dart_type.hpp"
 #include "dart/collision/dart/narrow_phase/collision_algorithm_manager.hpp"
+#include "dart/collision/dart/narrow_phase/narrow_phase_input.hpp"
+#include "dart/collision/dart/narrow_phase/narrow_phase_manager.hpp"
 #include "dart/collision/dart/narrow_phase/type.hpp"
 #include "dart/collision/scene.hpp"
 #include "dart/collision/type.hpp"
@@ -57,6 +60,7 @@ public:
   /// Destructor
   ~DartScene() override;
 
+  // Documentation inherited
   void update(Scalar time_step = 1e-3) override;
 
 protected:
@@ -67,24 +71,39 @@ protected:
   // Documentation inherited
   void destroy_object_impl(Object<Scalar>* object) override;
 
+  // Documentation inherited
   const ObjectArray<Scalar>& get_objects() const override;
 
+  // Documentation inherited
   ObjectArray<Scalar>& get_mutable_objects() override;
 
   DartEngine<Scalar>* get_mutable_dart_engine();
 
   const DartEngine<Scalar>* get_dart_engine() const;
 
+  void update_broad_phase(Scalar time_step);
+
+  void update_overlapping_pairs();
+
 private:
   friend class DartObject<Scalar>;
 
   DartObjectArray<Scalar> m_objects;
 
-  std::shared_ptr<detail::BroadPhaseAlgorithm<Scalar>> m_broad_phase;
+  detail::CollisionAlgorithmSelector<Scalar> m_collision_algorithm_manager;
 
-  detail::BroadPhaseOverlappingPairs<Scalar> m_overlapping_pairs;
+  detail::BroadPhaseAlgorithm<Scalar>* m_broad_phase;
 
-  detail::CollisionAlgorithmManager<Scalar> m_collision_algorithm_manager;
+  detail::NarrowPhaseManager<Scalar> m_narrow_phase_manager;
+
+  // detail::BroadPhaseOverlappingPairs<Scalar> m_overlapping_pair_container;
+
+  common::vector<ContactGeometry<Scalar>> m_contact_geometries;
+
+  detail::NarrowPhaseInput<Scalar> m_narrow_phase_input;
+
+  common::vector<std::pair<DartObject<Scalar>*, DartObject<Scalar>*>>
+      m_overlapping_pairs;
 };
 
 DART_TEMPLATE_CLASS_HEADER(COLLISION, DartScene)

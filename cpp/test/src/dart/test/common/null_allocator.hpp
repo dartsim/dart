@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,23 +32,27 @@
 
 #pragma once
 
-#include "dart/collision/type.hpp"
-#include "dart/common/memory.hpp"
+#include "dart/common/memory_allocator/memory_allocator.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::test {
 
-DART_DEFINE_CLASS_POINTERS_T1(DartEngine);
-DART_DEFINE_CLASS_POINTERS_T1(DartObject);
-DART_DEFINE_CLASS_POINTERS_T1(DartScene);
+class NullAllocator : public dart::common::MemoryAllocator
+{
+public:
+  NullAllocator() = default;
 
-template <typename Scalar>
-using DartSceneArray
-    = common::DerivedPtrArray<Scene<Scalar>, DartScene<Scalar>>;
+  ~NullAllocator() override = default;
 
-template <typename Scalar>
-using DartObjectArray
-    = common::DerivedPtrArray<Object<Scalar>, DartObject<Scalar>>;
+  DART_STRING_TYPE(NullAllocator);
 
-} // namespace collision
-} // namespace dart
+  [[nodiscard]] void* allocate(size_t size) noexcept override;
+
+  [[nodiscard]] void* allocate_aligned(
+      size_t size, size_t alignment) noexcept override;
+
+  void deallocate(void* pointer, size_t size) override;
+
+  void deallocate_aligned(void* pointer, size_t size) override;
+};
+
+} // namespace dart::test

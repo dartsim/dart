@@ -71,7 +71,7 @@ int collide_sphere_sphere(
     penetration = rsum;
 
     if (result) {
-      Contact<Scalar> contact;
+      ContactPoint<Scalar> contact;
       contact.collision_object1 = o1;
       contact.collision_object2 = o2;
       contact.point = point;
@@ -87,7 +87,7 @@ int collide_sphere_sphere(
   penetration = rsum - normal_sqr;
 
   if (result) {
-    Contact<Scalar> contact;
+    ContactPoint<Scalar> contact;
     contact.collision_object1 = o1;
     contact.collision_object2 = o2;
     contact.point = point;
@@ -132,9 +132,10 @@ int collide_pair(
 
 //==============================================================================
 template <typename Scalar>
-std::shared_ptr<DartEngine<Scalar>> DartEngine<Scalar>::Create()
+std::shared_ptr<DartEngine<Scalar>> DartEngine<Scalar>::Create(
+    common::MemoryManager& memory_manager)
 {
-  return std::shared_ptr<DartEngine>(new DartEngine());
+  return std::shared_ptr<DartEngine>(new DartEngine(memory_manager));
 }
 
 //==============================================================================
@@ -169,8 +170,34 @@ const std::string& DartEngine<Scalar>::get_type() const
 template <typename Scalar>
 const std::string& DartEngine<Scalar>::GetType()
 {
-  static const std::string type = "dart";
+  static const std::string type = "dart_" + std::string(typeid(Scalar).name());
   return type;
+}
+
+//==============================================================================
+template <typename Scalar>
+Scene<Scalar>* DartEngine<Scalar>::create_scene()
+{
+  Scene<Scalar>* scene
+      = this->m_memory_manager.template construct_using_free<DartScene<Scalar>>(
+          this);
+  if (scene) {
+    m_scenes.push_back(scene);
+  }
+  return scene;
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartEngine<Scalar>::destroy_scene(Scene<Scalar>* scene)
+{
+  if (auto casted = dynamic_cast<DartScene<Scalar>*>(scene)) {
+    auto& mm = this->m_memory_manager;
+    auto& allocator = mm.get_mutable_free_list_allocator();
+
+    m_scenes.erase_derived(casted);
+    allocator.destroy(casted);
+  }
 }
 
 //==============================================================================
@@ -211,47 +238,21 @@ void DartEngine<Scalar>::print(std::ostream& os, int indent) const
   if (indent != 0) {
     os << spaces << "type: " << get_type() << "\n";
   }
+  os << spaces << "scene_count: " << m_scenes.size() << "\n";
   os << spaces << "allocator:\n";
   this->m_memory_manager.print(os, indent + 2);
 }
 
 //==============================================================================
 template <typename Scalar>
-Scene<Scalar>* DartEngine<Scalar>::create_scene_impl()
-{
-  auto scene
-      = this->m_memory_manager.template construct_using_free<DartScene<Scalar>>(
-          this);
-  if (scene) {
-    m_scenes.push_back(scene);
-  }
-  return scene;
-}
-
-//==============================================================================
-template <typename Scalar>
-void DartEngine<Scalar>::destroy_scene_impl(Scene<Scalar>* scene)
-{
-  if (auto casted = dynamic_cast<DartScene<Scalar>*>(scene)) {
-    auto& mm = this->m_memory_manager;
-    auto& allocator = mm.get_mutable_free_list_allocator();
-
-    m_scenes.erase_derived(casted);
-    allocator.destroy(casted);
-  }
-}
-
-//==============================================================================
-template <typename Scalar>
-const common::ArrayForBasePtr<Scene<Scalar>>& DartEngine<Scalar>::get_scenes()
-    const
+const DartSceneArray<Scalar>& DartEngine<Scalar>::get_scenes() const
 {
   return m_scenes;
 }
 
 //==============================================================================
 template <typename Scalar>
-common::ArrayForBasePtr<Scene<Scalar>>& DartEngine<Scalar>::get_mutable_scenes()
+DartSceneArray<Scalar>& DartEngine<Scalar>::get_mutable_scenes()
 {
   return m_scenes;
 }

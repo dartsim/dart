@@ -38,8 +38,7 @@
 #include "dart/collision/dart/narrow_phase/type.hpp"
 #include "dart/collision/engine.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::collision {
 
 template <typename Scalar_>
 class DartEngine : public Engine<Scalar_>
@@ -48,7 +47,18 @@ public:
   // Type aliases
   using Scalar = Scalar_;
 
-  [[nodiscard]] static std::shared_ptr<DartEngine> Create();
+  /// Creates a new DartEngine
+  [[nodiscard]] static std::shared_ptr<DartEngine> Create(
+      common::MemoryManager& memory_manager
+      = common::MemoryManager::GetDefault());
+
+  /// Constructor
+  ///
+  /// @param[in] memory_manager: Memory manager to use for all memory
+  /// allocations of the engine.
+  DartEngine(
+      common::MemoryManager& memory_manager
+      = common::MemoryManager::GetDefault());
 
   /// Destructor
   ~DartEngine() override;
@@ -56,8 +66,14 @@ public:
   // Documentation inherited
   const std::string& get_type() const override;
 
-  /// Get collision detector type for this class
+  /// Returns collision detector type for this class
   static const std::string& GetType();
+
+  // Documentation inherited
+  Scene<Scalar>* create_scene() override;
+
+  // Documentation inherited
+  void destroy_scene(Scene<Scalar>* scene) override;
 
   // Documentation inherited
   bool collide(
@@ -66,30 +82,21 @@ public:
       const CollisionOption<Scalar>& option = {},
       CollisionResult<Scalar>* result = nullptr) override;
 
+  // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 protected:
-  /// Constructor
-  DartEngine(
-      common::MemoryManager& memory_manager
-      = common::MemoryManager::GetDefault());
+  // Documentation inherited
+  const DartSceneArray<Scalar>& get_scenes() const override;
 
   // Documentation inherited
-  Scene<Scalar>* create_scene_impl() override;
-
-  // Documentation inherited
-  void destroy_scene_impl(Scene<Scalar>* scene) override;
-
-  // Documentation inherited
-  const common::ArrayForBasePtr<Scene<Scalar>>& get_scenes() const override;
-
-  // Documentation inherited
-  common::ArrayForBasePtr<Scene<Scalar>>& get_mutable_scenes() override;
+  DartSceneArray<Scalar>& get_mutable_scenes() override;
 
 private:
   friend class DartScene<Scalar>;
 
-  common::ArrayForDerivedPtr<Scene<Scalar>, DartScene<Scalar>> m_scenes;
+  /// Collision scenes created by this engine.
+  DartSceneArray<Scalar> m_scenes;
 
   // DART_REGISTER_ENGINE_IN_HEADER(DartEngine<Scalar>);
 };
@@ -97,7 +104,6 @@ private:
 // DART_REGISTER_ENGINE_OUT_HEADER(DartEngine<Scalar>);
 DART_TEMPLATE_CLASS_HEADER(COLLISION, DartEngine)
 
-} // namespace collision
-} // namespace dart
+} // namespace dart::collision
 
 #include "dart/collision/dart/detail/dart_engine_impl.hpp"

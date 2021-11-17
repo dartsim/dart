@@ -47,14 +47,15 @@ public:
   virtual ~Scene();
 
   /// Return collision detection engine associated with this Scene
-  Engine<Scalar>* get_mutable_engine();
+  [[nodiscard]] Engine<Scalar>* get_mutable_engine();
 
   /// Return (const) collision detection engine associated with this
   /// Scene
-  const Engine<Scalar>* get_engine() const;
+  [[nodiscard]] const Engine<Scalar>* get_engine() const;
 
   /// Creates a collision object.
-  Object<Scalar>* create_object(math::Geometry3Ptr<Scalar> geometry);
+  [[nodiscard]] Object<Scalar>* create_object(
+      math::Geometry3Ptr<Scalar> geometry);
 
   void destroy_object(Object<Scalar>* object);
 
@@ -62,23 +63,24 @@ public:
   template <typename... Args>
   Object<Scalar>* create_sphere_object(Args&&... args);
 
+  /// Proceeds a discrete time step
   virtual void update(Scalar time_step = 1e-3) = 0;
 
 protected:
   /// Constructor
   ///
   /// \param[in] collisionDetector: Collision detector that created this group.
-  Scene(Engine<Scalar>* engine);
+  explicit Scene(Engine<Scalar>* engine);
 
-  virtual Object<Scalar>* create_object_impl(
+  [[nodiscard]] virtual Object<Scalar>* create_object_impl(
       ObjectId id, math::Geometry3Ptr<Scalar> geometry)
       = 0;
 
   virtual void destroy_object_impl(Object<Scalar>* object) = 0;
 
-  virtual const ObjectArray<Scalar>& get_objects() const = 0;
+  [[nodiscard]] virtual const ObjectArray<Scalar>& get_objects() const = 0;
 
-  virtual ObjectArray<Scalar>& get_mutable_objects() = 0;
+  [[nodiscard]] virtual ObjectArray<Scalar>& get_mutable_objects() = 0;
 
   /// The parent collision engine that created this scene
   Engine<Scalar>* m_engine;

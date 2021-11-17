@@ -29,8 +29,9 @@
 
 #include <unordered_map>
 
-#include "dart/collision/dart/broad_phase/object_pair.hpp"
+#include "dart/collision/dart/broad_phase/nearby_object_pair.hpp"
 #include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/dart/narrow_phase/collision_algorithm_manager.hpp"
 #include "dart/common/hash.hpp"
 
 namespace dart::collision::detail {
@@ -45,29 +46,49 @@ public:
   using Scalar = Scalar_;
 
   /// Constructor
-  BroadPhaseOverlappingPairs() = default;
+  BroadPhaseOverlappingPairs(
+      CollisionAlgorithmSelector<Scalar>& collision_algorithm_manager)
+    : m_collision_algorithm_manager(collision_algorithm_manager)
+  {
+    // Do nothing
+  }
 
   /// Destructor
   virtual ~BroadPhaseOverlappingPairs() = default;
 
   bool add(DartObject<Scalar>* object_a, DartObject<Scalar>* object_b);
 
-  bool remove(DartObject<Scalar>* object_a, DartObject<Scalar>* object_b);
+  // bool remove(DartObject<Scalar>* object_a, DartObject<Scalar>* object_b);
+
+  void request_narrow_phase()
+  {
+    for (auto i = 0u; i < m_pair_id_list.size(); ++i) {
+      auto& algorithm = m_algorithms[i];
+      algorithm->request_collision_check(m_objects_a[i], m_objects_b[i]);
+    }
+  }
 
 private:
-  struct ObjectPairHash
+  struct OverlappingObjectPairHash
   {
     std::size_t operator()(const std::pair<ObjectId, ObjectId>& key) const
     {
-      return common::hash_pair_szudzik(key.first, key.second);
+      return common::hash_pair_szudzik_ascend(key.first, key.second);
     }
   };
 
-  std::unordered_map<
-      std::pair<ObjectId, ObjectId>,
-      ObjectPair<Scalar>,
-      ObjectPairHash>
-      m_pairs;
+  detail::CollisionAlgorithmSelector<Scalar>& m_collision_algorithm_manager;
+
+  // TODO(JS): Use custom memory allocator (+ custom container if needed)
+  std::vector<ObjectPairId> m_pair_id_list;
+  std::vector<DartObject<Scalar>*> m_objects_a;
+  std::vector<DartObject<Scalar>*> m_objects_b;
+  std::vector<CollisionAlgorithm<Scalar>*> m_algorithms; // TODO(JS): Remove?
+  std::vector<bool> m_should_test_overlap;
+
+  std::unordered_map<ObjectPairId, uint64_t> m_map_pair_id_to_index;
+
+  uint64_t m_pair_count = 0;
 };
 
 } // namespace dart::collision::detail

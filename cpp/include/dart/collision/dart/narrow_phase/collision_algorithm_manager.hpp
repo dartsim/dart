@@ -32,20 +32,23 @@
 
 #pragma once
 
+#include <vector>
+
 #include "dart/collision/dart/dart_type.hpp"
 #include "dart/collision/dart/narrow_phase/type.hpp"
+#include "dart/common/macro.hpp"
 
 namespace dart::collision::detail {
 
 template <typename Scalar_>
-class CollisionAlgorithmManager
+class CollisionAlgorithmSelector
 {
 public:
   using Scalar = Scalar_;
 
-  CollisionAlgorithmManager();
+  CollisionAlgorithmSelector(common::MemoryAllocator& allocator);
 
-  ~CollisionAlgorithmManager() = default;
+  ~CollisionAlgorithmSelector() = default;
 
   CollisionAlgorithm<Scalar>* create_algorithm(
       DartObject<Scalar>* object_a, DartObject<Scalar>* object_b)
@@ -58,8 +61,9 @@ public:
 
     const auto type_a = object_a->get_geometry()->get_type();
     const auto type_b = object_b->get_geometry()->get_type();
+    DART_UNUSED(type_a, type_b);
 
-    auto& create_function = m_collision_matrix[type_a][type_b];
+    auto& create_function = m_collision_matrix[0][0];
     DART_ASSERT(create_function);
 
     return create_function->create(object_a, object_b, this);
@@ -72,9 +76,10 @@ public:
   }
 
 protected:
-  CollisionAlgorithmCreateFunc<Scalar>* m_collision_matrix[16][16];
+  CollisionAlgorithmCreator<Scalar>* m_collision_matrix[100][100];
 
 private:
+  std::vector<int> m_active_algorithms;
 };
 
 } // namespace dart::collision::detail

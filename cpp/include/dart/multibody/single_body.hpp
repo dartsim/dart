@@ -43,6 +43,8 @@ protected:
 private:
 };
 
+DART_TEMPLATE_CLASS_HEADER(MULTIBODY, SingleBody)
+
 } // namespace dart::multibody
 
 #include "dart/multibody/detail/single_body_impl.hpp"

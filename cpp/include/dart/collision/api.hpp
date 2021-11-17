@@ -30,7 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/dart_engine.hpp"
 #include "dart/collision/type.hpp"
 
 #pragma once
@@ -38,26 +37,14 @@
 namespace dart::collision {
 
 template <typename Scalar>
-EnginePtr<Scalar> get_default_engine()
-{
-  static std::shared_ptr<DartEngine<Scalar>> engine
-      = DartEngine<Scalar>::Create();
-  return engine;
-}
+EnginePtr<Scalar> get_default_engine();
 
 template <typename Scalar>
-Scene<Scalar>* get_default_scene()
-{
-  auto engine = get_default_engine<Scalar>();
-  static auto scene = engine->create_scene();
-  return scene;
-}
+Scene<Scalar>* get_default_scene();
 
 template <typename Scalar, typename... Args>
-Object<Scalar>* create_sphere_object(Args&&... args)
-{
-  auto engine = get_default_engine<Scalar>();
-  return engine->create_sphere_object(std::forward<Args>(args)...);
-}
+Object<Scalar>* create_sphere_object(Args&&... args);
 
 } // namespace dart::collision
+
+#include "dart/collision/detail/api_impl.hpp"

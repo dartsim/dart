@@ -30,38 +30,10 @@
 #include <gtest/gtest.h>
 
 #include "dart/common/all.hpp"
+#include "dart/test/common/null_allocator.hpp"
 
 using namespace dart;
 using namespace common;
-
-class NullAllocator : public dart::common::MemoryAllocator
-{
-public:
-  DART_STRING_TYPE(NullAllocator);
-
-  [[nodiscard]] void* allocate(size_t size) noexcept override
-  {
-    DART_UNUSED(size);
-    return nullptr;
-  }
-
-  [[nodiscard]] void* allocate_aligned(
-      size_t size, size_t alignment) noexcept override
-  {
-    DART_UNUSED(size, alignment);
-    return nullptr;
-  }
-
-  void deallocate(void* pointer, size_t size) override
-  {
-    DART_UNUSED(pointer, size);
-  }
-
-  void deallocate_aligned(void* pointer, size_t size) override
-  {
-    DART_UNUSED(pointer, size);
-  }
-};
 
 //==============================================================================
 TEST(StackAllocatorTest, ConstructorsAndInitialStates)
@@ -80,7 +52,7 @@ TEST(StackAllocatorTest, ConstructorsAndInitialStates)
 //==============================================================================
 TEST(LinearAllocatorTest, Deallocate)
 {
-  auto null_alloc = NullAllocator();
+  auto null_alloc = test::NullAllocator();
 
   auto alloc1 = StackAllocator(0);
   alloc1.deallocate(nullptr, 0);

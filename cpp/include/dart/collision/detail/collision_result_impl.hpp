@@ -39,7 +39,7 @@ namespace collision {
 
 //==============================================================================
 template <typename Scalar>
-void CollisionResult<Scalar>::add_contact(const Contact<Scalar>& contact)
+void CollisionResult<Scalar>::add_contact(const ContactPoint<Scalar>& contact)
 {
   m_contacts.push_back(contact);
 }
@@ -53,7 +53,7 @@ int CollisionResult<Scalar>::get_num_contacts() const
 
 //==============================================================================
 template <typename Scalar>
-Contact<Scalar>& CollisionResult<Scalar>::get_mutable_contact(int index)
+ContactPoint<Scalar>& CollisionResult<Scalar>::get_mutable_contact(int index)
 {
   assert(0 <= index && static_cast<std::size_t>(index) < m_contacts.size());
 
@@ -62,7 +62,8 @@ Contact<Scalar>& CollisionResult<Scalar>::get_mutable_contact(int index)
 
 //==============================================================================
 template <typename Scalar>
-const Contact<Scalar>& CollisionResult<Scalar>::get_contact(int index) const
+const ContactPoint<Scalar>& CollisionResult<Scalar>::get_contact(
+    int index) const
 {
   assert(0 <= index && static_cast<std::size_t>(index) < m_contacts.size());
 
@@ -71,7 +72,7 @@ const Contact<Scalar>& CollisionResult<Scalar>::get_contact(int index) const
 
 //==============================================================================
 template <typename Scalar>
-const std::vector<Contact<Scalar>>& CollisionResult<Scalar>::get_contacts()
+const std::vector<ContactPoint<Scalar>>& CollisionResult<Scalar>::get_contacts()
     const
 {
   return m_contacts;

@@ -33,15 +33,15 @@
 namespace dart::common {
 
 template <typename BaseT>
-class ArrayForBasePtr
+class BasePtrArray
 {
 public:
   using BasePtr = BaseT*;
   using ConstBasePtr = const BaseT*;
 
-  ArrayForBasePtr() = default;
+  BasePtrArray() = default;
 
-  virtual ~ArrayForBasePtr() = default;
+  virtual ~BasePtrArray() = default;
 
   virtual void push_back(BasePtr pointer) = 0;
 
@@ -56,13 +56,23 @@ public:
   virtual ConstBasePtr get(int index) const = 0;
 
   virtual void clear() = 0;
+
+  ConstBasePtr operator[](int index) const
+  {
+    return get(index);
+  }
+
+  BasePtr operator[](int index)
+  {
+    return get(index);
+  }
 };
 
 template <typename BaseT, typename DerivedT>
-class ArrayForDerivedPtr final : public ArrayForBasePtr<BaseT>
+class DerivedPtrArray final : public BasePtrArray<BaseT>
 {
 public:
-  using Base = ArrayForBasePtr<BaseT>;
+  using Base = BasePtrArray<BaseT>;
 
   using BasePtr = typename Base::BasePtr;
   using ConstBasePtr = typename Base::ConstBasePtr;
@@ -70,7 +80,7 @@ public:
   using DerivedPtr = DerivedT*;
   using ConstDerivedPtr = const DerivedT*;
 
-  ArrayForDerivedPtr(MemoryAllocator& allocator = MemoryAllocator::GetDefault())
+  DerivedPtrArray(MemoryAllocator& allocator = MemoryAllocator::GetDefault())
     : m_data(allocator)
   {
     static_assert(

@@ -30,12 +30,12 @@
 namespace dart::collision::detail {
 
 template <typename Scalar>
-struct CollisionAlgorithmCreateFunc;
+struct CollisionAlgorithmCreator;
 
 template <typename Scalar>
 class CollisionAlgorithm;
 
 template <typename Scalar>
-class CollisionAlgorithmManager;
+class CollisionAlgorithmSelector;
 
 } // namespace dart::collision::detail

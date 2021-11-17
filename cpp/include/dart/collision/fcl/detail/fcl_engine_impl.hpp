@@ -47,13 +47,13 @@ namespace collision {
 
 //==============================================================================
 template <typename Scalar>
-Contact<Scalar> convert_contact(
+ContactPoint<Scalar> convert_contact(
     const FclContact<Scalar>& fcl_contact,
     FclObject<Scalar>* object1,
     FclObject<Scalar>* object2,
     const CollisionOption<Scalar>& option)
 {
-  Contact<Scalar> contact;
+  ContactPoint<Scalar> contact;
 
   contact.collision_object1 = object1;
   contact.collision_object2 = object2;
@@ -89,9 +89,10 @@ void report_contacts(
 
 //==============================================================================
 template <typename Scalar>
-std::shared_ptr<FclEngine<Scalar>> FclEngine<Scalar>::Create()
+std::shared_ptr<FclEngine<Scalar>> FclEngine<Scalar>::Create(
+    common::MemoryManager& memory_manager)
 {
-  return std::shared_ptr<FclEngine>(new FclEngine());
+  return std::shared_ptr<FclEngine>(new FclEngine(memory_manager));
 }
 
 //==============================================================================
@@ -126,8 +127,34 @@ const std::string& FclEngine<Scalar>::get_type() const
 template <typename Scalar>
 const std::string& FclEngine<Scalar>::GetType()
 {
-  static const std::string type = "fcl";
+  static const std::string type = "fcl_" + std::string(typeid(Scalar).name());
   return type;
+}
+
+//==============================================================================
+template <typename Scalar>
+Scene<Scalar>* FclEngine<Scalar>::create_scene()
+{
+  auto scene
+      = this->m_memory_manager.template construct_using_free<FclScene<Scalar>>(
+          this);
+  if (scene) {
+    m_scenes.push_back_derived(scene);
+  }
+  return scene;
+}
+
+//==============================================================================
+template <typename Scalar>
+void FclEngine<Scalar>::destroy_scene(Scene<Scalar>* scene)
+{
+  if (auto casted = dynamic_cast<FclScene<Scalar>*>(scene)) {
+    auto& mm = this->m_memory_manager;
+    auto& allocator = mm.get_mutable_free_list_allocator();
+
+    m_scenes.erase_derived(casted);
+    allocator.destroy(casted);
+  }
 }
 
 //==============================================================================
@@ -181,41 +208,14 @@ bool FclEngine<Scalar>::collide(
 
 //==============================================================================
 template <typename Scalar>
-Scene<Scalar>* FclEngine<Scalar>::create_scene_impl()
-{
-  auto scene
-      = this->m_memory_manager.template construct_using_free<FclScene<Scalar>>(
-          this);
-  if (scene) {
-    m_scenes.push_back_derived(scene);
-  }
-  return scene;
-}
-
-//==============================================================================
-template <typename Scalar>
-void FclEngine<Scalar>::destroy_scene_impl(Scene<Scalar>* scene)
-{
-  if (auto casted = dynamic_cast<FclScene<Scalar>*>(scene)) {
-    auto& mm = this->m_memory_manager;
-    auto& allocator = mm.get_mutable_free_list_allocator();
-
-    m_scenes.erase_derived(casted);
-    allocator.destroy(casted);
-  }
-}
-
-//==============================================================================
-template <typename Scalar>
-const common::ArrayForBasePtr<Scene<Scalar>>& FclEngine<Scalar>::get_scenes()
-    const
+const FclSceneArray<Scalar>& FclEngine<Scalar>::get_scenes() const
 {
   return m_scenes;
 }
 
 //==============================================================================
 template <typename Scalar>
-common::ArrayForBasePtr<Scene<Scalar>>& FclEngine<Scalar>::get_mutable_scenes()
+FclSceneArray<Scalar>& FclEngine<Scalar>::get_mutable_scenes()
 {
   return m_scenes;
 }
@@ -226,33 +226,41 @@ std::shared_ptr<FclCollisionGeometry<Scalar>>
 FclEngine<Scalar>::create_fcl_collision_geometry(
     const math::ConstGeometryPtr& shape)
 {
-  FclCollisionGeometry<Scalar>* geom = nullptr;
-  const auto& shapeType = shape->get_type();
+  auto& mm = this->m_memory_manager;
+  auto& allocator = mm.get_mutable_free_list_allocator();
 
   if (auto sphere = shape->as<math::Sphere<Scalar>>()) {
-    const auto radius = sphere->get_radius();
+    const Scalar radius = sphere->get_radius();
 
     if (FclEngine<Scalar>::PRIMITIVE == m_primitive_shape_type) {
-      geom = new FclSphere<Scalar>(radius);
+      auto fcl_sphere = allocator.template construct<FclSphere<Scalar>>(radius);
+      return std::shared_ptr<FclSphere<Scalar>>(
+          fcl_sphere, [&allocator](FclSphere<Scalar>* pointer) {
+            allocator.destroy(pointer);
+          });
     } else {
-      auto fcl_mesh = new ::fcl::BVHModel<FclOBBRSS<Scalar>>();
+      auto fcl_mesh
+          = allocator.template construct<::fcl::BVHModel<FclOBBRSS<Scalar>>>();
       auto fcl_sphere = FclSphere<Scalar>(radius);
       ::fcl::generateBVHModel(
           *fcl_mesh, fcl_sphere, get_identity_transform<Scalar>(), 16, 16);
       // TODO(JS): Consider using icosphere
-      geom = fcl_mesh;
+      return std::shared_ptr<::fcl::BVHModel<FclOBBRSS<Scalar>>>(
+          fcl_mesh, [&allocator](::fcl::BVHModel<FclOBBRSS<Scalar>>* pointer) {
+            allocator.destroy(pointer);
+          });
     }
   } else {
     DART_ERROR(
         "Attempting to create an unsupported shape type [{}]. Creating a "
         "sphere with 0.1 radius instead.",
-        shapeType);
-    geom = new FclSphere<Scalar>(0.1);
+        shape->get_type());
+    auto fcl_sphere = allocator.template construct<FclSphere<Scalar>>(0.1);
+    return std::shared_ptr<FclSphere<Scalar>>(
+        fcl_sphere, [&allocator](FclSphere<Scalar>* pointer) {
+          allocator.destroy(pointer);
+        });
   }
-
-  assert(geom);
-
-  return std::shared_ptr<FclCollisionGeometry<Scalar>>(geom);
 }
 
 } // namespace collision

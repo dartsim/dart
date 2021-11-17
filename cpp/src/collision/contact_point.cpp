@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,12 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/contact.hpp"
+#include "dart/collision/contact_point.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::collision {
 
-DART_TEMPLATE_STRUCT_SOURCE(COLLISION, Contact)
+DART_TEMPLATE_STRUCT_SOURCE(COLLISION, ContactPoint)
 
-} // namespace collision
-} // namespace dart
+} // namespace dart::collision

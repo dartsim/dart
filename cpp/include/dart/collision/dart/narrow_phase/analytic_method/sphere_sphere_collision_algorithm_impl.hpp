@@ -41,7 +41,9 @@ namespace dart::collision::detail {
 
 //==============================================================================
 template <typename Scalar>
-SphereSphereCollisionAlgorithm<Scalar>::SphereSphereCollisionAlgorithm()
+SphereSphereCollisionAlgorithm<Scalar>::SphereSphereCollisionAlgorithm(
+    common::MemoryAllocator& allocator)
+  : CollisionAlgorithm<Scalar>(allocator)
 {
   // Do nothing
 }

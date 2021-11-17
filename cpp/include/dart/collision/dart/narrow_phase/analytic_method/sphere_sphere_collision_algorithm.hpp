@@ -33,7 +33,9 @@
 #pragma once
 
 #include "dart/collision/dart/narrow_phase/collision_algorithm.hpp"
+#include "dart/collision/dart/narrow_phase/narrow_phase_algorithm_result.hpp"
 #include "dart/collision/dart/narrow_phase/type.hpp"
+#include "dart/math/geometry/sphere.hpp"
 
 namespace dart::collision::detail {
 
@@ -42,8 +44,11 @@ class SphereSphereCollisionAlgorithm : public CollisionAlgorithm<Scalar_>
 {
 public:
   using Scalar = Scalar_;
+  using Base = CollisionAlgorithm<Scalar_>;
 
-  SphereSphereCollisionAlgorithm();
+  using BatchTask = NarrowPhaseAlgorithmBatchTask<Scalar>;
+
+  SphereSphereCollisionAlgorithm(common::MemoryAllocator& allocator);
 
   ~SphereSphereCollisionAlgorithm() override;
 
@@ -55,7 +60,6 @@ public:
   using Factory = StatelessCollisionAlgorithmCreateFunc<
       SphereSphereCollisionAlgorithm<Scalar>>;
 
-protected:
 private:
 };
 

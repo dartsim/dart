@@ -32,62 +32,56 @@
 
 #pragma once
 
-#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
+#include "dart/collision/contact_point.hpp"
 
-namespace dart::collision::detail {
-
-namespace {
-
-template <typename Scalar>
-class Callback : public BroadPhaseCallback<Scalar>
-{
-public:
-  Callback(detail::BroadPhaseOverlappingPairs<Scalar>& pairs) : m_pairs(pairs)
-  {
-    // Do nothing
-  }
-
-  bool add_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    m_pairs.add(object_a, object_b);
-    return false;
-  }
-
-  bool remove_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    DART_UNUSED(object_a, object_b);
-    // m_pairs.remove(object_a, object_b);
-    return false;
-  }
-
-private:
-  detail::BroadPhaseOverlappingPairs<Scalar>& m_pairs;
-};
-
-} // namespace
+namespace dart {
+namespace collision {
 
 //==============================================================================
 template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::BroadPhaseAlgorithm()
+constexpr Scalar ContactPoint<Scalar>::get_normal_epsilon()
 {
+  return 1e-6;
+}
+
+//==============================================================================
+template <typename Scalar>
+constexpr Scalar ContactPoint<Scalar>::get_normal_epsilon_squared()
+{
+  return 1e-12;
+}
+
+//==============================================================================
+template <typename Scalar>
+ContactPoint<Scalar>::ContactPoint()
+  : point(math::Vector3<Scalar>::Zero()),
+    normal(math::Vector3<Scalar>::Zero()),
+    force(math::Vector3<Scalar>::Zero()),
+    collision_object1(nullptr),
+    collision_object2(nullptr),
+    depth(0)
+{
+  // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
   // Do nothing
 }
 
 //==============================================================================
 template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::~BroadPhaseAlgorithm()
+bool ContactPoint<Scalar>::is_zero_normal(const math::Vector3<Scalar>& normal)
 {
-  // Do nothing
+  if (normal.squaredNorm() < get_normal_epsilon_squared())
+    return true;
+  else
+    return false;
 }
 
 //==============================================================================
 template <typename Scalar>
-void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(
-    Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs)
+bool ContactPoint<Scalar>::is_non_zero_normal(
+    const math::Vector3<Scalar>& normal)
 {
-  compute_overlapping_pairs(time_step, Callback(pairs));
+  return !is_zero_normal(normal);
 }
 
-} // namespace dart::collision::detail
+} // namespace collision
+} // namespace dart

@@ -1018,6 +1018,7 @@ function(dart_build_unit_tests)
   )
   set(multiValueArgs
     INCLUDE_DIRS
+    LINK_LIBRARIES
   )
   cmake_parse_arguments(
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}

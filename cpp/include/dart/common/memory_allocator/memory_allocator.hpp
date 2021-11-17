@@ -41,10 +41,10 @@ public:
   static MemoryAllocator& GetDefault();
 
   /// Default constructor
-  MemoryAllocator() noexcept = default;
+  MemoryAllocator() noexcept;
 
   /// Destructor
-  virtual ~MemoryAllocator() = default;
+  virtual ~MemoryAllocator();
 
   /// Returns type string.
   virtual const std::string& get_type() const = 0;

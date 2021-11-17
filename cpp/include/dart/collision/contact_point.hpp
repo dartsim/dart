@@ -32,55 +32,59 @@
 
 #pragma once
 
-#include "dart/collision/contact.hpp"
+#include "dart/collision/export.hpp"
+#include "dart/collision/type.hpp"
+#include "dart/common/macro.hpp"
+#include "dart/math/type.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::collision {
 
-//==============================================================================
-template <typename Scalar>
-constexpr Scalar Contact<Scalar>::get_normal_epsilon()
+/// Contact information of a pair of collision objects
+template <typename Scalar_>
+struct ContactPoint
 {
-  return 1e-6;
-}
+  using Scalar = Scalar_;
 
-//==============================================================================
-template <typename Scalar>
-constexpr Scalar Contact<Scalar>::get_normal_epsilon_squared()
-{
-  return 1e-12;
-}
+  /// Default constructor
+  ContactPoint();
 
-//==============================================================================
-template <typename Scalar>
-Contact<Scalar>::Contact()
-  : point(math::Vector3<Scalar>::Zero()),
-    normal(math::Vector3<Scalar>::Zero()),
-    force(math::Vector3<Scalar>::Zero()),
-    collision_object1(nullptr),
-    collision_object2(nullptr),
-    depth(0)
-{
-  // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
-  // Do nothing
-}
+  /// Contact point w.r.t. the world frame
+  math::Vector3<Scalar> point;
 
-//==============================================================================
-template <typename Scalar>
-bool Contact<Scalar>::is_zero_normal(const math::Vector3<Scalar>& normal)
-{
-  if (normal.squaredNorm() < get_normal_epsilon_squared())
-    return true;
-  else
-    return false;
-}
+  /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
+  math::Vector3<Scalar> normal;
 
-//==============================================================================
-template <typename Scalar>
-bool Contact<Scalar>::is_non_zero_normal(const math::Vector3<Scalar>& normal)
-{
-  return !is_zero_normal(normal);
-}
+  /// Contact force acting on bodyNode1 w.r.t. the world frame
+  ///
+  /// The contact force acting on bodyNode2 is -force, which is the opposite
+  /// direction of the force.
+  math::Vector3<Scalar> force;
 
-} // namespace collision
-} // namespace dart
+  /// First colliding collision object
+  Object<Scalar>* collision_object1;
+
+  /// Second colliding collision object
+  Object<Scalar>* collision_object2;
+
+  /// Penetration depth
+  Scalar depth;
+
+  /// Returns the epsilon to be used for determination of zero-length normal.
+  constexpr static Scalar get_normal_epsilon();
+
+  /// Returns the squired epsilon to be used for determination of zero-length
+  /// normal.
+  constexpr static Scalar get_normal_epsilon_squared();
+
+  /// Returns true if the length of a normal is less than the epsilon.
+  static bool is_zero_normal(const math::Vector3<Scalar>& normal);
+
+  /// Returns !isZeroNormal().
+  static bool is_non_zero_normal(const math::Vector3<Scalar>& normal);
+};
+
+DART_TEMPLATE_STRUCT_HEADER(COLLISION, ContactPoint)
+
+} // namespace dart::collision
+
+#include "dart/collision/detail/contact_point_impl.hpp"

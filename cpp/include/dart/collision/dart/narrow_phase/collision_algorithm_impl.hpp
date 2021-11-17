@@ -39,7 +39,9 @@ namespace dart::collision::detail {
 
 //==============================================================================
 template <typename Scalar>
-CollisionAlgorithm<Scalar>::CollisionAlgorithm()
+CollisionAlgorithm<Scalar>::CollisionAlgorithm(
+    common::MemoryAllocator& allocator)
+  : m_batch_task(allocator)
 {
   // Do nothing
 }

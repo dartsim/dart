@@ -54,20 +54,6 @@ Engine<Scalar>::~Engine()
 
 //==============================================================================
 template <typename Scalar>
-Scene<Scalar>* Engine<Scalar>::create_scene()
-{
-  return create_scene_impl();
-}
-
-//==============================================================================
-template <typename Scalar>
-void Engine<Scalar>::destroy_scene(Scene<Scalar>* scene)
-{
-  destroy_scene_impl(scene);
-}
-
-//==============================================================================
-template <typename Scalar>
 template <typename GeometryType, typename... Args>
 Object<Scalar>* Engine<Scalar>::create_object(Args&&... args)
 {
@@ -81,6 +67,20 @@ template <typename... Args>
 Object<Scalar>* Engine<Scalar>::create_sphere_object(Args&&... args)
 {
   return get_default_scene()->create_sphere_object(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename Scalar>
+const common::MemoryManager& Engine<Scalar>::get_memory_manager() const
+{
+  return m_memory_manager;
+}
+
+//==============================================================================
+template <typename Scalar>
+common::MemoryManager& Engine<Scalar>::get_mutable_memory_manager()
+{
+  return m_memory_manager;
 }
 
 //==============================================================================

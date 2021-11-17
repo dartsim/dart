@@ -27,43 +27,22 @@
 
 #pragma once
 
-#include "dart/common/hash.hpp"
-#include "dart/common/macro.hpp"
+#include "dart/collision/dart/broad_phase/nearby_object_pair.hpp"
 
-namespace dart::common {
+namespace dart::collision::detail {
 
 //==============================================================================
-template <typename T>
-T hash_pair_cantor_pairing(T a, T b)
+template <typename Scalar>
+OverlappingObjectPair<Scalar>::OverlappingObjectPair()
 {
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  return 0.5 * (a + b) * (a + b + 1) + b;
+  // Do nothing
 }
 
 //==============================================================================
-template <typename T>
-T hash_pair_szudzik(T a, T b)
+template <typename Scalar>
+OverlappingObjectPair<Scalar>::~OverlappingObjectPair()
 {
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  return a >= b ? a * a + a + b : a + b * b;
+  // Do nothing
 }
 
-//==============================================================================
-template <typename T>
-T hash_pair_szudzik_ascend(T a, T b)
-{
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  DART_ASSERT(a <= b);
-  return a + b * b;
-}
-
-//==============================================================================
-template <typename T>
-T hash_pair_szudzik_descend(T a, T b)
-{
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  DART_ASSERT(b <= a);
-  return a * a + a + b;
-}
-
-} // namespace dart::common
+} // namespace dart::collision::detail

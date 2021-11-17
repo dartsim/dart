@@ -33,47 +33,57 @@
 #pragma once
 
 #include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/dart/narrow_phase/narrow_phase_algorithm_result.hpp"
 #include "dart/collision/dart/narrow_phase/narrow_phase_callback.hpp"
 #include "dart/collision/dart/narrow_phase/type.hpp"
 
 namespace dart::collision::detail {
 
 template <typename Scalar_>
-struct CollisionAlgorithmCreateFunc
+struct CollisionAlgorithmCreator
 {
   using Scalar = Scalar_;
 
   bool swapped;
 
-  CollisionAlgorithmCreateFunc() : swapped(false)
+  CollisionAlgorithmCreator() : swapped(false)
   {
     // Do nothing
   }
 
-  virtual ~CollisionAlgorithmCreateFunc() = default;
+  virtual ~CollisionAlgorithmCreator() = default;
 
   virtual CollisionAlgorithm<Scalar>* create(
       const Object<Scalar>* object_a,
       const Object<Scalar>* object_b,
-      CollisionAlgorithmManager<Scalar>* manager)
+      CollisionAlgorithmSelector<Scalar>* manager)
       = 0;
 };
 
 template <typename AlgorithmT>
 struct StatelessCollisionAlgorithmCreateFunc
-  : public CollisionAlgorithmCreateFunc<typename AlgorithmT::Scalar>
+  : public CollisionAlgorithmCreator<typename AlgorithmT::Scalar>
 {
   using Scalar = typename AlgorithmT::Scalar;
+
+  StatelessCollisionAlgorithmCreateFunc(common::MemoryAllocator& allocator)
+    : m_allocator(allocator)
+  {
+    // Do nothing
+  }
 
   CollisionAlgorithm<Scalar>* create(
       const Object<Scalar>* object_a,
       const Object<Scalar>* object_b,
-      CollisionAlgorithmManager<Scalar>* manager) final
+      CollisionAlgorithmSelector<Scalar>* manager) final
   {
     DART_UNUSED(object_a, object_b, manager);
-    static AlgorithmT algorithm;
+    static AlgorithmT algorithm(m_allocator);
     return &algorithm;
   }
+
+private:
+  common::MemoryAllocator& m_allocator;
 };
 
 template <typename Scalar_>
@@ -82,9 +92,21 @@ class CollisionAlgorithm
 public:
   using Scalar = Scalar_;
 
-  CollisionAlgorithm();
+  /// Constructor
+  CollisionAlgorithm(common::MemoryAllocator& allocator);
 
+  /// Destructor
   virtual ~CollisionAlgorithm();
+
+  void request_collision_check(
+      const Object<Scalar>& object_a, const Object<Scalar>& object_b)
+  {
+    auto geom_a = object_a.get_geometry();
+    auto geom_b = object_b.get_geometry();
+
+    DART_ASSERT(geom_a);
+    DART_ASSERT(geom_b);
+  };
 
   virtual bool run(
       const Object<Scalar>& o1,
@@ -92,7 +114,16 @@ public:
       NarrowPhaseCallback<Scalar>* callback)
       = 0;
 
+  virtual bool compute_collision_batch(
+      NarrowPhaseAlgorithmBatchTask<Scalar>* task)
+  {
+    DART_UNUSED(task);
+    return true;
+  }
+
 protected:
+  NarrowPhaseAlgorithmBatchTask<Scalar> m_batch_task;
+
 private:
 };
 

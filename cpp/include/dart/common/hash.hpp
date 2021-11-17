@@ -37,6 +37,12 @@ T hash_pair_cantor_pairing(T a, T b);
 template <typename T>
 T hash_pair_szudzik(T a, T b);
 
+template <typename T>
+T hash_pair_szudzik_ascend(T a, T b);
+
+template <typename T>
+T hash_pair_szudzik_descend(T a, T b);
+
 /// Thomas Wang's 32 Bit Mix Function:
 /// http://www.cris.com/~Ttwang/tech/inthash.htm
 /// https://c42f.github.io/2015/09/21/inverting-32-bit-wang-hash.html

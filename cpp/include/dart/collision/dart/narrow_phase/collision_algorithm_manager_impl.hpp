@@ -39,10 +39,13 @@ namespace dart::collision::detail {
 
 //==============================================================================
 template <typename Scalar>
-CollisionAlgorithmManager<Scalar>::CollisionAlgorithmManager()
+CollisionAlgorithmSelector<Scalar>::CollisionAlgorithmSelector(
+    common::MemoryAllocator& allocator)
 {
-  m_collision_matrix[0][0]
-      = new typename SphereSphereCollisionAlgorithm<Scalar>::Factory;
+  DART_NOT_IMPLEMENTED;
+  DART_UNUSED(allocator);
+  //  m_collision_matrix[0][0]
+  //      = new typename SphereSphereCollisionAlgorithm<Scalar>::Factory;
 }
 
 } // namespace dart::collision::detail

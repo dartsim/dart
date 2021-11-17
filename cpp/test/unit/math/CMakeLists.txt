@@ -3,4 +3,6 @@
 dart_build_unit_tests(
   COMPONENT_NAME math
   TARGET_PREFIX UNIT_math
+  LINK_LIBRARIES
+    ${PROJECT_NAME}${DART_VERSION_MAJOR}-test-math
 )

@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 
 #include "dart/common/memory_allocator/stl_allocator.hpp"
@@ -35,6 +36,13 @@ namespace dart::common {
 
 template <typename T>
 using vector = std::vector<T, StlAllocator<T>>;
+
+//==============================================================================
+template <typename T, typename Allocator>
+bool contains(std::vector<T, Allocator>& vec, const T& to_remove)
+{
+  return std::find(vec.begin(), vec.end(), to_remove) != vec.end();
+}
 
 //==============================================================================
 template <typename T, typename Allocator>

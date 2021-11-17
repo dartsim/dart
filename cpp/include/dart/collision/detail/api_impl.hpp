@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,64 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/api.hpp"
+#include "dart/collision/dart/dart_engine.hpp"
+
 #pragma once
 
-#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
-
-namespace dart::collision::detail {
-
-namespace {
-
-template <typename Scalar>
-class Callback : public BroadPhaseCallback<Scalar>
-{
-public:
-  Callback(detail::BroadPhaseOverlappingPairs<Scalar>& pairs) : m_pairs(pairs)
-  {
-    // Do nothing
-  }
-
-  bool add_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    m_pairs.add(object_a, object_b);
-    return false;
-  }
-
-  bool remove_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    DART_UNUSED(object_a, object_b);
-    // m_pairs.remove(object_a, object_b);
-    return false;
-  }
-
-private:
-  detail::BroadPhaseOverlappingPairs<Scalar>& m_pairs;
-};
-
-} // namespace
+namespace dart::collision {
 
 //==============================================================================
 template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::BroadPhaseAlgorithm()
+EnginePtr<Scalar> get_default_engine()
 {
-  // Do nothing
+  static std::shared_ptr<DartEngine<Scalar>> engine
+      = DartEngine<Scalar>::Create();
+  return engine;
 }
 
 //==============================================================================
 template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::~BroadPhaseAlgorithm()
+Scene<Scalar>* get_default_scene()
 {
-  // Do nothing
+  auto engine = get_default_engine<Scalar>();
+  static auto scene = engine->create_scene();
+  return scene;
 }
 
 //==============================================================================
-template <typename Scalar>
-void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(
-    Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs)
+template <typename Scalar, typename... Args>
+Object<Scalar>* create_sphere_object(Args&&... args)
 {
-  compute_overlapping_pairs(time_step, Callback(pairs));
+  auto engine = get_default_engine<Scalar>();
+  return engine->create_sphere_object(std::forward<Args>(args)...);
 }
 
-} // namespace dart::collision::detail
+} // namespace dart::collision

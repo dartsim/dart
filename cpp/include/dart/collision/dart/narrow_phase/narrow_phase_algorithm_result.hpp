@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors:
+ * Copyright (c) 2011-2021, The DART development contributors:
  * https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,29 +27,73 @@
 
 #pragma once
 
-#include <memory>
+#include <cstdint>
+#include <vector>
 
-#include "dart/collision/dart/dart_type.hpp"
-#include "dart/collision/dart/narrow_phase/type.hpp"
+#include "dart/collision/contact_point.hpp"
 #include "dart/collision/export.hpp"
+#include "dart/common/macro.hpp"
+#include "dart/math/geometry/geometry3.hpp"
+#include "dart/math/lie_group/se3.hpp"
+#include "dart/math/type.hpp"
 
 namespace dart::collision::detail {
 
 template <typename Scalar_>
-struct ObjectPair
+struct NarrowPhaseAlgorithmBatchTask
 {
+  // Type aliases
   using Scalar = Scalar_;
 
-  DartObject<Scalar>* object_a;
-  DartObject<Scalar>* object_b;
+  struct Task
+  {
+    uint64_t overlapping_pairs_id;
 
-  CollisionAlgorithm<Scalar>* algorithm;
+    math::Geometry3<Scalar>* collision_geometry_a;
 
-  ObjectPair();
+    math::Geometry3<Scalar>* collision_geometry_b;
 
-  virtual ~ObjectPair();
+    math::SE3<Scalar> pose_a;
+
+    math::SE3<Scalar> pose_b;
+
+    bool need_contact_point;
+
+    bool is_colliding;
+
+    common::vector<ContactPoint<Scalar>> contact_points;
+
+    Task(common::MemoryAllocator& allocator) : contact_points(allocator)
+    {
+      // Do nothing
+    }
+  };
+
+  /// Constructor
+  NarrowPhaseAlgorithmBatchTask(common::MemoryAllocator& allocator)
+    : m_tasks(allocator)
+  {
+    // Do nothing
+  }
+
+  /// Destructor
+  virtual ~NarrowPhaseAlgorithmBatchTask() = default;
+
+  virtual void add_contact_point(unsigned int index)
+  {
+    DART_NOT_IMPLEMENTED;
+    DART_UNUSED(index);
+    //    ContactPoint<Scalar> contact_point;
+    //    contact_points[index].emplace_back(std::move(contact_point));
+  }
+
+  virtual void clear()
+  {
+    m_tasks.clear();
+  }
+
+private:
+  common::vector<Task> m_tasks;
 };
 
 } // namespace dart::collision::detail
-
-#include "dart/collision/dart/broad_phase/object_pair_impl.hpp"

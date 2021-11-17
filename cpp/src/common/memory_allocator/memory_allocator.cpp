@@ -40,6 +40,18 @@ MemoryAllocator& MemoryAllocator::GetDefault()
 }
 
 //==============================================================================
+MemoryAllocator::MemoryAllocator() noexcept
+{
+  // Do nothing
+}
+
+//==============================================================================
+MemoryAllocator::~MemoryAllocator()
+{
+  // Do nothing
+}
+
+//==============================================================================
 void MemoryAllocator::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {

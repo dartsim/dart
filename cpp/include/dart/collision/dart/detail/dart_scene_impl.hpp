@@ -48,9 +48,26 @@ template <typename Scalar>
 DartScene<Scalar>::DartScene(Engine<Scalar>* engine)
   : Scene<Scalar>(engine),
     m_objects(
+        engine->get_mutable_memory_manager().get_mutable_free_list_allocator()),
+    m_collision_algorithm_manager(
+        engine->get_mutable_memory_manager().get_mutable_free_list_allocator()),
+    m_narrow_phase_manager(
+        engine->get_mutable_memory_manager().get_mutable_free_list_allocator(),
+        m_collision_algorithm_manager),
+    // m_overlapping_pair_container(m_collision_algorithm_manager),
+    m_contact_geometries(
+        engine->get_mutable_memory_manager().get_mutable_free_list_allocator()),
+    m_overlapping_pairs(
         engine->get_mutable_memory_manager().get_mutable_free_list_allocator())
 {
-  m_broad_phase = std::make_shared<detail::SimpleBroadPhaseAlgorithm<Scalar>>();
+  DART_ASSERT(engine);
+
+  auto& mm = this->m_engine->get_mutable_memory_manager();
+  auto& allocator = mm.get_mutable_free_list_allocator();
+
+  m_broad_phase
+      = allocator.template construct<detail::SimpleBroadPhaseAlgorithm<Scalar>>(
+          allocator);
 }
 
 //==============================================================================
@@ -59,6 +76,9 @@ DartScene<Scalar>::~DartScene()
 {
   auto& mm = this->m_engine->get_mutable_memory_manager();
   auto& allocator = mm.get_mutable_free_list_allocator();
+
+  allocator.template destroy<detail::SimpleBroadPhaseAlgorithm<Scalar>>(
+      static_cast<detail::SimpleBroadPhaseAlgorithm<Scalar>*>(m_broad_phase));
 
   for (auto i = 0; i < m_objects.size(); ++i) {
     allocator.destroy(m_objects.get_derived(i));
@@ -139,7 +159,39 @@ void DartScene<Scalar>::update(Scalar time_step)
 {
   DART_NOT_IMPLEMENTED;
 
-  m_broad_phase->update_overlapping_pairs(time_step, m_overlapping_pairs);
+  // TODO(JS): Add filtering
+
+  update_broad_phase(time_step);
+
+  m_narrow_phase_manager.check_collision();
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartScene<Scalar>::update_broad_phase(Scalar time_step)
+{
+  m_overlapping_pairs.clear();
+  m_broad_phase->compute_overlapping_pairs(
+      time_step,
+      [&](DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) {
+        m_overlapping_pairs.emplace_back(std::make_pair(object_a, object_b));
+      });
+
+  update_overlapping_pairs();
+
+  // m_overlapping_pair_container->request_narrow_phase();
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartScene<Scalar>::update_overlapping_pairs()
+{
+  for (const auto& id_pair : m_overlapping_pairs) {
+    DartObject<Scalar>* object_a = id_pair.first;
+    DartObject<Scalar>* object_b = id_pair.second;
+    // m_overlapping_pair_container.add(object_a, object_b); // TODO(JS): Remove
+    m_narrow_phase_manager.request_collision_check(object_a, object_b);
+  }
 }
 
 } // namespace dart::collision

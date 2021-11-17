@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,62 +32,57 @@
 
 #pragma once
 
-#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
+#include <vector>
+
+#include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/dart/narrow_phase/type.hpp"
+#include "dart/common/macro.hpp"
 
 namespace dart::collision::detail {
 
-namespace {
-
-template <typename Scalar>
-class Callback : public BroadPhaseCallback<Scalar>
+template <typename Scalar_>
+class NarrowPhaseManager
 {
 public:
-  Callback(detail::BroadPhaseOverlappingPairs<Scalar>& pairs) : m_pairs(pairs)
+  using Scalar = Scalar_;
+
+  explicit NarrowPhaseManager(
+      common::MemoryAllocator& allocator,
+      CollisionAlgorithmSelector<Scalar>& collision_algorithm_dispatch)
+    : m_collision_algorithm_dispatch(collision_algorithm_dispatch),
+      m_active_algorithms(allocator)
   {
     // Do nothing
   }
 
-  bool add_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    m_pairs.add(object_a, object_b);
-    return false;
-  }
+  virtual ~NarrowPhaseManager() = default;
 
-  bool remove_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
+  virtual void request_collision_check(
+      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b)
   {
     DART_UNUSED(object_a, object_b);
-    // m_pairs.remove(object_a, object_b);
-    return false;
+    // 1. Get or create algorithm by the geometry type
+
+    // 2. Assign the request to the algorithm
+    //    In this step, the concrete manager or the concrete algorithm split the
+    //    job if it's needed.
   }
 
+  virtual void check_collision()
+  {
+    // Ask all the (active) algorithms to perform collision checking.
+    // It's assumed that the algorithms can run in parallel.
+    for (auto& algorithm : m_active_algorithms) {
+      algorithm->compute_collision_batch(nullptr);
+    }
+  }
+
+protected:
 private:
-  detail::BroadPhaseOverlappingPairs<Scalar>& m_pairs;
+  CollisionAlgorithmSelector<Scalar>& m_collision_algorithm_dispatch;
+  common::vector<CollisionAlgorithm<Scalar>*> m_active_algorithms;
 };
 
-} // namespace
-
-//==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::BroadPhaseAlgorithm()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::~BroadPhaseAlgorithm()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar>
-void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(
-    Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs)
-{
-  compute_overlapping_pairs(time_step, Callback(pairs));
-}
-
 } // namespace dart::collision::detail
+
+#include "dart/collision/dart/narrow_phase/collision_algorithm_manager_impl.hpp"

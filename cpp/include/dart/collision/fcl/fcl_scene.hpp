@@ -50,36 +50,39 @@ public:
   friend class FclEngine<Scalar>;
 
   /// Constructor
-  FclScene(Engine<Scalar>* engine);
+  explicit FclScene(Engine<Scalar>* engine);
 
   /// Destructor
   ~FclScene() override;
 
 protected:
   // Documentation inherited
-  Object<Scalar>* create_object_impl(
+  [[nodiscard]] Object<Scalar>* create_object_impl(
       ObjectId id, math::Geometry3Ptr<Scalar> geometry) override;
 
   // Documentation inherited
   void destroy_object_impl(Object<Scalar>* object) override;
 
-  const ObjectArray<Scalar>& get_objects() const override;
+  // Documentation inherited
+  [[nodiscard]] const ObjectArray<Scalar>& get_objects() const override;
 
-  ObjectArray<Scalar>& get_mutable_objects() override;
+  // Documentation inherited
+  [[nodiscard]] ObjectArray<Scalar>& get_mutable_objects() override;
 
 public:
+  // Documentation inherited
   void update(Scalar time_step = 1e-3) override;
 
 protected:
-  FclEngine<Scalar>* get_mutable_fcl_engine();
+  [[nodiscard]] FclEngine<Scalar>* get_mutable_fcl_engine();
 
-  const FclEngine<Scalar>* get_fcl_engine() const;
-
-  /// Return FCL collision manager that is also a broad-phase algorithm
-  FCLCollisionManager* get_fcl_collision_manager();
+  [[nodiscard]] const FclEngine<Scalar>* get_fcl_engine() const;
 
   /// Return FCL collision manager that is also a broad-phase algorithm
-  const FCLCollisionManager* get_fcl_collision_manager() const;
+  [[nodiscard]] FCLCollisionManager* get_fcl_collision_manager();
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  [[nodiscard]] const FCLCollisionManager* get_fcl_collision_manager() const;
 
 private:
   FclObjectArray<Scalar> m_objects;

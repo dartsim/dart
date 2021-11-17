@@ -27,43 +27,29 @@
 
 #pragma once
 
-#include "dart/common/hash.hpp"
-#include "dart/common/macro.hpp"
+#include <memory>
 
-namespace dart::common {
+#include "dart/collision/dart/dart_type.hpp"
+#include "dart/collision/dart/narrow_phase/type.hpp"
+#include "dart/collision/export.hpp"
 
-//==============================================================================
-template <typename T>
-T hash_pair_cantor_pairing(T a, T b)
+namespace dart::collision::detail {
+
+template <typename Scalar_>
+struct OverlappingObjectPair
 {
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  return 0.5 * (a + b) * (a + b + 1) + b;
-}
+  using Scalar = Scalar_;
 
-//==============================================================================
-template <typename T>
-T hash_pair_szudzik(T a, T b)
-{
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  return a >= b ? a * a + a + b : a + b * b;
-}
+  DartObject<Scalar>* object_a;
+  DartObject<Scalar>* object_b;
 
-//==============================================================================
-template <typename T>
-T hash_pair_szudzik_ascend(T a, T b)
-{
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  DART_ASSERT(a <= b);
-  return a + b * b;
-}
+  CollisionAlgorithm<Scalar>* algorithm;
 
-//==============================================================================
-template <typename T>
-T hash_pair_szudzik_descend(T a, T b)
-{
-  static_assert(std::is_unsigned_v<T>, "Cannot use for signed integers.");
-  DART_ASSERT(b <= a);
-  return a * a + a + b;
-}
+  OverlappingObjectPair();
 
-} // namespace dart::common
+  virtual ~OverlappingObjectPair();
+};
+
+} // namespace dart::collision::detail
+
+#include "dart/collision/dart/broad_phase/nearby_object_pair_impl.hpp"

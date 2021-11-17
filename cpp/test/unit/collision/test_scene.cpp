@@ -54,6 +54,8 @@ void test_scene(const EngineT& engine)
 {
   using Scalar = typename EngineT::element_type::Scalar;
 
+  std::cout << "Testing for " << engine->get_type() << std::endl;
+
   if (!engine) {
     return;
   }

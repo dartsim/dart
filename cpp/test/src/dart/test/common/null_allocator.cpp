@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,64 +30,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/test/common/null_allocator.hpp"
 
-#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
-
-namespace dart::collision::detail {
-
-namespace {
-
-template <typename Scalar>
-class Callback : public BroadPhaseCallback<Scalar>
-{
-public:
-  Callback(detail::BroadPhaseOverlappingPairs<Scalar>& pairs) : m_pairs(pairs)
-  {
-    // Do nothing
-  }
-
-  bool add_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    m_pairs.add(object_a, object_b);
-    return false;
-  }
-
-  bool remove_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    DART_UNUSED(object_a, object_b);
-    // m_pairs.remove(object_a, object_b);
-    return false;
-  }
-
-private:
-  detail::BroadPhaseOverlappingPairs<Scalar>& m_pairs;
-};
-
-} // namespace
+namespace dart::test {
 
 //==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::BroadPhaseAlgorithm()
+void* NullAllocator::allocate(size_t size) noexcept
 {
-  // Do nothing
+  DART_UNUSED(size);
+  return nullptr;
 }
 
 //==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::~BroadPhaseAlgorithm()
+void* NullAllocator::allocate_aligned(size_t size, size_t alignment) noexcept
 {
-  // Do nothing
+  DART_UNUSED(size, alignment);
+  return nullptr;
 }
 
 //==============================================================================
-template <typename Scalar>
-void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(
-    Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs)
+void NullAllocator::deallocate(void* pointer, size_t size)
 {
-  compute_overlapping_pairs(time_step, Callback(pairs));
+  DART_UNUSED(pointer, size);
 }
 
-} // namespace dart::collision::detail
+//==============================================================================
+void NullAllocator::deallocate_aligned(void* pointer, size_t size)
+{
+  DART_UNUSED(pointer, size);
+}
+
+} // namespace dart::test

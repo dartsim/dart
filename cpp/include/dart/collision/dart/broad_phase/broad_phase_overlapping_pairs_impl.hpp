@@ -57,59 +57,65 @@ bool BroadPhaseOverlappingPairs<Scalar>::add(
   // Two distinct collision objects shouldn't have the same ID.
   DART_ASSERT(id_a != id_b);
 
-  if (m_pairs.find({id_a, id_b}) != m_pairs.end()) {
+  const ObjectPairId pair_id = common::hash_pair_szudzik_ascend(id_a, id_b);
+  if (m_map_pair_id_to_index.find(pair_id) != m_map_pair_id_to_index.end()) {
     DART_DEBUG("Cannot add the same pair twice.");
     return false;
   }
 
-  auto result = m_pairs.insert({{id_a, id_b}, {}});
-  ObjectPair<Scalar>& object_pair = result.first->second;
-  object_pair.object_a = object_a;
-  object_pair.object_b = object_b;
-  object_pair.algorithm = nullptr; // this will be assigned later when needed
+  const uint64_t index = m_pair_count++;
+  auto collision_algorithm
+      = m_collision_algorithm_manager.create_algorithm(object_a, object_b);
+
+  m_pair_id_list.push_back(pair_id);
+  m_objects_a.push_back(object_a);
+  m_objects_b.push_back(object_b);
+  m_algorithms.push_back(collision_algorithm);
+
+  m_map_pair_id_to_index[pair_id] = index;
 
   return true;
 }
 
 //==============================================================================
-template <typename Scalar>
-bool BroadPhaseOverlappingPairs<Scalar>::remove(
-    DartObject<Scalar>* object_a, DartObject<Scalar>* object_b)
-{
-  DART_ASSERT(object_a);
-  DART_ASSERT(object_b);
-  DART_ASSERT(object_a != object_b);
+// template <typename Scalar>
+// bool BroadPhaseOverlappingPairs<Scalar>::remove(
+//    DartObject<Scalar>* object_a, DartObject<Scalar>* object_b)
+//{
+//  DART_ASSERT(object_a);
+//  DART_ASSERT(object_b);
+//  DART_ASSERT(object_a != object_b);
 
-  // Sort the objects by the IDs
-  if (object_a->get_id() > object_b->get_id()) {
-    std::swap(object_a, object_b);
-  }
+//  // Sort the objects by the IDs
+//  if (object_a->get_id() > object_b->get_id()) {
+//    std::swap(object_a, object_b);
+//  }
 
-  const ObjectId id_a = object_a->get_id();
-  const ObjectId id_b = object_b->get_id();
+//  const ObjectId id_a = object_a->get_id();
+//  const ObjectId id_b = object_b->get_id();
 
-  // IDs should be sorted.
-  DART_ASSERT(id_a < id_b);
+//  // IDs should be sorted.
+//  DART_ASSERT(id_a < id_b);
 
-  // Two distinct collision objects shouldn't have the same ID.
-  DART_ASSERT(id_a != id_b);
+//  // Two distinct collision objects shouldn't have the same ID.
+//  DART_ASSERT(id_a != id_b);
 
-  const auto it = m_pairs.find({id_a, id_b});
-  if (it == m_pairs.end()) {
-    DART_DEBUG("Cannot add the same pair twice.");
-    return false;
-  }
+//  const auto it = m_pairs.find({id_a, id_b});
+//  if (it == m_pairs.end()) {
+//    DART_DEBUG("Cannot add the same pair twice.");
+//    return false;
+//  }
 
-  // Release resources
-  ObjectPair<Scalar>& object_pair = it->second;
-  if (object_pair.algorithm != nullptr) {
-    // TODO(JS): Deallocate collision algorithm
-    DART_NOT_IMPLEMENTED;
-  }
+//  // Release resources
+//  OverlappingObjectPair<Scalar>& nearby_object_pair = it->second;
+//  if (nearby_object_pair.algorithm != nullptr) {
+//    // TODO(JS): Deallocate collision algorithm
+//    DART_NOT_IMPLEMENTED;
+//  }
 
-  m_pairs.erase(it);
+//  m_pairs.erase(it);
 
-  return true;
-}
+//  return true;
+//}
 
 } // namespace dart::collision::detail

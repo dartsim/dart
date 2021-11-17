@@ -31,10 +31,7 @@
 #include <string>
 
 #include "dart/collision/collision_option.hpp"
-#include "dart/collision/export.hpp"
 #include "dart/collision/type.hpp"
-#include "dart/common/container/vector.hpp"
-#include "dart/common/container/vector_base.hpp"
 #include "dart/common/macro.hpp"
 #include "dart/common/memory_allocator/memory_manager.hpp"
 
@@ -51,20 +48,21 @@ public:
   virtual ~Engine();
 
   /// Returns collision detection engine type as a std::string.
-  virtual const std::string& get_type() const = 0;
+  [[nodiscard]] virtual const std::string& get_type() const = 0;
 
   /// Creates a collision scene.
-  Scene<Scalar>* create_scene();
+  [[nodiscard]] virtual Scene<Scalar>* create_scene() = 0;
 
-  void destroy_scene(Scene<Scalar>* scene);
+  /// Destroy a collision scene.
+  virtual void destroy_scene(Scene<Scalar>* scene) = 0;
 
   /// Create an collision object for a geometry type
   template <typename GeometryType, typename... Args>
-  Object<Scalar>* create_object(Args&&... args);
+  [[nodiscard]] Object<Scalar>* create_object(Args&&... args);
 
   /// Create an collision object for a sphere shape
   template <typename... Args>
-  Object<Scalar>* create_sphere_object(Args&&... args);
+  [[nodiscard]] Object<Scalar>* create_sphere_object(Args&&... args);
 
   /// Performs narrow phase collision detection
   virtual bool collide(
@@ -74,10 +72,11 @@ public:
       CollisionResult<Scalar>* result = nullptr)
       = 0;
 
-  common::MemoryManager& get_mutable_memory_manager()
-  {
-    return m_memory_manager;
-  }
+  /// Returns memory manager.
+  [[nodiscard]] const common::MemoryManager& get_memory_manager() const;
+
+  /// Returns memory manager.
+  [[nodiscard]] common::MemoryManager& get_mutable_memory_manager();
 
   /// Prints state of the memory allocator
   virtual void print(std::ostream& os = std::cout, int indent = 0) const;
@@ -89,23 +88,26 @@ public:
 
 protected:
   /// Constructor
+  ///
+  /// @param[in] memory_manager: Memory manager to use for all memory
+  /// allocations of the engine.
   Engine(
       common::MemoryManager& memory_manager
       = common::MemoryManager::GetDefault());
 
-  virtual Scene<Scalar>* create_scene_impl() = 0;
+  /// Returns collision scenes
+  [[nodiscard]] virtual const SceneArray<Scalar>& get_scenes() const = 0;
 
-  virtual void destroy_scene_impl(Scene<Scalar>* scene) = 0;
+  /// Returns collision scenes
+  [[nodiscard]] virtual SceneArray<Scalar>& get_mutable_scenes() = 0;
 
+  /// Memory manager.
   common::MemoryManager& m_memory_manager;
 
-  virtual const SceneArray<Scalar>& get_scenes() const = 0;
-
-  virtual SceneArray<Scalar>& get_mutable_scenes() = 0;
-
 private:
-  Scene<Scalar>* get_default_scene();
+  [[nodiscard]] Scene<Scalar>* get_default_scene();
 
+  /// Default scene.
   Scene<Scalar>* m_default_scene = nullptr;
 };
 

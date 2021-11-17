@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,62 +32,26 @@
 
 #pragma once
 
-#include "dart/collision/dart/broad_phase/broad_phase_algorithm.hpp"
+#include "dart/collision/export.hpp"
+#include "dart/collision/type.hpp"
+#include "dart/common/macro.hpp"
+#include "dart/math/type.hpp"
 
-namespace dart::collision::detail {
+namespace dart::collision {
 
-namespace {
-
-template <typename Scalar>
-class Callback : public BroadPhaseCallback<Scalar>
+/// Contact information of a pair of collision objects
+template <typename Scalar_>
+struct ContactGeometry
 {
-public:
-  Callback(detail::BroadPhaseOverlappingPairs<Scalar>& pairs) : m_pairs(pairs)
-  {
-    // Do nothing
-  }
+  using Scalar = Scalar_;
 
-  bool add_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    m_pairs.add(object_a, object_b);
-    return false;
-  }
+  static constexpr int MAX_CONTACT_POINTS = 4;
 
-  bool remove_pair(
-      DartObject<Scalar>* object_a, DartObject<Scalar>* object_b) override
-  {
-    DART_UNUSED(object_a, object_b);
-    // m_pairs.remove(object_a, object_b);
-    return false;
-  }
-
-private:
-  detail::BroadPhaseOverlappingPairs<Scalar>& m_pairs;
+  unsigned int contact_point_index_begin;
 };
 
-} // namespace
+DART_TEMPLATE_STRUCT_HEADER(COLLISION, ContactGeometry);
 
-//==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::BroadPhaseAlgorithm()
-{
-  // Do nothing
-}
+} // namespace dart::collision
 
-//==============================================================================
-template <typename Scalar>
-BroadPhaseAlgorithm<Scalar>::~BroadPhaseAlgorithm()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename Scalar>
-void BroadPhaseAlgorithm<Scalar>::update_overlapping_pairs(
-    Scalar time_step, detail::BroadPhaseOverlappingPairs<Scalar>& pairs)
-{
-  compute_overlapping_pairs(time_step, Callback(pairs));
-}
-
-} // namespace dart::collision::detail
+#include "dart/collision/detail/contact_geometry_impl.hpp"

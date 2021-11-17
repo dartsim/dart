@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022, The DART development contributors:
+ * Copyright (c) 2011-2021, The DART development contributors:
  * https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,22 +27,25 @@
 
 #pragma once
 
-#include "dart/collision/dart/broad_phase/object_pair.hpp"
+#include "dart/collision/dart/narrow_phase/analytic_method/sphere_sphere_collision_algorithm.hpp"
 
 namespace dart::collision::detail {
 
-//==============================================================================
-template <typename Scalar>
-ObjectPair<Scalar>::ObjectPair()
+template <typename Scalar_>
+class NarrowPhaseInput
 {
-  // Do nothing
-}
+public:
+  // Type aliases
+  using Scalar = Scalar_;
 
-//==============================================================================
-template <typename Scalar>
-ObjectPair<Scalar>::~ObjectPair()
-{
-  // Do nothing
-}
+  /// Constructor
+  NarrowPhaseInput() = default;
+
+  /// Destructor
+  virtual ~NarrowPhaseInput() = default;
+
+private:
+  // typename SphereSphereCollisionAlgorithm<Scalar>::BatchTask m_sphere_sphere;
+};
 
 } // namespace dart::collision::detail
