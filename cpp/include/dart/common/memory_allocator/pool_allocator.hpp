@@ -29,68 +29,86 @@
 
 #include <mutex>
 
-#include "dart/common/memory_allocator/detail/memory_block.hpp"
 #include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
 
-/// Object pool implementation
-template <typename T>
-class ObjectPool
+class DART_COMMON_API PoolAllocator : public MemoryAllocator
 {
 public:
+  using Base = MemoryAllocator;
+
   /// Constructor
-  explicit ObjectPool(
-      size_t capacity = 1024,
+  ///
+  /// @param[in] base_allocator: Low level allocator to be used for allocating
+  /// memory required by this memory allocator
+  explicit PoolAllocator(
       MemoryAllocator& base_allocator = MemoryAllocator::GetDefault());
 
   /// Destructor
-  virtual ~ObjectPool();
+  ~PoolAllocator() override;
 
-  /// Creates an object.
-  template <typename... Args>
-  [[nodiscard]] T* construct(Args&&... args) noexcept;
+  DART_STRING_TYPE(PoolAllocator);
 
-  /// Destroys an object created by this allocator.
-  void destroy(T* object) noexcept;
+  // Documentation inherited
+  [[nodiscard]] void* allocate(size_t size) noexcept override;
 
-  [[nodiscard]] size_t size() const;
+  // Documentation inherited
+  [[nodiscard]] void* allocate_aligned(
+      size_t size, size_t alignment) noexcept override;
 
-  [[nodiscard]] size_t capacity() const;
+  // Documentation inherited
+  void deallocate(void* pointer, size_t size) override;
 
-  [[nodiscard]] const T* get_front() const;
+  // Documentation inherited
+  void deallocate_aligned(void* pointer, size_t size) override;
 
-#ifndef NDEBUG
-  const auto& get_free_object_stack() const
-  {
-    return m_free_object_stack;
-  }
-
-  void print_free_object_stack() const
-  {
-    get_free_object_stack().print_list();
-  }
-#endif
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
-  [[nodiscard]] T* allocate();
+  struct MemoryUnit
+  {
+    MemoryUnit* next;
+  };
 
-  void deallocate(T* pointer);
+  struct MemoryBlock
+  {
+    MemoryUnit* memory_units;
+  };
 
-  using MemoryBlockStack = detail::ObjectMemoryStack<T>;
+  static constexpr int HEAP_COUNT = 128;
 
-  /// The maximum number of objects this pool can hold.
-  const size_t m_capacity;
+  static constexpr size_t MAX_UNIT_SIZE = 1024;
 
+  static constexpr size_t BLOCK_SIZE = 16 * MAX_UNIT_SIZE;
+
+  static size_t m_unit_sizes[HEAP_COUNT];
+
+  static int m_map_size_to_heap_index[MAX_UNIT_SIZE + 1];
+
+  static bool m_initialized;
+
+  /// The base allocator to allocate memory chunk
   MemoryAllocator& m_base_allocator;
 
-  T* const m_front;
+  int m_allocated_memory_block_count;
 
-  MemoryBlockStack m_free_object_stack;
+  int m_current_memory_blocks_count;
 
-  std::mutex m_mutex;
+  /// Mutex for thread safety
+  mutable std::mutex m_mutex;
+
+  MemoryUnit* m_free_memory_units[HEAP_COUNT];
+
+  MemoryBlock* m_memory_blocks;
+
+#ifndef NDEBUG
+private:
+  size_t m_size = 0;
+  size_t m_peak = 0;
+  std::unordered_map<void*, size_t> m_map_pointer_to_size;
+#endif
 };
 
 } // namespace dart::common
-
-#include "dart/common/memory_allocator/detail/object_pool_impl.hpp"

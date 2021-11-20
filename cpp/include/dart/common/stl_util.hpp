@@ -41,13 +41,6 @@ namespace dart::common {
 template <bool Flag = false>
 void static_assert_no_match();
 
-//==============================================================================
-template <typename T, typename Allocator>
-void erase(std::vector<T, Allocator>& vec, const T& to_remove)
-{
-  vec.erase(std::remove(vec.begin(), vec.end(), to_remove), vec.end());
-}
-
 } // namespace dart::common
 
 #include "dart/common/detail/stl_util_impl.hpp"

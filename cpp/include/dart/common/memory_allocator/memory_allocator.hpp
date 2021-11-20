@@ -38,14 +38,18 @@ namespace dart::common {
 class DART_COMMON_API MemoryAllocator
 {
 public:
+  static MemoryAllocator& GetDefault();
+
   /// Default constructor
   MemoryAllocator() noexcept = default;
 
   /// Destructor
   virtual ~MemoryAllocator() = default;
 
-  /// Allocates @c size bytes of uninitialized storage whose alignment is
-  /// specified by @c alignmnet.
+  /// Returns type string.
+  virtual const std::string& get_type() const = 0;
+
+  /// Allocates @c size bytes of uninitialized storage.
   ///
   /// @param[in] n: The byte size to allocate sotrage for.
   /// @param[in] alignment: Alignment size. Default is 0.
@@ -68,12 +72,15 @@ public:
       = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
+  template <typename T>
+  [[nodiscard]] T* allocate_as(size_t n = 1) noexcept;
+
   /// Deallocates the storage referenced by the pointer @c p, which must be a
   /// pointer obtained by an earlier cal to allocate() or allocate_aligned().
   ///
   /// @param[in] pointer: Pointer obtained from allocate() or
   /// allocate_aligned().
-  virtual void deallocate(void* pointer) = 0;
+  virtual void deallocate(void* pointer, size_t size) = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Deallocates the storage referenced by the pointer @c p, which must be a
@@ -81,7 +88,7 @@ public:
   ///
   /// @param[in] pointer: Pointer obtained from allocate() or
   /// allocate_aligned().
-  virtual void deallocate_aligned(void* pointer) = 0;
+  virtual void deallocate_aligned(void* pointer, size_t size) = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Allocates uninitialized storage and constructs an object of type T to the
@@ -100,9 +107,27 @@ public:
   [[nodiscard]] T* construct_aligned(
       size_t alignment = 0, Args&&... args) noexcept;
 
+  template <typename T, typename... Args>
+  [[nodiscard]] T* construct_at(void* pointer, Args&&... args);
+
+  template <typename T, typename... Args>
+  [[nodiscard]] T* construct_at(T* pointer, Args&&... args);
+
   /// Calls the destructor of the object and deallocate the storage.
   template <typename T>
-  void destroy(T* pointer) noexcept;
+  void destroy(T* object) noexcept;
+
+  /// Prints state of the memory allocator
+  virtual void print(std::ostream& os = std::cout, int indent = 0) const;
+
+  /// Prints state of the memory allocator
+  DART_COMMON_API friend std::ostream& operator<<(
+      std::ostream& os, const MemoryAllocator& allocator);
+
+#ifndef NDEBUG
+  // virtual size_t get_peak() const = 0;
+  // virtual void print();
+#endif
 
 protected:
   /// Returns true if @c alignment is valid for @c size.

@@ -27,6 +27,8 @@
 
 #include "dart/common/stopwatch.hpp"
 
+#include <iostream>
+
 namespace dart::common {
 
 namespace {

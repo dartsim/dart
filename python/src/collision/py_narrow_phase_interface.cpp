@@ -42,8 +42,8 @@ void py_narrow_phase_interface(py::module& m)
 {
   m.def(
       "collide",
-      [](collision::ObjectPtr<double> object1,
-         collision::ObjectPtr<double> object2) -> bool {
+      [](collision::Object<double>* object1,
+         collision::Object<double>* object2) -> bool {
         return collision::collide(std::move(object1), std::move(object2));
       });
 }

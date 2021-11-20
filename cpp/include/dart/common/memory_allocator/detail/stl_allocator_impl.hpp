@@ -63,6 +63,14 @@ StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
 
 //==============================================================================
 template <typename T>
+const std::string& StlAllocator<T>::get_type() const
+{
+  static const std::string type = "StlAllocator";
+  return type;
+}
+
+//==============================================================================
+template <typename T>
 typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
     size_type n, const void* hint)
 {
@@ -84,9 +92,29 @@ template <typename T>
 void StlAllocator<T>::deallocate(pointer pointer, size_type n)
 {
   DART_UNUSED(n);
-  m_base_allocator.deallocate(pointer);
+  m_base_allocator.deallocate(pointer, n * sizeof(T));
 }
 
-// void deallocate(pointer pointer, size_t n);
+//==============================================================================
+template <typename T>
+void StlAllocator<T>::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[StlAllocator]\n";
+  }
+  const std::string spaces(indent, ' ');
+  os << spaces << "base_allocator:\n";
+  m_base_allocator.print(os, indent + 2);
+#ifndef NDEBUG
+#endif
+}
+
+//==============================================================================
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const StlAllocator<T>& allocator)
+{
+  allocator.print(os);
+  return os;
+}
 
 } // namespace dart::common

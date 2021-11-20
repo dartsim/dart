@@ -25,16 +25,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <string>
 #include <vector>
 
-#include "dart/common/memory_allocator/stl_allocator.hpp"
+#include <gtest/gtest.h>
 
-namespace dart::common {
+#include "dart/common/all.hpp"
 
-template <typename T>
-using vector = std::vector<T, StlAllocator<T>>;
+using namespace dart;
+using namespace common;
 
-} // namespace dart::common
+//==============================================================================
+TEST(MemoryManagerTest, Basics)
+{
+  auto m = MemoryManager();
+  (void)m;
+  m.print();
+}

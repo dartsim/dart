@@ -27,7 +27,27 @@
 
 #include "dart/common/memory_allocator/memory_allocator.hpp"
 
+#include "dart/common/bit.hpp"
+#include "dart/common/memory_allocator/raw_allocator.hpp"
+
 namespace dart::common {
+
+//==============================================================================
+MemoryAllocator& MemoryAllocator::GetDefault()
+{
+  static RawAllocator default_allocator;
+  return default_allocator;
+}
+
+//==============================================================================
+void MemoryAllocator::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[*::print is not implemented]\n";
+  }
+  const std::string spaces(indent, ' ');
+  os << spaces << "*::print is not implemented:\n";
+}
 
 //==============================================================================
 bool MemoryAllocator::is_valid_alignment(size_t size, size_t alignment) const
@@ -53,6 +73,13 @@ bool MemoryAllocator::is_valid_alignment(size_t size, size_t alignment) const
   }
 
   return true;
+}
+
+//==============================================================================
+std::ostream& operator<<(std::ostream& os, const MemoryAllocator& allocator)
+{
+  allocator.print(os);
+  return os;
 }
 
 } // namespace dart::common

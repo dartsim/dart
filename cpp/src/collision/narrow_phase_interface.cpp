@@ -37,8 +37,8 @@ namespace dart::collision {
 //==============================================================================
 #if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
 template bool collide(
-    ObjectPtr<double> object1,
-    ObjectPtr<double> object2,
+    Object<double>* object1,
+    Object<double>* object2,
     const CollisionOption<double>& option,
     CollisionResult<double>* result);
 #endif
@@ -46,8 +46,8 @@ template bool collide(
 //==============================================================================
 #if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
 template bool collide(
-    ObjectPtr<float> object1,
-    ObjectPtr<float> object2,
+    Object<float>* object1,
+    Object<float>* object2,
     const CollisionOption<float>& option,
     CollisionResult<float>* result);
 #endif

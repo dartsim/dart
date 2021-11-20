@@ -41,8 +41,7 @@ namespace dart::python {
 
 void py_object(py::module& m)
 {
-  ::py::class_<collision::Objectd, std::shared_ptr<collision::Objectd>>(
-      m, "Object")
+  ::py::class_<collision::Objectd>(m, "Object")
       .def("set_pose", &collision::Objectd::set_pose, py::arg("pose"))
       .def("get_pose", &collision::Objectd::get_pose)
       .def(

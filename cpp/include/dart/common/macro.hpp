@@ -222,3 +222,17 @@
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 #endif
+
+#define DART_STRING_TYPE(type_name)                                            \
+  /** Returns type string. */                                                  \
+  static const std::string& GetType()                                          \
+  {                                                                            \
+    static const std::string type = #type_name;                                \
+    return type;                                                               \
+  }                                                                            \
+                                                                               \
+  const std::string& get_type() const override                                 \
+  {                                                                            \
+    return GetType();                                                          \
+  }                                                                            \
+  void _ANONYMOUS_FUNCTION_13()

@@ -50,7 +50,7 @@ LinearAllocator::LinearAllocator(
 LinearAllocator::~LinearAllocator()
 {
   if (m_start_ptr) {
-    this->m_base_allocator.deallocate(m_start_ptr);
+    this->m_base_allocator.deallocate(m_start_ptr, m_max_capacity);
   }
 }
 
@@ -115,8 +115,8 @@ void* LinearAllocator::allocate_aligned(size_t size, size_t alignment) noexcept
   // Check max capacity
   if (m_offset + padding + size > m_max_capacity) {
     DART_DEBUG(
-        "Allocating {} with padding {} exceeds the max capacity {}. Returning "
-        "nullptr.",
+        "Allocating {} bytes with padding {} exceeds the max capacity {}. "
+        "Returning nullptr.",
         size,
         padding,
         m_max_capacity);
@@ -130,17 +130,17 @@ void* LinearAllocator::allocate_aligned(size_t size, size_t alignment) noexcept
 }
 
 //==============================================================================
-void LinearAllocator::deallocate(void* pointer)
+void LinearAllocator::deallocate(void* pointer, size_t size)
 {
   // LinearAllocator doesn't allow to deallocate memory
-  DART_UNUSED(pointer);
+  DART_UNUSED(pointer, size);
 }
 
 //==============================================================================
-void LinearAllocator::deallocate_aligned(void* pointer)
+void LinearAllocator::deallocate_aligned(void* pointer, size_t size)
 {
   // LinearAllocator doesn't allow to deallocate memory
-  DART_UNUSED(pointer);
+  DART_UNUSED(pointer, size);
 }
 
 //==============================================================================
@@ -162,6 +162,25 @@ const void* LinearAllocator::get_begin_address() const
 {
   // No need to lock the mutex as m_head isn't changed once initialized
   return m_start_ptr;
+}
+
+//==============================================================================
+void LinearAllocator::print(std::ostream& os, int indent) const
+{
+  // Lock the mutex
+  std::lock_guard<std::mutex> lock(m_mutex);
+
+  if (indent == 0) {
+    os << "[LinearAllocator]\n";
+  }
+  const std::string spaces(indent, ' ');
+  if (indent != 0) {
+    os << spaces << "type: " << get_type() << "\n";
+  }
+  os << spaces << "first_address: " << m_start_ptr << "\n";
+  os << spaces << "size_in_bytes: " << m_offset << "\n";
+  os << spaces << "base_allocator:\n";
+  m_base_allocator.print(os, indent + 2);
 }
 
 } // namespace dart::common

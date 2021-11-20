@@ -72,7 +72,7 @@ public:
   }
 
 protected:
-  CollisionAlgorithmCreateFunc<Scalar>* m_collision_matrix[100][100];
+  CollisionAlgorithmCreateFunc<Scalar>* m_collision_matrix[16][16];
 
 private:
 };

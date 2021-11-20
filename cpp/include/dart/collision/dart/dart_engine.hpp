@@ -48,9 +48,9 @@ public:
   // Type aliases
   using Scalar = Scalar_;
 
-  static std::shared_ptr<DartEngine> Create();
+  [[nodiscard]] static std::shared_ptr<DartEngine> Create();
 
-  /// Constructor
+  /// Destructor
   ~DartEngine() override;
 
   // Documentation inherited
@@ -60,21 +60,36 @@ public:
   static const std::string& GetType();
 
   // Documentation inherited
-  ScenePtr<Scalar> create_scene() override;
-
-  // Documentation inherited
   bool collide(
       Object<Scalar>* object1,
       Object<Scalar>* object2,
       const CollisionOption<Scalar>& option = {},
       CollisionResult<Scalar>* result = nullptr) override;
 
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
+
 protected:
   /// Constructor
-  DartEngine() = default;
+  DartEngine(
+      common::MemoryManager& memory_manager
+      = common::MemoryManager::GetDefault());
+
+  // Documentation inherited
+  Scene<Scalar>* create_scene_impl() override;
+
+  // Documentation inherited
+  void destroy_scene_impl(Scene<Scalar>* scene) override;
+
+  // Documentation inherited
+  const common::ArrayForBasePtr<Scene<Scalar>>& get_scenes() const override;
+
+  // Documentation inherited
+  common::ArrayForBasePtr<Scene<Scalar>>& get_mutable_scenes() override;
 
 private:
   friend class DartScene<Scalar>;
+
+  common::ArrayForDerivedPtr<Scene<Scalar>, DartScene<Scalar>> m_scenes;
 
   // DART_REGISTER_ENGINE_IN_HEADER(DartEngine<Scalar>);
 };

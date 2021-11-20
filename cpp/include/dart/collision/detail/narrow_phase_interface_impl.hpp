@@ -67,15 +67,4 @@ bool collide(
   return engine->collide(object1, object2, option, result);
 }
 
-//==============================================================================
-template <typename Scalar>
-bool collide(
-    ObjectPtr<Scalar> object1,
-    ObjectPtr<Scalar> object2,
-    const CollisionOption<Scalar>& option,
-    CollisionResult<Scalar>* result)
-{
-  return collide(object1.get(), object2.get(), option, result);
-}
-
 } // namespace dart::collision

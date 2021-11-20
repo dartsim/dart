@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "dart/collision/type.hpp"
 #include "dart/common/memory.hpp"
 
 namespace dart {
@@ -39,6 +40,15 @@ namespace collision {
 
 DART_DEFINE_CLASS_POINTERS_T1(FclEngine);
 DART_DEFINE_CLASS_POINTERS_T1(FclScene);
+DART_DEFINE_CLASS_POINTERS_T1(FclObject);
+
+template <typename Scalar>
+using FclSceneArray
+    = common::ArrayForDerivedPtr<Scene<Scalar>, FclScene<Scalar>>;
+
+template <typename Scalar>
+using FclObjectArray
+    = common::ArrayForDerivedPtr<Object<Scalar>, FclObject<Scalar>>;
 
 } // namespace collision
 } // namespace dart

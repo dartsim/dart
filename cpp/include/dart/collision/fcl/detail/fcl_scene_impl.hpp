@@ -46,6 +46,8 @@ namespace collision {
 template <typename Scalar>
 FclScene<Scalar>::FclScene(Engine<Scalar>* engine)
   : Scene<Scalar>(engine),
+    m_objects(
+        engine->get_mutable_memory_manager().get_mutable_free_list_allocator()),
     m_broad_phase_alg(new FclDynamicAABBTreeCollisionManager<Scalar>())
 {
   // Do nothing
@@ -53,8 +55,21 @@ FclScene<Scalar>::FclScene(Engine<Scalar>* engine)
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> FclScene<Scalar>::create_object_impl(
-    math::Geometry3Ptr<Scalar> geometry)
+FclScene<Scalar>::~FclScene()
+{
+  auto& mm = this->m_engine->get_mutable_memory_manager();
+  auto& allocator = mm.get_mutable_free_list_allocator();
+
+  for (auto i = 0; i < m_objects.size(); ++i) {
+    allocator.destroy(m_objects.get_derived(i));
+  }
+  m_objects.clear();
+}
+
+//==============================================================================
+template <typename Scalar>
+Object<Scalar>* FclScene<Scalar>::create_object_impl(
+    ObjectId id, math::Geometry3Ptr<Scalar> geometry)
 {
   if (!geometry) {
     DART_WARN("Not allowed to create a collision object for a null shape");
@@ -68,8 +83,44 @@ ObjectPtr<Scalar> FclScene<Scalar>::create_object_impl(
     return nullptr;
   }
 
-  return std::shared_ptr<FclObject<Scalar>>(
-      new FclObject<Scalar>(this, std::move(geometry), fcl_collision_geometry));
+  auto& mm = this->m_engine->get_mutable_memory_manager();
+  auto& allocator = mm.get_mutable_free_list_allocator();
+
+  auto new_object = allocator.template construct<FclObject<Scalar>>(
+      this, id, std::move(geometry), fcl_collision_geometry);
+
+  if (new_object) {
+    m_objects.push_back(new_object);
+  }
+
+  return new_object;
+}
+
+//==============================================================================
+template <typename Scalar>
+void FclScene<Scalar>::destroy_object_impl(Object<Scalar>* object)
+{
+  if (auto casted = dynamic_cast<FclObject<Scalar>*>(object)) {
+    auto& mm = this->m_engine->get_mutable_memory_manager();
+    auto& allocator = mm.get_mutable_free_list_allocator();
+    allocator.destroy(casted);
+
+    m_objects.erase_derived(casted);
+  }
+}
+
+//==============================================================================
+template <typename Scalar>
+const ObjectArray<Scalar>& FclScene<Scalar>::get_objects() const
+{
+  return m_objects;
+}
+
+//==============================================================================
+template <typename Scalar>
+ObjectArray<Scalar>& FclScene<Scalar>::get_mutable_objects()
+{
+  return m_objects;
 }
 
 //==============================================================================

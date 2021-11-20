@@ -25,15 +25,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/memory_allocator/default_allocator.hpp"
+#include <gtest/gtest.h>
 
-namespace dart::common {
+#include "dart/common/all.hpp"
+
+using namespace dart;
+using namespace common;
 
 //==============================================================================
-MemoryAllocator& get_default_allocator()
+TEST(RawAllocatorTest, Basics)
 {
-  static CAllocator default_allocator;
-  return default_allocator;
-}
+  auto alloc = RawAllocator();
 
-} // namespace dart::common
+  //---------------------
+  // Invalid allocations
+  //---------------------
+
+  // size must not be zero
+  EXPECT_TRUE(alloc.allocate(0) == nullptr);
+
+  // alignment must be power of 2
+  EXPECT_TRUE(alloc.allocate_aligned(8, 9) == nullptr);
+
+  // alignment must be greater than sizeof(void*)
+  EXPECT_TRUE(alloc.allocate_aligned(8, sizeof(void*) - 1) == nullptr);
+
+  //-------------------
+  // Valid allocations
+  //-------------------
+
+  auto mem1 = alloc.allocate(2);
+  EXPECT_TRUE(mem1 != nullptr);
+
+  alloc.deallocate(mem1, 2);
+}

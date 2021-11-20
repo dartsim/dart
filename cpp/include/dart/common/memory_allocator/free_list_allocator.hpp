@@ -29,55 +29,90 @@
 
 #include <mutex>
 
+#include "dart/common/export.hpp"
 #include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
 
-// template <typename T>
-// class FreeListAllocator : public MemoryAllocator
-//{
-// public:
-//  FreeListAllocator(
-//      MemoryAllocator& base_allocator, size_t initial_allocation = 0);
+class DART_COMMON_API FreeListAllocator : public MemoryAllocator
+{
+public:
+  FreeListAllocator(
+      MemoryAllocator& base_allocator = MemoryAllocator::GetDefault(),
+      size_t initial_allocation = 1048576 /* 1 MB */);
 
-//  ~FreeListAllocator() override = default;
+  ~FreeListAllocator() override;
 
-//  [[nodiscard]] T* allocate(size_t size, size_t alignment = 0) override;
+  DART_STRING_TYPE(FreeListAllocator);
 
-//  void deallocate(T* pointer, size_t) override;
+  // Documentation inherited
+  [[nodiscard]] void* allocate(size_t size) noexcept override;
 
-// private:
-//  struct Header
-//  {
-//    size_t size;
-//    bool is_allocated;
-//    Header* previous;
-//    Header* next;
-//    bool has_next_allocator;
+  // Documentation inherited
+  [[nodiscard]] void* allocate_aligned(
+      size_t size, size_t alignment) noexcept override;
 
-//    Header(size_t size, Header* previous, Header* next, bool
-//    has_next_allocator)
-//      : size(size),
-//        is_allocated(false),
-//        previous(previous),
-//        next(next),
-//        has_next_allocator(has_next_allocator)
-//    {
-//      // Do nothing
-//    }
-//  };
+  // Documentation inherited
+  void deallocate(void* pointer, size_t size) override;
 
-//  bool allocate_new_block(size_t size);
+  // Documentation inherited
+  void deallocate_aligned(void* pointer, size_t size) override;
 
-//  MemoryAllocator& m_base_allocator;
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
 
-//  size_t m_allocated_size;
+private:
+  struct MemoryBlockHeader
+  {
+    size_t size;
 
-//  Header* m_current_block;
+    MemoryBlockHeader* prev;
 
-//  Header* m_free;
+    MemoryBlockHeader* next;
 
-//  std::mutex m_mutex;
-//};
+    bool is_allocated;
+
+    bool is_next_contiguous;
+
+    MemoryBlockHeader(
+        size_t size,
+        MemoryBlockHeader* prev,
+        MemoryBlockHeader* next,
+        bool is_next_contiguous);
+
+    size_t as_size_t() const;
+
+    unsigned char* as_char_ptr();
+
+    const unsigned char* as_char_ptr() const;
+
+    void split(size_t size_to_split);
+
+    void merge(MemoryBlockHeader* other);
+
+#ifndef NDEBUG
+    bool is_valid() const;
+#endif
+  };
+
+  bool allocate_memory_block(size_t size_to_allocate);
+
+  MemoryAllocator& m_base_allocator;
+
+  mutable std::mutex m_mutex;
+
+  MemoryBlockHeader* m_block_head{nullptr};
+
+  MemoryBlockHeader* m_free_block{nullptr};
+
+  size_t m_allocated_size{0};
+
+#ifndef NDEBUG
+private:
+  size_t m_size = 0;
+  size_t m_peak = 0;
+  std::unordered_map<void*, size_t> m_map_pointer_to_size;
+#endif
+};
 
 } // namespace dart::common

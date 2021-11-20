@@ -37,7 +37,7 @@ namespace dart::simulation {
 struct CollisionDetectionSystem::Implementation
 {
   collision::EnginePtr<double> collision_engine;
-  collision::ScenePtr<double> collision_scene;
+  collision::Scene<double>* collision_scene;
 
   Implementation()
   {
@@ -56,7 +56,7 @@ CollisionDetectionSystem::CollisionDetectionSystem()
 //==============================================================================
 CollisionDetectionSystem::~CollisionDetectionSystem()
 {
-  // Do nothing
+  m_impl->collision_engine->destroy_scene(m_impl->collision_scene);
 }
 
 //==============================================================================

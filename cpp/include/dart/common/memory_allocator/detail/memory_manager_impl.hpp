@@ -25,56 +25,84 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/memory_allocator/c_allocator.hpp"
+#pragma once
+
+#include "dart/common/memory_allocator/memory_manager.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-CAllocator::CAllocator() noexcept
+template <typename T, typename... Args>
+T* MemoryManager::construct(Type type, Args&&... args) noexcept
 {
-  // Do nothing
-}
-
-//==============================================================================
-CAllocator::~CAllocator()
-{
-  // Do nothing
-}
-
-//==============================================================================
-void* CAllocator::allocate(size_t size) noexcept
-{
-  if (size == 0) {
+  // Allocate new memory for a new object (without calling the constructor)
+  void* object = allocate(type, sizeof(T));
+  if (!object) {
     return nullptr;
   }
 
-  return std::malloc(size);
-}
-
-//==============================================================================
-void* CAllocator::allocate_aligned(size_t size, size_t alignment) noexcept
-{
-  if (size == 0) {
+  // Call constructor. Return nullptr if failed.
+  try {
+    new (object) T(std::forward<Args>(args)...);
+  } catch (...) {
+    deallocate(type, object, sizeof(T));
     return nullptr;
   }
 
-  if (!this->is_valid_alignment(size, alignment)) {
-    return nullptr;
+  return reinterpret_cast<T*>(object);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryManager::construct_using_free(Args&&... args) noexcept
+{
+  return construct<T, Args...>(Type::Free, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryManager::construct_using_pool(Args&&... args) noexcept
+{
+  return construct<T, Args...>(Type::Pool, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryManager::construct_using_frame(Args&&... args) noexcept
+{
+  return construct<T, Args...>(Type::Frame, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T>
+void MemoryManager::destroy(Type type, T* object) noexcept
+{
+  if (!object) {
+    return;
   }
-
-  return common::aligned_alloc(alignment, size);
+  object->~T();
+  deallocate(type, object, sizeof(T));
 }
 
 //==============================================================================
-void CAllocator::deallocate(void* pointer)
+template <typename T>
+void MemoryManager::destroy_using_free(T* pointer) noexcept
 {
-  std::free(pointer);
+  destroy(Type::Free, pointer);
 }
 
 //==============================================================================
-void CAllocator::deallocate_aligned(void* pointer)
+template <typename T>
+void MemoryManager::destroy_using_pool(T* pointer) noexcept
 {
-  common::aligned_free(pointer);
+  destroy(Type::Pool, pointer);
+}
+
+//==============================================================================
+template <typename T>
+void MemoryManager::destroy_using_frame(T* pointer) noexcept
+{
+  destroy(Type::Frame, pointer);
 }
 
 } // namespace dart::common

@@ -13,7 +13,7 @@ RUN cd /opt/dart \
     -DCMAKE_BUILD_TYPE=Release .. \
     -DDART_DEBUG=ON \
     -DDART_TRACE=ON \
-    && make ALL -j \
+    && make ALL -j4 \
     && cd .. \
     && rm -rf __build
 

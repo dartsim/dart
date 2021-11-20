@@ -27,11 +27,67 @@
 
 #pragma once
 
+#include <mutex>
+
 #include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
 
-/// Returns default memory allocator, which is CAllocator
-DART_COMMON_API MemoryAllocator& get_default_allocator();
+class DART_COMMON_API FrameAllocator : public MemoryAllocator
+{
+public:
+  using Base = MemoryAllocator;
+
+  /// Constructor
+  ///
+  /// @param[in] base_allocator: Low level allocator to be used for allocating
+  /// memory required by this memory allocator
+  explicit FrameAllocator(
+      MemoryAllocator& base_allocator = MemoryAllocator::GetDefault());
+
+  /// Destructor
+  ~FrameAllocator() override;
+
+  DART_STRING_TYPE(FrameAllocator);
+
+  // Documentation inherited
+  [[nodiscard]] void* allocate(size_t size) noexcept override;
+
+  // Documentation inherited
+  [[nodiscard]] void* allocate_aligned(
+      size_t size, size_t alignment) noexcept override;
+
+  // Documentation inherited
+  void deallocate(void* pointer, size_t size) override;
+
+  // Documentation inherited
+  void deallocate_aligned(void* pointer, size_t size) override;
+
+  void reset();
+
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
+
+private:
+  /// The base allocator to allocate memory chunck
+  MemoryAllocator& m_base_allocator;
+
+  /// Mutex for thread safety
+  mutable std::mutex m_mutex;
+
+  size_t m_total_size_bytes;
+
+  void* m_start_pointer;
+
+  size_t m_offset;
+
+  size_t m_frames_should_shrink;
+
+  bool m_should_allocate_more;
+
+  static constexpr int frames_until_shrink = 128;
+
+  static constexpr size_t m_init_single_frame_allocator_bytes = 1048576; // 1 MB
+};
 
 } // namespace dart::common

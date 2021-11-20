@@ -25,37 +25,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#pragma once
 
-#include "dart/common/all.hpp"
+namespace dart::common {
 
-using namespace dart;
-using namespace common;
+//
 
-//==============================================================================
-TEST(CAllocatorTest, Basics)
-{
-  auto alloc = CAllocator();
-
-  //---------------------
-  // Invalid allocations
-  //---------------------
-
-  // size must not be zero
-  EXPECT_TRUE(alloc.allocate(0) == nullptr);
-
-  // alignment must be power of 2
-  EXPECT_TRUE(alloc.allocate_aligned(8, 9) == nullptr);
-
-  // alignment must be greater than sizeof(void*)
-  EXPECT_TRUE(alloc.allocate_aligned(8, sizeof(void*) - 1) == nullptr);
-
-  //-------------------
-  // Valid allocations
-  //-------------------
-
-  auto mem1 = alloc.allocate(2);
-  EXPECT_TRUE(mem1 != nullptr);
-
-  alloc.deallocate(mem1);
-}
+} // namespace dart::common

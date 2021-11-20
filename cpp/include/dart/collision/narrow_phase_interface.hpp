@@ -45,25 +45,18 @@ bool collide(
     const CollisionOption<Scalar>& option = {},
     CollisionResult<Scalar>* result = nullptr);
 
-template <typename Scalar>
-bool collide(
-    ObjectPtr<Scalar> object1,
-    ObjectPtr<Scalar> object2,
-    const CollisionOption<Scalar>& option = {},
-    CollisionResult<Scalar>* result = nullptr);
-
 #if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
 extern template DART_COLLISION_API bool collide(
-    ObjectPtr<double> object1,
-    ObjectPtr<double> object2,
+    Object<double>* object1,
+    Object<double>* object2,
     const CollisionOption<double>& option,
     CollisionResult<double>* result);
 #endif
 
 #if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
 extern template DART_COLLISION_API bool collide(
-    ObjectPtr<float> object1,
-    ObjectPtr<float> object2,
+    Object<float>* object1,
+    Object<float>* object2,
     const CollisionOption<float>& option,
     CollisionResult<float>* result);
 #endif

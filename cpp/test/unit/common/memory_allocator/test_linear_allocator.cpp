@@ -52,7 +52,7 @@ TEST(LinearAllocatorTest, ConstructorsAndInitialStates)
 TEST(LinearAllocatorTest, Deallocate)
 {
   auto alloc1 = LinearAllocator(0);
-  alloc1.deallocate(nullptr);
+  alloc1.deallocate(nullptr, 0);
 }
 
 //==============================================================================

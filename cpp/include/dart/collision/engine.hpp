@@ -29,12 +29,14 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 #include "dart/collision/collision_option.hpp"
 #include "dart/collision/export.hpp"
 #include "dart/collision/type.hpp"
+#include "dart/common/container/vector.hpp"
+#include "dart/common/container/vector_base.hpp"
 #include "dart/common/macro.hpp"
+#include "dart/common/memory_allocator/memory_manager.hpp"
 
 namespace dart::collision {
 
@@ -52,15 +54,17 @@ public:
   virtual const std::string& get_type() const = 0;
 
   /// Creates a collision scene.
-  virtual ScenePtr<Scalar> create_scene() = 0;
+  Scene<Scalar>* create_scene();
+
+  void destroy_scene(Scene<Scalar>* scene);
 
   /// Create an collision object for a geometry type
   template <typename GeometryType, typename... Args>
-  ObjectPtr<Scalar> create_object(Args&&... args);
+  Object<Scalar>* create_object(Args&&... args);
 
   /// Create an collision object for a sphere shape
   template <typename... Args>
-  ObjectPtr<Scalar> create_sphere_object(Args&&... args);
+  Object<Scalar>* create_sphere_object(Args&&... args);
 
   /// Performs narrow phase collision detection
   virtual bool collide(
@@ -70,14 +74,39 @@ public:
       CollisionResult<Scalar>* result = nullptr)
       = 0;
 
+  common::MemoryManager& get_mutable_memory_manager()
+  {
+    return m_memory_manager;
+  }
+
+  /// Prints state of the memory allocator
+  virtual void print(std::ostream& os = std::cout, int indent = 0) const;
+
+  /// Prints state of the collision engine
+  template <typename OtherScalar>
+  friend std::ostream& operator<<(
+      std::ostream& os, const Engine<OtherScalar>& print);
+
 protected:
   /// Constructor
-  Engine() = default;
+  Engine(
+      common::MemoryManager& memory_manager
+      = common::MemoryManager::GetDefault());
+
+  virtual Scene<Scalar>* create_scene_impl() = 0;
+
+  virtual void destroy_scene_impl(Scene<Scalar>* scene) = 0;
+
+  common::MemoryManager& m_memory_manager;
+
+  virtual const SceneArray<Scalar>& get_scenes() const = 0;
+
+  virtual SceneArray<Scalar>& get_mutable_scenes() = 0;
 
 private:
   Scene<Scalar>* get_default_scene();
 
-  ScenePtr<Scalar> m_default_scene;
+  Scene<Scalar>* m_default_scene = nullptr;
 };
 
 DART_TEMPLATE_CLASS_HEADER(COLLISION, Engine)

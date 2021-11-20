@@ -82,7 +82,7 @@ public:
     DART
   };
 
-  /// Constructor
+  /// Destructor
   ~FclEngine() override;
 
   // Documentation inherited
@@ -90,9 +90,6 @@ public:
 
   /// Get collision detector type for this class
   static const std::string& GetType();
-
-  // Documentation inherited
-  ScenePtr<Scalar> create_scene() override;
 
   // Documentation inherited
   bool collide(
@@ -103,7 +100,21 @@ public:
 
 protected:
   /// Constructor
-  FclEngine() = default;
+  FclEngine(
+      common::MemoryManager& memory_manager
+      = common::MemoryManager::GetDefault());
+
+  // Documentation inherited
+  Scene<Scalar>* create_scene_impl() override;
+
+  // Documentation inherited
+  void destroy_scene_impl(Scene<Scalar>* scene) override;
+
+  // Documentation inherited
+  const common::ArrayForBasePtr<Scene<Scalar>>& get_scenes() const override;
+
+  // Documentation inherited
+  common::ArrayForBasePtr<Scene<Scalar>>& get_mutable_scenes() override;
 
   /// Returns fcl::CollisionGeometry for a shape
   std::shared_ptr<FclCollisionGeometry<Scalar>> create_fcl_collision_geometry(
@@ -111,6 +122,8 @@ protected:
 
 private:
   friend class FclScene<Scalar>;
+
+  common::ArrayForDerivedPtr<Scene<Scalar>, FclScene<Scalar>> m_scenes;
 
   PrimitiveShape m_primitive_shape_type = PrimitiveShape::PRIMITIVE;
 

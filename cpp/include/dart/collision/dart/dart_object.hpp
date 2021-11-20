@@ -64,10 +64,12 @@ public:
 
   /// @}
 
-protected:
+public:
   /// Constructor
-  DartObject(DartScene<Scalar>* group, math::Geometry3Ptr<Scalar> shape);
+  DartObject(
+      DartScene<Scalar>* scene, ObjectId id, math::Geometry3Ptr<Scalar> shape);
 
+protected:
   // Documentation inherited
   void update_engine_data() override;
 

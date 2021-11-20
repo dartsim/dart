@@ -53,59 +53,13 @@ public:
 
   void reset();
 
-  double elapsed_s() const
-  {
-    if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
-      return duration().count() * 1e-9;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
-      return duration().count() * 1e-6;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
-      return duration().count() * 1e-3;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
-      return duration().count();
-    }
-  }
+  double elapsed_s() const;
 
-  double elapsed_ms() const
-  {
-    if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
-      return duration().count() * 1e-6;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
-      return duration().count() * 1e-3;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
-      return duration().count();
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
-      return duration().count() * 1e+3;
-      ;
-    }
-  }
+  double elapsed_ms() const;
 
-  double elapsed_us() const
-  {
-    if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
-      return duration().count() * 1e-3;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
-      return duration().count();
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
-      return duration().count() * 1e+3;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
-      return duration().count() * 1e+6;
-      ;
-    }
-  }
+  double elapsed_us() const;
 
-  double elapsed_ns() const
-  {
-    if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
-      return duration().count();
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
-      return duration().count() * 1e+3;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
-      return duration().count() * 1e+6;
-    } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
-      return duration().count() * 1e+9;
-    }
-  }
+  double elapsed_ns() const;
 
   void print(std::ostream& os = std::cout) const;
 

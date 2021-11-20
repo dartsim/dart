@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "dart/common/container/vector_base.hpp"
 #include "dart/common/memory.hpp"
 
 namespace dart::collision {
@@ -41,5 +42,11 @@ DART_DEFINE_STRUCT_POINTERS_T1(CollisionOption);
 DART_DEFINE_CLASS_POINTERS_T1(CollisionResult);
 
 using ObjectId = uint64_t;
+
+template <typename Scalar>
+using SceneArray = common::ArrayForBasePtr<Scene<Scalar>>;
+
+template <typename Scalar>
+using ObjectArray = common::ArrayForBasePtr<Object<Scalar>>;
 
 } // namespace dart::collision

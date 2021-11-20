@@ -27,46 +27,20 @@
 
 #pragma once
 
+#include <vector>
+
+#include "dart/common/memory_allocator/stl_allocator.hpp"
+
 namespace dart::common {
 
-// /// Object pool implementation
-// template <typename T>
-// class PoolAllocator : public MemoryAllocator
-// {
-// public:
-//   /// Constructor
-//   PoolAllocator(
-//       size_t max_capacity = 1024,
-//       MemoryAllocator& base_allocator = get_default_allocator());
+template <typename T>
+using vector = std::vector<T, StlAllocator<T>>;
 
-//   /// Destructor
-//   ~PoolAllocator() override;
-
-//   [[nodiscard]] T* allocate(size_t size, size_t alignment = 0) override;
-
-//   void deallocate(T* pointer, size_t) override;
-
-// private:
-//   bool push_back_arena(size_t requested_size);
-
-//   void clear();
-
-//   using MemoryBlockType = detail::MemoryBlockLinkedList;
-//   using MemoryBlockStack = detail::ObjectMemoryBlockStack<T>;
-
-//   /// The maximum number of objects this pool can hold.
-//   const size_t m_max_capacity;
-
-//   detail::ObjectMemoryBlockStack<void*> m_free_object_stack;
-
-//   /// Number of free items
-//   size_t m_num_free_objects = 0;
-
-//   MemoryAllocator& m_base_allocator;
-
-//   std::mutex m_mutex;
-// };
+//==============================================================================
+template <typename T, typename Allocator>
+void erase(std::vector<T, Allocator>& vec, const T& to_remove)
+{
+  vec.erase(std::remove(vec.begin(), vec.end(), to_remove), vec.end());
+}
 
 } // namespace dart::common
-
-#include "dart/common/memory_allocator/detail/dynamic_pool_allocator_impl.hpp"

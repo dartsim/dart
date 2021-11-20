@@ -104,39 +104,19 @@ enum class LogLevel
 DART_COMMON_API LogLevel convert_log_level(spdlog::level::level_enum level);
 #endif
 
-inline void set_log_level(LogLevel level)
-{
-#if DART_HAVE_spdlog
-  switch (level) {
-    case LogLevel::LOGLEVEL_TRACE:
-      spdlog::set_level(spdlog::level::trace);
-      break;
-    case LogLevel::LOGLEVEL_DEBUG:
-      spdlog::set_level(spdlog::level::debug);
-      break;
-    case LogLevel::LOGLEVEL_INFO:
-      spdlog::set_level(spdlog::level::info);
-      break;
-    case LogLevel::LOGLEVEL_WARN:
-      spdlog::set_level(spdlog::level::warn);
-      break;
-    case LogLevel::LOGLEVEL_ERROR:
-      spdlog::set_level(spdlog::level::err);
-      break;
-    case LogLevel::LOGLEVEL_FATAL:
-      spdlog::set_level(spdlog::level::critical);
-      break;
-    case LogLevel::LOGLEVEL_OFF:
-      spdlog::set_level(spdlog::level::off);
-      break;
-    default:
-      std::cerr << "[ERROR] Unsupported logging level.\n";
-      break;
-  }
-#else
-  (void)level;
-#endif
-}
+DART_COMMON_API void set_log_level(LogLevel level);
+
+DART_COMMON_API void set_log_level_to_trace();
+
+DART_COMMON_API void set_log_level_to_debug();
+
+DART_COMMON_API void set_log_level_to_info();
+
+DART_COMMON_API void set_log_level_to_warn();
+
+DART_COMMON_API void set_log_level_to_error();
+
+DART_COMMON_API void set_log_level_to_fatal();
 
 #if SPDLOG_VERSION >= 10801
 inline LogLevel get_log_level()

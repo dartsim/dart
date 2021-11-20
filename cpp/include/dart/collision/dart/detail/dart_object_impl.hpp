@@ -104,8 +104,8 @@ void DartObject<Scalar>::update_aabb() const
 //==============================================================================
 template <typename Scalar>
 DartObject<Scalar>::DartObject(
-    DartScene<Scalar>* group, math::Geometry3Ptr<Scalar> shape)
-  : Object<Scalar>(group, std::move(shape))
+    DartScene<Scalar>* group, ObjectId id, math::Geometry3Ptr<Scalar> geometry)
+  : Object<Scalar>(group, id, std::move(geometry))
 {
   // Do nothing
 }

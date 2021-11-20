@@ -41,7 +41,7 @@ struct World::Implementation
 
   collision::EnginePtr<double> collision_engine;
 
-  collision::ScenePtr<double> collision_scene;
+  collision::Scene<double>* collision_scene;
 
   math::Vector3d gravity = math::Vector3d(0, 0, -9.81);
 
@@ -63,7 +63,7 @@ World::World() : m_impl(std::make_unique<Implementation>())
 //==============================================================================
 World::~World()
 {
-  // Do nothing
+  m_impl->collision_engine->destroy_scene(m_impl->collision_scene);
 }
 
 //==============================================================================

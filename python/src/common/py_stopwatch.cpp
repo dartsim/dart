@@ -52,7 +52,7 @@ void py_stopwatch(py::module& m)
       .def("print", [](const common::StopwatchNS* self) {
         py::scoped_ostream_redirect stream(
             std::cout, py::module::import("sys").attr("stdout"));
-        self->print();
+        std::cout << *self;
       });
 
   m.def("tic", &common::tic);

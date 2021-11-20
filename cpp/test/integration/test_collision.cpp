@@ -61,6 +61,7 @@ void test_collide(const EngineT& engine)
   auto o1 = scene->create_sphere_object(0.5);
   auto o2 = scene->create_sphere_object(0.5);
   scene->update();
+
   DART_UNUSED(o1, o2);
 }
 
@@ -71,12 +72,12 @@ TYPED_TEST(CollisionTest, Basics)
 
   test_collide(collision::DartEngine<Scalar>::Create());
 #if DART_HAVE_fcl
-  test_collide(collision::FclEngine<Scalar>::Create());
+ test_collide(collision::FclEngine<Scalar>::Create());
 #endif
 #if DART_HAVE_ODE
-  test_collide(collision::OdeEngine<Scalar>::Create());
+ test_collide(collision::OdeEngine<Scalar>::Create());
 #endif
 #if DART_HAVE_Bullet
-  test_collide(collision::BulletEngine<Scalar>::Create());
+ test_collide(collision::BulletEngine<Scalar>::Create());
 #endif
 }

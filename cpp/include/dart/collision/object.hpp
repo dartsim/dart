@@ -92,7 +92,8 @@ public:
 
 protected:
   /// Contructor
-  Object(Scene<Scalar>* scene, math::Geometry3Ptr<Scalar> geometry);
+  Object(
+      Scene<Scalar>* scene, ObjectId id, math::Geometry3Ptr<Scalar> geometry);
 
   /// Update the collision object of the collision detection engine. This
   /// function will be called ahead of every collision checking by
@@ -103,6 +104,9 @@ protected:
   /// Collision group
   Scene<Scalar>* m_scene;
 
+  /// Unique ID in the engine
+  ObjectId m_id = 0;
+
   /// Geometry
   const math::Geometry3Ptr<Scalar> m_geometry;
 
@@ -110,8 +114,6 @@ protected:
 
 private:
   friend class Scene<Scalar>;
-
-  ObjectId m_id = 0;
 };
 
 DART_TEMPLATE_CLASS_HEADER(COLLISION, Object)

@@ -63,7 +63,7 @@ ObjectPool<T>::~ObjectPool()
 {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (m_front) {
-    m_base_allocator.deallocate_aligned(m_front);
+    m_base_allocator.deallocate_aligned(m_front, sizeof(T) * m_capacity);
   }
 }
 

@@ -125,8 +125,8 @@ bool Object<Scalar>::collide(
 //==============================================================================
 template <typename Scalar>
 Object<Scalar>::Object(
-    Scene<Scalar>* scene, math::Geometry3Ptr<Scalar> geometry)
-  : m_scene(scene), m_geometry(std::move(geometry))
+    Scene<Scalar>* scene, ObjectId id, math::Geometry3Ptr<Scalar> geometry)
+  : m_scene(scene), m_id(id), m_geometry(std::move(geometry))
 {
   // Do nothing
 }

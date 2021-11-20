@@ -81,7 +81,7 @@ dart_component_setup(
   GENERATE_EXPORT_HEADER
   GENERATE_COMPONENT_ALL_HEADER
   SUB_DIRECTORIES
-    memory_allocator resource
+    container memory_allocator resource
 )
 
 # TODO(JS): Fix this

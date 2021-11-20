@@ -37,6 +37,8 @@ using namespace common;
 class NullAllocator : public dart::common::MemoryAllocator
 {
 public:
+  DART_STRING_TYPE(NullAllocator);
+
   [[nodiscard]] void* allocate(size_t size) noexcept override
   {
     DART_UNUSED(size);
@@ -50,14 +52,14 @@ public:
     return nullptr;
   }
 
-  void deallocate(void* pointer) override
+  void deallocate(void* pointer, size_t size) override
   {
-    DART_UNUSED(pointer);
+    DART_UNUSED(pointer, size);
   }
 
-  void deallocate_aligned(void* pointer) override
+  void deallocate_aligned(void* pointer, size_t size) override
   {
-    DART_UNUSED(pointer);
+    DART_UNUSED(pointer, size);
   }
 };
 
@@ -81,13 +83,13 @@ TEST(LinearAllocatorTest, Deallocate)
   auto null_alloc = NullAllocator();
 
   auto alloc1 = StackAllocator(0);
-  alloc1.deallocate(nullptr);
+  alloc1.deallocate(nullptr, 0);
 
   auto alloc2 = StackAllocator(8);
-  alloc2.deallocate(nullptr);
+  alloc2.deallocate(nullptr, 0);
 
   auto alloc3 = StackAllocator(8, null_alloc);
-  alloc3.deallocate(nullptr);
+  alloc3.deallocate(nullptr, 0);
 }
 
 //==============================================================================
@@ -120,11 +122,11 @@ TEST(AllocatorTest, TotalSize)
   EXPECT_TRUE(allocator2.get_size() > size);
   size = allocator2.get_size();
 
-  allocator2.deallocate_aligned(ptr2);
+  allocator2.deallocate_aligned(ptr2, 8);
   EXPECT_TRUE(allocator2.get_size() < size);
   size = allocator2.get_size();
 
-  allocator2.deallocate(ptr1);
+  allocator2.deallocate(ptr1, 0);
   EXPECT_TRUE(allocator2.get_size() < size);
   size = allocator2.get_size();
   EXPECT_TRUE(size == 0);

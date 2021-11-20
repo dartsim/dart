@@ -52,7 +52,76 @@ LogLevel convert_log_level(spdlog::level::level_enum level)
       return LogLevel::LOGLEVEL_UNKNOWN;
   }
 }
-
 #endif
+
+void set_log_level(LogLevel level)
+{
+#if DART_HAVE_spdlog
+  switch (level) {
+    case LogLevel::LOGLEVEL_TRACE:
+      spdlog::set_level(spdlog::level::trace);
+      break;
+    case LogLevel::LOGLEVEL_DEBUG:
+      spdlog::set_level(spdlog::level::debug);
+      break;
+    case LogLevel::LOGLEVEL_INFO:
+      spdlog::set_level(spdlog::level::info);
+      break;
+    case LogLevel::LOGLEVEL_WARN:
+      spdlog::set_level(spdlog::level::warn);
+      break;
+    case LogLevel::LOGLEVEL_ERROR:
+      spdlog::set_level(spdlog::level::err);
+      break;
+    case LogLevel::LOGLEVEL_FATAL:
+      spdlog::set_level(spdlog::level::critical);
+      break;
+    case LogLevel::LOGLEVEL_OFF:
+      spdlog::set_level(spdlog::level::off);
+      break;
+    default:
+      std::cerr << "[ERROR] Unsupported logging level.\n";
+      break;
+  }
+#else
+  (void)level;
+#endif
+}
+
+//==============================================================================
+void set_log_level_to_trace()
+{
+  set_log_level(LogLevel::LOGLEVEL_TRACE);
+}
+
+//==============================================================================
+void set_log_level_to_debug()
+{
+  set_log_level(LogLevel::LOGLEVEL_DEBUG);
+}
+
+//==============================================================================
+void set_log_level_to_info()
+{
+  set_log_level(LogLevel::LOGLEVEL_INFO);
+}
+
+//==============================================================================
+void set_log_level_to_warn()
+{
+  set_log_level(LogLevel::LOGLEVEL_WARN);
+}
+
+//==============================================================================
+void set_log_level_to_error()
+{
+  set_log_level(LogLevel::LOGLEVEL_ERROR);
+}
+
+//==============================================================================
+void set_log_level_to_fatal()
+{
+  set_log_level(LogLevel::LOGLEVEL_FATAL);
+}
 
 } // namespace dart::common

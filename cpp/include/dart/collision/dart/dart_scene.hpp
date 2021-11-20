@@ -61,8 +61,15 @@ public:
 
 protected:
   // Documentation inherited
-  ObjectPtr<Scalar> create_object_impl(
-      math::Geometry3Ptr<Scalar> geometry) override;
+  Object<Scalar>* create_object_impl(
+      ObjectId id, math::Geometry3Ptr<Scalar> geometry) override;
+
+  // Documentation inherited
+  void destroy_object_impl(Object<Scalar>* object) override;
+
+  const ObjectArray<Scalar>& get_objects() const override;
+
+  ObjectArray<Scalar>& get_mutable_objects() override;
 
   DartEngine<Scalar>* get_mutable_dart_engine();
 
@@ -70,6 +77,8 @@ protected:
 
 private:
   friend class DartObject<Scalar>;
+
+  DartObjectArray<Scalar> m_objects;
 
   std::shared_ptr<detail::BroadPhaseAlgorithm<Scalar>> m_broad_phase;
 

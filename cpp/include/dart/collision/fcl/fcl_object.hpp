@@ -65,13 +65,15 @@ public:
   /// Return FCL collision object
   const FclCollisionObject<Scalar>* get_fcl_collision_object() const;
 
-protected:
+public:
   /// Constructor
   FclObject(
       Scene<Scalar>* collision_scene,
+      ObjectId id,
       math::Geometry3Ptr<Scalar> geometry,
       const std::shared_ptr<FclCollisionGeometry<Scalar>>& fcl_coll_geom);
 
+protected:
   // Documentation inherited
   void update_engine_data() override;
 

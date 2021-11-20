@@ -29,7 +29,6 @@
 
 #include <mutex>
 
-#include "dart/common/memory_allocator/default_allocator.hpp"
 #include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
@@ -46,10 +45,12 @@ public:
   /// @param[in] max_capacity: Maximum count of object to allocate.
   explicit LinearAllocator(
       size_t max_capacity,
-      MemoryAllocator& base_allocator = get_default_allocator());
+      MemoryAllocator& base_allocator = MemoryAllocator::GetDefault());
 
   /// Destructor
   ~LinearAllocator() override;
+
+  DART_STRING_TYPE(LinearAllocator);
 
   /// @copydoc MemoryAllocator::allocate
   ///
@@ -66,13 +67,13 @@ public:
   /// allocator is destructed.
   ///
   /// Complexity is O(1).
-  void deallocate(void* pointer) override;
+  void deallocate(void* pointer, size_t size) override;
 
   /// This function does nothing. The allocated memory is released when this
   /// allocator is destructed.
   ///
   /// Complexity is O(1).
-  void deallocate_aligned(void* pointer) override;
+  void deallocate_aligned(void* pointer, size_t size) override;
 
   /// Returns the maximum capacity of this allocator.
   [[nodiscard]] size_t get_max_capacity() const;
@@ -85,11 +86,14 @@ public:
   /// Returns the first address of this allocator uses.
   [[nodiscard]] const void* get_begin_address() const;
 
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
+
 private:
   /// The maximum size of memory that this allocator can allocate
   const size_t m_max_capacity;
 
-  /// The base allocator to allocate memory chunck
+  /// The base allocator to allocate memory chunk
   MemoryAllocator& m_base_allocator;
 
   /// The memory address of this allocator uses

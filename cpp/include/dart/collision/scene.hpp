@@ -31,6 +31,7 @@
 
 #include "dart/collision/export.hpp"
 #include "dart/collision/type.hpp"
+#include "dart/common/container/vector.hpp"
 #include "dart/math/geometry/type.hpp"
 
 namespace dart::collision {
@@ -43,7 +44,7 @@ public:
   using Scalar = Scalar_;
 
   /// Destructor
-  virtual ~Scene() = default;
+  virtual ~Scene();
 
   /// Return collision detection engine associated with this Scene
   Engine<Scalar>* get_mutable_engine();
@@ -53,13 +54,13 @@ public:
   const Engine<Scalar>* get_engine() const;
 
   /// Creates a collision object.
-  ObjectPtr<Scalar> create_object(math::Geometry3Ptr<Scalar> geometry);
+  Object<Scalar>* create_object(math::Geometry3Ptr<Scalar> geometry);
 
-  void remove_object(ObjectPtr<Scalar> object);
+  void destroy_object(Object<Scalar>* object);
 
   /// Creates a collision object with sphere
   template <typename... Args>
-  ObjectPtr<Scalar> create_sphere_object(Args&&... args);
+  Object<Scalar>* create_sphere_object(Args&&... args);
 
   virtual void update(Scalar time_step = 1e-3) = 0;
 
@@ -69,9 +70,15 @@ protected:
   /// \param[in] collisionDetector: Collision detector that created this group.
   Scene(Engine<Scalar>* engine);
 
-  virtual ObjectPtr<Scalar> create_object_impl(
-      math::Geometry3Ptr<Scalar> geometry)
+  virtual Object<Scalar>* create_object_impl(
+      ObjectId id, math::Geometry3Ptr<Scalar> geometry)
       = 0;
+
+  virtual void destroy_object_impl(Object<Scalar>* object) = 0;
+
+  virtual const ObjectArray<Scalar>& get_objects() const = 0;
+
+  virtual ObjectArray<Scalar>& get_mutable_objects() = 0;
 
   /// The parent collision engine that created this scene
   Engine<Scalar>* m_engine;

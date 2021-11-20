@@ -48,7 +48,7 @@ public:
 
   explicit Simulator(const SimulatorConfigs& configs = SimulatorConfigs());
 
-  ~Simulator();
+  virtual ~Simulator();
 
   virtual void run(long num_steps = 0);
 

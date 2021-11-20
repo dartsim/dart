@@ -48,7 +48,7 @@ public:
   explicit SimpleSimulator(
       const SimpleSimulatorConfigs& configs = SimpleSimulatorConfigs());
 
-  ~SimpleSimulator();
+  ~SimpleSimulator() override;
 
   void run(long num_steps = 0) override;
 

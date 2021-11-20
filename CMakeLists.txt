@@ -214,7 +214,7 @@ set(all_target_candidates
   tests_and_run
   benchmarks
   dartpy${DART_VERSION_MAJOR}
-  test-dartpy${DART_VERSION_MAJOR}
+  dartpy${DART_VERSION_MAJOR}-test
 #  doc
 #  coverage_html
 )

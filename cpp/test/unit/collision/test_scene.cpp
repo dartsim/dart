@@ -33,6 +33,7 @@
 #endif
 
 using namespace dart;
+using namespace collision;
 
 //==============================================================================
 template <typename T>
@@ -42,7 +43,7 @@ struct SceneTest : public testing::Test
 };
 
 //==============================================================================
-using Types = testing::Types</*double, */ float>;
+using Types = testing::Types<float, double>;
 
 //==============================================================================
 TYPED_TEST_SUITE(SceneTest, Types);
@@ -74,6 +75,8 @@ void test_scene(const EngineT& engine)
   sphere2->set_position(math::Vector3<Scalar>::Random());
 
   scene->update();
+
+  engine->print();
 }
 
 //==============================================================================
@@ -91,4 +94,18 @@ TYPED_TEST(SceneTest, Collide)
 #if DART_HAVE_Bullet
   test_scene(collision::BulletEngine<Scalar>::Create());
 #endif
+}
+
+//==============================================================================
+TYPED_TEST(SceneTest, MemoryManager)
+{
+  common::set_log_level_to_debug();
+
+  using Scalar = typename TestFixture::Type;
+
+  auto engine = DartEngine<Scalar>::Create();
+  auto scene = engine->create_scene();
+  (void)scene;
+
+  engine->destroy_scene(scene);
 }

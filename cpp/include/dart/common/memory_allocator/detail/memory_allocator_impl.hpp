@@ -32,17 +32,38 @@
 
 #pragma once
 
-#include "dart/common/bit.hpp"
-#include "dart/common/memory_allocator/c_allocator.hpp"
 #include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
 
 //==============================================================================
+template <typename T>
+T* MemoryAllocator::allocate_as(size_t n) noexcept
+{
+  return static_cast<T*>(allocate(n * sizeof(T)));
+}
+
+//==============================================================================
 template <typename T, typename... Args>
 T* MemoryAllocator::construct(Args&&... args) noexcept
 {
-  return construct_aligned<T>(0, std::forward<Args>(args)...);
+  // Allocate new memory for a new object (without calling the constructor)
+  void* object = allocate(sizeof(T));
+  if (!object) {
+    return nullptr;
+  }
+
+  // Call constructor. Return nullptr if failed.
+  try {
+    new (object) T(std::forward<Args>(args)...);
+  } catch (...) {
+    deallocate(object, sizeof(T));
+    return nullptr;
+  }
+
+  return reinterpret_cast<T*>(object);
+
+  // return construct_aligned<T, Args...>(0, std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -59,11 +80,27 @@ T* MemoryAllocator::construct_aligned(size_t alignment, Args&&... args) noexcept
   try {
     new (object) T(std::forward<Args>(args)...);
   } catch (...) {
-    deallocate(object);
+    deallocate_aligned(object, sizeof(T));
     return nullptr;
   }
 
   return reinterpret_cast<T*>(object);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryAllocator::construct_at(void* pointer, Args&&... args)
+{
+  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
+      T(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryAllocator::construct_at(T* pointer, Args&&... args)
+{
+  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
+      T(std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -74,7 +111,7 @@ void MemoryAllocator::destroy(T* object) noexcept
     return;
   }
   object->~T();
-  deallocate(object);
+  deallocate(object, sizeof(T));
 }
 
 } // namespace dart::common

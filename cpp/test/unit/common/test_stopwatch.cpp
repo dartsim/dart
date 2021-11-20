@@ -75,5 +75,5 @@ TEST(StopwatchTest, Basics)
   EXPECT_FALSE(sw.is_started());
   EXPECT_DOUBLE_EQ(sw.elapsed_s(), 0.0);
 
-  sw.print();
+  std::cout << sw;
 }

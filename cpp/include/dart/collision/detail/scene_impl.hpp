@@ -37,6 +37,7 @@
 #include "dart/collision/object.hpp"
 #include "dart/collision/scene.hpp"
 #include "dart/common/logging.hpp"
+#include "dart/common/stl_util.hpp"
 #include "dart/math/geometry/sphere.hpp"
 
 namespace dart::collision {
@@ -45,7 +46,14 @@ namespace dart::collision {
 template <typename Scalar>
 Scene<Scalar>::Scene(Engine<Scalar>* engine) : m_engine(engine)
 {
-  assert(m_engine);
+  DART_ASSERT(m_engine);
+}
+
+//==============================================================================
+template <typename Scalar>
+Scene<Scalar>::~Scene()
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -64,7 +72,7 @@ const Engine<Scalar>* Scene<Scalar>::get_engine() const
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> Scene<Scalar>::create_object(
+Object<Scalar>* Scene<Scalar>::create_object(
     math::Geometry3Ptr<Scalar> geometry)
 {
   // Check object ID
@@ -75,7 +83,8 @@ ObjectPtr<Scalar> Scene<Scalar>::create_object(
   }
 
   // Create new object
-  auto new_object = create_object_impl(std::move(geometry));
+  auto new_object
+      = create_object_impl(m_next_collision_object_id, std::move(geometry));
   if (!new_object) {
     DART_WARN(
         "Failed to create a new collision object by the underlying collision "
@@ -83,26 +92,22 @@ ObjectPtr<Scalar> Scene<Scalar>::create_object(
     return nullptr;
   }
 
-  // Set ID
-  new_object->m_id = m_next_collision_object_id++;
-
-  // TODO(JS): Store the created object (maybe introduce a tailored container?)
+  m_next_collision_object_id++;
 
   return new_object;
 }
 
 //==============================================================================
 template <typename Scalar>
-void Scene<Scalar>::remove_object(ObjectPtr<Scalar> object)
+void Scene<Scalar>::destroy_object(Object<Scalar>* object)
 {
-  (void)object;
-  DART_NOT_IMPLEMENTED;
+  destroy_object_impl(object);
 }
 
 //==============================================================================
 template <typename Scalar>
 template <typename... Args>
-ObjectPtr<Scalar> Scene<Scalar>::create_sphere_object(Args&&... args)
+Object<Scalar>* Scene<Scalar>::create_sphere_object(Args&&... args)
 {
   auto geometry
       = std::make_shared<math::Sphere<Scalar>>(std::forward<Args>(args)...);

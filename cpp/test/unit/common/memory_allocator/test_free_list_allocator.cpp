@@ -25,15 +25,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <vector>
 
-#include <memory>
+#include <gtest/gtest.h>
 
-#include "dart/collision/export.hpp"
-#include "dart/collision/type.hpp"
+#include "dart/common/all.hpp"
 
-namespace dart::collision {
+using namespace dart;
+using namespace common;
 
-//
+//==============================================================================
+TEST(FreeListAllocatorTest, Basics)
+{
+  auto a = FreeListAllocator();
+  a.print();
 
-} // namespace dart::collision
+  auto mem1 = a.allocate(10);
+  auto mem2 = a.allocate(10);
+  a.print();
+
+  a.deallocate(mem1, 10);
+  a.deallocate(mem2, 10);
+  a.print();
+}

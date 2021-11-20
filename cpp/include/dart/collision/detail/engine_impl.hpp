@@ -34,9 +34,16 @@
 
 #include "dart/collision/engine.hpp"
 #include "dart/collision/scene.hpp"
-#include "dart/common/logging.hpp"
 
 namespace dart::collision {
+
+//==============================================================================
+template <typename Scalar>
+Engine<Scalar>::Engine(common::MemoryManager& allocator)
+  : m_memory_manager(allocator)
+{
+  // Do nothing
+}
 
 //==============================================================================
 template <typename Scalar>
@@ -47,8 +54,22 @@ Engine<Scalar>::~Engine()
 
 //==============================================================================
 template <typename Scalar>
+Scene<Scalar>* Engine<Scalar>::create_scene()
+{
+  return create_scene_impl();
+}
+
+//==============================================================================
+template <typename Scalar>
+void Engine<Scalar>::destroy_scene(Scene<Scalar>* scene)
+{
+  destroy_scene_impl(scene);
+}
+
+//==============================================================================
+template <typename Scalar>
 template <typename GeometryType, typename... Args>
-ObjectPtr<Scalar> Engine<Scalar>::create_object(Args&&... args)
+Object<Scalar>* Engine<Scalar>::create_object(Args&&... args)
 {
   return get_default_scene()->template create_object_impl<GeometryType>(
       std::forward<Args>(args)...);
@@ -57,9 +78,20 @@ ObjectPtr<Scalar> Engine<Scalar>::create_object(Args&&... args)
 //==============================================================================
 template <typename Scalar>
 template <typename... Args>
-ObjectPtr<Scalar> Engine<Scalar>::create_sphere_object(Args&&... args)
+Object<Scalar>* Engine<Scalar>::create_sphere_object(Args&&... args)
 {
   return get_default_scene()->create_sphere_object(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename Scalar>
+void Engine<Scalar>::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[*::print is not implemented]\n";
+  }
+  const std::string spaces(indent, ' ');
+  os << spaces << "*::print is not implemented:\n";
 }
 
 //==============================================================================
@@ -70,7 +102,15 @@ Scene<Scalar>* Engine<Scalar>::get_default_scene()
     m_default_scene = create_scene();
   }
 
-  return m_default_scene.get();
+  return m_default_scene;
+}
+
+//==============================================================================
+template <typename Scalar>
+std::ostream& operator<<(std::ostream& os, const Engine<Scalar>& engine)
+{
+  engine.print(os);
+  return os;
 }
 
 } // namespace dart::collision

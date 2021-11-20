@@ -53,12 +53,21 @@ public:
   FclScene(Engine<Scalar>* engine);
 
   /// Destructor
-  ~FclScene() override = default;
+  ~FclScene() override;
+
+protected:
+  // Documentation inherited
+  Object<Scalar>* create_object_impl(
+      ObjectId id, math::Geometry3Ptr<Scalar> geometry) override;
 
   // Documentation inherited
-  ObjectPtr<Scalar> create_object_impl(
-      math::Geometry3Ptr<Scalar> geometry) override;
+  void destroy_object_impl(Object<Scalar>* object) override;
 
+  const ObjectArray<Scalar>& get_objects() const override;
+
+  ObjectArray<Scalar>& get_mutable_objects() override;
+
+public:
   void update(Scalar time_step = 1e-3) override;
 
 protected:
@@ -71,6 +80,9 @@ protected:
 
   /// Return FCL collision manager that is also a broad-phase algorithm
   const FCLCollisionManager* get_fcl_collision_manager() const;
+
+private:
+  FclObjectArray<Scalar> m_objects;
 
   /// FCL broad-phase algorithm
   std::unique_ptr<FCLCollisionManager> m_broad_phase_alg;

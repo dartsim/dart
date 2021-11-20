@@ -96,9 +96,23 @@ std::shared_ptr<FclEngine<Scalar>> FclEngine<Scalar>::Create()
 
 //==============================================================================
 template <typename Scalar>
-FclEngine<Scalar>::~FclEngine()
+FclEngine<Scalar>::FclEngine(common::MemoryManager& memory_manager)
+  : Engine<Scalar>(memory_manager)
 {
   // Do nothing
+}
+
+//==============================================================================
+template <typename Scalar>
+FclEngine<Scalar>::~FclEngine()
+{
+  auto& mm = this->m_memory_manager;
+  auto& allocator = mm.get_mutable_free_list_allocator();
+
+  for (auto i = 0; i < m_scenes.size(); ++i) {
+    allocator.destroy(m_scenes.get_derived(i));
+  }
+  m_scenes.clear();
 }
 
 //==============================================================================
@@ -114,13 +128,6 @@ const std::string& FclEngine<Scalar>::GetType()
 {
   static const std::string type = "fcl";
   return type;
-}
-
-//==============================================================================
-template <typename Scalar>
-ScenePtr<Scalar> FclEngine<Scalar>::create_scene()
-{
-  return std::make_shared<FclScene<Scalar>>(this);
 }
 
 //==============================================================================
@@ -170,6 +177,47 @@ bool FclEngine<Scalar>::collide(
   }
 
   return (num_contacts > 0);
+}
+
+//==============================================================================
+template <typename Scalar>
+Scene<Scalar>* FclEngine<Scalar>::create_scene_impl()
+{
+  auto scene
+      = this->m_memory_manager.template construct_using_free<FclScene<Scalar>>(
+          this);
+  if (scene) {
+    m_scenes.push_back_derived(scene);
+  }
+  return scene;
+}
+
+//==============================================================================
+template <typename Scalar>
+void FclEngine<Scalar>::destroy_scene_impl(Scene<Scalar>* scene)
+{
+  if (auto casted = dynamic_cast<FclScene<Scalar>*>(scene)) {
+    auto& mm = this->m_memory_manager;
+    auto& allocator = mm.get_mutable_free_list_allocator();
+
+    m_scenes.erase_derived(casted);
+    allocator.destroy(casted);
+  }
+}
+
+//==============================================================================
+template <typename Scalar>
+const common::ArrayForBasePtr<Scene<Scalar>>& FclEngine<Scalar>::get_scenes()
+    const
+{
+  return m_scenes;
+}
+
+//==============================================================================
+template <typename Scalar>
+common::ArrayForBasePtr<Scene<Scalar>>& FclEngine<Scalar>::get_mutable_scenes()
+{
+  return m_scenes;
 }
 
 //==============================================================================

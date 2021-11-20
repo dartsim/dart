@@ -1,5 +1,5 @@
 # DART: Dynamic Animation and Robotics Toolkit
 
-DART is a modern, cross-platform, scalable, and high-performance physics engine for robotics and reinforcement learning applications.
+DART aims to be a scalable and high-fidelity physics library for robotics and reinforcement learning application.
 
 This project is written in C++17, and follows the CppCoreGuidelines. The source code is released under the 2-Clause BSD license.

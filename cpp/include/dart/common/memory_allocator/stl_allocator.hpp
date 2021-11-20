@@ -31,7 +31,7 @@
 
 #include "dart/common/export.hpp"
 #include "dart/common/memory.hpp"
-#include "dart/common/memory_allocator/default_allocator.hpp"
+#include "dart/common/memory_allocator/memory_allocator.hpp"
 
 namespace dart::common {
 
@@ -55,7 +55,7 @@ public:
 
   /// Default constructor
   StlAllocator(
-      MemoryAllocator& base_allocator = get_default_allocator()) noexcept;
+      MemoryAllocator& base_allocator = MemoryAllocator::GetDefault()) noexcept;
 
   /// Copy constructor
   StlAllocator(const StlAllocator& other) throw();
@@ -66,6 +66,8 @@ public:
 
   /// Destructor
   ~StlAllocator() = default;
+
+  const std::string& get_type() const;
 
   /// Allocates n * sizeof(T) bytes of uninitialized storage.
   ///
@@ -87,6 +89,12 @@ public:
   // TODO(JS): Make this constexpr once migrated to C++20
 
   // TODO(JS): Add size_type max_size() const noexcept;
+
+  void print(std::ostream& os = std::cout, int indent = 0) const;
+
+  template <typename U>
+  friend std::ostream& operator<<(
+      std::ostream& os, const StlAllocator<U>& allocator);
 
 private:
   template <typename U>

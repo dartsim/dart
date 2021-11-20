@@ -35,14 +35,18 @@ using namespace common;
 //==============================================================================
 TEST(StlAllocatorTest, Basics)
 {
+  common::set_log_level(LogLevel::LOGLEVEL_DEBUG);
+
   {
     auto a = StlAllocator<int>();
     auto o1 = a.allocate(1);
     auto o2 = a.allocate(1);
     EXPECT_TRUE(o1 != nullptr);
     EXPECT_TRUE(o2 != nullptr);
+    a.print();
     a.deallocate(o1, sizeof(int));
     a.deallocate(o2, sizeof(int));
+    a.print();
   }
 
   {
@@ -59,12 +63,15 @@ TEST(StlAllocatorTest, Basics)
     } catch (...) {
       EXPECT_TRUE(false);
     }
+    a.print();
   }
 }
 
 //==============================================================================
 TEST(StlAllocatorTest, StdVector)
 {
+  common::set_log_level(LogLevel::LOGLEVEL_DEBUG);
+
   {
     std::vector<int, StlAllocator<int>> vec;
     EXPECT_EQ(vec.capacity(), 0);
@@ -91,5 +98,6 @@ TEST(StlAllocatorTest, StdVector)
       EXPECT_TRUE(false);
     }
     EXPECT_EQ(vec.size(), 1);
+    vec.get_allocator().print();
   }
 }

@@ -40,7 +40,7 @@ namespace dart::python {
 
 void py_scene(py::module& m)
 {
-  py::class_<collision::Scened, std::shared_ptr<collision::Scened>>(m, "Scene");
+  py::class_<collision::Scened>(m, "Scene");
 }
 
 } // namespace dart::python

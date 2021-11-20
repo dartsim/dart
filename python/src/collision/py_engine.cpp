@@ -62,14 +62,18 @@ void py_engine(py::module& m)
               }),
           py::arg("engine_name") = collision::DartEngined::GetType())
       .def("get_type", &collision::Engined::get_type)
-      .def("create_scene", &collision::Engined::create_scene)
+      .def(
+          "create_scene",
+          &collision::Engined::create_scene,
+          py::return_value_policy::reference_internal)
       .def(
           "create_sphere_object",
           [](collision::Engined* self,
-             double radius) -> collision::ObjectPtr<double> {
+             double radius) -> collision::Object<double>* {
             return self->create_sphere_object(radius);
           },
-          py::arg("radius") = 0.5)
+          py::arg("radius") = 0.5,
+          py::return_value_policy::reference_internal)
       .def(
           "collide",
           &collision::Engined::collide,

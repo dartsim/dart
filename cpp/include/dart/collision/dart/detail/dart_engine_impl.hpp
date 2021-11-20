@@ -39,8 +39,7 @@
 #include "dart/common/logging.hpp"
 #include "dart/math/geometry/sphere.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::collision {
 
 //==============================================================================
 template <typename Scalar>
@@ -140,9 +139,23 @@ std::shared_ptr<DartEngine<Scalar>> DartEngine<Scalar>::Create()
 
 //==============================================================================
 template <typename Scalar>
-DartEngine<Scalar>::~DartEngine()
+DartEngine<Scalar>::DartEngine(common::MemoryManager& allocator)
+  : Engine<Scalar>(allocator)
 {
   // Do nothing
+}
+
+//==============================================================================
+template <typename Scalar>
+DartEngine<Scalar>::~DartEngine()
+{
+  auto& mm = this->m_memory_manager;
+  auto& allocator = mm.get_mutable_free_list_allocator();
+
+  for (auto i = 0; i < m_scenes.size(); ++i) {
+    allocator.destroy(m_scenes.get_derived(i));
+  }
+  m_scenes.clear();
 }
 
 //==============================================================================
@@ -158,13 +171,6 @@ const std::string& DartEngine<Scalar>::GetType()
 {
   static const std::string type = "dart";
   return type;
-}
-
-//==============================================================================
-template <typename Scalar>
-ScenePtr<Scalar> DartEngine<Scalar>::create_scene()
-{
-  return std::make_shared<DartScene<Scalar>>(this);
 }
 
 //==============================================================================
@@ -194,5 +200,60 @@ bool DartEngine<Scalar>::collide(
   return (num_contacts > 0);
 }
 
-} // namespace collision
-} // namespace dart
+//==============================================================================
+template <typename Scalar>
+void DartEngine<Scalar>::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[DartEngine]\n";
+  }
+  const std::string spaces(indent, ' ');
+  if (indent != 0) {
+    os << spaces << "type: " << get_type() << "\n";
+  }
+  os << spaces << "allocator:\n";
+  this->m_memory_manager.print(os, indent + 2);
+}
+
+//==============================================================================
+template <typename Scalar>
+Scene<Scalar>* DartEngine<Scalar>::create_scene_impl()
+{
+  auto scene
+      = this->m_memory_manager.template construct_using_free<DartScene<Scalar>>(
+          this);
+  if (scene) {
+    m_scenes.push_back(scene);
+  }
+  return scene;
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartEngine<Scalar>::destroy_scene_impl(Scene<Scalar>* scene)
+{
+  if (auto casted = dynamic_cast<DartScene<Scalar>*>(scene)) {
+    auto& mm = this->m_memory_manager;
+    auto& allocator = mm.get_mutable_free_list_allocator();
+
+    m_scenes.erase_derived(casted);
+    allocator.destroy(casted);
+  }
+}
+
+//==============================================================================
+template <typename Scalar>
+const common::ArrayForBasePtr<Scene<Scalar>>& DartEngine<Scalar>::get_scenes()
+    const
+{
+  return m_scenes;
+}
+
+//==============================================================================
+template <typename Scalar>
+common::ArrayForBasePtr<Scene<Scalar>>& DartEngine<Scalar>::get_mutable_scenes()
+{
+  return m_scenes;
+}
+
+} // namespace dart::collision

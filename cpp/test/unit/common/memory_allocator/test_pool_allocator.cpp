@@ -25,33 +25,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <vector>
 
-#include "dart/common/memory_allocator/memory_allocator.hpp"
+#include <gtest/gtest.h>
 
-namespace dart::common {
+#include "dart/common/all.hpp"
 
-class DART_COMMON_API CAllocator : public MemoryAllocator
+using namespace dart;
+using namespace common;
+
+//==============================================================================
+TEST(PoolAllocatorTest, Basics)
 {
-public:
-  /// Constructor
-  CAllocator() noexcept;
+  common::set_log_level(common::LogLevel::LOGLEVEL_TRACE);
 
-  /// Destructor
-  ~CAllocator() override;
-
-  // Documentation inherited
-  [[nodiscard]] void* allocate(size_t size) noexcept override;
-
-  // Documentation inherited
-  [[nodiscard]] void* allocate_aligned(
-      size_t size, size_t alignment) noexcept override;
-
-  // Documentation inherited
-  void deallocate(void* pointer) override;
-
-  // Documentation inherited
-  void deallocate_aligned(void* pointer) override;
-};
-
-} // namespace dart::common
+  {
+    auto a = PoolAllocator();
+    (void)a;
+    auto p1 = a.allocate(8);
+    EXPECT_TRUE(p1 != nullptr);
+    a.print();
+  }
+}

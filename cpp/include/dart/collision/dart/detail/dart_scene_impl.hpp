@@ -45,7 +45,10 @@ namespace dart::collision {
 
 //==============================================================================
 template <typename Scalar>
-DartScene<Scalar>::DartScene(Engine<Scalar>* engine) : Scene<Scalar>(engine)
+DartScene<Scalar>::DartScene(Engine<Scalar>* engine)
+  : Scene<Scalar>(engine),
+    m_objects(
+        engine->get_mutable_memory_manager().get_mutable_free_list_allocator())
 {
   m_broad_phase = std::make_shared<detail::SimpleBroadPhaseAlgorithm<Scalar>>();
 }
@@ -54,28 +57,66 @@ DartScene<Scalar>::DartScene(Engine<Scalar>* engine) : Scene<Scalar>(engine)
 template <typename Scalar>
 DartScene<Scalar>::~DartScene()
 {
-  // Do nothing
+  auto& mm = this->m_engine->get_mutable_memory_manager();
+  auto& allocator = mm.get_mutable_free_list_allocator();
+
+  for (auto i = 0; i < m_objects.size(); ++i) {
+    allocator.destroy(m_objects.get_derived(i));
+  }
+  m_objects.clear();
 }
 
 //==============================================================================
 template <typename Scalar>
-ObjectPtr<Scalar> DartScene<Scalar>::create_object_impl(
-    math::Geometry3Ptr<Scalar> geometry)
+Object<Scalar>* DartScene<Scalar>::create_object_impl(
+    ObjectId id, math::Geometry3Ptr<Scalar> geometry)
 {
   if (!geometry) {
     DART_WARN("Not allowed to create a collision object for a null shape");
     return nullptr;
   }
 
-  auto object = std::shared_ptr<DartObject<Scalar>>(
-      new DartObject<Scalar>(this, std::move(geometry)));
+  auto& mm = this->m_engine->get_mutable_memory_manager();
+  auto object = mm.template construct_using_free<DartObject<Scalar>>(
+      this, id, std::move(geometry));
 
-  if (!m_broad_phase->add_object(object.get())) {
-    DART_DEBUG("Failed to add collision object to broad phase algorithm.");
-    return nullptr;
+  if (object) {
+    if (!m_broad_phase->add_object(object)) {
+      DART_DEBUG("Failed to add collision object to broad phase algorithm.");
+      return nullptr;
+    }
+
+    m_objects.push_back(object);
   }
 
   return object;
+}
+
+//==============================================================================
+template <typename Scalar>
+void DartScene<Scalar>::destroy_object_impl(Object<Scalar>* object)
+{
+  if (auto casted = dynamic_cast<DartObject<Scalar>*>(object)) {
+    auto& mm = this->m_engine->get_mutable_memory_manager();
+    auto& allocator = mm.get_mutable_free_list_allocator();
+    allocator.destroy(casted);
+
+    m_objects.erase_derived(casted);
+  }
+}
+
+//==============================================================================
+template <typename Scalar>
+const ObjectArray<Scalar>& DartScene<Scalar>::get_objects() const
+{
+  return m_objects;
+}
+
+//==============================================================================
+template <typename Scalar>
+ObjectArray<Scalar>& DartScene<Scalar>::get_mutable_objects()
+{
+  return m_objects;
 }
 
 //==============================================================================

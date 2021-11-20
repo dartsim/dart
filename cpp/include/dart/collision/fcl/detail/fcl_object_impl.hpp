@@ -85,9 +85,10 @@ const FclCollisionObject<Scalar>* FclObject<Scalar>::get_fcl_collision_object()
 template <typename Scalar>
 FclObject<Scalar>::FclObject(
     Scene<Scalar>* collision_scene,
+    ObjectId id,
     math::Geometry3Ptr<Scalar> geometry,
     const std::shared_ptr<FclCollisionGeometry<Scalar>>& fcl_coll_geom)
-  : Object<Scalar>(collision_scene, std::move(geometry)),
+  : Object<Scalar>(collision_scene, id, std::move(geometry)),
     m_fcl_collision_object(new FclCollisionObject<Scalar>(fcl_coll_geom))
 {
   assert(fcl_coll_geom);
