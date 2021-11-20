@@ -25,35 +25,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#pragma once
 
-#include "dart/common/all.hpp"
+#include <string>
+#include <vector>
 
-using namespace dart;
-using namespace common;
+#include "dart/common/memory_allocator/stl_allocator.hpp"
 
-//==============================================================================
-TEST(ObjectPoolTest, Basics)
-{
-  auto alloc = ObjectPool<double>(2);
-  EXPECT_EQ(alloc.size(), 0);
+namespace dart::common {
 
-  auto o1 = alloc.construct();
-  EXPECT_EQ(alloc.size(), 1);
-  EXPECT_EQ(o1, alloc.get_front());
+template <typename T>
+using vector = std::vector<T, StlAllocator<T>>;
 
-  auto o2 = alloc.construct();
-  EXPECT_EQ(alloc.size(), 2);
-  EXPECT_EQ(o2, alloc.get_front() + 1);
-
-  auto o3 = alloc.construct();
-  EXPECT_EQ(alloc.size(), 2);
-  EXPECT_EQ(o3, nullptr);
-
-  alloc.destroy(o1);
-  alloc.destroy(o2);
-
-#ifndef NDEBUG
-  alloc.print_free_object_stack();
-#endif
-}
+} // namespace dart::common

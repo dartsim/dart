@@ -32,16 +32,61 @@
 
 #pragma once
 
-#include "dart/common/memory_allocator/default_allocator.hpp"
+#include "dart/common/memory_allocator/stl_allocator.hpp"
 
 namespace dart::common {
 
 //==============================================================================
 template <typename T>
-MemoryAllocator<T>& get_default_allocator()
+StlAllocator<T>::StlAllocator(MemoryAllocator& base_allocator) noexcept
+  : m_base_allocator(base_allocator)
 {
-  static CAllocator<T> default_allocator;
-  return default_allocator;
+  // Do nothing
 }
+
+//==============================================================================
+template <typename T>
+StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
+  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+template <class U>
+StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
+  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
+    size_type n, const void* hint)
+{
+  DART_UNUSED(hint);
+  pointer ptr
+      = reinterpret_cast<pointer>(m_base_allocator.allocate(n * sizeof(T)));
+
+  // Throw std::bad_alloc to comply 23.10.9.1
+  // Reference: https://stackoverflow.com/a/50326956/3122234
+  if (!ptr) {
+    throw std::bad_alloc();
+  }
+
+  return ptr;
+}
+
+//==============================================================================
+template <typename T>
+void StlAllocator<T>::deallocate(pointer pointer, size_type n)
+{
+  DART_UNUSED(n);
+  m_base_allocator.deallocate(pointer);
+}
+
+// void deallocate(pointer pointer, size_t n);
 
 } // namespace dart::common

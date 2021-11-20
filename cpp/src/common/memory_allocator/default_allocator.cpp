@@ -25,35 +25,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#include "dart/common/memory_allocator/default_allocator.hpp"
 
-#include "dart/common/all.hpp"
-
-using namespace dart;
-using namespace common;
+namespace dart::common {
 
 //==============================================================================
-TEST(ObjectPoolTest, Basics)
+MemoryAllocator& get_default_allocator()
 {
-  auto alloc = ObjectPool<double>(2);
-  EXPECT_EQ(alloc.size(), 0);
-
-  auto o1 = alloc.construct();
-  EXPECT_EQ(alloc.size(), 1);
-  EXPECT_EQ(o1, alloc.get_front());
-
-  auto o2 = alloc.construct();
-  EXPECT_EQ(alloc.size(), 2);
-  EXPECT_EQ(o2, alloc.get_front() + 1);
-
-  auto o3 = alloc.construct();
-  EXPECT_EQ(alloc.size(), 2);
-  EXPECT_EQ(o3, nullptr);
-
-  alloc.destroy(o1);
-  alloc.destroy(o2);
-
-#ifndef NDEBUG
-  alloc.print_free_object_stack();
-#endif
+  static CAllocator default_allocator;
+  return default_allocator;
 }
+
+} // namespace dart::common

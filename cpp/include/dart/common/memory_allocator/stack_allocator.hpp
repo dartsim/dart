@@ -39,14 +39,15 @@ namespace dart::common {
 /// This class keeps a pointer to the current memory address and it moves it
 /// forward for every allocation. This class also can remove it backwards when a
 /// deallocation operation is done.
-template <typename T = void>
-class StackAllocator : public MemoryAllocator<T>
+class DART_COMMON_API StackAllocator : public MemoryAllocator
 {
 public:
+  using Base = MemoryAllocator;
+
   /// Constructor
-  StackAllocator(
+  explicit StackAllocator(
       size_t max_capacity,
-      MemoryAllocator<T>& base_allocator = get_default_allocator<T>());
+      MemoryAllocator& base_allocator = get_default_allocator());
 
   /// Destructor
   ~StackAllocator() override;
@@ -54,13 +55,14 @@ public:
   /// @copydoc MemoryAllocator::allocate
   ///
   /// Complexity is O(1).
-  [[nodiscard]] T* allocate(size_t size, size_t alignment = 0) override;
+  [[nodiscard]] void* allocate(
+      size_t size, size_t alignment = 0) noexcept override;
 
   /// This function does nothing. The allocated memory is released when this
   /// allocator is destructed.
   ///
   /// Complexity is O(1).
-  void deallocate(T* pointer, size_t) override;
+  void deallocate(void* pointer) override;
 
   /// Returns the maximum capacity of this allocator.
   size_t get_max_capacity() const;
@@ -83,7 +85,7 @@ private:
   const size_t m_max_capacity;
 
   /// The base allocator to allocate memory chunck
-  MemoryAllocator<T>& m_base_allocator;
+  MemoryAllocator& m_base_allocator;
 
   /// The memory address of this allocator uses
   void* m_start_ptr = nullptr;
@@ -96,5 +98,3 @@ private:
 };
 
 } // namespace dart::common
-
-#include "dart/common/memory_allocator/detail/stack_allocator_impl.hpp"

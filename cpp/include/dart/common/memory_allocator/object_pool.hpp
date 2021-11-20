@@ -41,9 +41,9 @@ class ObjectPool
 {
 public:
   /// Constructor
-  ObjectPool(
+  explicit ObjectPool(
       size_t capacity = 1024,
-      MemoryAllocator<T>& base_allocator = get_default_allocator<T>());
+      MemoryAllocator& base_allocator = get_default_allocator());
 
   /// Destructor
   virtual ~ObjectPool();
@@ -83,7 +83,7 @@ private:
   /// The maximum number of objects this pool can hold.
   const size_t m_capacity;
 
-  MemoryAllocator<T>& m_base_allocator;
+  MemoryAllocator& m_base_allocator;
 
   T* const m_front;
 

@@ -31,65 +31,69 @@
 
 #include "dart/common/export.hpp"
 #include "dart/common/memory.hpp"
+#include "dart/common/memory_allocator/default_allocator.hpp"
 
 namespace dart::common {
 
-/// Base class for std::allocator compatible allocators.
-class DART_COMMON_API MemoryAllocator
+/// std::allocator compatible allocator that wrapps various MemoryAllocator
+template <typename T>
+class StlAllocator : public std::allocator<T>
 {
 public:
+  // Type aliases
+  using Base = std::allocator<T>;
+  using value_type = typename Base::value_type;
+  using size_type = typename Base::size_type;
+  using pointer = typename Base::pointer;
+  using const_pointer = typename Base::const_pointer;
+
+  template <typename U>
+  struct rebind
+  {
+    using other = StlAllocator<U>;
+  };
+
   /// Default constructor
-  MemoryAllocator() noexcept = default;
+  StlAllocator(
+      MemoryAllocator& base_allocator = get_default_allocator()) noexcept;
+
+  /// Copy constructor
+  StlAllocator(const StlAllocator& other) throw();
+
+  /// Copy constructor
+  template <class U>
+  StlAllocator(const StlAllocator<U>& other) throw();
 
   /// Destructor
-  virtual ~MemoryAllocator() = default;
+  ~StlAllocator() = default;
 
-  /// Allocates @c size bytes of uninitialized storage whose alignment is
-  /// specified by @c alignmnet.
+  /// Allocates n * sizeof(T) bytes of uninitialized storage.
   ///
-  /// @param[in] n: The byte size to allocate sotrage for.
-  /// @param[in] alignment: Alignment size. Default is 0.
+  /// @param[in] n: The number of objects to allocate sotrage for.
+  /// @param[in] hint: Point to a nearby memory location.
   /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// @return On failure, a null pointer
-  [[nodiscard]] virtual void* allocate(
-      size_t size, size_t alignment = 0) noexcept
-      = 0;
-  // TODO(JS): Make this constexpr once migrated to C++20
+  [[nodiscard]] pointer allocate(size_type n, const void* hint = 0);
 
   /// Deallocates the storage referenced by the pointer @c p, which must be a
   /// pointer obtained by an earlier cal to allocate() or allocate_aligned().
   ///
   /// @param[in] pointer: Pointer obtained from allocate() or
   /// allocate_aligned().
-  virtual void deallocate(void* pointer) = 0;
+  /// @param[in] n: Number of objects earlier passed to allocate() or
+  /// allocate_aligned().
+  void deallocate(pointer pointer, size_type n);
   // TODO(JS): Make this constexpr once migrated to C++20
 
-  /// Allocates uninitialized storage and constructs an object of type T to the
-  /// allocated storage.
-  ///
-  /// @param[in] args...: The constructor arguments to use.
-  template <typename T, typename... Args>
-  [[nodiscard]] T* construct(Args&&... args) noexcept;
+  // TODO(JS): Add size_type max_size() const noexcept;
 
-  /// Allocates uninitialized storage and constructs an object of type T to the
-  /// allocated storage whose alignment is specified by @c alignmnet.
-  ///
-  /// @param[in] alignment: Alignment size. Default is 0.
-  /// @param[in] args...: The constructor arguments to use.
-  template <typename T, typename... Args>
-  [[nodiscard]] T* construct_aligned(
-      size_t alignment = 0, Args&&... args) noexcept;
-
-  /// Calls the destructor of the object and deallocate the storage.
-  template <typename T>
-  void destroy(T* pointer) noexcept;
-
-protected:
-  /// Returns true if @c alignment is valid for @c size.
-  bool is_valid_alignment(size_t size, size_t alignment) const;
+private:
+  template <typename U>
+  friend class StlAllocator;
+  MemoryAllocator& m_base_allocator;
 };
 
 } // namespace dart::common
 
-#include "dart/common/memory_allocator/detail/memory_allocator_impl.hpp"
+#include "dart/common/memory_allocator/detail/stl_allocator_impl.hpp"

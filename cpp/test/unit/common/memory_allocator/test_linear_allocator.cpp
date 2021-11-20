@@ -52,7 +52,7 @@ TEST(LinearAllocatorTest, ConstructorsAndInitialStates)
 TEST(LinearAllocatorTest, Deallocate)
 {
   auto alloc1 = LinearAllocator(0);
-  alloc1.deallocate(nullptr, 0);
+  alloc1.deallocate(nullptr);
 }
 
 //==============================================================================
@@ -89,15 +89,15 @@ TEST(AllocatorTest, TotalSize)
     int b;
   };
 
-  //  static_assert(sizeof(DoubleInt) > 1);
-  //  auto allocator3 = LinearAllocator<DoubleInt>(sizeof(DoubleInt) + 1);
+  static_assert(sizeof(DoubleInt) > 1);
+  auto allocator3 = LinearAllocator(sizeof(DoubleInt) + 1);
 
-  //  DoubleInt* obj1 = allocator3.construct<DoubleInt>();
-  //  EXPECT_TRUE(obj1 != nullptr);
-  //  EXPECT_EQ(allocator3.get_size(), sizeof(DoubleInt));
-  //  EXPECT_TRUE(allocator3.construct<DoubleInt>() == nullptr);
-  //  EXPECT_EQ(allocator3.get_size(), sizeof(DoubleInt));
+  DoubleInt* obj1 = allocator3.construct<DoubleInt>();
+  EXPECT_TRUE(obj1 != nullptr);
+  EXPECT_EQ(allocator3.get_size(), sizeof(DoubleInt));
+  EXPECT_TRUE(allocator3.construct<DoubleInt>() == nullptr);
+  EXPECT_EQ(allocator3.get_size(), sizeof(DoubleInt));
 
-  //  allocator3.destroy(obj1);
-  //  allocator3.destroy<DoubleInt>(nullptr);
+  allocator3.destroy(obj1);
+  allocator3.destroy<DoubleInt>(nullptr);
 }

@@ -36,7 +36,7 @@ namespace dart::common {
 
 //==============================================================================
 template <typename T>
-ObjectPool<T>::ObjectPool(size_t capacity, MemoryAllocator<T>& base_allocator)
+ObjectPool<T>::ObjectPool(size_t capacity, MemoryAllocator& base_allocator)
   : m_capacity(capacity),
     m_base_allocator(base_allocator),
     m_front(reinterpret_cast<T*>(m_base_allocator.allocate(
@@ -63,7 +63,7 @@ ObjectPool<T>::~ObjectPool()
 {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (m_front) {
-    m_base_allocator.deallocate(m_front, sizeof(T) * m_capacity);
+    m_base_allocator.deallocate(m_front);
   }
 }
 

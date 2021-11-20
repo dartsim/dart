@@ -42,8 +42,8 @@ template <bool Flag = false>
 void static_assert_no_match();
 
 //==============================================================================
-template <typename T>
-void erase(std::vector<T>& vec, const T& to_remove)
+template <typename T, typename Allocator>
+void erase(std::vector<T, Allocator>& vec, const T& to_remove)
 {
   vec.erase(std::remove(vec.begin(), vec.end(), to_remove), vec.end());
 }

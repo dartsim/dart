@@ -169,15 +169,14 @@ ctest --output-on-failure -j$num_threads
   # make -j$num_threads all tutorials
 # fi
 
-make -j$num_threads install
-
 # dartpy: build, test, and install
 if [ "$BUILD_DARTPY" = "ON" ]; then
   # TODO(JS): Enable this
   make -j$num_threads dartpy8
   make dartpy8-test
-  make -j$num_threads dartpy8-install
 fi
+
+make -j$num_threads install
 
 # Codecov
 if [ "$CODECOV" = "ON" ]; then

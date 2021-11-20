@@ -36,14 +36,17 @@ namespace dart::common {
 
 /// Memory allocator to keep a point at the first memory address of the memory
 /// chunk and move it every time an allocation is done.
-template <typename T = void>
-class LinearAllocator : public MemoryAllocator<T>
+class DART_COMMON_API LinearAllocator : public MemoryAllocator
 {
 public:
+  using Base = MemoryAllocator;
+
   /// Constructor
-  LinearAllocator(
+  ///
+  /// @param[in] max_capacity: Maximum count of object to allocate.
+  explicit LinearAllocator(
       size_t max_capacity,
-      MemoryAllocator<T>& base_allocator = get_default_allocator<T>());
+      MemoryAllocator& base_allocator = get_default_allocator());
 
   /// Destructor
   ~LinearAllocator() override;
@@ -51,13 +54,14 @@ public:
   /// @copydoc MemoryAllocator::allocate
   ///
   /// Complexity is O(1).
-  [[nodiscard]] T* allocate(size_t size, size_t alignment = 0) override;
+  [[nodiscard]] void* allocate(
+      size_t size, size_t alignment = 0) noexcept override;
 
   /// This function does nothing. The allocated memory is released when this
   /// allocator is destructed.
   ///
   /// Complexity is O(1).
-  void deallocate(T* pointer, size_t) override;
+  void deallocate(void* pointer) override;
 
   /// Returns the maximum capacity of this allocator.
   [[nodiscard]] size_t get_max_capacity() const;
@@ -75,7 +79,7 @@ private:
   const size_t m_max_capacity;
 
   /// The base allocator to allocate memory chunck
-  MemoryAllocator<T>& m_base_allocator;
+  MemoryAllocator& m_base_allocator;
 
   /// The memory address of this allocator uses
   void* m_start_ptr = nullptr;
@@ -86,107 +90,5 @@ private:
   /// Mutex for thread safety
   mutable std::mutex m_mutex;
 };
-
-//==============================================================================
-template <typename T>
-LinearAllocator<T>::LinearAllocator(
-    size_t max_capacity, MemoryAllocator<T>& base_allocator)
-  : m_max_capacity(max_capacity),
-    m_base_allocator(base_allocator),
-    m_start_ptr(base_allocator.allocate(max_capacity)),
-    m_offset(0)
-{
-#ifndef NDEBUG
-  if (max_capacity == 0) {
-    DART_WARN(
-        "Allocator with zero max capacity is not able to allocate any memory.");
-  }
-#endif
-}
-
-//==============================================================================
-template <typename T>
-LinearAllocator<T>::~LinearAllocator()
-{
-  if (m_start_ptr) {
-    this->m_base_allocator.deallocate(m_start_ptr, m_max_capacity);
-  }
-}
-
-//==============================================================================
-template <typename T>
-T* LinearAllocator<T>::allocate(size_t size, size_t alignment)
-{
-  if (size == 0) {
-    return nullptr;
-  }
-
-  if (m_start_ptr == nullptr) {
-    return nullptr;
-  }
-
-  if (!this->is_valid_alignment(size, alignment)) {
-    return nullptr;
-  }
-
-  // Lock the mute
-  std::lock_guard<std::mutex> lock(m_mutex);
-
-  const size_t current_ptr = reinterpret_cast<size_t>(m_start_ptr) + m_offset;
-
-  // Compute padding
-  size_t padding = 0;
-  if (alignment > 0 && m_offset % alignment != 0) {
-    padding = get_padding(current_ptr, alignment);
-  }
-
-  // Check max capacity
-  if (m_offset + padding + size > m_max_capacity) {
-    DART_DEBUG(
-        "Allocating {} with padding {} exceeds the max capacity {}. Returning "
-        "nullptr.",
-        size,
-        padding,
-        m_max_capacity);
-    return nullptr;
-  }
-
-  // Update offset
-  m_offset += padding + size;
-
-  return reinterpret_cast<T*>(current_ptr + padding);
-}
-
-//==============================================================================
-template <typename T>
-void LinearAllocator<T>::deallocate(T* pointer, size_t size)
-{
-  // LinearAllocator doesn't allow to deallocate memory
-  DART_UNUSED(pointer, size);
-}
-
-//==============================================================================
-template <typename T>
-size_t LinearAllocator<T>::get_max_capacity() const
-{
-  // No need to lock the mutex as m_max_capacity isn't changed once initialized
-  return m_max_capacity;
-}
-
-//==============================================================================
-template <typename T>
-size_t LinearAllocator<T>::get_size() const
-{
-  std::lock_guard<std::mutex> lock(m_mutex);
-  return m_offset;
-}
-
-//==============================================================================
-template <typename T>
-const void* LinearAllocator<T>::get_begin_address() const
-{
-  // No need to lock the mutex as m_head isn't changed once initialized
-  return m_start_ptr;
-}
 
 } // namespace dart::common

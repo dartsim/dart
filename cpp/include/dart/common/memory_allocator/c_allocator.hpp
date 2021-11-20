@@ -31,41 +31,21 @@
 
 namespace dart::common {
 
-template <typename T = void>
-class CAllocator : public MemoryAllocator<T>
+class DART_COMMON_API CAllocator : public MemoryAllocator
 {
 public:
-  using value_type = T;
-
   /// Constructor
   CAllocator() noexcept;
-
-  template <typename U>
-  CAllocator(const CAllocator<U>& /*other*/) noexcept
-  {
-    // Do nothing
-  }
 
   /// Destructor
   ~CAllocator() override;
 
-  [[nodiscard]] T* allocate(size_t size, size_t alignment = 0) override;
+  // Documentation inherited
+  [[nodiscard]] void* allocate(
+      size_t size, size_t alignment = 0) noexcept override;
 
-  void deallocate(T* pointer, size_t) override;
+  // Documentation inherited
+  void deallocate(void* pointer) override;
 };
 
-template <class T, class U>
-constexpr bool operator==(const CAllocator<T>&, const CAllocator<U>&) noexcept
-{
-  return true;
-}
-
-template <class T, class U>
-constexpr bool operator!=(const CAllocator<T>&, const CAllocator<U>&) noexcept
-{
-  return false;
-}
-
 } // namespace dart::common
-
-#include "dart/common/memory_allocator/detail/c_allocator_impl.hpp"

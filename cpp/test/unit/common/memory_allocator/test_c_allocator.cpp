@@ -57,13 +57,5 @@ TEST(CAllocatorTest, Basics)
   auto mem1 = alloc.allocate(2);
   EXPECT_TRUE(mem1 != nullptr);
 
-  alloc.deallocate(mem1, 2);
-}
-
-//==============================================================================
-TEST(CAllocatorTest, StlCompatibility)
-{
-  auto alloc1 = CAllocator<int>();
-  auto alloc2 = std::allocator<int>();
-  // std::vector<int> vec(alloc1);
+  alloc.deallocate(mem1);
 }

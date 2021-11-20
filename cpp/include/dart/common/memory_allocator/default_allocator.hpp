@@ -31,9 +31,7 @@
 
 namespace dart::common {
 
-template <typename T>
-MemoryAllocator<T>& get_default_allocator();
+/// Returns default memory allocator, which is CAllocator
+DART_COMMON_API MemoryAllocator& get_default_allocator();
 
 } // namespace dart::common
-
-#include "dart/common/memory_allocator/detail/default_allocator_impl.hpp"

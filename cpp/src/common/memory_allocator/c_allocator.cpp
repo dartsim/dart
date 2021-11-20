@@ -29,4 +29,40 @@
 
 namespace dart::common {
 
+//==============================================================================
+CAllocator::CAllocator() noexcept
+{
+  // Do nothing
+}
+
+//==============================================================================
+CAllocator::~CAllocator()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void* CAllocator::allocate(size_t size, size_t alignment) noexcept
+{
+  if (size == 0) {
+    return nullptr;
+  }
+
+  if (alignment == 0) {
+    return std::malloc(size);
+  }
+
+  if (!this->is_valid_alignment(size, alignment)) {
+    return nullptr;
+  }
+
+  return common::aligned_alloc(alignment, size);
+}
+
+//==============================================================================
+void CAllocator::deallocate(void* pointer)
+{
+  std::free(pointer);
+}
+
 } // namespace dart::common

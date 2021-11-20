@@ -25,54 +25,71 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include <algorithm>
-#include <cstdlib>
+#include "dart/common/all.hpp"
 
-#include "dart/common/memory_allocator/c_allocator.hpp"
-
-namespace dart::common {
+using namespace dart;
+using namespace common;
 
 //==============================================================================
-template <typename T>
-CAllocator<T>::CAllocator() noexcept
+TEST(StlAllocatorTest, Basics)
 {
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-CAllocator<T>::~CAllocator()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-T* CAllocator<T>::allocate(size_t size, size_t alignment)
-{
-  if (size == 0) {
-    return nullptr;
+  {
+    auto a = StlAllocator<int>();
+    auto o1 = a.allocate(1);
+    auto o2 = a.allocate(1);
+    EXPECT_TRUE(o1 != nullptr);
+    EXPECT_TRUE(o2 != nullptr);
+    a.deallocate(o1, sizeof(int));
+    a.deallocate(o2, sizeof(int));
   }
 
-  if (alignment == 0) {
-    return reinterpret_cast<T*>(std::malloc(size));
+  {
+    LinearAllocator base_allocator(sizeof(int) + 1);
+    static_assert(
+        sizeof(int) > 1,
+        "sizeof(int) should be greater than 1 to keep this test valid.");
+    auto a = StlAllocator<int>(base_allocator);
+    EXPECT_TRUE(a.allocate(1) != nullptr);
+    try {
+      EXPECT_TRUE(a.allocate(1) == nullptr);
+    } catch (std::bad_alloc& e) {
+      EXPECT_TRUE(true);
+    } catch (...) {
+      EXPECT_TRUE(false);
+    }
   }
-
-  if (!this->is_valid_alignment(size, alignment)) {
-    return nullptr;
-  }
-
-  return reinterpret_cast<T*>(common::aligned_alloc(alignment, size));
 }
 
 //==============================================================================
-template <typename T>
-void CAllocator<T>::deallocate(T* pointer, size_t size)
+TEST(StlAllocatorTest, StdVector)
 {
-  DART_UNUSED(size);
-  std::free(pointer);
-}
+  {
+    std::vector<int, StlAllocator<int>> vec;
+    EXPECT_EQ(vec.capacity(), 0);
+    vec.reserve(1);
+    EXPECT_EQ(vec.capacity(), 1);
+    vec.reserve(2);
+    EXPECT_EQ(vec.capacity(), 2);
+  }
 
-} // namespace dart::common
+  {
+    LinearAllocator base_allocator(sizeof(int) + 1);
+    common::vector<int> vec(
+        base_allocator); // equivalent to std::vector<int, StlAllocator<int>>
+    EXPECT_EQ(vec.size(), 0);
+    vec.resize(1);
+    EXPECT_EQ(vec.size(), 1);
+    // Cannot allocator more than one because the base_allocator only can
+    // allocate up to sizeof(int) + 1.
+    try {
+      vec.resize(2);
+    } catch (std::bad_alloc& e) {
+      EXPECT_TRUE(true);
+    } catch (...) {
+      EXPECT_TRUE(false);
+    }
+    EXPECT_EQ(vec.size(), 1);
+  }
+}

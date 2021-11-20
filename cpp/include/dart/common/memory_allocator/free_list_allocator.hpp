@@ -34,11 +34,11 @@
 namespace dart::common {
 
 // template <typename T>
-// class FreeListAllocator : public MemoryAllocator<T>
+// class FreeListAllocator : public MemoryAllocator
 //{
 // public:
 //  FreeListAllocator(
-//      MemoryAllocator<T>& base_allocator, size_t initial_allocation = 0);
+//      MemoryAllocator& base_allocator, size_t initial_allocation = 0);
 
 //  ~FreeListAllocator() override = default;
 
@@ -69,7 +69,7 @@ namespace dart::common {
 
 //  bool allocate_new_block(size_t size);
 
-//  MemoryAllocator<T>& m_base_allocator;
+//  MemoryAllocator& m_base_allocator;
 
 //  size_t m_allocated_size;
 
