@@ -34,7 +34,7 @@
 #include <vector>
 #if DART_ENABLE_TBB
   #include <execution>
-#else
+#elif DART_HAVE_OpenMP
   #include <omp.h>
 #endif
 
@@ -90,13 +90,17 @@ void parallel_for(
     case ExecutionPolicy::Parallel: {
 #if DART_ENABLE_TBB
       std::for_each(std::execution::par_unseq, begin, end, std::move(func));
-#else
+#elif DART_HAVE_OpenMP
   #pragma omp parallel for
   #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
       for (ssize_t i = begin; i < ssize_t(end); ++i) {
   #else
       for (auto i = begin; i < end; ++i) {
   #endif
+        func(i);
+      }
+#else
+      for (auto i = begin; i < end; ++i) {
         func(i);
       }
 #endif

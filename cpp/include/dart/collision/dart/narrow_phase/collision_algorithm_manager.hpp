@@ -67,6 +67,7 @@ public:
 
   bool destroy_algorithm(CollisionAlgorithm<Scalar>* algorithm)
   {
+    DART_UNUSED(algorithm);
     return true;
   }
 

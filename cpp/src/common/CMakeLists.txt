@@ -4,7 +4,6 @@
 set(target_link_library_public
   Eigen3::Eigen
   ${CMAKE_DL_LIBS}
-  OpenMP::OpenMP_CXX  # TODO(JS): Make optional
 )
 if(TARGET fmt::fmt-header-only)
   list(APPEND target_link_library_public fmt::fmt-header-only)
@@ -17,6 +16,9 @@ if(spdlog_FOUND)
   else()
     list(APPEND target_link_library_public spdlog::spdlog)
   endif()
+endif()
+if(OpenMP_FOUND)
+  list(APPEND target_link_library_public OpenMP::OpenMP_CXX)
 endif()
 
 # Explicit template instantiation options
@@ -65,7 +67,7 @@ dart_component_setup(
   DEPENDENT_PACKAGES_REQUIRED
     fmt Eigen3
   DEPENDENT_PACKAGES_OPTIONAL
-    spdlog
+    OpenMP spdlog
   TARGET_LINK_LIBRARIES_PUBLIC
     ${target_link_library_public}
   TARGET_COMPILE_FEATURES_PUBLIC

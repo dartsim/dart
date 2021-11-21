@@ -24,7 +24,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
 #pragma once
+
+#include "dart/common/macro.hpp"
 
 namespace dart::math::detail {
 
@@ -141,6 +144,7 @@ struct DescendA
 {
   static bool descend_a(const Node* node_a, const Node* node_b)
   {
+    DART_UNUSED(node_b);
     return not node_a->is_leaf();
   }
 };
@@ -151,6 +155,7 @@ struct DescendB
 {
   static bool descend_a(const Node* node_a, const Node* node_b)
   {
+    DART_UNUSED(node_a);
     return node_b->is_leaf();
   }
 };

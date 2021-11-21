@@ -29,7 +29,7 @@ find_package(TBB QUIET)  # TODO(JS): Make optional
 message("[DEBUG] TBB_FOUND: ${TBB_FOUND}")
 
 # OpenMP
-find_package(OpenMP QUIET REQUIRED)  # TODO(JS): Make optional
+find_package(OpenMP QUIET)  # TODO(JS): Make optional
 message("[DEBUG] OpenMP_FOUND: ${OpenMP_FOUND}")
 
 # spdlog
