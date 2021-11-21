@@ -4,6 +4,12 @@ file(GLOB_RECURSE sources "*.cpp")
 
 set(target_name ${PROJECT_NAME}${DART_VERSION_MAJOR}-external-imgui)
 
+# Check dependencies
+if(NOT glfw3_FOUND)
+  message(WARNING "Skipped [${target_name}] due to missing package glfw3")
+  return()
+endif()
+
 add_library(${target_name} STATIC)
 add_library(imgui::imgui ALIAS ${target_name})
 

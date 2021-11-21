@@ -5,7 +5,11 @@
 # ==============================================================================
 
 # CMake 3.10.2, the default version of Ubuntu 18.04 LTS
-cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+if(MSVC)
+  cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
+else()
+  cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+endif()
 
 # Policy settings
 if(POLICY CMP0072)
@@ -16,6 +20,9 @@ if(POLICY CMP0074)
 endif()
 if(POLICY CMP0076)
   cmake_policy(SET CMP0076 NEW)
+endif()
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
 endif()
 
 # DART version
@@ -77,6 +84,7 @@ include(DARTDependencies)
 # Compiler settings and compiler specific settings
 # ==============================================================================
 
+# GCC
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0.0)
     message("[DEBUG] GCC version is less than 9.0.0")
@@ -89,14 +97,56 @@ if(CMAKE_COMPILER_IS_GNUCXX)
       set(DART_ENABLE_TBB FALSE)
     endif()
   endif()
-endif()
+  set(DART_ENABLE_TBB FALSE) # TODO(JS): Fix
 
-if(DART_ENABLE_NATIVE_ARCH)
-  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-  else()
-    message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
+  if(DART_ENABLE_NATIVE_ARCH)
+    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    else()
+      message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
+    endif()
   endif()
+
+# Clang
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+
+  set(DART_ENABLE_TBB FALSE) # TODO(JS): Fix
+
+  if(DART_ENABLE_NATIVE_ARCH)
+    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    else()
+      message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
+    endif()
+  endif()
+
+# MSVC
+elseif(MSVC)
+
+  set(DART_ENABLE_TBB FALSE) # TODO(JS): Fix
+
+  # TODO(JS): Utilize DART_ENABLE_NATIVE_ARCH
+
+  add_compile_options(/wd4005)
+  add_compile_options(/wd4099)
+  add_compile_options(/wd4146)
+  add_compile_options(/wd4244)
+  add_compile_options(/wd4250)
+  add_compile_options(/wd4251)  # TODO(JS): Fix first
+  add_compile_options(/wd4267)
+  add_compile_options(/wd4305)
+  add_compile_options(/wd4334)
+  add_compile_options(/wd4838)
+  add_compile_options(/wd4996)
+  add_compile_options(/bigobj)
+
+  if(BUILD_SHARED_LIBS)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+  else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  endif()
+
+  add_compile_options($<$<CONFIG:Release>:/WX>)
 endif()
 
 # ==============================================================================

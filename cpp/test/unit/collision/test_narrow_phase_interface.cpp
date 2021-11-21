@@ -28,7 +28,9 @@
 #include <gtest/gtest.h>
 
 #include "dart/collision/all.hpp"
-#include "dart/collision/fcl/fcl_engine.hpp"
+#if DART_HAVE_fcl
+  #include "dart/collision/fcl/fcl_engine.hpp"
+#endif
 
 using namespace dart;
 

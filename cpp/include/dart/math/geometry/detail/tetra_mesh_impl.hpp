@@ -47,7 +47,7 @@ TetraMesh<S>::TetraMesh()
 
 //==============================================================================
 template <typename S>
-const std::string& TetraMesh<S>::getStaticType()
+const std::string& TetraMesh<S>::GetType()
 {
   static const std::string type("TetraMesh");
   return type;
@@ -57,7 +57,7 @@ const std::string& TetraMesh<S>::getStaticType()
 template <typename S>
 const std::string& TetraMesh<S>::get_type() const
 {
-  return getStaticType();
+  return GetType();
 }
 
 //==============================================================================
@@ -168,7 +168,7 @@ TetraMesh<S>& TetraMesh<S>::operator+=(const TetraMesh& other)
 
 //==============================================================================
 template <typename S>
-std::shared_ptr<TetraMesh<S>> TetraMesh<S>::generateConvexHull(
+std::shared_ptr<TetraMesh<S>> TetraMesh<S>::generate_convex_hull(
     bool optimize) const
 {
   auto triangles = Triangles();

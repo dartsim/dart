@@ -50,7 +50,7 @@ void print_duration_if_non_zero(
 //==============================================================================
 template <typename UnitType, typename ClockType>
 Stopwatch<UnitType, ClockType>::Stopwatch(bool start)
-  : m_start(ClockType::now()), m_elapsed(0), m_paused(not start)
+  : m_start(ClockType::now()), m_elapsed(0), m_paused(!start)
 {
   // clang-format off
   static_assert(std::is_same_v<UnitType, std::chrono::seconds>

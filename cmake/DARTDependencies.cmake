@@ -48,6 +48,9 @@ find_package(OpenGL QUIET MODULE)
 find_package(OpenSceneGraph 3.2.3 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
 )
+if(MSVC)
+  list(REMOVE_ITEM OPENSCENEGRAPH_LIBRARIES optimized debug)
+endif()
 if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
   add_library(osg::osg INTERFACE IMPORTED)
   set_target_properties(osg::osg PROPERTIES

@@ -624,12 +624,6 @@ function(dart_component_setup)
     endif()
   endforeach()
 
-  dart_add_component(COMPONENT_NAME ${_ARG_COMPONENT_NAME})
-  dart_add_component_dependent_components(
-    COMPONENT_NAME ${_ARG_COMPONENT_NAME}
-    DEPENDENT_COMPONENTS ${_ARG_DEPENDENT_COMPONENTS}
-  )
-
   # Set target name
   set(target_name ${PROJECT_NAME}${DART_VERSION_MAJOR}-${_ARG_COMPONENT_NAME})
 
@@ -662,6 +656,13 @@ function(dart_component_setup)
       message("[WARN] Building component [${_ARG_COMPONENT_NAME}] without [${package}] as it's not found")
     endif()
   endforeach()
+
+  # Set up component properties
+  dart_add_component(COMPONENT_NAME ${_ARG_COMPONENT_NAME})
+  dart_add_component_dependent_components(
+    COMPONENT_NAME ${_ARG_COMPONENT_NAME}
+    DEPENDENT_COMPONENTS ${_ARG_DEPENDENT_COMPONENTS}
+  )
 
   # Current paths
   set(current_src_source_dir ${CMAKE_CURRENT_SOURCE_DIR})

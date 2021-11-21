@@ -63,7 +63,7 @@ public:
   /// Destructor
   ~TetraMesh() override = default;
 
-  static const std::string& getStaticType();
+  static const std::string& GetType();
 
   const std::string& get_type() const override;
 
@@ -98,7 +98,8 @@ public:
   ///
   /// \param[in] optimize: (Optional) Whether to discard vertices that are not
   /// used in the convex hull.
-  std::shared_ptr<TetraMesh<S>> generateConvexHull(bool optimize = true) const;
+  std::shared_ptr<TetraMesh<S>> generate_convex_hull(
+      bool optimize = true) const;
 
 protected:
   /// Computes triangle normals.

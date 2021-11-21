@@ -33,7 +33,7 @@ namespace dart::math {
 
 //==============================================================================
 template <typename S>
-Aabb3<S> Aabb3<S>::FromPoints(
+Aabb3<S> Aabb3<S>::From_points(
     const Vector3<S>& point1, const Vector3<S>& point2)
 {
   return Aabb3<S>(point1.cwiseMin(point2), point1.cwiseMax(point2));

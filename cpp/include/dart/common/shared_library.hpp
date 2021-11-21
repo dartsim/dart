@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "dart/common/export.hpp"
@@ -130,8 +131,8 @@ public:
   ConstHandlePtr handle_ptr() const;
 
 private:
-  std::string m_path;
-  HandlePtr m_handle{nullptr};
+  struct Implementation;
+  std::unique_ptr<Implementation> m_impl;
 };
 
 } // namespace dart::common

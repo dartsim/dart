@@ -58,7 +58,7 @@ public:
 
   static constexpr bool IS_ORIENTED = false;
 
-  static Aabb3 FromPoints(const Vector3<S>& point1, const Vector3<S>& point2);
+  static Aabb3 From_points(const Vector3<S>& point1, const Vector3<S>& point2);
 
   /// Constructor
   Aabb3();

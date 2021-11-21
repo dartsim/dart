@@ -54,7 +54,7 @@ TEST(StlAllocatorTest, Basics)
     EXPECT_TRUE(a.allocate(1) != nullptr);
     try {
       EXPECT_TRUE(a.allocate(1) == nullptr);
-    } catch (std::bad_alloc& e) {
+    } catch (std::bad_alloc& /*e*/) {
       EXPECT_TRUE(true);
     } catch (...) {
       EXPECT_TRUE(false);
@@ -85,7 +85,7 @@ TEST(StlAllocatorTest, StdVector)
     // allocate up to sizeof(int) + 1.
     try {
       vec.resize(2);
-    } catch (std::bad_alloc& e) {
+    } catch (std::bad_alloc& /*e*/) {
       EXPECT_TRUE(true);
     } catch (...) {
       EXPECT_TRUE(false);

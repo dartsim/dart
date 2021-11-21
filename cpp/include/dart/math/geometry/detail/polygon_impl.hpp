@@ -41,7 +41,7 @@ namespace dart::math {
 
 //==============================================================================
 template <typename Scalar>
-const std::string& Polygon<Scalar>::getStaticType()
+const std::string& Polygon<Scalar>::GetType()
 {
   static const std::string type("Polygon");
   return type;
@@ -51,21 +51,21 @@ const std::string& Polygon<Scalar>::getStaticType()
 template <typename Scalar>
 const std::string& Polygon<Scalar>::get_type() const
 {
-  return getStaticType();
+  return GetType();
 }
 
 //==============================================================================
 template <typename Scalar>
-std::shared_ptr<Polygon<Scalar>> Polygon<Scalar>::generateConvexHull() const
+std::shared_ptr<Polygon<Scalar>> Polygon<Scalar>::generate_convex_hull() const
 {
-  //  mIndices.clear();
+  //  m_indices.clear();
 
   auto polygon = std::make_shared<Polygon<Scalar>>();
 
-  if (mPoints.size() <= 3) {
+  if (m_points.size() <= 3) {
     // Three or fewer points is already a convex hull
-    //    for (std::size_t i = 0; i < mPoints.size(); ++i)
-    //      mIndices.push_back(i);
+    //    for (std::size_t i = 0; i < m_points.size(); ++i)
+    //      m_indices.push_back(i);
 
     return polygon;
   }

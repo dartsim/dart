@@ -48,20 +48,20 @@ public:
   using Index = std::size_t;
   using Vector2 = Eigen::Matrix<Scalar, 2, 1>;
 
-  static const std::string& getStaticType();
+  static const std::string& GetType();
 
   explicit Polygon() = default;
 
   const std::string& get_type() const override;
 
-  Vector2 computeCentroid();
+  // Vector2 compute_centroid();
 
   /// Generates a convex hull that encloses the trimesh.
-  std::shared_ptr<Polygon<Scalar>> generateConvexHull() const;
+  std::shared_ptr<Polygon<Scalar>> generate_convex_hull() const;
 
 private:
-  std::vector<Vector2> mPoints;
-  std::vector<Index> mIndices;
+  std::vector<Vector2> m_points;
+  std::vector<Index> m_indices;
 };
 
 using Polygonf = Polygon<float>;

@@ -49,6 +49,18 @@
 namespace dart::common {
 
 //==============================================================================
+struct SharedLibrary::Implementation
+{
+  std::string path;
+  HandlePtr handle{nullptr};
+
+  Implementation()
+  {
+    // Do nothing
+  }
+};
+
+//==============================================================================
 std::string get_last_error()
 {
 #if DART_OS_LINUX || DART_OS_MACOS
@@ -75,6 +87,7 @@ std::string get_last_error()
 
 //==============================================================================
 SharedLibrary::SharedLibrary(const std::string& path)
+  : m_impl(std::make_unique<Implementation>())
 {
   // Load shared library
   load(path);
@@ -87,7 +100,7 @@ SharedLibrary::~SharedLibrary()
     return;
   }
 
-  const bool unloaded = DYNLIB_UNLOAD(m_handle);
+  const bool unloaded = DYNLIB_UNLOAD(m_impl->handle);
 
   if (!unloaded) {
     DART_ERROR("Failed to unload shared library: {}", get_last_error());
@@ -105,10 +118,10 @@ bool SharedLibrary::load(const std::string& path)
   // the path to the canonical path before passing to dlopen(~) to get the same
   // handle for the same shared library. Reference:
   // https://stackoverflow.com/a/12148491/3122234
-  m_path = path;
-  m_handle = DYNLIB_LOAD(path.c_str());
+  m_impl->path = path;
+  m_impl->handle = DYNLIB_LOAD(path.c_str());
 
-  if (m_handle == nullptr) {
+  if (m_impl->handle == nullptr) {
     DART_ERROR(
         "Failed to load the shared library '{}': {}", path, get_last_error());
     return false;
@@ -120,7 +133,7 @@ bool SharedLibrary::load(const std::string& path)
 //==============================================================================
 bool SharedLibrary::is_loaded() const
 {
-  return m_handle != nullptr;
+  return m_impl->handle != nullptr;
 }
 
 //==============================================================================
@@ -130,13 +143,13 @@ void* SharedLibrary::symbol(const std::string& symbol_name) const
     return nullptr;
   }
 
-  void* symbol = DYNLIB_GETSYM(m_handle, symbol_name.c_str());
+  void* symbol = DYNLIB_GETSYM(m_impl->handle, symbol_name.c_str());
 
   if (symbol == nullptr) {
     DART_ERROR(
         "Failed to get symbol '{}' from shared library '{}: {}",
         symbol_name,
-        m_path,
+        m_impl->path,
         get_last_error());
     return nullptr;
   }
@@ -147,19 +160,19 @@ void* SharedLibrary::symbol(const std::string& symbol_name) const
 //==============================================================================
 const std::string& SharedLibrary::path() const
 {
-  return m_path;
+  return m_impl->path;
 }
 
 //==============================================================================
 SharedLibrary::HandlePtr SharedLibrary::mutable_handle_ptr()
 {
-  return m_handle;
+  return m_impl->handle;
 }
 
 //==============================================================================
 SharedLibrary::ConstHandlePtr SharedLibrary::handle_ptr() const
 {
-  return m_handle;
+  return m_impl->handle;
 }
 
 } // namespace dart::common

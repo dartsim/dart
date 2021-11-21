@@ -93,7 +93,7 @@ void parallel_for(
 #elif DART_HAVE_OpenMP
   #pragma omp parallel for
   #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      for (ssize_t i = begin; i < ssize_t(end); ++i) {
+      for (int i = begin; i < end; ++i) {
   #else
       for (auto i = begin; i < end; ++i) {
   #endif

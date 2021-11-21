@@ -37,7 +37,7 @@ class Castable
 public:
   /// Returns true if the types of this Geometry and the template parameter (a
   /// geometry class) are identical. This function is a syntactic sugar, which
-  /// is identical to: (getType() == GeometryType::getStaticType()).
+  /// is identical to: (get_type() == GeometryType::GetType()).
   ///
   /// Example code:
   /// \code
