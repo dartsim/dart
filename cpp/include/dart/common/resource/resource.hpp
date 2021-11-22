@@ -49,11 +49,11 @@ class DART_COMMON_API Resource
 {
 public:
   /// Position to seek relative to.
-  enum SeekType
+  enum class SeekType
   {
-    SEEKTYPE_CUR, ///< Current position.
-    SEEKTYPE_END, ///< End of file.
-    SEEKTYPE_SET  ///< Begining of file.
+    CUR, ///< Current position.
+    END, ///< End of file.
+    SET  ///< Begining of file.
   };
 
   /// Destructor

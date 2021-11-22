@@ -42,10 +42,10 @@ class StlAllocator : public std::allocator<T>
 public:
   // Type aliases
   using Base = std::allocator<T>;
-  using value_type = typename Base::value_type;
-  using size_type = typename Base::size_type;
-  using pointer = typename Base::pointer;
-  using const_pointer = typename Base::const_pointer;
+  using value_type = typename std::allocator_traits<Base>::value_type;
+  using size_type = typename std::allocator_traits<Base>::size_type;
+  using pointer = typename std::allocator_traits<Base>::pointer;
+  using const_pointer = typename std::allocator_traits<Base>::const_pointer;
 
   template <typename U>
   struct rebind

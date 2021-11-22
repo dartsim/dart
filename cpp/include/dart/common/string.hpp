@@ -78,6 +78,8 @@ DART_COMMON_API double to_double(const std::string& str);
 template <typename S>
 S to_scalar(const std::string& str);
 
+DART_COMMON_API std::string strerror(int error_number);
+
 } // namespace dart::common
 
 #include "dart/common/detail/string_impl.hpp"

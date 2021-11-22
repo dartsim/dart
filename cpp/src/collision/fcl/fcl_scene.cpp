@@ -36,13 +36,7 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class FclScene<double>;
-#endif
-
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class FclScene<float>;
-#endif
+DART_TEMPLATE_CLASS_SOURCE(COLLISION, FclScene)
 
 } // namespace collision
 } // namespace dart

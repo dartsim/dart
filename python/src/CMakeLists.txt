@@ -24,11 +24,7 @@ target_include_directories(
 target_link_libraries(
   ${pybind_module}
   PUBLIC
-    ${PROJECT_NAME}${DART_VERSION_MAJOR}-common
-    ${PROJECT_NAME}${DART_VERSION_MAJOR}-math
-    ${PROJECT_NAME}${DART_VERSION_MAJOR}-collision
-    ${PROJECT_NAME}${DART_VERSION_MAJOR}-multibody
-    ${PROJECT_NAME}${DART_VERSION_MAJOR}-gui
+    ${dart_component_targets}
     ${Python_LIBRARIES}
 )
 

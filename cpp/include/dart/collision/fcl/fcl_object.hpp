@@ -85,13 +85,7 @@ private:
   friend class FclScene<Scalar>;
 };
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-extern template class DART_COLLISION_API FclObject<double>;
-#endif
-
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-extern template class DART_COLLISION_API FclObject<float>;
-#endif
+DART_TEMPLATE_CLASS_HEADER(COLLISION, FclObject)
 
 } // namespace collision
 } // namespace dart

@@ -235,4 +235,16 @@ double to_double(const std::string& str)
   return std::stod(str);
 }
 
+//==============================================================================
+std::string strerror(int error_number)
+{
+#if defined(_MSC_VER)
+  char errmsg[256];
+  strerror_s(errmsg, 256, error_number);
+  return errmsg;
+#else
+  return std::strerror(error_number);
+#endif
+}
+
 } // namespace dart::common

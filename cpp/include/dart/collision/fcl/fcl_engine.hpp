@@ -131,17 +131,7 @@ private:
 };
 
 // DART_REGISTER_ENGINE_OUT_HEADER(FclEngine<Scalar>);
-
-using FclEnginef = FclEngine<float>;
-using FclEngined = FclEngine<double>;
-
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-extern template class DART_COLLISION_API FclEngine<double>;
-#endif
-
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-extern template class DART_COLLISION_API FclEngine<float>;
-#endif
+DART_TEMPLATE_CLASS_HEADER(COLLISION, FclEngine)
 
 } // namespace collision
 } // namespace dart

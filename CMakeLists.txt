@@ -35,7 +35,7 @@ set(DART_VERSION_PATCH 0)
 set(DART_VERSION
     "${DART_VERSION_MAJOR}.${DART_VERSION_MINOR}.${DART_VERSION_PATCH}"
 )
-project(dart VERSION ${DART_VERSION} LANGUAGES CXX)
+project(dart VERSION ${DART_VERSION} LANGUAGES C CXX)
 
 # Add <project>/cmake to CMAKE_MODULE_PATH
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -132,8 +132,6 @@ elseif(MSVC)
   add_compile_options(/wd4305)
   add_compile_options(/wd4334)
   add_compile_options(/wd4838)
-  add_compile_options(/wd4996)
-  add_compile_options(/bigobj)
 
   if(BUILD_SHARED_LIBS)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")

@@ -71,7 +71,7 @@ dart_component_setup(
   TARGET_LINK_LIBRARIES_PUBLIC
     ${target_link_library_public}
   TARGET_COMPILE_FEATURES_PUBLIC
-    cxx_std_17
+    c_std_11 cxx_std_17
   TARGET_COMPILE_OPTIONS_PUBLIC
     ${compile_options_public}
   TARGET_COMPILE_DEFINITIONS_PUBLIC

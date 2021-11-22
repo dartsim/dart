@@ -37,19 +37,21 @@
 #include <limits>
 
 #include "dart/common/logging.hpp"
+#include "dart/common/stdio.hpp"
+#include "dart/common/string.hpp"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
 LocalResource::LocalResource(const std::string& path)
-  : m_file(std::fopen(path.c_str(), "rb"))
+  : m_file(common::fopen(path.c_str(), "rb"))
 {
   if (!m_file) {
     DART_WARN(
         "Failed opening file '{}' for reading: {}.",
         path,
-        std::strerror(errno));
+        common::strerror(errno));
   }
 }
 
@@ -61,7 +63,7 @@ LocalResource::~LocalResource()
   }
 
   if (std::fclose(m_file) == EOF) {
-    DART_WARN("Failed closing file: {}", std::strerror(errno));
+    DART_WARN("Failed closing file: {}", common::strerror(errno));
   }
 }
 
@@ -81,7 +83,7 @@ std::size_t LocalResource::get_size()
   if (offset == -1L) {
     DART_WARN(
         "Unable to compute file size: Failed getting current offset: {}",
-        std::strerror(errno));
+        common::strerror(errno));
     return 0;
   }
 
@@ -91,7 +93,7 @@ std::size_t LocalResource::get_size()
     DART_WARN(
         "Unable to compute file size: Failed seeking to the end of the file: "
         "{}",
-        std::strerror(errno));
+        common::strerror(errno));
     return 0;
   }
 
@@ -100,7 +102,7 @@ std::size_t LocalResource::get_size()
     DART_WARN(
         "[LocalResource::getSize] Unable to compute file size: Failed"
         " getting end of file offset: {}",
-        std::strerror(errno));
+        common::strerror(errno));
     return 0;
   }
   // fopen, ftell, and fseek produce undefined behavior when called on
@@ -118,7 +120,7 @@ std::size_t LocalResource::get_size()
   if (std::fseek(m_file, offset, SEEK_SET) || std::ferror(m_file)) {
     DART_WARN(
         "Unable to compute file size: Failed restoring offset: {}",
-        std::strerror(errno));
+        common::strerror(errno));
     return 0;
   }
 
@@ -133,7 +135,7 @@ std::size_t LocalResource::tell()
 
   const long offset = std::ftell(m_file);
   if (offset == -1L) {
-    DART_WARN("Failed getting current offset: {}", std::strerror(errno));
+    DART_WARN("Failed getting current offset: {}", common::strerror(errno));
   }
   // fopen, ftell, and fseek produce undefined behavior when called on
   // directories. ftell() on Linux libc returns LONG_MAX, unless you are in an
@@ -156,15 +158,15 @@ bool LocalResource::seek(ptrdiff_t offset, SeekType mode)
 {
   int origin;
   switch (mode) {
-    case Resource::SEEKTYPE_CUR:
+    case Resource::SeekType::CUR:
       origin = SEEK_CUR;
       break;
 
-    case Resource::SEEKTYPE_END:
+    case Resource::SeekType::END:
       origin = SEEK_END;
       break;
 
-    case Resource::SEEKTYPE_SET:
+    case Resource::SeekType::SET:
       origin = SEEK_SET;
       break;
 
@@ -178,7 +180,7 @@ bool LocalResource::seek(ptrdiff_t offset, SeekType mode)
   if (!std::fseek(m_file, offset, origin) && !std::ferror(m_file))
     return true;
   else {
-    DART_WARN("Failed seeking: {}", std::strerror(errno));
+    DART_WARN("Failed seeking: {}", common::strerror(errno));
     return false;
   }
 }
@@ -192,7 +194,7 @@ std::size_t LocalResource::read(
 
   const std::size_t result = std::fread(buffer, size, count, m_file);
   if (std::ferror(m_file)) {
-    DART_WARN("Failed reading file: {}", std::strerror(errno));
+    DART_WARN("Failed reading file: {}", common::strerror(errno));
   }
   return result;
 }
