@@ -1,6 +1,6 @@
 # Copyright (c) 2011-2021, The DART development contributors
 
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+execute_process(COMMAND ${Python_EXECUTABLE} -c
   "from distutils.sysconfig import get_python_lib;\
   print(get_python_lib(plat_specific=True, prefix=''))"
   OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
@@ -17,7 +17,7 @@ file(GLOB_RECURSE dartpy_sources "*.cpp")
 pybind11_add_module(${pybind_module} MODULE ${dartpy_headers} ${dartpy_sources})
 
 target_include_directories(
-  ${pybind_module} SYSTEM PUBLIC ${PYTHON_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS}
+  ${pybind_module} SYSTEM PUBLIC ${Python_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -30,7 +30,7 @@ target_link_libraries(
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-multibody
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-rendering
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-gui
-    ${PYTHON_LIBRARIES}
+    ${Python_LIBRARIES}
 )
 
 # Remove debug postfix for dartpy

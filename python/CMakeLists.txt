@@ -41,7 +41,20 @@ if(CMAKE_VERSION VERSION_LESS 3.15)
 
 else()
 
-  find_package(Python COMPONENTS Interpreter Development QUIET)
+  if(APPLE)
+    if(NOT DEFINED Python_FIND_REGISTRY)
+        set(Python_FIND_REGISTRY "LAST")
+    endif()
+    if(NOT DEFINED Python_FIND_FRAMEWORK)
+        set(Python_FIND_FRAMEWORK "LAST")
+    endif()
+    if(NOT DEFINED Python_FIND_STRATEGY)
+        set(Python_FIND_STRATEGY "VERSION")
+    endif()
+  endif()
+
+  find_package(Python COMPONENTS Interpreter Development)
+
   if(NOT Python_FOUND)
     message(WARNING "Disabling [dartpy] due to missing Python.")
     return()

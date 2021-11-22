@@ -24,6 +24,9 @@ endif()
 if(POLICY CMP0091)
   cmake_policy(SET CMP0091 NEW)
 endif()
+if(POLICY CMP0094)
+  cmake_policy(SET CMP0094 NEW)
+endif()
 
 # DART version
 set(DART_VERSION_MAJOR 8)

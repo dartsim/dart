@@ -2,7 +2,7 @@
 
 # Make sure pytest is installed
 execute_process(
-  COMMAND ${PYTHON_EXECUTABLE} -c "import pytest; print(pytest.__version__)"
+  COMMAND ${Python_EXECUTABLE} -c "import pytest; print(pytest.__version__)"
   RESULT_VARIABLE pytest_not_found OUTPUT_VARIABLE pytest_version ERROR_QUIET
 )
 if(pytest_not_found)
@@ -25,8 +25,8 @@ add_custom_target(
   dartpy8-test
   COMMAND
     ${CMAKE_COMMAND} -E echo
-    "Running pytest by: PYTHONPATH=${DART_PYTHON_PROJECT_BINARY_DIR}/src ${PYTHON_EXECUTABLE} -m pytest [sources]"
-  COMMAND PYTHONPATH=${DART_PYTHON_PROJECT_BINARY_DIR}/src ${PYTHON_EXECUTABLE}
+    "Running pytest by: PYTHONPATH=${DART_PYTHON_PROJECT_BINARY_DIR}/src ${Python_EXECUTABLE} -m pytest [sources]"
+  COMMAND PYTHONPATH=${DART_PYTHON_PROJECT_BINARY_DIR}/src ${Python_EXECUTABLE}
           -m pytest ${test_files} -v
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   SOURCES ${test_files}
