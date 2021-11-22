@@ -29,6 +29,6 @@
 
 namespace dart::multibody {
 
-DART_TEMPLATE_CLASS_SOURCE(SingleBody)
+DART_TEMPLATE_CLASS_SOURCE(MULTIBODY, SingleBody)
 
 } // namespace dart::multibody

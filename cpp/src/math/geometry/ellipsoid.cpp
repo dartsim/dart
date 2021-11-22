@@ -36,7 +36,7 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-template class Ellipsoid<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, Ellipsoid);
 
 } // namespace math
 } // namespace dart

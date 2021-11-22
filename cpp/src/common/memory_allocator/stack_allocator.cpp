@@ -84,7 +84,49 @@ StackAllocator::~StackAllocator()
 }
 
 //==============================================================================
-void* StackAllocator::allocate(size_t size, size_t alignment) noexcept
+void* StackAllocator::allocate(size_t size) noexcept
+{
+  if (size == 0) {
+    return nullptr;
+  }
+
+  if (m_start_ptr == nullptr) {
+    return nullptr;
+  }
+
+  // Lock the mutex
+  std::lock_guard<std::mutex> lock(m_mutex);
+
+  const size_t current_ptr = reinterpret_cast<size_t>(m_start_ptr) + m_offset;
+
+  // Compute padding
+  const size_t padding = sizeof(Header);
+
+  // Check max capacity
+  if (m_offset + padding + size > m_max_capacity) {
+    DART_DEBUG(
+        "Allocating {} with padding {} exceeds the max capacity {}. Returning "
+        "nullptr.",
+        size,
+        padding,
+        m_max_capacity);
+    return nullptr;
+  }
+
+  const std::size_t next_address = current_ptr + padding;
+  const std::size_t header_address = next_address - sizeof(Header);
+  DART_ASSERT(
+      padding <= static_cast<std::size_t>(std::numeric_limits<char>::max()));
+  Header* header_ptr = reinterpret_cast<Header*>(header_address);
+  header_ptr->padding = static_cast<char>(padding);
+
+  m_offset += padding + size;
+
+  return reinterpret_cast<void*>(next_address);
+}
+
+//==============================================================================
+void* StackAllocator::allocate_aligned(size_t size, size_t alignment) noexcept
 {
   if (size == 0) {
     return nullptr;
@@ -129,11 +171,17 @@ void* StackAllocator::allocate(size_t size, size_t alignment) noexcept
 
   m_offset += padding + size;
 
-  return reinterpret_cast<void*>(current_ptr + padding);
+  return reinterpret_cast<void*>(next_address);
 }
 
 //==============================================================================
 void StackAllocator::deallocate(void* pointer)
+{
+  deallocate_aligned(pointer);
+}
+
+//==============================================================================
+void StackAllocator::deallocate_aligned(void* pointer)
 {
   if (pointer == nullptr) {
     return;

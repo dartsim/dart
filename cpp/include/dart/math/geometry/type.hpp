@@ -27,7 +27,10 @@
 
 #pragma once
 
+#include <memory>
+
 #include "dart/common/memory.hpp"
+#include "dart/math/export.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {

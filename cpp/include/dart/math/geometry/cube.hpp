@@ -71,10 +71,7 @@ private:
   S m_length;
 };
 
-using Cubef = Cube<float>;
-using Cubed = Cube<double>;
-
-extern template class DART_MATH_API Cube<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Cube);
 
 } // namespace math
 } // namespace dart

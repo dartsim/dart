@@ -41,11 +41,17 @@ public:
   ~CAllocator() override;
 
   // Documentation inherited
-  [[nodiscard]] void* allocate(
-      size_t size, size_t alignment = 0) noexcept override;
+  [[nodiscard]] void* allocate(size_t size) noexcept override;
+
+  // Documentation inherited
+  [[nodiscard]] void* allocate_aligned(
+      size_t size, size_t alignment) noexcept override;
 
   // Documentation inherited
   void deallocate(void* pointer) override;
+
+  // Documentation inherited
+  void deallocate_aligned(void* pointer) override;
 };
 
 } // namespace dart::common

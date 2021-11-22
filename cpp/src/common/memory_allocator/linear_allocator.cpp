@@ -55,7 +55,39 @@ LinearAllocator::~LinearAllocator()
 }
 
 //==============================================================================
-void* LinearAllocator::allocate(size_t size, size_t alignment) noexcept
+void* LinearAllocator::allocate(size_t size) noexcept
+{
+  if (size == 0) {
+    return nullptr;
+  }
+
+  if (m_start_ptr == nullptr) {
+    return nullptr;
+  }
+
+  // Lock the mutex
+  std::lock_guard<std::mutex> lock(m_mutex);
+
+  const size_t current_ptr = reinterpret_cast<size_t>(m_start_ptr) + m_offset;
+
+  // Check max capacity
+  if (m_offset + size > m_max_capacity) {
+    DART_DEBUG(
+        "Allocating {} exceeds the max capacity {}. Returning "
+        "nullptr.",
+        size,
+        m_max_capacity);
+    return nullptr;
+  }
+
+  // Update offset
+  m_offset += size;
+
+  return reinterpret_cast<void*>(current_ptr);
+}
+
+//==============================================================================
+void* LinearAllocator::allocate_aligned(size_t size, size_t alignment) noexcept
 {
   if (size == 0) {
     return nullptr;
@@ -99,6 +131,13 @@ void* LinearAllocator::allocate(size_t size, size_t alignment) noexcept
 
 //==============================================================================
 void LinearAllocator::deallocate(void* pointer)
+{
+  // LinearAllocator doesn't allow to deallocate memory
+  DART_UNUSED(pointer);
+}
+
+//==============================================================================
+void LinearAllocator::deallocate_aligned(void* pointer)
 {
   // LinearAllocator doesn't allow to deallocate memory
   DART_UNUSED(pointer);

@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "dart/common/eigen_include.hpp"
+#include "dart/common/macro.hpp"
 #include "dart/math/geometry/geometry2.hpp"
 
 namespace dart::math {
@@ -64,10 +65,7 @@ private:
   std::vector<Index> m_indices;
 };
 
-using Polygonf = Polygon<float>;
-using Polygond = Polygon<double>;
-
-extern template class Polygon<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Polygon);
 
 } // namespace dart::math
 

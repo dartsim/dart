@@ -50,7 +50,7 @@ template <typename T, typename... Args>
 T* MemoryAllocator::construct_aligned(size_t alignment, Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(sizeof(T), alignment);
+  void* object = allocate_aligned(sizeof(T), alignment);
   if (!object) {
     return nullptr;
   }

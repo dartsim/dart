@@ -70,10 +70,7 @@ private:
   S m_height;
 };
 
-using Cylinderf = Cylinder<float>;
-using Cylinderd = Cylinder<double>;
-
-extern template class DART_MATH_API Cylinder<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Cylinder);
 
 } // namespace math
 } // namespace dart

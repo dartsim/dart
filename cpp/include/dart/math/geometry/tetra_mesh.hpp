@@ -118,10 +118,7 @@ protected:
   Normals mTetraNormals;
 };
 
-extern template class DART_MATH_API TetraMesh<double>;
-
-using TetraMeshf = TetraMesh<float>;
-using TetraMeshd = TetraMesh<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, TetraMesh);
 
 } // namespace math
 } // namespace dart

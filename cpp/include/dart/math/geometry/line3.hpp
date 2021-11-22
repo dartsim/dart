@@ -28,6 +28,7 @@
 #pragma once
 
 #include "dart/common/macro.hpp"
+#include "dart/math/export.hpp"
 #include "dart/math/type.hpp"
 
 namespace dart::math {

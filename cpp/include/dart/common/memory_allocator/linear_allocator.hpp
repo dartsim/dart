@@ -54,14 +54,25 @@ public:
   /// @copydoc MemoryAllocator::allocate
   ///
   /// Complexity is O(1).
-  [[nodiscard]] void* allocate(
-      size_t size, size_t alignment = 0) noexcept override;
+  [[nodiscard]] void* allocate(size_t size) noexcept override;
+
+  /// @copydoc MemoryAllocator::allocate
+  ///
+  /// Complexity is O(1).
+  [[nodiscard]] void* allocate_aligned(
+      size_t size, size_t alignment) noexcept override;
 
   /// This function does nothing. The allocated memory is released when this
   /// allocator is destructed.
   ///
   /// Complexity is O(1).
   void deallocate(void* pointer) override;
+
+  /// This function does nothing. The allocated memory is released when this
+  /// allocator is destructed.
+  ///
+  /// Complexity is O(1).
+  void deallocate_aligned(void* pointer) override;
 
   /// Returns the maximum capacity of this allocator.
   [[nodiscard]] size_t get_max_capacity() const;

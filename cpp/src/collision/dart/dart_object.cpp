@@ -35,7 +35,7 @@
 namespace dart {
 namespace collision {
 
-DART_TEMPLATE_CLASS_SOURCE(DartObject)
+DART_TEMPLATE_CLASS_SOURCE(COLLISION, DartObject)
 
 } // namespace collision
 } // namespace dart

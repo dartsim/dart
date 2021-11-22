@@ -121,10 +121,7 @@ protected:
   Normals m_triangle_normals;
 };
 
-extern template class DART_MATH_API TriMesh<double>;
-
-using TriMeshf = TriMesh<float>;
-using TriMeshd = TriMesh<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, TriMesh);
 
 } // namespace math
 } // namespace dart

@@ -32,10 +32,8 @@
 
 #include "dart/math/geometry/tetra_mesh.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-template class TetraMesh<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, TetraMesh);
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math

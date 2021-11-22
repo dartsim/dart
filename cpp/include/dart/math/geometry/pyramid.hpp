@@ -56,10 +56,7 @@ public:
 private:
 };
 
-using Pyramidf = Pyramid<float>;
-using Pyramidd = Pyramid<double>;
-
-extern template class DART_MATH_API Pyramid<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Pyramid);
 
 } // namespace math
 } // namespace dart

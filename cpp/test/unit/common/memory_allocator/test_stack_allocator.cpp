@@ -37,14 +37,25 @@ using namespace common;
 class NullAllocator : public dart::common::MemoryAllocator
 {
 public:
-  [[nodiscard]] void* allocate(
-      size_t size, size_t alignment = 0) noexcept override
+  [[nodiscard]] void* allocate(size_t size) noexcept override
+  {
+    DART_UNUSED(size);
+    return nullptr;
+  }
+
+  [[nodiscard]] void* allocate_aligned(
+      size_t size, size_t alignment) noexcept override
   {
     DART_UNUSED(size, alignment);
     return nullptr;
   }
 
   void deallocate(void* pointer) override
+  {
+    DART_UNUSED(pointer);
+  }
+
+  void deallocate_aligned(void* pointer) override
   {
     DART_UNUSED(pointer);
   }
@@ -103,13 +114,13 @@ TEST(AllocatorTest, TotalSize)
   EXPECT_TRUE(allocator2.get_size() > size);
   size = allocator2.get_size();
 
-  void* ptr2 = allocator2.allocate(8, 8);
+  void* ptr2 = allocator2.allocate_aligned(8, 8);
   EXPECT_TRUE(ptr2 != nullptr);
   EXPECT_TRUE(is_aligned(ptr2, 8));
   EXPECT_TRUE(allocator2.get_size() > size);
   size = allocator2.get_size();
 
-  allocator2.deallocate(ptr2);
+  allocator2.deallocate_aligned(ptr2);
   EXPECT_TRUE(allocator2.get_size() < size);
   size = allocator2.get_size();
 

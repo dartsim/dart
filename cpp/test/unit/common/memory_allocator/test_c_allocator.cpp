@@ -45,10 +45,10 @@ TEST(CAllocatorTest, Basics)
   EXPECT_TRUE(alloc.allocate(0) == nullptr);
 
   // alignment must be power of 2
-  EXPECT_TRUE(alloc.allocate(8, 9) == nullptr);
+  EXPECT_TRUE(alloc.allocate_aligned(8, 9) == nullptr);
 
   // alignment must be greater than sizeof(void*)
-  EXPECT_TRUE(alloc.allocate(8, sizeof(void*) - 1) == nullptr);
+  EXPECT_TRUE(alloc.allocate_aligned(8, sizeof(void*) - 1) == nullptr);
 
   //-------------------
   // Valid allocations

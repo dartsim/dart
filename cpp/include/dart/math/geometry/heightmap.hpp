@@ -151,10 +151,7 @@ private:
   S m_max_height;
 };
 
-using Heightmapf = Heightmap<float>;
-using Heightmapd = Heightmap<double>;
-
-extern template class DART_MATH_API Heightmap<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Heightmap);
 
 } // namespace math
 } // namespace dart

@@ -42,14 +42,20 @@ CAllocator::~CAllocator()
 }
 
 //==============================================================================
-void* CAllocator::allocate(size_t size, size_t alignment) noexcept
+void* CAllocator::allocate(size_t size) noexcept
 {
   if (size == 0) {
     return nullptr;
   }
 
-  if (alignment == 0) {
-    return std::malloc(size);
+  return std::malloc(size);
+}
+
+//==============================================================================
+void* CAllocator::allocate_aligned(size_t size, size_t alignment) noexcept
+{
+  if (size == 0) {
+    return nullptr;
   }
 
   if (!this->is_valid_alignment(size, alignment)) {
@@ -63,6 +69,12 @@ void* CAllocator::allocate(size_t size, size_t alignment) noexcept
 void CAllocator::deallocate(void* pointer)
 {
   std::free(pointer);
+}
+
+//==============================================================================
+void CAllocator::deallocate_aligned(void* pointer)
+{
+  common::aligned_free(pointer);
 }
 
 } // namespace dart::common

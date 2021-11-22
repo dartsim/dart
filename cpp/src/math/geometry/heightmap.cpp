@@ -36,7 +36,7 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-template class Heightmap<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, Heightmap);
 
 } // namespace math
 } // namespace dart

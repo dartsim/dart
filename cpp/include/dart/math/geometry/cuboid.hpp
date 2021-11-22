@@ -71,10 +71,7 @@ private:
   Vector3 m_size;
 };
 
-using Cuboidf = Cuboid<float>;
-using Cuboidd = Cuboid<double>;
-
-extern template class DART_MATH_API Cuboid<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Cuboid);
 
 } // namespace math
 } // namespace dart

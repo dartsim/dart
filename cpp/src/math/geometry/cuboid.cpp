@@ -36,7 +36,7 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-template class Cuboid<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, Cuboid);
 
 } // namespace math
 } // namespace dart

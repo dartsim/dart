@@ -36,7 +36,7 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-template class Plane3<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, Plane3);
 
 } // namespace math
 } // namespace dart

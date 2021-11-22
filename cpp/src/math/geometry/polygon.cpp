@@ -32,11 +32,9 @@
 
 #include "dart/math/geometry/polygon.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 //==============================================================================
-template class Polygon<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, Polygon);
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math

@@ -29,6 +29,6 @@
 
 namespace dart::collision {
 
-DART_TEMPLATE_CLASS_SOURCE(Object)
+DART_TEMPLATE_CLASS_SOURCE(COLLISION, Object)
 
 } // namespace dart::collision

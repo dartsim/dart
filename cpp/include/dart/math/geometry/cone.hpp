@@ -61,10 +61,7 @@ private:
   S m_length;
 };
 
-using Conef = Cone<float>;
-using Coned = Cone<double>;
-
-extern template class DART_MATH_API Cone<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Cone);
 
 } // namespace math
 } // namespace dart

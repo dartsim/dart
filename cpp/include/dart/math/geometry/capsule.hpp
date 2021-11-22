@@ -32,19 +32,19 @@
 
 #pragma once
 
+#include "dart/common/macro.hpp"
 #include "dart/math/export.hpp"
 #include "dart/math/geometry/convex3.hpp"
 #include "dart/math/type.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-template <typename S_>
-class Capsule : public Convex3<S_>
+template <typename _Scalar>
+class Capsule : public Convex3<_Scalar>
 {
 public:
   // Type aliases
-  using S = S_;
+  using Scalar = _Scalar;
 
   /// Returns type string
   static const std::string& GetType();
@@ -53,31 +53,22 @@ public:
   ///
   /// \param[in] radius: Radius of the capsule
   /// \param[in] height: Height of the cylindrical part excluding the dome parts
-  Capsule(S radius, S height);
+  Capsule(Scalar radius, Scalar height);
 
   // Documentation inherited
   const std::string& get_type() const override;
 
-  S get_radius() const
-  {
-    return m_radius;
-  }
-  S get_height() const
-  {
-    return m_height;
-  }
+  Scalar get_radius() const;
+
+  Scalar get_height() const;
 
 private:
-  S m_radius;
-  S m_height;
+  Scalar m_radius;
+  Scalar m_height;
 };
 
-using Capsulef = Capsule<float>;
-using Capsuled = Capsule<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Capsule);
 
-extern template class DART_MATH_API Capsule<double>;
-
-} // namespace math
-} // namespace dart
+} // namespace dart::math
 
 #include "dart/math/geometry/detail/capsule_impl.hpp"

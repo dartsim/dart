@@ -52,8 +52,19 @@ public:
   /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// @return On failure, a null pointer
-  [[nodiscard]] virtual void* allocate(
-      size_t size, size_t alignment = 0) noexcept
+  [[nodiscard]] virtual void* allocate(size_t size) noexcept = 0;
+  // TODO(JS): Make this constexpr once migrated to C++20
+
+  /// Allocates @c size bytes of uninitialized storage whose alignment is
+  /// specified by @c alignmnet.
+  ///
+  /// @param[in] n: The byte size to allocate sotrage for.
+  /// @param[in] alignment: Alignment size. Default is 0.
+  /// @return On success, the pointer to the beginning of newly allocated
+  /// memory.
+  /// @return On failure, a null pointer
+  [[nodiscard]] virtual void* allocate_aligned(
+      size_t size, size_t alignment) noexcept
       = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
@@ -63,6 +74,14 @@ public:
   /// @param[in] pointer: Pointer obtained from allocate() or
   /// allocate_aligned().
   virtual void deallocate(void* pointer) = 0;
+  // TODO(JS): Make this constexpr once migrated to C++20
+
+  /// Deallocates the storage referenced by the pointer @c p, which must be a
+  /// pointer obtained by an earlier cal to allocate() or allocate_aligned().
+  ///
+  /// @param[in] pointer: Pointer obtained from allocate() or
+  /// allocate_aligned().
+  virtual void deallocate_aligned(void* pointer) = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Allocates uninitialized storage and constructs an object of type T to the

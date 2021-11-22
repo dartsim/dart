@@ -39,7 +39,7 @@ template <typename T>
 ObjectPool<T>::ObjectPool(size_t capacity, MemoryAllocator& base_allocator)
   : m_capacity(capacity),
     m_base_allocator(base_allocator),
-    m_front(reinterpret_cast<T*>(m_base_allocator.allocate(
+    m_front(reinterpret_cast<T*>(m_base_allocator.allocate_aligned(
         sizeof(T) * capacity, std::max(sizeof(void*), sizeof(T)))))
 {
   static_assert(sizeof(T) >= sizeof(void*), "Unsupported type.");
@@ -63,7 +63,7 @@ ObjectPool<T>::~ObjectPool()
 {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (m_front) {
-    m_base_allocator.deallocate(m_front);
+    m_base_allocator.deallocate_aligned(m_front);
   }
 }
 

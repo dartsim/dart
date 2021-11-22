@@ -32,6 +32,6 @@
 
 namespace dart::collision {
 
-DART_TEMPLATE_CLASS_SOURCE(Scene)
+DART_TEMPLATE_CLASS_SOURCE(COLLISION, Scene)
 
 } // namespace dart::collision

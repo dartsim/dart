@@ -35,6 +35,6 @@
 namespace dart::math {
 
 //==============================================================================
-template class Cylinder<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, Cylinder);
 
 } // namespace dart::math

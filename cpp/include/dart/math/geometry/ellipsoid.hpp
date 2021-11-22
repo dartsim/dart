@@ -61,10 +61,7 @@ private:
   S m_length;
 };
 
-using Ellipsoidf = Ellipsoid<float>;
-using Ellipsoidd = Ellipsoid<double>;
-
-extern template class DART_MATH_API Ellipsoid<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Ellipsoid);
 
 } // namespace math
 } // namespace dart

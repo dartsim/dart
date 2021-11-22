@@ -61,63 +61,130 @@
   DART_CONCAT(DETAIL_DART_ASSERT_, DART_NUM_ARGS(__VA_ARGS__))                 \
   (__VA_ARGS__)
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-
-  #if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-
-    #define DART_TEMPLATE_HEADER(type, module_name, class_name)                \
-      extern template type DART_##module_name##_API class_name<float>;         \
-      extern template type DART_##module_name##_API class_name<double>;        \
-      using class_name##f = class_name<float>;                                 \
-      using class_name##d = class_name<double>;                                \
-      using class_name##ld = class_name<long double>;
-    #define DART_TEMPLATE_SOURCE(type, class_name)                             \
-      template type class_name<float>;                                         \
-      template type class_name<double>;
-
-  #else
-
-    #define DART_TEMPLATE_HEADER(type, module_name, class_name)                \
-      extern template class DART_##module_name##_API class_name<float>;        \
-      using class_name##f = class_name<float>;                                 \
-      using class_name##d = class_name<double>;                                \
-      using class_name##ld = class_name<long double>;
-    #define DART_TEMPLATE_SOURCE(class_name) template type class_name<float>;
-
-  #endif
-
-#elif DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
+#if defined(_MSC_VER)
 
   #if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
 
-    #define DART_TEMPLATE_HEADER(type, module_name, class_name)                \
-      extern template type DART_##module_name##_API class_name<float>;         \
-      extern template type DART_##module_name##_API class_name<double>;        \
-      using class_name##f = class_name<float>;                                 \
-      using class_name##d = class_name<double>;                                \
-      using class_name##ld = class_name<long double>;
-    #define DART_TEMPLATE_SOURCE(type, class_name)                             \
-      template type class_name<float>;                                         \
-      template type class_name<double>;
+    #if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template type class_name<float>;                                \
+        extern template type class_name<double>;                               \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(type, module_name, class_name)              \
+        template type DART_##module_name##_API class_name<float>;              \
+        template type DART_##module_name##_API class_name<double>;
+
+    #else
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template class class_name<float>;                               \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(class_name)                                 \
+        template type DART_##module_name##_API class_name<float>;
+
+    #endif
+
+  #elif DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
+
+    #if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template type class_name<float>;                                \
+        extern template type class_name<double>;                               \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(type, module_name, class_name)              \
+        template type DART_##module_name##_API class_name<float>;              \
+        template type DART_##module_name##_API class_name<double>;
+
+    #else
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template type class_name<double>;                               \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(type, module_name, class_name)              \
+        template type DART_##module_name##_API class_name<double>;
+
+    #endif
 
   #else
 
     #define DART_TEMPLATE_HEADER(type, module_name, class_name)                \
-      extern template type DART_##module_name##_API class_name<double>;        \
       using class_name##f = class_name<float>;                                 \
-      using class_name##d = class_name<double>;                                \
-      using class_name##ld = class_name<long double>;
-    #define DART_TEMPLATE_SOURCE(type, class_name)                             \
-      template type class_name<double>;
+      using class_name##d = class_name<double>;
+    #define DART_TEMPLATE_SOURCE(type, module_name, class_name)
 
   #endif
 
 #else
 
-  #define DART_TEMPLATE_HEADER(type, module_name, class_name)                  \
-    using class_name##f = class_name<float>;                                   \
-    using class_name##d = class_name<double>;
-  #define DART_TEMPLATE_SOURCE(type, class_name)
+  #if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
+
+    #if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template type DART_##module_name##_API class_name<float>;       \
+        extern template type DART_##module_name##_API class_name<double>;      \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(type, module_name, class_name)              \
+        template type class_name<float>;                                       \
+        template type class_name<double>;
+
+    #else
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template class DART_##module_name##_API class_name<float>;      \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(class_name) template type class_name<float>;
+
+    #endif
+
+  #elif DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
+
+    #if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template type DART_##module_name##_API class_name<float>;       \
+        extern template type DART_##module_name##_API class_name<double>;      \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(type, module_name, class_name)              \
+        template type class_name<float>;                                       \
+        template type class_name<double>;
+
+    #else
+
+      #define DART_TEMPLATE_HEADER(type, module_name, class_name)              \
+        extern template type DART_##module_name##_API class_name<double>;      \
+        using class_name##f = class_name<float>;                               \
+        using class_name##d = class_name<double>;                              \
+        using class_name##ld = class_name<long double>;
+      #define DART_TEMPLATE_SOURCE(type, module_name, class_name)              \
+        template type class_name<double>;
+
+    #endif
+
+  #else
+
+    #define DART_TEMPLATE_HEADER(type, module_name, class_name)                \
+      using class_name##f = class_name<float>;                                 \
+      using class_name##d = class_name<double>;
+    #define DART_TEMPLATE_SOURCE(type, module_name, class_name)
+
+  #endif
 
 #endif
 
@@ -125,10 +192,10 @@
   DART_TEMPLATE_HEADER(class, module_name, class_name)
 #define DART_TEMPLATE_STRUCT_HEADER(module_name, class_name)                   \
   DART_TEMPLATE_HEADER(struct, module_name, class_name)
-#define DART_TEMPLATE_CLASS_SOURCE(class_name)                                 \
-  DART_TEMPLATE_SOURCE(class, class_name)
-#define DART_TEMPLATE_STRUCT_SOURCE(class_name)                                \
-  DART_TEMPLATE_SOURCE(struct, class_name)
+#define DART_TEMPLATE_CLASS_SOURCE(module_name, class_name)                    \
+  DART_TEMPLATE_SOURCE(class, module_name, class_name)
+#define DART_TEMPLATE_STRUCT_SOURCE(module_name, class_name)                   \
+  DART_TEMPLATE_SOURCE(struct, module_name, class_name)
 
 #define DART_TEMPLATE_CLASS_SCALAR(class_name)                                 \
   using class_name##f = class_name<float>;                                     \

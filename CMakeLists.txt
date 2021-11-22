@@ -180,6 +180,14 @@ if(DART_ENABLE_CODECOV)
   )
 endif()
 
+# Set output directories
+# TODO(JS): Find a better way
+if(MSVC)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+endif()
+
 # Include the C++ project directory
 include(CTest)
 enable_testing()

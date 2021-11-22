@@ -32,11 +32,9 @@
 
 #include "dart/math/geometry/sphere.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 //==============================================================================
-template class Sphere<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, Sphere);
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math

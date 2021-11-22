@@ -35,8 +35,8 @@
 namespace dart {
 namespace collision {
 
-DART_TEMPLATE_CLASS_SOURCE(CollisionFilter)
-DART_TEMPLATE_CLASS_SOURCE(CompositeCollisionFilter)
+DART_TEMPLATE_CLASS_SOURCE(COLLISION, CollisionFilter)
+DART_TEMPLATE_CLASS_SOURCE(COLLISION, CompositeCollisionFilter)
 
 } // namespace collision
 } // namespace dart

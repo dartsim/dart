@@ -75,10 +75,7 @@ private:
   S m_offset;
 };
 
-using Plane3f = Plane3<float>;
-using Plane3d = Plane3<double>;
-
-extern template class DART_MATH_API Plane3<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Plane3);
 
 } // namespace math
 } // namespace dart

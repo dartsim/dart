@@ -84,10 +84,7 @@ private:
   S m_radius;
 };
 
-using Spheref = Sphere<float>;
-using Sphered = Sphere<double>;
-
-extern template class DART_MATH_API Sphere<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Sphere);
 
 } // namespace dart::math
 
