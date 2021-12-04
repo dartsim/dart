@@ -84,9 +84,6 @@ dart_component_setup(
     container memory_allocator resource
 )
 
-# TODO(JS): Fix this
-message("[DEBUG] TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIRS}")
-message("[DEBUG] TBB_LIBRARIES   : ${TBB_LIBRARIES}")
 # TODO(JS): Make TBB imported target
 if(DART_ENABLE_TBB)
   target_include_directories(dart8-common PUBLIC ${TBB_INCLUDE_DIRS})

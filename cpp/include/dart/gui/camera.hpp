@@ -25,60 +25,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/widget.hpp"
+#pragma once
+
+#include <memory>
+#include <string>
+
+#include "dart/gui/export.hpp"
+#include "dart/gui/image.hpp"
+#include "dart/gui/type.hpp"
 
 namespace dart::gui {
 
-//==============================================================================
-struct Widget::Implementation
+class DART_GUI_API Camera
 {
-  std::string title = "(default)";
-  bool visible = true;
+private:
+  Camera(Scene* scene);
 
-  Implementation()
-  {
-    // Do nothing
-  }
+public:
+  ~Camera();
+
+  void set_image_width(int width);
+
+  void set_image_height(int height);
+
+  void render();
+
+  void render_to_texture();
+
+  void copy(Image& image);
+
+protected:
+private:
+  friend class Scene;
+  struct Implementation;
+  std::unique_ptr<Implementation> m_impl;
 };
-
-//==============================================================================
-Widget::Widget() : m_impl(std::make_unique<Implementation>())
-{
-  // Do nothing
-}
-
-//==============================================================================
-Widget::~Widget()
-{
-  // Do nothing
-}
-
-//==============================================================================
-void Widget::set_title(const std::string& title)
-{
-  m_impl->title = title;
-}
-
-//==============================================================================
-const std::string& Widget::get_title() const
-{
-  return m_impl->title;
-}
-
-//==============================================================================
-void Widget::draw()
-{
-  if (!m_impl->visible) {
-    return;
-  }
-
-  draw_impl();
-}
-
-//==============================================================================
-void Widget::draw_impl()
-{
-  // Do nothing
-}
 
 } // namespace dart::gui

@@ -87,6 +87,14 @@ include(DARTDependencies)
 # Compiler settings and compiler specific settings
 # ==============================================================================
 
+if(DART_ENABLE_NATIVE_ARCH)
+  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  else()
+    message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
+  endif()
+endif()
+
 # GCC
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0.0)
@@ -102,26 +110,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   set(DART_ENABLE_TBB FALSE) # TODO(JS): Fix
 
-  if(DART_ENABLE_NATIVE_ARCH)
-    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-    else()
-      message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
-    endif()
-  endif()
-
 # Clang
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 
   set(DART_ENABLE_TBB FALSE) # TODO(JS): Fix
-
-  if(DART_ENABLE_NATIVE_ARCH)
-    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-    else()
-      message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
-    endif()
-  endif()
 
 # MSVC
 elseif(MSVC)

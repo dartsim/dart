@@ -5,7 +5,7 @@ dart_component_setup(
   COMPONENT_NAME
     application
   DEPENDENT_COMPONENTS
-    common math simulation rendering gui
+    common math simulation gui
   DEPENDENT_PACKAGES_OPTIONAL
   TARGET_LINK_LIBRARIES_PUBLIC
   TARGET_COMPILE_FEATURES_PUBLIC

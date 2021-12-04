@@ -74,7 +74,6 @@ set(dart_component_targets
   ${PROJECT_NAME}${DART_VERSION_MAJOR}-math
   ${PROJECT_NAME}${DART_VERSION_MAJOR}-collision
   ${PROJECT_NAME}${DART_VERSION_MAJOR}-multibody
-  ${PROJECT_NAME}${DART_VERSION_MAJOR}-rendering
   ${PROJECT_NAME}${DART_VERSION_MAJOR}-gui
 )
 foreach(target ${dart_component_targets})

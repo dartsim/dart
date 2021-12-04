@@ -29,9 +29,15 @@
 
 #include <memory>
 
+#include "dart/gui/export.hpp"
+#include "dart/gui/osg_include.hpp"
+
 namespace dart::gui {
 
-class Widget;
-using WidgetPtr = std::shared_ptr<Widget>;
+class Camera;
+using CameraPtr = std::shared_ptr<Camera>;
+
+class Scene;
+using ScenePtr = std::shared_ptr<Scene>;
 
 } // namespace dart::gui

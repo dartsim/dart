@@ -31,7 +31,6 @@
 
 #include "dart/common/all.hpp"
 #include "dart/gui/all.hpp"
-#include "dart/rendering/all.hpp"
 #include "dart/simulation/all.hpp"
 
 namespace dart::application {
@@ -43,10 +42,10 @@ struct SimpleSimulator::Implementation
 
   std::shared_ptr<simulation::World> world{nullptr};
 
-  std::shared_ptr<rendering::Scene> scene{nullptr};
-  std::shared_ptr<rendering::Camera> camera{nullptr};
+  std::shared_ptr<gui::Scene> scene{nullptr};
+  std::shared_ptr<gui::Camera> camera{nullptr};
 
-  std::shared_ptr<gui::MainWindow> main_window{nullptr};
+  // std::shared_ptr<gui::MainWindow> main_window{nullptr};
 
   Implementation()
   {
@@ -65,7 +64,7 @@ SimpleSimulator::SimpleSimulator(const SimpleSimulatorConfigs& configs)
   m_impl->world = simulation::World::Create();
 
   // Create scene
-  m_impl->scene = rendering::Scene::Create();
+  m_impl->scene = gui::Scene::Create();
   m_impl->scene->set_world(m_impl->world);
 
   // Create camera
@@ -73,9 +72,9 @@ SimpleSimulator::SimpleSimulator(const SimpleSimulatorConfigs& configs)
 
   // Create main window
   if (m_impl->configs.headless) {
-    m_impl->main_window = nullptr;
+    // m_impl->main_window = nullptr;
   } else {
-    m_impl->main_window = gui::MainWindow::Create();
+    // m_impl->main_window = gui::MainWindow::Create();
   }
 }
 
@@ -83,7 +82,7 @@ SimpleSimulator::SimpleSimulator(const SimpleSimulatorConfigs& configs)
 SimpleSimulator::~SimpleSimulator()
 {
   // Clear resources
-  m_impl->main_window.reset();
+  // m_impl->main_window.reset();
   m_impl->camera.reset();
   m_impl->scene.reset();
   m_impl->world.reset();
@@ -95,10 +94,10 @@ void SimpleSimulator::run(long num_steps)
   long steps = 0;
   while (true) {
     if (!m_impl->configs.headless) {
-      DART_ASSERT(m_impl->main_window);
-      if (m_impl->main_window->should_close()) {
-        break;
-      }
+      //      DART_ASSERT(m_impl->main_window);
+      //      if (m_impl->main_window->should_close()) {
+      //        break;
+      //      }
     }
 
     if (num_steps != 0 && steps >= num_steps) {
@@ -113,8 +112,8 @@ void SimpleSimulator::run(long num_steps)
     if (m_impl->configs.headless) {
       // m_impl->world->step();
     } else {
-      DART_ASSERT(m_impl->main_window);
-      m_impl->main_window->update();
+      //      DART_ASSERT(m_impl->main_window);
+      // m_impl->main_window->update();
     }
 
     steps++;

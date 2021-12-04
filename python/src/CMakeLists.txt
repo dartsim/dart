@@ -28,7 +28,6 @@ target_link_libraries(
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-math
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-collision
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-multibody
-    ${PROJECT_NAME}${DART_VERSION_MAJOR}-rendering
     ${PROJECT_NAME}${DART_VERSION_MAJOR}-gui
     ${Python_LIBRARIES}
 )

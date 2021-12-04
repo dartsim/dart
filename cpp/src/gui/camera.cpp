@@ -25,16 +25,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/rendering/camera.hpp"
+#include "dart/gui/camera.hpp"
 
 #include <mutex>
 
 #include "dart/common/logging.hpp"
 #include "dart/common/macro.hpp"
-#include "dart/rendering/osg_include.hpp"
-#include "dart/rendering/scene.hpp"
+#include "dart/gui/osg_include.hpp"
+#include "dart/gui/scene.hpp"
 
-namespace dart::rendering {
+namespace dart::gui {
 
 //==============================================================================
 struct ImageSizeCallback : osg::Camera::DrawCallback
@@ -306,4 +306,4 @@ void Camera::copy(Image& image)
   image.set_from_osg_image(*m_impl->osg_image);
 }
 
-} // namespace dart::rendering
+} // namespace dart::gui

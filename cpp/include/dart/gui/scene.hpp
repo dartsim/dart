@@ -30,26 +30,38 @@
 #include <memory>
 #include <string>
 
-#include "dart/rendering/export.hpp"
-#include "dart/rendering/osg_include.hpp"
+#include "dart/gui/export.hpp"
+#include "dart/gui/osg_include.hpp"
+#include "dart/gui/type.hpp"
+#include "dart/simulation/world.hpp"
 
-namespace dart::rendering {
+namespace dart::gui {
 
-class DART_RENDERING_API Image
+class DART_GUI_API Scene
 {
 public:
-  Image();
+  template <typename... Args>
+  static std::shared_ptr<Scene> Create(Args&&... args)
+  {
+    return std::make_shared<Scene>(std::forward<Args>(args)...);
+  }
 
-  ~Image();
+  Scene();
 
-  void set_data(
-      const unsigned char* data, int width, int height, int format, int type);
+  ~Scene();
 
-  void set_from_osg_image(const osg::Image& image);
+  bool set_world(std::shared_ptr<simulation::World> world);
 
+  [[nodiscard]] CameraPtr create_camera();
+
+  [[nodiscard]] osg::ref_ptr<const osg::Group> get_osg_root_node() const;
+
+  [[nodiscard]] osg::ref_ptr<osg::Group> get_mutable_osg_root_node();
+
+protected:
 private:
   struct Implementation;
   std::unique_ptr<Implementation> m_impl;
 };
 
-} // namespace dart::rendering
+} // namespace dart::gui

@@ -25,12 +25,10 @@ endif()
 #===============================================================================
 
 # TBB
-find_package(TBB QUIET)  # TODO(JS): Make optional
-message("[DEBUG] TBB_FOUND: ${TBB_FOUND}")
+find_package(TBB QUIET)
 
 # OpenMP
-find_package(OpenMP QUIET)  # TODO(JS): Make optional
-message("[DEBUG] OpenMP_FOUND: ${OpenMP_FOUND}")
+find_package(OpenMP QUIET)
 
 # spdlog
 find_package(spdlog 1.3.0 QUIET)
@@ -56,26 +54,6 @@ if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
   set_target_properties(osg::osg PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${OPENSCENEGRAPH_INCLUDE_DIRS}"
     INTERFACE_LINK_LIBRARIES "${OPENSCENEGRAPH_LIBRARIES}"
-  )
-endif()
-
-# GLEW
-find_package(GLEW MODULE QUIET)
-if(GLEW_FOUND AND NOT TARGET GLEW::glew)
-  add_library(GLEW::glew INTERFACE IMPORTED)
-  set_target_properties(GLEW::glew PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${GLEW_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${GLEW_LIBRARIES}"
-  )
-endif()
-
-# GLFW3 (optional)
-find_package(glfw3 QUIET CONFIG)
-if(glfw3_FOUND AND NOT TARGET glfw)
-  add_library(glfw INTERFACE IMPORTED)
-  set_target_properties(glfw PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${GLFW3_INCLUDE_DIR}"
-    INTERFACE_LINK_LIBRARIES "${GLFW3_LIBRARY}"
   )
 endif()
 

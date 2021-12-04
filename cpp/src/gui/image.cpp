@@ -25,12 +25,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/rendering/image.hpp"
+#include "dart/gui/image.hpp"
 
 #include "dart/common/logging.hpp"
 #include "dart/common/macro.hpp"
 
-namespace dart::rendering {
+namespace dart::gui {
 
 //==============================================================================
 int get_bytes_per_channel(int type)
@@ -107,4 +107,4 @@ void Image::set_from_osg_image(const osg::Image& image)
       = static_cast<osg::Image*>(image.clone(osg::CopyOp::DEEP_COPY_ALL));
 }
 
-} // namespace dart::rendering
+} // namespace dart::gui

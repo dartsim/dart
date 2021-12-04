@@ -16,6 +16,9 @@ if(DOWNLOAD_DEPENDENT_PACKAGES)
   set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 
+  # To suppress warning, Policy CMP0042 is not set
+  set(CMAKE_MACOSX_RPATH 1)
+
   # Adds the targers: gtest, gtest_main, gmock, gmock_main
   add_subdirectory(
     ${googletest_SOURCE_DIR}

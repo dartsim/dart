@@ -1307,6 +1307,9 @@ function(dart_build_example)
 
   target_link_libraries(${_ARG_TARGET_NAME} PRIVATE ${component_dependent_component_targets})
 
+  # Add the test target to the list
+  dart_property_add(DART_GLOBAL_PROPERTY_EXAMPLE_LIST ${target_name})
+
   dart_clang_format_add(${header} ${sources})
 
 endfunction()

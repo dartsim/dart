@@ -27,5 +27,19 @@
 
 #pragma once
 
-#include <GL/glew.h> // must be included before glfw3.h
-#include <GLFW/glfw3.h>
+#ifdef __APPLE__
+  #define GL_SILENCE_DEPRECATION
+#endif
+#include <osg/Camera>
+#include <osg/Light>
+#include <osg/Material>
+#include <osg/MatrixTransform>
+#include <osg/Shape>
+#include <osg/ShapeDrawable>
+#include <osg/Texture2D>
+#include <osgDB/WriteFile>
+#include <osgGA/TrackballManipulator>
+#include <osgViewer/CompositeViewer>
+#include <osgViewer/View>
+#include <osgViewer/Viewer>
+#include <osgViewer/ViewerEventHandlers>

@@ -25,13 +25,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/scene3d.hpp"
+#include "dart/gui/scene.hpp"
+
+#include <unordered_set>
+
+#include "dart/common/logging.hpp"
+#include "dart/common/macro.hpp"
+#include "dart/gui/camera.hpp"
 
 namespace dart::gui {
 
 //==============================================================================
-struct Scene3d::Implementation
+struct Scene::Implementation
 {
+  std::shared_ptr<simulation::World> world;
+
+  std::unordered_set<CameraPtr> cameras;
+
+  osg::ref_ptr<osg::Group> osg_root_node;
+
   Implementation()
   {
     // Do nothing
@@ -39,21 +51,50 @@ struct Scene3d::Implementation
 };
 
 //==============================================================================
-Scene3d::Scene3d() : m_impl(std::make_unique<Implementation>())
+Scene::Scene() : m_impl(std::make_unique<Implementation>())
+{
+  // Create an empty world
+  m_impl->world = simulation::World::Create();
+
+  // Create OSG root node
+  m_impl->osg_root_node = new osg::Group();
+}
+
+//==============================================================================
+Scene::~Scene()
 {
   // Do nothing
 }
 
 //==============================================================================
-Scene3d::~Scene3d()
+bool Scene::set_world(std::shared_ptr<simulation::World> world)
 {
-  // Do nothing
+  if (world == nullptr) {
+    return false;
+  }
+
+  m_impl->world = std::move(world);
+  return true;
 }
 
 //==============================================================================
-void Scene3d::draw_impl()
+CameraPtr Scene::create_camera()
 {
-  // Do nothing
+  auto camera = std::shared_ptr<Camera>(new Camera(this));
+  m_impl->cameras.insert(camera);
+  return camera;
+}
+
+//==============================================================================
+osg::ref_ptr<const osg::Group> Scene::get_osg_root_node() const
+{
+  return m_impl->osg_root_node;
+}
+
+//==============================================================================
+osg::ref_ptr<osg::Group> Scene::get_mutable_osg_root_node()
+{
+  return m_impl->osg_root_node;
 }
 
 } // namespace dart::gui
