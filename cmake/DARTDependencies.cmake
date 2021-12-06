@@ -42,6 +42,16 @@ find_package(fcl MODULE QUIET)
 # OpenMP
 find_package(OpenGL QUIET MODULE)
 
+# GLEW
+find_package(GLEW MODULE QUIET)
+if(GLEW_FOUND AND NOT TARGET GLEW::glew)
+  add_library(GLEW::glew INTERFACE IMPORTED)
+  set_target_properties(GLEW::glew PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${GLEW_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${GLEW_LIBRARIES}"
+  )
+endif()
+
 # OpenSceneGraph
 find_package(OpenSceneGraph 3.2.3 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow

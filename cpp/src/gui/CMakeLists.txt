@@ -1,6 +1,6 @@
 # Copyright (c) 2011-2021, The DART development contributors
 
-set(target_link_libraries_public osg::osg)
+set(target_link_libraries_public GLEW::glew osg::osg)
 if(APPLE)
   list(APPEND target_link_libraries_public "-framework OpenGL")
 endif()
@@ -12,7 +12,7 @@ dart_component_setup(
   DEPENDENT_COMPONENTS
     common math simulation
   DEPENDENT_PACKAGES_REQUIRED
-    OpenSceneGraph
+    GLEW OpenSceneGraph
   TARGET_LINK_LIBRARIES_PUBLIC
     ${target_link_libraries_public}
   TARGET_COMPILE_FEATURES_PUBLIC

@@ -6,12 +6,12 @@ execute_process(
   RESULT_VARIABLE pytest_not_found OUTPUT_VARIABLE pytest_version ERROR_QUIET
 )
 if(pytest_not_found)
-  message(WARNING "Skipping test-python because pytest is not found")
+  message(WARNING "Skipping dartpy8-test because pytest is not found")
   return()
 elseif(pytest_version VERSION_LESS 3.0)
   message(
     WARNING
-      "Skipping test-python because pytest version ${pytest_version} is less than 3.0"
+      "Skipping dartpy8-test because pytest version ${pytest_version} is less than 3.0"
   )
   return()
 endif()
