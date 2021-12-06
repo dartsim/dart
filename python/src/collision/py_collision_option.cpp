@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#include "include_pybind11.h"
 
 #include "dart/collision/all.hpp"
 

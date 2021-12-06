@@ -39,7 +39,7 @@
 
 #include "dart/common/all.hpp"
 
-#include "pybind11/pybind11.h"
+#include "include_pybind11.h"
 
 using std::fabs;
 

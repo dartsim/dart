@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#include "include_pybind11.h"
 
 // clang-format off
 #include "eigen_geometry_pybind.h"

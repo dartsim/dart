@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/chrono.h>
-#include <pybind11/iostream.h>
-#include <pybind11/pybind11.h>
+
+#include "include_pybind11.h"
 
 #include "dart/common/all.hpp"
 

@@ -30,17 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include_pybind11.h"
+#pragma once
 
-#include "dart/collision/all.hpp"
+#if defined(_MSC_VER) & defined(_DEBUG) && _MSC_VER >= 1930
+  #include <corecrt.h>
+#endif
 
-namespace py = pybind11;
-
-namespace dart::python {
-
-void py_scene(py::module& m)
-{
-  py::class_<collision::Scened>(m, "Scene");
-}
-
-} // namespace dart::python
+#include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
+#include <pybind11/chrono.h>
+#include <pybind11/iostream.h>
