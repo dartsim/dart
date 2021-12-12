@@ -310,7 +310,7 @@ struct SO3Test : public testing::Test
 };
 
 //==============================================================================
-using Types = testing::Types<float, double, long double>;
+using Types = testing::Types<float, double>;
 
 //==============================================================================
 TYPED_TEST_SUITE(SO3Test, Types);
@@ -530,15 +530,22 @@ TYPED_TEST(SO3Test, Conversions)
 TYPED_TEST(SO3Test, EulerAngles)
 {
   using Scalar = typename TestFixture::Type;
+  using SO3 = SO3<Scalar>;
 
-  SO3<Scalar> a;
-  SO3<Scalar> b;
+  SO3 a;
+  SO3 b;
 
   const Eigen::Matrix<Scalar, 3, 1> angles
       = Eigen::Matrix<Scalar, 3, 1>::Random();
 
+  a.set_from_euler_xyz(angles[0], angles[1], angles[2]);
+  EXPECT_EQ(
+      a, SO3::RotX(angles[0]) * SO3::RotY(angles[1]) * SO3::RotZ(angles[2]));
+  EXPECT_EQ(a, SO3().set_from_euler_xyz(a.euler_angles()));
+
   a.set_from_rpy(angles);
   b.set_from_rpy(a.rpy());
+  EXPECT_EQ(a, b);
 }
 
 //==============================================================================

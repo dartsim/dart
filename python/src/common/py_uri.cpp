@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include_pybind11.h"
-#include "include_pybind11.h"
-
 #include "dart/common/resource/uri.hpp"
+
+#include "include_pybind11.h"
 
 namespace py = pybind11;
 

@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include_pybind11.h"
-
 #include "dart/math/all.hpp"
+
+#include "include_pybind11.h"
 
 namespace py = pybind11;
 
@@ -49,8 +49,20 @@ void py_so3(py::module& m)
                      py::arg("tolerance") = math::eps<double>())
                  .def("set_random", &math::SO3d::set_random)
                  .def("inverse", &math::SO3d::inverse)
+                 .def("normalize", &math::SO3d::normalize)
+                 .def("normalized", &math::SO3d::normalized)
                  .def_static("Identity", &math::SO3d::Identity)
-                 .def_static("Random", &math::SO3d::Random);
+                 .def_static("Random", &math::SO3d::Random)
+                 .def_static("RotX", &math::SO3d::RotX, py::arg("angle"))
+                 .def_static("RotY", &math::SO3d::RotY, py::arg("angle"))
+                 .def_static("RotZ", &math::SO3d::RotZ, py::arg("angle"))
+                 .def_static(
+                     "Rot",
+                     [](double angle, const Eigen::Vector3d& axis) {
+                       return math::SO3d::Rot(angle, axis);
+                     },
+                     py::arg("angle"),
+                     py::arg("axis"));
 
   auto so3_algebra = py::class_<math::SO3Algebrad>(m, "SO3Algebra")
                          .def(py::init<>())

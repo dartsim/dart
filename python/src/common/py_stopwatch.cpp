@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/all.hpp"
 
 #include "include_pybind11.h"
-
-#include "dart/common/all.hpp"
 
 namespace py = pybind11;
 

@@ -47,7 +47,7 @@ struct SE3Test : public testing::Test
 };
 
 //==============================================================================
-using Types = testing::Types<float /*, double, long double*/>;
+using Types = testing::Types<float, double>;
 
 //==============================================================================
 TYPED_TEST_SUITE(SE3Test, Types);

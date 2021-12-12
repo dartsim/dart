@@ -41,7 +41,7 @@ static constexpr S eps()
   } else if constexpr (std::is_same_v<S, double>) {
     return 1e-12;
   } else if constexpr (std::is_same_v<S, long double>) {
-    return 1e-24;
+    return 1e-18;
   } else {
     return 0;
   }
@@ -55,7 +55,7 @@ constexpr T default_absolute_tolerance()
   } else if constexpr (std::is_same_v<T, double>) {
     return 1e-6;
   } else if constexpr (std::is_same_v<T, long double>) {
-    return 1e-12;
+    return 1e-9;
   } else {
     return 0;
   }

@@ -59,13 +59,20 @@ public:
   using Transformation
       = Eigen::Transform<Scalar, SpaceDim, Eigen::Isometry, Options>;
 
+  [[nodiscard]] static LieGroup RotX(Scalar angle);
+
+  [[nodiscard]] static LieGroup RotY(Scalar angle);
+
+  [[nodiscard]] static LieGroup RotZ(Scalar angle);
+
+  template <typename MatrixDerived>
+  [[nodiscard]] static LieGroup Rot(
+      Scalar angle, const Eigen::MatrixBase<MatrixDerived>& axis);
+
   DART_LIE_GROUP_BASE_ASSIGN_OPERATORS(SO3Base);
 
   /// Implicit conversion to Eigen::Matrix<Scalar, Dim, 1>
-  operator Eigen::Matrix<Scalar, 3, 1>() const
-  {
-    return coeffs();
-  }
+  operator Eigen::Matrix<Scalar, 3, 1>() const;
 
   /// @{ @name Group operations
 
@@ -86,10 +93,7 @@ public:
   /// @}
 
   template <typename MatrixDerived>
-  void set_from_rotation_matrix(const Eigen::MatrixBase<MatrixDerived>& mat)
-  {
-    set_from_quaternion(Eigen::Quaternion<Scalar>(mat));
-  }
+  void set_from_rotation_matrix(const Eigen::MatrixBase<MatrixDerived>& mat);
 
   void set_from_quaternion(Scalar w, Scalar x, Scalar y, Scalar z);
 
@@ -97,10 +101,17 @@ public:
 
   /// @{ @name Euler angles
 
-  /// @return Euler angles in the ranges [0,pi]x[-pi,pi]x[-pi,pi]
-  [[nodiscard]] Eigen::Matrix<Scalar, 3, 1> rpy() const;
+  Derived& set_from_euler_xyz(Scalar angle0, Scalar angle1, Scalar angle2);
 
-  void set_from_euler_angles_intrinsic(
+  Derived& set_from_euler_zyx(Scalar angle0, Scalar angle1, Scalar angle2);
+
+  template <typename MatrixDerived>
+  Derived& set_from_euler_xyz(const Eigen::MatrixBase<MatrixDerived>& angles);
+
+  template <typename MatrixDerived>
+  Derived& set_from_euler_zyx(const Eigen::MatrixBase<MatrixDerived>& angles);
+
+  Derived& set_from_euler_angles_intrinsic(
       Scalar angle0,
       Scalar angle1,
       Scalar angle2,
@@ -108,7 +119,7 @@ public:
       int axis1 = 1,
       int axis2 = 2);
 
-  void set_from_euler_angles_extrinsic(
+  Derived& set_from_euler_angles_extrinsic(
       Scalar angle0,
       Scalar angle1,
       Scalar angle2,
@@ -131,9 +142,32 @@ public:
   template <typename MatrixDrived>
   void set_from_rpy(const Eigen::MatrixBase<MatrixDrived>& angles);
 
+  /// @return Euler angles in the ranges [0,pi]x[-pi,pi]x[-pi,pi]
+  [[nodiscard]] Eigen::Matrix<Scalar, 3, 1> rpy() const;
+
   /// @}
 
+  template <typename OtherDerived>
+  Derived& rotate(const SO3Base<OtherDerived>& other);
+
+  template <typename MatrixDerived>
+  Derived& rotate(Scalar angle, const Eigen::MatrixBase<MatrixDerived>& axis);
+
+  Derived& rotate_x(Scalar angle);
+
+  Derived& rotate_y(Scalar angle);
+
+  Derived& rotate_z(Scalar angle);
+
+  template <typename OtherDerived>
+  Derived& left_rotate(const SO3Base<OtherDerived>& other);
+
+  template <typename OtherDerived>
+  Derived& right_rotate(const SO3Base<OtherDerived>& other);
+
   void normalize();
+
+  LieGroup normalized() const;
 
   /// Returns the w component of the in quaternion.
   [[nodiscard]] Scalar w() const;
@@ -173,6 +207,52 @@ public:
 protected:
   using Base::derived;
 };
+
+//==============================================================================
+template <typename Derived>
+typename SO3Base<Derived>::LieGroup SO3Base<Derived>::RotX(Scalar angle)
+{
+  LieGroup p;
+  p.rotate_x(angle);
+  return p;
+}
+
+//==============================================================================
+template <typename Derived>
+typename SO3Base<Derived>::LieGroup SO3Base<Derived>::RotY(Scalar angle)
+{
+  LieGroup p;
+  p.rotate_y(angle);
+  return p;
+}
+
+//==============================================================================
+template <typename Derived>
+typename SO3Base<Derived>::LieGroup SO3Base<Derived>::RotZ(Scalar angle)
+{
+  LieGroup p;
+  p.rotate_z(angle);
+  return p;
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename SO3Base<Derived>::LieGroup SO3Base<Derived>::Rot(
+    Scalar angle, const Eigen::MatrixBase<MatrixDerived>& axis)
+{
+  LieGroup p;
+  p.rotate(angle, axis);
+  return p;
+}
+
+//==============================================================================
+template <typename Derived>
+SO3Base<Derived>::operator Eigen::
+    Matrix<typename SO3Base<Derived>::Scalar, 3, 1>() const
+{
+  return coeffs();
+}
 
 //==============================================================================
 template <typename Derived>
@@ -235,6 +315,15 @@ typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(
 
 //==============================================================================
 template <typename Derived>
+template <typename MatrixDerived>
+void SO3Base<Derived>::set_from_rotation_matrix(
+    const Eigen::MatrixBase<MatrixDerived>& mat)
+{
+  set_from_quaternion(Eigen::Quaternion<Scalar>(mat));
+}
+
+//==============================================================================
+template <typename Derived>
 void SO3Base<Derived>::set_from_quaternion(
     Scalar w, Scalar x, Scalar y, Scalar z)
 {
@@ -286,13 +375,7 @@ template <typename MatrixDrived>
 void SO3Base<Derived>::set_from_rpy(
     const Eigen::MatrixBase<MatrixDrived>& angles)
 {
-  quaternion() = Quaternion(
-      Eigen::AngleAxis<Scalar>(angles[2], Eigen::Matrix<Scalar, 3, 1>::UnitX())
-      * Eigen::AngleAxis<Scalar>(
-          angles[1], Eigen::Matrix<Scalar, 3, 1>::UnitY())
-      * Eigen::AngleAxis<Scalar>(
-          angles[0], Eigen::Matrix<Scalar, 3, 1>::UnitZ()));
-  normalize();
+  set_from_euler_angles_intrinsic(angles[0], angles[1], angles[2], 2, 1, 0);
 }
 
 //==============================================================================
@@ -305,7 +388,41 @@ Eigen::Matrix<typename SO3Base<Derived>::Scalar, 3, 1> SO3Base<Derived>::rpy()
 
 //==============================================================================
 template <typename Derived>
-void SO3Base<Derived>::set_from_euler_angles_intrinsic(
+Derived& SO3Base<Derived>::set_from_euler_xyz(
+    Scalar angle0, Scalar angle1, Scalar angle2)
+{
+  return set_from_euler_angles_intrinsic(angle0, angle1, angle2, 0, 1, 2);
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& SO3Base<Derived>::set_from_euler_zyx(
+    Scalar angle0, Scalar angle1, Scalar angle2)
+{
+  return set_from_euler_angles_intrinsic(angle0, angle1, angle2, 2, 1, 0);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+Derived& SO3Base<Derived>::set_from_euler_xyz(
+    const Eigen::MatrixBase<MatrixDerived>& angles)
+{
+  return set_from_euler_xyz(angles[0], angles[1], angles[2]);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+Derived& SO3Base<Derived>::set_from_euler_zyx(
+    const Eigen::MatrixBase<MatrixDerived>& angles)
+{
+  return set_from_euler_zyx(angles[0], angles[1], angles[2]);
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& SO3Base<Derived>::set_from_euler_angles_intrinsic(
     Scalar angle0,
     Scalar angle1,
     Scalar angle2,
@@ -323,11 +440,12 @@ void SO3Base<Derived>::set_from_euler_angles_intrinsic(
       Eigen::AngleAxis<Scalar>(angle0, a0)
       * Eigen::AngleAxis<Scalar>(angle1, a1)
       * Eigen::AngleAxis<Scalar>(angle2, a2));
+  return derived();
 }
 
 //==============================================================================
 template <typename Derived>
-void SO3Base<Derived>::set_from_euler_angles_extrinsic(
+Derived& SO3Base<Derived>::set_from_euler_angles_extrinsic(
     Scalar angle0,
     Scalar angle1,
     Scalar angle2,
@@ -335,7 +453,65 @@ void SO3Base<Derived>::set_from_euler_angles_extrinsic(
     int axis1,
     int axis2)
 {
-  set_from_euler_angles_intrinsic(angle2, angle1, angle0, axis2, axis1, axis0);
+  return set_from_euler_angles_intrinsic(
+      angle2, angle1, angle0, axis2, axis1, axis0);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+Derived& SO3Base<Derived>::rotate(const SO3Base<OtherDerived>& other)
+{
+  return right_rotate(other);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+Derived& SO3Base<Derived>::rotate(
+    Scalar angle, const Eigen::MatrixBase<MatrixDerived>& axis)
+{
+  quaternion() = quaternion() * Eigen::AngleAxis<Scalar>(angle, axis);
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& SO3Base<Derived>::rotate_x(Scalar angle)
+{
+  return rotate(angle, Eigen::Matrix<Scalar, 3, 1>::UnitX());
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& SO3Base<Derived>::rotate_y(Scalar angle)
+{
+  return rotate(angle, Eigen::Matrix<Scalar, 3, 1>::UnitY());
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& SO3Base<Derived>::rotate_z(Scalar angle)
+{
+  return rotate(angle, Eigen::Matrix<Scalar, 3, 1>::UnitZ());
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+Derived& SO3Base<Derived>::left_rotate(const SO3Base<OtherDerived>& other)
+{
+  quaternion() = other.quaternion() * quaternion();
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+Derived& SO3Base<Derived>::right_rotate(const SO3Base<OtherDerived>& other)
+{
+  quaternion() *= other.quaternion();
+  return derived();
 }
 
 //==============================================================================
@@ -346,6 +522,15 @@ void SO3Base<Derived>::normalize()
     coeffs() *= -1;
   }
   coeffs().normalize();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SO3Base<Derived>::LieGroup SO3Base<Derived>::normalized() const
+{
+  LieGroup out(*this);
+  out.normalize();
+  return out;
 }
 
 //==============================================================================

@@ -85,17 +85,11 @@ public:
 
   /** Copy constructor from LieGroupBase*/
   template <typename OtherDerived>
-  SO3(const LieGroupBase<OtherDerived>& other) : m_data(other.coeffs())
-  {
-    /* Do nothing */
-  }
+  SO3(const LieGroupBase<OtherDerived>& other);
 
   /** Move constructor from LieGroupBase */
   template <typename OtherDerived>
-  SO3(LieGroupBase<OtherDerived>&& other) : m_data(std::move(other.coeffs()))
-  {
-    /* Do nothing */
-  }
+  SO3(LieGroupBase<OtherDerived>&& other);
 
   /// Constructs from quaternion
   template <typename QuatDerived>
@@ -141,6 +135,24 @@ template <typename Scalar, int Options>
 SO3<Scalar, Options>::SO3() : m_data(Quaternion::Identity().coeffs())
 {
   // Do nothing
+}
+
+//==============================================================================
+template <typename Scalar, int Options>
+template <typename OtherDerived>
+SO3<Scalar, Options>::SO3(const LieGroupBase<OtherDerived>& other)
+  : m_data(other.coeffs())
+{
+  /* Do nothing */
+}
+
+//==============================================================================
+template <typename Scalar, int Options>
+template <typename OtherDerived>
+SO3<Scalar, Options>::SO3(LieGroupBase<OtherDerived>&& other)
+  : m_data(std::move(other.coeffs()))
+{
+  /* Do nothing */
 }
 
 //==============================================================================
