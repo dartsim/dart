@@ -191,6 +191,9 @@ public:
   /// Increment the version of this Shape and notify its subscribers
   std::size_t incrementVersion() override final;
 
+  /// Deep copy shape
+  virtual ShapePtr clone() const = 0;
+
 protected:
   /// Updates volume
   virtual void updateVolume() const = 0;

@@ -55,6 +55,9 @@ ArrowShape::Properties::Properties(
 }
 
 //==============================================================================
+ArrowShape::ArrowShape() : MeshShape(Eigen::Vector3d::Ones(), nullptr) {}
+
+//==============================================================================
 ArrowShape::ArrowShape(
     const Eigen::Vector3d& _tail,
     const Eigen::Vector3d& _head,
@@ -251,6 +254,29 @@ void ArrowShape::configureArrow(
   mIsVolumeDirty = true;
 
   incrementVersion();
+}
+
+//==============================================================================
+ShapePtr ArrowShape::clone() const
+{
+  aiScene* new_scene = cloneMesh();
+  auto new_shape = std::make_shared<ArrowShape>();
+
+  new_shape->mTail = mTail;
+  new_shape->mHead = mHead;
+  new_shape->mProperties = mProperties;
+
+  new_shape->mMesh = new_scene;
+  new_shape->mMeshUri = mMeshUri;
+  new_shape->mMeshPath = mMeshPath;
+  new_shape->mResourceRetriever = mResourceRetriever;
+  new_shape->mDisplayList = mDisplayList;
+  new_shape->mScale = mScale;
+  new_shape->mColorMode = mColorMode;
+  new_shape->mAlphaMode = mAlphaMode;
+  new_shape->mColorIndex = mColorIndex;
+
+  return new_shape;
 }
 
 //==============================================================================

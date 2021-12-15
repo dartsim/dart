@@ -308,6 +308,21 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 }
 
 //==============================================================================
+ShapePtr MeshShape::clone() const
+{
+  aiScene* new_scene = cloneMesh();
+
+  auto new_shape = std::make_shared<MeshShape>(mScale, new_scene, mMeshUri, mResourceRetriever);
+  new_shape->mMeshPath = mMeshPath;
+  new_shape->mDisplayList = mDisplayList;
+  new_shape->mColorMode = mColorMode;
+  new_shape->mAlphaMode = mAlphaMode;
+  new_shape->mColorIndex = mColorIndex;
+
+  return new_shape;
+}
+
+//==============================================================================
 void MeshShape::updateBoundingBox() const
 {
   if (!mMesh)
@@ -357,6 +372,168 @@ void MeshShape::updateVolume() const
   const Eigen::Vector3d bounds = getBoundingBox().computeFullExtents();
   mVolume = bounds.x() * bounds.y() * bounds.z();
   mIsVolumeDirty = false;
+}
+
+//==============================================================================
+aiScene* MeshShape::cloneMesh() const
+{
+  // Create new assimp mesh
+  aiScene* new_scene = new aiScene();
+  // Copy basic data
+  new_scene->mNumAnimations = 0; // we do not care about animations // new_scene->mNumAnimations = mMesh->mNumAnimations;
+  new_scene->mNumCameras = 0; // we do not care about cameras // new_scene->mNumCameras = mMesh->mNumCameras;
+  new_scene->mNumLights = 0; // we do not care about lights // new_scene->mNumLights = mMesh->mNumLights;
+  new_scene->mNumMaterials = mMesh->mNumMaterials;
+  new_scene->mNumMeshes = mMesh->mNumMeshes;
+  new_scene->mNumTextures = mMesh->mNumTextures;
+  new_scene->mFlags = mMesh->mFlags;
+  // Initialize empty structs
+  new_scene->mAnimations = nullptr;
+  new_scene->mCameras = nullptr;
+  new_scene->mLights = nullptr;
+
+  // Copy materials
+  new_scene->mMaterials = new aiMaterial*[new_scene->mNumMaterials];
+  for (unsigned int i = 0; i < new_scene->mNumMaterials; i++)
+  {
+    new_scene->mMaterials[i] = new aiMaterial();
+    new_scene->mMaterials[i]->mNumAllocated = mMesh->mMaterials[i]->mNumAllocated;
+    new_scene->mMaterials[i]->mNumProperties = mMesh->mMaterials[i]->mNumProperties;
+
+    new_scene->mMaterials[i]->mProperties = new aiMaterialProperty*[new_scene->mMaterials[i]->mNumProperties];
+
+    for (unsigned int j = 0; j < new_scene->mMaterials[i]->mNumProperties; j++)
+    {
+      new_scene->mMaterials[i]->mProperties[j] = new aiMaterialProperty();
+      auto& prop = new_scene->mMaterials[i]->mProperties[j];
+      auto& other = mMesh->mMaterials[i]->mProperties[j];
+
+      prop->mKey = other->mKey;
+      prop->mSemantic = other->mSemantic;
+      prop->mIndex = other->mIndex;
+      prop->mDataLength = other->mDataLength;
+      prop->mType = other->mType;
+      prop->mData = new char[prop->mDataLength];
+      memcpy(prop->mData, other->mData, prop->mDataLength);
+    }
+  }
+
+  // Copy textures
+  new_scene->mTextures = new aiTexture*[new_scene->mNumTextures];
+  for (unsigned int i = 0; i < new_scene->mNumTextures; i++)
+  {
+    new_scene->mTextures[i] = new aiTexture();
+    strcpy(new_scene->mTextures[i]->achFormatHint, mMesh->mTextures[i]->achFormatHint);
+    new_scene->mTextures[i]->mHeight = mMesh->mTextures[i]->mHeight;
+    new_scene->mTextures[i]->mWidth = mMesh->mTextures[i]->mWidth;
+    // new_scene->mTextures[i]->mFilename = mMesh->mTextures[i]->mFilename;
+    unsigned int size = new_scene->mTextures[i]->mWidth;
+    if (new_scene->mTextures[i]->mHeight > 0)
+      size *= new_scene->mTextures[i]->mHeight;
+    new_scene->mTextures[i]->pcData = new aiTexel[size];
+    memcpy(new_scene->mTextures[i]->pcData, mMesh->mTextures[i]->pcData, size * sizeof(aiTexel));
+  }
+
+  // Copy meshes
+  new_scene->mMeshes = new aiMesh*[new_scene->mNumMeshes];
+  for (unsigned int i = 0; i < new_scene->mNumMeshes; i++)
+  {
+    new_scene->mMeshes[i] = new aiMesh();
+    auto& mesh = new_scene->mMeshes[i];
+    auto& other = mMesh->mMeshes[i];
+    // Empty - we do not care about animation meshes or bones
+    mesh->mAnimMeshes = nullptr;
+    mesh->mBones = nullptr;
+    mesh->mNumAnimMeshes = 0;
+    mesh->mNumBones = 0;
+    // Basic info
+    mesh->mMaterialIndex = other->mMaterialIndex;
+    mesh->mName = other->mName;
+    mesh->mNumFaces = other->mNumFaces;
+    memcpy(&mesh->mNumUVComponents[0], &other->mNumUVComponents[0], AI_MAX_NUMBER_OF_TEXTURECOORDS * sizeof(unsigned int));
+    mesh->mNumVertices = other->mNumVertices;
+    mesh->mPrimitiveTypes = other->mPrimitiveTypes;
+
+    if (mesh->mNumVertices > 0) {
+      // Copy verticies
+      mesh->mVertices = new aiVector3D[mesh->mNumVertices];
+      memcpy(mesh->mVertices, other->mVertices, mesh->mNumVertices * sizeof(aiVector3D));
+
+      // Copy normals
+      mesh->mNormals = new aiVector3D[mesh->mNumVertices];
+      memcpy(mesh->mNormals, other->mNormals, mesh->mNumVertices * sizeof(aiVector3D));
+
+      // Copy faces
+      mesh->mFaces = new aiFace[mesh->mNumFaces];
+      for (unsigned int a = 0; a < mesh->mNumFaces; a++)
+      {
+        mesh->mFaces[a].mNumIndices = other->mFaces[a].mNumIndices;
+        mesh->mFaces[a].mIndices = new unsigned int[mesh->mFaces[a].mNumIndices];
+        memcpy(mesh->mFaces[a].mIndices, other->mFaces[a].mIndices, mesh->mFaces[a].mNumIndices * sizeof(unsigned int));
+      }
+
+      // Copy tangents
+      if (other->mTangents)
+      {
+        mesh->mTangents = new aiVector3D[mesh->mNumVertices];
+        memcpy(mesh->mTangents, other->mTangents, mesh->mNumVertices * sizeof(aiVector3D));
+      }
+      // Copy bi-tangents
+      if (other->mBitangents)
+      {
+        mesh->mBitangents = new aiVector3D[mesh->mNumVertices];
+        memcpy(mesh->mBitangents, other->mBitangents, mesh->mNumVertices * sizeof(aiVector3D));
+      }
+
+      // Copy color sets
+      for (unsigned int a = 0; a < AI_MAX_NUMBER_OF_COLOR_SETS; a++)
+      {
+        if (other->mColors[a])
+        {
+          mesh->mColors[a] = new aiColor4D[mesh->mNumVertices];
+          memcpy(mesh->mColors[a], other->mColors[a], mesh->mNumVertices * sizeof(aiColor4D));
+        }
+      }
+
+      // Copy texture coordinates
+      for (unsigned int a = 0; a < AI_MAX_NUMBER_OF_TEXTURECOORDS; a++)
+      {
+        if (other->mTextureCoords[a])
+        {
+          mesh->mTextureCoords[a] = new aiVector3D[mesh->mNumVertices];
+          memcpy(mesh->mTextureCoords[a], other->mTextureCoords[a], mesh->mNumVertices * sizeof(aiVector3D));
+        }
+      }
+    }
+  }
+
+  // Copy nodes
+  std::function<void(aiNode*, aiNode*, aiNode*)> aiNodeCopyRecursive = [&aiNodeCopyRecursive](aiNode* dest, aiNode* src, aiNode* parent)
+  {
+    dest->mNumMeshes = src->mNumMeshes;
+    dest->mNumChildren = src->mNumChildren;
+    dest->mName = src->mName;
+    dest->mTransformation = src->mTransformation;
+    dest->mParent = parent;
+
+    dest->mMeshes = new unsigned int[dest->mNumMeshes];
+    memcpy(dest->mMeshes, src->mMeshes, dest->mNumMeshes * sizeof(unsigned int));
+
+    dest->mChildren = new aiNode*[dest->mNumChildren];
+    for (unsigned int i = 0; i < dest->mNumChildren; i++)
+    {
+      dest->mChildren[i] = new aiNode();
+      aiNodeCopyRecursive(dest->mChildren[i], src->mChildren[i], dest);
+    }
+  };
+
+  if (mMesh->mRootNode)
+  {
+    new_scene->mRootNode = new aiNode();
+    aiNodeCopyRecursive(new_scene->mRootNode, mMesh->mRootNode, nullptr);
+  }
+
+  return new_scene;
 }
 
 //==============================================================================

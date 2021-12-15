@@ -67,22 +67,32 @@ const std::string& SoftMeshShape::getStaticType()
   return type;
 }
 
+//==============================================================================
 const aiMesh* SoftMeshShape::getAssimpMesh() const
 {
   return mAssimpMesh.get();
 }
 
+//==============================================================================
 const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
 {
   return mSoftBodyNode;
 }
 
+//==============================================================================
 Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 {
   dtwarn << "[SoftMeshShape::computeInertia] Not implemented yet.\n";
   // TODO(JS): Not implemented.
 
   return Eigen::Matrix3d::Zero();
+}
+
+//==============================================================================
+ShapePtr SoftMeshShape::clone() const
+{
+  dtwarn << "[SoftMeshShape::clone] This should never be called.\n";
+  return nullptr;
 }
 
 //==============================================================================

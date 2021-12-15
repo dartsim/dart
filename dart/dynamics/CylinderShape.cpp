@@ -115,6 +115,12 @@ Eigen::Matrix3d CylinderShape::computeInertia(
 }
 
 //==============================================================================
+ShapePtr CylinderShape::clone() const
+{
+  return std::make_shared<CylinderShape>(mRadius, mHeight);
+}
+
+//==============================================================================
 void CylinderShape::updateBoundingBox() const
 {
   mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));

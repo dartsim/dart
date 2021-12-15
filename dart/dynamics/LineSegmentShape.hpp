@@ -108,6 +108,9 @@ public:
   /// will be evenly distributed across all lines.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
+  // Documentation inherited.
+  ShapePtr clone() const override;
+
   // TODO(MXG): Consider supporting colors-per-vertex
 
 protected:

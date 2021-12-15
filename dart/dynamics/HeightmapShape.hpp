@@ -149,6 +149,9 @@ public:
   /// Set the color of this arrow
   void notifyColorUpdated(const Eigen::Vector4d& color) override;
 
+  // Documentation inherited.
+  ShapePtr clone() const override;
+
 protected:
   // Documentation inherited.
   void updateBoundingBox() const override;

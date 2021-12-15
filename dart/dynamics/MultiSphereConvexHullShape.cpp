@@ -128,6 +128,12 @@ Eigen::Matrix3d MultiSphereConvexHullShape::computeInertia(double mass) const
 }
 
 //==============================================================================
+ShapePtr MultiSphereConvexHullShape::clone() const
+{
+  return std::make_shared<MultiSphereConvexHullShape>(mSpheres);
+}
+
+//==============================================================================
 void MultiSphereConvexHullShape::updateBoundingBox() const
 {
   Eigen::Vector3d min

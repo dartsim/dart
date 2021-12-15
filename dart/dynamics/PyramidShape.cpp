@@ -154,5 +154,11 @@ Eigen::Matrix3d PyramidShape::computeInertia(double /*mass*/) const
   return Eigen::Matrix3d::Identity();
 }
 
+//==============================================================================
+ShapePtr PyramidShape::clone() const
+{
+  return std::make_shared<PyramidShape>(mBaseWidth, mBaseDepth, mHeight);
+}
+
 } // namespace dynamics
 } // namespace dart
