@@ -589,10 +589,57 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Isometry3d Qnext
-      = getQ() * convertToTransform(getVelocitiesStatic() * _dt);
+  const Eigen::Isometry3d Qdiff
+      = convertToTransform(getVelocitiesStatic() * _dt);
+  const Eigen::Isometry3d Qnext = getQ() * Qdiff;
+  const Eigen::Isometry3d QdiffInv = Qdiff.inverse();
 
+  setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
+  setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
   setPositionsStatic(convertToPositions(Qnext));
+}
+
+//==============================================================================
+void FreeJoint::integrateVelocities(double _dt)
+{
+  // Integrating the acceleration gives us the new velocity of child body frame.
+  // But if there is any linear acceleration, the frame will be displaced. If we
+  // apply euler integration direcly on the spatial acceleration, it will
+  // produce the velocity of a point that is instantaneously coincident with the
+  // previous location of the child body frame. However, we want to compute the
+  // spatial velocity at the current location of the child body frame. To
+  // accomplish this, we first convert the linear portion of the spatial
+  // acceleration into classical linear acceleration and apply the integration.
+  Eigen::Vector6d accel = getAccelerationsStatic();
+  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
+  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
+  setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
+      getVelocitiesStatic(), accel, _dt));
+
+  // Since the velocity has been updated, we use the new velocity to recompute
+  // the spatial acceleration. This is needed to ensure that functions like
+  // BodyNode::getLinearAcceleration work properly.
+  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
+  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
+  setAccelerationsStatic(accel);
+}
+
+//==============================================================================
+void FreeJoint::updateConstrainedTerms(double timeStep)
+{
+  const double invTimeStep = 1.0 / timeStep;
+
+  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
+  Eigen::Vector6d accel = getAccelerationsStatic();
+  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
+
+  setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
+
+  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
+  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
+  setAccelerationsStatic(accel + mVelocityChanges * invTimeStep);
+  this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
+  // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 
 //==============================================================================

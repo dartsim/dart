@@ -1117,31 +1117,19 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
           = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
       VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
 
-      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE));
-      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD1, TOLERANCE));
-      EXPECT_TRUE(equals(ddq0, ddqFD2, TOLERANCE));
+      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE))
+          << "dq0  : " << dq0.transpose() << "\ndq0FD: " << dq0FD.transpose();
 
-      if (!equals(dq0FD, dq0, TOLERANCE))
-      {
-        std::cout << "dq0  : " << dq0.transpose() << std::endl;
-        std::cout << "dq0FD: " << dq0FD.transpose() << std::endl;
-      }
-      if (!equals(dq1, dq1FD, TOLERANCE))
-      {
-        std::cout << "dq1  : " << dq1.transpose() << std::endl;
-        std::cout << "dq1FD: " << dq1FD.transpose() << std::endl;
-      }
-      if (!equals(ddq0, ddqFD1, TOLERANCE))
-      {
-        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
-        std::cout << "ddqFD1: " << ddqFD1.transpose() << std::endl;
-      }
-      if (!equals(ddq0, ddqFD2, TOLERANCE))
-      {
-        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
-        std::cout << "ddqFD2: " << ddqFD2.transpose() << std::endl;
-      }
+      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE))
+          << "dq1  : " << dq1.transpose() << "\ndq1FD: " << dq1FD.transpose();
+
+      EXPECT_TRUE(equals(ddq0, ddqFD1, 10 * TOLERANCE))
+          << "ddq0  : " << ddq0.transpose()
+          << "\nddqFD1: " << ddqFD1.transpose();
+
+      EXPECT_TRUE(equals(ddq0, ddqFD2, 10 * TOLERANCE))
+          << "ddq0  : " << ddq0.transpose()
+          << "\nddqFD2: " << ddqFD2.transpose() << std::endl;
     }
   }
 }
@@ -2603,5 +2591,72 @@ TEST_F(DynamicsTest, HybridDynamics)
     EXPECT_NEAR(command(i, 2), output(i, 2), tol);
     EXPECT_NEAR(command(i, 3), output(i, 3), tol);
     EXPECT_NEAR(command(i, 4), output(i, 4), tol);
+  }
+}
+
+//==============================================================================
+TEST_F(DynamicsTest, OffsetCOM)
+{
+  WorldPtr world = World::create();
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+
+  SkeletonPtr boxSkel = createBox(Vector3d(1.0, 1.0, 1.0));
+  world->addSkeleton(boxSkel);
+  BodyNode* box = boxSkel->getBodyNode(0);
+  dynamics::Inertia inertia;
+  inertia.setMass(60);
+  inertia.setMoment(
+      box->getShapeNode(0)->getShape()->computeInertia(inertia.getMass()));
+  inertia.setLocalCOM({0, 500, 0});
+  box->setInertia(inertia);
+  Eigen::Isometry3d boxInitialPose = box->getWorldTransform();
+  Eigen::Vector3d torque(0, 0, 100);
+  box->addExtTorque(torque, false);
+
+  {
+    Vector3d comVel = box->getCOMLinearVelocity();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel))
+        << "comVel: " << comVel.transpose();
+  }
+  {
+    Vector3d linVel = box->getLinearVelocity();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0), linVel))
+        << "linVel: " << linVel.transpose();
+  }
+
+  world->step();
+  // Velocity at COM should be zero since the object is just rotating.
+  {
+    Vector3d comVel = box->getCOMLinearVelocity();
+    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel, 1e-4))
+        << "comVel: " << comVel.transpose();
+  }
+  {
+    Vector3d angVel = box->getAngularVelocity();
+    // We can compute expectedAngAccel like so because the initial angular
+    // velocity is zero.
+    Vector3d expectedAngAccel = inertia.getMoment().inverse() * torque;
+    Vector3d expectedAngVel = expectedAngAccel * dt;
+    EXPECT_TRUE(equals(expectedAngVel, angVel))
+        << "angVel: " << angVel.transpose();
+    Vector3d linVel = box->getLinearVelocity();
+    Vector3d expLinVel
+        = angVel.cross(boxInitialPose.linear() * -box->getLocalCOM());
+    EXPECT_TRUE(equals(expLinVel, linVel))
+        << "Expected: " << expLinVel.transpose()
+        << "\nActual: " << linVel.transpose();
+
+    Vector3d angAccel = box->getAngularAcceleration();
+    EXPECT_TRUE(equals(expectedAngAccel, angAccel))
+        << "angAccel: " << angAccel.transpose();
+    Vector3d linAccel = box->getLinearAcceleration();
+    Vector3d expLinAccel
+        = expectedAngAccel.cross(boxInitialPose.linear() * -box->getLocalCOM());
+    EXPECT_TRUE(equals(expLinAccel, linAccel))
+        << "Expected: " << expLinAccel.transpose()
+        << "\nActual: " << linAccel.transpose();
   }
 }
