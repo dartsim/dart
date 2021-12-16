@@ -381,13 +381,9 @@ aiScene* MeshShape::cloneMesh() const
   // Create new assimp mesh
   aiScene* new_scene = new aiScene();
   // Copy basic data
-  new_scene->mNumAnimations
-      = 0; // we do not care about animations // new_scene->mNumAnimations =
-           // mMesh->mNumAnimations;
-  new_scene->mNumCameras = 0; // we do not care about cameras //
-                              // new_scene->mNumCameras = mMesh->mNumCameras;
-  new_scene->mNumLights = 0;  // we do not care about lights //
-                              // new_scene->mNumLights = mMesh->mNumLights;
+  new_scene->mNumAnimations = 0; // we do not care about animations
+  new_scene->mNumCameras = 0;    // we do not care about cameras
+  new_scene->mNumLights = 0;     // we do not care about lights
   new_scene->mNumMaterials = mMesh->mNumMaterials;
   new_scene->mNumMeshes = mMesh->mNumMeshes;
   new_scene->mNumTextures = mMesh->mNumTextures;
