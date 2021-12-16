@@ -219,7 +219,8 @@ void VoxelGridShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 //==============================================================================
 ShapePtr VoxelGridShape::clone() const
 {
-  return std::make_shared<VoxelGridShape>(fcl_make_shared<octomap::OcTree>(*mOctree));
+  return std::make_shared<VoxelGridShape>(
+      fcl_make_shared<octomap::OcTree>(*mOctree));
 }
 
 //==============================================================================
