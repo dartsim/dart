@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -95,6 +95,7 @@ Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
   return angMomentum;
 }
 
+//==============================================================================
 TEST(Issue1193, SingleBody)
 {
   WorldPtr world = World::create();
@@ -102,7 +103,6 @@ TEST(Issue1193, SingleBody)
   world->setTimeStep(dt);
   world->setGravity(Vector3d::Zero());
   SkeletonPtr skel = createBox({1, 1, 1});
-  skel->disableSelfCollisionCheck();
   world->addSkeleton(skel);
   auto rootBn = skel->getRootBodyNode();
 
@@ -123,6 +123,7 @@ TEST(Issue1193, SingleBody)
   EXPECT_NEAR(g_iters * dt * vels[5], positionDiff.z(), tol);
 }
 
+//==============================================================================
 TEST(Issue1193, SingleBodyWithOffDiagonalMoi)
 {
   WorldPtr world = World::create();
@@ -130,7 +131,6 @@ TEST(Issue1193, SingleBodyWithOffDiagonalMoi)
   world->setTimeStep(dt);
   world->setGravity(Vector3d::Zero());
   SkeletonPtr skel = createBox({1, 4, 9});
-  skel->disableSelfCollisionCheck();
   world->addSkeleton(skel);
   auto rootBn = skel->getRootBodyNode();
   rootBn->setMomentOfInertia(1.1, 1.1, 0.7, 0.1, 0, 0);
@@ -154,6 +154,7 @@ TEST(Issue1193, SingleBodyWithOffDiagonalMoi)
   EXPECT_NEAR(g_iters * dt * vels[5], positionDiff.z(), tol);
 }
 
+//==============================================================================
 TEST(Issue1193, SingleBodyWithJointOffset)
 {
   WorldPtr world = World::create();
@@ -161,7 +162,6 @@ TEST(Issue1193, SingleBodyWithJointOffset)
   world->setTimeStep(dt);
   world->setGravity(Vector3d::Zero());
   SkeletonPtr skel = createBox({1, 1, 1});
-  skel->disableSelfCollisionCheck();
   world->addSkeleton(skel);
   auto rootBn = skel->getRootBodyNode();
   rootBn->setMomentOfInertia(1.1, 1.1, 0.7, 0.1, 0, 0);
@@ -189,6 +189,7 @@ TEST(Issue1193, SingleBodyWithJointOffset)
   EXPECT_NEAR(g_iters * dt * vels[5], positionDiff.z(), tol);
 }
 
+//==============================================================================
 TEST(Issue1193, SingleBodyWithCOMOffset)
 {
   WorldPtr world = World::create();
@@ -200,12 +201,13 @@ TEST(Issue1193, SingleBodyWithCOMOffset)
   auto rootBn = skel->getRootBodyNode();
   rootBn->setMomentOfInertia(1.0 / 6, 1.0 / 6.0, 1.0 / 6.0, 0, 0, 0);
   rootBn->setLocalCOM({1, 5, 8});
-  rootBn->addExtForce({10, 0, 0});
+  const Eigen::Vector3d extForce{10, 0, 0};
+  rootBn->addExtForce(extForce);
   world->step();
   auto comLinearVel = rootBn->getCOMLinearVelocity();
-  // TODO (addisu) Improve FreeJoint integration so that a higher tolerance is
+  // TODO (azeey) Improve FreeJoint integration so that a higher tolerance is
   // not necessary here.
-  EXPECT_NEAR(0.01, comLinearVel.x(), tol * 1e2);
+  EXPECT_NEAR(extForce.x() * dt, comLinearVel.x(), tol * 1e2);
 }
 
 //==============================================================================
@@ -216,7 +218,6 @@ TEST(Issue1193, WithFixedJoint)
   world->setTimeStep(dt);
   world->setGravity(Vector3d::Zero());
   SkeletonPtr skel = createBox({1, 1, 1}, {0, 0, 2});
-  skel->disableSelfCollisionCheck();
   world->addSkeleton(skel);
   auto rootBn = skel->getRootBodyNode();
 
@@ -238,7 +239,7 @@ TEST(Issue1193, WithFixedJoint)
   jointPoseInParent.translate(Eigen::Vector3d(0.0, 0.0, -4));
   joint->setTransformFromParentBodyNode(jointPoseInParent);
 
-  // TODO (addisu) Improve FreeJoint integration so we can test with larger
+  // TODO (azeey) Improve FreeJoint integration so we can test with larger
   // forces. Currently, increasing these forces much more causes the test to
   // fail.
   rootBn->setExtTorque({0, 2500, 0});
@@ -254,6 +255,7 @@ TEST(Issue1193, WithFixedJoint)
   EXPECT_NEAR(0.0, positionDiff.y(), tol);
 }
 
+//==============================================================================
 TEST(Issue1193, WithRevoluteJoint)
 {
   auto world = SdfParser::readWorld(
@@ -285,6 +287,7 @@ TEST(Issue1193, WithRevoluteJoint)
   EXPECT_NEAR(0.0, positionDiff.y(), tol * 5e2);
 }
 
+//==============================================================================
 TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
 {
   auto world = SdfParser::readWorld(

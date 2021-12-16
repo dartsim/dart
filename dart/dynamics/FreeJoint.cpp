@@ -592,9 +592,10 @@ void FreeJoint::integratePositions(double _dt)
   const Eigen::Isometry3d Qdiff
       = convertToTransform(getVelocitiesStatic() * _dt);
   const Eigen::Isometry3d Qnext = getQ() * Qdiff;
+  const Eigen::Isometry3d QdiffInv = Qdiff.inverse();
 
-  setVelocitiesStatic(math::AdR(Qdiff.inverse(), getVelocitiesStatic()));
-  setAccelerationsStatic(math::AdR(Qdiff.inverse(), getAccelerationsStatic()));
+  setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
+  setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
   setPositionsStatic(convertToPositions(Qnext));
 }
 
