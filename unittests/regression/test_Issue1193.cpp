@@ -31,11 +31,11 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "dart/dart.hpp"
+#include "dart/utils/sdf/SdfParser.hpp"
 
 #include "TestHelpers.hpp"
-
-#include "dart/utils/sdf/SdfParser.hpp"
 
 using namespace dart::math;
 using namespace dart::collision;
@@ -55,9 +55,9 @@ TEST(Issue1193, AngularVelAdd)
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
   Joint* sphereJoint = sphere->getParentJoint();
-  sphereJoint->setVelocity(0, 10.0);  // ang_x -> Affect lz and ly
-  sphereJoint->setVelocity(1, 10.0);  // ang_y -> No effect
-  sphereJoint->setVelocity(2, 10.0);  // ang_z -> Affect lx and ly
+  sphereJoint->setVelocity(0, 10.0); // ang_x -> Affect lz and ly
+  sphereJoint->setVelocity(1, 10.0); // ang_y -> No effect
+  sphereJoint->setVelocity(2, 10.0); // ang_z -> Affect lx and ly
   world->addSkeleton(sphereSkel);
 
   Eigen::Vector3d linearVelBefore = sphere->getLinearVelocity();
@@ -85,7 +85,7 @@ const int g_iters = 100000;
 Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
 {
   Eigen::Vector3d angMomentum = Eigen::Vector3d::Zero();
-  for(auto *bn: skel->getBodyNodes())
+  for (auto* bn : skel->getBodyNodes())
   {
     angMomentum += dart::math::dAdInvT(
                        bn->getWorldTransform(),
@@ -94,7 +94,6 @@ Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
   }
   return angMomentum;
 }
-
 
 TEST(Issue1193, SingleBody)
 {
@@ -170,7 +169,7 @@ TEST(Issue1193, SingleBodyWithJointOffset)
 
   Vector6d vels = compose({0, 2.5, 0}, {0, 0, -10});
 
-  auto *freeJoint = dynamic_cast<FreeJoint *>(rootBn->getParentJoint());
+  auto* freeJoint = dynamic_cast<FreeJoint*>(rootBn->getParentJoint());
   freeJoint->setVelocities(vels);
 
   Eigen::Isometry3d jointPoseInParent = Eigen::Isometry3d::Identity();
@@ -199,7 +198,7 @@ TEST(Issue1193, SingleBodyWithCOMOffset)
   SkeletonPtr skel = createBox({1, 1, 1});
   world->addSkeleton(skel);
   auto rootBn = skel->getRootBodyNode();
-  rootBn->setMomentOfInertia(1.0/6, 1.0/6.0, 1.0/6.0, 0, 0, 0);
+  rootBn->setMomentOfInertia(1.0 / 6, 1.0 / 6.0, 1.0 / 6.0, 0, 0, 0);
   rootBn->setLocalCOM({1, 5, 8});
   rootBn->addExtForce({10, 0, 0});
   world->step();
@@ -233,7 +232,7 @@ TEST(Issue1193, WithFixedJoint)
 
   auto pair = rootBn->createChildJointAndBodyNodePair<WeldJoint>(
       WeldJoint::Properties(joint2Prop), link2Prop);
-  auto *joint = pair.first;
+  auto* joint = pair.first;
 
   Eigen::Isometry3d jointPoseInParent = Eigen::Isometry3d::Identity();
   jointPoseInParent.translate(Eigen::Vector3d(0.0, 0.0, -4));
@@ -271,7 +270,7 @@ TEST(Issue1193, WithRevoluteJoint)
   auto comFrame = SimpleFrame::createShared(rootBn, "CombinedCOM", comRelPose);
   Eigen::Vector3d initComPosition = comFrame->getWorldTransform().translation();
 
-  auto *joint = skel->getJoint("revJoint");
+  auto* joint = skel->getJoint("revJoint");
   ASSERT_NE(nullptr, joint);
 
   for (int i = 0; i < g_iters; ++i)
@@ -298,7 +297,7 @@ TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
   SkeletonPtr skel = world->getSkeleton(0);
   auto link1 = skel->getBodyNode("link1");
 
-  auto *joint = skel->getJoint("revJoint");
+  auto* joint = skel->getJoint("revJoint");
   ASSERT_NE(nullptr, joint);
 
   link1->getParentJoint()->setVelocities(compose({0, 0.25, 0}, {0, 0, -0.1}));

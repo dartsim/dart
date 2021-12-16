@@ -610,7 +610,7 @@ void FreeJoint::integrateVelocities(double _dt)
   // accomplish this, we first convert the linear portion of the spatial
   // acceleration into classical linear acceleration and apply the integration.
   Eigen::Vector6d accel = getAccelerationsStatic();
-  const Eigen::Vector6d &velBefore = getVelocitiesStatic();
+  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
   accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
   setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
       getVelocitiesStatic(), accel, _dt));
@@ -628,13 +628,13 @@ void FreeJoint::updateConstrainedTerms(double timeStep)
 {
   const double invTimeStep = 1.0 / timeStep;
 
-  const Eigen::Vector6d &velBefore = getVelocitiesStatic();
+  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
   Eigen::Vector6d accel = getAccelerationsStatic();
   accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
 
   setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
 
-  const Eigen::Vector6d &velAfter = getVelocitiesStatic();
+  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
   accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
   setAccelerationsStatic(accel + mVelocityChanges * invTimeStep);
   this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
