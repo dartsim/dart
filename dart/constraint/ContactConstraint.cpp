@@ -920,9 +920,9 @@ dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
   assert(isActive());
 
   if (mBodyNodeA->isReactive())
-    return mBodyNodeA->getSkeleton()->mUnionRootSkeleton.lock();
+    return ConstraintBase::getRootSkeleton(mBodyNodeA->getSkeleton());
   else
-    return mBodyNodeB->getSkeleton()->mUnionRootSkeleton.lock();
+    return ConstraintBase::getRootSkeleton(mBodyNodeB->getSkeleton());
 }
 
 //==============================================================================
