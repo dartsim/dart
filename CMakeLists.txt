@@ -194,6 +194,7 @@ if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
   add_compile_options(/wd4005)
   add_compile_options(/wd4099)
+  add_compile_options(/wd4146)  # for FCL warnings: https://github.com/dartsim/dart/runs/4568423649?check_suite_focus=true#step:5:407
   add_compile_options(/wd4244)
   add_compile_options(/wd4250)
   add_compile_options(/wd4267)
