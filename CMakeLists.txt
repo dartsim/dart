@@ -110,6 +110,13 @@ message(STATUS "")
 message(STATUS "============================================")
 message(STATUS "                DART ${DART_VERSION}")
 message(STATUS "============================================")
+message(STATUS "")
+
+# Print build tool information
+message(STATUS "[ Build Tools ]")
+message(STATUS "- CMake: ${CMAKE_VERSION}")
+message(STATUS "- C++  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "")
 
 #===============================================================================
 # CodeCov settings
