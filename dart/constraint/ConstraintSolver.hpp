@@ -184,6 +184,15 @@ public:
   /// properties and registered skeletons and constraints will be copied over.
   virtual void setFromOtherConstraintSolver(const ConstraintSolver& other);
 
+  /// Get the handler used for computing contact surface parameters based on
+  /// the contact properties of the two colliding bodies.
+  ContactSurfaceHandlerPtr getContactSurfaceHandler() const;
+
+  /// Set the handler used for computing contact surface parameters based on
+  /// the contact properties of the two colliding bodies. This function
+  /// automatically sets the previous handler as parent of the given handler.
+  void setContactSurfaceHandler(ContactSurfaceHandlerPtr handler);
+
 protected:
   // TODO(JS): Docstring
   virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;
@@ -256,6 +265,9 @@ protected:
 
   /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
+
+  /// Factory for ContactSurfaceParams for each contact
+  ContactSurfaceHandlerPtr mContactSurfaceHandler;
 };
 
 } // namespace constraint

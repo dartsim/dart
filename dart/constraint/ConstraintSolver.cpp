@@ -43,6 +43,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
+#include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
@@ -64,7 +65,8 @@ ConstraintSolver::ConstraintSolver(double timeStep)
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
-    mTimeStep(timeStep)
+    mTimeStep(timeStep),
+    mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>())
 {
   assert(timeStep > 0.0);
 
@@ -83,7 +85,8 @@ ConstraintSolver::ConstraintSolver()
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
-    mTimeStep(0.001)
+    mTimeStep(0.001),
+    mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>())
 {
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
@@ -389,6 +392,8 @@ void ConstraintSolver::setFromOtherConstraintSolver(
 
   addSkeletons(other.getSkeletons());
   mManualConstraints = other.mManualConstraints;
+
+  mContactSurfaceHandler = other.mContactSurfaceHandler;
 }
 
 //==============================================================================
@@ -543,8 +548,9 @@ void ConstraintSolver::updateConstraints()
       ++contactPairMap[std::make_pair(
           contact.collisionObject1, contact.collisionObject2)];
 
+      const auto params = mContactSurfaceHandler->createParams(contact);
       mContactConstraints.push_back(
-          std::make_shared<ContactConstraint>(contact, mTimeStep));
+          std::make_shared<ContactConstraint>(contact, mTimeStep, params));
     }
   }
 
@@ -560,14 +566,9 @@ void ConstraintSolver::updateConstraints()
     if (it != contactPairMap.end())
       numContacts = it->second;
 
-    // The slip compliance acts like a damper at each contact point so the total
-    // damping for each collision is multiplied by the number of contact points
-    // (numContacts). To eliminate this dependence on numContacts, the inverse
-    // damping is multiplied by numContacts.
-    contactConstraint->setPrimarySlipCompliance(
-        contactConstraint->getPrimarySlipCompliance() * numContacts);
-    contactConstraint->setSecondarySlipCompliance(
-        contactConstraint->getSecondarySlipCompliance() * numContacts);
+    mContactSurfaceHandler->updateConstraint(
+        *contactConstraint, contact, numContacts);
+
     contactConstraint->update();
 
     if (contactConstraint->isActive())
@@ -738,6 +739,20 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
       = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2) != nullptr;
 
   return bodyNode1IsSoft || bodyNode2IsSoft;
+}
+
+//==============================================================================
+ContactSurfaceHandlerPtr ConstraintSolver::getContactSurfaceHandler() const
+{
+  return mContactSurfaceHandler;
+}
+
+//==============================================================================
+void ConstraintSolver::setContactSurfaceHandler(
+    ContactSurfaceHandlerPtr handler)
+{
+  handler->setParent(mContactSurfaceHandler);
+  mContactSurfaceHandler = std::move(handler);
 }
 
 } // namespace constraint
