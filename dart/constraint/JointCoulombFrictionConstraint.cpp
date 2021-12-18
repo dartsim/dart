@@ -276,7 +276,7 @@ void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
 //==============================================================================
 dynamics::SkeletonPtr JointCoulombFrictionConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
+  return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
 }
 
 //==============================================================================

@@ -456,7 +456,7 @@ void JointLimitConstraint::applyImpulse(double* lambda)
 //==============================================================================
 dynamics::SkeletonPtr JointLimitConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
+  return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
 }
 
 //==============================================================================

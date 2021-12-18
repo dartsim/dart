@@ -537,7 +537,7 @@ void JointConstraint::applyImpulse(double* lambda)
 //==============================================================================
 dynamics::SkeletonPtr JointConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
+  return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
 }
 
 //==============================================================================
