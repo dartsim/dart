@@ -312,7 +312,7 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
       boxShape);
 
   // Needed to update subscribtions
-  world->step(1);
+  world->step();
 
   EXPECT_TRUE(group->hasShapeFrame(sn));
   const auto* skel_A_ptr = skel_A.get();
@@ -322,7 +322,7 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   world->removeSkeleton(skel_A);
   world->removeSkeleton(skel_B);
 
-  world->step(1);
+  world->step();
 
   EXPECT_FALSE(group->hasShapeFrame(sn));
   EXPECT_FALSE(group->isSubscribedTo(skel_A_ptr));
