@@ -4,7 +4,7 @@
 
 * Dynamics
 
-  * Added deep copy for shapes: [#1620](https://github.com/dartsim/dart/pull/1620)
+  * Added deep copy for shapes: [#1612](https://github.com/dartsim/dart/pull/1612)
   * Fixed grouping of constraints: [#1624](https://github.com/dartsim/dart/pull/1624), [#1628](https://github.com/dartsim/dart/pull/1628)
   * Fixed issue with removing skeletons without shapes: [#1625](https://github.com/dartsim/dart/pull/1625)
 
