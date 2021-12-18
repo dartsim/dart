@@ -237,11 +237,8 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     -Wall
     -Wextra
     $<$<NOT:$<CONFIG:DEBUG>>:-Werror>
-    $<$<NOT:$<CONFIG:DEBUG>>:-Wno-error=deprecated-declarations>
     -fPIC
   )
-  # Turn warning "deprecated-declarations" into an warning even if -Werror is
-  # specified until we abandon glut.
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
   if(CLANG_VERSION VERSION_LESS 6.0)
