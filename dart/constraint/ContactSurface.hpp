@@ -89,7 +89,7 @@ private:
   /// Used for future-compatibility. Add any newly added fields here so that
   /// ABI doesn't change. The data should be accessed via non-virtual getters
   /// and setters added to this struct.
-  void* mExtraData {nullptr};
+  void* mExtraData{nullptr};
 };
 
 /// Class used to determine the properties of a contact constraint based on the

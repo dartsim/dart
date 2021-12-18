@@ -186,11 +186,11 @@ ContactConstraintPtr DefaultContactSurfaceHandler::createConstraint(
       contact, numContactsOnCollisionObject, timeStep);
 
   constraint->setPrimarySlipCompliance(
-      constraint->getPrimarySlipCompliance() *
-      static_cast<double>(numContactsOnCollisionObject));
+      constraint->getPrimarySlipCompliance()
+      * static_cast<double>(numContactsOnCollisionObject));
   constraint->setSecondarySlipCompliance(
-      constraint->getSecondarySlipCompliance() *
-      static_cast<double>(numContactsOnCollisionObject));
+      constraint->getSecondarySlipCompliance()
+      * static_cast<double>(numContactsOnCollisionObject));
 
   return constraint;
 }

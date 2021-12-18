@@ -739,8 +739,7 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 }
 
 //==============================================================================
-ContactSurfaceHandlerPtr
-ConstraintSolver::getLastContactSurfaceHandler() const
+ContactSurfaceHandlerPtr ConstraintSolver::getLastContactSurfaceHandler() const
 {
   return mContactSurfaceHandler;
 }
