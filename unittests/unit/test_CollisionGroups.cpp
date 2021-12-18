@@ -263,6 +263,72 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   EXPECT_FALSE(group->collide());
 }
 
+TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
+  {
+    std::cout << "Skipping test for [" << GetParam() << "], because it is not "
+              << "available" << std::endl;
+    return;
+  }
+  else
+  {
+    std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
+              << std::endl;
+  }
+  // Note: When skeletons are added to a world, the constraint solver will
+  // subscribe to them.
+  dart::simulation::WorldPtr world = dart::simulation::World::create();
+  auto cd
+      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+
+  world->getConstraintSolver()->setCollisionDetector(cd);
+
+  dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
+  dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
+
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+
+  // Check that there are no subscribtions before adding the skeletons to the
+  // world
+  EXPECT_FALSE(group->isSubscribedTo(skel_A.get()));
+  EXPECT_FALSE(group->isSubscribedTo(skel_B.get()));
+
+  world->addSkeleton(skel_A);
+  world->addSkeleton(skel_B);
+
+  // Check that there are subscribtions after adding the skeletons to the
+  // world
+  EXPECT_TRUE(group->isSubscribedTo(skel_A.get()));
+  EXPECT_TRUE(group->isSubscribedTo(skel_B.get()));
+
+  // Add a shape to one of the skeletons to test that removal works for
+  // skeletons with and without shapes
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(1.0));
+
+  auto pair = skel_B->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto sn = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      boxShape);
+
+  // Needed to update subscribtions
+  world->step();
+
+  EXPECT_TRUE(group->hasShapeFrame(sn));
+  const auto* skel_A_ptr = skel_A.get();
+  const auto* skel_B_ptr = skel_B.get();
+  // Check that there are no subscribtions after removing the skeletons from the
+  // world
+  world->removeSkeleton(skel_A);
+  world->removeSkeleton(skel_B);
+
+  world->step();
+
+  EXPECT_FALSE(group->hasShapeFrame(sn));
+  EXPECT_FALSE(group->isSubscribedTo(skel_A_ptr));
+  EXPECT_FALSE(group->isSubscribedTo(skel_B_ptr));
+}
+
 INSTANTIATE_TEST_CASE_P(
     CollisionEngine,
     CollisionGroupsTest,

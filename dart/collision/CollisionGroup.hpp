@@ -214,6 +214,24 @@ public:
   void unsubscribeFrom(
       const dynamics::Skeleton* skeleton, const Others*... others);
 
+  /// Do nothing. This function is for terminating the recursive variadic
+  /// template.
+  void unsubscribeFrom();
+
+  /// Check if this is subscribed to bodyNode and the other sources
+  template <typename... Others>
+  bool isSubscribedTo(
+      const dynamics::BodyNode* bodyNode, const Others*... others);
+
+  /// Check if this is subscribed to skeleton and the other sources
+  template <typename... Others>
+  bool isSubscribedTo(
+      const dynamics::Skeleton* skeleton, const Others*... others);
+
+  /// Return true. This function is for terminating the recursive variadic
+  /// template
+  bool isSubscribedTo();
+
   /// Return true if this CollisionGroup contains shapeFrame
   bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
 
