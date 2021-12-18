@@ -981,9 +981,11 @@ double SoftContactConstraint::computeRestitutionCoefficient(
 dynamics::SkeletonPtr SoftContactConstraint::getRootSkeleton() const
 {
   if (mSoftBodyNode1 || mBodyNode1->isReactive())
-    return mBodyNode1->getSkeleton()->mUnionRootSkeleton.lock();
+    return ConstraintBase::getRootSkeleton(
+        mBodyNode1->getSkeleton()->getSkeleton());
   else
-    return mBodyNode2->getSkeleton()->mUnionRootSkeleton.lock();
+    return ConstraintBase::getRootSkeleton(
+        mBodyNode2->getSkeleton()->getSkeleton());
 }
 
 //==============================================================================

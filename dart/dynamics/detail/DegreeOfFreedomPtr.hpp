@@ -218,7 +218,7 @@ private:
   TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
 
   /// Local index of this DegreeOfFreedom within its Joint
-  std::size_t mIndex;
+  std::size_t mIndex = 0;
 };
 
 /// TemplateWeakDegreeOfFreedomPtr is a templated class that enables users to

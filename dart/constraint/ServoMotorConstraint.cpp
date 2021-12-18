@@ -277,7 +277,7 @@ void ServoMotorConstraint::applyImpulse(double* lambda)
 //==============================================================================
 dynamics::SkeletonPtr ServoMotorConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
+  return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
 }
 
 //==============================================================================

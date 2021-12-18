@@ -288,7 +288,7 @@ void MimicMotorConstraint::applyImpulse(double* lambda)
 //==============================================================================
 dynamics::SkeletonPtr MimicMotorConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
+  return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
 }
 
 //==============================================================================
