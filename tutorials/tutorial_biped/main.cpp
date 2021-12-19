@@ -36,7 +36,7 @@
 
 const double default_speed_increment = 0.5;
 
-// const int default_ik_iterations = 4500;
+[[maybe_unused]] const int default_ik_iterations = 4500;
 
 const double default_force = 50.0; // N
 const int default_countdown = 100; // Number of timesteps for applying force

@@ -37,8 +37,8 @@ const double default_height = 1.0; // m
 const double default_width = 0.2;  // m
 const double default_depth = 0.2;  // m
 
-const double default_torque = 15.0; // N-m
-const double default_force = 15.0;  // N
+[[maybe_unused]] const double default_torque = 15.0; // N-m
+[[maybe_unused]] const double default_force = 15.0;  // N
 const int default_countdown = 200;  // Number of timesteps for applying force
 
 const double default_rest_position = 0.0;
