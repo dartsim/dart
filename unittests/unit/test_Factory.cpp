@@ -92,6 +92,8 @@ public:
     return SingletonFactoryString::getSingletonPtr();
   }
 
+  virtual ~Fruit() = default;
+
   virtual std::string getName() const = 0;
 };
 
@@ -166,6 +168,8 @@ public:
   }
 
   City(int year) : mYear(year) {}
+
+  virtual ~City() = default;
 
   virtual std::string getName() const = 0;
 
