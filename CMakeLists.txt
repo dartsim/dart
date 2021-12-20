@@ -93,6 +93,7 @@ option(DART_ENABLE_SIMD
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
+option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a 
 # terminal. However, this doesn't work in some cases such as when the makefile is
@@ -182,9 +183,9 @@ if(MSVC)
     )
   endif()
 
-  add_compile_options(
-    $<$<NOT:$<CONFIG:DEBUG>>:/WX>
-  )
+  if(DART_TREAT_WARNINGS_AS_ERRORS)
+    add_compile_options(/WX)
+  endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase-")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
@@ -206,12 +207,10 @@ if(MSVC)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
-  add_compile_options(
-    -Wall
-    -Wextra
-    $<$<NOT:$<CONFIG:DEBUG>>:-Werror>
-    -fPIC
-  )
+  add_compile_options(-Wall -Wextra -fPIC)
+  if(DART_TREAT_WARNINGS_AS_ERRORS)
+    add_compile_options(-Werror)
+  endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   if(GCC_VERSION VERSION_LESS 7.3.0)
@@ -233,12 +232,10 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 
-  add_compile_options(
-    -Wall
-    -Wextra
-    $<$<NOT:$<CONFIG:DEBUG>>:-Werror>
-    -fPIC
-  )
+  add_compile_options(-Wall -Wextra -fPIC)
+  if(DART_TREAT_WARNINGS_AS_ERRORS)
+    add_compile_options(-Werror)
+  endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
   if(CLANG_VERSION VERSION_LESS 6.0)
