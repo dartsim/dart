@@ -5,6 +5,7 @@
 * Common
 
   * Added Castable class: [#1634](https://github.com/dartsim/dart/pull/1634)
+  * Added spdlog support as underlying logging framework: [#1633](https://github.com/dartsim/dart/pull/1633)
 
 * Dynamics
 

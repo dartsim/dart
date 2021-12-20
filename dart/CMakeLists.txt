@@ -136,7 +136,26 @@ target_link_libraries(dart
     Boost::system
     Boost::filesystem
 )
-if (TARGET octomap)
+
+# spdlog settings
+if(spdlog_FOUND)
+  # Prefer header only target
+  if(TARGET spdlog::spdlog_header_only)
+    target_link_libraries(dart PUBLIC spdlog::spdlog_header_only)
+    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
+  elseif(TARGET spdlog::spdlog)
+    target_link_libraries(dart PUBLIC spdlog::spdlog)
+    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
+  else()
+    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
+    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
+  endif()
+else()
+  target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
+endif()
+
+# octomap settings
+if(TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)
 endif()
 target_compile_features(dart PUBLIC cxx_std_17)
@@ -160,12 +179,37 @@ if(DART_ENABLE_SIMD)
   endif()
 endif()
 
+# Active log level
+if(DART_ACTIVE_LOG_LEVEL STREQUAL "TRACE")
+  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=0)
+elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "DEBUG")
+  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=1)
+elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "INFO")
+  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=2)
+elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "WARN")
+  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=3)
+elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "ERROR")
+  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=4)
+elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "FATAL")
+  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=5)
+elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "OFF")
+  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=6)
+else()
+  message(FATAL_ERROR "Invalid active log level: ${DART_ACTIVE_LOG_LEVEL}")
+endif()
+
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  Eigen3 ccd fcl assimp Boost octomap
+  Eigen3 ccd fcl assimp Boost
 )
+if(TARGET octomap)
+  add_component_dependency_packages(${PROJECT_NAME} dart octomap)
+endif()
+if(spdlog_FOUND)
+  add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
+endif()
 
 if(MSVC)
   set_target_properties(

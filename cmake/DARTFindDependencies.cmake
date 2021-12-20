@@ -2,11 +2,11 @@
 # dependency in package.xml.
 
 #======================================
-# Mandatory dependencies for DART core
+# Required dependencies for DART core
 #======================================
 if(DART_VERBOSE)
   message(STATUS "")
-  message(STATUS "[ Mandatory dependencies for DART core ]")
+  message(STATUS "[ Required dependencies for DART core ]")
 endif()
 
 # Eigen
@@ -119,6 +119,14 @@ else()
   endif()
 endif()
 
+#=======================
+# Optional dependencies
+#=======================
+
+option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
+mark_as_advanced(DART_SKIP_spdlog)
+dart_find_package(spdlog)
+
 #--------------------
 # Misc. dependencies
 #--------------------
@@ -126,3 +134,4 @@ endif()
 # Doxygen
 find_package(Doxygen QUIET)
 dart_check_optional_package(DOXYGEN "generating API documentation" "doxygen")
+
