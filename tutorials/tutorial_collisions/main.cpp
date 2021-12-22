@@ -46,12 +46,17 @@
 [[maybe_unused]] const double maximum_start_v = 4.0; // m/s
 [[maybe_unused]] const double default_start_v = 3.5; // m/s
 
-[[maybe_unused]] const double minimum_launch_angle = dart::math::toRadian(30.0); // rad
-[[maybe_unused]] const double maximum_launch_angle = dart::math::toRadian(70.0); // rad
-[[maybe_unused]] const double default_launch_angle = dart::math::toRadian(45.0); // rad
+[[maybe_unused]] const double minimum_launch_angle
+    = dart::math::toRadian(30.0); // rad
+[[maybe_unused]] const double maximum_launch_angle
+    = dart::math::toRadian(70.0); // rad
+[[maybe_unused]] const double default_launch_angle
+    = dart::math::toRadian(45.0); // rad
 
-[[maybe_unused]] const double maximum_start_w = 6 * dart::math::constantsd::pi(); // rad/s
-[[maybe_unused]] const double default_start_w = 3 * dart::math::constantsd::pi(); // rad/s
+[[maybe_unused]] const double maximum_start_w
+    = 6 * dart::math::constantsd::pi(); // rad/s
+[[maybe_unused]] const double default_start_w
+    = 3 * dart::math::constantsd::pi(); // rad/s
 
 [[maybe_unused]] const double ring_spring_stiffness = 0.5;
 [[maybe_unused]] const double ring_damping_coefficient = 0.05;
@@ -60,7 +65,8 @@
 const double default_ground_width = 2;
 const double default_wall_thickness = 0.1;
 const double default_wall_height = 1;
-[[maybe_unused]] const double default_spawn_range = 0.9 * default_ground_width / 2;
+[[maybe_unused]] const double default_spawn_range
+    = 0.9 * default_ground_width / 2;
 
 [[maybe_unused]] const double default_restitution = 0.6;
 
