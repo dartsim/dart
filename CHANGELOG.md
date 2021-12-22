@@ -8,10 +8,6 @@
   * Fixed grouping of constraints: [#1624](https://github.com/dartsim/dart/pull/1624), [#1628](https://github.com/dartsim/dart/pull/1628)
   * Fixed issue with removing skeletons without shapes: [#1625](https://github.com/dartsim/dart/pull/1625)
 
-* Build
-
-  * Removed DART_TREAT_WARNINGS_AS_ERRORS option and made it default on release build: [#1629](https://github.com/dartsim/dart/pull/1629)
-
 ### [DART 6.12.1 (2021-11-04)](https://github.com/dartsim/dart/milestone/71?closed=1)
 
 * Build
