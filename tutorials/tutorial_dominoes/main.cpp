@@ -45,9 +45,9 @@ const double default_domino_mass
     = default_domino_density * default_domino_height * default_domino_width
       * default_domino_depth;
 
-[[maybe_unused]] const double default_push_force = 8.0;  // N
-const int default_force_duration = 200; // # iterations
-const int default_push_duration = 1000; // # iterations
+[[maybe_unused]] const double default_push_force = 8.0; // N
+const int default_force_duration = 200;                 // # iterations
+const int default_push_duration = 1000;                 // # iterations
 
 [[maybe_unused]] const double defaultmEndEffectormOffset = 0.05;
 
