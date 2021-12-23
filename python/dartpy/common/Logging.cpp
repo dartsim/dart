@@ -30,33 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
 
-void Logging(py::module& sm);
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-
-void dart_common(py::module& m)
+void Logging(py::module& m)
 {
-  auto sm = m.def_submodule("common");
-
-  Logging(sm);
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
+  m.def("trace", [](const std::string& log) { common::trace(log); });
+  m.def("debug", [](const std::string& log) { common::debug(log); });
+  m.def("info", [](const std::string& log) { common::info(log); });
+  m.def("warn", [](const std::string& log) { common::warn(log); });
+  m.def("error", [](const std::string& log) { common::error(log); });
+  m.def("fatal", [](const std::string& log) { common::fatal(log); });
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python

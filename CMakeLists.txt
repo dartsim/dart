@@ -154,6 +154,22 @@ else()
   message(WARNING "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
+# Active log level:
+#
+# - TRACE: To enable log with DART_TRACE() and below
+# - DEBUG: To enable log with DART_DEBUG() and below
+# - INFO: To enable log with DART_INFO() and below
+# - WARN: To enable log with DART_WARN() and below
+# - ERROR: To enable log with DART_ERROR() and below
+# - FATAL: To enable log with DART_FATAL()
+# - OFF: To turn off all the logs
+if(BUILD_TYPE_DEBUG)
+  set(DART_ACTIVE_LOG_LEVEL "DEBUG" CACHE STRING "Compile time active log level to enable")
+else()
+  set(DART_ACTIVE_LOG_LEVEL "INFO" CACHE STRING "Compile time active log level to enable")
+endif()
+set_property(CACHE DART_ACTIVE_LOG_LEVEL PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF)
+
 #===============================================================================
 # Find dependencies
 #===============================================================================

@@ -30,33 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#include <dart/common/Logging.hpp>
+#include <gtest/gtest.h>
 
-namespace py = pybind11;
+#include "TestHelpers.hpp"
 
-namespace dart {
-namespace python {
+using namespace dart;
 
-void Logging(py::module& sm);
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-
-void dart_common(py::module& m)
+//==============================================================================
+TEST(LoggingTest, Basics)
 {
-  auto sm = m.def_submodule("common");
-
-  Logging(sm);
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
+  DART_TRACE("trace log");
+  DART_DEBUG("debug log");
+  DART_INFO("info log");
+  DART_WARN("warn log");
+  DART_ERROR("error log");
+  DART_FATAL("fatal log");
 }
 
-} // namespace python
-} // namespace dart
+//==============================================================================
+TEST(LoggingTest, Arguments)
+{
+  [[maybe_unused]] int val = 10;
+  DART_INFO("Log with param '{}' and '{}'", 1, val);
+}
