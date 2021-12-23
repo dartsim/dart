@@ -37,8 +37,8 @@ namespace dart::common {
 
 //==============================================================================
 template <typename T>
-StlAllocator<T>::StlAllocator(MemoryAllocator& base_allocator) noexcept
-  : m_base_allocator(base_allocator)
+StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
+  : mBaseAllocator(baseAllocator)
 {
   // Do nothing
 }
@@ -46,7 +46,7 @@ StlAllocator<T>::StlAllocator(MemoryAllocator& base_allocator) noexcept
 //==============================================================================
 template <typename T>
 StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
-  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
+  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
 {
   // Do nothing
 }
@@ -55,7 +55,7 @@ StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
 template <typename T>
 template <class U>
 StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
-  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
+  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
 {
   // Do nothing
 }
@@ -67,7 +67,7 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 {
   (void)hint;
   pointer ptr
-      = reinterpret_cast<pointer>(m_base_allocator.allocate(n * sizeof(T)));
+      = reinterpret_cast<pointer>(mBaseAllocator.allocate(n * sizeof(T)));
 
   // Throw std::bad_alloc to comply 23.10.9.1
   // Reference: https://stackoverflow.com/a/50326956/3122234
@@ -83,7 +83,7 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 template <typename T>
 void StlAllocator<T>::deallocate(pointer pointer, size_type n)
 {
-  m_base_allocator.deallocate(pointer, n * sizeof(T));
+  mBaseAllocator.deallocate(pointer, n * sizeof(T));
 }
 
 //==============================================================================
@@ -95,8 +95,8 @@ void StlAllocator<T>::print(std::ostream& os, int indent) const
     os << "[StlAllocator]\n";
   }
   const std::string spaces(indent, ' ');
-  os << spaces << "base_allocator:\n";
-  m_base_allocator.print(os, indent + 2);
+  os << spaces << "baseAllocator:\n";
+  mBaseAllocator.print(os, indent + 2);
 }
 
 //==============================================================================

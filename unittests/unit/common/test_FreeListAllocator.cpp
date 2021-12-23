@@ -30,31 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STLHELPERS_HPP_
-#define DART_COMMON_STLHELPERS_HPP_
+#include <dart/common/FreeListAllocator.hpp>
+#include <gtest/gtest.h>
 
-#include <cassert>
-#include <cstddef>
-#include <vector>
+#include "TestHelpers.hpp"
 
-#include "dart/common/Memory.hpp"
-
-namespace dart {
-namespace common {
+using namespace dart;
+using namespace common;
 
 //==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(
-    std::size_t index, const std::vector<T>& vec)
+TEST(FreeListAllocatorTest, Basics)
 {
-  assert(index < vec.size());
-  if (index < vec.size())
-    return vec[index];
+  auto a = FreeListAllocator();
+  a.print();
 
-  return nullptr;
+  auto mem1 = a.allocate(10);
+  auto mem2 = a.allocate(10);
+  a.print();
+
+  a.deallocate(mem1, 10);
+  a.deallocate(mem2, 10);
+  a.print();
 }
-
-} // namespace common
-} // namespace dart
-
-#endif // DART_COMMON_STLHELPERS_HPP_

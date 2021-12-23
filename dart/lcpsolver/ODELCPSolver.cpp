@@ -34,7 +34,7 @@
 
 #include <cstdio>
 
-#include "dart/common/StlHelpers.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/external/odelcpsolver/misc.h"
 #include "dart/lcpsolver/Lemke.hpp"

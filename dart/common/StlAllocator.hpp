@@ -59,7 +59,7 @@ public:
 
   /// Default constructor
   explicit StlAllocator(
-      MemoryAllocator& base_allocator = MemoryAllocator::GetDefault()) noexcept;
+      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault()) noexcept;
 
   /// Copy constructor
   StlAllocator(const StlAllocator& other) throw();
@@ -101,7 +101,7 @@ public:
 private:
   template <typename U>
   friend class StlAllocator;
-  MemoryAllocator& m_base_allocator;
+  MemoryAllocator& mBaseAllocator;
 };
 
 } // namespace dart::common

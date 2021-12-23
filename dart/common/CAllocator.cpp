@@ -47,21 +47,21 @@ CAllocator::CAllocator() noexcept
 CAllocator::~CAllocator()
 {
 #ifndef NDEBUG
-  std::lock_guard<std::mutex> lock(m_mutex);
-  if (!m_map_pointer_to_size.empty())
+  std::lock_guard<std::mutex> lock(mMutex);
+  if (!mMapPointerToSize.empty())
   {
-    size_t total_size = 0;
-    for (auto it : m_map_pointer_to_size)
+    size_t totalSize = 0;
+    for (auto it : mMapPointerToSize)
     {
       void* pointer = it.first;
       size_t size = it.second;
-      total_size += size;
+      totalSize += size;
       dterr << "Found memory leak of " << size << " bytes at " << pointer
             << "\n";
       // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
       // destructor is resolved.
     }
-    dterr << "Found potential memory leak of total " << total_size
+    dterr << "Found potential memory leak of total " << totalSize
           << " bytes!\n";
     // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
     // destructor is resolved.
@@ -79,15 +79,15 @@ void* CAllocator::allocate(size_t size) noexcept
 
   DART_TRACE("Allocated {} bytes.", size);
 #ifndef NDEBUG
-  std::lock_guard<std::mutex> lock(m_mutex);
-  auto new_ptr = std::malloc(size);
-  if (new_ptr)
+  std::lock_guard<std::mutex> lock(mMutex);
+  auto newPtr = std::malloc(size);
+  if (newPtr)
   {
-    m_size += size;
-    m_peak = std::max(m_peak, m_size);
-    m_map_pointer_to_size[new_ptr] = size;
+    mSize += size;
+    mPeak = std::max(mPeak, mSize);
+    mMapPointerToSize[newPtr] = size;
   }
-  return new_ptr;
+  return newPtr;
 #else
   return std::malloc(size);
 #endif
@@ -98,12 +98,12 @@ void CAllocator::deallocate(void* pointer, size_t size)
 {
   (void)size;
 #ifndef NDEBUG
-  std::lock_guard<std::mutex> lock(m_mutex);
-  auto it = m_map_pointer_to_size.find(pointer);
-  if (it != m_map_pointer_to_size.end())
+  std::lock_guard<std::mutex> lock(mMutex);
+  auto it = mMapPointerToSize.find(pointer);
+  if (it != mMapPointerToSize.end())
   {
-    auto allocated_size = it->second;
-    if (size != allocated_size)
+    auto allocatedSize = it->second;
+    if (size != allocatedSize)
     {
       DART_FATAL(
           "Attempting to deallocate memory at {} of {} bytes that is different "
@@ -111,12 +111,12 @@ void CAllocator::deallocate(void* pointer, size_t size)
           "{} bytes.",
           pointer,
           size,
-          allocated_size,
-          allocated_size);
-      size = allocated_size;
+          allocatedSize,
+          allocatedSize);
+      size = allocatedSize;
     }
-    m_size -= size;
-    m_map_pointer_to_size.erase(it);
+    mSize -= size;
+    mMapPointerToSize.erase(it);
     DART_TRACE("Deallocated {} bytes.", size);
   }
   else
@@ -145,9 +145,9 @@ void CAllocator::print(std::ostream& os, int indent) const
     os << spaces << "type: " << getType() << "\n";
   }
 #ifndef NDEBUG
-  std::lock_guard<std::mutex> lock(m_mutex);
-  os << spaces << "size_in_bytes: " << m_size << "\n";
-  os << spaces << "peak: " << m_peak << "\n";
+  std::lock_guard<std::mutex> lock(mMutex);
+  os << spaces << "size_in_bytes: " << mSize << "\n";
+  os << spaces << "peak: " << mPeak << "\n";
 #endif
 }
 
