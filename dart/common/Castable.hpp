@@ -33,6 +33,22 @@
 #ifndef DART_COMMON_CASTABLE_HPP_
 #define DART_COMMON_CASTABLE_HPP_
 
+#include <string>
+
+#define DART_STRING_TYPE(type_name)                                            \
+  /** Returns type string. */                                                  \
+  [[nodiscard]] static const std::string& getStaticType()                      \
+  {                                                                            \
+    static const std::string type = #type_name;                                \
+    return type;                                                               \
+  }                                                                            \
+                                                                               \
+  [[nodiscard]] const std::string& getType() const override                    \
+  {                                                                            \
+    return getStaticType();                                                    \
+  }                                                                            \
+  void _ANONYMOUS_FUNCTION_1()
+
 namespace dart::common {
 
 /// A CRTP base class that provides an interface for easily casting to the
