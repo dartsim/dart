@@ -34,23 +34,13 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/dynamics/BallJoint.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/PrismaticJoint.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/TranslationalJoint.hpp"
-#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/simulation/World.hpp"
 
 #include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace math;
-using namespace dynamics;
-using namespace simulation;
 
 #define LIE_GROUP_OPT_TOL 1e-12
 

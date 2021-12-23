@@ -510,7 +510,7 @@ void testSphereSphere(
     }
   }
   // The positions of contact point are different depending on the collision
-  // detector. More comprehensive tests need to be added.
+  // detector. More integration tests need to be added.
 }
 
 //==============================================================================
