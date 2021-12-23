@@ -93,7 +93,6 @@ option(DART_ENABLE_SIMD
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
-option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a 
 # terminal. However, this doesn't work in some cases such as when the makefile is
@@ -169,6 +168,12 @@ else()
   set(DART_ACTIVE_LOG_LEVEL "INFO" CACHE STRING "Compile time active log level to enable")
 endif()
 set_property(CACHE DART_ACTIVE_LOG_LEVEL PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF)
+
+if(BUILD_TYPE_DEBUG)
+  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+else()
+  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
+endif()
 
 #===============================================================================
 # Find dependencies

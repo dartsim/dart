@@ -7,6 +7,7 @@ foreach(collision_engine
     target_link_libraries(test_CollisionGroups ${collision_engine})
   endif()
 endforeach()
+dart_add_test("unit" test_CAllocator)
 dart_add_test("unit" test_ContactConstraint)
 dart_add_test("unit" test_Factory)
 dart_add_test("unit" test_GenericJoints)
