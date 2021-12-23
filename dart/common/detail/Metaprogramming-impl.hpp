@@ -30,21 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DETAIL_BOXEDLCPSOLVER_IMPL_HPP_
-#define DART_CONSTRAINT_DETAIL_BOXEDLCPSOLVER_IMPL_HPP_
+#ifndef DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
+#define DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
 
-#include "dart/constraint/BoxedLcpSolver.hpp"
+#include <type_traits>
 
-namespace dart {
-namespace constraint {
+#include "dart/common/Metaprogramming.hpp"
 
-template <typename BoxedLcpSolverT>
-bool BoxedLcpSolver::is() const
+namespace dart::common::detail {
+
+// Inspired by https://stackoverflow.com/a/6324863/3122234
+
+// Variadic to force ambiguity of class members. C++11 and up.
+template <typename... Args>
+struct ambiguate : public Args...
 {
-  return getType() == BoxedLcpSolverT::getStaticType();
-}
+};
 
-} // namespace constraint
-} // namespace dart
+// Non-variadic version of the line above.
+// template <typename A, typename B> struct ambiguate : public A, public B {};
 
-#endif // DART_CONSTRAINT_DETAIL_BOXEDLCPSOLVER_IMPL_HPP_
+template <typename A, typename = void>
+struct got_type : std::false_type
+{
+};
+
+template <typename A>
+struct got_type<A> : std::true_type
+{
+  using type = A;
+};
+
+template <typename T, T>
+struct sig_check : std::true_type
+{
+};
+
+template <typename Alias, typename AmbiguitySeed>
+struct has_member
+{
+  template <typename C>
+  static char (&f(decltype(&C::value)))[1];
+
+  template <typename C>
+  static char (&f(...))[2];
+
+  // Make sure the member name is consistently spelled the same.
+  static_assert(
+      (sizeof(f<AmbiguitySeed>(0)) == 1),
+      "Member name specified in AmbiguitySeed is different from member name "
+      "specified in Alias, or wrong Alias/AmbiguitySeed has been specified.");
+
+  static bool const value = sizeof(f<Alias>(0)) == 2;
+};
+
+} // namespace dart::common::detail
+
+#endif // DART_COMMON_DETAIL_METAPROGRAMMING_HPP_

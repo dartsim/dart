@@ -2,6 +2,10 @@
 
 ### [DART 6.13.0 (TBD)](https://github.com/dartsim/dart/milestone/69?closed=1)
 
+* Common
+
+  * Added Castable class: [#1634](https://github.com/dartsim/dart/pull/1634)
+
 * Dynamics
 
   * Added deep copy for shapes: [#1612](https://github.com/dartsim/dart/pull/1612)
