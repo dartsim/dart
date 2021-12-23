@@ -30,21 +30,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SHAPE_HPP_
-#define DART_DYNAMICS_DETAIL_SHAPE_HPP_
+#ifndef DART_COMMON_CASTABLE_HPP_
+#define DART_COMMON_CASTABLE_HPP_
 
-#include "dart/dynamics/Shape.hpp"
+namespace dart::common {
 
-namespace dart {
-namespace dynamics {
-
-template <typename ShapeT>
-bool Shape::is() const
+/// A CRTP base class that provides an interface for easily casting to the
+/// derived types.
+template <typename Base>
+class Castable
 {
-  return getType() == ShapeT::getStaticType();
-}
+public:
+  /// Returns true if the types of this \c Base and the template parameter (a
+  /// base class) are identical. This function is a syntactic sugar, which
+  /// is identical to: (getType() == ShapeType::getStaticType()).
+  ///
+  /// Example code:
+  /// \code
+  /// if (shape->is<Sphere>())
+  ///   std::cout << "The shape type is sphere!\n";
+  /// \endcode
+  template <typename Derived>
+  [[nodiscard]] bool is() const;
 
-} // namespace dynamics
-} // namespace dart
+  /// Casts to pointer of Derived if Base is its base class. Returns nullptr
+  /// otherwise.
+  template <typename Derived>
+  [[nodiscard]] const Derived* as() const;
 
-#endif // DART_DYNAMICS_DETAIL_SHAPE_HPP_
+  /// Casts to pointer of Derived if Base is its base class. Returns nullptr
+  /// otherwise.
+  template <typename Derived>
+  [[nodiscard]] Derived* as();
+
+  /// Casts to reference of Derived if Base is its base class. UB otherwise.
+  template <typename Derived>
+  [[nodiscard]] const Derived& as_ref() const;
+
+  /// Casts to reference of Derived if Base is its base class. UB otherwise.
+  template <typename Derived>
+  [[nodiscard]] Derived& as_ref();
+
+private:
+  /// Casts to Base const-reference
+  [[nodiscard]] const Base& base() const;
+
+  /// Casts to Base reference
+  [[nodiscard]] Base& base();
+};
+
+} // namespace dart::common
+
+#include "dart/common/detail/Castable-impl.hpp"
+
+#endif // DART_COMMON_CASTABLE_HPP_

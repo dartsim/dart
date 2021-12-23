@@ -6,7 +6,7 @@
 
 - [ ] Document new methods and classes
 - [ ] Format new code files using ClangFormat by running `make format`
-- [ ] Build with `-DDART_TREAT_WARNINGS_AS_ERRORS=ON` and resolve build warnings
+- [ ] Build with `-DDART_TREAT_WARNINGS_AS_ERRORS=ON` and resolve all the compile warnings
 
 #### Before merging a pull request
 
