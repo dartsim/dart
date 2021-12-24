@@ -32,6 +32,7 @@
 
 #include "dart/common/CAllocator.hpp"
 
+#include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 
 namespace dart::common {
@@ -55,9 +56,15 @@ CAllocator::~CAllocator()
       void* pointer = it.first;
       size_t size = it.second;
       total_size += size;
-      DART_FATAL("Found memory leak of {} bytes at {}!", size, pointer);
+      dterr << "Found memory leak of " << size << " bytes at " << pointer
+            << "\n";
+      // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
+      // destructor is resolved.
     }
-    DART_FATAL("Found potential memory leak of total {} bytes!", total_size);
+    dterr << "Found potential memory leak of total " << total_size
+          << " bytes!\n";
+    // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
+    // destructor is resolved.
   }
 #endif
 }
@@ -99,12 +106,14 @@ void CAllocator::deallocate(void* pointer, size_t size)
     if (size != allocated_size)
     {
       DART_FATAL(
-          "Cannot deallocated memory {} because the deallocating size {} is "
-          "different from the allocated size {}.",
+          "Attempting to deallocate memory at {} of {} bytes that is different "
+          "from the allocated size {}, which is a critical bug. Deallocating "
+          "{} bytes.",
           pointer,
           size,
+          allocated_size,
           allocated_size);
-      return;
+      size = allocated_size;
     }
     m_size -= size;
     m_map_pointer_to_size.erase(it);
