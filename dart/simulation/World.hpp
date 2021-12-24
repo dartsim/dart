@@ -49,7 +49,6 @@
 #include "dart/common/NameManager.hpp"
 #include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
-#include "dart/common/Timer.hpp"
 #include "dart/constraint/SmartPointer.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"

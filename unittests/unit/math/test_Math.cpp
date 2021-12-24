@@ -34,7 +34,7 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/common/Timer.hpp"
+#include "dart/common/Stopwatch.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
@@ -1379,61 +1379,47 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
   }
 
   // Test2: performance
-  Timer t1dyn("AdTJac1 - dynamic");
-  t1dyn.start();
+  tic();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ1 = AdTJac1(T, dynamicJ);
   }
-  t1dyn.stop();
+  std::cout << "AdTJac1 - dynamic: " << toc() << " s\n";
 
-  Timer t1fix("AdTJac1 - fixed");
-  t1fix.start();
+  tic();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ1 = AdTJac1(T, fixedJ);
   }
-  t1fix.stop();
+  std::cout << "AdTJac1 - fixed  : " << toc() << " s\n";
 
-  Timer t2dyn("AdTJac2 - dynamic");
-  t2dyn.start();
+  tic();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ2 = AdTJac2(T, dynamicJ);
   }
-  t2dyn.stop();
+  std::cout << "AdTJac2 - dynamic: " << toc() << " s\n";
 
-  Timer t2fix("AdTJac2 - fixed");
-  t2fix.start();
+  tic();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ2 = AdTJac2(T, fixedJ);
   }
-  t2fix.stop();
+  std::cout << "AdTJac2 - fixed  : " << toc() << " s\n";
 
-  Timer t3dyn("AdTJac3 - dynamic");
-  t3dyn.start();
+  tic();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ3 = AdTJac3(T, dynamicJ);
   }
-  t3dyn.stop();
+  std::cout << "AdTJac3 - dynamic: " << toc() << " s\n";
 
-  Timer t3fix("AdTJac3 - fixed");
-  t3fix.start();
+  tic();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ3 = AdTJac3(T, fixedJ);
   }
-  t3fix.stop();
-
-  t1dyn.print();
-  t2dyn.print();
-  t3dyn.print();
-
-  t1fix.print();
-  t2fix.print();
-  t3fix.print();
+  std::cout << "AdTJac3 - fixed  : " << toc() << " s\n";
 
   // Note: The best function for dynamic size Jacobian is AdTJac2, and the best
   //       function for fixed size Jacobian is AdTJac3

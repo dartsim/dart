@@ -7,6 +7,7 @@
   * Added Castable class: [#1634](https://github.com/dartsim/dart/pull/1634)
   * Added spdlog support as underlying logging framework: [#1633](https://github.com/dartsim/dart/pull/1633)
   * Added custom memory allocators: [#1636](https://github.com/dartsim/dart/pull/1636), [#1637](https://github.com/dartsim/dart/pull/1637), [#1639](https://github.com/dartsim/dart/pull/1639)
+  * Added Stopwatch class to replace Timer: [#1638](https://github.com/dartsim/dart/pull/1638)
 
 * Dynamics
 
