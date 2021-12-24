@@ -30,44 +30,84 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#include "dart/common/Stopwatch.hpp"
 
-#include "dart/common/Timer.hpp"
+namespace dart::common {
 
-using namespace dart::common;
+namespace {
+StopwatchNS sw = StopwatchNS(true);
+}
 
 //==============================================================================
-TEST(Common, Timer)
+void tic()
 {
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  Timer timer1("Timer1");
-  Timer timer2("Timer2");
-
-  // Run for 2 seconds
-  timer1.start();
-  for (int i = 0; i < 1e+3; ++i)
-  {
-    timer2.start();
-#ifdef _WIN32
-    Sleep(2); // 2 milliseconds
-#else
-    usleep(2000); // 2 milliseconds
-#endif
-    timer2.stop();
-  }
-  timer1.stop();
-
-  timer1.print();
-  timer2.print();
-
-  // Both timer should have counted more than 2 seconds
-#ifdef _WIN32
-  // On Windows, Sleep(2) takes less than exact 2 milliseconds..
-  EXPECT_GE(timer1.getTotalElapsedTime(), 1.99);
-  EXPECT_GE(timer2.getTotalElapsedTime(), 1.99);
-#else
-  EXPECT_GE(timer1.getTotalElapsedTime(), 2.0);
-  EXPECT_GE(timer2.getTotalElapsedTime(), 2.0);
-#endif
-  DART_SUPPRESS_DEPRECATED_END
+  sw.reset();
 }
+
+//==============================================================================
+double toc(bool print)
+{
+  return tocS(print);
+}
+
+//==============================================================================
+double tocS(bool print)
+{
+  if (!print)
+  {
+    return sw.elapsedS();
+  }
+
+  sw.stop();
+  const double elapsed = sw.elapsedS();
+  std::cout << "Elapsed time is " << elapsed << " s." << std::endl;
+  sw.start();
+  return elapsed;
+}
+
+//==============================================================================
+double tocMS(bool print)
+{
+  if (!print)
+  {
+    return sw.elapsedMS();
+  }
+
+  sw.stop();
+  const double elapsed = sw.elapsedMS();
+  std::cout << "Elapsed time is " << elapsed << " ms." << std::endl;
+  sw.start();
+  return elapsed;
+}
+
+//==============================================================================
+double tocUS(bool print)
+{
+  if (!print)
+  {
+    return sw.elapsedUS();
+  }
+
+  sw.stop();
+  const double elapsed = sw.elapsedUS();
+  std::cout << "Elapsed time is " << elapsed << " us." << std::endl;
+  sw.start();
+  return elapsed;
+}
+
+//==============================================================================
+double tocNS(bool print)
+{
+  if (!print)
+  {
+    return sw.elapsedNS();
+  }
+
+  sw.stop();
+  const double elapsed = sw.elapsedNS();
+  std::cout << "Elapsed time is " << elapsed << " ns." << std::endl;
+  sw.start();
+  return elapsed;
+}
+
+} // namespace dart::common

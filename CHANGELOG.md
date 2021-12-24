@@ -8,6 +8,7 @@
   * Added spdlog support as underlying logging framework: [#1633](https://github.com/dartsim/dart/pull/1633)
   * Added MemoryAllocator and CAllocator: [#1636](https://github.com/dartsim/dart/pull/1636)
   * Added std::allocator compatible memory allocator wrapper: [#1637](https://github.com/dartsim/dart/pull/1637)
+  * Added Stopwatch class to replace Timer: [#1638](https://github.com/dartsim/dart/pull/1638)
 
 * Dynamics
 

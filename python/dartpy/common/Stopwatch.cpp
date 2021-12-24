@@ -30,44 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#include <dart/dart.hpp>
+#include <pybind11/iostream.h>
+#include <pybind11/pybind11.h>
 
-#include "dart/common/Timer.hpp"
+namespace py = pybind11;
 
-using namespace dart::common;
+namespace dart::python {
 
-//==============================================================================
-TEST(Common, Timer)
+void Stopwatch(py::module& m)
 {
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  Timer timer1("Timer1");
-  Timer timer2("Timer2");
+  py::class_<common::StopwatchNS>(m, "Stopwatch")
+      .def(py::init<bool>(), py::arg("start") = true)
+      .def("isStarted", &common::StopwatchNS::isStarted)
+      .def("start", &common::StopwatchNS::start)
+      .def("stop", &common::StopwatchNS::stop)
+      .def("reset", &common::StopwatchNS::reset)
+      .def("elapsedS", &common::StopwatchNS::elapsedS)
+      .def("elapsedMS", &common::StopwatchNS::elapsedMS)
+      .def("elapsedUS", &common::StopwatchNS::elapsedUS)
+      .def("elapsedNS", &common::StopwatchNS::elapsedNS)
+      .def("print", [](const common::StopwatchNS* self) {
+        py::scoped_ostream_redirect stream(
+            std::cout, py::module::import("sys").attr("stdout"));
+        std::cout << *self;
+      });
 
-  // Run for 2 seconds
-  timer1.start();
-  for (int i = 0; i < 1e+3; ++i)
-  {
-    timer2.start();
-#ifdef _WIN32
-    Sleep(2); // 2 milliseconds
-#else
-    usleep(2000); // 2 milliseconds
-#endif
-    timer2.stop();
-  }
-  timer1.stop();
-
-  timer1.print();
-  timer2.print();
-
-  // Both timer should have counted more than 2 seconds
-#ifdef _WIN32
-  // On Windows, Sleep(2) takes less than exact 2 milliseconds..
-  EXPECT_GE(timer1.getTotalElapsedTime(), 1.99);
-  EXPECT_GE(timer2.getTotalElapsedTime(), 1.99);
-#else
-  EXPECT_GE(timer1.getTotalElapsedTime(), 2.0);
-  EXPECT_GE(timer2.getTotalElapsedTime(), 2.0);
-#endif
-  DART_SUPPRESS_DEPRECATED_END
+  m.def("tic", &common::tic);
+  m.def("toc", &common::toc, py::arg("print") = false);
+  m.def("tocS", &common::tocS, py::arg("print") = false);
+  m.def("tocMS", &common::tocMS, py::arg("print") = false);
+  m.def("tocUS", &common::tocUS, py::arg("print") = false);
+  m.def("tocNS", &common::tocNS, py::arg("print") = false);
 }
+
+} // namespace dart::python

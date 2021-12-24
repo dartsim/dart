@@ -30,44 +30,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Stopwatch.hpp>
 #include <gtest/gtest.h>
 
-#include "dart/common/Timer.hpp"
+#include "TestHelpers.hpp"
 
-using namespace dart::common;
+using namespace dart;
+using namespace common;
 
 //==============================================================================
-TEST(Common, Timer)
+TEST(StopwatchTest, Basics)
 {
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  Timer timer1("Timer1");
-  Timer timer2("Timer2");
+  auto sw = StopwatchNS();
 
-  // Run for 2 seconds
-  timer1.start();
-  for (int i = 0; i < 1e+3; ++i)
-  {
-    timer2.start();
-#ifdef _WIN32
-    Sleep(2); // 2 milliseconds
-#else
-    usleep(2000); // 2 milliseconds
-#endif
-    timer2.stop();
-  }
-  timer1.stop();
+  // Stopwatch is started by default
+  EXPECT_TRUE(sw.isStarted());
+  EXPECT_TRUE(StopwatchNS(true).isStarted());
+  EXPECT_FALSE(StopwatchNS(false).isStarted());
 
-  timer1.print();
-  timer2.print();
+  // Stop the stopwatch
+  sw.stop();
+  EXPECT_FALSE(sw.isStarted());
 
-  // Both timer should have counted more than 2 seconds
-#ifdef _WIN32
-  // On Windows, Sleep(2) takes less than exact 2 milliseconds..
-  EXPECT_GE(timer1.getTotalElapsedTime(), 1.99);
-  EXPECT_GE(timer2.getTotalElapsedTime(), 1.99);
-#else
-  EXPECT_GE(timer1.getTotalElapsedTime(), 2.0);
-  EXPECT_GE(timer2.getTotalElapsedTime(), 2.0);
-#endif
-  DART_SUPPRESS_DEPRECATED_END
+  // Elapsed time should be the same
+  auto elapsed1 = sw.elapsedS();
+  EXPECT_DOUBLE_EQ(elapsed1, sw.elapsedS());
+  EXPECT_DOUBLE_EQ(elapsed1, sw.elapsedS());
+
+  // Elapsed time monotonically increase while the stopwatch is running
+  sw.start();
+  EXPECT_GE(sw.elapsedS(), elapsed1);
+  EXPECT_GE(sw.elapsedS(), elapsed1);
+
+  // Starting a stopwatch already started doesn't have any effect
+  sw.start();
+  EXPECT_TRUE(sw.isStarted());
+
+  // Restting a started stopwatch resets the elapsed time but doesn't stop the
+  // stopwatch
+  sw.start();
+  sw.reset();
+  EXPECT_TRUE(sw.isStarted());
+  EXPECT_GE(sw.elapsedS(), 0.0);
+  EXPECT_GE(sw.elapsedS(), 0.0);
+
+  // Restting a stopped stopwatch resets the elapsed time but doesn't start the
+  // stopwatch
+  sw.stop();
+  sw.reset();
+  EXPECT_FALSE(sw.isStarted());
+  EXPECT_DOUBLE_EQ(sw.elapsedS(), 0.0);
+
+  std::cout << sw;
 }
