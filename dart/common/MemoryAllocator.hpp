@@ -93,6 +93,16 @@ public:
   template <typename T>
   void destroy(T* object) noexcept;
 
+#ifndef NDEBUG
+  /// Returns true if a pointer is allocated by this allocator.
+  [[nodiscard]] virtual bool isAllocated(void* pointer, size_t size) const
+      noexcept
+      = 0;
+
+  /// Returns true if there is no memory allocated by this allocator.
+  [[nodiscard]] virtual bool isEmpty() const noexcept = 0;
+#endif
+
   /// Prints state of the memory allocator
   virtual void print(std::ostream& os = std::cout, int indent = 0) const;
 

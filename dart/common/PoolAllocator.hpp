@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_FREELISTALLOCATOR_HPP_
-#define DART_COMMON_FREELISTALLOCATOR_HPP_
+#ifndef DART_COMMON_POOLALLOCATOR_HPP_
+#define DART_COMMON_POOLALLOCATOR_HPP_
 
+#include <array>
 #include <mutex>
 #ifndef NDEBUG
   #include <unordered_map>
@@ -42,34 +43,31 @@
 
 namespace dart::common {
 
-/// Most general heap memory allocator for allocating memory of various sizes.
-///
-/// This allocator preallocates a large chunk of contiguous memory on
-/// construction, using the base memory allocator and returns the fraction of
-/// the allocated memories by request. This way the class controls the timing
-/// and frequency of dynamic memory allocations to minimize the performance hit
-/// by dynamic memory allocation by the system.
-///
-/// As the name saying, this class manages the information of which part of the
-/// preallocated memory is actually used using the free list data structure.
-///
-/// If the preallocated memory is all used up, then this class allocates
-/// additional memory chunck using the base allocator.
-class FreeListAllocator : public MemoryAllocator
+/// Memory allocator optimized for allocating many objects of the same or
+/// similar sizes
+class PoolAllocator : public MemoryAllocator
 {
 public:
   /// Constructor
   ///
   /// \param[in] baseAllocator: (optional) Base memory allocator.
   /// \param[in] initialAllocation: (optional) Bytes to initially allocate.
-  explicit FreeListAllocator(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
-      size_t initialAllocation = 1048576 /* 1 MB */);
+  explicit PoolAllocator(
+      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
 
   /// Destructor
-  ~FreeListAllocator() override;
+  ~PoolAllocator() override;
 
-  DART_STRING_TYPE(FreeListAllocator);
+  DART_STRING_TYPE(PoolAllocator);
+
+  /// Returns the base allocator
+  const MemoryAllocator& getBaseAllocator() const;
+
+  /// Returns the base allocator
+  MemoryAllocator& getBaseAllocator();
+
+  /// Returns the count of allocated memory blocks
+  int getNumAllocatedMemoryBlocks() const;
 
   // Documentation inherited
   [[nodiscard]] void* allocate(size_t size) noexcept override;
@@ -90,71 +88,63 @@ public:
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
-  struct MemoryBlockHeader
+  struct MemoryUnit
   {
-    /// Memory block size in bytes
-    size_t mSize;
-
-    /// Pointer to previous memory block
-    MemoryBlockHeader* mPrev;
-
     /// Pointer to next memory block
-    MemoryBlockHeader* mNext;
-
-    /// Whether this block is used
-    bool mIsAllocated;
-
-    /// Whether the next memory block is contiguous
-    bool mIsNextContiguous;
-
-    /// Constructor
-    explicit MemoryBlockHeader(
-        size_t size,
-        MemoryBlockHeader* prev,
-        MemoryBlockHeader* next,
-        bool isNextContiguous);
-
-    /// Casts to size_t
-    size_t asSizeT() const;
-
-    /// Casts to unsigned char*
-    unsigned char* asCharPtr();
-
-    /// Casts to const unsigned char*
-    const unsigned char* asCharPtr() const;
-
-    /// Splits the memory block
-    void split(size_t sizeToSplit);
-
-    /// Merges this memory block with the given memory block
-    void merge(MemoryBlockHeader* other);
-
-#ifndef NDEBUG
-    /// Returns whether this memory block is valid
-    bool isValid() const;
-#endif
+    MemoryUnit* mNext;
   };
 
-  /// Allocates
-  bool allocateMemoryBlock(size_t sizeToAllocate);
+  struct MemoryBlock
+  {
+    /// Pointer to the first memory unit
+    MemoryUnit* mMemoryUnits;
+  };
 
-  /// The base allocator
+  inline static constexpr int HEAP_COUNT = 128;
+
+  inline static constexpr size_t MAX_UNIT_SIZE = 1024;
+
+  inline static constexpr size_t BLOCK_SIZE = 16 * MAX_UNIT_SIZE;
+
+  inline static std::array<size_t, HEAP_COUNT> mUnitSizes;
+
+  inline static std::array<int, MAX_UNIT_SIZE + 1> mMapSizeToHeapIndex;
+
+  inline static bool mInitialized = false;
+
+  /// The base allocator to allocate memory chunk
   MemoryAllocator& mBaseAllocator;
 
-  /// Mutex for private variables except the base allocator
+  /// Mutex for for mNumAllocatedMemoryBlocks, mNumMemoryBlocks,
+  /// mFreeMemoryUnits, and mAllocatedMemoryBlocks.
   mutable std::mutex mMutex;
 
-  /// Pointer to the first memory block
-  MemoryBlockHeader* mBlockHead{nullptr};
+  /// The array of memory blocks.
+  ///
+  /// This array is a placeholder of allocated memory blocks. Initially this
+  /// contains nullptr as the elements.
+  MemoryBlock* mMemoryBlocks;
 
-  /// Pointer to the current free memory block
-  MemoryBlockHeader* mFreeBlock{nullptr};
+  /// The size of mMemoryBlocks.
+  ///
+  /// This is simply the current size of mMemoryBlocks. The value doesn't mean
+  /// the actual count of the allocated memory blocks.
+  int mMemoryBlocksSize;
 
-  /// The allocated size in bytes
-  size_t mAllocatedSize{0};
+  /// The count of the allocated memory blocks in use.
+  int mCurrentMemoryBlockIndex;
+
+  /// List of free memory units.
+  ///
+  /// The size of mFreeMemoryUnits is fixed to HEAP_COUNT where each element is
+  /// for a specific memory size. For example, the first element has the free
+  /// memory unit for 8 bytes while the last element has the free memory unit
+  /// for 1024 bytes.
+  ///
+  /// The size must be the same of mUnitSizes.
+  std::array<MemoryUnit*, HEAP_COUNT> mFreeMemoryUnits;
 
 #ifndef NDEBUG
-private:
   size_t mSize = 0;
   size_t mPeak = 0;
   std::unordered_map<void*, size_t> mMapPointerToSize;
@@ -163,4 +153,4 @@ private:
 
 } // namespace dart::common
 
-#endif // DART_COMMON_FREELISTALLOCATOR_HPP_
+#endif // DART_COMMON_POOLALLOCATOR_HPP_
