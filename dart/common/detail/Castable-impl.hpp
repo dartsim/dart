@@ -78,7 +78,7 @@ Derived* Castable<Base>::as()
 //==============================================================================
 template <typename Base>
 template <typename Derived>
-const Derived& Castable<Base>::as_ref() const
+const Derived& Castable<Base>::asRef() const
 {
   assert(is<Derived>());
   return *as<Derived>();
@@ -87,7 +87,7 @@ const Derived& Castable<Base>::as_ref() const
 //==============================================================================
 template <typename Base>
 template <typename Derived>
-Derived& Castable<Base>::as_ref()
+Derived& Castable<Base>::asRef()
 {
   assert(is<Derived>());
   return *as<Derived>();

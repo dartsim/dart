@@ -42,6 +42,8 @@
 
 namespace dart::common {
 
+/// A stateless memory allocator (in release mode) that uses std::malloc and
+/// std::free for memory allocation and deallocation.
 class CAllocator : public MemoryAllocator
 {
 public:
@@ -64,10 +66,10 @@ public:
 
 #ifndef NDEBUG
 private:
-  size_t m_size = 0;
-  size_t m_peak = 0;
-  std::unordered_map<void*, size_t> m_map_pointer_to_size;
-  mutable std::mutex m_mutex;
+  size_t mSize = 0;
+  size_t mPeak = 0;
+  std::unordered_map<void*, size_t> mMapPointerToSize;
+  mutable std::mutex mMutex;
 #endif
 };
 

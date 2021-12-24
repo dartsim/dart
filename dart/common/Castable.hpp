@@ -81,11 +81,11 @@ public:
 
   /// Casts to reference of Derived if Base is its base class. UB otherwise.
   template <typename Derived>
-  [[nodiscard]] const Derived& as_ref() const;
+  [[nodiscard]] const Derived& asRef() const;
 
   /// Casts to reference of Derived if Base is its base class. UB otherwise.
   template <typename Derived>
-  [[nodiscard]] Derived& as_ref();
+  [[nodiscard]] Derived& asRef();
 
 private:
   /// Casts to Base const-reference
