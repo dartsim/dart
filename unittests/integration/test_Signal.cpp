@@ -41,7 +41,6 @@ using namespace Eigen;
 using namespace dart;
 using namespace common;
 using namespace dynamics;
-using namespace simulation;
 
 static int callCount0 = 0;
 static int callCount1 = 0;
