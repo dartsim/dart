@@ -35,11 +35,9 @@
 
 #include <array>
 #include <mutex>
-#ifndef NDEBUG
-  #include <unordered_map>
-#endif
 
 #include "dart/common/MemoryAllocator.hpp"
+#include "dart/common/MemoryAllocatorDebugger.hpp"
 
 namespace dart::common {
 
@@ -48,6 +46,8 @@ namespace dart::common {
 class PoolAllocator : public MemoryAllocator
 {
 public:
+  using Debug = MemoryAllocatorDebugger<PoolAllocator>;
+
   /// Constructor
   ///
   /// \param[in] baseAllocator: (optional) Base memory allocator.
@@ -61,28 +61,19 @@ public:
   DART_STRING_TYPE(PoolAllocator);
 
   /// Returns the base allocator
-  const MemoryAllocator& getBaseAllocator() const;
+  [[nodiscard]] const MemoryAllocator& getBaseAllocator() const;
 
   /// Returns the base allocator
-  MemoryAllocator& getBaseAllocator();
+  [[nodiscard]] MemoryAllocator& getBaseAllocator();
 
   /// Returns the count of allocated memory blocks
-  int getNumAllocatedMemoryBlocks() const;
+  [[nodiscard]] int getNumAllocatedMemoryBlocks() const;
 
   // Documentation inherited
-  [[nodiscard]] void* allocate(size_t size) noexcept override;
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
   // Documentation inherited
-  void deallocate(void* pointer, size_t size) override;
-
-#ifndef NDEBUG
-  // Documentation inherited
-  [[nodiscard]] bool isAllocated(void* pointer, size_t size) const
-      noexcept override;
-
-  // Documentation inherited
-  [[nodiscard]] bool isEmpty() const noexcept override;
-#endif
+  void deallocate(void* pointer, size_t bytes) override;
 
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
@@ -143,12 +134,6 @@ private:
   ///
   /// The size must be the same of mUnitSizes.
   std::array<MemoryUnit*, HEAP_COUNT> mFreeMemoryUnits;
-
-#ifndef NDEBUG
-  size_t mSize = 0;
-  size_t mPeak = 0;
-  std::unordered_map<void*, size_t> mMapPointerToSize;
-#endif
 };
 
 } // namespace dart::common

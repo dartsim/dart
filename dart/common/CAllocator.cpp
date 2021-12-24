@@ -47,116 +47,28 @@ CAllocator::CAllocator() noexcept
 //==============================================================================
 CAllocator::~CAllocator()
 {
-#ifndef NDEBUG
-  std::lock_guard<std::mutex> lock(mMutex);
-  if (!mMapPointerToSize.empty())
-  {
-    size_t totalSize = 0;
-    for (auto it : mMapPointerToSize)
-    {
-      void* pointer = it.first;
-      size_t size = it.second;
-      totalSize += size;
-      dterr << "Found memory leak of " << size << " bytes at " << pointer
-            << "\n";
-      // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
-      // destructor is resolved.
-    }
-    dterr << "Found potential memory leak of total " << totalSize
-          << " bytes!\n";
-    // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
-    // destructor is resolved.
-  }
-#endif
+  // Do nothing
 }
 
 //==============================================================================
-void* CAllocator::allocate(size_t size) noexcept
+void* CAllocator::allocate(size_t bytes) noexcept
 {
-  if (size == 0)
+  if (bytes == 0)
   {
     return nullptr;
   }
 
-  DART_TRACE("Allocated {} bytes.", size);
-#ifndef NDEBUG
-  std::lock_guard<std::mutex> lock(mMutex);
-  auto newPtr = std::malloc(size);
-  if (newPtr)
-  {
-    mSize += size;
-    mPeak = std::max(mPeak, mSize);
-    mMapPointerToSize[newPtr] = size;
-  }
-  return newPtr;
-#else
-  return std::malloc(size);
-#endif
+  DART_TRACE("Allocated {} bytes.", bytes);
+  return std::malloc(bytes);
 }
 
 //==============================================================================
-void CAllocator::deallocate(void* pointer, size_t size)
+void CAllocator::deallocate(void* pointer, size_t bytes)
 {
-  (void)size;
-#ifndef NDEBUG // debug
-  std::lock_guard<std::mutex> lock(mMutex);
-  auto it = mMapPointerToSize.find(pointer);
-  if (it != mMapPointerToSize.end())
-  {
-    auto allocatedSize = it->second;
-    if (size != allocatedSize)
-    {
-      DART_FATAL(
-          "Attempting to deallocate memory at {} of {} bytes that is different "
-          "from the allocated size {}, which is a critical bug. Deallocating "
-          "{} bytes.",
-          pointer,
-          size,
-          allocatedSize,
-          allocatedSize);
-      size = allocatedSize;
-    }
-    mSize -= size;
-    mMapPointerToSize.erase(it);
-    DART_TRACE("Deallocated {} bytes.", size);
-  }
-  else
-  {
-    DART_FATAL(
-        "Cannot deallocate memory {} that is not allocated by this allocator!",
-        pointer);
-    return;
-  }
-#else
-  DART_TRACE("Deallocated.");
-#endif
+  DART_UNUSED(bytes);
   std::free(pointer);
+  DART_TRACE("Deallocated.");
 }
-
-#ifndef NDEBUG
-//==============================================================================
-bool CAllocator::isAllocated(void* pointer, size_t size) const noexcept
-{
-  std::lock_guard<std::mutex> lock(mMutex);
-
-  const auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end())
-    return false;
-
-  const auto& allocatedSize = it->second;
-  if (size != allocatedSize)
-    return false;
-
-  return true;
-}
-
-//==============================================================================
-bool CAllocator::isEmpty() const noexcept
-{
-  std::lock_guard<std::mutex> lock(mMutex);
-  return mMapPointerToSize.empty();
-}
-#endif
 
 //==============================================================================
 void CAllocator::print(std::ostream& os, int indent) const
@@ -170,11 +82,6 @@ void CAllocator::print(std::ostream& os, int indent) const
   {
     os << spaces << "type: " << getType() << "\n";
   }
-#ifndef NDEBUG
-  std::lock_guard<std::mutex> lock(mMutex);
-  os << spaces << "size_in_bytes: " << mSize << "\n";
-  os << spaces << "peak: " << mPeak << "\n";
-#endif
 }
 
 } // namespace dart::common

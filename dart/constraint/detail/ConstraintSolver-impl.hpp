@@ -30,36 +30,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CALLOCATOR_HPP_
-#define DART_COMMON_CALLOCATOR_HPP_
+#ifndef DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
+#define DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
 
-#include "dart/common/MemoryAllocator.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 
-namespace dart::common {
+namespace dart::constraint {
 
-/// A stateless memory allocator (in release mode) that uses std::malloc and
-/// std::free for memory allocation and deallocation.
-class CAllocator : public MemoryAllocator
+//==============================================================================
+template <typename Func>
+void ConstraintSolver::eachConstraint(Func func) const
 {
-public:
-  /// Constructor
-  CAllocator() noexcept;
+  if constexpr (std::is_same_v<
+                    std::invoke_result_t<Func, const ConstraintBase*>,
+                    bool>)
+  {
+    for (auto i = 0u; i < getNumConstraints(); ++i)
+    {
+      if (!func(getConstraint(i)))
+        return;
+    }
+  }
+  else
+  {
+    for (auto i = 0u; i < getNumConstraints(); ++i)
+    {
+      func(getConstraint(i));
+    }
+  }
+}
 
-  /// Destructor
-  ~CAllocator() override;
+//==============================================================================
+template <typename Func>
+void ConstraintSolver::eachConstraint(Func func)
+{
+  if constexpr (std::is_same_v<
+                    std::invoke_result_t<Func, ConstraintBase*>,
+                    bool>)
+  {
+    for (auto i = 0u; i < getNumConstraints(); ++i)
+    {
+      if (!func(getConstraint(i)))
+        return;
+    }
+  }
+  else
+  {
+    for (auto i = 0u; i < getNumConstraints(); ++i)
+    {
+      func(getConstraint(i));
+    }
+  }
+}
 
-  DART_STRING_TYPE(CAllocator);
+} // namespace dart::constraint
 
-  // Documentation inherited
-  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
-
-  // Documentation inherited
-  void deallocate(void* pointer, size_t bytes) override;
-
-  // Documentation inherited
-  void print(std::ostream& os = std::cout, int indent = 0) const override;
-};
-
-} // namespace dart::common
-
-#endif // DART_COMMON_CALLOCATOR_HPP_
+#endif // DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_

@@ -35,6 +35,8 @@
 
 #include <cassert>
 
+#include "dart/common/Logging.hpp"
+
 // DART_NUM_ARGS(<arg1> [, <arg2> [, ...]])
 #define DETAIL_DART_NUM_ARGS(z, a, b, c, d, e, f, cnt, ...) cnt
 #define DART_NUM_ARGS(...)                                                     \
@@ -67,5 +69,10 @@
 #define DART_ASSERT(...)                                                       \
   DART_CONCAT(DETAIL_DART_ASSERT_, DART_NUM_ARGS(__VA_ARGS__))                 \
   (__VA_ARGS__)
+
+// Macro to mark the function is not implemented
+#define DART_NOT_IMPLEMENTED                                                   \
+  DART_FATAL("Not implemented: {}:{}", __FILE__, __LINE__);                    \
+  void(0)
 
 #endif

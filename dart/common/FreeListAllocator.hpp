@@ -34,11 +34,9 @@
 #define DART_COMMON_FREELISTALLOCATOR_HPP_
 
 #include <mutex>
-#ifndef NDEBUG
-  #include <unordered_map>
-#endif
 
 #include "dart/common/MemoryAllocator.hpp"
+#include "dart/common/MemoryAllocatorDebugger.hpp"
 
 namespace dart::common {
 
@@ -58,6 +56,8 @@ namespace dart::common {
 class FreeListAllocator : public MemoryAllocator
 {
 public:
+  using Debug = MemoryAllocatorDebugger<FreeListAllocator>;
+
   /// Constructor
   ///
   /// \param[in] baseAllocator: (optional) Base memory allocator.
@@ -71,20 +71,17 @@ public:
 
   DART_STRING_TYPE(FreeListAllocator);
 
-  // Documentation inherited
-  [[nodiscard]] void* allocate(size_t size) noexcept override;
+  /// Returns the base allocator
+  [[nodiscard]] const MemoryAllocator& getBaseAllocator() const;
+
+  /// Returns the base allocator
+  [[nodiscard]] MemoryAllocator& getBaseAllocator();
 
   // Documentation inherited
-  void deallocate(void* pointer, size_t size) override;
-
-#ifndef NDEBUG
-  // Documentation inherited
-  [[nodiscard]] bool isAllocated(void* pointer, size_t size) const
-      noexcept override;
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
   // Documentation inherited
-  [[nodiscard]] bool isEmpty() const noexcept override;
-#endif
+  void deallocate(void* pointer, size_t bytes) override;
 
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
@@ -130,12 +127,15 @@ private:
     void merge(MemoryBlockHeader* other);
 
 #ifndef NDEBUG
-    /// Returns whether this memory block is valid
+    /// [Debug only] Returns whether this memory block is valid
     bool isValid() const;
 #endif
   };
 
-  /// Allocates
+  /// Allocates a new memory block for \c sizeToAllocate bytes
+  ///
+  /// \param[in] sizeToAllocate: The bytes to allocate.
+  /// \return The success
   bool allocateMemoryBlock(size_t sizeToAllocate);
 
   /// The base allocator
@@ -145,20 +145,16 @@ private:
   mutable std::mutex mMutex;
 
   /// Pointer to the first memory block
-  MemoryBlockHeader* mBlockHead{nullptr};
+  MemoryBlockHeader* mFirstMemoryBlock{nullptr};
 
   /// Pointer to the current free memory block
   MemoryBlockHeader* mFreeBlock{nullptr};
 
-  /// The allocated size in bytes
-  size_t mAllocatedSize{0};
+  /// The total allocated block size in bytes
+  size_t mTotalAllocatedBlockSize{0};
 
-#ifndef NDEBUG
-private:
-  size_t mSize = 0;
-  size_t mPeak = 0;
-  std::unordered_map<void*, size_t> mMapPointerToSize;
-#endif
+  /// The total allocated size in bytes
+  size_t mTotalAllocatedSize{0};
 };
 
 } // namespace dart::common

@@ -30,81 +30,78 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/StlAllocator.hpp"
+#ifndef DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_
+#define DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_
+
+#include "dart/common/MemoryManager.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-template <typename T>
-StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
-  : mBaseAllocator(baseAllocator)
+template <typename T, typename... Args>
+T* MemoryManager::construct(Type type, Args&&... args) noexcept
 {
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-template <class U>
-StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
-    size_type n, const void* hint)
-{
-  (void)hint;
-  pointer ptr
-      = reinterpret_cast<pointer>(mBaseAllocator.allocate(n * sizeof(T)));
-
-  // Throw std::bad_alloc to comply 23.10.9.1
-  // Reference: https://stackoverflow.com/a/50326956/3122234
-  if (!ptr)
+  // Allocate new memory for a new object (without calling the constructor)
+  void* object = allocate(type, sizeof(T));
+  if (!object)
   {
-    throw std::bad_alloc();
+    return nullptr;
   }
 
-  return ptr;
-}
-
-//==============================================================================
-template <typename T>
-void StlAllocator<T>::deallocate(pointer pointer, size_type n)
-{
-  mBaseAllocator.deallocate(pointer, n * sizeof(T));
-}
-
-//==============================================================================
-template <typename T>
-void StlAllocator<T>::print(std::ostream& os, int indent) const
-{
-  if (indent == 0)
+  // Call constructor. Return nullptr if failed.
+  try
   {
-    os << "[StlAllocator]\n";
+    new (object) T(std::forward<Args>(args)...);
   }
-  const std::string spaces(indent, ' ');
-  os << spaces << "base_allocator:\n";
-  mBaseAllocator.print(os, indent + 2);
+  catch (...)
+  {
+    deallocate(type, object, sizeof(T));
+    return nullptr;
+  }
+
+  return reinterpret_cast<T*>(object);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryManager::constructUsingFree(Args&&... args) noexcept
+{
+  return construct<T, Args...>(Type::Free, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryManager::constructUsingPool(Args&&... args) noexcept
+{
+  return construct<T, Args...>(Type::Pool, std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const StlAllocator<T>& allocator)
+void MemoryManager::destroy(Type type, T* object) noexcept
 {
-  allocator.print(os);
-  return os;
+  if (!object)
+  {
+    return;
+  }
+  object->~T();
+  deallocate(type, object, sizeof(T));
+}
+
+//==============================================================================
+template <typename T>
+void MemoryManager::destroyUsingFree(T* pointer) noexcept
+{
+  destroy(Type::Free, pointer);
+}
+
+//==============================================================================
+template <typename T>
+void MemoryManager::destroyUsingPool(T* pointer) noexcept
+{
+  destroy(Type::Pool, pointer);
 }
 
 } // namespace dart::common
+
+#endif // DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_

@@ -50,15 +50,3 @@ TEST(StlAllocatorTest, Basics)
   a.deallocate(o2, 1);
   a.print();
 }
-
-//==============================================================================
-TEST(StlAllocatorTest, StdVector)
-{
-  std::vector<int, StlAllocator<int>> vec;
-  EXPECT_EQ(vec.capacity(), 0);
-  vec.reserve(1);
-  EXPECT_EQ(vec.capacity(), 1);
-  vec.reserve(2);
-  EXPECT_EQ(vec.capacity(), 2);
-  vec.get_allocator().print();
-}
