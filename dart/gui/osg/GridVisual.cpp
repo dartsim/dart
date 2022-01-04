@@ -32,10 +32,13 @@
 
 #include "dart/gui/osg/GridVisual.hpp"
 
+#include <osg/Depth>
+
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/gui/osg/Utils.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
@@ -443,11 +446,55 @@ void GridVisual::refresh()
     mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
         mMinorLineWidth);
     mMinorLineGeom->setPrimitiveSet(0, mMinorLineFaces);
+    if (mMinorLineColor->at(0).a() < 1 - getAlphaThreshold<float>())
+    {
+      mMinorLineGeom->getOrCreateStateSet()->setMode(
+          GL_BLEND, ::osg::StateAttribute::ON);
+      mMinorLineGeom->getOrCreateStateSet()->setRenderingHint(
+          ::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
+          depth, ::osg::StateAttribute::ON);
+    }
+    else
+    {
+      mMinorLineGeom->getOrCreateStateSet()->setMode(
+          GL_BLEND, ::osg::StateAttribute::OFF);
+      mMinorLineGeom->getOrCreateStateSet()->setRenderingHint(
+          ::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
+          depth, ::osg::StateAttribute::ON);
+    }
 
     mMajorLineGeom->setVertexArray(mMajorLineVertices);
     mMajorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
         mMajorLineWidth);
     mMajorLineGeom->setPrimitiveSet(0, mMajorLineFaces);
+    if (mMajorLineColor->at(0).a() < 1 - getAlphaThreshold<float>())
+    {
+      mMajorLineGeom->getOrCreateStateSet()->setMode(
+          GL_BLEND, ::osg::StateAttribute::ON);
+      mMajorLineGeom->getOrCreateStateSet()->setRenderingHint(
+          ::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      mMajorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
+          depth, ::osg::StateAttribute::ON);
+    }
+    else
+    {
+      mMajorLineGeom->getOrCreateStateSet()->setMode(
+          GL_BLEND, ::osg::StateAttribute::OFF);
+      mMajorLineGeom->getOrCreateStateSet()->setRenderingHint(
+          ::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      mMajorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
+          depth, ::osg::StateAttribute::ON);
+    }
 
     static const ::osg::Vec4 xAxisLineColor(0.9f, 0.1f, 0.1f, 1.0f);
     static const ::osg::Vec4 yAxisLineColor(0.1f, 0.9f, 0.1f, 1.0f);
@@ -516,9 +563,9 @@ void GridVisual::initialize()
   mAxisLineGeom->setVertexArray(mAxisLineVertices);
   mAxisLineGeom->setDataVariance(::osg::Object::STATIC);
   mAxisLineGeom->getOrCreateStateSet()->setMode(
-      GL_BLEND, ::osg::StateAttribute::ON);
+      GL_BLEND, ::osg::StateAttribute::OFF);
   mAxisLineGeom->getOrCreateStateSet()->setRenderingHint(
-      ::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::StateSet::OPAQUE_BIN);
 
   // Set grid color
   static const ::osg::Vec4 majorLineColor(0.4f, 0.4f, 0.4f, 1.0f);
@@ -538,20 +585,12 @@ void GridVisual::initialize()
   mMajorLineColor->at(0) = majorLineColor;
   mMajorLineGeom->setColorArray(mMajorLineColor);
   mMajorLineGeom->setColorBinding(::osg::Geometry::BIND_OVERALL);
-  mMajorLineGeom->getOrCreateStateSet()->setMode(
-      GL_BLEND, ::osg::StateAttribute::ON);
-  mMajorLineGeom->getOrCreateStateSet()->setRenderingHint(
-      ::osg::StateSet::TRANSPARENT_BIN);
 
   mMinorLineColor = new ::osg::Vec4Array;
   mMinorLineColor->resize(1);
   mMinorLineColor->at(0) = minorLineColor;
   mMinorLineGeom->setColorArray(mMinorLineColor);
   mMinorLineGeom->setColorBinding(::osg::Geometry::BIND_OVERALL);
-  mMinorLineGeom->getOrCreateStateSet()->setMode(
-      GL_BLEND, ::osg::StateAttribute::ON);
-  mMinorLineGeom->getOrCreateStateSet()->setRenderingHint(
-      ::osg::StateSet::TRANSPARENT_BIN);
 
   mMinorLineFaces = new ::osg::DrawElementsUInt(::osg::PrimitiveSet::LINES, 0);
   mMinorLineGeom->addPrimitiveSet(mMinorLineFaces);

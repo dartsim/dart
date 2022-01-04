@@ -35,6 +35,7 @@
 #if HAVE_OCTOMAP
 
   #include <osg/CullFace>
+  #include <osg/Depth>
   #include <osg/Geode>
   #include <osg/Light>
   #include <osg/Material>
@@ -77,7 +78,27 @@ public:
 
   void updateColor(const Eigen::Vector4d& color)
   {
+    // Set color
     setColor(eigToOsgVec4f(color));
+
+    // Set alpha specific properties
+    ::osg::StateSet* ss = getOrCreateStateSet();
+    if (std::abs(color[3]) > 1 - getAlphaThreshold())
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+      ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
+    else
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+      ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
   }
 
 protected:

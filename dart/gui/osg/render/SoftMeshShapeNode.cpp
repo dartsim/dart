@@ -33,6 +33,7 @@
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
 
@@ -283,12 +284,30 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
   if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
       || firstTime)
   {
-    if (mColors->size() != 1)
-      mColors->resize(1);
-
-    (*mColors)[0] = eigToOsgVec4d(mVisualAspect->getRGBA());
-
+    // Set color
+    const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
+    mColors->resize(1);
+    (*mColors)[0] = color;
     setColorArray(mColors, ::osg::Array::BIND_OVERALL);
+
+    // Set alpha specific properties
+    ::osg::StateSet* ss = getOrCreateStateSet();
+    if (std::abs(color.a()) > 1 - getAlphaThreshold())
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+      ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
+    else
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+      ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
   }
 }
 

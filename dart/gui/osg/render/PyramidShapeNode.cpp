@@ -35,6 +35,7 @@
 #include <array>
 
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
@@ -141,8 +142,6 @@ PyramidShapeGeode::PyramidShapeGeode(
     mDrawable(nullptr),
     mLineWidth(new ::osg::LineWidth)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
       new ::osg::CullFace(::osg::CullFace::BACK));
   getOrCreateStateSet()->setMode(GL_LIGHTING, ::osg::StateAttribute::ON);
@@ -285,12 +284,30 @@ void PyramidShapeDrawable::refresh(bool firstTime)
   if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
       || firstTime)
   {
-    if (mColors->size() != 1)
-      mColors->resize(1);
-
-    (*mColors)[0] = eigToOsgVec4d(mVisualAspect->getRGBA());
-
+    // Set color
+    const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
+    mColors->resize(1);
+    (*mColors)[0] = color;
     setColorArray(mColors, ::osg::Array::BIND_OVERALL);
+
+    // Set alpha specific properties
+    ::osg::StateSet* ss = getOrCreateStateSet();
+    if (std::abs(color.a()) > 1 - getAlphaThreshold())
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+      ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
+    else
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+      ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
   }
 }
 
