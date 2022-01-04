@@ -119,6 +119,9 @@ public:
   /// Set gravity
   void setGravity(const Eigen::Vector3d& _gravity);
 
+  /// Set gravity
+  void setGravity(double x, double y, double z);
+
   /// Get gravity
   const Eigen::Vector3d& getGravity() const;
 

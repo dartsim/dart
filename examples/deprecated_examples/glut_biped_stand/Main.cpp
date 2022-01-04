@@ -45,8 +45,7 @@ int main(int argc, char* argv[])
       = dart::utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  myWorld->setGravity(0.0, -9.81, 0.0);
 
   dart::dynamics::SkeletonPtr biped = myWorld->getSkeleton("fullbody1");
 

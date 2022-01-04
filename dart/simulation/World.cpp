@@ -259,6 +259,12 @@ void World::setGravity(const Eigen::Vector3d& _gravity)
 }
 
 //==============================================================================
+void World::setGravity(double x, double y, double z)
+{
+  setGravity(Eigen::Vector3d(x, y, z));
+}
+
+//==============================================================================
 const Eigen::Vector3d& World::getGravity() const
 {
   return mGravity;
