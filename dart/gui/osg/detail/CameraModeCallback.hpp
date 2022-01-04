@@ -30,46 +30,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
+#ifndef DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
+#define DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
 
-PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
+#include <mutex>
 
-namespace py = pybind11;
+#include <osg/NodeCallback>
 
-namespace dart {
-namespace python {
+#include "dart/gui/osg/Viewer.hpp"
 
-void ImGuiViewer(py::module& m)
+namespace dart::gui::osg::detail {
+
+class CameraModeCallback : public ::osg::NodeCallback
 {
-  ::py::class_<
-      dart::gui::osg::ImGuiViewer,
-      dart::gui::osg::Viewer,
-      osg::ref_ptr<dart::gui::osg::ImGuiViewer>>(m, "ImGuiViewer")
-      .def(::py::init<>())
-      .def(
-          ::py::init([](const Eigen::Vector4d& clearColor) {
-            return new ::dart::gui::osg::ImGuiViewer(
-                gui::osg::eigToOsgVec4f(clearColor));
-          }),
-          ::py::arg("clearColor"))
-      .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
-      .def(
-          "getImGuiHandler",
-          +[](dart::gui::osg::ImGuiViewer* self)
-              -> dart::gui::osg::ImGuiHandler* {
-            return self->getImGuiHandler();
-          },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "showAbout",
-          +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
-      .def(
-          "hideAbout",
-          +[](dart::gui::osg::ImGuiViewer* self) { self->hideAbout(); });
-}
+public:
+  /// Default constructor
+  CameraModeCallback();
 
-} // namespace python
-} // namespace dart
+  // Documentation inherited
+  void operator()(::osg::Node* node, ::osg::NodeVisitor* nv) override;
+
+  /// Sets the camera mode of the primary camera.
+  ///
+  /// \note Thread safe
+  void setCameraMode(CameraMode mode);
+
+  /// Returns the camera mode of the primary camera.
+  ///
+  /// \note Thread safe
+  CameraMode getCameraMode() const;
+
+  /// Sets the scene to render the depth
+  ///
+  /// \note Thread safe
+  void setSceneData(::osg::Node* scene);
+
+private:
+  ::osg::ref_ptr<::osg::Camera> mDepthRrtCam;
+  ::osg::ref_ptr<::osg::Camera> mDepthHudCam;
+  CameraMode mCameraMode;
+  bool mCameraModeChanged;
+  ::osg::ref_ptr<::osg::Node> mScene;
+  ::osg::ref_ptr<::osg::Node> mSceneToChange;
+
+  /// Mutex for all the member variables
+  mutable std::mutex mMutex;
+};
+
+} // namespace dart::gui::osg::detail
+
+#endif // DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_

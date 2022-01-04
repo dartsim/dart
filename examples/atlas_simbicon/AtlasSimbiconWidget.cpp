@@ -144,6 +144,15 @@ void AtlasSimbiconWidget::render()
       else
         mNode->hideShadow();
     }
+
+    // Depth
+    if (ImGui::Checkbox("Depth mode", &mDepthMode))
+    {
+      if (mDepthMode)
+        mViewer->setCameraMode(dart::gui::osg::CameraMode::DEPTH);
+      else
+        mViewer->setCameraMode(dart::gui::osg::CameraMode::RGBA);
+    }
   }
 
   if (ImGui::CollapsingHeader(

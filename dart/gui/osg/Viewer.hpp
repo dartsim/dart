@@ -60,6 +60,10 @@ class BodyNode;
 namespace gui {
 namespace osg {
 
+namespace detail {
+class CameraModeCallback;
+} // namespace detail
+
 class WorldNode;
 class DefaultEventHandler;
 class DragAndDrop;
@@ -70,6 +74,18 @@ class InteractiveFrameDnD;
 class BodyNodeDnD;
 class Viewer;
 class SaveScreen;
+
+/// Camera mode
+enum class CameraMode
+{
+  /// To render the RGBA color
+  RGBA,
+
+  /// To render the depth buffer
+  ///
+  /// \warning The DEPTH mode currently not compatible with the ImGui wigets.
+  DEPTH,
+};
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class ViewerAttachment : public virtual ::osg::Group
@@ -302,6 +318,12 @@ public:
   /// view, 0.0 otherwise.
   double getVerticalFieldOfView() const;
 
+  /// Sets the camera mode of the primary camera.
+  void setCameraMode(CameraMode mode);
+
+  /// Returns the camera mode of the primary camera.
+  CameraMode getCameraMode() const;
+
 protected:
   friend class SaveScreen;
 
@@ -388,7 +410,12 @@ protected:
 
   /// Map from BodyNode ptrs to BodyNodeDnD ptrs
   std::map<dart::dynamics::BodyNode*, BodyNodeDnD*> mBodyNodeDnDMap;
+
+private:
+  /// Callback to control the camera mode
+  ::osg::ref_ptr<detail::CameraModeCallback> mCameraModeCallback;
 };
+
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace osg
