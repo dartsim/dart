@@ -88,7 +88,10 @@ struct ContactSurfaceParams
 private:
   /// Used for future-compatibility. Add any newly added fields here so that
   /// ABI doesn't change. The data should be accessed via non-virtual getters
-  /// and setters added to this struct.
+  /// and setters added to this struct. When this field starts to be used,
+  /// custom destructor, copy/move constructors and copy/move assignment
+  /// operators have to be defined that will take care of copying/destroying
+  /// the extra data.
   void* mExtraData{nullptr};
 };
 
