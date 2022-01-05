@@ -60,7 +60,9 @@ namespace {
 
 // N.B. Use a loose tolerance, so that we don't have to be super strict with
 // C++.
+#ifndef NDEBUG
 const double kCheckTolerance = 1e-5;
+#endif
 
 template <typename T>
 void CheckRotMat(const Eigen::Matrix<T, 3, 3>& R) {

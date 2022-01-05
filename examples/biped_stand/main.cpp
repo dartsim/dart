@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -78,6 +78,9 @@ public:
       mKd(i, i) = 40.0;
 
     mPreOffset = 0.0;
+
+    mForce.setZero();
+    mImpulseDuration = 0;
   }
 
   void customPreRefresh()
@@ -96,6 +99,15 @@ public:
 
   void customPreStep()
   {
+    // Perturbation
+    mBiped->getBodyNode("h_spine")->addExtForce(mForce);
+    mImpulseDuration--;
+    if (mImpulseDuration <= 0)
+    {
+      mImpulseDuration = 0;
+      mForce.setZero();
+    }
+
     const Eigen::VectorXd dof = mBiped->getPositions();
     const Eigen::VectorXd dofVel = mBiped->getVelocities();
     const Eigen::VectorXd constrForces = mBiped->getConstraintForces();
@@ -159,6 +171,12 @@ public:
     // to be used.
   }
 
+  void perturbBiped(const Eigen::Vector3d& force, int frames = 100)
+  {
+    mForce = force;
+    mImpulseDuration = frames;
+  }
+
 protected:
   dart::dynamics::SkeletonPtr mBiped;
 
@@ -172,15 +190,18 @@ protected:
   int mFrame;
   double mTimestep;
   double mPreOffset;
+
+  int mImpulseDuration;
+  Eigen::Vector3d mForce;
 };
 
 //==============================================================================
 class CustomEventHandler : public osgGA::GUIEventHandler
 {
 public:
-  CustomEventHandler(/*Pass in any necessary arguments*/)
+  CustomEventHandler(CustomWorldNode* worldNode)
   {
-    // Set up the customized event handler
+    mWorldNode = worldNode;
   }
 
   bool handle(
@@ -188,47 +209,24 @@ public:
   {
     if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
     {
-      if (ea.getKey() == 'q')
+      if (ea.getKey() == '1')
       {
-        std::cout << "Lowercase q pressed" << std::endl;
+        mWorldNode->perturbBiped(Eigen::Vector3d(50, 0, 0), 100);
         return true;
       }
-      else if (ea.getKey() == 'Q')
+      else if (ea.getKey() == '2')
       {
-        std::cout << "Capital Q pressed" << std::endl;
+        mWorldNode->perturbBiped(Eigen::Vector3d(-50, 0, 0), 100);
         return true;
       }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
+      else if (ea.getKey() == '3')
       {
-        std::cout << "Left arrow key pressed" << std::endl;
+        mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, 50), 100);
         return true;
       }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
+      else if (ea.getKey() == '4')
       {
-        std::cout << "Right arrow key pressed" << std::endl;
-        return true;
-      }
-    }
-    else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP)
-    {
-      if (ea.getKey() == 'q')
-      {
-        std::cout << "Lowercase q released" << std::endl;
-        return true;
-      }
-      else if (ea.getKey() == 'Q')
-      {
-        std::cout << "Capital Q released" << std::endl;
-        return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-      {
-        std::cout << "Left arrow key released" << std::endl;
-        return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-      {
-        std::cout << "Right arrow key released" << std::endl;
+        mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, -50), 100);
         return true;
       }
     }
@@ -239,6 +237,9 @@ public:
     // any remaining event handlers.
     return false;
   }
+
+private:
+  CustomWorldNode* mWorldNode;
 };
 
 //==============================================================================
@@ -265,11 +266,18 @@ int main()
   auto shadow = gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
 
   // Wrap a WorldNode around it
-  viewer.addWorldNode(new CustomWorldNode(world, biped, shadow));
-  viewer.addEventHandler(new CustomEventHandler());
+  ::osg::ref_ptr<CustomWorldNode> node
+      = new CustomWorldNode(world, biped, shadow);
+  viewer.addWorldNode(node);
+  viewer.addEventHandler(new CustomEventHandler(node.get()));
 
   viewer.addInstructionText("Press space to start simulation.\n");
   std::cout << viewer.getInstructions() << std::endl;
+  std::cout << "1: Push robot with +50 along x-axis N for 100 frames\n"
+            << "2: Push robot with -50 along x-axis N for 100 frames\n"
+            << "3: Push robot with +50 along z-axis N for 100 frames\n"
+            << "4: Push robot with -50 along z-axis N for 100 frames\n"
+            << std::endl;
 
   // Set up the window to be 640x480
   viewer.setUpViewInWindow(0, 0, 640, 480);

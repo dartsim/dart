@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -278,6 +278,24 @@ void CollisionGroup::unsubscribeFrom(
   }
 
   unsubscribeFrom(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+bool CollisionGroup::isSubscribedTo(
+    const dynamics::BodyNode* bodyNode, const Others*... others)
+{
+  auto it = mBodyNodeSources.find(bodyNode);
+  return (it != mBodyNodeSources.end()) && isSubscribedTo(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+bool CollisionGroup::isSubscribedTo(
+    const dynamics::Skeleton* skeleton, const Others*... others)
+{
+  auto it = mSkeletonSources.find(skeleton);
+  return (it != mSkeletonSources.end()) && isSubscribedTo(others...);
 }
 
 } // namespace collision

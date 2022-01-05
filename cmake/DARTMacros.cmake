@@ -288,3 +288,103 @@ function(dart_build_tutorial_in_source target)
   dart_build_target_in_source(${target} ${ARGN})
   dart_add_tutorial(${target})
 endfunction()
+
+
+# ==============================================================================
+# dart_build_tests()
+#
+function(dart_build_tests)
+  set(prefix _ARG)
+  set(options
+    GLOB_SOURCES
+  )
+  set(oneValueArgs
+    COMPONENT_NAME
+    TARGET_PREFIX
+    TYPE
+  )
+  set(multiValueArgs
+    INCLUDE_DIRS
+    LINK_LIBRARIES
+    SOURCES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT _ARG_TARGET_PREFIX)
+    set(_ARG_TARGET_PREFIX UNIT)
+  endif()
+
+  if(NOT _ARG_TYPE)
+    message(FATAL_ERROR "TYPE is not set!")
+  endif()
+
+  foreach(dep ${_ARG_LINK_LIBRARIES})
+    if(NOT TARGET ${dep})
+      if(_ARG__ARG_COMPONENT_NAME)
+        message(WARNING "Skipping tests for component [${_ARG_COMPONENT_NAME}] due to missing component target [${dep}]")
+      else()
+        message(WARNING "Skipping tests due to missing component target [${dep}]")
+      endif()
+      return()
+    endif()
+  endforeach()
+
+  # Glob all the test files
+  if(_ARG_GLOB_SOURCES)
+    file(GLOB_RECURSE glob_test_files RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "test_*.cpp")
+    list(APPEND test_files ${glob_test_files})
+  endif()
+  list(APPEND test_files ${_ARG_SOURCES})
+  if(test_files)
+    list(SORT test_files)
+  endif()
+
+  foreach(source ${test_files})
+    # Set target name
+    if(_ARG_TARGET_PREFIX)
+      set(target_name ${_ARG_TARGET_PREFIX}_)
+    else()
+      set(target_name )
+    endif()
+    get_filename_component(source_name ${source} NAME_WE)
+    string(REPLACE "test_" "" source_name ${source_name})
+    get_filename_component(source_dir ${source} DIRECTORY)
+    if(source_dir)
+      string(REPLACE "/" "_" source_prefix ${source_dir})
+      set(target_name "${target_name}${source_prefix}_${source_name}")
+    else()
+      set(target_name "${target_name}${source_name}")
+    endif()
+
+    if(MSVC)
+      add_executable(${target_name} ${source})
+    else()
+      add_executable(${target_name} EXCLUDE_FROM_ALL ${source})
+    endif()
+    add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
+
+    # Include directories
+    target_include_directories(
+      ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
+    )
+
+    # Link libraries
+    target_link_libraries(${target_name} PRIVATE gtest gtest_main)
+    target_link_libraries(
+      ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
+    )
+    if(UNIX)
+      # gtest requies pthread when compiled on a Unix machine
+      target_link_libraries(${target_name} PRIVATE pthread)
+    endif()
+
+    # Add the test target to the list
+    dart_property_add(DART_${_ARG_TYPE}_TESTS ${target_name})
+
+  endforeach()
+
+  dart_format_add(${test_files})
+
+endfunction()

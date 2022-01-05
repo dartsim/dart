@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -45,8 +45,7 @@ int main(int argc, char* argv[])
       = dart::utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  myWorld->setGravity(0.0, -9.81, 0.0);
 
   dart::dynamics::SkeletonPtr biped = myWorld->getSkeleton("fullbody1");
 

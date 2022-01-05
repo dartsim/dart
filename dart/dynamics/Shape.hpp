@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,6 +37,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Castable.hpp"
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Signal.hpp"
@@ -50,7 +51,8 @@ namespace dynamics {
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class Shape : public virtual common::Subject,
-              public virtual common::VersionCounter
+              public virtual common::VersionCounter,
+              public common::Castable<Shape>
 {
 public:
   using VersionChangedSignal
@@ -111,21 +113,6 @@ public:
   /// Returns a string representing the shape type
   /// \sa is()
   virtual const std::string& getType() const = 0;
-
-  /// Get true if the types of this Shape and the template parameter (a shape
-  /// class) are identical. This function is a syntactic sugar, which is
-  /// identical to: (getType() == ShapeType::getStaticType()).
-  ///
-  /// Example code:
-  /// \code
-  /// auto shape = bodyNode->getShapeNode(0)->getShape();
-  /// if (shape->is<BoxShape>())
-  ///   std::cout << "The shape type is box!\n";
-  /// \endcode
-  ///
-  /// \sa getType()
-  template <typename ShapeT>
-  bool is() const;
 
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
@@ -238,7 +225,5 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
-
-#include "dart/dynamics/detail/Shape.hpp"
 
 #endif // DART_DYNAMICS_SHAPE_HPP_

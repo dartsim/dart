@@ -7,7 +7,7 @@ script_path="$(
 )"
 
 os=ubuntu-focal
-dart_version=v6.12
+dart_version=v6.13
 build_dir_prefix=.build/
 project_dir=/opt/dart/
 cleanup_command=""

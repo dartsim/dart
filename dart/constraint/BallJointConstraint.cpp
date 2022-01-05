@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -334,13 +334,13 @@ void BallJointConstraint::applyImpulse(double* _lambda)
 dynamics::SkeletonPtr BallJointConstraint::getRootSkeleton() const
 {
   if (mBodyNode1->isReactive())
-    return mBodyNode1->getSkeleton()->mUnionRootSkeleton.lock();
+    return ConstraintBase::getRootSkeleton(mBodyNode1->getSkeleton());
 
   if (mBodyNode2)
   {
     if (mBodyNode2->isReactive())
     {
-      return mBodyNode2->getSkeleton()->mUnionRootSkeleton.lock();
+      return ConstraintBase::getRootSkeleton(mBodyNode2->getSkeleton());
     }
     else
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -495,11 +495,8 @@ BulletCollisionDetector::createBulletCollisionShape(
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
 
-  if (shape->is<SphereShape>())
+  if (const auto sphere = shape->as<SphereShape>())
   {
-    assert(dynamic_cast<const SphereShape*>(shape.get()));
-
-    const auto sphere = static_cast<const SphereShape*>(shape.get());
     const auto radius = sphere->getRadius();
 
     auto bulletCollisionShape = std::make_unique<btSphereShape>(radius);
@@ -507,11 +504,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<BoxShape>())
+  else if (const auto box = shape->as<BoxShape>())
   {
-    assert(dynamic_cast<const BoxShape*>(shape.get()));
-
-    const auto box = static_cast<const BoxShape*>(shape.get());
     const Eigen::Vector3d& size = box->getSize();
 
     auto bulletCollisionShape
@@ -520,11 +514,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<EllipsoidShape>())
+  else if (const auto ellipsoid = shape->as<EllipsoidShape>())
   {
-    assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
-
-    const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
     const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
     auto bulletCollisionShape = createBulletEllipsoidMesh(
@@ -533,11 +524,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<CylinderShape>())
+  else if (const auto cylinder = shape->as<CylinderShape>())
   {
-    assert(dynamic_cast<const CylinderShape*>(shape.get()));
-
-    const auto cylinder = static_cast<const CylinderShape*>(shape.get());
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
     const auto size = btVector3(radius, radius, height * 0.5);
@@ -547,11 +535,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<CapsuleShape>())
+  else if (const auto capsule = shape->as<CapsuleShape>())
   {
-    assert(dynamic_cast<const CapsuleShape*>(shape.get()));
-
-    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
     const auto radius = capsule->getRadius();
     const auto height = capsule->getHeight();
 
@@ -561,11 +546,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<ConeShape>())
+  else if (const auto cone = shape->as<ConeShape>())
   {
-    assert(dynamic_cast<const ConeShape*>(shape.get()));
-
-    const auto cone = static_cast<const ConeShape*>(shape.get());
     const auto radius = cone->getRadius();
     const auto height = cone->getHeight();
 
@@ -579,11 +561,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<PlaneShape>())
+  else if (const auto plane = shape->as<PlaneShape>())
   {
-    assert(dynamic_cast<const PlaneShape*>(shape.get()));
-
-    const auto plane = static_cast<const PlaneShape*>(shape.get());
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
@@ -593,12 +572,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<MultiSphereConvexHullShape>())
+  else if (const auto multiSphere = shape->as<MultiSphereConvexHullShape>())
   {
-    assert(dynamic_cast<const MultiSphereConvexHullShape*>(shape.get()));
-
-    const auto multiSphere
-        = static_cast<const MultiSphereConvexHullShape*>(shape.get());
     const auto numSpheres = multiSphere->getNumSpheres();
     const auto& spheres = multiSphere->getSpheres();
 
@@ -617,11 +592,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<MeshShape>())
+  else if (const auto shapeMesh = shape->as<MeshShape>())
   {
-    assert(dynamic_cast<const MeshShape*>(shape.get()));
-
-    const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
     const auto scale = shapeMesh->getScale();
     const auto mesh = shapeMesh->getMesh();
 
@@ -631,11 +603,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<SoftMeshShape>())
+  else if (const auto softMeshShape = shape->as<SoftMeshShape>())
   {
-    assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
-
-    const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
     const auto mesh = softMeshShape->getAssimpMesh();
 
     auto bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
@@ -643,12 +612,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   }
-  else if (shape->is<HeightmapShapef>())
+  else if (const auto heightMap = shape->as<HeightmapShapef>())
   {
-    assert(dynamic_cast<const HeightmapShapef*>(shape.get()));
-
-    const auto heightMap = static_cast<const HeightmapShapef*>(shape.get());
-
     return createBulletCollisionShapeFromHeightmap(heightMap);
   }
   else if (shape->is<HeightmapShaped>())

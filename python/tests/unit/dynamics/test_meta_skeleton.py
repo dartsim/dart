@@ -3,7 +3,7 @@ import pytest
 import dartpy as dart
 
 
-# TODO(JS): Move this to comprehensive category once created
+# TODO(JS): Move this to integration category once created
 
 
 def test_basic():

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -277,7 +277,7 @@ void ServoMotorConstraint::applyImpulse(double* lambda)
 //==============================================================================
 dynamics::SkeletonPtr ServoMotorConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
+  return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
 }
 
 //==============================================================================

@@ -29,7 +29,7 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Can Erdogan](https://github.com/cerdogan)         | planning, examples
  [Jie Tan](https://github.com/jietan)               | lcp solver, renderer
  [Yunfei Bai](https://github.com/YunfeiBai)         | build and bug fixes
- [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | mimic joint, OSG shadows, build and bug fixes
+ [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | mimic joint, OSG shadows, shape deep copy, build and bug fixes
  [Sehoon Ha](https://github.com/sehoonha)           | early DART data structure design, [pydart](https://github.com/sehoonha/pydart)
  [Donny Ward](https://github.com/donnyward)         | build fix
  [Andrew Price](https://github.com/a-price)         | build fix
@@ -47,7 +47,7 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Aditya Vamsikrishna](https://github.com/aditya-vk) | bug fix
  [pchorak](https://github.com/pchorak)              | bug fixes
  [acxz](https://github.com/acxz)                    | doxygen warning fix
- [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector, slip effect on contact
+ [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector, slip effect on contact, velocity and position integration, constraint grouping, skeleton unsubscription fix
  [Christoph Hinze](https://github.com/chhinze)      | python bindings
  [Erwin Coumans](https://github.com/erwincoumans)   | build fix on Windows/MSVC
  [Silvio Traversaro](https://github.com/traversaro) | build fix on Windows/MSVC, vcpkg packaging

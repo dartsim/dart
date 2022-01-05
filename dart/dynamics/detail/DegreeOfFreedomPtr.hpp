@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -218,7 +218,7 @@ private:
   TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
 
   /// Local index of this DegreeOfFreedom within its Joint
-  std::size_t mIndex;
+  std::size_t mIndex = 0;
 };
 
 /// TemplateWeakDegreeOfFreedomPtr is a templated class that enables users to

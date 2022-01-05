@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -52,6 +52,8 @@ typedef struct
   #include <sys/time.h>
 #endif
 
+#include "dart/common/Deprecated.hpp"
+
 namespace dart {
 namespace common {
 
@@ -59,7 +61,9 @@ namespace common {
 ///
 /// This is a definition of mTimer class.
 /// For measure the time, gettimeofday() api is used
-class Timer
+///
+/// \deprecated Use Stopwatch instead.
+class DART_DEPRECATED(6.13) Timer
 {
 public:
   /// \brief Default constructor

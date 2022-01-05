@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -49,7 +49,6 @@
 #include "dart/common/NameManager.hpp"
 #include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
-#include "dart/common/Timer.hpp"
 #include "dart/constraint/SmartPointer.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -119,6 +118,9 @@ public:
 
   /// Set gravity
   void setGravity(const Eigen::Vector3d& _gravity);
+
+  /// Set gravity
+  void setGravity(double x, double y, double z);
 
   /// Get gravity
   const Eigen::Vector3d& getGravity() const;

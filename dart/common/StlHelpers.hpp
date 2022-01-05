@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,15 +37,7 @@
 #include <cstddef>
 #include <vector>
 
-#include "Memory.hpp"
-
-// Macro to suppress -Wunused-parameter and -Wunused-variable warnings in
-// release mode when a variable is only used in assertions.
-#define DART_UNUSED(x)                                                         \
-  do                                                                           \
-  {                                                                            \
-    (void)(x);                                                                 \
-  } while (0)
+#include "dart/common/Memory.hpp"
 
 namespace dart {
 namespace common {

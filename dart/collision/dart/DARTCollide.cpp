@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -50,11 +50,6 @@ namespace collision {
 // penetration : real positive means penetration
 
 #define DART_COLLISION_EPS 1E-6
-static const int MAX_CYLBOX_CLIP_POINTS = 16;
-static const int nCYLINDER_AXIS = 2;
-// Number of segment of cylinder base circle.
-// Must be divisible by 4.
-static const int nCYLINDER_SEGMENT = 8;
 
 typedef double dVector3[4];
 typedef double dVector3[4];

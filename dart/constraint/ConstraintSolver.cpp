@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -145,7 +145,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
            << "', which doesn't exist in the ConstraintSolver.\n";
   }
 
-  mCollisionGroup->removeShapeFramesOf(skeleton.get());
+  mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());

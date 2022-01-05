@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -256,6 +256,12 @@ void World::setGravity(const Eigen::Vector3d& _gravity)
   {
     (*it)->setGravity(_gravity);
   }
+}
+
+//==============================================================================
+void World::setGravity(double x, double y, double z)
+{
+  setGravity(Eigen::Vector3d(x, y, z));
 }
 
 //==============================================================================

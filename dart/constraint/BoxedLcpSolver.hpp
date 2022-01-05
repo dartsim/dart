@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,10 +37,12 @@
 
 #include <Eigen/Core>
 
+#include "dart/common/Castable.hpp"
+
 namespace dart {
 namespace constraint {
 
-class BoxedLcpSolver
+class BoxedLcpSolver : public common::Castable<BoxedLcpSolver>
 {
 public:
   /// Destructor
@@ -48,22 +50,6 @@ public:
 
   /// Returns the type
   virtual const std::string& getType() const = 0;
-
-  /// Returns true if this solver and the template parameter (a solver class)
-  /// are the same type. This function is a syntactic sugar, which is identical
-  /// to:
-  /// \code getType() == BoxedLcpSolver::getStaticType() \endcode.
-  ///
-  /// Example code:
-  /// \code
-  /// auto lcpSolver = constraintSolver->getBoxedLcpSolver();
-  /// if (shape->is<DantzigBoxedLcpSolver>())
-  ///   std::cout << "The LCP solver type is Dantzig!\n";
-  /// \endcode
-  ///
-  /// \sa getType()
-  template <typename BoxedLcpSolverT>
-  bool is() const;
 
   /// Solves constriant impulses for a constrained group. The LCP formulation
   /// setting that this function solve is A*x = b + w where each x[i], w[i]
@@ -109,7 +95,5 @@ public:
 
 } // namespace constraint
 } // namespace dart
-
-#include "dart/constraint/detail/BoxedLcpSolver-impl.hpp"
 
 #endif // DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_

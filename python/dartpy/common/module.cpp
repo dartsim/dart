@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,23 +37,27 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
+void Logging(py::module& sm);
 void Observer(py::module& sm);
 void Subject(py::module& sm);
 void Uri(py::module& sm);
 void Composite(py::module& sm);
 void Resource(py::module& sm);
 void ResourceRetriever(py::module& sm);
+void Stopwatch(py::module& sm);
 
 void dart_common(py::module& m)
 {
   auto sm = m.def_submodule("common");
 
+  Logging(sm);
   Observer(sm);
   Subject(sm);
   Uri(sm);
   Composite(sm);
   Resource(sm);
   ResourceRetriever(sm);
+  Stopwatch(sm);
 }
 
 } // namespace python

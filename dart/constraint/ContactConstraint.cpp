@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -749,9 +749,9 @@ dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
   assert(isActive());
 
   if (mBodyNodeA->isReactive())
-    return mBodyNodeA->getSkeleton()->mUnionRootSkeleton.lock();
+    return ConstraintBase::getRootSkeleton(mBodyNodeA->getSkeleton());
   else
-    return mBodyNodeB->getSkeleton()->mUnionRootSkeleton.lock();
+    return ConstraintBase::getRootSkeleton(mBodyNodeB->getSkeleton());
 }
 
 //==============================================================================

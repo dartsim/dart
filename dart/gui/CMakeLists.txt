@@ -51,6 +51,13 @@ target_link_libraries(${target_name}
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
 )
+if(APPLE)
+  # Suppress "deprecated-declarations" until we abandon glut.
+  target_compile_options(${target_name}
+    PUBLIC
+      -Wno-deprecated-declarations
+  )
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

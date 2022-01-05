@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -185,60 +185,52 @@ detail::OdeGeom* createOdeGeom(
   detail::OdeGeom* geom = nullptr;
   const auto shape = shapeFrame->getShape().get();
 
-  if (shape->is<SphereShape>())
+  if (const auto sphere = shape->as<SphereShape>())
   {
-    const auto sphere = static_cast<const SphereShape*>(shape);
     const auto radius = sphere->getRadius();
 
     geom = new detail::OdeSphere(collObj, radius);
   }
-  else if (shape->is<BoxShape>())
+  else if (const auto box = shape->as<BoxShape>())
   {
-    const auto box = static_cast<const BoxShape*>(shape);
     const Eigen::Vector3d& size = box->getSize();
 
     geom = new detail::OdeBox(collObj, size);
   }
-  else if (shape->is<CapsuleShape>())
+  else if (const auto capsule = shape->as<CapsuleShape>())
   {
-    const auto capsule = static_cast<const CapsuleShape*>(shape);
     const auto radius = capsule->getRadius();
     const auto height = capsule->getHeight();
 
     geom = new detail::OdeCapsule(collObj, radius, height);
   }
-  else if (shape->is<CylinderShape>())
+  else if (const auto cylinder = shape->as<CylinderShape>())
   {
-    const auto cylinder = static_cast<const CylinderShape*>(shape);
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
     geom = new detail::OdeCylinder(collObj, radius, height);
   }
-  else if (shape->is<PlaneShape>())
+  else if (const auto plane = shape->as<PlaneShape>())
   {
-    const auto plane = static_cast<const PlaneShape*>(shape);
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
     geom = new detail::OdePlane(collObj, normal, offset);
   }
-  else if (shape->is<MeshShape>())
+  else if (const auto shapeMesh = shape->as<MeshShape>())
   {
-    auto shapeMesh = static_cast<const MeshShape*>(shape);
     const Eigen::Vector3d& scale = shapeMesh->getScale();
     auto aiScene = shapeMesh->getMesh();
 
     geom = new detail::OdeMesh(collObj, aiScene, scale);
   }
-  else if (shape->is<HeightmapShapef>())
+  else if (const auto heightMap = shape->as<HeightmapShapef>())
   {
-    auto heightMap = static_cast<const HeightmapShapef*>(shape);
     geom = new detail::OdeHeightmapf(collObj, heightMap);
   }
-  else if (shape->is<HeightmapShaped>())
+  else if (const auto heightMap = shape->as<HeightmapShaped>())
   {
-    auto heightMap = static_cast<const HeightmapShaped*>(shape);
     geom = new detail::OdeHeightmapd(collObj, heightMap);
   }
   else

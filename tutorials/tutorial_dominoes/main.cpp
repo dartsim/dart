@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -37,7 +37,7 @@ const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
 const double default_domino_depth = default_domino_width / 5.0;
 
-const double default_distance = default_domino_height / 2.0;
+[[maybe_unused]] const double default_distance = default_domino_height / 2.0;
 const double default_angle = dart::math::toRadian(20.0);
 
 const double default_domino_density = 2.6e3; // kg/m^3
@@ -45,11 +45,11 @@ const double default_domino_mass
     = default_domino_density * default_domino_height * default_domino_width
       * default_domino_depth;
 
-const double default_push_force = 8.0;  // N
-const int default_force_duration = 200; // # iterations
-const int default_push_duration = 1000; // # iterations
+[[maybe_unused]] const double default_push_force = 8.0; // N
+const int default_force_duration = 200;                 // # iterations
+const int default_push_duration = 1000;                 // # iterations
 
-const double defaultmEndEffectormOffset = 0.05;
+[[maybe_unused]] const double defaultmEndEffectormOffset = 0.05;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
