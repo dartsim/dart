@@ -52,15 +52,9 @@ WorldPtr readWorld(const common::Uri& uri)
   SdfParser::Options options;
   options.mDefaultRootJointType = SdfParser::RootJointType::FIXED;
   WorldPtr world = SdfParser::readWorld(uri, options);
-  for (auto i = 0u; i < world->getNumSkeletons(); ++i)
-  {
-    auto skel = world->getSkeleton(i);
-    for (auto j = 0u; j < skel->getNumJoints(); ++j)
-    {
-      auto joint = skel->getJoint(j);
-      joint->setLimitEnforcement(true);
-    }
-  }
+  world->eachSkeleton([](Skeleton* skel) {
+    skel->eachJoint([](Joint* joint) { joint->setLimitEnforcement(true); });
+  });
   return world;
 }
 

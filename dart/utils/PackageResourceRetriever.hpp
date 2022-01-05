@@ -61,13 +61,13 @@ public:
   /// Specify the directory of a ROS package. In your URDF files, you may see
   /// strings with a package URI pattern such as:
   ///
-  /// @code
+  /// \code
   /// "package://my_robot/meshes/mesh_for_my_robot.stl"
   ///  \______/  \______/\___________________________/
   ///      |        |                 |
   ///   package  package   file path with respect to
   ///   keyword   name       the package directory
-  /// @endcode
+  /// \endcode
   ///
   /// For us to successfully parse a URDF, we need to be told what the path
   /// to the package directory is, using addPackageDirectory(). In this case,

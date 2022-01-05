@@ -264,8 +264,7 @@ public:
     if (mForceCountDown > 0)
     {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
-      auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
-      shapeNodes[0]->getVisualAspect()->setColor(dart::Color::Red());
+      bn->setColor(dart::Color::Red());
 
       if (mPositiveSign)
         bn->addExtForce(

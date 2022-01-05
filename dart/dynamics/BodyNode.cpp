@@ -664,24 +664,22 @@ Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(
 }
 
 //==============================================================================
-void BodyNode::setFrictionCoeff(double _coeff)
+void BodyNode::setFrictionCoeff(double coeff)
 {
   // Below code block is to set the friction coefficients of all the current
   // dynamics aspects of this BodyNode as a stopgap solution. However, this
   // won't help for new ShapeNodes that get added later.
-  auto shapeNodes = getShapeNodesWith<DynamicsAspect>();
-  for (auto& shapeNode : shapeNodes)
-  {
+  eachShapeNodeWith<DynamicsAspect>([&](ShapeNode* shapeNode) {
     auto* dynamicsAspect = shapeNode->getDynamicsAspect();
-    dynamicsAspect->setFrictionCoeff(_coeff);
-  }
+    dynamicsAspect->setFrictionCoeff(coeff);
+  });
 
-  if (mAspectProperties.mFrictionCoeff == _coeff)
+  if (mAspectProperties.mFrictionCoeff == coeff)
     return;
 
   assert(
-      0.0 <= _coeff && "Coefficient of friction should be non-negative value.");
-  mAspectProperties.mFrictionCoeff = _coeff;
+      0.0 <= coeff && "Coefficient of friction should be non-negative value.");
+  mAspectProperties.mFrictionCoeff = coeff;
 
   incrementVersion();
 }
@@ -693,25 +691,23 @@ double BodyNode::getFrictionCoeff() const
 }
 
 //==============================================================================
-void BodyNode::setRestitutionCoeff(double _coeff)
+void BodyNode::setRestitutionCoeff(double coeff)
 {
   // Below code block is to set the restitution coefficients of all the current
   // dynamics aspects of this BodyNode as a stopgap solution. However, this
   // won't help for new ShapeNodes that get added later.
-  auto shapeNodes = getShapeNodesWith<DynamicsAspect>();
-  for (auto& shapeNode : shapeNodes)
-  {
+  eachShapeNodeWith<DynamicsAspect>([&](ShapeNode* shapeNode) {
     auto* dynamicsAspect = shapeNode->getDynamicsAspect();
-    dynamicsAspect->setFrictionCoeff(_coeff);
-  }
+    dynamicsAspect->setFrictionCoeff(coeff);
+  });
 
-  if (_coeff == mAspectProperties.mRestitutionCoeff)
+  if (coeff == mAspectProperties.mRestitutionCoeff)
     return;
 
   assert(
-      0.0 <= _coeff && _coeff <= 1.0
+      0.0 <= coeff && coeff <= 1.0
       && "Coefficient of restitution should be in range of [0, 1].");
-  mAspectProperties.mRestitutionCoeff = _coeff;
+  mAspectProperties.mRestitutionCoeff = coeff;
 
   incrementVersion();
 }
@@ -982,9 +978,7 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
 //==============================================================================
 void BodyNode::removeAllShapeNodes()
 {
-  auto shapeNodes = getShapeNodes();
-  for (auto shapeNode : shapeNodes)
-    shapeNode->remove();
+  eachShapeNode([](ShapeNode* shapeNode) { shapeNode->remove(); });
 }
 
 //==============================================================================
@@ -1614,6 +1608,30 @@ void BodyNode::dirtyCoriolisForces()
 {
   SKEL_SET_FLAGS(mCoriolisForces);
   SKEL_SET_FLAGS(mCoriolisAndGravityForces);
+}
+
+//==============================================================================
+void BodyNode::setColor(const Eigen::Vector3d& color)
+{
+  eachShapeNodeWith<VisualAspect>([&](ShapeNode* shapeNode) {
+    shapeNode->getVisualAspect()->setColor(color);
+  });
+}
+
+//==============================================================================
+void BodyNode::setColor(const Eigen::Vector4d& color)
+{
+  eachShapeNodeWith<VisualAspect>([&](ShapeNode* shapeNode) {
+    shapeNode->getVisualAspect()->setColor(color);
+  });
+}
+
+//==============================================================================
+void BodyNode::setAlpha(double alpha)
+{
+  eachShapeNodeWith<VisualAspect>([&](ShapeNode* shapeNode) {
+    shapeNode->getVisualAspect()->setAlpha(alpha);
+  });
 }
 
 //==============================================================================

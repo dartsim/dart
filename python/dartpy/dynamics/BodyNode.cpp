@@ -925,7 +925,9 @@ void BodyNode(py::module& m)
           "getShapeNodes",
           +[](dart::dynamics::BodyNode* self)
               -> const std::vector<dart::dynamics::ShapeNode*> {
+            DART_SUPPRESS_DEPRECATED_BEGIN
             return self->getShapeNodes();
+            DART_SUPPRESS_DEPRECATED_END
           },
           ::py::return_value_policy::reference_internal)
       .def(
@@ -1199,7 +1201,18 @@ void BodyNode(py::module& m)
           +[](dart::dynamics::BodyNode* self) { self->dirtyExternalForces(); })
       .def(
           "dirtyCoriolisForces",
-          +[](dart::dynamics::BodyNode* self) { self->dirtyCoriolisForces(); });
+          +[](dart::dynamics::BodyNode* self) { self->dirtyCoriolisForces(); })
+      .def(
+          "setColor",
+          ::py::overload_cast<const Eigen::Vector3d&>(
+              &dynamics::BodyNode::setColor),
+          ::py::arg("color"))
+      .def(
+          "setColor",
+          ::py::overload_cast<const Eigen::Vector4d&>(
+              &dynamics::BodyNode::setColor),
+          ::py::arg("color"))
+      .def("setAlpha", &dynamics::BodyNode::setAlpha, ::py::arg("alpha"));
 }
 
 } // namespace python

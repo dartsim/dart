@@ -281,6 +281,48 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   inline const TypeName* get##AspectName(std::size_t index) const              \
   {                                                                            \
     return getNode<TypeName>(index);                                           \
+  }                                                                            \
+  template <typename Func>                                                     \
+  void each##AspectName(Func func) const                                       \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, const AspectName*>,           \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        if (!func(get##AspectName(i)))                                         \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        func(get##AspectName(i));                                              \
+      }                                                                        \
+    }                                                                          \
+  }                                                                            \
+  template <typename Func>                                                     \
+  void each##AspectName(Func func)                                             \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, AspectName*>,                 \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        if (!func(get##AspectName(i)))                                         \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        func(get##AspectName(i));                                              \
+      }                                                                        \
+    }                                                                          \
   }
 
 //==============================================================================
@@ -313,6 +355,48 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   inline const TypeName* get##AspectName(const std::string& name) const        \
   {                                                                            \
     return getNode<TypeName>(name);                                            \
+  }                                                                            \
+  template <typename Func>                                                     \
+  void each##AspectName(std::size_t treeIndex, Func func) const                \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, const AspectName*>,           \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        if (!func(get##AspectName(treeIndex, i)))                              \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        func(get##AspectName(treeIndex, i));                                   \
+      }                                                                        \
+    }                                                                          \
+  }                                                                            \
+  template <typename Func>                                                     \
+  void each##AspectName(std::size_t treeIndex, Func func)                      \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, AspectName*>,                 \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        if (!func(get##AspectName(treeIndex, i)))                              \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        func(get##AspectName(treeIndex, i));                                   \
+      }                                                                        \
+    }                                                                          \
   }
 
 //==============================================================================
@@ -325,7 +409,49 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
     TypeName, AspectName, PluralAspectName)                                    \
   std::size_t getNum##PluralAspectName() const;                                \
   TypeName* get##AspectName(std::size_t index);                                \
-  const TypeName* get##AspectName(std::size_t index) const;
+  const TypeName* get##AspectName(std::size_t index) const;                    \
+  template <typename Func>                                                     \
+  void each##AspectName(Func func) const                                       \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, const AspectName*>,           \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        if (!func(get##AspectName(i)))                                         \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        func(get##AspectName(i));                                              \
+      }                                                                        \
+    }                                                                          \
+  }                                                                            \
+  template <typename Func>                                                     \
+  void each##AspectName(Func func)                                             \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, AspectName*>,                 \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        if (!func(get##AspectName(i)))                                         \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
+      {                                                                        \
+        func(get##AspectName(i));                                              \
+      }                                                                        \
+    }                                                                          \
+  }
 
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_DECLARATIONS(AspectName)                    \
@@ -343,7 +469,50 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
       std::size_t treeIndex, std::size_t nodeIndex) const;                     \
                                                                                \
   TypeName* get##AspectName(const std::string& name);                          \
-  const TypeName* get##AspectName(const std::string& name) const;
+  const TypeName* get##AspectName(const std::string& name) const;              \
+                                                                               \
+  template <typename Func>                                                     \
+  void each##AspectName(std::size_t treeIndex, Func func) const                \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, const AspectName*>,           \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        if (!func(get##AspectName(treeIndex, i)))                              \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        func(get##AspectName(treeIndex, i));                                   \
+      }                                                                        \
+    }                                                                          \
+  }                                                                            \
+  template <typename Func>                                                     \
+  void each##AspectName(std::size_t treeIndex, Func func)                      \
+  {                                                                            \
+    if constexpr (std::is_same_v<                                              \
+                      std::invoke_result_t<Func, AspectName*>,                 \
+                      bool>)                                                   \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        if (!func(get##AspectName(treeIndex, i)))                              \
+          return;                                                              \
+      }                                                                        \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
+      {                                                                        \
+        func(get##AspectName(treeIndex, i));                                   \
+      }                                                                        \
+    }                                                                          \
+  }
 
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(AspectName)               \

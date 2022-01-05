@@ -345,13 +345,7 @@ BodyNode* addSoftBody(
 void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
 {
   // Set the color of all the shapes in the object
-  for (std::size_t i = 0; i < object->getNumBodyNodes(); ++i)
-  {
-    BodyNode* bn = object->getBodyNode(i);
-    auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
-    for (auto visualShapeNode : visualShapeNodes)
-      visualShapeNode->getVisualAspect()->setColor(color);
-  }
+  object->setColor(color);
 }
 
 SkeletonPtr createBall()

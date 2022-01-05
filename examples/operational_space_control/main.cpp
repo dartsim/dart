@@ -60,11 +60,10 @@ public:
       mKd(i, i) = 5.0;
 
     // Set joint properties
-    for (std::size_t i = 0; i < mRobot->getNumJoints(); ++i)
-    {
-      mRobot->getJoint(i)->setLimitEnforcement(false);
-      mRobot->getJoint(i)->setDampingCoefficient(0, 0.5);
-    }
+    mRobot->eachJoint([](dart::dynamics::Joint* joint) {
+      joint->setLimitEnforcement(false);
+      joint->setDampingCoefficient(0, 0.5);
+    });
 
     mOffset = Eigen::Vector3d(0.05, 0, 0);
 

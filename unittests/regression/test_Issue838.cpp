@@ -52,13 +52,11 @@ TEST(Issue838, MaterialParsing)
 
   for (size_t i = 0; i < skeleton->getNumBodyNodes(); ++i)
   {
-    const Eigen::Vector4d c = colors[i];
-    const dart::dynamics::BodyNode* bn = skeleton->getBodyNode(i);
-    for (size_t j = 0; j < bn->getNumShapeNodes(); ++j)
-    {
-      const dart::dynamics::ShapeNode* sn = bn->getShapeNode(j);
-      EXPECT_TRUE(equals(sn->getVisualAspect()->getRGBA(), c));
-    }
+    const Eigen::Vector4d& c = colors[i];
+    skeleton->getBodyNode(i)->eachShapeNodeWith<dart::dynamics::VisualAspect>(
+        [&](const dart::dynamics::ShapeNode* shapeNode) {
+          EXPECT_TRUE(equals(shapeNode->getVisualAspect()->getRGBA(), c));
+        });
   }
 }
 

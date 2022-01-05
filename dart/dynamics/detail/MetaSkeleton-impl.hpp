@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2022, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -15,12 +15,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -36,114 +30,152 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
-#define DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
+#ifndef DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_
+#define DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_
 
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
 
-namespace dart {
-namespace simulation {
-
-//==============================================================================
-template <typename... Args>
-WorldPtr World::create(Args&&... args)
-{
-  return std::make_shared<World>(std::forward<Args>(args)...);
-}
+namespace dart::dynamics {
 
 //==============================================================================
 template <typename Func>
-void World::eachSkeleton(Func func) const
+void MetaSkeleton::eachBodyNode(Func func) const
 {
   if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, const dynamics::Skeleton*>,
+                    std::invoke_result_t<Func, const dynamics::BodyNode*>,
                     bool>)
   {
-    for (auto skel : mSkeletons)
+    for (auto i = 0u; i < getNumBodyNodes(); ++i)
     {
-      if (!func(skel.get()))
+      if (!func(getBodyNode(i)))
         return;
     }
   }
   else
   {
-    for (auto skel : mSkeletons)
+    for (auto i = 0u; i < getNumBodyNodes(); ++i)
     {
-      func(skel.get());
+      func(getBodyNode(i));
     }
   }
 }
 
 //==============================================================================
 template <typename Func>
-void World::eachSkeleton(Func func)
+void MetaSkeleton::eachBodyNode(Func func)
 {
   if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, dynamics::Skeleton*>,
+                    std::invoke_result_t<Func, dynamics::BodyNode*>,
                     bool>)
   {
-    for (auto skel : mSkeletons)
+    for (auto i = 0u; i < getNumBodyNodes(); ++i)
     {
-      if (!func(skel.get()))
+      if (!func(getBodyNode(i)))
         return;
     }
   }
   else
   {
-    for (auto skel : mSkeletons)
+    for (auto i = 0u; i < getNumBodyNodes(); ++i)
     {
-      func(skel.get());
+      func(getBodyNode(i));
     }
   }
 }
 
 //==============================================================================
 template <typename Func>
-void World::eachSimpleFrame(Func func) const
+void MetaSkeleton::eachJoint(Func func) const
 {
   if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, const dynamics::SimpleFrame*>,
+                    std::invoke_result_t<Func, const dynamics::Joint*>,
                     bool>)
   {
-    for (auto simpleFrame : mSimpleFrames)
+    for (auto i = 0u; i < getNumJoints(); ++i)
     {
-      if (!func(simpleFrame.get()))
+      if (!func(getJoint(i)))
         return;
     }
   }
   else
   {
-    for (auto simpleFrame : mSimpleFrames)
+    for (auto i = 0u; i < getNumJoints(); ++i)
     {
-      func(simpleFrame.get());
+      func(getJoint(i));
     }
   }
 }
 
 //==============================================================================
 template <typename Func>
-void World::eachSimpleFrame(Func func)
+void MetaSkeleton::eachJoint(Func func)
 {
   if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, dynamics::SimpleFrame*>,
+                    std::invoke_result_t<Func, dynamics::Joint*>,
                     bool>)
   {
-    for (auto simpleFrame : mSimpleFrames)
+    for (auto i = 0u; i < getNumJoints(); ++i)
     {
-      if (!func(simpleFrame.get()))
+      if (!func(getJoint(i)))
         return;
     }
   }
   else
   {
-    for (auto simpleFrame : mSimpleFrames)
+    for (auto i = 0u; i < getNumJoints(); ++i)
     {
-      func(simpleFrame.get());
+      func(getJoint(i));
     }
   }
 }
 
-} // namespace simulation
-} // namespace dart
+//==============================================================================
+template <typename Func>
+void MetaSkeleton::eachDof(Func func) const
+{
+  if constexpr (std::is_same_v<
+                    std::
+                        invoke_result_t<Func, const dynamics::DegreeOfFreedom*>,
+                    bool>)
+  {
+    for (auto i = 0u; i < getNumDofs(); ++i)
+    {
+      if (!func(getDof(i)))
+        return;
+    }
+  }
+  else
+  {
+    for (auto i = 0u; i < getNumDofs(); ++i)
+    {
+      func(getDof(i));
+    }
+  }
+}
 
-#endif // DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
+//==============================================================================
+template <typename Func>
+void MetaSkeleton::eachDof(Func func)
+{
+  if constexpr (std::is_same_v<
+                    std::invoke_result_t<Func, dynamics::DegreeOfFreedom*>,
+                    bool>)
+  {
+    for (auto i = 0u; i < getNumDofs(); ++i)
+    {
+      if (!func(getDof(i)))
+        return;
+    }
+  }
+  else
+  {
+    for (auto i = 0u; i < getNumDofs(); ++i)
+    {
+      func(getDof(i));
+    }
+  }
+}
+
+} // namespace dart::dynamics
+
+#endif // DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_

@@ -288,17 +288,15 @@ public:
     mLegs.push_back(mAtlas->getDof("rootJoint_rot_y")->getIndexInSkeleton());
     mLegs.push_back(mAtlas->getDof("rootJoint_pos_z")->getIndexInSkeleton());
 
-    for (std::size_t i = 0; i < mAtlas->getNumEndEffectors(); ++i)
-    {
-      const InverseKinematicsPtr ik = mAtlas->getEndEffector(i)->getIK();
-      if (ik)
+    mAtlas->eachEndEffector([&](EndEffector* ee) {
+      if (const InverseKinematicsPtr ik = ee->getIK())
       {
         mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
         mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
         mConstraintActive.push_back(false);
-        mEndEffectorIndex.push_back(i);
+        mEndEffectorIndex.push_back(ee->getIndexInSkeleton());
       }
-    }
+    });
 
     mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
         mAtlas->getIK(true)->getObjective());
@@ -876,18 +874,16 @@ void enableDragAndDrops(
   for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
 
-  for (std::size_t i = 0; i < atlas->getNumEndEffectors(); ++i)
-  {
-    EndEffector* ee = atlas->getEndEffector(i);
+  atlas->eachEndEffector([&](EndEffector* ee) {
     if (!ee->getIK())
-      continue;
+      return;
 
     // Check whether the target is an interactive frame, and add it if it is
     if (const auto& frame
         = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
             ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
-  }
+  });
 }
 
 int main()

@@ -1411,8 +1411,8 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   auto boxBodyNode1 = boxSkeleton1->getBodyNode(0u);
   auto boxBodyNode2 = boxSkeleton2->getBodyNode(0u);
 
-  auto boxShapeNode1 = boxBodyNode1->getShapeNodesWith<CollisionAspect>()[0];
-  auto boxShapeNode2 = boxBodyNode2->getShapeNodesWith<CollisionAspect>()[0];
+  auto boxShapeNode1 = boxBodyNode1->getShapeNodeWith<CollisionAspect>(0);
+  auto boxShapeNode2 = boxBodyNode2->getShapeNodeWith<CollisionAspect>(0);
 
   collision::CollisionOption option;
   collision::CollisionResult result;

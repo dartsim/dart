@@ -505,11 +505,7 @@ BodyNode* addSoftBody(
   bn->setInertia(inertia);
 
   // Make the shape transparent
-  auto visualAspect
-      = bn->getShapeNodesWith<VisualAspect>()[0]->getVisualAspect();
-  Eigen::Vector4d color = visualAspect->getRGBA();
-  color[3] = 0.4;
-  visualAspect->setRGBA(color);
+  bn->setAlpha(0.4);
 
   return bn;
 }
@@ -517,13 +513,7 @@ BodyNode* addSoftBody(
 void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
 {
   // Set the color of all the shapes in the object
-  for (std::size_t i = 0; i < object->getNumBodyNodes(); ++i)
-  {
-    BodyNode* bn = object->getBodyNode(i);
-    auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
-    for (auto visualShapeNode : visualShapeNodes)
-      visualShapeNode->getVisualAspect()->setColor(color);
-  }
+  object->setColor(color);
 }
 
 SkeletonPtr createBall()

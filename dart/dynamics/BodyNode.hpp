@@ -43,9 +43,10 @@
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/Node.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/dynamics/SpecializedNodeManager.hpp"
 #include "dart/dynamics/TemplatedJacobianNode.hpp"
@@ -259,7 +260,7 @@ public:
   /// coefficient per ShapeNode of the BodyNode. This will be removed in the
   /// next major release.
   DART_DEPRECATED(6.10)
-  void setFrictionCoeff(double _coeff);
+  void setFrictionCoeff(double coeff);
 
   /// Return frictional coefficient.
   /// \deprecated Deprecated since DART 6.10. Please set the friction
@@ -273,7 +274,7 @@ public:
   /// coefficient per ShapeNode of the BodyNode. This will be removed in the
   /// next major release.
   DART_DEPRECATED(6.10)
-  void setRestitutionCoeff(double _coeff);
+  void setRestitutionCoeff(double coeff);
 
   /// Return coefficient of restitution
   /// \deprecated Deprecated since DART 6.10. Please set the restitution
@@ -508,9 +509,15 @@ public:
       const std::shared_ptr<ShapeType>& shape, StringType&& name);
 
   /// Return the list of ShapeNodes
+  ///
+  /// \deprecated Use eachShapeNode() instead.
+  DART_DEPRECATED(6.13)
   const std::vector<ShapeNode*> getShapeNodes();
 
   /// Return the list of (const) ShapeNodes
+  ///
+  /// \deprecated Use eachShapeNode() instead.
+  DART_DEPRECATED(6.13)
   const std::vector<const ShapeNode*> getShapeNodes() const;
 
   /// Remove all ShapeNodes from this BodyNode
@@ -531,16 +538,71 @@ public:
   std::size_t getNumShapeNodesWith() const;
 
   /// Return the list of ShapeNodes containing given Aspect
+  ///
+  /// \deprecated Use eachShapeNodeWith() instead.
   template <class Aspect>
+  DART_DEPRECATED(6.13)
   const std::vector<ShapeNode*> getShapeNodesWith();
 
   /// Return the list of ShapeNodes containing given Aspect
+  ///
+  /// \deprecated Use eachShapeNodeWith() instead.
   template <class Aspect>
+  DART_DEPRECATED(6.13)
   const std::vector<const ShapeNode*> getShapeNodesWith() const;
+
+  /// Returns the index-th ShapeNode among the ShapeNodes that have a specific
+  /// Aspect.
+  ///
+  /// Returns nullptr if not found.
+  template <class Aspect>
+  ShapeNode* getShapeNodeWith(std::size_t index);
+
+  template <class Aspect>
+  const ShapeNode* getShapeNodeWith(std::size_t index) const;
 
   /// Remove all ShapeNodes containing given Aspect from this BodyNode
   template <class Aspect>
   void removeAllShapeNodesWith();
+
+  /// Iterates all the ShapeNodes that has a specific aspect.
+  ///
+  /// Example:
+  /// \code{.cpp}
+  /// bodyNode->eachShapeNodeWith<VisualAspect>([](const ShapeNode* shapeNode)
+  /// {
+  ///   shapeNode->getVisualAspect()->getAlpha();
+  /// });
+  /// \endcode
+  ///
+  /// \tparam Aspect: The Aspect type that ShapeNodes should have to be visited.
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(const ShapeNode*) or \c bool(const ShapeNode*). If
+  /// you want to conditionally iterate, use \c bool(const ShapeNode*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each ShapeNode.
+  template <typename Aspect, typename Func>
+  void eachShapeNodeWith(Func func) const;
+
+  /// Iterates all the ShapeNodes that has a specific aspect.
+  ///
+  /// Example:
+  /// \code{.cpp}
+  /// bodyNode->eachShapeNodeWith<VisualAspect>([&](ShapeNode* shapeNode) {
+  ///   shapeNode->getVisualAspect()->setAlpha(0.5);
+  /// });
+  /// \endcode
+  ///
+  /// \tparam Aspect: The Aspect type that ShapeNodes should have to be visited.
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(ShapeNode*) or \c bool(ShapeNode*). If
+  /// you want to conditionally iterate, use \c bool(ShapeNode*) and return
+  /// false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each ShapeNode.
+  template <typename Aspect, typename Func>
+  void eachShapeNodeWith(Func func);
 
   DART_BAKE_SPECIALIZED_NODE_DECLARATIONS(EndEffector)
 
@@ -820,6 +882,33 @@ public:
 
   /// Tell the Skeleton that the coriolis forces need to be update
   void dirtyCoriolisForces();
+
+  /// Sets the RGB color of the ShapeNodes that are currently in this
+  /// BodyNode.
+  ///
+  /// ShapeNodes that don't have VisualAspect will be ignored.
+  ///
+  /// Note that the ShapeNodes that are added after calling this function
+  /// don't get updated to the color that was set beforehand.
+  void setColor(const Eigen::Vector3d& color);
+
+  /// Sets the RGBA color of the ShapeNodes that are currently in this
+  /// BodyNode.
+  ///
+  /// ShapeNodes that don't have VisualAspect will be ignored.
+  ///
+  /// Note that the ShapeNodes that are added after calling this function
+  /// don't get updated to the color that was set beforehand.
+  void setColor(const Eigen::Vector4d& color);
+
+  /// Sets the alpha component of the ShapeNodes that are currently in this
+  /// BodyNode.
+  ///
+  /// ShapeNodes that don't have VisualAspect will be ignored.
+  ///
+  /// Note that the ShapeNodes that are added after calling this function
+  /// don't get updated to the alpha value that was set beforehand.
+  void setAlpha(double alpha);
 
   //----------------------------------------------------------------------------
   // Friendship
