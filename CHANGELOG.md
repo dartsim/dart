@@ -14,6 +14,7 @@
   * Added deep copy for shapes: [#1612](https://github.com/dartsim/dart/pull/1612)
   * Fixed grouping of constraints: [#1624](https://github.com/dartsim/dart/pull/1624), [#1628](https://github.com/dartsim/dart/pull/1628)
   * Fixed issue with removing skeletons without shapes: [#1625](https://github.com/dartsim/dart/pull/1625)
+  * Added support for custom contact surface handlers: [#1626](https://github.com/dartsim/dart/pull/1626)
 
 ### [DART 6.12.1 (2021-11-04)](https://github.com/dartsim/dart/milestone/71?closed=1)
 

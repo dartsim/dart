@@ -58,6 +58,7 @@ public:
       const ContactSurfaceParams& contactSurfaceParams);
 
   /// Constructor
+  DART_DEPRECATED(6.13)
   ContactConstraint(collision::Contact& contact, double timeStep);
 
   /// Destructor

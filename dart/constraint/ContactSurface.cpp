@@ -54,6 +54,8 @@ void ContactSurfaceHandler::setParent(ContactSurfaceHandlerPtr parent)
 {
   if (parent.get() != this)
     this->mParent = std::move(parent);
+  else
+    dtwarn << "Cannot assign self as parent handler.";
 }
 
 //==============================================================================
