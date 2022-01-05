@@ -50,6 +50,12 @@ ContactSurfaceHandler::ContactSurfaceHandler(ContactSurfaceHandlerPtr parent)
 }
 
 //==============================================================================
+ContactSurfaceHandlerPtr ContactSurfaceHandler::getParent()
+{
+  return this->mParent;
+}
+
+//==============================================================================
 void ContactSurfaceHandler::setParent(ContactSurfaceHandlerPtr parent)
 {
   if (parent.get() != this)

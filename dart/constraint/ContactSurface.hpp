@@ -123,6 +123,9 @@ public:
       size_t numContactsOnCollisionObject,
       double timeStep) const;
 
+  /// Get the optional parent handler (nullptr if none is set)
+  ContactSurfaceHandlerPtr getParent();
+
   /// Set the optional parent handler (ignored if parent.get() == this)
   void setParent(ContactSurfaceHandlerPtr parent);
 
