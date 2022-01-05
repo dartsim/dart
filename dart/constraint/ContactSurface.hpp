@@ -92,7 +92,14 @@ private:
   /// custom destructor, copy/move constructors and copy/move assignment
   /// operators have to be defined that will take care of copying/destroying
   /// the extra data.
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wunused-private-field"
+#endif
   void* mExtraData{nullptr};
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#endif
 };
 
 /// Class used to determine the properties of a contact constraint based on the
@@ -106,6 +113,8 @@ public:
   ///                   when adding a new one. It is suggested to keep this
   ///                   paradigm if used elsewhere.
   explicit ContactSurfaceHandler(ContactSurfaceHandlerPtr parent = nullptr);
+  
+  virtual ~ContactSurfaceHandler() = default;
 
   /// Create parameters of the contact constraint. This method should combine
   /// the collision properties of the two colliding bodies and write the
@@ -142,6 +151,8 @@ protected:
 class DefaultContactSurfaceHandler : public ContactSurfaceHandler
 {
 public:
+  virtual ~DefaultContactSurfaceHandler() = default;
+  
   // Documentation inherited
   ContactSurfaceParams createParams(
       const collision::Contact& contact,
