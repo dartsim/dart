@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP
-#define DART_CONSTRAINT_CONTACTSURFACE_HPP
+#ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
+#define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
 #include <Eigen/Core>
 
@@ -39,18 +39,18 @@
 #include "dart/constraint/SmartPointer.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 
-namespace dart {
-namespace constraint {
-
 #define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
 #define DART_FRICTION_COEFF_THRESHOLD 1e-3
 #define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
 #define DART_MAX_BOUNCING_VELOCITY 1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON_SQUARED 1e-12
 
+namespace dart {
+namespace constraint {
+
 constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
 constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
-// slip compliance is combined through addition,
+// Slip compliance is combined through addition,
 // so set to half the global default value
 constexpr double DART_DEFAULT_SLIP_COMPLIANCE = 0.0;
 const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR = Eigen::Vector3d::UnitZ();
@@ -123,7 +123,7 @@ public:
   /// Set the optional parent handler (ignored if parent.get() == this)
   void setParent(ContactSurfaceHandlerPtr parent);
 
-  friend class dart::constraint::ConstraintSolver;
+  friend class ConstraintSolver;
 
 protected:
   /// The optional parent handler
@@ -169,4 +169,4 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif // DART_CONSTRAINT_CONTACTSURFACE_HPP
+#endif // DART_CONSTRAINT_CONTACTSURFACE_HPP_

@@ -64,6 +64,7 @@ ContactConstraint::ContactConstraint(
       timeStep,
       DefaultContactSurfaceHandler().createParams(contact, 1u))
 {
+  // Do nothing
 }
 
 //==============================================================================

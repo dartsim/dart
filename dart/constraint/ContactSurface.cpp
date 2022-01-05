@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, The DART development contributors
+ * Copyright (c) 2011-2021, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,16 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ContactSurface.hpp"
+#include "dart/constraint/ContactSurface.hpp"
 
 #include <utility>
 
-#include <dart/collision/Contact.hpp>
-#include <dart/constraint/ContactSurface.hpp>
-
 #include "dart/collision/CollisionObject.hpp"
-
-#include "ContactConstraint.hpp"
+#include "dart/collision/Contact.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
+#include "dart/constraint/ContactSurface.hpp"
 
 namespace dart {
 namespace constraint {
@@ -48,6 +46,7 @@ namespace constraint {
 ContactSurfaceHandler::ContactSurfaceHandler(ContactSurfaceHandlerPtr parent)
   : mParent(std::move(parent))
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -73,12 +72,12 @@ ContactConstraintPtr ContactSurfaceHandler::createConstraint(
     size_t numContactsOnCollisionObject,
     const double timeStep) const
 {
-  auto params = this->createParams(contact, numContactsOnCollisionObject);
+  auto params = createParams(contact, numContactsOnCollisionObject);
   return std::make_shared<ContactConstraint>(contact, timeStep, params);
 }
 
 //==============================================================================
-ContactSurfaceParams constraint::DefaultContactSurfaceHandler::createParams(
+ContactSurfaceParams DefaultContactSurfaceHandler::createParams(
     const collision::Contact& contact,
     size_t numContactsOnCollisionObject) const
 {
