@@ -15,6 +15,10 @@
   * Fixed grouping of constraints: [#1624](https://github.com/dartsim/dart/pull/1624), [#1628](https://github.com/dartsim/dart/pull/1628)
   * Fixed issue with removing skeletons without shapes: [#1625](https://github.com/dartsim/dart/pull/1625)
 
+* GUI
+
+  * Fixed depth testing for transparent objects: [#1643](https://github.com/dartsim/dart/pull/1643)
+
 ### [DART 6.12.1 (2021-11-04)](https://github.com/dartsim/dart/milestone/71?closed=1)
 
 * Build
