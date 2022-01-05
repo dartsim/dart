@@ -494,10 +494,14 @@ public:
       mGeometry = new ::osg::Geometry;
       mGeometry->setVertexArray(mVertices);
       mGeometry->setDataVariance(::osg::Object::STATIC);
+
+      // TODO(JS): This should be set by the alpha value of the color
+      // See other shapes such as BoxShapeNode and MeshShapeNode.
       mGeometry->getOrCreateStateSet()->setMode(
           GL_BLEND, ::osg::StateAttribute::ON);
       mGeometry->getOrCreateStateSet()->setRenderingHint(
           ::osg::StateSet::TRANSPARENT_BIN);
+
       mGeometry->addPrimitiveSet(mPrimitiveSet);
       mGeometry->getOrCreateStateSet()->setAttribute(
           mPoint, ::osg::StateAttribute::ON);

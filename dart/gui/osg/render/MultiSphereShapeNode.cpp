@@ -33,6 +33,7 @@
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Light>
@@ -143,8 +144,6 @@ MultiSphereShapeGeode::MultiSphereShapeGeode(
     mMultiSphereShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
       new ::osg::CullFace(::osg::CullFace::BACK));
   extractData();
@@ -263,10 +262,31 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
   if (mMultiSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
       || firstTime)
   {
+    // Set color
+    const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     (*mColors).resize(1);
-    (*mColors)[0] = eigToOsgVec4f(mVisualAspect->getRGBA());
+    (*mColors)[0] = color;
     setColorArray(mColors);
     setColorBinding(::osg::Geometry::BIND_OVERALL);
+
+    // Set alpha specific properties
+    ::osg::StateSet* ss = getOrCreateStateSet();
+    if (std::abs(color.a()) > 1 - getAlphaThreshold())
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+      ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
+    else
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+      ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
   }
 }
 

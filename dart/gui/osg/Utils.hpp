@@ -37,6 +37,24 @@
 #include <osg/Matrix>
 
 //==============================================================================
+template <typename T = double>
+constexpr T getAlphaThreshold()
+{
+  if constexpr (std::is_same_v<T, float>)
+  {
+    return 1e-6;
+  }
+  else if constexpr (std::is_same_v<T, double>)
+  {
+    return 1e-9;
+  }
+  else
+  {
+    return 1e-9;
+  }
+}
+
+//==============================================================================
 template <typename Scalar>
 ::osg::Matrix eigToOsgMatrix(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& tf)

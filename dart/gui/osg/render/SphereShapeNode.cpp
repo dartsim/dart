@@ -34,6 +34,7 @@
 
 #include <osg/BlendFunc>
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Light>
 #include <osg/Material>
@@ -138,8 +139,6 @@ SphereShapeGeode::SphereShapeGeode(
     mSphereShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
       new ::osg::CullFace(::osg::CullFace::BACK));
   extractData();
@@ -204,7 +203,28 @@ void SphereShapeDrawable::refresh(bool firstTime)
   if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
       || firstTime)
   {
-    setColor(eigToOsgVec4d(mVisualAspect->getRGBA()));
+    // Set color
+    const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
+    setColor(color);
+
+    // Set alpha specific properties
+    ::osg::StateSet* ss = getOrCreateStateSet();
+    if (std::abs(color.a()) > 1 - getAlphaThreshold())
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+      ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
+    else
+    {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+      ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
   }
 }
 
