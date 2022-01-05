@@ -748,6 +748,13 @@ ContactSurfaceHandlerPtr ConstraintSolver::getLastContactSurfaceHandler() const
 void ConstraintSolver::addContactSurfaceHandler(
     ContactSurfaceHandlerPtr handler)
 {
+  // sanity check, do not add the same handler twice
+  if (handler == mContactSurfaceHandler)
+  {
+    dterr << "Adding the same contact surface handler for the second time, "
+             "ignoring." << std::endl;
+    return;
+  }
   handler->setParent(mContactSurfaceHandler);
   mContactSurfaceHandler = std::move(handler);
 }

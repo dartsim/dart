@@ -191,6 +191,17 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIsCalled)
   EXPECT_TRUE(customHandler->mCalled);
   EXPECT_TRUE(customHandler2->mCalled);
   EXPECT_EQ(2, params.mPrimaryFrictionCoeff);
+  
+  // Try once more adding the same handler instance; this should be ignored.
+  // If it were added, the createParams() call could get into an infinite loop
+  // calling the last handler as its parent, so rather check for it.
+  solver->addContactSurfaceHandler(customHandler2);
+  
+  customHandler->mCalled = customHandler2->mCalled = false;
+  params = solver->getLastContactSurfaceHandler()->createParams({}, 0);
+  EXPECT_TRUE(customHandler->mCalled);
+  EXPECT_TRUE(customHandler2->mCalled);
+  EXPECT_EQ(2, params.mPrimaryFrictionCoeff);
 }
 
 //==============================================================================
