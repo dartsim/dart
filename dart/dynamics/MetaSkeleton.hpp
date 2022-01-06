@@ -53,7 +53,6 @@ class SoftBodyNode;
 class PointMass;
 class Joint;
 class DegreeOfFreedom;
-class Marker;
 
 /// MetaSkeleton is a pure abstract base class that provides a common interface
 /// for obtaining data (such as Jacobians and Mass Matrices) from groups of
@@ -124,9 +123,15 @@ public:
   virtual const BodyNode* getBodyNode(const std::string& name) const = 0;
 
   /// Get all the BodyNodes that are held by this MetaSkeleton
+  ///
+  /// \deprecated Use eachBodyNode() instead.
+  DART_DEPRECATED(6.13)
   virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
 
   /// Get all the BodyNodes that are held by this MetaSkeleton
+  ///
+  /// \deprecated Use eachBodyNode() instead.
+  DART_DEPRECATED(6.13)
   virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
 
   /// Returns all the BodyNodes of given name.
@@ -170,9 +175,15 @@ public:
   virtual const Joint* getJoint(const std::string& name) const = 0;
 
   /// Returns all the joints that are held by this MetaSkeleton.
+  ///
+  /// \deprecated Use eachJoint() instead.
+  DART_DEPRECATED(6.13)
   virtual std::vector<Joint*> getJoints() = 0;
 
   /// Returns all the joints that are held by this MetaSkeleton.
+  ///
+  /// \deprecated Use eachJoint() instead.
+  DART_DEPRECATED(6.13)
   virtual std::vector<const Joint*> getJoints() const = 0;
 
   /// Returns all the Joint of given name.
@@ -214,9 +225,15 @@ public:
   virtual const DegreeOfFreedom* getDof(std::size_t _idx) const = 0;
 
   /// Get the vector of DegreesOfFreedom for this MetaSkeleton
+  ///
+  /// \deprecated Use eachDof() instead.
+  DART_DEPRECATED(6.13)
   virtual const std::vector<DegreeOfFreedom*>& getDofs() = 0;
 
   /// Get a vector of const DegreesOfFreedom for this MetaSkeleton
+  ///
+  /// \deprecated Use eachBodyNode() instead.
+  DART_DEPRECATED(6.13)
   virtual std::vector<const DegreeOfFreedom*> getDofs() const = 0;
 
   /// Get the index of a specific DegreeOfFreedom within this
@@ -886,6 +903,111 @@ public:
 
   /// \}
 
+  /// Sets the RGB color of the BodyNodes that are currently in this
+  /// MetaSkeleton.
+  ///
+  /// ShapeNodes that don't have VisualAspect will be ignored.
+  ///
+  /// Note that the ShapeNodes that are added after calling this function
+  /// don't get updated to the color that was set beforehand.
+  void setColor(const Eigen::Vector3d& color);
+
+  /// Sets the RGBA color of the BodyNodes that are currently in this
+  /// MetaSkeleton.
+  ///
+  /// ShapeNodes that don't have VisualAspect will be ignored.
+  ///
+  /// Note that the ShapeNodes that are added after calling this function
+  /// don't get updated to the color that was set beforehand.
+  void setColor(const Eigen::Vector4d& color);
+
+  /// Sets the alpha component of the BodyNodes that are currently in this
+  /// MetaSkeleton.
+  ///
+  /// ShapeNodes that don't have VisualAspect will be ignored.
+  ///
+  /// Note that the BodyNodes that are added after calling this function
+  /// don't get updated to the alpha value that was set beforehand.
+  void setAlpha(double alpha);
+
+  /// \{ \name Iterations
+
+  /// Iterates all the BodyNodes in this MetaSkeleton and invokes the callback
+  /// function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(const BodyNode*) or \c bool(const BodyNode*). If
+  /// you want to conditionally iterate, use \c bool(const BodyNode*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each BodyNode.
+  template <typename Func>
+  void eachBodyNode(Func func) const;
+
+  /// Iterates all the BodyNodes in this MetaSkeleton and invokes the callback
+  /// function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(BodyNode*) or \c bool(BodyNode*). If
+  /// you want to conditionally iterate, use \c bool(BodyNode*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each BodyNode.
+  template <typename Func>
+  void eachBodyNode(Func func);
+
+  /// Iterates all the Joints in this MetaSkeleton and invokes the callback
+  /// function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(const Joint*) or \c bool(const Joint*). If
+  /// you want to conditionally iterate, use \c bool(const BodyNode*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each Joint.
+  template <typename Func>
+  void eachJoint(Func func) const;
+
+  /// Iterates all the Joints in this MetaSkeleton and invokes the callback
+  /// function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(Joint*) or \c bool(Joint*). If
+  /// you want to conditionally iterate, use \c bool(Joint*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each Joint.
+  template <typename Func>
+  void eachJoint(Func func);
+
+  /// Iterates all the DegreeOfFreedoms in this MetaSkeleton and invokes the
+  /// callback function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(const DegreeOfFreedom*) or \c bool(const
+  /// DegreeOfFreedom*). If you want to conditionally iterate, use \c bool(const
+  /// DegreeOfFreedom*) and return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each
+  /// DegreeOfFreedom.
+  template <typename Func>
+  void eachDof(Func func) const;
+
+  /// Iterates all the DegreeOfFreedoms in this MetaSkeleton and invokes the
+  /// callback function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(DegreeOfFreedom*) or \c bool(DegreeOfFreedom*). If
+  /// you want to conditionally iterate, use \c bool(DegreeOfFreedom*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each
+  /// DegreeOfFreedom.
+  template <typename Func>
+  void eachDof(Func func);
+
+  /// \}
+
 protected:
   /// Default constructor
   MetaSkeleton();
@@ -904,5 +1026,7 @@ public:
 
 } // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/MetaSkeleton-impl.hpp"
 
 #endif // DART_DYNAMICS_METASKELETON_HPP_

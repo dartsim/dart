@@ -118,13 +118,11 @@ double testDynamicsSpeed(
   if (nullptr == world)
     return 0;
 
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
-  {
-    dart::dynamics::SkeletonPtr skel = world->getSkeleton(i);
+  world->eachSkeleton([](dart::dynamics::Skeleton* skel) {
     skel->resetPositions();
     skel->resetVelocities();
     skel->resetAccelerations();
-  }
+  });
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   start = std::chrono::system_clock::now();

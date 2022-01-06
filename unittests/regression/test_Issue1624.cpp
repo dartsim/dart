@@ -62,10 +62,8 @@ TEST(Issue1624, ContactGrouping)
     world->step();
   }
 
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
-  {
-    auto skel = world->getSkeleton(i);
+  world->eachSkeleton([&](Skeleton* skel) {
     Eigen::Vector3d velocity = skel->getCOMLinearVelocity();
     EXPECT_LE(velocity.norm(), 2.0);
-  }
+  });
 }

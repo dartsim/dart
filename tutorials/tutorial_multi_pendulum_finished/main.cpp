@@ -252,18 +252,17 @@ public:
     for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
     {
       BodyNode* bn = mPendulum->getBodyNode(i);
-      auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
-      for (std::size_t j = 0; j < 2; ++j)
-        visualShapeNodes[j]->getVisualAspect()->setColor(dart::Color::Blue());
 
       // If we have three visualization shapes, that means the arrow is
       // attached. We should remove it in case this body is no longer
       // experiencing a force
-      if (visualShapeNodes.size() == 3u)
+      if (bn->getNumShapeNodesWith<VisualAspect>() == 3u)
       {
-        assert(visualShapeNodes[2]->getShape() == mArrow);
-        visualShapeNodes[2]->remove();
+        assert(bn->getShapeNodeWith<VisualAspect>(2)->getShape() == mArrow);
+        bn->getShapeNodeWith<VisualAspect>(2)->remove();
       }
+
+      bn->setColor(dart::Color::Blue());
     }
 
     if (!mBodyForce)
@@ -277,8 +276,8 @@ public:
           dof->setForce(mPositiveSign ? default_torque : -default_torque);
 
           BodyNode* bn = dof->getChildBodyNode();
-          auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
-          visualShapeNodes[0]->getVisualAspect()->setColor(dart::Color::Red());
+          bn->getShapeNodeWith<VisualAspect>(0)->getVisualAspect()->setColor(
+              dart::Color::Red());
 
           --mForceCountDown[i];
         }
@@ -302,9 +301,8 @@ public:
             location[0] = -location[0];
           }
           bn->addExtForce(force, location, true, true);
-
-          auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
-          shapeNodes[1]->getVisualAspect()->setColor(dart::Color::Red());
+          bn->getShapeNodeWith<VisualAspect>(1)->getVisualAspect()->setColor(
+              dart::Color::Red());
           bn->createShapeNodeWith<VisualAspect>(mArrow);
 
           --mForceCountDown[i];

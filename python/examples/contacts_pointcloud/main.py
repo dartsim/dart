@@ -54,8 +54,7 @@ def setAlpha(skeleton, alphaValue):
     skeleton : The skeleton to set transparency values for
     alphaValue: [0,1] transparency, where 1 is fully visible
     """
-    for bodyNode in skeleton.getBodyNodes():
-        bodyNode.getShapeNode(0).getVisualAspect().setAlpha(alphaValue)
+    skeleton.setAlpha(alphaValue)
 
 
 def main():

@@ -51,18 +51,11 @@ int main(int argc, char* argv[])
       "dart://sample/skel/softBodies.skel");
   assert(myWorld != nullptr);
 
-  for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
-  {
-    dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
-    for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j)
-    {
-      dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
-      Eigen::Vector3d color = dart::Color::Random();
-      auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAspect>();
-      for (auto shapeNode : shapeNodes)
-        shapeNode->getVisualAspect(true)->setColor(color);
-    }
-  }
+  myWorld->eachSkeleton([](dart::dynamics::Skeleton* skel) {
+    skel->eachBodyNode([](dart::dynamics::BodyNode* bodyNode) {
+      bodyNode->setColor(dart::Color::Random());
+    });
+  });
 
   // create a window and link it to the world
   MyWindow window;

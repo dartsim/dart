@@ -518,18 +518,16 @@ TEST(DartLoader, KR5MeshColor)
   EXPECT_EQ(robot->getNumBodyNodes(), 7u);
   EXPECT_EQ(robot->getNumTrees(), 1u);
 
-  for (auto i = 0u; i < robot->getNumBodyNodes(); ++i)
-  {
-    auto body = robot->getBodyNode(i);
-    for (auto shapeNode : body->getShapeNodesWith<dynamics::VisualAspect>())
-    {
-      auto shape = shapeNode->getShape();
-      if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape))
-      {
-        EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
-      }
-    }
-  }
+  robot->eachBodyNode([](dynamics::BodyNode* bodyNode) {
+    bodyNode->eachShapeNodeWith<dynamics::VisualAspect>(
+        [&](dynamics::ShapeNode* shapeNode) {
+          auto shape = shapeNode->getShape();
+          if (auto mesh = shape->as<dynamics::MeshShape>())
+          {
+            EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+          }
+        });
+  });
 }
 
 //==============================================================================
@@ -584,20 +582,20 @@ TEST(DartLoader, parseVisualCollisionName)
 
   auto body0 = robot->getBodyNode(0);
   ASSERT_TRUE(nullptr != body0);
-  auto shape_nodes0 = body0->getShapeNodes();
-  ASSERT_EQ(shape_nodes0.size(), 2);
-  EXPECT_EQ(shape_nodes0[0]->getName(), "first_visual");
-  EXPECT_EQ(shape_nodes0[1]->getName(), "second_visual");
+  ASSERT_EQ(body0->getNumShapeNodes(), 2);
+  EXPECT_EQ(body0->getShapeNode(0)->getName(), "first_visual");
+  EXPECT_EQ(body0->getShapeNode(1)->getName(), "second_visual");
 
   auto body1 = robot->getBodyNode(1);
   ASSERT_TRUE(nullptr != body1);
-  auto shape_nodes1 = body1->getShapeNodes();
-  ASSERT_EQ(shape_nodes1.size(), 2);
+  ASSERT_EQ(body1->getNumShapeNodes(), 2);
   // The ShapeNode naming pattern is infered from
   // BodyNode::createShapeNodeWith(const ShapePtr& shape) sot this test could
   // fail if the naming pattern in the function is changed.
-  EXPECT_EQ(shape_nodes1[0]->getName(), body1->getName() + "_ShapeNode_0");
-  EXPECT_EQ(shape_nodes1[1]->getName(), body1->getName() + "_ShapeNode_1");
+  EXPECT_EQ(
+      body1->getShapeNode(0)->getName(), body1->getName() + "_ShapeNode_0");
+  EXPECT_EQ(
+      body1->getShapeNode(1)->getName(), body1->getName() + "_ShapeNode_1");
 }
 
 //==============================================================================

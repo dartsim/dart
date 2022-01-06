@@ -358,9 +358,10 @@ void SimWindow::drawBodyNode(
   mRI->transform(bodyNode->getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  auto shapeNodes = bodyNode->getShapeNodesWith<dynamics::VisualAspect>();
-  for (const auto& shapeNode : shapeNodes)
-    drawShapeFrame(shapeNode, color, useDefaultColor);
+  bodyNode->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](const dynamics::ShapeNode* shapeNode) {
+        drawShapeFrame(shapeNode, color, useDefaultColor);
+      });
   // _ri.popName();
 
   if (mShowPointMasses)
@@ -373,8 +374,8 @@ void SimWindow::drawBodyNode(
 
   if (mShowMarkers)
   {
-    for (auto i = 0u; i < bodyNode->getNumMarkers(); ++i)
-      drawMarker(bodyNode->getMarker(i));
+    bodyNode->eachMarker(
+        [this](const dynamics::Marker* marker) { drawMarker(marker); });
   }
 
   // render the subtree

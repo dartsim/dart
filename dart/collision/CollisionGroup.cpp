@@ -480,15 +480,12 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
       // CollisionGroup.
       updateNeeded = true;
 
-      const auto& collisionShapeNodes
-          = bn->getShapeNodesWith<dynamics::CollisionAspect>();
-
-      for (const auto& shapeNode : collisionShapeNodes)
-      {
-        source.mObjects.insert(
-            {shapeNode, addShapeFrameImpl(shapeNode, meta.get())});
-        child->second.mFrames.insert(shapeNode);
-      }
+      bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+          [&](const dynamics::ShapeNode* shapeNode) {
+            source.mObjects.insert(
+                {shapeNode, addShapeFrameImpl(shapeNode, meta.get())});
+            child->second.mFrames.insert(shapeNode);
+          });
 
       // Skip the rest of the for-loop, because it's only for updating old
       // children
@@ -505,33 +502,30 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
     std::unordered_set<const dynamics::ShapeFrame*> unusedFrames
         = child->second.mFrames;
 
-    const std::vector<const dynamics::ShapeNode*> nodes
-        = child->first->getShapeNodesWith<dynamics::CollisionAspect>();
+    child->first->eachShapeNodeWith<dynamics::CollisionAspect>(
+        [&](const dynamics::ShapeNode* shapeNode) {
+          unusedFrames.erase(shapeNode);
 
-    for (const dynamics::ShapeNode* node : nodes)
-    {
-      unusedFrames.erase(node);
+          auto frameInsertion
+              = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
 
-      auto frameInsertion
-          = source.mObjects.insert(std::make_pair(node, nullptr));
+          const auto& it = frameInsertion.first;
+          if (frameInsertion.second)
+          {
+            // If the insertion occurred, then this is a new ShapeFrame, and we
+            // need to create a collision object for it.
+            updateNeeded = true;
 
-      const auto& it = frameInsertion.first;
-      if (frameInsertion.second)
-      {
-        // If the insertion occurred, then this is a new ShapeFrame, and we
-        // need to create a collision object for it.
-        updateNeeded = true;
-
-        it->second = addShapeFrameImpl(node, meta.get());
-        child->second.mFrames.insert(node);
-      }
-      else
-      {
-        // If the insertion did not occur, then this is an old ShapeFrame, and
-        // we should check if it needs an update.
-        updateNeeded |= updateShapeFrame(it->second);
-      }
-    }
+            it->second = addShapeFrameImpl(shapeNode, meta.get());
+            child->second.mFrames.insert(shapeNode);
+          }
+          else
+          {
+            // If the insertion did not occur, then this is an old ShapeFrame,
+            // and we should check if it needs an update.
+            updateNeeded |= updateShapeFrame(it->second);
+          }
+        });
 
     for (const dynamics::ShapeFrame* unused : unusedFrames)
     {
@@ -585,30 +579,28 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
   std::unordered_map<const dynamics::ShapeFrame*, ObjectInfo*> unusedFrames
       = source.mObjects;
 
-  const std::vector<const dynamics::ShapeNode*> nodes
-      = bn->getShapeNodesWith<dynamics::CollisionAspect>();
+  bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](const dynamics::ShapeNode* shapeNode) {
+        unusedFrames.erase(shapeNode);
 
-  for (const dynamics::ShapeNode* node : nodes)
-  {
-    unusedFrames.erase(node);
+        auto frameInsertion
+            = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
 
-    auto frameInsertion = source.mObjects.insert(std::make_pair(node, nullptr));
-
-    const auto& it = frameInsertion.first;
-    if (frameInsertion.second)
-    {
-      updateNeeded = true;
-      // If the insertion occurred, then this is a new ShapeFrame, and we need
-      // to create a collision object for it.
-      it->second = addShapeFrameImpl(node, bn.get());
-    }
-    else
-    {
-      // If the insertion did not occur, then this is an old ShapeFrame, and
-      // we should check if it needs an update.
-      updateNeeded |= updateShapeFrame(it->second);
-    }
-  }
+        const auto& it = frameInsertion.first;
+        if (frameInsertion.second)
+        {
+          updateNeeded = true;
+          // If the insertion occurred, then this is a new ShapeFrame, and we
+          // need to create a collision object for it.
+          it->second = addShapeFrameImpl(shapeNode, bn.get());
+        }
+        else
+        {
+          // If the insertion did not occur, then this is an old ShapeFrame, and
+          // we should check if it needs an update.
+          updateNeeded |= updateShapeFrame(it->second);
+        }
+      });
 
   // Remove from this group and ShapeFrames that no longer belong to the
   // BodyNode

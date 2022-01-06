@@ -167,16 +167,13 @@ TEST(SdfParser, ReadMaterial)
   std::string sdf_filename = "dart://sample/sdf/quad.sdf";
   SkeletonPtr skeleton = SdfParser::readSkeleton(sdf_filename);
   EXPECT_TRUE(nullptr != skeleton);
-  auto bodynode = skeleton->getBodyNode(0);
+  auto bodyNode = skeleton->getBodyNode(0);
 
-  for (auto shapenode : bodynode->getShapeNodes())
-  {
-    if (shapenode->has<dart::dynamics::VisualAspect>())
-    {
-      Eigen::Vector4d color = shapenode->getVisualAspect()->getRGBA();
-      Eigen::Vector4d expected_color(0.5, 0.6, 0.8, 1.0);
-      double diff = (color - expected_color).norm();
-      EXPECT_LT(diff, 1e-4);
-    }
-  }
+  bodyNode->eachShapeNodeWith<dart::dynamics::VisualAspect>(
+      [](dart::dynamics::ShapeNode* shapeNode) {
+        Eigen::Vector4d color = shapeNode->getVisualAspect()->getRGBA();
+        Eigen::Vector4d expected_color(0.5, 0.6, 0.8, 1.0);
+        double diff = (color - expected_color).norm();
+        EXPECT_LT(diff, 1e-4);
+      });
 }

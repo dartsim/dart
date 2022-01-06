@@ -254,6 +254,70 @@ public:
   /// Get recording
   Recording* getRecording();
 
+  /// \{ \name Iterations
+
+  /// Iterates all the Skeletons and invokes the callback function.
+  ///
+  /// Example:
+  /// \code{.cpp}
+  /// bodyNode->eachSkeleton([](const Skeleton* skel) {
+  ///   // ...
+  /// });
+  ///
+  /// bodyNode->eachSkeleton([](const Skeleton* skel) -> bool {
+  ///   if (!skel->getName() == "name")
+  ///   {
+  ///     // to stop iterating when found a ShapeNode with no VisualAspect
+  ///     return false;
+  ///   }
+  ///   return true;
+  /// });
+  /// \endcode
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(const Skeleton*) or \c bool(const Skeleton*). If
+  /// you want to conditionally iterate, use \c bool(const Skeleton*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each Skeleton.
+  template <typename Func>
+  void eachSkeleton(Func func) const;
+
+  /// Iterates all the Skeletons and invokes the callback function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(Skeleton*) or \c bool(Skeleton*). If
+  /// you want to conditionally iterate, use \c bool(Skeleton*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each Skeleton.
+  template <typename Func>
+  void eachSkeleton(Func func);
+
+  /// Iterates all the SimpleFrames and invokes the callback function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(const SimpleFrame*) or \c bool(const SimpleFrame*).
+  /// If you want to conditionally iterate, use \c bool(const SimpleFrame*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each SimpleFrame.
+  template <typename Func>
+  void eachSimpleFrame(Func func) const;
+
+  /// Iterates all the SimpleFrames and invokes the callback function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(SimpleFrame*) or \c bool(SimpleFrame*). If
+  /// you want to conditionally iterate, use \c bool(SimpleFrame*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each SimpleFrame.
+  template <typename Func>
+  void eachSimpleFrame(Func func);
+
+  /// \}
+
 protected:
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(

@@ -35,6 +35,7 @@
 
 #include <utility>
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
@@ -46,10 +47,10 @@ JointType* BodyNode::moveTo(
     BodyNode* _newParent, const typename JointType::Properties& _joint)
 {
   if (nullptr == _newParent)
-    return getSkeleton()->moveBodyNodeTree<JointType>(
+    return getSkeleton()->template moveBodyNodeTree<JointType>(
         this, getSkeleton(), nullptr, _joint);
   else
-    return getSkeleton()->moveBodyNodeTree<JointType>(
+    return getSkeleton()->template moveBodyNodeTree<JointType>(
         this, _newParent->getSkeleton(), _newParent, _joint);
 }
 
@@ -60,7 +61,7 @@ JointType* BodyNode::moveTo(
     BodyNode* _newParent,
     const typename JointType::Properties& _joint)
 {
-  return getSkeleton()->moveBodyNodeTree<JointType>(
+  return getSkeleton()->template moveBodyNodeTree<JointType>(
       this, _newSkeleton, _newParent, _joint);
 }
 
@@ -256,11 +257,105 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 
 //==============================================================================
 template <class AspectT>
+ShapeNode* BodyNode::getShapeNodeWith(std::size_t index)
+{
+  std::size_t count = 0;
+  ShapeNode* found = nullptr;
+  eachShapeNodeWith<AspectT>([&](ShapeNode* shapeNode) -> bool {
+    if (count++ == index)
+    {
+      found = shapeNode;
+      return false;
+    }
+    return true;
+  });
+
+  return found;
+}
+
+//==============================================================================
+template <class AspectT>
+const ShapeNode* BodyNode::getShapeNodeWith(std::size_t index) const
+{
+  std::size_t count = 0;
+  const ShapeNode* found = nullptr;
+  eachShapeNodeWith<AspectT>([&](const ShapeNode* shapeNode) -> bool {
+    if (count++ == index)
+    {
+      found = shapeNode;
+      return false;
+    }
+    return true;
+  });
+
+  return found;
+}
+
+//==============================================================================
+template <class AspectT>
 void BodyNode::removeAllShapeNodesWith()
 {
-  auto shapeNodes = getShapeNodesWith<AspectT>();
-  for (auto shapeNode : shapeNodes)
-    shapeNode->remove();
+  eachShapeNodeWith<AspectT>([](ShapeNode* shapeNode) { shapeNode->remove(); });
+}
+
+//==============================================================================
+template <typename AspectT, typename Func>
+void BodyNode::eachShapeNodeWith(Func func) const
+{
+  if constexpr (std::is_same_v<
+                    std::invoke_result_t<Func, const ShapeNode*>,
+                    bool>)
+  {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i)
+    {
+      const ShapeNode* shapeNode = getShapeNode(i);
+      if (shapeNode->has<AspectT>())
+      {
+        if (!func(shapeNode))
+          return;
+      }
+    }
+  }
+  else
+  {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i)
+    {
+      const ShapeNode* shapeNode = getShapeNode(i);
+      if (shapeNode->has<AspectT>())
+      {
+        func(shapeNode);
+      }
+    }
+  }
+}
+
+//==============================================================================
+template <typename AspectT, typename Func>
+void BodyNode::eachShapeNodeWith(Func func)
+{
+  if constexpr (std::is_same_v<std::invoke_result_t<Func, ShapeNode*>, bool>)
+  {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i)
+    {
+      ShapeNode* shapeNode = getShapeNode(i);
+      if (shapeNode->has<AspectT>())
+      {
+        if (!func(shapeNode))
+          return;
+      }
+    }
+  }
+  else
+  {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i)
+    {
+      ShapeNode* shapeNode = getShapeNode(i);
+      if (shapeNode->has<AspectT>())
+      {
+        func(shapeNode);
+      }
+    }
+  }
 }
 
 } // namespace dynamics

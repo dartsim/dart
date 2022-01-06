@@ -153,13 +153,17 @@ void MetaSkeleton(py::module& m)
           "getJoints",
           +[](dart::dynamics::MetaSkeleton* self)
               -> std::vector<dart::dynamics::Joint*> {
+            DART_SUPPRESS_DEPRECATED_BEGIN
             return self->getJoints();
+            DART_SUPPRESS_DEPRECATED_END
           })
       .def(
           "getJoints",
           +[](const dart::dynamics::MetaSkeleton* self)
               -> std::vector<const dart::dynamics::Joint*> {
+            DART_SUPPRESS_DEPRECATED_BEGIN
             return self->getJoints();
+            DART_SUPPRESS_DEPRECATED_END
           })
       .def(
           "getJoints",
@@ -215,7 +219,9 @@ void MetaSkeleton(py::module& m)
           "getDofs",
           +[](dart::dynamics::MetaSkeleton* self)
               -> std::vector<dart::dynamics::DegreeOfFreedom*> {
+            DART_SUPPRESS_DEPRECATED_BEGIN
             return self->getDofs();
+            DART_SUPPRESS_DEPRECATED_END
           },
           ::py::return_value_policy::reference_internal)
       .def(
@@ -1397,7 +1403,21 @@ void MetaSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getCOMLinearJacobianDeriv(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"));
+          ::py::arg("inCoordinatesOf"))
+      .def(
+          "setColor",
+          ::py::overload_cast<const Eigen::Vector3d&>(
+              &dynamics::MetaSkeleton::setColor),
+          ::py::arg("color"))
+      .def(
+          "setColor",
+          ::py::overload_cast<const Eigen::Vector4d&>(
+              &dynamics::MetaSkeleton::setColor),
+          ::py::arg("color"))
+      .def(
+          "setAlpha",
+          &dart::dynamics::MetaSkeleton::setAlpha,
+          ::py::arg("alpha"));
 }
 
 } // namespace python
