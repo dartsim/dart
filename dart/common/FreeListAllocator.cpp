@@ -227,6 +227,31 @@ void FreeListAllocator::deallocate(void* pointer, size_t size)
   mFreeBlock = curr;
 }
 
+#ifndef NDEBUG
+//==============================================================================
+bool FreeListAllocator::isAllocated(void* pointer, size_t size) const noexcept
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+
+  const auto it = mMapPointerToSize.find(pointer);
+  if (it == mMapPointerToSize.end())
+    return false;
+
+  const auto& allocatedSize = it->second;
+  if (size != allocatedSize)
+    return false;
+
+  return true;
+}
+
+//==============================================================================
+bool FreeListAllocator::isEmpty() const noexcept
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+  return mMapPointerToSize.empty();
+}
+#endif
+
 //==============================================================================
 bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 {

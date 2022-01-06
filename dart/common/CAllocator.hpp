@@ -61,6 +61,15 @@ public:
   // Documentation inherited
   void deallocate(void* pointer, size_t size) override;
 
+#ifndef NDEBUG
+  // Documentation inherited
+  [[nodiscard]] bool isAllocated(void* pointer, size_t size) const
+      noexcept override;
+
+  // Documentation inherited
+  [[nodiscard]] bool isEmpty() const noexcept override;
+#endif
+
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 

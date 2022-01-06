@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart::common {
 
@@ -97,7 +98,7 @@ void* CAllocator::allocate(size_t size) noexcept
 void CAllocator::deallocate(void* pointer, size_t size)
 {
   (void)size;
-#ifndef NDEBUG
+#ifndef NDEBUG // debug
   std::lock_guard<std::mutex> lock(mMutex);
   auto it = mMapPointerToSize.find(pointer);
   if (it != mMapPointerToSize.end())
@@ -131,6 +132,31 @@ void CAllocator::deallocate(void* pointer, size_t size)
 #endif
   std::free(pointer);
 }
+
+#ifndef NDEBUG
+//==============================================================================
+bool CAllocator::isAllocated(void* pointer, size_t size) const noexcept
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+
+  const auto it = mMapPointerToSize.find(pointer);
+  if (it == mMapPointerToSize.end())
+    return false;
+
+  const auto& allocatedSize = it->second;
+  if (size != allocatedSize)
+    return false;
+
+  return true;
+}
+
+//==============================================================================
+bool CAllocator::isEmpty() const noexcept
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+  return mMapPointerToSize.empty();
+}
+#endif
 
 //==============================================================================
 void CAllocator::print(std::ostream& os, int indent) const
