@@ -565,7 +565,8 @@ public:
   template <class Aspect>
   void removeAllShapeNodesWith();
 
-  /// Iterates all the ShapeNodes that has a specific aspect.
+  /// Iterates all the ShapeNodes that has a specific aspect and invokes the
+  /// callback function.
   ///
   /// Example:
   /// \code{.cpp}
@@ -585,7 +586,8 @@ public:
   template <typename Aspect, typename Func>
   void eachShapeNodeWith(Func func) const;
 
-  /// Iterates all the ShapeNodes that has a specific aspect.
+  /// Iterates all the ShapeNodes that has a specific aspect and invokes the
+  /// callback function.
   ///
   /// Example:
   /// \code{.cpp}

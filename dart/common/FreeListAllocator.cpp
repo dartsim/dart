@@ -52,32 +52,48 @@ FreeListAllocator::~FreeListAllocator()
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-#ifndef NDEBUG
-  if (!mMapPointerToSize.empty())
+  // Forcefully deallocate all the memory blocks if destructing this allocator
+  // without deallocating individual memories allocated by this allocator.
+  if (mTotalAllocatedSize != 0)
   {
-    size_t totalSize = 0;
-    for (auto it : mMapPointerToSize)
+    MemoryBlockHeader* currBlock = mFirstMemoryBlock;
+    while (currBlock)
     {
-      void* pointer = it.first;
-      size_t size = it.second;
-      totalSize += size;
-      dterr << "Found memory leak of " << size << " bytes at " << pointer
-            << "\n";
-      // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
-      // destructor is resolved.
+      MemoryBlockHeader* currSubBlock = currBlock;
+      MemoryBlockHeader* next = currBlock->mNext;
+      size_t sizeToDeallocate = 0;
+
+      while (currSubBlock)
+      {
+        sizeToDeallocate += currSubBlock->mSize + sizeof(MemoryBlockHeader);
+        if (!currSubBlock->mIsNextContiguous)
+        {
+          next = currSubBlock->mNext;
+          break;
+        }
+        currSubBlock = currSubBlock->mNext;
+      }
+
+      mBaseAllocator.deallocate(currBlock, sizeToDeallocate);
+      currBlock = next;
     }
-    dterr << "Found potential memory leak of total " << totalSize
-          << " bytes!\n";
+
+    dterr
+        << "Forcefully deallocated memory " << mTotalAllocatedSize
+        << " of byte(s) that is not deallocated before destructing this memory "
+        << "allocator.\n";
     // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
     // destructor is resolved.
-  }
-#endif
 
-  MemoryBlockHeader* curr = mBlockHead;
+    return;
+  }
+
+  // Deallocate memory blocks
+  MemoryBlockHeader* curr = mFirstMemoryBlock;
   while (curr)
   {
     DART_ASSERT(!curr->mIsAllocated); // TODO(JS): This means some of pointers
-                                      // are not deallocated
+    // are not deallocated
     MemoryBlockHeader* next = curr->mNext;
     const auto size = curr->mSize;
 
@@ -89,11 +105,22 @@ FreeListAllocator::~FreeListAllocator()
 }
 
 //==============================================================================
-void* FreeListAllocator::allocate(size_t size) noexcept
+const MemoryAllocator& FreeListAllocator::getBaseAllocator() const
 {
-  DART_UNUSED(size);
+  return mBaseAllocator;
+}
 
-  if (size == 0)
+//==============================================================================
+MemoryAllocator& FreeListAllocator::getBaseAllocator()
+{
+  return mBaseAllocator;
+}
+
+//==============================================================================
+void* FreeListAllocator::allocate(size_t bytes) noexcept
+{
+  // Not allowed to allocate zero bytes
+  if (bytes == 0)
   {
     return nullptr;
   }
@@ -101,33 +128,44 @@ void* FreeListAllocator::allocate(size_t size) noexcept
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  MemoryBlockHeader* curr = mBlockHead;
-  DART_ASSERT(mBlockHead->mPrev == nullptr);
+  // Ensure that the first memory block doesn't have the previous block
+  DART_ASSERT(mFirstMemoryBlock->mPrev == nullptr);
 
+  // Iterate from the first memory block
+  MemoryBlockHeader* curr = mFirstMemoryBlock;
+
+  // Use free block if available
   if (mFreeBlock)
   {
+    // Ensure the free block is not in use
     DART_ASSERT(!mFreeBlock->mIsAllocated);
-    if (size <= mFreeBlock->mSize)
+
+    // Use the free block if the requested size is equal to or smaller than
+    // the free block
+    if (bytes <= mFreeBlock->mSize)
     {
       curr = mFreeBlock;
       mFreeBlock = nullptr;
     }
   }
 
+  // Search for a memory block that is not used and has sufficient free space
   while (curr)
   {
-    if (!curr->mIsAllocated && size <= curr->mSize)
+    if (!curr->mIsAllocated && bytes <= curr->mSize)
     {
-      curr->split(size);
+      curr->split(bytes);
       break;
     }
 
     curr = curr->mNext;
   }
 
+  // If failed to find an avaliable memory block, allocate a new memory block
   if (curr == nullptr)
   {
-    if (!allocateMemoryBlock((mAllocatedSize + size) * 2))
+    // Allocate a sufficient size
+    if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2))
     {
       return nullptr;
     }
@@ -136,72 +174,39 @@ void* FreeListAllocator::allocate(size_t size) noexcept
     DART_ASSERT(!mFreeBlock->mIsAllocated);
 
     curr = mFreeBlock;
-    DART_ASSERT(curr->mSize >= size);
+    DART_ASSERT(curr->mSize >= bytes);
 
-    curr->split(size);
+    // Split the new memory block for the requested size
+    curr->split(bytes);
   }
 
+  // Mark the current block is allocated
   curr->mIsAllocated = true;
 
+  // Set free block if the next block is free
   if (curr->mNext != nullptr && !curr->mNext->mIsAllocated)
   {
     mFreeBlock = curr->mNext;
   }
 
-#ifndef NDEBUG
-  auto out = static_cast<void*>(curr->asCharPtr() + sizeof(MemoryBlockHeader));
-  if (out)
-  {
-    mSize += size;
-    mPeak = std::max(mPeak, mSize);
-    mMapPointerToSize[out] = size;
-  }
-  return out;
-#else
+  mTotalAllocatedSize += bytes;
+
   return static_cast<void*>(curr->asCharPtr() + sizeof(MemoryBlockHeader));
-#endif
 }
 
 //==============================================================================
-void FreeListAllocator::deallocate(void* pointer, size_t size)
+void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 {
-  DART_UNUSED(size, pointer);
+  DART_UNUSED(bytes, pointer);
 
-  if (pointer == nullptr || size == 0)
+  // Cannot deallocate nullptr or zero bytes
+  if (pointer == nullptr || bytes == 0)
   {
     return;
   }
 
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
-
-#ifndef NDEBUG
-  auto it = mMapPointerToSize.find(pointer);
-  if (it != mMapPointerToSize.end())
-  {
-    auto allocatedSize = it->second;
-    if (size != allocatedSize)
-    {
-      DART_FATAL(
-          "Cannot deallocated memory {} because the deallocating size {} is "
-          "different from the allocated size {}.",
-          pointer,
-          size,
-          allocatedSize);
-      return;
-    }
-    mSize -= size;
-    mMapPointerToSize.erase(it);
-    DART_TRACE("Deallocated {} bytes.", size);
-  }
-  else
-  {
-    DART_FATAL(
-        "Cannot deallocate memory {} that is not allocated by this allocator!",
-        pointer);
-    return;
-  }
-#endif
 
   unsigned char* block_addr
       = static_cast<unsigned char*>(pointer) - sizeof(MemoryBlockHeader);
@@ -225,49 +230,38 @@ void FreeListAllocator::deallocate(void* pointer, size_t size)
   }
 
   mFreeBlock = curr;
+
+  mTotalAllocatedSize -= bytes;
+
+  DART_TRACE("Deallocated {} bytes.", bytes);
 }
-
-#ifndef NDEBUG
-//==============================================================================
-bool FreeListAllocator::isAllocated(void* pointer, size_t size) const noexcept
-{
-  std::lock_guard<std::mutex> lock(mMutex);
-
-  const auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end())
-    return false;
-
-  const auto& allocatedSize = it->second;
-  if (size != allocatedSize)
-    return false;
-
-  return true;
-}
-
-//==============================================================================
-bool FreeListAllocator::isEmpty() const noexcept
-{
-  std::lock_guard<std::mutex> lock(mMutex);
-  return mMapPointerToSize.empty();
-}
-#endif
 
 //==============================================================================
 bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 {
+  // Allocate memory chunck for header and the actual requested size
   void* memory
       = mBaseAllocator.allocate(sizeToAllocate + sizeof(MemoryBlockHeader));
+
+  // Return false if failed to allocate
   if (memory == nullptr)
-  {
     return false;
-  }
 
-  mBlockHead = mBaseAllocator.constructAt<MemoryBlockHeader>(
-      memory, sizeToAllocate, nullptr, mBlockHead, false);
+  // Construct the memory block header, linking the current block as the next
+  // block
+  mFirstMemoryBlock = mBaseAllocator.constructAt<MemoryBlockHeader>(
+      memory,            // address to construct
+      sizeToAllocate,    // size of the memory block
+      nullptr,           // previous memory block
+      mFirstMemoryBlock, // next memory block
+      false              // whether the next memory block is contiguous
+  );
 
-  mFreeBlock = mBlockHead;
+  // Set the new memory block as free block
+  mFreeBlock = mFirstMemoryBlock;
 
-  mAllocatedSize += sizeToAllocate;
+  // Update the allocated size (without memory size for the headers of blocks)
+  mTotalAllocatedBlockSize += sizeToAllocate;
 
   return true;
 }
@@ -287,9 +281,9 @@ void FreeListAllocator::print(std::ostream& os, int indent) const
   {
     os << spaces << "type: " << getType() << "\n";
   }
-  os << spaces << "reserved_size: " << mAllocatedSize << "\n";
+  os << spaces << "reserved_size: " << mTotalAllocatedBlockSize << "\n";
   os << spaces << "memory_blocks:\n";
-  auto curr = mBlockHead;
+  auto curr = mFirstMemoryBlock;
   while (curr)
   {
     os << spaces << "- block_addr: " << curr << "\n";
@@ -302,7 +296,7 @@ void FreeListAllocator::print(std::ostream& os, int indent) const
   }
   os << spaces << "free_block_addr: " << mFreeBlock << "\n";
   os << spaces << "header_size: " << sizeof(MemoryBlockHeader) << "\n";
-  os << spaces << "baseAllocator:\n";
+  os << spaces << "base_allocator:\n";
   mBaseAllocator.print(os, indent + 2);
 }
 

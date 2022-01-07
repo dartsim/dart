@@ -41,8 +41,8 @@
 namespace dart::common {
 
 //==============================================================================
-PoolAllocator::PoolAllocator(MemoryAllocator& base_allocator)
-  : mBaseAllocator(base_allocator)
+PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
+  : mBaseAllocator(baseAllocator)
 {
   static_assert(
       8 <= sizeof(MemoryUnit),
@@ -90,21 +90,6 @@ PoolAllocator::~PoolAllocator()
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-#ifndef NDEBUG
-  if (!mMapPointerToSize.empty())
-  {
-    size_t totalSize = 0;
-    for (auto it : mMapPointerToSize)
-    {
-      void* pointer = it.first;
-      size_t size = it.second;
-      totalSize += size;
-      DART_FATAL("Found memory leak of {} bytes at {}!", size, pointer);
-    }
-    DART_FATAL("Found potential memory leak of total {} bytes!", totalSize);
-  }
-#endif
-
   for (int i = 0; i < mCurrentMemoryBlockIndex; ++i)
   {
     mBaseAllocator.deallocate(mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE);
@@ -132,43 +117,33 @@ int PoolAllocator::getNumAllocatedMemoryBlocks() const
 }
 
 //==============================================================================
-void* PoolAllocator::allocate(size_t size) noexcept
+void* PoolAllocator::allocate(size_t bytes) noexcept
 {
   // Cannot allocate zero bytes
-  if (size == 0)
+  if (bytes == 0)
   {
     return nullptr;
   }
 
   // Use the default allocator to allocate memory that is greater than
   // MAX_UNIT_SIZE
-  if (size > MAX_UNIT_SIZE)
+  if (bytes > MAX_UNIT_SIZE)
   {
     DART_TRACE(
         "Cannot allocate memory of size > {} using PoolAllocator.",
         MAX_UNIT_SIZE);
-    return mBaseAllocator.allocate(size);
+    return mBaseAllocator.allocate(bytes);
   }
 
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  const int heapIndex = mMapSizeToHeapIndex[size];
+  const int heapIndex = mMapSizeToHeapIndex[bytes];
 
   if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex])
   {
     mFreeMemoryUnits[heapIndex] = unit->mNext;
-#ifndef NDEBUG
-    if (unit)
-    {
-      mSize += size;
-      mPeak = std::max(mPeak, mSize);
-      mMapPointerToSize[unit] = size;
-    }
     return unit;
-#else
-    return unit;
-#endif
   }
 
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize)
@@ -211,95 +186,32 @@ void* PoolAllocator::allocate(size_t size) noexcept
   mFreeMemoryUnits[heapIndex] = newBlock->mMemoryUnits->mNext;
   mCurrentMemoryBlockIndex++;
 
-#ifndef NDEBUG
-  if (newBlock->mMemoryUnits)
-  {
-    mSize += size;
-    mPeak = std::max(mPeak, mSize);
-    mMapPointerToSize[newBlock->mMemoryUnits] = size;
-  }
   return newBlock->mMemoryUnits;
-#else
-  return newBlock->mMemoryUnits;
-#endif
 }
 
 //==============================================================================
-void PoolAllocator::deallocate(void* pointer, size_t size)
+void PoolAllocator::deallocate(void* pointer, size_t bytes)
 {
-  if (size > MAX_UNIT_SIZE)
+  // Cannot deallocate nullptr or zero bytes
+  if (pointer == nullptr || bytes == 0)
   {
-    mBaseAllocator.deallocate(pointer, size);
     return;
+  }
+
+  if (bytes > MAX_UNIT_SIZE)
+  {
+    return mBaseAllocator.deallocate(pointer, bytes);
   }
 
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-#ifndef NDEBUG // debug
-  auto it = mMapPointerToSize.find(pointer);
-  if (it != mMapPointerToSize.end())
-  {
-    auto allocatedSize = it->second;
-    if (size != allocatedSize)
-    {
-      DART_FATAL(
-          "Cannot deallocated memory {} because the deallocating size {} is "
-          "different from the allocated size {}.",
-          pointer,
-          size,
-          allocatedSize);
-      return;
-    }
-    mSize -= size;
-    mMapPointerToSize.erase(it);
-    DART_TRACE("Deallocated {} bytes.", size);
-  }
-  else
-  {
-    DART_FATAL(
-        "Cannot deallocate memory {} that is not allocated by this allocator!",
-        pointer);
-    return;
-  }
-#endif
-
-  const int heapIndex = mMapSizeToHeapIndex[size];
+  const int heapIndex = mMapSizeToHeapIndex[bytes];
 
   MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
   releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
   mFreeMemoryUnits[heapIndex] = releasedUnit;
 }
-
-#ifndef NDEBUG
-//==============================================================================
-bool PoolAllocator::isAllocated(void* pointer, size_t size) const noexcept
-{
-  if (size > MAX_UNIT_SIZE)
-  {
-    return mBaseAllocator.isAllocated(pointer, size);
-  }
-
-  std::lock_guard<std::mutex> lock(mMutex);
-
-  const auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end())
-    return false;
-
-  const auto& allocatedSize = it->second;
-  if (size != allocatedSize)
-    return false;
-
-  return true;
-}
-
-//==============================================================================
-bool PoolAllocator::isEmpty() const noexcept
-{
-  std::lock_guard<std::mutex> lock(mMutex);
-  return mMapPointerToSize.empty();
-}
-#endif
 
 //==============================================================================
 void PoolAllocator::print(std::ostream& os, int indent) const

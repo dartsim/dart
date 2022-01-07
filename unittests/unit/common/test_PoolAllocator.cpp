@@ -41,73 +41,66 @@ using namespace common;
 //==============================================================================
 TEST(PoolAllocatorTest, Constructors)
 {
-  auto a = PoolAllocator();
-  EXPECT_EQ(&a.getBaseAllocator(), &MemoryAllocator::GetDefault());
+  auto a = PoolAllocator::Debug();
+  EXPECT_EQ(
+      &a.getInternalAllocator().getBaseAllocator(),
+      &MemoryAllocator::GetDefault());
 
-  auto b = PoolAllocator(MemoryAllocator::GetDefault());
-  EXPECT_EQ(&b.getBaseAllocator(), &MemoryAllocator::GetDefault());
+  auto b = PoolAllocator::Debug(MemoryAllocator::GetDefault());
+  EXPECT_EQ(
+      &b.getInternalAllocator().getBaseAllocator(),
+      &MemoryAllocator::GetDefault());
 
-  EXPECT_EQ(b.getNumAllocatedMemoryBlocks(), 0);
+  EXPECT_EQ(b.getInternalAllocator().getNumAllocatedMemoryBlocks(), 0);
 
-#ifndef NDEBUG
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
-#endif
 }
 
 //==============================================================================
 TEST(PoolAllocatorTest, Allocate)
 {
-  auto a = PoolAllocator();
-  EXPECT_EQ(a.allocate(0), nullptr);
-
-#ifndef NDEBUG
+  auto a = PoolAllocator::Debug();
   EXPECT_TRUE(a.isEmpty());
-#endif
+
+  // Cannot allocate 0 bytes
+  EXPECT_EQ(a.allocate(0), nullptr);
 
   // Allocate small memory
   auto ptr1 = a.allocate(1);
   EXPECT_NE(ptr1, nullptr);
-#ifndef NDEBUG
-  EXPECT_TRUE(a.isAllocated(ptr1, 1));
-  EXPECT_FALSE(a.isAllocated(0, 1));        // incorrect address
-  EXPECT_FALSE(a.isAllocated(ptr1, 1 * 2)); // incorrect size
-#endif
-  EXPECT_EQ(a.getNumAllocatedMemoryBlocks(), 1);
+  EXPECT_TRUE(a.hasAllocated(ptr1, 1));
+  EXPECT_FALSE(a.hasAllocated(0, 1));        // incorrect address
+  EXPECT_FALSE(a.hasAllocated(ptr1, 1 * 2)); // incorrect size
+  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 1);
 
   // Allocate the same size, which doesn't increase the number of memory block
   auto ptr2 = a.allocate(1);
   EXPECT_NE(ptr2, nullptr);
-  EXPECT_EQ(a.getNumAllocatedMemoryBlocks(), 1);
+  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 1);
 
   // Allocate different size
   auto ptr3 = a.allocate(64);
   EXPECT_NE(ptr3, nullptr);
-  EXPECT_EQ(a.getNumAllocatedMemoryBlocks(), 2);
+  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 2);
 
   // Allocate memory of the max size (= 1024)
   auto ptr4 = a.allocate(1024);
   EXPECT_NE(ptr4, nullptr);
-#ifndef NDEBUG
-  EXPECT_TRUE(a.isAllocated(ptr4, 1024));
-  EXPECT_FALSE(a.isAllocated(0, 1024));
-  EXPECT_FALSE(a.isAllocated(ptr4, 1024 * 2));
-#endif
-  EXPECT_EQ(a.getNumAllocatedMemoryBlocks(), 3);
+  EXPECT_TRUE(a.hasAllocated(ptr4, 1024));
+  EXPECT_FALSE(a.hasAllocated(0, 1024));
+  EXPECT_FALSE(a.hasAllocated(ptr4, 1024 * 2));
+  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 3);
 
   // Allocate oversized memory (> 1024)
   auto ptr5 = a.allocate(2048);
   EXPECT_NE(ptr5, nullptr);
-#ifndef NDEBUG
-  EXPECT_TRUE(a.isAllocated(ptr5, 2048));
-  EXPECT_FALSE(a.isAllocated(0, 2048));
-  EXPECT_FALSE(a.isAllocated(ptr5, 2048 * 2));
-#endif
-  EXPECT_EQ(a.getNumAllocatedMemoryBlocks(), 3);
+  EXPECT_TRUE(a.hasAllocated(ptr5, 2048));
+  EXPECT_FALSE(a.hasAllocated(0, 2048));
+  EXPECT_FALSE(a.hasAllocated(ptr5, 2048 * 2));
+  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 3);
 
-#ifndef NDEBUG
   EXPECT_FALSE(a.isEmpty());
-#endif
 
   a.deallocate(ptr1, 1);
   a.deallocate(ptr2, 1);
@@ -115,7 +108,5 @@ TEST(PoolAllocatorTest, Allocate)
   a.deallocate(ptr4, 1024);
   a.deallocate(ptr5, 2048);
 
-#ifndef NDEBUG
   EXPECT_TRUE(a.isEmpty());
-#endif
 }

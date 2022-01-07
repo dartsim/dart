@@ -378,23 +378,23 @@ TEST(World, SetNewConstraintSolver)
 {
   auto world = createWorld();
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
-  EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
+  EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
 
   auto solver1 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
       std::make_shared<constraint::DantzigBoxedLcpSolver>());
   EXPECT_TRUE(solver1->getSkeletons().size() == 0);
-  EXPECT_TRUE(solver1->getConstraints().size() == 0);
+  EXPECT_TRUE(solver1->getNumConstraints() == 0);
 
   world->setConstraintSolver(std::move(solver1));
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
-  EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
+  EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
 
   auto solver2 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
       std::make_shared<constraint::PgsBoxedLcpSolver>());
   EXPECT_TRUE(solver2->getSkeletons().size() == 0);
-  EXPECT_TRUE(solver2->getConstraints().size() == 0);
+  EXPECT_TRUE(solver2->getNumConstraints() == 0);
 
   world->setConstraintSolver(std::move(solver2));
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
-  EXPECT_TRUE(world->getConstraintSolver()->getConstraints().size() == 1);
+  EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
 }

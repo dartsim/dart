@@ -117,10 +117,40 @@ public:
   constraint::ConstConstraintBasePtr getConstraint(std::size_t index) const;
 
   /// Returns all the constraints added to this ConstraintSolver.
+  ///
+  /// \deprecated Use eachConstraint() instead
+  DART_DEPRECATED(6.13)
   std::vector<constraint::ConstraintBasePtr> getConstraints();
 
   /// Returns all the constraints added to this ConstraintSolver.
+  ///
+  /// \deprecated Use eachConstraint() instead
+  DART_DEPRECATED(6.13)
   std::vector<constraint::ConstConstraintBasePtr> getConstraints() const;
+
+  /// Iterates all the constraints and invokes the callback function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(const ConstraintBase*) or \c bool(const
+  /// ConstraintBase*). If you want to conditionally iterate, use \c bool(const
+  /// ConstraintBase*) and return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each
+  /// ConstraintBase.
+  template <typename Func>
+  void eachConstraint(Func func) const;
+
+  /// Iterates all the constraints and invokes the callback function.
+  ///
+  /// \tparam Func: The callback function type. The function signature should be
+  /// equivalent to \c void(ConstraintBase*) or \c bool(ConstraintBase*). If
+  /// you want to conditionally iterate, use \c bool(ConstraintBase*) and
+  /// return false when to stop iterating.
+  ///
+  /// \param[in] func: The callback function to be called for each
+  /// ConstraintBase.
+  template <typename Func>
+  void eachConstraint(Func func);
 
   /// Clears the last collision result
   void clearLastCollisionResult();
@@ -188,8 +218,14 @@ protected:
   // TODO(JS): Docstring
   virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;
 
-  /// Check if the skeleton is contained in this solver
+  /// Checks if the skeleton is contained in this solver
+  ///
+  /// \deprecated Use hasSkeleton() instead.
+  DART_DEPRECATED(6.13)
   bool containSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
+
+  /// Checks if the skeleton is contained in this solver
+  bool hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
 
   /// Add skeleton if the constraint is not contained in this solver
   bool checkAndAddSkeleton(const dynamics::SkeletonPtr& skeleton);
@@ -260,5 +296,7 @@ protected:
 
 } // namespace constraint
 } // namespace dart
+
+#include "dart/constraint/detail/ConstraintSolver-impl.hpp"
 
 #endif // DART_CONSTRAINT_CONSTRAINTSOVER_HPP_

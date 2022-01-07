@@ -41,6 +41,7 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
@@ -101,7 +102,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (containSkeleton(skeleton))
+  if (hasSkeleton(skeleton))
   {
     dtwarn << "[ConstraintSolver::addSkeleton] Attempting to add "
            << "skeleton '" << skeleton->getName()
@@ -135,7 +136,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (!containSkeleton(skeleton))
+  if (!hasSkeleton(skeleton))
   {
     dtwarn << "[ConstraintSolver::removeSkeleton] Attempting to remove "
            << "skeleton '" << skeleton->getName()
@@ -233,7 +234,7 @@ std::vector<ConstConstraintBasePtr> ConstraintSolver::getConstraints() const
 {
   std::vector<ConstConstraintBasePtr> constraints;
   constraints.reserve(mManualConstraints.size());
-  for (auto constraint : mManualConstraints)
+  for (auto& constraint : mManualConstraints)
     constraints.push_back(constraint);
 
   return constraints;
@@ -392,16 +393,20 @@ void ConstraintSolver::setFromOtherConstraintSolver(
 }
 
 //==============================================================================
-bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& _skeleton) const
+bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& skeleton) const
 {
-  assert(
-      _skeleton != nullptr && "Not allowed to insert null pointer skeleton.");
+  return hasSkeleton(skeleton);
+}
 
-  for (std::vector<SkeletonPtr>::const_iterator it = mSkeletons.begin();
-       it != mSkeletons.end();
-       ++it)
+//==============================================================================
+bool ConstraintSolver::hasSkeleton(const ConstSkeletonPtr& skeleton) const
+{
+  DART_ASSERT(
+      skeleton != nullptr, "Not allowed to insert null pointer skeleton.");
+
+  for (const auto& itrSkel : mSkeletons)
   {
-    if ((*it) == _skeleton)
+    if (itrSkel == skeleton)
       return true;
   }
 
@@ -411,7 +416,7 @@ bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& _skeleton) const
 //==============================================================================
 bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
-  if (!containSkeleton(skeleton))
+  if (!hasSkeleton(skeleton))
   {
     mSkeletons.push_back(skeleton);
     return true;

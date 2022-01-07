@@ -39,16 +39,54 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
+TEST(FreeListAllocatorTest, Constructors)
+{
+  auto a = FreeListAllocator::Debug();
+  EXPECT_EQ(
+      &a.getInternalAllocator().getBaseAllocator(),
+      &MemoryAllocator::GetDefault());
+
+  auto b = FreeListAllocator::Debug(MemoryAllocator::GetDefault());
+  EXPECT_EQ(
+      &b.getInternalAllocator().getBaseAllocator(),
+      &MemoryAllocator::GetDefault());
+
+  EXPECT_TRUE(a.isEmpty());
+  EXPECT_TRUE(b.isEmpty());
+}
+
+//==============================================================================
 TEST(FreeListAllocatorTest, Basics)
 {
-  auto a = FreeListAllocator();
-  a.print();
+  auto a = FreeListAllocator::Debug();
+  EXPECT_TRUE(a.isEmpty());
 
-  auto mem1 = a.allocate(10);
-  auto mem2 = a.allocate(10);
-  a.print();
+  // Cannot allocate 0 bytes
+  EXPECT_EQ(a.allocate(0), nullptr);
 
-  a.deallocate(mem1, 10);
-  a.deallocate(mem2, 10);
-  a.print();
+  // Allocate small memory
+  auto ptr1 = a.allocate(1);
+  EXPECT_NE(ptr1, nullptr);
+  EXPECT_TRUE(a.hasAllocated(ptr1, 1));
+  EXPECT_FALSE(a.hasAllocated(0, 1));        // incorrect address
+  EXPECT_FALSE(a.hasAllocated(ptr1, 1 * 2)); // incorrect size
+
+  a.deallocate(ptr1, 1);
+
+  EXPECT_TRUE(a.isEmpty());
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, MemoryLeak)
+{
+  auto a = FreeListAllocator::Debug();
+  EXPECT_TRUE(a.isEmpty());
+
+  // Allocate small memory
+  auto ptr1 = a.allocate(1);
+  EXPECT_NE(ptr1, nullptr);
+
+  EXPECT_FALSE(a.isEmpty());
+  // Expect that FreeListAllocator complains that not all the memory is
+  // deallocated
 }

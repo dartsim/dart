@@ -57,29 +57,38 @@ public:
   /// Returns type string.
   [[nodiscard]] virtual const std::string& getType() const = 0;
 
-  /// Allocates @c size bytes of uninitialized storage.
+  /// Allocates \c size bytes of uninitialized storage.
   ///
-  /// @param[in] size: The byte size to allocate sotrage for.
-  /// @return On success, the pointer to the beginning of newly allocated
+  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
-  /// @return On failure, a null pointer
-  [[nodiscard]] virtual void* allocate(size_t size) noexcept = 0;
+  /// \return On failure, a null pointer
+  [[nodiscard]] virtual void* allocate(size_t bytes) noexcept = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
+  /// Allocates object(s) without calling the constructor.
+  ///
+  /// This is identical to \c static_cast<T*>(allocate(n * sizeof(T))).
+  ///
+  /// \param[in] n: The number of objects to allocate.
   template <typename T>
   [[nodiscard]] T* allocateAs(size_t n = 1) noexcept;
 
-  /// Deallocates the storage referenced by the pointer @c p, which must be a
+  /// Deallocates the storage referenced by the pointer \c p, which must be a
   /// pointer obtained by an earlier cal to allocate().
   ///
-  /// @param[in] pointer: Pointer obtained from allocate().
-  virtual void deallocate(void* pointer, size_t size) = 0;
+  /// \param[in] pointer: Pointer obtained from allocate().
+  /// \param[in] bytes: The bytes of the allocated memory.
+  virtual void deallocate(void* pointer, size_t bytes) = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Allocates uninitialized storage and constructs an object of type T to the
   /// allocated storage.
   ///
-  /// @param[in] args...: The constructor arguments to use.
+  /// \tparam T: The object type to construct.
+  /// \tparam Args...: The argument types to pass to the object constructor.
+  ///
+  /// \param[in] args: The constructor arguments to use.
   template <typename T, typename... Args>
   [[nodiscard]] T* construct(Args&&... args) noexcept;
 
@@ -92,16 +101,6 @@ public:
   /// Calls the destructor of the object and deallocate the storage.
   template <typename T>
   void destroy(T* object) noexcept;
-
-#ifndef NDEBUG
-  /// Returns true if a pointer is allocated by this allocator.
-  [[nodiscard]] virtual bool isAllocated(void* pointer, size_t size) const
-      noexcept
-      = 0;
-
-  /// Returns true if there is no memory allocated by this allocator.
-  [[nodiscard]] virtual bool isEmpty() const noexcept = 0;
-#endif
 
   /// Prints state of the memory allocator
   virtual void print(std::ostream& os = std::cout, int indent = 0) const;
