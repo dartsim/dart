@@ -29,7 +29,11 @@
         </visual>
         <visual name='v2'>
           <pose>0 0 -2 0 0 0</pose>
-          <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          <geometry>
+            <sphere>
+              <radius>0.1</radius>
+            </sphere>
+          </geometry>
         </visual>
       </link>
       <joint name="revJoint" type="revolute">
@@ -54,7 +58,11 @@
           </inertia>
         </inertial>
         <visual name='v1'>
-          <geometry><box><size>1 1 1</size></box></geometry>
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
         </visual>
       </link>
     </model>

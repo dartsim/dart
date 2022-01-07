@@ -832,82 +832,82 @@
 
     <!-- new situational awareness cameras -->
     <link name="r_situational_awareness_camera_link">
-      <inertial>
-        <mass value="0.1"/>
-        <origin xyz="0 0 0"/>
-        <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
-      </inertial>
-      <visual>
-        <origin rpy="0 0 0" xyz="0 0 0"/>
-        <geometry>
-          <box size="0.01 0.01 0.01"/>
-        </geometry>
-      </visual>
+        <inertial>
+            <mass value="0.1"/>
+            <origin xyz="0 0 0"/>
+            <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.01 0.01 0.01"/>
+            </geometry>
+        </visual>
     </link>
     <joint name="r_situational_awareness_camera_joint" type="fixed">
-      <parent link="utorso"/>
-      <child link="r_situational_awareness_camera_link"/>
-      <!-- if camera points x-forward, bottom towards front of robot, 15 degree yaw forwards from
+        <parent link="utorso"/>
+        <child link="r_situational_awareness_camera_link"/>
+        <!-- if camera points x-forward, bottom towards front of robot, 15 degree yaw forwards from
            lateral (+y) view -->
-      <origin xyz="0.216409 -0.121799 0.406759" rpy="1.57079633 0 -1.30899694"/>
+        <origin xyz="0.216409 -0.121799 0.406759" rpy="1.57079633 0 -1.30899694"/>
     </joint>
     <joint name="r_situational_awareness_camera_optical_frame_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="-1.5708 0.0 -1.5708" />
-      <parent link="r_situational_awareness_camera_link" />
-      <child link="r_situational_awareness_camera_optical_frame"/>
+        <origin xyz="0 0 0" rpy="-1.5708 0.0 -1.5708" />
+        <parent link="r_situational_awareness_camera_link" />
+        <child link="r_situational_awareness_camera_optical_frame"/>
     </joint>
     <link name="r_situational_awareness_camera_optical_frame"/>
 
     <link name="l_situational_awareness_camera_link">
-      <inertial>
-        <mass value="0.1"/>
-        <origin xyz="0 0 0"/>
-        <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
-      </inertial>
-      <visual>
-        <origin rpy="0 0 0" xyz="0 0 0"/>
-        <geometry>
-          <box size="0.01 0.01 0.01"/>
-        </geometry>
-      </visual>
+        <inertial>
+            <mass value="0.1"/>
+            <origin xyz="0 0 0"/>
+            <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.01 0.01 0.01"/>
+            </geometry>
+        </visual>
     </link>
     <joint name="l_situational_awareness_camera_joint" type="fixed">
-      <parent link="utorso"/>
-      <child link="l_situational_awareness_camera_link"/>
-      <!-- if camera points x-forward, bottom towards front of robot, 15 degree yaw forwards from
+        <parent link="utorso"/>
+        <child link="l_situational_awareness_camera_link"/>
+        <!-- if camera points x-forward, bottom towards front of robot, 15 degree yaw forwards from
            lateral (+y) view -->
-      <origin xyz="0.216409 0.121799 0.406759" rpy="-1.57079633 0 1.30899694"/>
+        <origin xyz="0.216409 0.121799 0.406759" rpy="-1.57079633 0 1.30899694"/>
     </joint>
     <joint name="l_situational_awareness_camera_optical_frame_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="-1.5708 0.0 -1.5708" />
-      <parent link="l_situational_awareness_camera_link" />
-      <child link="l_situational_awareness_camera_optical_frame"/>
+        <origin xyz="0 0 0" rpy="-1.5708 0.0 -1.5708" />
+        <parent link="l_situational_awareness_camera_link" />
+        <child link="l_situational_awareness_camera_optical_frame"/>
     </joint>
     <link name="l_situational_awareness_camera_optical_frame"/>
 
     <link name="rear_situational_awareness_camera_link">
-      <inertial>
-        <mass value="0.1"/>
-        <origin xyz="0 0 0"/>
-        <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
-      </inertial>
-      <visual>
-        <origin rpy="0 0 0" xyz="0 0 0"/>
-        <geometry>
-          <box size="0.01 0.01 0.01"/>
-        </geometry>
-      </visual>
+        <inertial>
+            <mass value="0.1"/>
+            <origin xyz="0 0 0"/>
+            <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.01 0.01 0.01"/>
+            </geometry>
+        </visual>
     </link>
     <joint name="rear_situational_awareness_camera_joint" type="fixed">
-      <parent link="utorso"/>
-      <child link="rear_situational_awareness_camera_link"/>
-      <!-- if camera points towards -X direction of the utorso link frame -->
-      <origin xyz="-0.0026 0.0264 0.6649" rpy="0 0 3.14159"/>
+        <parent link="utorso"/>
+        <child link="rear_situational_awareness_camera_link"/>
+        <!-- if camera points towards -X direction of the utorso link frame -->
+        <origin xyz="-0.0026 0.0264 0.6649" rpy="0 0 3.14159"/>
     </joint>
     <joint name="rear_situational_awareness_camera_optical_frame_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="-1.5708 0.0 -1.5708" />
-      <parent link="rear_situational_awareness_camera_link" />
-      <child link="rear_situational_awareness_camera_optical_frame"/>
+        <origin xyz="0 0 0" rpy="-1.5708 0.0 -1.5708" />
+        <parent link="rear_situational_awareness_camera_link" />
+        <child link="rear_situational_awareness_camera_optical_frame"/>
     </joint>
     <link name="rear_situational_awareness_camera_optical_frame"/>
 

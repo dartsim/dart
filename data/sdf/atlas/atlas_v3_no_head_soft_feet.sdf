@@ -1182,9 +1182,9 @@
             <frags>2 2 2</frags>
           </box>
         </geometry>
-	<kv>50000.0</kv>
-	<ke>100.0</ke>
-	<damp>1000.0</damp>
+        <kv>50000.0</kv>
+        <ke>100.0</ke>
+        <damp>1000.0</damp>
       </soft_shape>
       <collision name='l_foot_collision'>
         <pose>0 0 0 0 -0 0</pose>
@@ -1519,9 +1519,9 @@
             <frags>2 2 2</frags>
           </box>
         </geometry>
-	<kv>50000.0</kv>
-	<ke>100.0</ke>
-	<damp>1000.0</damp>
+        <kv>50000.0</kv>
+        <ke>100.0</ke>
+        <damp>1000.0</damp>
       </soft_shape>
       <collision name='r_foot_collision'>
         <pose>0 0 0 0 -0 0</pose>
