@@ -6,7 +6,7 @@
             <gravity>0 0 -9.81</gravity>
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
-        
+
         <skeleton name="skeleton_1">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -40,7 +40,7 @@
                             <height>10.0</height>
                         </cylinder>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link_2">
                 <gravity>1</gravity>
@@ -72,7 +72,7 @@
                             <size>0.2 0.2 0.2</size>
                         </ellipsoid>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1">
                 <parent>world</parent>
@@ -90,8 +90,8 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="skeleton_2">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -125,7 +125,7 @@
                             <height>10.0</height>
                         </cylinder>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1">
                 <parent>world</parent>
@@ -135,7 +135,7 @@
                     <xyz>1 0 0</xyz>
                 </axis>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
     </world>
 </skel>

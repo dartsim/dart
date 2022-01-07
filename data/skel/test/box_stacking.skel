@@ -24,13 +24,13 @@
                             <size>2.0 0.01 2.0</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
         <skeleton name="box skeleton1">
             <body name="box">
@@ -54,15 +54,15 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
             </joint>
         </skeleton>
-        
+
         <skeleton name="box skeleton2">
             <body name="box">
                 <gravity>1</gravity>
@@ -85,15 +85,15 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
             </joint>
         </skeleton>
-        
+
         <skeleton name="box skeleton3">
             <body name="box">
                 <gravity>1</gravity>
@@ -116,9 +116,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -147,9 +147,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -178,9 +178,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -209,9 +209,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -240,9 +240,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -271,9 +271,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -302,9 +302,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -333,14 +333,14 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
             </joint>
         </skeleton>
-      
+
     </world>
 </skel>

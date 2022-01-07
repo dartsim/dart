@@ -37,13 +37,13 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="translational" name="joint 1">
                 <parent>world</parent>
                 <child>link 1</child>
                 <transformation>-0.1 0 0 0 0 0</transformation>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>bullet</collision_detector>
         </physics>
-        
+
         <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.375 0 0 0 0</transformation>
@@ -26,14 +26,14 @@
                             <size>5.0 0.05 5.0</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="car_skeleton">
             <transformation>0 -0.3 0 0 0 0</transformation>
             <body name="main_body">
@@ -59,7 +59,7 @@
                             <size>0.2 0.05 0.1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_front_left">
@@ -83,14 +83,14 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_front_right">
@@ -114,14 +114,14 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_back_left">
@@ -145,14 +145,14 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_back_right">
@@ -176,16 +176,16 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>main_body</child>
@@ -274,9 +274,9 @@
                             <size>1.0 0.01 0.5</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
@@ -309,14 +309,14 @@
                             <size>1.0 0.01 0.5</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
     </world>
 </skel>

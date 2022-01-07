@@ -30,7 +30,7 @@
                             <size>4.0 0.1 0.5</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="free" name="joint 1" actuator="acceleration">
                 <parent>world</parent>
@@ -40,7 +40,7 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton> 
+        </skeleton>
         <skeleton name="skeleton 1">
             <body name="link 1">
                 <gravity>1</gravity>
@@ -64,7 +64,7 @@
                             <size>0.25 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1" actuator="force">
                 <parent>world</parent>
@@ -74,7 +74,7 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton> 
+        </skeleton>
         <skeleton name="skeleton 2">
             <body name="link 1">
                 <gravity>1</gravity>
@@ -98,7 +98,7 @@
                             <size>0.25 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1" actuator="passive">
                 <parent>world</parent>
@@ -108,7 +108,7 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton> 
+        </skeleton>
         <skeleton name="skeleton 3">
             <body name="link 1">
                 <gravity>1</gravity>
@@ -132,7 +132,7 @@
                             <size>0.25 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1" actuator="servo">
                 <parent>world</parent>
@@ -142,7 +142,7 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton> 
+        </skeleton>
         <skeleton name="skeleton 4">
             <body name="link 1">
                 <gravity>1</gravity>
@@ -166,7 +166,7 @@
                             <size>0.25 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1" actuator="acceleration">
                 <parent>world</parent>
@@ -176,7 +176,7 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton> 
+        </skeleton>
         <skeleton name="skeleton 5">
             <body name="link 1">
                 <gravity>1</gravity>
@@ -200,7 +200,7 @@
                             <size>0.25 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1" actuator="velocity">
                 <parent>world</parent>
@@ -210,7 +210,7 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton> 
+        </skeleton>
         <skeleton name="skeleton 6">
             <body name="link 1">
                 <gravity>1</gravity>
@@ -234,7 +234,7 @@
                             <size>0.25 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1" actuator="locked">
                 <parent>world</parent>
@@ -244,6 +244,6 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton> 
+        </skeleton>
     </world>
 </skel>

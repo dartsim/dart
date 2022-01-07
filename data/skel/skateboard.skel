@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>bullet</collision_detector>
         </physics>
-                
+
         <skeleton name="skateboard_skeleton">
             <transformation>0 -0.3 0 0 0 0</transformation>
             <body name="main_body">
@@ -32,7 +32,7 @@
                             <size>0.4 0.06 0.18</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_front_left">
@@ -56,14 +56,14 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_front_right">
@@ -87,14 +87,14 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_back_left">
@@ -118,14 +118,14 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="wheel_back_right">
@@ -149,16 +149,16 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <ellipsoid>
-                           <size>0.08 0.08 0.08</size>
+                            <size>0.08 0.08 0.08</size>
                         </ellipsoid>
                         <!--cylinder>
                             <radius>0.04</radius>
                             <height>0.02</height>
                         </cylinder-->
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>main_body</child>

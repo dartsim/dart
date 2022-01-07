@@ -7,7 +7,7 @@
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
 
-	<skeleton name="ground skeleton">
+        <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.375 0 0 0 0</transformation>
                 <visualization_shape>
@@ -27,13 +27,13 @@
                             <size>2.5 0.05 2.5</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
         <skeleton name="skeleton 1">
             <body name="link 1">
@@ -52,9 +52,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		<kv>100.0</kv>
-		<ke>10.0</ke>
-		<damp>1.0</damp>
+                    <kv>100.0</kv>
+                    <ke>10.0</ke>
+                    <damp>1.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
@@ -71,7 +71,7 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="free" name="joint 1">
                 <parent>world</parent>
@@ -82,6 +82,6 @@
                     <xyz>0 1 0</xyz>
                 </axis>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

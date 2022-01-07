@@ -24,14 +24,14 @@
                             <size>10.0 1.0 10.0</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="box_skeleton">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -63,15 +63,15 @@
                             <size>1.0 1.0 1.0</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link_1</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="ellipsoid_skeleton">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -103,14 +103,14 @@
                             <size>1.0 1.0 1.0</size>
                         </ellipsoid>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link_1</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
     </world>
 </skel>

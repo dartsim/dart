@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>bullet</collision_detector>
         </physics>
-        
+
         <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.375 0 0 0 0</transformation>
@@ -28,14 +28,14 @@
                             <point>0.0 0.0 0.0</point>
                         </plane>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="box skeleton">
             <body name="box">
                 <gravity>1</gravity>
@@ -60,15 +60,15 @@
                             <size>0.1 0.05 0.1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="skeleton_2">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -93,15 +93,15 @@
                             <size>0.05 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link_1</child>
             </joint>
         </skeleton>
-        
+
         <skeleton name="skeleton_3">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -126,14 +126,14 @@
                             <size>0.05 0.05 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link_1</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
         <skeleton name="skeleton_4">
             <body name="link_1">
@@ -161,9 +161,9 @@
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link_1</child>

@@ -39,7 +39,7 @@
                             <size>0.1 0.025 0.025</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="free" name="joint 1">
                 <parent>world</parent>
@@ -50,6 +50,6 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

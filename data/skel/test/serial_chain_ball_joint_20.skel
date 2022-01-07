@@ -407,6 +407,6 @@
                 <child>link 20</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

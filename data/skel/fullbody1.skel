@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
-        
+
         <skeleton name="ground skeleton">
             <mobile>false</mobile>
             <body name="ground">
@@ -26,13 +26,13 @@
                             <size>10.0 0.05 10.0</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
         <skeleton name="fullbody1">
             <transformation>0 0 0 0 0 0</transformation>
@@ -59,9 +59,9 @@
                             <size>0.1088 0.1088 0.23936</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <!-- Left Leg -->
             <body name="h_thigh_left">
                 <transformation>0.01649408 -0.05774016 -0.09072832 0.0 0.0 0.0</transformation>
@@ -86,7 +86,7 @@
                             <size>0.093025 0.3721 0.093025</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_shin_left">
@@ -112,7 +112,7 @@
                             <size>0.07474 0.3737 0.07474</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_heel_left">
@@ -139,7 +139,7 @@
                             <size>0.1080 0.0540 0.1080</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_toe_left">
@@ -166,7 +166,7 @@
                             <size>0.1000 0.0500 0.0800</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Right Leg -->
@@ -193,7 +193,7 @@
                             <size>0.093025 0.3721 0.093025</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_shin_right">
@@ -219,7 +219,7 @@
                             <size>0.07474 0.3737 0.07474</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_heel_right">
@@ -246,7 +246,7 @@
                             <size>0.1080 0.0540 0.1080</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_toe_right">
@@ -273,7 +273,7 @@
                             <size>0.1000 0.0500 0.0800</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Upper Body -->
@@ -300,7 +300,7 @@
                             <size>0.12535 0.2507 0.17549</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_spine">
@@ -326,7 +326,7 @@
                             <size>0.0908 0.1816 0.0908</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_head">
@@ -353,7 +353,7 @@
                             <size>0.101725 0.1565 0.1252</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Left Arm -->
@@ -380,7 +380,7 @@
                             <size>0.09615 0.1923 0.09615</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_bicep_left">
@@ -406,7 +406,7 @@
                             <size>0.07848 0.2616 0.07848</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_forearm_left">
@@ -432,7 +432,7 @@
                             <size>0.0506 0.2024 0.0506</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_hand_left">
@@ -459,7 +459,7 @@
                             <size>0.032975 0.1319 0.032975</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Right Arm -->
@@ -486,7 +486,7 @@
                             <size>0.09615 0.1923 0.09615</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_bicep_right">
@@ -512,7 +512,7 @@
                             <size>0.07848 0.2616 0.07848</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_forearm_right">
@@ -538,7 +538,7 @@
                             <size>0.0506 0.2024 0.0506</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_hand_right">
@@ -565,7 +565,7 @@
                             <size>0.032975 0.1319 0.032975</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- JOINT: Pelvis -->
@@ -794,7 +794,7 @@
                 <init_vel>0</init_vel>
             </joint>
 
-        </skeleton>	
+        </skeleton>
 
     </world>
 </skel>

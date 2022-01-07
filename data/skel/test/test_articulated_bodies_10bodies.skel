@@ -7,7 +7,7 @@
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
 
-	<skeleton name="ground skeleton">
+        <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.375 0 0 0 0</transformation>
                 <visualization_shape>
@@ -26,13 +26,13 @@
                             <size>5.0 0.05 5.0</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
         <skeleton name="skeleton 1">
             <transformation>0 5.0 0 0 0 0</transformation>
@@ -51,9 +51,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>10.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>10.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -107,9 +107,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>10.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>10.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -163,9 +163,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>10.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>10.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -219,9 +219,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>10.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>10.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -275,9 +275,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>10.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>10.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -319,63 +319,83 @@
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link 1</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 2">
                 <parent>link 1</parent>
                 <child>link 2</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 3">
                 <parent>link 2</parent>
                 <child>link 3</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 4">
                 <parent>link 3</parent>
                 <child>link 4</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 5">
                 <parent>link 4</parent>
                 <child>link 5</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 6">
                 <parent>link 5</parent>
                 <child>link 6</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 7">
                 <parent>link 6</parent>
                 <child>link 7</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 8">
                 <parent>link 7</parent>
                 <child>link 8</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 9">
                 <parent>link 8</parent>
                 <child>link 9</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 10">
                 <parent>link 9</parent>
                 <child>link 10</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.25 0 0 0 0</transformation>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

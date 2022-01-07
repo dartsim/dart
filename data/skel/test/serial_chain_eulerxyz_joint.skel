@@ -219,6 +219,6 @@
                 <axis_order>zyx</axis_order>
             </joint>
 
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

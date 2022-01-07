@@ -24,14 +24,14 @@
                             <size>2.0 0.01 2.0</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="box skeleton">
             <body name="box">
                 <gravity>1</gravity>
@@ -63,15 +63,15 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>box</child>
             </joint>
         </skeleton>
-        
+
         <skeleton name="skeleton_2">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -103,15 +103,15 @@
                             <size>0.2 0.2 0.2</size>
                         </ellipsoid>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link_1</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="skeleton_3">
             <body name="link_1">
                 <gravity>1</gravity>
@@ -143,14 +143,14 @@
                             <size>0.2 0.2 0.2</size>
                         </ellipsoid>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link_1</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
     </world>
 </skel>

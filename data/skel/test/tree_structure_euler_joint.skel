@@ -29,7 +29,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 6">
                 <gravity>1</gravity>
@@ -53,7 +53,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 5">
                 <gravity>1</gravity>
@@ -77,7 +77,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 4">
                 <gravity>1</gravity>
@@ -101,7 +101,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 2">
                 <gravity>1</gravity>
@@ -125,7 +125,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 3">
                 <gravity>1</gravity>
@@ -149,7 +149,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 7">
                 <gravity>1</gravity>
@@ -173,7 +173,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 8">
                 <gravity>1</gravity>
@@ -197,7 +197,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 9">
                 <gravity>1</gravity>
@@ -221,7 +221,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 10">
                 <gravity>1</gravity>
@@ -245,7 +245,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 11">
                 <gravity>1</gravity>
@@ -269,7 +269,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 12">
                 <gravity>1</gravity>
@@ -293,7 +293,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 13">
                 <gravity>1</gravity>
@@ -317,7 +317,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="euler" name="joint 6">
                 <parent>link 3</parent>
@@ -436,6 +436,6 @@
                     <xyz>0 0 1</xyz>
                 </axis>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

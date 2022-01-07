@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>bullet</collision_detector>
         </physics>
-        
+
         <skeleton name="biped">
             <transformation>0 0 0 0 0 0</transformation>
             <body name="h_pelvis">
@@ -32,9 +32,9 @@
                             <size>0.1088 0.1088 0.23936</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <!-- Left Leg -->
             <body name="h_thigh_left">
                 <transformation>0.01649408 -0.05774016 -0.09072832 0.0 0.0 0.0</transformation>
@@ -59,7 +59,7 @@
                             <size>0.093025 0.3721 0.093025</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_shin_left">
@@ -85,7 +85,7 @@
                             <size>0.07474 0.3737 0.07474</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_heel_left">
@@ -112,7 +112,7 @@
                             <size>0.1080 0.0540 0.1080</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_toe_left">
@@ -139,7 +139,7 @@
                             <size>0.1000 0.0500 0.0800</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Right Leg -->
@@ -166,7 +166,7 @@
                             <size>0.093025 0.3721 0.093025</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_shin_right">
@@ -192,7 +192,7 @@
                             <size>0.07474 0.3737 0.07474</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_heel_right">
@@ -219,7 +219,7 @@
                             <size>0.1080 0.0540 0.1080</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_toe_right">
@@ -246,7 +246,7 @@
                             <size>0.1000 0.0500 0.0800</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Upper Body -->
@@ -273,7 +273,7 @@
                             <size>0.12535 0.2507 0.17549</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_spine">
@@ -299,7 +299,7 @@
                             <size>0.0908 0.1816 0.0908</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_head">
@@ -326,7 +326,7 @@
                             <size>0.101725 0.1565 0.1252</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Left Arm -->
@@ -353,7 +353,7 @@
                             <size>0.09615 0.0423 0.09615</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_bicep_left">
@@ -379,7 +379,7 @@
                             <size>0.07848 0.2616 0.07848</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_forearm_left">
@@ -405,7 +405,7 @@
                             <size>0.0506 0.2024 0.0506</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_hand_left">
@@ -432,7 +432,7 @@
                             <size>0.032975 0.1319 0.032975</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- Right Arm -->
@@ -459,7 +459,7 @@
                             <size>0.09615 0.0423 0.09615</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_bicep_right">
@@ -485,7 +485,7 @@
                             <size>0.07848 0.2616 0.07848</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_forearm_right">
@@ -511,7 +511,7 @@
                             <size>0.0506 0.2024 0.0506</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="h_hand_right">
@@ -538,7 +538,7 @@
                             <size>0.032975 0.1319 0.032975</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <!-- JOINT: Pelvis -->
@@ -564,11 +564,11 @@
                 <parent>h_thigh_left</parent>
                 <child>h_shin_left</child>
                 <axis>
-                  <xyz>0.0 0.0 1.0</xyz>
-                  <limit>
-                    <lower>-3.14</lower>
-                    <upper>0.0</upper>
-                  </limit>                  
+                    <xyz>0.0 0.0 1.0</xyz>
+                    <limit>
+                        <lower>-3.14</lower>
+                        <upper>0.0</upper>
+                    </limit>
                 </axis>
                 <init_pos>-0.17</init_pos>
                 <init_vel>0</init_vel>
@@ -580,17 +580,17 @@
                 <child>h_heel_left</child>
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
-                  <limit>
-                    <lower>-1.57</lower>
-                    <upper>3.14</upper>
-                  </limit>                  
+                    <limit>
+                        <lower>-1.57</lower>
+                        <upper>3.14</upper>
+                    </limit>
                 </axis>
                 <axis2>
                     <xyz>1.0 0.0 0.0</xyz>
-                  <limit>
-                    <lower>-1.57</lower>
-                    <upper>1.57</upper>
-                  </limit>                  
+                    <limit>
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis2>
                 <init_pos>0 0</init_pos>
                 <init_vel>0 0</init_vel>
@@ -602,10 +602,10 @@
                 <child>h_toe_left</child>
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
-                  <limit>
-                    <lower>-1.57</lower>
-                    <upper>1.57</upper>
-                  </limit>                  
+                    <limit>
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
@@ -627,10 +627,10 @@
                 <child>h_shin_right</child>
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
-                  <limit>
-                    <lower>-3.14</lower>
-                    <upper>0.0</upper>
-                  </limit>                  
+                    <limit>
+                        <lower>-3.14</lower>
+                        <upper>0.0</upper>
+                    </limit>
                 </axis>
                 <init_pos>-0.17</init_pos>
                 <init_vel>0</init_vel>
@@ -642,17 +642,17 @@
                 <child>h_heel_right</child>
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
-                  <limit>
-                    <lower>-1.57</lower>
-                    <upper>3.14</upper>
-                  </limit>                  
+                    <limit>
+                        <lower>-1.57</lower>
+                        <upper>3.14</upper>
+                    </limit>
                 </axis>
                 <axis2>
-                  <xyz>1.0 0.0 0.0</xyz>
-                  <limit>
-                    <lower>-1.57</lower>
-                    <upper>1.57</upper>
-                  </limit>                  
+                    <xyz>1.0 0.0 0.0</xyz>
+                    <limit>
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis2>
                 <init_pos>0 0</init_pos>
                 <init_vel>0 0</init_vel>
@@ -665,9 +665,9 @@
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
@@ -681,16 +681,16 @@
                 <axis>
                     <xyz>1.0 0.0 0.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <axis2>
                     <xyz>0.0 0.0 1.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis2>
                 <init_pos>0 0</init_pos>
                 <init_vel>0 0</init_vel>
@@ -703,9 +703,9 @@
                 <axis>
                     <xyz>0.0 1.0 0.0</xyz>
                     <limit>
-                      <lower>-3.14</lower>
-                      <upper>3.14</upper>
-                    </limit>                  
+                        <lower>-3.14</lower>
+                        <upper>3.14</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
@@ -718,16 +718,16 @@
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <axis2>
                     <xyz>1.0 0.0 0.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis2>
                 <init_pos>0 0</init_pos>
                 <init_vel>0 0</init_vel>
@@ -741,9 +741,9 @@
                 <axis>
                     <xyz>1.0 0.0 0.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <init_pos>0.0</init_pos>
                 <init_vel>0</init_vel>
@@ -765,9 +765,9 @@
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
                     <limit>
-                      <lower>0.0</lower>
-                      <upper>3.14</upper>
-                    </limit>                  
+                        <lower>0.0</lower>
+                        <upper>3.14</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
@@ -780,9 +780,9 @@
                 <axis>
                     <xyz>1.0 0.0 0.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
@@ -796,9 +796,9 @@
                 <axis>
                     <xyz>1.0 0.0 0.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
@@ -820,9 +820,9 @@
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
                     <limit>
-                      <lower>0.0</lower>
-                      <upper>3.14</upper>
-                    </limit>                  
+                        <lower>0.0</lower>
+                        <upper>3.14</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
@@ -835,15 +835,15 @@
                 <axis>
                     <xyz>1.0 0.0 0.0</xyz>
                     <limit>
-                      <lower>-1.57</lower>
-                      <upper>1.57</upper>
-                    </limit>                  
+                        <lower>-1.57</lower>
+                        <upper>1.57</upper>
+                    </limit>
                 </axis>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
             </joint>
 
-        </skeleton>	
+        </skeleton>
 
     </world>
 </skel>

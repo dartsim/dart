@@ -20,12 +20,12 @@
               <size>2.5 0.05 2.5</size>
             </box>
           </geometry>
-        </collision_shape>                                
+        </collision_shape>
       </body>
       <joint type="weld" name="joint 1">
         <parent>world</parent>
         <child>ground</child>
       </joint>
-    </skeleton>	
+    </skeleton>
   </world>
 </skel>

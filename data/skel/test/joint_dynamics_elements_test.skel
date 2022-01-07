@@ -29,7 +29,7 @@
                             <size>0.1 1.0 0.1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link 2">
                 <gravity>1</gravity>
@@ -53,7 +53,7 @@
                             <size>0.1 1.0 0.1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint0">
                 <parent>world</parent>
@@ -98,6 +98,6 @@
                     </dynamics>
                 </axis3>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

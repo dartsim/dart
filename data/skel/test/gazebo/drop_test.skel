@@ -24,14 +24,14 @@
                             <size>10.0 10.0 0.01</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="box">
             <transformation>0 0 10.5 0 0 0</transformation>
             <body name="link">
@@ -64,15 +64,15 @@
                             <size>1 1 1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="sphere">
             <transformation>0 1.5 10.5 0 0 0</transformation>
             <body name="link">
@@ -105,9 +105,9 @@
                             <size>1 1 1</size>
                         </ellipsoid>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link</child>
@@ -148,14 +148,14 @@
                             <height>1.0</height>
                         </cylinder>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>link</child>
             </joint>
         </skeleton>
-        
+
     </world>
 </skel>

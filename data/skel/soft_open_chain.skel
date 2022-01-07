@@ -7,7 +7,7 @@
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
 
-	<skeleton name="ground skeleton">
+        <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.375 0 0 0 0</transformation>
                 <visualization_shape>
@@ -26,13 +26,13 @@
                             <size>2.5 0.05 2.5</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
         <skeleton name="skeleton 1">
             <body name="link 1">
@@ -50,9 +50,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>0.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>0.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -84,9 +84,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>0.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>0.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -118,9 +118,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>0.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>0.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -152,9 +152,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>0.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>0.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -186,9 +186,9 @@
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		    <kv>500.0</kv>
-		    <ke>0.0</ke>
-		    <damp>5.0</damp>
+                    <kv>500.0</kv>
+                    <ke>0.0</ke>
+                    <damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <geometry>
@@ -208,13 +208,17 @@
             <joint type="ball" name="joint 1">
                 <parent>world</parent>
                 <child>link 1</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.025 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 2">
                 <parent>link 1</parent>
                 <child>link 2</child>
-                <axis><xyz>0 0 1</xyz></axis>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
                 <transformation>0 0.025 0 0 0 0</transformation>
             </joint>
             <joint type="ball" name="joint 3">
@@ -232,6 +236,6 @@
                 <child>link 5</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>dart</collision_detector>
         </physics>
-        
+
         <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.375 0 0 0 0</transformation>
@@ -26,14 +26,14 @@
                             <size>2.5 0.05 2.5</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
         <skeleton name="skeleton1">
             <body name="link1">
                 <gravity>1</gravity>
@@ -58,7 +58,7 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <body name="link2">
                 <gravity>1</gravity>
@@ -83,9 +83,9 @@
                             <size>0.2 0.2 0.2</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <joint type="free" name="joint1">
                 <parent>world</parent>
                 <child>link1</child>
@@ -112,7 +112,7 @@
                     <xyz>1.0 0.0 0.0</xyz>
                 </axis2>
             </joint>
-        </skeleton>	
-        
+        </skeleton>
+
     </world>
 </skel>
