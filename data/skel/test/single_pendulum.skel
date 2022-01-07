@@ -37,7 +37,7 @@
                             <size>0.1 0.2 0.3</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="revolute" name="joint 1">
                 <parent>world</parent>
@@ -45,9 +45,11 @@
                 <transformation>-0.1 0 0 0 0 0</transformation>
                 <axis>
                     <xyz>0 0 1</xyz>
-		    <damping>10.0</damping>
+                    <dynamics>
+                        <damping>10</damping>
+                    </dynamics>
                 </axis>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>

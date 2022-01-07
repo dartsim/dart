@@ -6,7 +6,7 @@
             <gravity>0 0 -9.81</gravity>
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
-        
+
         <skeleton name="grount skeleton">
             <body name="ground">
                 <transformation>0 0 -0.3 0 0 0</transformation>
@@ -25,13 +25,13 @@
                             <size>10.0 10.0 0.05</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
             <joint type="weld" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>
-        </skeleton>	
+        </skeleton>
 
         <!-- to demonstrate force torque, we'll construct a model with
     	two bodies stacked vertically, with a x-revolute joint connecting
@@ -69,9 +69,9 @@
                             <size>1 1 1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
-            
+
             <body name="link2">
                 <gravity>1</gravity>
                 <transformation>1.0 0 1.0 0 0 0</transformation>
@@ -102,7 +102,7 @@
                             <size>1 1 1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <body name="link3">
@@ -135,7 +135,7 @@
                             <size>1 1 1</size>
                         </box>
                     </geometry>
-                </collision_shape>                                
+                </collision_shape>
             </body>
 
             <joint type="free" name="joint0">
@@ -148,7 +148,9 @@
                 <child>link2</child>
                 <axis>
                     <xyz>0 1 0</xyz>
-		    <damping>100.0</damping>
+                    <dynamics>
+                        <damping>100.0</damping>
+                    </dynamics>
                 </axis>
             </joint>
 
@@ -157,11 +159,13 @@
                 <child>link3</child>
                 <axis>
                     <xyz>0 1 0</xyz>
-		    <damping>30.0</damping>
+                    <dynamics>
+                        <damping>30.0</damping>
+                    </dynamics>
                 </axis>
             </joint>
 
-        </skeleton>	
+        </skeleton>
 
     </world>
 </skel>

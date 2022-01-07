@@ -169,7 +169,9 @@
                 <transformation>0 0 0 0 0 0</transformation>
                 <axis>
                     <xyz>0 1 0</xyz>
-                    <damping>0.000</damping>
+                    <dynamics>
+                        <damping>0.000</damping>
+                    </dynamics>
                 </axis>
                 <axis2>
                     <xyz>0 0 1</xyz>
@@ -182,11 +184,15 @@
                 <transformation>0 0 0 0 0 0</transformation>
                 <axis>
                     <xyz>0 1 0</xyz>
-                    <damping>0.000</damping>
+                    <dynamics>
+                        <damping>0.000</damping>
+                    </dynamics>
                 </axis>
                 <axis2>
                     <xyz>0 0 1</xyz>
-                    <damping>0.000</damping>
+                    <dynamics>
+                        <damping>0.000</damping>
+                    </dynamics>
                 </axis2>
             </joint>
             <joint type="revolute" name="joint_back_left">
@@ -195,7 +201,9 @@
                 <transformation>0 0 0 0 0 0</transformation>
                 <axis>
                     <xyz>0 0 1</xyz>
-                    <damping>0.00</damping>
+                    <dynamics>
+                        <damping>0.000</damping>
+                    </dynamics>
                 </axis>
             </joint>
             <joint type="revolute" name="joint_back_right">
@@ -204,7 +212,9 @@
                 <transformation>0 0 0 0 0 0</transformation>
                 <axis>
                     <xyz>0 0 1</xyz>
-                    <damping>0.00</damping>
+                    <dynamics>
+                        <damping>0.000</damping>
+                    </dynamics>
                 </axis>
             </joint>
         </skeleton>

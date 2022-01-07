@@ -22,23 +22,29 @@
             <joint type="planar" name="joint1">
                 <parent>world</parent>
                 <child>link1</child>
-		<plane type="xy"/>
+                <plane type="xy"/>
                 <axis>
-		    <damping>1</damping>
+                    <dynamics>
+                        <damping>1</damping>
+                    </dynamics>
                     <limit>
                         <lower>-1</lower>
                         <upper>+1</upper>
                     </limit>
                 </axis>
                 <axis2>
-		    <damping>2</damping>
+                    <dynamics>
+                        <damping>2</damping>
+                    </dynamics>
                     <limit>
                         <lower>-2</lower>
                         <upper>+2</upper>
                     </limit>
                 </axis2>
                 <axis3>
-		    <damping>3</damping>
+                    <dynamics>
+                        <damping>3</damping>
+                    </dynamics>
                     <limit>
                         <lower>-3</lower>
                         <upper>+3</upper>
@@ -50,23 +56,29 @@
             <joint type="planar" name="joint2">
                 <parent>link1</parent>
                 <child>link2</child>
-		<plane type="yz"/>
+                <plane type="yz"/>
                 <axis>
-		    <damping>1</damping>
+                    <dynamics>
+                        <damping>1</damping>
+                    </dynamics>
                     <limit>
                         <lower>-1</lower>
                         <upper>+1</upper>
                     </limit>
                 </axis>
                 <axis2>
-		    <damping>2</damping>
+                    <dynamics>
+                        <damping>2</damping>
+                    </dynamics>
                     <limit>
                         <lower>-2</lower>
                         <upper>+2</upper>
                     </limit>
                 </axis2>
                 <axis3>
-		    <damping>3</damping>
+                    <dynamics>
+                        <damping>3</damping>
+                    </dynamics>
                     <limit>
                         <lower>-3</lower>
                         <upper>+3</upper>
@@ -78,23 +90,29 @@
             <joint type="planar" name="joint3">
                 <parent>link2</parent>
                 <child>link3</child>
-		<plane type="zx"/>
+                <plane type="zx"/>
                 <axis>
-		    <damping>1</damping>
+                    <dynamics>
+                        <damping>1</damping>
+                    </dynamics>
                     <limit>
                         <lower>-1</lower>
                         <upper>+1</upper>
                     </limit>
                 </axis>
                 <axis2>
-		    <damping>2</damping>
+                    <dynamics>
+                        <damping>2</damping>
+                    </dynamics>
                     <limit>
                         <lower>-2</lower>
                         <upper>+2</upper>
                     </limit>
                 </axis2>
                 <axis3>
-		    <damping>3</damping>
+                    <dynamics>
+                        <damping>3</damping>
+                    </dynamics>
                     <limit>
                         <lower>-3</lower>
                         <upper>+3</upper>
@@ -106,30 +124,36 @@
             <joint type="planar" name="joint4">
                 <parent>link3</parent>
                 <child>link4</child>
-		<plane type="arbitrary">
-		    <translation_axis1>
+                <plane type="arbitrary">
+                    <translation_axis1>
                         <xyz>1 0 0</xyz>
                     </translation_axis1>
                     <translation_axis2>
                         <xyz>0 1 0</xyz>
                     </translation_axis2>
-		</plane>
+                </plane>
                 <axis>
-		    <damping>1</damping>
+                    <dynamics>
+                        <damping>1</damping>
+                    </dynamics>
                     <limit>
                         <lower>-1</lower>
                         <upper>+1</upper>
                     </limit>
                 </axis>
                 <axis2>
-		    <damping>2</damping>
+                    <dynamics>
+                        <damping>2</damping>
+                    </dynamics>
                     <limit>
                         <lower>-2</lower>
                         <upper>+2</upper>
                     </limit>
                 </axis2>
                 <axis3>
-		    <damping>3</damping>
+                    <dynamics>
+                        <damping>3</damping>
+                    </dynamics>
                     <limit>
                         <lower>-3</lower>
                         <upper>+3</upper>
@@ -138,6 +162,6 @@
                 <init_pos>1 2 3</init_pos>
                 <init_vel>4 5 6</init_vel>
             </joint>
-        </skeleton>	
+        </skeleton>
     </world>
 </skel>
