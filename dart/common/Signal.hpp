@@ -51,38 +51,38 @@ public:
   Connection();
 
   /// Copy constructor
-  Connection(const Connection& _other);
+  Connection(const Connection& other);
 
   /// Move constructor
-  Connection(Connection&& _other);
+  Connection(Connection&& other);
 
   /// Assignment operator
-  Connection& operator=(const Connection& _other);
+  Connection& operator=(const Connection& other);
 
   /// Move assignment operator
-  Connection& operator=(Connection&& _other);
+  Connection& operator=(Connection&& other);
 
   /// Destructor
   virtual ~Connection();
 
   /// Get true if the slot is connected
-  bool isConnected() const;
+  [[nodiscard]] bool isConnected() const;
 
   /// Disconnect the connection
   void disconnect() const;
   // TODO(JS): Make this non-const in the next major release
 
-  template <typename _Signature, template <class> class Combiner>
+  template <typename Signature, template <class> class Combiner>
   friend class Signal;
 
 protected:
   /// Constructor given connection body
   Connection(
-      const std::weak_ptr<signal::detail::ConnectionBodyBase>& _connectionBody);
+      const std::weak_ptr<signal::detail::ConnectionBodyBase>& connectionBody);
 
   /// Move constructor given connection body
   Connection(
-      std::weak_ptr<signal::detail::ConnectionBodyBase>&& _connectionBody);
+      std::weak_ptr<signal::detail::ConnectionBodyBase>&& connectionBody);
 
 private:
   /// Weak pointer to connection body in the signal
@@ -94,10 +94,10 @@ class ScopedConnection : public Connection
 {
 public:
   /// Default constructor
-  ScopedConnection(const Connection& _other);
+  ScopedConnection(const Connection& other);
 
   /// Move constructor
-  ScopedConnection(Connection&& _other);
+  ScopedConnection(Connection&& other);
 
   /// Destructor
   virtual ~ScopedConnection();
@@ -129,13 +129,13 @@ public:
   virtual ~Signal();
 
   /// Connect a slot to the signal
-  Connection connect(const SlotType& _slot);
+  Connection connect(const SlotType& slot);
 
   /// Connect a slot to the signal
-  Connection connect(SlotType&& _slot);
+  Connection connect(SlotType&& slot);
 
   /// Disconnect given connection
-  void disconnect(const Connection& _connection) const;
+  void disconnect(const Connection& connection) const;
 
   /// Disconnect a connection
   void disconnect(const std::shared_ptr<ConnectionBodyType>& connectionBody);
@@ -150,7 +150,7 @@ public:
   // connection gets removed when it's disconnected.
 
   /// Get the number of connections
-  std::size_t getNumConnections() const;
+  [[nodiscard]] std::size_t getNumConnections() const;
 
   /// Raise the signal
   template <typename... ArgTypes>
@@ -185,13 +185,13 @@ public:
   virtual ~Signal();
 
   /// Connect a slot to the signal
-  Connection connect(const SlotType& _slot);
+  Connection connect(const SlotType& slot);
 
   /// Connect a slot to the signal
-  Connection connect(SlotType&& _slot);
+  Connection connect(SlotType&& slot);
 
   /// Disconnect given connection
-  void disconnect(const Connection& _connection) const;
+  void disconnect(const Connection& connection) const;
 
   /// Disconnect given connection
   void disconnect(const std::shared_ptr<ConnectionBodyType>& connectionBody);
@@ -206,15 +206,15 @@ public:
   // connection gets removed when it's disconnected.
 
   /// Get the number of connections
-  std::size_t getNumConnections() const;
+  [[nodiscard]] std::size_t getNumConnections() const;
 
   /// Raise the signal
-  template <typename... ArgTypes>
-  void raise(ArgTypes&&... _args);
+  template <typename... Args>
+  void raise(Args&&... args);
 
   /// Raise the signal
-  template <typename... ArgTypes>
-  void operator()(ArgTypes&&... _args);
+  template <typename... Args>
+  void operator()(Args&&... args);
 
 private:
   /// Connection set
@@ -232,14 +232,14 @@ public:
   using SignalType = typename T::SignalType;
 
   /// Constructor given signal
-  SlotRegister(typename T::SignalType& _signal);
+  SlotRegister(SignalType& signal);
 
   /// Connect a slot to the signal
-  Connection connect(const SlotType& _slot);
+  Connection connect(const SlotType& slot);
 
 private:
   /// Signal
-  typename T::SignalType& mSignal;
+  SignalType& mSignal;
 };
 
 } // namespace common

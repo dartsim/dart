@@ -54,9 +54,9 @@ Signal<_Res(_ArgTypes...), Combiner>::~Signal()
 
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
-Connection Signal<_Res(_ArgTypes...), Combiner>::connect(const SlotType& _slot)
+Connection Signal<_Res(_ArgTypes...), Combiner>::connect(const SlotType& slot)
 {
-  auto newConnectionBody = std::make_shared<ConnectionBodyType>(*this, _slot);
+  auto newConnectionBody = std::make_shared<ConnectionBodyType>(*this, slot);
   mConnectionBodies.insert(newConnectionBody);
 
   return Connection(std::move(newConnectionBody));
@@ -64,10 +64,10 @@ Connection Signal<_Res(_ArgTypes...), Combiner>::connect(const SlotType& _slot)
 
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
-Connection Signal<_Res(_ArgTypes...), Combiner>::connect(SlotType&& _slot)
+Connection Signal<_Res(_ArgTypes...), Combiner>::connect(SlotType&& slot)
 {
   auto newConnectionBody = std::make_shared<ConnectionBodyType>(
-      *this, std::forward<SlotType>(_slot));
+      *this, std::forward<SlotType>(slot));
   mConnectionBodies.insert(newConnectionBody);
 
   return Connection(std::move(newConnectionBody));
@@ -76,9 +76,9 @@ Connection Signal<_Res(_ArgTypes...), Combiner>::connect(SlotType&& _slot)
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 void Signal<_Res(_ArgTypes...), Combiner>::disconnect(
-    const Connection& _connection) const
+    const Connection& connection) const
 {
-  _connection.disconnect();
+  connection.disconnect();
 }
 
 //==============================================================================
@@ -113,14 +113,14 @@ std::size_t Signal<_Res(_ArgTypes...), Combiner>::getNumConnections() const
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 template <typename... ArgTypes>
-_Res Signal<_Res(_ArgTypes...), Combiner>::raise(ArgTypes&&... _args)
+_Res Signal<_Res(_ArgTypes...), Combiner>::raise(ArgTypes&&... args)
 {
   std::vector<ResultType> res(mConnectionBodies.size());
   auto resIt = res.begin();
 
   for (const auto& connectionBody : mConnectionBodies)
   {
-    *(resIt++) = connectionBody->getSlot()(std::forward<ArgTypes>(_args)...);
+    *(resIt++) = connectionBody->getSlot()(std::forward<ArgTypes>(args)...);
   }
 
   return Combiner<ResultType>::process(res.begin(), resIt);
@@ -128,10 +128,10 @@ _Res Signal<_Res(_ArgTypes...), Combiner>::raise(ArgTypes&&... _args)
 
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
-template <typename... ArgTypes>
-_Res Signal<_Res(_ArgTypes...), Combiner>::operator()(ArgTypes&&... _args)
+template <typename... Args>
+_Res Signal<_Res(_ArgTypes...), Combiner>::operator()(Args&&... args)
 {
-  return raise(std::forward<ArgTypes>(_args)...);
+  return raise(std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -150,9 +150,9 @@ Signal<void(_ArgTypes...)>::~Signal()
 
 //==============================================================================
 template <typename... _ArgTypes>
-Connection Signal<void(_ArgTypes...)>::connect(const SlotType& _slot)
+Connection Signal<void(_ArgTypes...)>::connect(const SlotType& slot)
 {
-  auto newConnectionBody = std::make_shared<ConnectionBodyType>(*this, _slot);
+  auto newConnectionBody = std::make_shared<ConnectionBodyType>(*this, slot);
   mConnectionBodies.insert(newConnectionBody);
 
   return Connection(std::move(newConnectionBody));
@@ -160,10 +160,10 @@ Connection Signal<void(_ArgTypes...)>::connect(const SlotType& _slot)
 
 //==============================================================================
 template <typename... _ArgTypes>
-Connection Signal<void(_ArgTypes...)>::connect(SlotType&& _slot)
+Connection Signal<void(_ArgTypes...)>::connect(SlotType&& slot)
 {
   auto newConnectionBody = std::make_shared<ConnectionBodyType>(
-      *this, std::forward<SlotType>(_slot));
+      *this, std::forward<SlotType>(slot));
   mConnectionBodies.insert(newConnectionBody);
 
   return Connection(std::move(newConnectionBody));
@@ -171,9 +171,9 @@ Connection Signal<void(_ArgTypes...)>::connect(SlotType&& _slot)
 
 //==============================================================================
 template <typename... _ArgTypes>
-void Signal<void(_ArgTypes...)>::disconnect(const Connection& _connection) const
+void Signal<void(_ArgTypes...)>::disconnect(const Connection& connection) const
 {
-  _connection.disconnect();
+  connection.disconnect();
 }
 
 //==============================================================================
@@ -207,36 +207,35 @@ std::size_t Signal<void(_ArgTypes...)>::getNumConnections() const
 
 //==============================================================================
 template <typename... _ArgTypes>
-template <typename... ArgTypes>
-void Signal<void(_ArgTypes...)>::raise(ArgTypes&&... _args)
+template <typename... Args>
+void Signal<void(_ArgTypes...)>::raise(Args&&... args)
 {
   for (const auto& connectionBody : mConnectionBodies)
   {
-    connectionBody->getSlot()(std::forward<ArgTypes>(_args)...);
+    connectionBody->getSlot()(std::forward<Args>(args)...);
   }
 }
 
 //==============================================================================
 template <typename... _ArgTypes>
-template <typename... ArgTypes>
-void Signal<void(_ArgTypes...)>::operator()(ArgTypes&&... _args)
+template <typename... Args>
+void Signal<void(_ArgTypes...)>::operator()(Args&&... args)
 {
-  raise(std::forward<ArgTypes>(_args)...);
+  raise(std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename T>
-SlotRegister<T>::SlotRegister(typename T::SignalType& _signal)
-  : mSignal(_signal)
+SlotRegister<T>::SlotRegister(SignalType& signal) : mSignal(signal)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename T>
-Connection SlotRegister<T>::connect(const SlotType& _slot)
+Connection SlotRegister<T>::connect(const SlotType& slot)
 {
-  return mSignal.connect(_slot);
+  return mSignal.connect(slot);
 }
 
 } // namespace common

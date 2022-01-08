@@ -42,45 +42,45 @@ Connection::Connection()
 }
 
 //==============================================================================
-Connection::Connection(const Connection& _other)
-  : mWeakConnectionBody(_other.mWeakConnectionBody)
+Connection::Connection(const Connection& other)
+  : mWeakConnectionBody(other.mWeakConnectionBody)
 {
   // Do nothing
 }
 
 //==============================================================================
-Connection::Connection(Connection&& _other)
-  : mWeakConnectionBody(std::move(_other.mWeakConnectionBody))
+Connection::Connection(Connection&& other)
+  : mWeakConnectionBody(std::move(other.mWeakConnectionBody))
 {
   // Do nothing
 }
 
 //==============================================================================
-Connection& Connection::operator=(const Connection& _other)
+Connection& Connection::operator=(const Connection& other)
 {
-  mWeakConnectionBody = _other.mWeakConnectionBody;
+  mWeakConnectionBody = other.mWeakConnectionBody;
   return *this;
 }
 
 //==============================================================================
-Connection& Connection::operator=(Connection&& _other)
+Connection& Connection::operator=(Connection&& other)
 {
-  mWeakConnectionBody = std::move(_other.mWeakConnectionBody);
+  mWeakConnectionBody = std::move(other.mWeakConnectionBody);
   return *this;
 }
 
 //==============================================================================
 Connection::Connection(
-    const std::weak_ptr<signal::detail::ConnectionBodyBase>& _connectionBody)
-  : mWeakConnectionBody(_connectionBody)
+    const std::weak_ptr<signal::detail::ConnectionBodyBase>& connectionBody)
+  : mWeakConnectionBody(connectionBody)
 {
   // Do nothing
 }
 
 //==============================================================================
 Connection::Connection(
-    std::weak_ptr<signal::detail::ConnectionBodyBase>&& _connectionBody)
-  : mWeakConnectionBody(std::move(_connectionBody))
+    std::weak_ptr<signal::detail::ConnectionBodyBase>&& connectionBody)
+  : mWeakConnectionBody(std::move(connectionBody))
 {
   // Do nothing
 }
@@ -105,15 +105,14 @@ void Connection::disconnect() const
 }
 
 //==============================================================================
-ScopedConnection::ScopedConnection(const Connection& _other)
-  : Connection(_other)
+ScopedConnection::ScopedConnection(const Connection& other) : Connection(other)
 {
   // Do nothing
 }
 
 //==============================================================================
-ScopedConnection::ScopedConnection(Connection&& _other)
-  : Connection(std::move(_other))
+ScopedConnection::ScopedConnection(Connection&& other)
+  : Connection(std::move(other))
 {
   // Do nothing
 }

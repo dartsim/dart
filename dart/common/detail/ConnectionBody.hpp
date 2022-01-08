@@ -65,10 +65,10 @@ public:
   using SlotType = typename SignalType::SlotType;
 
   /// Constructor given slot
-  ConnectionBody(SignalType& signal, const SlotType& _slot);
+  ConnectionBody(SignalType& signal, const SlotType& slot);
 
   /// Move constructor given slot
-  ConnectionBody(SignalType& signal, SlotType&& _slot);
+  ConnectionBody(SignalType& signal, SlotType&& slot);
 
   /// Destructor
   virtual ~ConnectionBody();
@@ -93,16 +93,16 @@ private:
 //==============================================================================
 template <typename SignalType>
 ConnectionBody<SignalType>::ConnectionBody(
-    SignalType& signal, const SlotType& _slot)
-  : ConnectionBodyBase(), mSignal(signal), mSlot(_slot)
+    SignalType& signal, const SlotType& slot)
+  : ConnectionBodyBase(), mSignal(signal), mSlot(slot)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename SignalType>
-ConnectionBody<SignalType>::ConnectionBody(SignalType& signal, SlotType&& _slot)
-  : ConnectionBodyBase(), mSignal(signal), mSlot(std::forward<SlotType>(_slot))
+ConnectionBody<SignalType>::ConnectionBody(SignalType& signal, SlotType&& slot)
+  : ConnectionBodyBase(), mSignal(signal), mSlot(std::forward<SlotType>(slot))
 {
   // Do nothing
 }
@@ -129,6 +129,7 @@ ConnectionBody<SignalType>::getSlot() const
   return mSlot;
 }
 
+//==============================================================================
 /// DefaultCombiner -- return the last result
 template <typename T>
 struct DefaultCombiner
