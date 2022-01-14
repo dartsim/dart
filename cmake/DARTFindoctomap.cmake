@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(octomap 1.6.8 QUIET CONFIG)
+find_package(octomap 1.8.1 QUIET CONFIG)
 
 if(octomap_FOUND AND NOT TARGET octomap)
   add_library(octomap INTERFACE IMPORTED)

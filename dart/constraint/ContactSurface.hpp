@@ -113,7 +113,7 @@ public:
   ///                   when adding a new one. It is suggested to keep this
   ///                   paradigm if used elsewhere.
   explicit ContactSurfaceHandler(ContactSurfaceHandlerPtr parent = nullptr);
-  
+
   virtual ~ContactSurfaceHandler() = default;
 
   /// Create parameters of the contact constraint. This method should combine
@@ -152,7 +152,7 @@ class DefaultContactSurfaceHandler : public ContactSurfaceHandler
 {
 public:
   virtual ~DefaultContactSurfaceHandler() = default;
-  
+
   // Documentation inherited
   ContactSurfaceParams createParams(
       const collision::Contact& contact,

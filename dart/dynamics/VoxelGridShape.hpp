@@ -56,7 +56,7 @@ public:
 
   /// Constructs from a octomap::OcTree.
   /// \param[in] octree Octree.
-  explicit VoxelGridShape(fcl_shared_ptr<octomap::OcTree> octree);
+  explicit VoxelGridShape(std::shared_ptr<octomap::OcTree> octree);
 
   /// Destructor.
   ~VoxelGridShape() override = default;
@@ -68,13 +68,13 @@ public:
   static const std::string& getStaticType();
 
   /// Sets octree.
-  void setOctree(fcl_shared_ptr<octomap::OcTree> octree);
+  void setOctree(std::shared_ptr<octomap::OcTree> octree);
 
   /// Returns octree.
-  fcl_shared_ptr<octomap::OcTree> getOctree();
+  std::shared_ptr<octomap::OcTree> getOctree();
 
   /// Returns octree.
-  fcl_shared_ptr<const octomap::OcTree> getOctree() const;
+  std::shared_ptr<const octomap::OcTree> getOctree() const;
 
   /// Updates the occupancy probability of the voxels where \c point is located.
   ///
@@ -158,7 +158,7 @@ protected:
   void updateVolume() const override;
 
   /// Octree.
-  fcl_shared_ptr<octomap::OcTree> mOctree;
+  std::shared_ptr<octomap::OcTree> mOctree;
   // TODO(JS): Use std::shared_ptr once we drop supporting FCL (< 0.5)
 };
 

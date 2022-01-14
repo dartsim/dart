@@ -757,7 +757,7 @@ void ConstraintSolver::addContactSurfaceHandler(
   if (handler == mContactSurfaceHandler)
   {
     dterr << "Adding the same contact surface handler for the second time, "
-             "ignoring." << std::endl;
+          << "ignoring.\n";
     return;
   }
   handler->setParent(mContactSurfaceHandler);
