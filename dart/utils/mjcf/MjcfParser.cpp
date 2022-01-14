@@ -539,7 +539,7 @@ bool createShapeNodes(
     // Create ShapeNode with the shape created above
     dynamics::ShapeNode* shapeNode
         = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(
-            shape, site.getName());
+            shape, "site:" + site.getName());
 
     // RGBA
     dynamics::VisualAspect* visualAspect = shapeNode->getVisualAspect();

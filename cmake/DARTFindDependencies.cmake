@@ -9,6 +9,10 @@ if(DART_VERBOSE)
   message(STATUS "[ Required dependencies for DART core ]")
 endif()
 
+# fmt
+dart_find_package(fmt)
+dart_check_required_package(fmt "libfmt")
+
 # Eigen
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
@@ -84,9 +88,6 @@ if(ASSIMP_FOUND)
   unset(CMAKE_REQUIRED_INCLUDES)
   unset(CMAKE_REQUIRED_LIBRARIES)
 endif()
-
-# Boost
-dart_find_package(Boost)
 
 # octomap
 dart_find_package(octomap)

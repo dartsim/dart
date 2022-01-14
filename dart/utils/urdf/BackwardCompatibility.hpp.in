@@ -47,25 +47,4 @@
   (URDFDOM_HEADERS_MINOR_VERSION > y || (URDFDOM_HEADERS_MINOR_VERSION >= y && \
   URDFDOM_HEADERS_PATCH_VERSION >= z))))
 
-#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
-#include <memory>
-#else
-#include "boost/shared_ptr.hpp"
-#include "boost/weak_ptr.hpp"
-#endif
-
-namespace dart {
-namespace utils {
-
-#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
-template <typename T> using urdf_shared_ptr = std::shared_ptr<T>;
-template <typename T> using urdf_weak_ptr = std::weak_ptr<T>;
-#else
-template <typename T> using urdf_shared_ptr = boost::shared_ptr<T>;
-template <typename T> using urdf_weak_ptr = boost::weak_ptr<T>;
-#endif
-
-} // namespace utils
-} // namespace dart
-
 #endif // DART_UTILS_URDF_BACKWARDCOMPATIBILITY_HPP_

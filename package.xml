@@ -24,7 +24,6 @@
   <build_depend>pkg-config</build_depend>
   <depend>assimp</depend>
   <depend>bullet</depend>
-  <depend>boost</depend>
   <depend>eigen</depend>
   <depend>libfcl-dev</depend>
   <depend>glut</depend>

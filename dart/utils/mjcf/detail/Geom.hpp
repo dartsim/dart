@@ -117,7 +117,7 @@ private:
       const GeomAttributes& defaultAttributes);
 
   /// Updates attributes and elements that doesn't require any other elements.
-  Errors preprocess(const Compiler& compiler);
+  Errors preprocess(const Compiler& compiler, bool autoName = false);
 
   /// Updates attributes and elements that require the preprocessed child
   /// elements of this <geom>.

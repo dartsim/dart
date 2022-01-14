@@ -20,7 +20,7 @@ RUN apt-get update \
     libassimp-dev \
     libccd-dev \
     libfcl-dev \
-    libboost-all-dev \
+    libfmt-dev \
     libnlopt-cxx-dev \
     coinor-libipopt-dev \
     libbullet-dev \
@@ -34,6 +34,7 @@ RUN apt-get update \
     libxmu-dev \
     freeglut3-dev \
     libopenscenegraph-dev \
+    libspdlog-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install dartpy dependencies

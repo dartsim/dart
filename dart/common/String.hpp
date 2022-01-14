@@ -30,37 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#ifndef DART_COMMON_STRING_HPP_
+#define DART_COMMON_STRING_HPP_
 
-namespace py = pybind11;
+#include <string>
+#include <vector>
 
-namespace dart {
-namespace python {
+namespace dart::common {
 
-void Logging(py::module& sm);
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-void Stopwatch(py::module& sm);
-void String(py::module& sm);
+/// Converts string to upper cases
+std::string toUpper(std::string str);
 
-void dart_common(py::module& m)
-{
-  auto sm = m.def_submodule("common");
+/// Converts string to upper cases in place
+void toUpperInPlace(std::string& str);
 
-  Logging(sm);
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
-  Stopwatch(sm);
-  String(sm);
-}
+/// Converts string to lower cases
+std::string toLower(std::string str);
 
-} // namespace python
-} // namespace dart
+/// Converts string to lower cases in place
+void toLowerInPlace(std::string& str);
+
+/// Trims both sides of string
+std::string trim(
+    const std::string& str, const std::string& whitespaces = " \n\r\t");
+
+/// Trims left side of string
+std::string trimLeft(
+    const std::string& str, const std::string& whitespaces = " \n\r\t");
+
+/// Trims right side of string
+std::string trimRight(
+    const std::string& str, const std::string& whitespaces = " \n\r\t");
+
+/// Splits string given delimiters
+std::vector<std::string> split(
+    const std::string& str, const std::string& delimiters = " \n\r\t");
+
+} // namespace dart::common
+
+#endif // DART_COMMON_STRING_HPP_
