@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-set(DART_MIN_BOOST_VERSION 1.58.0 CACHE INTERNAL "Boost min version requirement" FORCE)
+set(DART_MIN_BOOST_VERSION 1.65.1 CACHE INTERNAL "Boost min version requirement" FORCE)
 if(MSVC)
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()

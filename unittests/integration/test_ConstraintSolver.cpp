@@ -71,43 +71,44 @@ TEST(ConstraintSolver, CustomConstactSurfaceHandler)
       return params;
     }
   };
-  
+
   auto world = createWorld();
 
   auto solver = world->getConstraintSolver();
   auto defaultHandler = solver->getLastContactSurfaceHandler();
   EXPECT_EQ(nullptr, defaultHandler->getParent());
-  
+
   auto customHandler = std::make_shared<CustomHandler>();
   solver->addContactSurfaceHandler(customHandler);
-  
+
   ASSERT_NE(nullptr, solver->getLastContactSurfaceHandler());
   EXPECT_EQ(nullptr, defaultHandler->getParent());
   EXPECT_EQ(defaultHandler, customHandler->getParent());
-  
+
   // try to remove nonexisting handler
-  EXPECT_FALSE(solver->removeContactSurfaceHandler(std::make_shared<CustomHandler>()));
+  EXPECT_FALSE(
+      solver->removeContactSurfaceHandler(std::make_shared<CustomHandler>()));
 
   EXPECT_TRUE(solver->removeContactSurfaceHandler(defaultHandler));
   EXPECT_EQ(nullptr, customHandler->getParent());
   EXPECT_EQ(customHandler, solver->getLastContactSurfaceHandler());
-  
+
   // removing last handler should not be done, but we test it anyways
   // a printed error message is expected
   EXPECT_TRUE(solver->removeContactSurfaceHandler(customHandler));
   EXPECT_EQ(nullptr, customHandler->getParent());
   EXPECT_EQ(nullptr, solver->getLastContactSurfaceHandler());
-  
+
   solver->addContactSurfaceHandler(defaultHandler);
   ASSERT_NE(nullptr, solver->getLastContactSurfaceHandler());
   EXPECT_EQ(defaultHandler, solver->getLastContactSurfaceHandler());
-  
+
   solver->addContactSurfaceHandler(customHandler);
   ASSERT_NE(nullptr, solver->getLastContactSurfaceHandler());
   EXPECT_EQ(customHandler, solver->getLastContactSurfaceHandler());
   EXPECT_EQ(nullptr, defaultHandler->getParent());
   EXPECT_EQ(defaultHandler, customHandler->getParent());
-  
+
   auto customHandler2 = std::make_shared<CustomHandler>();
   auto customHandler3 = std::make_shared<CustomHandler>();
   solver->addContactSurfaceHandler(customHandler2);
@@ -118,7 +119,7 @@ TEST(ConstraintSolver, CustomConstactSurfaceHandler)
   EXPECT_EQ(defaultHandler, customHandler->getParent());
   EXPECT_EQ(customHandler, customHandler2->getParent());
   EXPECT_EQ(customHandler2, customHandler3->getParent());
-  
+
   EXPECT_TRUE(solver->removeContactSurfaceHandler(customHandler));
   ASSERT_NE(nullptr, solver->getLastContactSurfaceHandler());
   EXPECT_EQ(customHandler3, solver->getLastContactSurfaceHandler());
@@ -126,7 +127,7 @@ TEST(ConstraintSolver, CustomConstactSurfaceHandler)
   EXPECT_EQ(defaultHandler, customHandler->getParent());
   EXPECT_EQ(defaultHandler, customHandler2->getParent());
   EXPECT_EQ(customHandler2, customHandler3->getParent());
-  
+
   EXPECT_TRUE(solver->removeContactSurfaceHandler(customHandler3));
   ASSERT_NE(nullptr, solver->getLastContactSurfaceHandler());
   EXPECT_EQ(customHandler2, solver->getLastContactSurfaceHandler());
@@ -134,7 +135,7 @@ TEST(ConstraintSolver, CustomConstactSurfaceHandler)
   EXPECT_EQ(defaultHandler, customHandler->getParent());
   EXPECT_EQ(defaultHandler, customHandler2->getParent());
   EXPECT_EQ(customHandler2, customHandler3->getParent());
-  
+
   // after we break the chain at handler 2, default handler is no longer
   // reachable
   customHandler2->setParent(nullptr);
@@ -160,43 +161,43 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIsCalled)
           contact, numContactsOnCollisionObject);
       mCalled = true;
       params.mPrimaryFrictionCoeff = mValue;
-      
+
       return params;
     }
 
     mutable bool mCalled{false};
     int mValue{0};
   };
-  
+
   auto world = createWorld();
 
   auto solver = world->getConstraintSolver();
   auto defaultHandler = solver->getLastContactSurfaceHandler();
   EXPECT_EQ(nullptr, defaultHandler->getParent());
-  
+
   auto customHandler = std::make_shared<ValueHandler>(1);
   solver->addContactSurfaceHandler(customHandler);
   solver->removeContactSurfaceHandler(defaultHandler);
-  
+
   customHandler->mCalled = false;
   auto params = solver->getLastContactSurfaceHandler()->createParams({}, 0);
   EXPECT_TRUE(customHandler->mCalled);
   EXPECT_EQ(1, params.mPrimaryFrictionCoeff);
-  
+
   auto customHandler2 = std::make_shared<ValueHandler>(2);
   solver->addContactSurfaceHandler(customHandler2);
-  
+
   customHandler->mCalled = customHandler2->mCalled = false;
   params = solver->getLastContactSurfaceHandler()->createParams({}, 0);
   EXPECT_TRUE(customHandler->mCalled);
   EXPECT_TRUE(customHandler2->mCalled);
   EXPECT_EQ(2, params.mPrimaryFrictionCoeff);
-  
+
   // Try once more adding the same handler instance; this should be ignored.
   // If it were added, the createParams() call could get into an infinite loop
   // calling the last handler as its parent, so rather check for it.
   solver->addContactSurfaceHandler(customHandler2);
-  
+
   customHandler->mCalled = customHandler2->mCalled = false;
   params = solver->getLastContactSurfaceHandler()->createParams({}, 0);
   EXPECT_TRUE(customHandler->mCalled);
@@ -222,36 +223,35 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIgnoreParent)
       auto params = constraint::ContactSurfaceParams{};
       mCalled = true;
       params.mPrimaryFrictionCoeff = mValue;
-      
+
       return params;
     }
 
     mutable bool mCalled{false};
     int mValue{0};
   };
-  
+
   auto world = createWorld();
 
   auto solver = world->getConstraintSolver();
   auto defaultHandler = solver->getLastContactSurfaceHandler();
   EXPECT_EQ(nullptr, defaultHandler->getParent());
-  
+
   auto customHandler = std::make_shared<IgnoreParentHandler>(1);
   solver->addContactSurfaceHandler(customHandler);
   solver->removeContactSurfaceHandler(defaultHandler);
-  
+
   customHandler->mCalled = false;
   auto params = solver->getLastContactSurfaceHandler()->createParams({}, 0);
   EXPECT_TRUE(customHandler->mCalled);
   EXPECT_EQ(1, params.mPrimaryFrictionCoeff);
-  
+
   auto customHandler2 = std::make_shared<IgnoreParentHandler>(2);
   solver->addContactSurfaceHandler(customHandler2);
-  
+
   customHandler->mCalled = customHandler2->mCalled = false;
   params = solver->getLastContactSurfaceHandler()->createParams({}, 0);
   EXPECT_FALSE(customHandler->mCalled);
   EXPECT_TRUE(customHandler2->mCalled);
   EXPECT_EQ(2, params.mPrimaryFrictionCoeff);
 }
-
