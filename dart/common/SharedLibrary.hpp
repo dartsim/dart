@@ -36,9 +36,8 @@
 #include <memory>
 #include <string>
 
-#include <boost/filesystem.hpp>
-
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Filesystem.hpp"
 #include "dart/common/Platform.hpp"
 
 #if DART_OS_LINUX
@@ -115,7 +114,7 @@ public:
   /// instead.
   DART_DEPRECATED(6.10)
   static std::shared_ptr<SharedLibrary> create(
-      const boost::filesystem::path& path);
+      const common::filesystem::path& path);
 
   /// Creates a SharedLibrary from a path to the shared library.
   ///
@@ -145,7 +144,7 @@ public:
   /// SharedLibrary(ProtectedConstructionTag, const std::string&) instead.
   DART_DEPRECATED(6.10)
   explicit SharedLibrary(
-      ProtectedConstructionTag, const boost::filesystem::path& path);
+      ProtectedConstructionTag, const common::filesystem::path& path);
 
   /// Constructs from a path to the shared library.
   ///
@@ -164,7 +163,7 @@ public:
   virtual ~SharedLibrary();
 
   /// Returns the path to the shared library file.
-  const boost::filesystem::path& getCanonicalPath() const;
+  const common::filesystem::path& getCanonicalPath() const;
 
   /// Returns the path to the shared library file.
   const std::string& path() const;
@@ -185,7 +184,8 @@ protected:
   /// Canonical path to the shared library where a canonical path is an absolute
   /// path that has no elements which are symbolic links, and no dot or dot dot
   /// elements such as "/path/../to/yourfile".
-  boost::filesystem::path mCanonicalPath;
+  /// \deprecated Use mCanonicalPath2 instead.
+  common::filesystem::path mCanonicalPath;
   // TODO(JS): Remove in DART 7.
 
   /// Canonical path to the shared library where a canonical path is an absolute

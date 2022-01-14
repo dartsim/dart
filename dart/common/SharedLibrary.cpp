@@ -57,7 +57,7 @@ namespace common {
 
 //==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibrary::create(
-    const boost::filesystem::path& path)
+    const common::filesystem::path& path)
 {
   return create(path.string());
 }
@@ -70,7 +70,7 @@ std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
 
 //==============================================================================
 SharedLibrary::SharedLibrary(
-    ProtectedConstructionTag, const boost::filesystem::path& canonicalPath)
+    ProtectedConstructionTag, const common::filesystem::path& canonicalPath)
   : SharedLibrary(ProtectedConstruction, canonicalPath.string())
 {
   // Do nothing
@@ -104,7 +104,7 @@ SharedLibrary::~SharedLibrary()
 }
 
 //==============================================================================
-const boost::filesystem::path& SharedLibrary::getCanonicalPath() const
+const common::filesystem::path& SharedLibrary::getCanonicalPath() const
 {
   return mCanonicalPath;
 }

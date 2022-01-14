@@ -43,7 +43,7 @@ namespace detail {
 
 //==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
-    const boost::filesystem::path& path)
+    const common::filesystem::path& path)
 {
   return load(path.string());
 }
@@ -62,7 +62,7 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   }
 
   // Convert the given path to the canonical path
-  const auto canonicalPath = boost::filesystem::canonical(path).string();
+  const auto canonicalPath = common::filesystem::canonical(path).string();
 
   const auto iter = mSharedLibraries.find(canonicalPath);
 

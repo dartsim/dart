@@ -35,14 +35,11 @@
 
 #include <optional>
 
-#include "dart/common/Deprecated.hpp"
-
 namespace dart {
 namespace common {
 
 /// \deprecated Use std::optional instead
 template <class T>
-DART_DEPRECATED(6.13)
 using optional = std::optional<T>;
 
 } // namespace common
