@@ -33,22 +33,17 @@
 #ifndef DART_COMMON_OPTIONAL_HPP_
 #define DART_COMMON_OPTIONAL_HPP_
 
-#if __cplusplus >= 201703L
-  #include <optional>
-#else
-  #include <boost/optional.hpp>
-#endif
+#include <optional>
+
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace common {
 
-#if __cplusplus >= 201703L
+/// \deprecated Use std::optional instead
 template <class T>
+DART_DEPRECATED(6.13)
 using optional = std::optional<T>;
-#else
-template <class T>
-using optional = boost::optional<T>;
-#endif
 
 } // namespace common
 } // namespace dart

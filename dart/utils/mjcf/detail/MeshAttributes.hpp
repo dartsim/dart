@@ -49,9 +49,9 @@ namespace detail {
 struct MeshAttributes final
 {
   /// Name of the Asset
-  common::optional<std::string> mName;
+  std::optional<std::string> mName;
 
-  common::optional<std::string> mFile;
+  std::optional<std::string> mFile;
 
   Eigen::Vector3d mScale{Eigen::Vector3d::Ones()};
 };

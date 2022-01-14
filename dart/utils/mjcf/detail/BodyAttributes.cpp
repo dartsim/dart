@@ -45,7 +45,7 @@ namespace detail {
 Errors appendBodyAttributes(
     BodyAttributes& attributes,
     tinyxml2::XMLElement* element,
-    const common::optional<Size>& size)
+    const std::optional<Size>& size)
 {
   Errors errors;
 

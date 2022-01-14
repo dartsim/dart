@@ -47,7 +47,7 @@ namespace detail {
 
 struct JointAttributes final
 {
-  common::optional<std::string> mName;
+  std::optional<std::string> mName;
 
   JointType mType{JointType::HINGE};
 

@@ -79,7 +79,7 @@ private:
   friend class MujocoModel;
   Errors read(
       tinyxml2::XMLElement* element,
-      const common::optional<Size>& size,
+      const std::optional<Size>& size,
       const Defaults& defaults,
       const Default* currentDefault,
       const common::Uri& baseUri,
@@ -96,7 +96,7 @@ private:
   Errors postprocess(const Compiler& compiler);
 
 private:
-  common::optional<std::string> mChildClass;
+  std::optional<std::string> mChildClass;
   std::vector<Geom> mGeoms;
   std::vector<Site> mSites;
   std::vector<Body> mRootBodies;

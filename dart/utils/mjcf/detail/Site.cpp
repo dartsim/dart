@@ -178,7 +178,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
 
 //==============================================================================
 static bool canUseFromTo(
-    GeomType type, const common::optional<Eigen::Vector6d>& fromto)
+    GeomType type, const std::optional<Eigen::Vector6d>& fromto)
 {
   if (!fromto)
     return false;

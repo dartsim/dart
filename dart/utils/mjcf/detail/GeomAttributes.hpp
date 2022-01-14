@@ -51,7 +51,7 @@ namespace detail {
 struct GeomAttributes final
 {
   /// Name of the geom
-  common::optional<std::string> mName;
+  std::optional<std::string> mName;
 
   /// Type of geometric shape
   GeomType mType{GeomType::SPHERE};
@@ -74,7 +74,7 @@ struct GeomAttributes final
   Eigen::Vector3d mFriction{Eigen::Vector3d(1, 0.005, 0.0001)};
 
   /// Mass
-  common::optional<double> mMass;
+  std::optional<double> mMass;
 
   /// Material density used to compute the geom mass and inertia.
   double mDensity{1000};
@@ -95,7 +95,7 @@ struct GeomAttributes final
   /// This attribute can only be used with capsule, cylinder, ellipsoid and
   /// box geoms. It provides an alternative specification of the geom length
   /// as well as the frame position and orientation.
-  common::optional<Eigen::Vector6d> mFromTo;
+  std::optional<Eigen::Vector6d> mFromTo;
 
   /// Position of the geom frame, in local or global coordinates as determined
   /// by the coordinate attribute of compiler.
@@ -107,23 +107,23 @@ struct GeomAttributes final
   /// These are the quantities (x, y, z, a) mentioned above. The last number
   /// is the angle of rotation, in degrees or radians as specified by the
   /// angle attribute of compiler.
-  common::optional<Eigen::Vector4d> mAxisAngle;
+  std::optional<Eigen::Vector4d> mAxisAngle;
 
   /// Rotation angles around three coordinate axes.
-  common::optional<Eigen::Vector3d> mEuler;
+  std::optional<Eigen::Vector3d> mEuler;
 
   /// The first 3 numbers are the X axis of the frame. The next 3 numbers are
   /// the Y axis of the frame, which is automatically made orthogonal to the X
   /// axis. The Z axis is then defined as the cross-product of the X and Y
   /// axes.
-  common::optional<Eigen::Vector6d> mXYAxes;
+  std::optional<Eigen::Vector6d> mXYAxes;
 
   /// The Z axis of the frame
-  common::optional<Eigen::Vector3d> mZAxis;
+  std::optional<Eigen::Vector3d> mZAxis;
 
-  common::optional<std::string> mHField;
+  std::optional<std::string> mHField;
 
-  common::optional<std::string> mMesh;
+  std::optional<std::string> mMesh;
 
   double mFitScale{1};
 };

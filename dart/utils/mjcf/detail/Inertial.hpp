@@ -86,19 +86,19 @@ private:
     /// These are the quantities (x, y, z, a) mentioned above. The last number
     /// is the angle of rotation, in degrees or radians as specified by the
     /// angle attribute of compiler.
-    common::optional<Eigen::Vector4d> mAxisAngle;
+    std::optional<Eigen::Vector4d> mAxisAngle;
 
     /// Rotation angles around three coordinate axes.
-    common::optional<Eigen::Vector3d> mEuler;
+    std::optional<Eigen::Vector3d> mEuler;
 
     /// The first 3 numbers are the X axis of the frame. The next 3 numbers are
     /// the Y axis of the frame, which is automatically made orthogonal to the X
     /// axis. The Z axis is then defined as the cross-product of the X and Y
     /// axes.
-    common::optional<Eigen::Vector6d> mXYAxes;
+    std::optional<Eigen::Vector6d> mXYAxes;
 
     /// The Z axis of the frame
-    common::optional<Eigen::Vector3d> mZAxis;
+    std::optional<Eigen::Vector3d> mZAxis;
 
     Eigen::Isometry3d mRelativeTransform{Eigen::Isometry3d::Identity()};
     Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
@@ -108,10 +108,10 @@ private:
 
     /// Diagonal inertia matrix, expressing the body inertia relative to the
     /// inertial frame.
-    common::optional<Eigen::Vector3d> mDiagInertia;
+    std::optional<Eigen::Vector3d> mDiagInertia;
 
     /// Full inertia matrix M.
-    common::optional<Eigen::Vector6d> mFullInertia;
+    std::optional<Eigen::Vector6d> mFullInertia;
   };
 
   Data mData;
