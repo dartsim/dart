@@ -51,6 +51,7 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Christoph Hinze](https://github.com/chhinze)      | python bindings
  [Erwin Coumans](https://github.com/erwincoumans)   | build fix on Windows/MSVC
  [Silvio Traversaro](https://github.com/traversaro) | build fix on Windows/MSVC, vcpkg packaging
+ [Martin Pecka](https://github.com/peci1)           | contact surface generalization
 
 You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
 

@@ -25,6 +25,7 @@ foreach(collision_engine
     target_link_libraries(test_CollisionGroups ${collision_engine})
   endif()
 endforeach()
+dart_add_test("integration" test_ConstraintSolver)
 dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_GenericJoints)
 dart_add_test("integration" test_Inertia)

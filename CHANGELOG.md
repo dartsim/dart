@@ -15,6 +15,7 @@
   * Added iterator methods to container-like classes: [#1644](https://github.com/dartsim/dart/pull/1644)
   * Fixed grouping of constraints: [#1624](https://github.com/dartsim/dart/pull/1624), [#1628](https://github.com/dartsim/dart/pull/1628)
   * Fixed issue with removing skeletons without shapes: [#1625](https://github.com/dartsim/dart/pull/1625)
+  * Added support for custom contact surface handlers: [#1626](https://github.com/dartsim/dart/pull/1626)
 
 * GUI
 
