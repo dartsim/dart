@@ -25,7 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_COMMON_FILESYSTEM_HPP_
+#define DART_COMMON_FILESYSTEM_HPP_
 
 #include "dart/common/Platform.hpp"
 
@@ -107,3 +108,5 @@ using error_code = ::std::error_code;
   #endif
 
 #endif // #ifndef DART_INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
+
+#endif // #ifndef DART_COMMON_FILESYSTEM_HPP_

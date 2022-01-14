@@ -315,7 +315,7 @@ void MeshShapeNode::extractData(bool firstTime)
           const common::filesystem::path relativeImagePath = imagePath.C_Str();
           const common::filesystem::path absoluteImagePath
               = common::filesystem::canonical(
-                  relativeImagePath, meshPath.parent_path(), ec);
+                  meshPath.parent_path() / relativeImagePath, ec);
 
           if (ec)
           {
