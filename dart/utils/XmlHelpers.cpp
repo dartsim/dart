@@ -35,8 +35,7 @@
 #include <iostream>
 #include <vector>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <fmt/format.h>
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
@@ -48,90 +47,45 @@ namespace utils {
 //==============================================================================
 std::string toString(bool v)
 {
-  return boost::lexical_cast<std::string>(v);
+  return fmt::format("{}", v);
 }
 
 //==============================================================================
 std::string toString(int v)
 {
-  return boost::lexical_cast<std::string>(v);
+  return std::to_string(v);
 }
 
 //==============================================================================
 std::string toString(unsigned int v)
 {
-  return boost::lexical_cast<std::string>(v);
+  return std::to_string(v);
 }
 
 //==============================================================================
 std::string toString(float v)
 {
-  return boost::lexical_cast<std::string>(v);
+  return std::to_string(v);
 }
 
 //==============================================================================
 std::string toString(double v)
 {
-  return boost::lexical_cast<std::string>(v);
+  return std::to_string(v);
 }
 
 //==============================================================================
 std::string toString(char v)
 {
-  return boost::lexical_cast<std::string>(v);
-}
-
-//==============================================================================
-std::string toString(const Eigen::Vector2d& v)
-{
-  return boost::lexical_cast<std::string>(v.transpose());
-}
-
-//==============================================================================
-std::string toString(const Eigen::Vector3d& v)
-{
-  return boost::lexical_cast<std::string>(v.transpose());
-}
-
-//==============================================================================
-std::string toString(const Eigen::Vector3i& v)
-{
-  return boost::lexical_cast<std::string>(v.transpose());
-}
-
-//==============================================================================
-std::string toString(const Eigen::Vector6d& v)
-{
-  return boost::lexical_cast<std::string>(v.transpose());
-}
-
-//==============================================================================
-std::string toString(const Eigen::VectorXd& v)
-{
-  return boost::lexical_cast<std::string>(v.transpose());
-}
-
-//==============================================================================
-std::string toString(const Eigen::Isometry3d& v)
-{
-  std::ostringstream ostr;
-  ostr.precision(6);
-
-  Eigen::Vector3d xyz = math::matrixToEulerXYZ(v.linear());
-
-  ostr << v.translation()(0) << " " << v.translation()(1) << " "
-       << v.translation()(2) << " ";
-  ostr << xyz[0] << " " << xyz[1] << " " << xyz[2];
-
-  return ostr.str();
+  return fmt::format("{}", v);
 }
 
 //==============================================================================
 bool toBool(const std::string& str)
 {
-  if (boost::to_upper_copy(str) == "TRUE" || str == "1")
+  if (common::toUpper(str) == "TRUE" || str == "1")
     return true;
-  else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
+  else if (common::toUpper(str) == "FALSE" || str == "0")
     return false;
   else
   {
@@ -144,30 +98,42 @@ bool toBool(const std::string& str)
 //==============================================================================
 int toInt(const std::string& str)
 {
-  return boost::lexical_cast<int>(str);
+  return std::stoi(str);
 }
 
 //==============================================================================
 unsigned int toUInt(const std::string& str)
 {
-  return boost::lexical_cast<unsigned int>(str);
+  return static_cast<unsigned int>(std::stoul(str));
 }
 
 //==============================================================================
 float toFloat(const std::string& str)
 {
-  return boost::lexical_cast<float>(str);
+  return std::stof(str);
 }
 
 //==============================================================================
 double toDouble(const std::string& str)
 {
-  return boost::lexical_cast<double>(str);
+  return std::stod(str);
 }
+
 //==============================================================================
 char toChar(const std::string& str)
 {
-  return boost::lexical_cast<char>(str);
+  if (str.empty())
+  {
+    DART_ERROR("");
+    return 0;
+  }
+
+  if (str.size() != 1)
+  {
+    DART_ERROR("");
+  }
+
+  return str[0];
 }
 
 //==============================================================================
@@ -175,10 +141,7 @@ Eigen::Vector2d toVector2d(const std::string& str)
 {
   Eigen::Vector2d ret;
 
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 2);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -187,9 +150,9 @@ Eigen::Vector2d toVector2d(const std::string& str)
     {
       try
       {
-        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+        ret[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector2d[" << i
@@ -206,10 +169,7 @@ Eigen::Vector2i toVector2i(const std::string& str)
 {
   Eigen::Vector2i ret;
 
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 2);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -218,9 +178,9 @@ Eigen::Vector2i toVector2i(const std::string& str)
     {
       try
       {
-        ret(i) = boost::lexical_cast<int>(pieces[i].c_str());
+        ret[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector2i[" << i
@@ -237,10 +197,7 @@ Eigen::Vector3d toVector3d(const std::string& str)
 {
   Eigen::Vector3d ret;
 
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 3);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -249,9 +206,9 @@ Eigen::Vector3d toVector3d(const std::string& str)
     {
       try
       {
-        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+        ret[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector3d[" << i
@@ -268,10 +225,7 @@ Eigen::Vector3i toVector3i(const std::string& str)
 {
   Eigen::Vector3i ret;
 
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 3);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -280,9 +234,9 @@ Eigen::Vector3i toVector3i(const std::string& str)
     {
       try
       {
-        ret(i) = boost::lexical_cast<int>(pieces[i].c_str());
+        ret[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid int for Eigen::Vector3i[" << i
@@ -299,10 +253,7 @@ Eigen::Vector4d toVector4d(const std::string& str)
 {
   Eigen::Vector4d ret;
 
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 4);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -311,9 +262,9 @@ Eigen::Vector4d toVector4d(const std::string& str)
     {
       try
       {
-        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+        ret[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector4d[" << i
@@ -330,10 +281,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
 {
   Eigen::Vector6d ret;
 
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -342,9 +290,9 @@ Eigen::Vector6d toVector6d(const std::string& str)
     {
       try
       {
-        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+        ret[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::Vector6d[" << i
@@ -359,10 +307,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
 //==============================================================================
 Eigen::VectorXd toVectorXd(const std::string& str)
 {
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() > 0);
 
   Eigen::VectorXd ret(pieces.size());
@@ -373,9 +318,9 @@ Eigen::VectorXd toVectorXd(const std::string& str)
     {
       try
       {
-        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+        ret[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for Eigen::VectorXd[" << i
@@ -392,10 +337,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -404,9 +346,9 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
     {
       try
       {
-        elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
+        elements[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for SE3[" << i
@@ -425,10 +367,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
 
   for (std::size_t i = 0; i < pieces.size(); ++i)
@@ -437,9 +376,9 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
     {
       try
       {
-        elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
+        elements[i] = toDouble(pieces[i]);
       }
-      catch (boost::bad_lexical_cast& e)
+      catch (std::exception& e)
       {
         std::cerr << "value [" << pieces[i]
                   << "] is not a valid double for SE3[" << i
@@ -477,9 +416,9 @@ bool getValueBool(
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-  if (boost::to_upper_copy(str) == "TRUE" || str == "1")
+  if (common::toUpper(str) == "TRUE" || str == "1")
     return true;
-  else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
+  else if (common::toUpper(str) == "FALSE" || str == "0")
     return false;
   else
   {

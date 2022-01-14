@@ -131,6 +131,7 @@ target_link_libraries(dart
     Eigen3::Eigen
     ccd
     fcl
+    fmt::fmt
     assimp
     Boost::boost
     Boost::system

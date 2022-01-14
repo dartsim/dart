@@ -36,13 +36,14 @@
 #include <string>
 
 #include <Eigen/Dense>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <Eigen/Geometry>
 #include <tinyxml2.h>
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
@@ -54,12 +55,12 @@ std::string toString(unsigned int v);
 std::string toString(float v);
 std::string toString(double v);
 std::string toString(char v);
-std::string toString(const Eigen::Vector2d& v);
-std::string toString(const Eigen::Vector3d& v);
-std::string toString(const Eigen::Vector3i& v);
-std::string toString(const Eigen::Vector6d& v);
-std::string toString(const Eigen::VectorXd& v);
-std::string toString(const Eigen::Isometry3d& v);
+template <typename S, int N>
+std::string toString(const Eigen::Matrix<S, N, 1>& v);
+template <typename S>
+std::string toString(
+    const Eigen::Transform<S, 3, Eigen::Isometry>& v,
+    const std::string& rotationType = "intrinsic");
 
 bool toBool(const std::string& str);
 int toInt(const std::string& str);
@@ -75,46 +76,8 @@ Eigen::Vector4d toVector4d(const std::string& str);
 Eigen::Vector6d toVector6d(const std::string& str);
 Eigen::VectorXd toVectorXd(const std::string& str);
 template <std::size_t N>
-Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
-{
-  Eigen::Matrix<double, N, 1> ret = Eigen::Matrix<double, N, 1>::Zero();
-
-  std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(str);
-  boost::split(
-      pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
-  std::size_t sizeToRead = std::min(N, pieces.size());
-  if (pieces.size() < N)
-  {
-    dterr << "Failed to read a vector because the dimension '" << pieces.size()
-          << "' is less than the expectation '" << N << "'.\n";
-  }
-  else if (pieces.size() > N)
-  {
-    dterr << "Failed to read a vector because the dimension '" << pieces.size()
-          << "' is greater than the expectation '" << N << "'.\n";
-  }
-
-  for (std::size_t i = 0; i < sizeToRead; ++i)
-  {
-    if (pieces[i] != "")
-    {
-      try
-      {
-        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-      }
-      catch (boost::bad_lexical_cast& e)
-      {
-        dterr << "value [" << pieces[i]
-              << "] is not a valid double for Eigen::Vector" << N << "d[" << i
-              << "]: " << e.what() << "\n";
-      }
-    }
-  }
-
-  return ret;
-}
-// TODO: The definition of _str is not clear for transform (see: #250)
+Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str);
+// TODO: The definition of str is not clear for transform (see: #250)
 Eigen::Isometry3d toIsometry3d(const std::string& str);
 Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str);
 
@@ -206,11 +169,7 @@ Eigen::VectorXd getAttributeVectorXd(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 template <std::size_t N>
 Eigen::Matrix<double, N, 1> getAttributeVectorNd(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
-{
-  const std::string val = getAttributeString(element, attributeName);
-  return toVectorNd<N>(val);
-}
+    const tinyxml2::XMLElement* element, const std::string& attributeName);
 
 /// TemplatedElementEnumerator is a convenience class to help visiting all the
 /// child elements of given parent element. This class is templated to cover
@@ -225,85 +184,34 @@ protected:
 public:
   /// Constructor that takes parent element and
   TemplatedElementEnumerator(
-      ElementPtr parentElement, const std::string& childElementName)
-    : mParentElement(parentElement),
-      mChildElementName(childElementName),
-      mCurrentElement(nullptr)
-  {
-  }
+      ElementPtr parentElement, const std::string& childElementName);
 
   /// Destructor
-  ~TemplatedElementEnumerator() {}
+  ~TemplatedElementEnumerator();
 
   /// Set the current element to the next sibling element or to the first child
   /// element of given parent element if it exists; returns success
-  bool next()
-  {
-    if (!mParentElement)
-      return false;
-
-    if (mCurrentElement)
-    {
-      mCurrentElement
-          = mCurrentElement->NextSiblingElement(mChildElementName.c_str());
-    }
-    else
-    {
-      mCurrentElement
-          = mParentElement->FirstChildElement(mChildElementName.c_str());
-    }
-
-    if (!valid())
-      mParentElement = nullptr;
-
-    return valid();
-  }
+  bool next();
 
   /// Get the current element
-  ElementPtr get() const
-  {
-    return mCurrentElement;
-  }
+  ElementPtr get() const;
 
   /// Dereference operator
-  ElementPtr operator->() const
-  {
-    return mCurrentElement;
-  }
+  ElementPtr operator->() const;
 
   /// Dereference operator
-  ElementRef operator*() const
-  {
-    return *mCurrentElement;
-  }
+  ElementRef operator*() const;
 
   /// Equality operator
-  bool operator==(const TemplatedElementEnumerator<ElementType>& rhs) const
-  {
-    // If they point at the same node, then the names must match
-    return (this->mParentElement == rhs.mParentElement)
-           && (this->mCurrentElement == rhs.mCurrentElement)
-           && (this->mCurrentElement != nullptr
-               || (this->mChildElementName == rhs.mChildElementName));
-  }
+  bool operator==(const TemplatedElementEnumerator<ElementType>& rhs) const;
 
   /// Assignment operator
   TemplatedElementEnumerator<ElementType>& operator=(
-      const TemplatedElementEnumerator<ElementType>& rhs)
-  {
-    this->mParentElement = rhs.mParentElement;
-    this->mChildElementName = rhs.mChildElementName;
-    this->mCurrentElement = rhs.mCurrentElement;
-
-    return *this;
-  }
+      const TemplatedElementEnumerator<ElementType>& rhs);
 
 private:
   /// Returns true if the current element is valid (not a nullptr)
-  bool valid() const
-  {
-    return mCurrentElement != nullptr;
-  }
+  bool valid() const;
 
 private:
   /// Parent element
@@ -328,5 +236,7 @@ bool copyChildNodes(
 
 } // namespace utils
 } // namespace dart
+
+#include "dart/utils/detail/XmlHelpers-impl.hpp"
 
 #endif // #ifndef DART_UTILS_XMLHELPERS_HPP_
