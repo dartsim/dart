@@ -2,6 +2,10 @@
 
 ### [DART 6.13.0 (TBD)](https://github.com/dartsim/dart/milestone/69?closed=1)
 
+* Build
+
+  * Dropped supporting FCL < 0.5: [#1647](https://github.com/dartsim/dart/pull/1647)
+
 * Common
 
   * Added Castable class: [#1634](https://github.com/dartsim/dart/pull/1634)
