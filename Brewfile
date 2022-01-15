@@ -3,7 +3,6 @@ brew 'cmake'
 brew 'pkg-config'
 
 brew 'assimp'
-brew 'boost'
 brew 'bullet'
 brew 'eigen'
 brew 'fcl'

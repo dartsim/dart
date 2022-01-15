@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(urdfdom QUIET CONFIG)
+find_package(urdfdom 1.0.0 QUIET CONFIG)
 
 if(MSVC)
   # Remove invalid path (i.e., /include) from urdfdom_INCLUDE_DIRS. This happens

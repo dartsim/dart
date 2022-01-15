@@ -2,30 +2,6 @@
 dart_find_package(tinyxml2)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
-# Test whether boost algorithm and lexical_cast headers are available.
-include(CheckCXXSourceCompiles)
-set(CMAKE_REQUIRED_FLAGS "-w")
-set(CMAKE_REQUIRED_INCLUDES "${Boost_INCLUDE_DIRS}")
-check_cxx_source_compiles(
-  "
-  #include <boost/algorithm/string.hpp>
-  #include <boost/lexical_cast.hpp>
-  int main()
-  {
-    return 0;
-  }
-  "
-  HAS_BOOST_ALGORITHM_LEXICAL_CAST
-)
-if(HAS_BOOST_ALGORITHM_LEXICAL_CAST)
-  if(DART_VERBOSE)
-    message(STATUS "Looking for Boost algorithm and lexical_cast headers - found")
-  endif()
-else()
-  message(WARNING "Looking for Boost algorithm and lexical_cast headers - NOT found, to use dart-utils, please install missing boost headers")
-  return()
-endif()
-
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")

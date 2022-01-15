@@ -40,7 +40,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # dart - common, math, integration, lcpsolver, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, constraint, simulation, [eigen3, libccd,
-#        fcl, assimp, boost]
+#        fcl, assimp]
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
 # dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
@@ -133,9 +133,6 @@ target_link_libraries(dart
     fcl
     fmt::fmt
     assimp
-    Boost::boost
-    Boost::system
-    Boost::filesystem
 )
 
 # spdlog settings
@@ -208,7 +205,7 @@ endif()
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  Eigen3 ccd fcl assimp Boost
+  Eigen3 ccd fcl assimp
 )
 if(TARGET octomap)
   add_component_dependency_packages(${PROJECT_NAME} dart octomap)

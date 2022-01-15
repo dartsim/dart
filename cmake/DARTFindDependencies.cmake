@@ -89,9 +89,6 @@ if(ASSIMP_FOUND)
   unset(CMAKE_REQUIRED_LIBRARIES)
 endif()
 
-# Boost
-dart_find_package(Boost)
-
 # octomap
 dart_find_package(octomap)
 if(MSVC)
