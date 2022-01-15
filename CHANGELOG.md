@@ -2,6 +2,12 @@
 
 ### [DART 6.13.0 (TBD)](https://github.com/dartsim/dart/milestone/69?closed=1)
 
+* Dependency
+
+  * Added required dependencies: fmt
+  * Added optional dependencies: spdlog
+  * Removed required dependencies: Boost
+
 * Build
 
   * Dropped supporting FCL < 0.5: [#1647](https://github.com/dartsim/dart/pull/1647)
