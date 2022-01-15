@@ -131,9 +131,15 @@ target_link_libraries(dart
     Eigen3::Eigen
     ccd
     fcl
-    fmt::fmt
     assimp
 )
+if(TARGET fmt::fmt-header-only)
+  target_link_libraries(dart PUBLIC fmt::fmt-header-only)
+elseif(TARGET fmt::fmt)
+  target_link_libraries(dart PUBLIC fmt::fmt)
+else()
+  message(FATAL_ERROR "Failed to find fmt targets")
+endif()
 
 # spdlog settings
 if(spdlog_FOUND)
