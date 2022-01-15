@@ -84,15 +84,15 @@ std::string trimRight(const std::string& str, const std::string& whitespaces)
 
 //==============================================================================
 std::vector<std::string> split(
-    const std::string& str, const std::string& delims)
+    const std::string& str, const std::string& delimiters)
 {
   std::vector<std::string> tokens;
-  std::size_t start = str.find_first_not_of(delims), end = 0;
+  std::size_t start = str.find_first_not_of(delimiters), end = 0;
 
-  while ((end = str.find_first_of(delims, start)) != std::string::npos)
+  while ((end = str.find_first_of(delimiters, start)) != std::string::npos)
   {
     tokens.push_back(str.substr(start, end - start));
-    start = str.find_first_not_of(delims, end);
+    start = str.find_first_not_of(delimiters, end);
   }
 
   if (start != std::string::npos)

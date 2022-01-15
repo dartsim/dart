@@ -30,42 +30,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STRING_HPP_
-#define DART_COMMON_STRING_HPP_
+#include <dart/dart.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-#include <string>
-#include <vector>
+namespace py = pybind11;
 
-namespace dart::common {
+namespace dart::python {
 
-/// Converts string to upper cases
-std::string toUpper(std::string str);
+void String(py::module& m)
+{
+  m.def("toUpper", &common::toUpper, py::arg("str"));
+  m.def("toLower", &common::toLower, py::arg("str"));
+  m.def(
+      "trim",
+      &common::trim,
+      py::arg("str"),
+      py::arg("whitespaces") = " \n\r\t");
+  m.def(
+      "trimLeft",
+      &common::trimLeft,
+      py::arg("str"),
+      py::arg("whitespaces") = " \n\r\t");
+  m.def(
+      "trimRight",
+      &common::trimRight,
+      py::arg("str"),
+      py::arg("whitespaces") = " \n\r\t");
+  m.def("split", &common::split, py::arg("str"), py::arg("delimiters") = " ");
+}
 
-/// Converts string to upper cases in place
-void toUpperInPlace(std::string& str);
-
-/// Converts string to lower cases
-std::string toLower(std::string str);
-
-/// Converts string to lower cases in place
-void toLowerInPlace(std::string& str);
-
-/// Trims both sides of string
-std::string trim(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Trims left side of string
-std::string trimLeft(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Trims right side of string
-std::string trimRight(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Splits string given delimiters
-std::vector<std::string> split(
-    const std::string& str, const std::string& delimiters = " ");
-
-} // namespace dart::common
-
-#endif // DART_COMMON_STRING_HPP_
+} // namespace dart::python

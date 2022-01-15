@@ -45,6 +45,7 @@ void Composite(py::module& sm);
 void Resource(py::module& sm);
 void ResourceRetriever(py::module& sm);
 void Stopwatch(py::module& sm);
+void String(py::module& sm);
 
 void dart_common(py::module& m)
 {
@@ -58,6 +59,7 @@ void dart_common(py::module& m)
   Resource(sm);
   ResourceRetriever(sm);
   Stopwatch(sm);
+  String(sm);
 }
 
 } // namespace python
