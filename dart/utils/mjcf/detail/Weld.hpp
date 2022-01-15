@@ -55,7 +55,7 @@ public:
   const Eigen::Matrix<double, 5, 1>& getSolImp() const;
   const std::string& getBody1() const;
   const std::string& getBody2() const;
-  const common::optional<Eigen::Isometry3d>& getRelativeTransform() const;
+  const std::optional<Eigen::Isometry3d>& getRelativeTransform() const;
 
 private:
   // Private memebers used by MujocoModel class
@@ -73,7 +73,7 @@ private:
   std::string mBody2;
   bool mUsePredefinedRelativeTransform{true};
   // Relative transform from body1 to body2
-  common::optional<Eigen::Isometry3d> mRelativeTransfrom;
+  std::optional<Eigen::Isometry3d> mRelativeTransfrom;
 };
 
 } // namespace detail

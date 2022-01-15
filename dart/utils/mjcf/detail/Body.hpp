@@ -118,7 +118,7 @@ private:
   friend class Worldbody;
   Errors read(
       tinyxml2::XMLElement* element,
-      const common::optional<Size>& size,
+      const std::optional<Size>& size,
       const Defaults& defaults,
       const Default* currentDefault);
 

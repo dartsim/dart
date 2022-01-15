@@ -116,7 +116,7 @@ private:
   struct Data
   {
     /// Name of the Site
-    common::optional<std::string> mName;
+    std::optional<std::string> mName;
 
     /// Type of Siteetric shape
     GeomType mType{GeomType::SPHERE};
@@ -131,7 +131,7 @@ private:
     /// This attribute can only be used with capsule, cylinder, ellipsoid and
     /// box Sites. It provides an alternative specification of the Site length
     /// as well as the frame position and orientation.
-    common::optional<Eigen::Vector6d> mFromTo;
+    std::optional<Eigen::Vector6d> mFromTo;
 
     /// Position of the Site frame, in local or global coordinates as determined
     /// by the coordinate attribute of compiler.
@@ -143,19 +143,19 @@ private:
     /// These are the quantities (x, y, z, a) mentioned above. The last number
     /// is the angle of rotation, in degrees or radians as specified by the
     /// angle attribute of compiler.
-    common::optional<Eigen::Vector4d> mAxisAngle;
+    std::optional<Eigen::Vector4d> mAxisAngle;
 
     /// Rotation angles around three coordinate axes.
-    common::optional<Eigen::Vector3d> mEuler;
+    std::optional<Eigen::Vector3d> mEuler;
 
     /// The first 3 numbers are the X axis of the frame. The next 3 numbers are
     /// the Y axis of the frame, which is automatically made orthogonal to the X
     /// axis. The Z axis is then defined as the cross-product of the X and Y
     /// axes.
-    common::optional<Eigen::Vector6d> mXYAxes;
+    std::optional<Eigen::Vector6d> mXYAxes;
 
     /// The Z axis of the frame
-    common::optional<Eigen::Vector3d> mZAxis;
+    std::optional<Eigen::Vector3d> mZAxis;
   };
 
   Data mData;

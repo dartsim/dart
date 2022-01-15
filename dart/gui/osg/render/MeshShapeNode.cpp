@@ -34,7 +34,6 @@
 
 #include <map>
 
-#include <boost/filesystem.hpp>
 #include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
@@ -43,6 +42,7 @@
 #include <osgDB/ReadFile>
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Filesystem.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
@@ -228,8 +228,6 @@ bool checkSpecularSanity(const aiColor4D& c)
 //==============================================================================
 void MeshShapeNode::extractData(bool firstTime)
 {
-  namespace bf = boost::filesystem;
-
   const aiScene* scene = mMeshShape->getMesh();
   const aiNode* root = scene->mRootNode;
 
@@ -302,7 +300,7 @@ void MeshShapeNode::extractData(bool firstTime)
       textureImageArray.reserve(count);
 
       aiString imagePath;
-      boost::system::error_code ec;
+      std::error_code ec;
       for (auto j = 0u; j < count; ++j)
       {
         if ((textureTypeAndCount.first == aiTextureType_NONE)
@@ -313,10 +311,11 @@ void MeshShapeNode::extractData(bool firstTime)
         else
         {
           aiMat->GetTexture(type, j, &imagePath);
-          const bf::path meshPath = mMeshShape->getMeshPath();
-          const bf::path relativeImagePath = imagePath.C_Str();
-          const bf::path absoluteImagePath
-              = bf::canonical(relativeImagePath, meshPath.parent_path(), ec);
+          const common::filesystem::path meshPath = mMeshShape->getMeshPath();
+          const common::filesystem::path relativeImagePath = imagePath.C_Str();
+          const common::filesystem::path absoluteImagePath
+              = common::filesystem::canonical(
+                  meshPath.parent_path() / relativeImagePath, ec);
 
           if (ec)
           {

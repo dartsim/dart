@@ -158,7 +158,12 @@ endif()
 if(TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)
 endif()
+
+# C++ standard settings
 target_compile_features(dart PUBLIC cxx_std_17)
+if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+  target_link_libraries(dart PUBLIC "stdc++fs")
+endif()
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)

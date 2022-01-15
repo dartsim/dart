@@ -76,7 +76,7 @@ const std::string& Weld::getBody2() const
 }
 
 //==============================================================================
-const common::optional<Eigen::Isometry3d>& Weld::getRelativeTransform() const
+const std::optional<Eigen::Isometry3d>& Weld::getRelativeTransform() const
 {
   return mRelativeTransfrom;
 }
