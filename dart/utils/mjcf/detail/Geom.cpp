@@ -110,13 +110,18 @@ static bool canUseFromTo(
 }
 
 //==============================================================================
-Errors Geom::preprocess(const Compiler& compiler)
+Errors Geom::preprocess(const Compiler& compiler, bool autoName)
 {
   Errors errors;
 
   if (mAttributes.mName)
   {
     mName = *mAttributes.mName;
+  }
+  else if (autoName)
+  {
+    static unsigned int index = 0;
+    mName = "geom (" + std::to_string(index++) + ")";
   }
 
   mType = mAttributes.mType;

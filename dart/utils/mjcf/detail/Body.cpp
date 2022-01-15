@@ -157,7 +157,7 @@ Errors Body::preprocess(const Compiler& compiler)
 
   for (Geom& geom : mGeoms)
   {
-    const Errors geomErrors = geom.preprocess(compiler);
+    const Errors geomErrors = geom.preprocess(compiler, true);
     errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
   }
 

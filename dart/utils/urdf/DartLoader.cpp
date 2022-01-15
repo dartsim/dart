@@ -60,8 +60,9 @@
 namespace dart {
 namespace utils {
 
-using ModelInterfacePtr = urdf_shared_ptr<urdf::ModelInterface>;
+using ModelInterfacePtr = std::shared_ptr<urdf::ModelInterface>;
 
+//==============================================================================
 DartLoader::Options::Options(
     common::ResourceRetrieverPtr resourceRetriever,
     RootJointType defaultRootJointType,

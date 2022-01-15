@@ -30,37 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dart.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
 
-void Logging(py::module& sm);
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-void Stopwatch(py::module& sm);
-void String(py::module& sm);
-
-void dart_common(py::module& m)
+void String(py::module& m)
 {
-  auto sm = m.def_submodule("common");
-
-  Logging(sm);
-  Observer(sm);
-  Subject(sm);
-  Uri(sm);
-  Composite(sm);
-  Resource(sm);
-  ResourceRetriever(sm);
-  Stopwatch(sm);
-  String(sm);
+  m.def("toUpper", &common::toUpper, py::arg("str"));
+  m.def("toLower", &common::toLower, py::arg("str"));
+  m.def(
+      "trim",
+      &common::trim,
+      py::arg("str"),
+      py::arg("whitespaces") = " \n\r\t");
+  m.def(
+      "trimLeft",
+      &common::trimLeft,
+      py::arg("str"),
+      py::arg("whitespaces") = " \n\r\t");
+  m.def(
+      "trimRight",
+      &common::trimRight,
+      py::arg("str"),
+      py::arg("whitespaces") = " \n\r\t");
+  m.def(
+      "split",
+      &common::split,
+      py::arg("str"),
+      py::arg("delimiters") = " \n\r\t");
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python
