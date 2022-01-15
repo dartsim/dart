@@ -38,23 +38,31 @@
 
 namespace dart::common {
 
+/// Converts string to upper cases
 std::string toUpper(std::string str);
 
+/// Converts string to upper cases in place
 void toUpperInPlace(std::string& str);
 
+/// Converts string to lower cases
 std::string toLower(std::string str);
 
+/// Converts string to lower cases in place
 void toLowerInPlace(std::string& str);
 
+/// Trims both sides of string
 std::string trim(
     const std::string& s, const std::string& whitespaces = " \n\r\t");
 
+/// Trims left side of string
 std::string trimLeft(
     const std::string& s, const std::string& whitespaces = " \n\r\t");
 
+/// Trims right side of string
 std::string trimRight(
     const std::string& s, const std::string& whitespaces = " \n\r\t");
 
+/// Splits string given delimiters
 std::vector<std::string> split(
     const std::string& str, const std::string& delims = " ");
 
