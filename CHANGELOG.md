@@ -31,6 +31,7 @@
 * GUI
 
   * Fixed depth testing for transparent objects: [#1643](https://github.com/dartsim/dart/pull/1643)
+  * Added depth rendering mode: [#1652](https://github.com/dartsim/dart/pull/1652)
 
 ### [DART 6.12.1 (2021-11-04)](https://github.com/dartsim/dart/milestone/71?closed=1)
 
