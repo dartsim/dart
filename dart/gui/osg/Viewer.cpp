@@ -45,6 +45,7 @@
 #include "dart/gui/osg/TrackballManipulator.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/detail/CameraModeCallback.hpp"
 #include "dart/simulation/World.hpp"
 
 namespace dart {
@@ -210,6 +211,11 @@ Viewer::Viewer(const ::osg::Vec4& clearColor)
   getCamera()->setClearColor(clearColor);
 
   getCamera()->setFinalDrawCallback(new SaveScreen(this));
+
+  // Settings for camera mode (RGBA/Depth)
+  mCameraModeCallback = new detail::CameraModeCallback;
+  mCameraModeCallback->setCameraMode(CameraMode::RGBA);
+  mRootGroup->addUpdateCallback(mCameraModeCallback);
 }
 
 //==============================================================================
@@ -367,6 +373,8 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
 
   mWorldNodes[_newWorldNode] = _active;
   mRootGroup->addChild(_newWorldNode);
+  mCameraModeCallback->setSceneData(
+      _newWorldNode); // TODO(JS): Change to addSceneData
   if (_active)
     _newWorldNode->simulate(mSimulating);
   _newWorldNode->mViewer = this;
@@ -900,6 +908,18 @@ double Viewer::getVerticalFieldOfView() const
   }
 
   return fovy;
+}
+
+//==============================================================================
+void Viewer::setCameraMode(CameraMode mode)
+{
+  mCameraModeCallback->setCameraMode(mode);
+}
+
+//========================================================================================
+CameraMode Viewer::getCameraMode() const
+{
+  return mCameraModeCallback->getCameraMode();
 }
 
 } // namespace osg

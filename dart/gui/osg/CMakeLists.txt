@@ -29,9 +29,11 @@ endif()
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+file(GLOB detail_hdrs "detail/*.hpp")
+file(GLOB detail_srcs "detail/*.cpp")
 
-set(dart_gui_osg_hdrs ${hdrs})
-set(dart_gui_osg_srcs ${srcs})
+set(dart_gui_osg_hdrs ${hdrs} ${detail_hdrs})
+set(dart_gui_osg_srcs ${srcs} ${detail_srcs})
 
 add_subdirectory(render)
 
@@ -58,6 +60,11 @@ dart_generate_include_header_file(
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
   DESTINATION include/dart/gui/osg
+  COMPONENT headers
+)
+install(
+  FILES ${detail_hdrs}
+  DESTINATION include/dart/gui/osg/detail
   COMPONENT headers
 )
 

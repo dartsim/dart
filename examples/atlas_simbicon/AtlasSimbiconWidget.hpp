@@ -69,6 +69,9 @@ protected:
 
   bool mShadow;
 
+  /// Whether render in depth mode
+  bool mDepthMode = false;
+
   /// Control mode value for GUI
   int mGuiControlMode;
 

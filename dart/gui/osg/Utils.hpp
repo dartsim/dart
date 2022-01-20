@@ -34,153 +34,87 @@
 #define DART_GUI_OSG_UTILS_HPP_
 
 #include <Eigen/Geometry>
+#include <osg/Camera>
 #include <osg/Matrix>
 
-//==============================================================================
-template <typename T = double>
-constexpr T getAlphaThreshold()
-{
-  if constexpr (std::is_same_v<T, float>)
-  {
-    return 1e-6;
-  }
-  else if constexpr (std::is_same_v<T, double>)
-  {
-    return 1e-9;
-  }
-  else
-  {
-    return 1e-9;
-  }
-}
+namespace dart::gui::osg {
 
-//==============================================================================
+/// Returns the alpha threshold for demining if the object is a transparent
+/// object or not
+template <typename T = double>
+constexpr T getAlphaThreshold();
+
+/// Converts Eigen::Isometry to osg::Matrix
 template <typename Scalar>
 ::osg::Matrix eigToOsgMatrix(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& tf)
-{
-  return ::osg::Matrix(
-      tf(0, 0),
-      tf(1, 0),
-      tf(2, 0),
-      tf(3, 0),
-      tf(0, 1),
-      tf(1, 1),
-      tf(2, 1),
-      tf(3, 1),
-      tf(0, 2),
-      tf(1, 2),
-      tf(2, 2),
-      tf(3, 2),
-      tf(0, 3),
-      tf(1, 3),
-      tf(2, 3),
-      tf(3, 3));
-}
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& tf);
 
-//==============================================================================
+/// Converts Eigen::DenseBase to osg::Matrix
 template <typename Derived>
-::osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M)
-{
-  return ::osg::Matrix(
-      M(0, 0),
-      M(1, 0),
-      M(2, 0),
-      M(3, 0),
-      M(0, 1),
-      M(1, 1),
-      M(2, 1),
-      M(3, 1),
-      M(0, 2),
-      M(1, 2),
-      M(2, 2),
-      M(3, 2),
-      M(0, 3),
-      M(1, 3),
-      M(2, 3),
-      M(3, 3));
-}
+::osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M);
 
-//==============================================================================
+/// Converts Eigen::MatrixBase to osg::Vec3f
 template <typename Derived>
-::osg::Vec3f eigToOsgVec3f(const Eigen::MatrixBase<Derived>& vec)
-{
-  return ::osg::Vec3f(vec[0], vec[1], vec[2]);
-}
+::osg::Vec3f eigToOsgVec3f(const Eigen::MatrixBase<Derived>& vec);
 
-//==============================================================================
+/// Converts Eigen::MatrixBase to osg::Vec3d
 template <typename Derived>
-::osg::Vec3d eigToOsgVec3d(const Eigen::MatrixBase<Derived>& vec)
-{
-  return ::osg::Vec3d(vec[0], vec[1], vec[2]);
-}
+::osg::Vec3d eigToOsgVec3d(const Eigen::MatrixBase<Derived>& vec);
 
-//==============================================================================
+/// Converts Eigen::MatrixBase to osg::Vec3f or osg::Vec3d based on the scalar
+/// type
 template <typename Derived>
 typename std::conditional<
     std::is_same<typename Derived::Scalar, float>::value,
     ::osg::Vec3f,
     ::osg::Vec3d>::type
-eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
-{
-  using Vec3 = typename std::conditional<
-      std::is_same<typename Derived::Scalar, float>::value,
-      ::osg::Vec3f,
-      ::osg::Vec3d>::type;
+eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec);
 
-  return Vec3(vec[0], vec[1], vec[2]);
-}
+/// Converts osg::Vec3f to Eigen::Vector3f
+Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec);
 
-//==============================================================================
-inline Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec)
-{
-  return Eigen::Vector3f(vec[0], vec[1], vec[2]);
-}
+/// Converts osg::Vec3d to Eigen::Vector3d
+Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec);
 
-//==============================================================================
-inline Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec)
-{
-  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
-}
-
-//==============================================================================
+/// Converts Eigen::MatrixBase to osg::Vec4f
 template <typename Derived>
-::osg::Vec4f eigToOsgVec4f(const Eigen::MatrixBase<Derived>& vec)
-{
-  return ::osg::Vec4f(vec[0], vec[1], vec[2], vec[3]);
-}
+::osg::Vec4f eigToOsgVec4f(const Eigen::MatrixBase<Derived>& vec);
 
-//==============================================================================
+/// Converts Eigen::MatrixBase to osg::Vec4d
 template <typename Derived>
-::osg::Vec4d eigToOsgVec4d(const Eigen::MatrixBase<Derived>& vec)
-{
-  return ::osg::Vec4d(vec[0], vec[1], vec[2], vec[3]);
-}
+::osg::Vec4d eigToOsgVec4d(const Eigen::MatrixBase<Derived>& vec);
 
-//==============================================================================
+/// Converts Eigen::MatrixBase to osg::Vec4f or osg::Vec4d based on the scalar
+/// type
 template <typename Derived>
 std::conditional<
     std::is_same<typename Derived::Scalar, float>::value,
     ::osg::Vec4f,
     ::osg::Vec4d>
-eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
-{
-  return std::conditional<
-      std::is_same<typename Derived::Scalar, float>::value,
-      ::osg::Vec4f,
-      ::osg::Vec4d>(vec[0], vec[1], vec[2], vec[3]);
-}
+eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec);
 
-//==============================================================================
-inline Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec)
-{
-  return Eigen::Vector4f(vec[0], vec[1], vec[2], vec[3]);
-}
+/// Converts osg::Vec4f to Eigen::Vector4f
+Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec);
 
-//==============================================================================
-inline Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
-{
-  return Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
-}
+/// Converts osg::Vec4d to Eigen::Vector4d
+Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec);
+
+/// Create a Render-To-Texture (RTT) camera.
+::osg::Camera* createRttCamera(
+    ::osg::Camera::BufferComponent buffer,
+    ::osg::Texture* tex,
+    bool isAbsolute = false);
+
+/// Creates a head-up display (HUD) camera that renders on the top after the
+/// main scene is drawn, which is generally used for heads-up display
+::osg::Camera* createHudCamera(
+    double left = 0, double right = 1, double bottom = 0, double top = 1);
+
+/// Creates a osg::Geode of quad shape
+::osg::Geode* createScreenQuad(float width, float height, float scale = 1.0f);
+
+} // namespace dart::gui::osg
+
+#include "dart/gui/osg/detail/Utils-impl.hpp"
 
 #endif // DART_GUI_OSG_UTILS_HPP_
