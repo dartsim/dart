@@ -95,6 +95,8 @@ template <typename HeightmapShapeT>
 std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap);
 
+bool isConvex(const aiMesh* mesh, float threshold = 0.001);
+
 } // anonymous namespace
 
 //==============================================================================
@@ -948,12 +950,22 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
       triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
   }
-
-  auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
-  gimpactMeshShape->updateBound();
-  gimpactMeshShape->setUserPointer(triMesh);
-
-  return gimpactMeshShape;
+  const bool makeConvexMesh
+      = scene->mNumMeshes == 1 && isConvex(scene->mMeshes[0]);
+  if (makeConvexMesh)
+  {
+    auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
+    convexMeshShape->setMargin(0.0f);
+    convexMeshShape->setUserPointer(triMesh);
+    return convexMeshShape;
+  }
+  else
+  {
+    auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
+    gimpactMeshShape->updateBound();
+    gimpactMeshShape->setUserPointer(triMesh);
+    return gimpactMeshShape;
+  }
 }
 
 //==============================================================================
@@ -973,10 +985,19 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
     triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
-  gimpactMeshShape->updateBound();
-
-  return gimpactMeshShape;
+  const bool makeConvexMesh = isConvex(mesh);
+  if (makeConvexMesh)
+  {
+    auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
+    convexMeshShape->setMargin(0.0f);
+    return convexMeshShape;
+  }
+  else
+  {
+    auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
+    gimpactMeshShape->updateBound();
+    return gimpactMeshShape;
+  }
 }
 
 //==============================================================================
@@ -1040,6 +1061,47 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 
   return std::make_unique<BulletCollisionShape>(
       std::move(heightFieldShape), relativeShapeTransform);
+}
+
+//==============================================================================
+bool isConvex(const aiMesh* mesh, float threshold)
+{
+  const auto points = mesh->mVertices;
+  for (auto i = 0u; i < mesh->mNumFaces; ++i)
+  {
+    btVector3 vertices[3];
+    for (auto j = 0u; j < 3; ++j)
+    {
+      const aiVector3D& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
+      vertices[j] = btVector3(vertex.x, vertex.y, vertex.z);
+    }
+    btVector3 A = vertices[0];
+    btVector3 B = vertices[1];
+    btVector3 C = vertices[2];
+    B -= A;
+    C -= A;
+
+    const btVector3 BCNorm = B.cross(C).normalized();
+
+    const float checkPoint
+        = btVector3(
+              points[0].x - A.x(), points[0].y - A.y(), points[0].z - A.z())
+              .dot(BCNorm);
+
+    for (unsigned long j = 0; j < mesh->mNumVertices; j++)
+    {
+      float dist
+          = btVector3(
+                points[j].x - A.x(), points[j].y - A.y(), points[j].z - A.z())
+                .dot(BCNorm);
+      if ((std::abs(checkPoint) > threshold) && (std::abs(dist) > threshold)
+          && (checkPoint * dist < 0.0f))
+      {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 } // anonymous namespace
