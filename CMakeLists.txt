@@ -92,9 +92,10 @@ option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_BUILD_EXTRAS "Build extra projects" OFF)
+option(DART_BUILD_DARTPY "Build dartpy" ON)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
-# GCC and Clang add ANSI-formatted colors when they detect the output medium is a 
+# GCC and Clang add ANSI-formatted colors when they detect the output medium is a
 # terminal. However, this doesn't work in some cases such as when the makefile is
 # invoked by Ninja. DART_FORCE_COLORED_OUTPUT can be used in this case to enforce
 # to always generate ANSI-formatted colors regardless of the output medium types.
