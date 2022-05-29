@@ -1066,20 +1066,24 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 //==============================================================================
 bool isConvex(const aiMesh* mesh, float threshold)
 {
+  // Check whether all the other vertices on the mesh is on the internal side of
+  // the face, assuming that the direction of the normal of the face is pointing
+  // external side.
+  //
+  // Reference: https://stackoverflow.com/a/40056279/3122234
+
   const auto points = mesh->mVertices;
+  btVector3 vertices[3];
   for (auto i = 0u; i < mesh->mNumFaces; ++i)
   {
-    btVector3 vertices[3];
     for (auto j = 0u; j < 3; ++j)
     {
       const aiVector3D& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
       vertices[j] = btVector3(vertex.x, vertex.y, vertex.z);
     }
-    btVector3 A = vertices[0];
-    btVector3 B = vertices[1];
-    btVector3 C = vertices[2];
-    B -= A;
-    C -= A;
+    const btVector3& A = vertices[0];
+    const btVector3 B = vertices[1] - A;
+    const btVector3 C = vertices[2] - A;
 
     const btVector3 BCNorm = B.cross(C).normalized();
 
@@ -1088,7 +1092,7 @@ bool isConvex(const aiMesh* mesh, float threshold)
               points[0].x - A.x(), points[0].y - A.y(), points[0].z - A.z())
               .dot(BCNorm);
 
-    for (unsigned long j = 0; j < mesh->mNumVertices; j++)
+    for (auto j = 0u; j < mesh->mNumVertices; ++j)
     {
       float dist
           = btVector3(

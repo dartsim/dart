@@ -20,6 +20,10 @@
   * Added Stopwatch class to replace Timer: [#1638](https://github.com/dartsim/dart/pull/1638)
   * Removed Boost dependency: [#1648](https://github.com/dartsim/dart/pull/1648), [#1651](https://github.com/dartsim/dart/pull/1651)
 
+* Collision Detection
+
+  * Updated to use convex mesh of Bullet when possible: [#1664](https://github.com/dartsim/dart/pull/1664), [#1667](https://github.com/dartsim/dart/pull/1667)
+
 * Dynamics
 
   * Added deep copy for shapes: [#1612](https://github.com/dartsim/dart/pull/1612)
