@@ -356,7 +356,7 @@ if(TARGET dart)
 
   # Add a "tutorials" target to build tutorials.
   if(MSVC)
-    # add_subdirectory(tutorials)
+    add_subdirectory(tutorials)
   else()
     add_subdirectory(tutorials EXCLUDE_FROM_ALL)
     get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
