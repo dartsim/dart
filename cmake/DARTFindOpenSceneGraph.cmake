@@ -6,8 +6,6 @@
 #
 # This file is provided under the "BSD-style" License
 
-include(CMakeParseArguments)
-
 if (CMAKE_VERSION VERSION_LESS 3.12)
   get_property(old_find_library_use_lib64_paths GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
   set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
@@ -57,19 +55,14 @@ endif()
 # variables contain absolute paths of OpenSceneGraph that could be different in
 # where the system that DART is built and where the system that consumes DART.
 if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
-  if(WIN32 AND "optimized" IN_LIST OPENSCENEGRAPH_LIBRARIES
-          AND     "debug" IN_LIST OPENSCENEGRAPH_LIBRARIES)
-    cmake_parse_arguments(OPENSCENEGRAPH_INTERFACE_LIBRARIES "" "" "debug;optimized"
-        ${OPENSCENEGRAPH_LIBRARIES})
-    set(OPENSCENEGRAPH_INTERFACE_LIBRARIES
-        $<$<CONFIG:Debug>:${OPENSCENEGRAPH_INTERFACE_LIBRARIES_debug}>
-        $<$<NOT:$<CONFIG:Debug>>:${OPENSCENEGRAPH_INTERFACE_LIBRARIES_optimized}>)
-  else()
-    set(OPENSCENEGRAPH_INTERFACE_LIBRARIES ${OPENSCENEGRAPH_LIBRARIES})
-  endif()
   add_library(osg::osg INTERFACE IMPORTED)
-  set_target_properties(osg::osg PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${OPENSCENEGRAPH_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${OPENSCENEGRAPH_INTERFACE_LIBRARIES}"
-  )
+  if(CMAKE_VERSION VERSION_LESS 3.11)
+    set_target_properties(osg::osg PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${OPENSCENEGRAPH_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${OPENSCENEGRAPH_LIBRARIES}"
+    )
+  else()
+    target_include_directories(osg::osg INTERFACE ${OPENSCENEGRAPH_INCLUDE_DIRS})
+    target_link_libraries(osg::osg INTERFACE ${OPENSCENEGRAPH_LIBRARIES})
+  endif()
 endif()
