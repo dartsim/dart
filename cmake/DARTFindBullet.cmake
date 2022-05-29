@@ -6,6 +6,8 @@
 #
 # This file is provided under the "BSD-style" License
 
+include(CMakeParseArguments)
+
 # Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
 # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
 # with Bullet, which uses relative paths and may break transitive dependencies.
