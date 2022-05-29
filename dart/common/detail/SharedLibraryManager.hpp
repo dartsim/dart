@@ -41,19 +41,6 @@
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Singleton.hpp"
 
-namespace std {
-
-template <>
-struct hash<::dart::common::filesystem::path>
-{
-  size_t operator()(const ::dart::common::filesystem::path& p) const
-  {
-    return ::dart::common::filesystem::hash_value(p);
-  }
-};
-
-} // namespace std
-
 namespace dart {
 namespace common {
 
@@ -91,8 +78,19 @@ protected:
   friend class Singleton<SharedLibraryManager>;
 
 protected:
+  struct FileSystemHash
+  {
+    size_t operator()(const ::dart::common::filesystem::path& p) const
+    {
+      return ::dart::common::filesystem::hash_value(p);
+    }
+  };
+
   /// Map from library path to the library instances.
-  std::unordered_map<common::filesystem::path, std::weak_ptr<SharedLibrary>>
+  std::unordered_map<
+      common::filesystem::path,
+      std::weak_ptr<SharedLibrary>,
+      FileSystemHash>
       mLibraries;
   // TODO(JS): Remove this in DART 7.
 

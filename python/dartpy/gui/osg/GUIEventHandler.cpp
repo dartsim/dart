@@ -65,7 +65,7 @@ class PyGUIEventHandler final : public GUIEventHandlerNoRef
 {
 public:
   // Inherit the constructors
-  using GUIEventHandlerNoRef::GUIEventHandler;
+  using GUIEventHandlerNoRef::GUIEventHandlerNoRef;
 
   // Trampoline for virtual function
   bool handle(

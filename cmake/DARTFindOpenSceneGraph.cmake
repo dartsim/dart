@@ -14,7 +14,7 @@ if (CMAKE_VERSION VERSION_LESS 3.12)
 endif()
 
 find_package(OpenSceneGraph 3.0 QUIET
-  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
+  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
 if (CMAKE_VERSION VERSION_LESS 3.12)

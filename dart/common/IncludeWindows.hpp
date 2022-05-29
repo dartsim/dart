@@ -30,21 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_LOADOPENGL_HPP_
-#define DART_GUI_LOADOPENGL_HPP_
+#ifndef DART_COMMON_INCLUDEWINDOWS_HPP_
+#define DART_COMMON_INCLUDEWINDOWS_HPP_
 
-#if defined(_WIN32)
-  #include "dart/common/IncludeWindows.hpp"
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__APPLE__)
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
+#ifdef _WIN32
+  #ifdef NOMINMAX
+    #include <windows.h>
+    #undef near
+    #undef far
+  #else
+    #define NOMINMAX
+    #include <windows.h>
+    #undef NOMINMAX
+    #undef near
+    #undef far
+  #endif
 #endif
 
-#endif // DART_GUI_LOADOPENGL_HPP_
+#endif // DART_COMMON_INCLUDEWINDOWS_HPP_

@@ -935,7 +935,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
   // Load textures on the first pass through
   if (firstTime)
   {
-    uint unit = 0;
+    unsigned int unit = 0;
     const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[unit];
 
     while (nullptr != aiTexCoords)
