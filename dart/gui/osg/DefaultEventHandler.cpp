@@ -103,13 +103,13 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
   ::osg::Vec3d eye, center, up;
   mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
 
-  Eigen::Vector3d near, far;
-  getNearAndFarPointUnderCursor(near, far);
-  Eigen::Vector3d v1 = far - near;
+  Eigen::Vector3d nearPt, farPt;
+  getNearAndFarPointUnderCursor(nearPt, farPt);
+  Eigen::Vector3d v1 = farPt - nearPt;
 
   if (LINE_CONSTRAINT == _constraint)
   {
-    const Eigen::Vector3d& b1 = near;
+    const Eigen::Vector3d& b1 = nearPt;
     const Eigen::Vector3d& v2 = _constraintVector;
     const Eigen::Vector3d& b2 = _fromPosition;
 
@@ -131,14 +131,14 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
   else if (PLANE_CONSTRAINT == _constraint)
   {
     const Eigen::Vector3d& n = _constraintVector;
-    double s = n.dot(_fromPosition - near) / n.dot(v1);
-    return near - _fromPosition + s * v1;
+    double s = n.dot(_fromPosition - nearPt) / n.dot(v1);
+    return nearPt - _fromPosition + s * v1;
   }
   else
   {
     Eigen::Vector3d n = osgToEigVec3(center - eye);
-    double s = n.dot(_fromPosition - near) / n.dot(v1);
-    return near - _fromPosition + s * v1;
+    double s = n.dot(_fromPosition - nearPt) / n.dot(v1);
+    return nearPt - _fromPosition + s * v1;
   }
 
   return Eigen::Vector3d::Zero();
@@ -146,7 +146,7 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
 
 //==============================================================================
 void DefaultEventHandler::getNearAndFarPointUnderCursor(
-    Eigen::Vector3d& near, Eigen::Vector3d& far, double distance) const
+    Eigen::Vector3d& nearPt, Eigen::Vector3d& farPt, double distance) const
 {
   ::osg::Camera* C = mViewer->getCamera();
   ::osg::Matrix VPW = C->getViewMatrix() * C->getProjectionMatrix()
@@ -158,8 +158,8 @@ void DefaultEventHandler::getNearAndFarPointUnderCursor(
   auto osgNear = ::osg::Vec3d(x, y, 0.0) * invVPW;
   auto osgFar = ::osg::Vec3d(x, y, distance) * invVPW;
 
-  near = osgToEigVec3(osgNear);
-  far = osgToEigVec3(osgFar);
+  nearPt = osgToEigVec3(osgNear);
+  farPt = osgToEigVec3(osgFar);
 }
 
 //==============================================================================

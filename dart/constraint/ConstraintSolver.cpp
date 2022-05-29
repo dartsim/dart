@@ -406,8 +406,13 @@ bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& skeleton) const
 //==============================================================================
 bool ConstraintSolver::hasSkeleton(const ConstSkeletonPtr& skeleton) const
 {
+#if _WIN32
+  DART_ASSERT(
+      skeleton != nullptr && "Not allowed to insert null pointer skeleton.");
+#else
   DART_ASSERT(
       skeleton != nullptr, "Not allowed to insert null pointer skeleton.");
+#endif
 
   for (const auto& itrSkel : mSkeletons)
   {

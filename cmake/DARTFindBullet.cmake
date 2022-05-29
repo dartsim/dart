@@ -12,19 +12,14 @@
 find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
 
 if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
-  if(WIN32 AND "optimized" IN_LIST BULLET_LIBRARIES
-           AND     "debug" IN_LIST BULLET_LIBRARIES)
-    cmake_parse_arguments(BULLET_INTERFACE_LIBRARIES "" "" "debug;optimized"
-        ${BULLET_LIBRARIES})
-    set(BULLET_INTERFACE_LIBRARIES
-        $<$<CONFIG:Debug>:${BULLET_INTERFACE_LIBRARIES_debug}>
-        $<$<NOT:$<CONFIG:Debug>>:${BULLET_INTERFACE_LIBRARIES_optimized}>)
-  else()
-    set(BULLET_INTERFACE_LIBRARIES ${BULLET_LIBRARIES})
-  endif()
   add_library(Bullet INTERFACE IMPORTED)
-  set_target_properties(Bullet PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${BULLET_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${BULLET_INTERFACE_LIBRARIES}"
-  )
+  if(CMAKE_VERSION VERSION_LESS 3.11)
+    set_target_properties(Bullet PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${BULLET_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${BULLET_LIBRARIES}"
+    )
+  else()
+    target_include_directories(Bullet INTERFACE ${BULLET_INCLUDE_DIRS})
+    target_link_libraries(Bullet INTERFACE ${BULLET_LIBRARIES})
+  endif()
 endif()

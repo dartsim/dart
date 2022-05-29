@@ -1,7 +1,11 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-cmake_minimum_required(VERSION 3.10.2)
+if(WIN32)
+  cmake_minimum_required(VERSION 3.11)
+else()
+  cmake_minimum_required(VERSION 3.10.2)
+endif()
 
 project(dart)
 

@@ -12,7 +12,7 @@ if (CMAKE_VERSION VERSION_LESS 3.12)
 endif()
 
 find_package(OpenSceneGraph 3.0 QUIET
-  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
+  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
 if (CMAKE_VERSION VERSION_LESS 3.12)
@@ -56,8 +56,13 @@ endif()
 # where the system that DART is built and where the system that consumes DART.
 if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
   add_library(osg::osg INTERFACE IMPORTED)
-  set_target_properties(osg::osg PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${OPENSCENEGRAPH_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${OPENSCENEGRAPH_LIBRARIES}"
-  )
+  if(CMAKE_VERSION VERSION_LESS 3.11)
+    set_target_properties(osg::osg PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${OPENSCENEGRAPH_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${OPENSCENEGRAPH_LIBRARIES}"
+    )
+  else()
+    target_include_directories(osg::osg INTERFACE ${OPENSCENEGRAPH_INCLUDE_DIRS})
+    target_link_libraries(osg::osg INTERFACE ${OPENSCENEGRAPH_LIBRARIES})
+  endif()
 endif()
