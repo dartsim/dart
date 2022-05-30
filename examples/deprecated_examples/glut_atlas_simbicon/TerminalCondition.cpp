@@ -90,14 +90,14 @@ bool BodyContactCondition::isSatisfied()
     for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i)
     {
       PointMass* pm = soft->getPointMass(i);
-      if (pm->isColliding() > 0)
+      if (pm->isColliding())
         return true;
     }
   }
 
   // TODO(JS): Need more elegant condition check method
   DART_SUPPRESS_DEPRECATED_BEGIN
-  if (mBodyNode->isColliding() > 0)
+  if (mBodyNode->isColliding())
     DART_SUPPRESS_DEPRECATED_END
     {
       //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."

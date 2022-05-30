@@ -336,7 +336,7 @@ if(TARGET dart)
 
   # Add example subdirectories and an "examples" target.
   if(MSVC)
-    # add_subdirectory(examples)
+    add_subdirectory(examples)
   else()
     add_subdirectory(examples EXCLUDE_FROM_ALL)
     get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
@@ -356,7 +356,7 @@ if(TARGET dart)
 
   # Add a "tutorials" target to build tutorials.
   if(MSVC)
-    # add_subdirectory(tutorials)
+    add_subdirectory(tutorials)
   else()
     add_subdirectory(tutorials EXCLUDE_FROM_ALL)
     get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
