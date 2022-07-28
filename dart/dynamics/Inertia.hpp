@@ -122,6 +122,9 @@ public:
   /// Set the spatial tensor
   void setSpatialTensor(const Eigen::Matrix6d& _spatial);
 
+  /// Set the spatial tensor, with option to silence warnings.
+  void setSpatialTensor(const Eigen::Matrix6d& _spatial, bool _printWarnings);
+
   /// Get the spatial inertia tensor
   const Eigen::Matrix6d& getSpatialTensor() const;
 
