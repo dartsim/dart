@@ -26,6 +26,7 @@
 
 * Dynamics
 
+  * Made inertial warnings optional when setting tensor: [#1672](https://github.com/dartsim/dart/pull/1672)
   * Added deep copy for shapes: [#1612](https://github.com/dartsim/dart/pull/1612)
   * Added iterator methods to container-like classes: [#1644](https://github.com/dartsim/dart/pull/1644)
   * Fixed grouping of constraints: [#1624](https://github.com/dartsim/dart/pull/1624), [#1628](https://github.com/dartsim/dart/pull/1628)
