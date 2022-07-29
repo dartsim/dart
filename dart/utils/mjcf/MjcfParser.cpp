@@ -306,7 +306,7 @@ createJointAndBodyNodePairForMultipleJoints(
 
       // Limits
       props.mIsPositionLimitEnforced
-          = mjcfJoint0.isLimited() & mjcfJoint1.isLimited();
+          = mjcfJoint0.isLimited() && mjcfJoint1.isLimited();
       props.mPositionLowerLimits[0] = mjcfJoint0.getRange()[0];
       props.mPositionLowerLimits[1] = mjcfJoint1.getRange()[0];
       props.mPositionUpperLimits[0] = mjcfJoint0.getRange()[1];
@@ -365,7 +365,7 @@ createJointAndBodyNodePairForMultipleJoints(
 
       // Limits
       props.mIsPositionLimitEnforced
-          = mjcfJoint0.isLimited() & mjcfJoint1.isLimited();
+          = mjcfJoint0.isLimited() && mjcfJoint1.isLimited();
       props.mPositionLowerLimits[0] = mjcfJoint0.getRange()[0];
       props.mPositionLowerLimits[1] = mjcfJoint1.getRange()[0];
       props.mPositionLowerLimits[2] = mjcfJoint2.getRange()[0];
