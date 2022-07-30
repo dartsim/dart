@@ -37,7 +37,7 @@ find_package(spdlog 1.3.0 QUIET)
 find_package(ccd MODULE QUIET)
 
 # fcl
-find_package(fcl MODULE QUIET)
+find_package(fcl 0.7.0 MODULE QUIET)
 
 # OpenMP
 find_package(OpenGL QUIET MODULE)
@@ -53,7 +53,7 @@ if(GLEW_FOUND AND NOT TARGET GLEW::glew)
 endif()
 
 # OpenSceneGraph
-find_package(OpenSceneGraph 3.2.3 QUIET
+find_package(OpenSceneGraph 3.6.5 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow
 )
 if(MSVC)
