@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors:
+ * Copyright (c) 2011-2022, The DART development contributors:
  * https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@
 
 namespace dart::common {
 
-/// std::allocator compatible allocator that wrapps various MemoryAllocator
+/// std::allocator compatible allocator that wraps various MemoryAllocator
 template <typename T>
 class StlAllocator : public std::allocator<T>
 {

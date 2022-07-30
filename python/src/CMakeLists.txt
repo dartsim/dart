@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2021, The DART development contributors
+# Copyright (c) 2011-2022, The DART development contributors
 
 execute_process(COMMAND ${Python_EXECUTABLE} -c
   "from distutils.sysconfig import get_python_lib;\

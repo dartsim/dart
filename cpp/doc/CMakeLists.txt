@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2021, The DART development contributors
+# Copyright (c) 2011-2022, The DART development contributors
 
 dart_documentation(
   DOXYFILE ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in

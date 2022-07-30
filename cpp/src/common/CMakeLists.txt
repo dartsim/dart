@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2021, The DART development contributors
+# Copyright (c) 2011-2022, The DART development contributors
 
 # Target link libraries
 set(target_link_library_public

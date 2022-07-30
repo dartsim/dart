@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2021, The DART development contributors
+# Copyright (c) 2011-2022, The DART development contributors
 
 get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 

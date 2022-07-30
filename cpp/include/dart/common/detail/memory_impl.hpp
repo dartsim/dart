@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, The DART development contributors:
+ * Copyright (c) 2011-2022, The DART development contributors:
  * https://github.com/dartsim/dart/blob/main/LICENSE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@ constexpr std::size_t get_padding(
   }
 
   //
-  // 0       (alignemnt)  (2*alignment)          (multiplier*alignment)
+  // 0       (alignment)  (2*alignment)          (multiplier*alignment)
   // +------------+-------------+-----...----+-------------+--------------
   //                                            ^          ^
   //                                            |          |

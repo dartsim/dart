@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2021, The DART development contributors
+# Copyright (c) 2011-2022, The DART development contributors
 
 # CMake 3.10.2, the default version of Ubuntu 18.04 LTS
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)

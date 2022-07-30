@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2021, The DART development contributors
+# Copyright (c) 2011-2022, The DART development contributors
 
 set(target_link_libraries_public GLEW::glew osg::osg)
 if(APPLE)
