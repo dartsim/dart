@@ -37,7 +37,7 @@ template <typename Derived>
 using MatrixBase = Eigen::MatrixBase<Derived>;
 
 template <typename S>
-using MatrixX = Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>;
+using MatrixX = Eigen::Matrix<S, Dynamic, Dynamic>;
 
 template <typename S, int Rows, int Cols = Rows>
 using Matrix = Eigen::Matrix<S, Rows, Cols>;
@@ -61,7 +61,7 @@ template <typename S>
 using Matrix6 = Matrix<S, 6>;
 
 template <typename S>
-using VectorX = Eigen::Matrix<S, Eigen::Dynamic, 1>;
+using VectorX = Eigen::Matrix<S, Dynamic, 1>;
 
 template <typename S, int Dim>
 using Vector = Eigen::Matrix<S, Dim, 1>;
