@@ -4,12 +4,8 @@
 # Basic Project Setup
 # ==============================================================================
 
-# CMake 3.10.2, the default version of Ubuntu 18.04 LTS
-if(MSVC)
-  cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
-else()
-  cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
-endif()
+# CMake 3.22.1, the system version of Ubuntu 22.04 LTS
+cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
 
 # Policy settings
 if(POLICY CMP0072)

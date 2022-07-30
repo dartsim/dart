@@ -42,11 +42,7 @@ endif()
 # Code coverage settings
 if(DART_ENABLE_CODECOV)
   set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O0")
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-    list(APPEND link_options_public --coverage)
-  else()
-    list(APPEND target_link_library_public --coverage)
-  endif()
+  list(APPEND link_options_public --coverage)
   list(APPEND compile_options_public
     -O0         # no optimization
     -g          # generate debug info

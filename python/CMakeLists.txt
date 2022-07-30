@@ -18,54 +18,29 @@ if(NOT DARTPY_PYTHON_VERSION)
   set(DARTPY_PYTHON_VERSION 3.4 CACHE STRING "Choose the target Python version (e.g., 3.4, 2.7)" FORCE)
 endif()
 
-if(CMAKE_VERSION VERSION_LESS 3.15)
-
-  # Find pybind11, including PythonInterp and PythonLibs
-  # Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
-  set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
-  find_package(pybind11 CONFIG 2.2.0 QUIET)
-  if(NOT pybind11_FOUND)
-    message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
-    return()
+if(APPLE)
+  if(NOT DEFINED Python_FIND_REGISTRY)
+      set(Python_FIND_REGISTRY "LAST")
   endif()
-
-  if(NOT PythonInterp_FOUND AND NOT PYTHONINTERP_FOUND)
-    message(WARNING "Disabling [dartpy] due to missing [PythonInterp].")
-    return()
+  if(NOT DEFINED Python_FIND_FRAMEWORK)
+      set(Python_FIND_FRAMEWORK "LAST")
   endif()
-
-  if(NOT PythonLibs_FOUND AND NOT PYTHONLIBS_FOUND)
-    message(WARNING "Disabling [dartpy] due to missing [PythonLibs].")
-    return()
+  if(NOT DEFINED Python_FIND_STRATEGY)
+      set(Python_FIND_STRATEGY "VERSION")
   endif()
+endif()
 
-else()
+find_package(Python COMPONENTS Interpreter Development)
 
-  if(APPLE)
-    if(NOT DEFINED Python_FIND_REGISTRY)
-        set(Python_FIND_REGISTRY "LAST")
-    endif()
-    if(NOT DEFINED Python_FIND_FRAMEWORK)
-        set(Python_FIND_FRAMEWORK "LAST")
-    endif()
-    if(NOT DEFINED Python_FIND_STRATEGY)
-        set(Python_FIND_STRATEGY "VERSION")
-    endif()
-  endif()
+if(NOT Python_FOUND)
+  message(WARNING "Disabling [dartpy] due to missing Python.")
+  return()
+endif()
 
-  find_package(Python COMPONENTS Interpreter Development)
-
-  if(NOT Python_FOUND)
-    message(WARNING "Disabling [dartpy] due to missing Python.")
-    return()
-  endif()
-
-  find_package(pybind11 CONFIG 2.2.0 QUIET)
-  if(NOT pybind11_FOUND)
-    message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
-    return()
-  endif()
-
+find_package(pybind11 CONFIG 2.2.0 QUIET)
+if(NOT pybind11_FOUND)
+  message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
+  return()
 endif()
 
 # DART components
