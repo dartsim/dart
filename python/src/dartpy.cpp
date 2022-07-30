@@ -39,9 +39,9 @@
 
 #include "collision/py_module.hpp"
 #include "common/py_module.hpp"
+#include "gui/py_module.hpp"
 #include "math/py_module.hpp"
 #include "multibody/py_module.hpp"
-#include "gui/py_module.hpp"
 
 namespace py = pybind11;
 

@@ -49,29 +49,27 @@
 
 #if FCL_VERSION_AT_LEAST(0, 6, 0)
 
-  #include <fcl/math/geometry.h>
-
   #include <fcl/geometry/bvh/BVH_model.h>
   #include <fcl/geometry/geometric_shape_to_BVH_model.h>
   #include <fcl/math/bv/OBBRSS.h>
   #include <fcl/math/bv/utility.h>
+  #include <fcl/math/geometry.h>
   #include <fcl/narrowphase/collision.h>
   #include <fcl/narrowphase/collision_object.h>
   #include <fcl/narrowphase/distance.h>
 
 #else
 
-  #include <fcl/math/matrix_3f.h>
-  #include <fcl/math/transform.h>
-  #include <fcl/math/vec_3f.h>
-
   #include <fcl/BV/OBBRSS.h>
   #include <fcl/BVH/BVH_model.h>
-  #include <fcl/shape/geometric_shape_to_BVH_model.h>
   #include <fcl/collision.h>
   #include <fcl/collision_data.h>
   #include <fcl/collision_object.h>
   #include <fcl/distance.h>
+  #include <fcl/math/matrix_3f.h>
+  #include <fcl/math/transform.h>
+  #include <fcl/math/vec_3f.h>
+  #include <fcl/shape/geometric_shape_to_BVH_model.h>
 
 #endif // FCL_VERSION_AT_LEAST(0,6,0)
 

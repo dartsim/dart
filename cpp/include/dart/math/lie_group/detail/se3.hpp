@@ -285,13 +285,14 @@ template <typename Scalar, int Options>
 template <typename TransDerived>
 SE3<Scalar, Options>::SE3(
     const Quaternion& quat, const Eigen::MatrixBase<TransDerived>& trans)
-  : m_data{quat.coeffs()[0],
-           quat.coeffs()[1],
-           quat.coeffs()[2],
-           quat.coeffs()[3],
-           trans[0],
-           trans[1],
-           trans[2]}
+  : m_data{
+      quat.coeffs()[0],
+      quat.coeffs()[1],
+      quat.coeffs()[2],
+      quat.coeffs()[3],
+      trans[0],
+      trans[1],
+      trans[2]}
 {
   // Do nothing
 }
@@ -312,13 +313,14 @@ template <typename Scalar, int Options>
 template <typename TransDerived>
 SE3<Scalar, Options>::SE3(
     Quaternion&& quat, Eigen::MatrixBase<TransDerived>&& trans)
-  : m_data{quat.coeffs()[0],
-           quat.coeffs()[1],
-           quat.coeffs()[2],
-           quat.coeffs()[3],
-           trans[0],
-           trans[1],
-           trans[2]}
+  : m_data{
+      quat.coeffs()[0],
+      quat.coeffs()[1],
+      quat.coeffs()[2],
+      quat.coeffs()[3],
+      trans[0],
+      trans[1],
+      trans[2]}
 {
   // Do nothing
 }

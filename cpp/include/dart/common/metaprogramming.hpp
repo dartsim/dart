@@ -61,8 +61,9 @@
 namespace dart::common {
 
 template <template <typename...> class TemplateBase, typename Derived>
-using is_base_of_template = decltype(
-    detail::is_base_of_template_impl<TemplateBase>(std::declval<Derived*>()));
+using is_base_of_template
+    = decltype(detail::is_base_of_template_impl<TemplateBase>(
+        std::declval<Derived*>()));
 
 template <template <typename...> class TemplateBase, typename Derived>
 constexpr bool is_base_of_template_v

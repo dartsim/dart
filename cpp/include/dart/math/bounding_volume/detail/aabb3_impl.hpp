@@ -266,14 +266,15 @@ template <typename S>
 Vector3<S> Aabb3<S>::corner(size_t index) const
 {
   static const S h = 0.5;
-  static const Vector3<S> offset[8] = {{-h, -h, -h},
-                                       {+h, -h, -h},
-                                       {-h, +h, -h},
-                                       {+h, +h, -h},
-                                       {-h, -h, +h},
-                                       {+h, -h, +h},
-                                       {-h, +h, +h},
-                                       {+h, +h, +h}};
+  static const Vector3<S> offset[8]
+      = {{-h, -h, -h},
+         {+h, -h, -h},
+         {-h, +h, -h},
+         {+h, +h, -h},
+         {-h, -h, +h},
+         {+h, -h, +h},
+         {-h, +h, +h},
+         {+h, +h, +h}};
 
   return Vector3<S>(width(), height(), depth()).array() * offset[index].array()
          + midPoint().array();

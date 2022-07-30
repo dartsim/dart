@@ -75,18 +75,19 @@ Icosphere<S>::computeIcosahedron(S radius)
   const S x = radius * unitX;
   const S z = radius * unitZ;
 
-  std::vector<Vector3> vertices = {{{-x, 0, z},
-                                    {x, 0, z},
-                                    {-x, 0, -z},
-                                    {x, 0, -z},
-                                    {0, z, x},
-                                    {0, z, -x},
-                                    {0, -z, x},
-                                    {0, -z, -x},
-                                    {z, x, 0},
-                                    {-z, x, 0},
-                                    {z, -x, 0},
-                                    {-z, -x, 0}}};
+  std::vector<Vector3> vertices
+      = {{{-x, 0, z},
+          {x, 0, z},
+          {-x, 0, -z},
+          {x, 0, -z},
+          {0, z, x},
+          {0, z, -x},
+          {0, -z, x},
+          {0, -z, -x},
+          {z, x, 0},
+          {-z, x, 0},
+          {z, -x, 0},
+          {-z, -x, 0}}};
 
   static std::vector<Triangle> triangles
       = {{{0, 4, 1},  {0, 9, 4},  {9, 5, 4},  {4, 5, 8},  {4, 8, 1},

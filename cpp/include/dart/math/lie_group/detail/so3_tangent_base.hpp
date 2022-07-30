@@ -277,9 +277,10 @@ template <typename Derived>
 std::array<typename SO3TangentBase<Derived>::Jacobian, 3>
 SO3TangentBase<Derived>::left_jacobian_time_derivative(Scalar tolerance) const
 {
-  return {left_jacobian_time_derivative(0, tolerance),
-          left_jacobian_time_derivative(1, tolerance),
-          left_jacobian_time_derivative(2, tolerance)};
+  return {
+      left_jacobian_time_derivative(0, tolerance),
+      left_jacobian_time_derivative(1, tolerance),
+      left_jacobian_time_derivative(2, tolerance)};
 }
 
 //==============================================================================
@@ -306,9 +307,10 @@ template <typename Derived>
 std::array<typename SO3TangentBase<Derived>::Jacobian, 3>
 SO3TangentBase<Derived>::right_jacobian_time_derivative(Scalar tolerance) const
 {
-  return {right_jacobian_time_derivative(0, tolerance),
-          right_jacobian_time_derivative(1, tolerance),
-          right_jacobian_time_derivative(2, tolerance)};
+  return {
+      right_jacobian_time_derivative(0, tolerance),
+      right_jacobian_time_derivative(1, tolerance),
+      right_jacobian_time_derivative(2, tolerance)};
 }
 
 //==============================================================================

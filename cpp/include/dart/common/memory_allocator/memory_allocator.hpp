@@ -68,8 +68,7 @@ public:
   /// memory.
   /// @return On failure, a null pointer
   [[nodiscard]] virtual void* allocate_aligned(
-      size_t size, size_t alignment) noexcept
-      = 0;
+      size_t size, size_t alignment) noexcept = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   template <typename T>
