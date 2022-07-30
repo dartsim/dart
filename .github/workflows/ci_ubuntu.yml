@@ -16,14 +16,14 @@ jobs:
       fail-fast: false
       matrix:
         # Supported LTS versions
-        os: [ubuntu-focal]
+        os: [ubuntu-jammy]
         build_type: [Release]
         codecov: [OFF]
         check_format: [OFF]
         build_dartpy: [ON]
         include:
           # For code coverage report to Codecov
-          - os: ubuntu-focal
+          - os: ubuntu-jammy
             build_type: Debug
             codecov: ON
             check_format: ON
