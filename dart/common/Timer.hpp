@@ -36,18 +36,7 @@
 #include <string>
 
 #ifdef _WIN32
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
-typedef struct
-{
-  LARGE_INTEGER start;
-  LARGE_INTEGER stop;
-} stopWatch;
+  #include "dart/common/IncludeWindows.h"
 #else
   #include <sys/time.h>
 #endif
@@ -97,7 +86,12 @@ private:
   int mCount;
 
 #ifdef _WIN32
-  stopWatch mTimer;
+  struct StopWatch
+  {
+    LARGE_INTEGER start;
+    LARGE_INTEGER stop;
+  };
+  StopWatch mTimer;
 #else
   timeval mTimeVal;
   double mStartedTime;

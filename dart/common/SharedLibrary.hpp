@@ -51,13 +51,7 @@
 
 #elif DART_OS_WINDOWS
 
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
+  #include "dart/common/IncludeWindows.h"
 using hInstance = HINSTANCE__*;
   #define DYNLIB_HANDLE hInstance
 
