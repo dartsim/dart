@@ -84,10 +84,10 @@ include(DARTDependencies)
 # ==============================================================================
 
 if(DART_ENABLE_NATIVE_ARCH)
-  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin"))
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
   else()
-    message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
+    message(WARNING "DART_ENABLE_NATIVE_ARCH is only supported for GCC and Clang (not on macOS) when the detected compiler is ${CMAKE_CXX_COMPILER_ID}.")
   endif()
 endif()
 
