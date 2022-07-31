@@ -51,7 +51,7 @@
 
 #elif DART_OS_WINDOWS
 
-  #include "dart/common/IncludeWindows.h"
+  #include "dart/common/IncludeWindows.hpp"
 using hInstance = HINSTANCE__*;
   #define DYNLIB_HANDLE hInstance
 

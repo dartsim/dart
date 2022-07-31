@@ -36,7 +36,7 @@
 #include <string>
 
 #ifdef _WIN32
-  #include "dart/common/IncludeWindows.h"
+  #include "dart/common/IncludeWindows.hpp"
 #else
   #include <sys/time.h>
 #endif
