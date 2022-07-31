@@ -38,6 +38,12 @@
   * Fixed depth testing for transparent objects: [#1643](https://github.com/dartsim/dart/pull/1643)
   * Added depth rendering mode: [#1652](https://github.com/dartsim/dart/pull/1652)
 
+### [DART 6.12.2 (2022-07-31)](https://github.com/dartsim/dart/milestone/72?closed=1)
+
+* Build
+
+  * Fixed build with urdfdom 3.1.0 on Windows: [#1675](https://github.com/dartsim/dart/pull/1675)
+
 ### [DART 6.12.1 (2021-11-04)](https://github.com/dartsim/dart/milestone/71?closed=1)
 
 * Build
