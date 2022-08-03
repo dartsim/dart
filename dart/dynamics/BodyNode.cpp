@@ -698,7 +698,7 @@ void BodyNode::setRestitutionCoeff(double coeff)
   // won't help for new ShapeNodes that get added later.
   eachShapeNodeWith<DynamicsAspect>([&](ShapeNode* shapeNode) {
     auto* dynamicsAspect = shapeNode->getDynamicsAspect();
-    dynamicsAspect->setFrictionCoeff(coeff);
+    dynamicsAspect->setRestitutionCoeff(coeff);
   });
 
   if (coeff == mAspectProperties.mRestitutionCoeff)
