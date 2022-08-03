@@ -5,7 +5,7 @@ name: Trigger Build Farm
 on:
   push:
     branches:
-      - dart7/main
+      - dart8/main
   schedule:
     # Run at 09:00 UTC (02:00 PDT) everyday
     - cron: "0 9 * * *"
@@ -27,7 +27,7 @@ jobs:
     name: Trigger Build Farm
     runs-on: ubuntu-latest
     steps:
-      - name: Send request to dartsim/dart-build-farm to build dart7/main
+      - name: Send request to dartsim/dart-build-farm to build dart8/main
         run: |
           curl -X POST https://api.github.com/repos/dartsim/dart-build-farm/dispatches \
           -H 'Accept: application/vnd.github.everest-preview+json' \
