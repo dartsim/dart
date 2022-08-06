@@ -50,7 +50,9 @@ public:
 
   ~Scene();
 
-  bool set_world(std::shared_ptr<simulation::World> world);
+  void set_name(const std::string& name);
+
+  const std::string& get_name() const;
 
   [[nodiscard]] CameraPtr create_camera();
 
@@ -59,7 +61,10 @@ public:
   [[nodiscard]] osg::ref_ptr<osg::Group> get_mutable_osg_root_node();
 
 protected:
+  bool init();
+
 private:
+  friend class Engine;
   struct Implementation;
   std::unique_ptr<Implementation> m_impl;
 };

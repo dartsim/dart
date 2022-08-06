@@ -25,18 +25,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/engine.hpp"
+#pragma once
 
-namespace dart::collision {
+#include "dart/application/export.hpp"
+#include "dart/gui/scene.hpp"
+#include "dart/gui/type.hpp"
 
-//==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class Engine<double>;
+namespace dart::application {
 
-#endif
+class DART_GUI_API WorldScene : public gui::Scene
+{
+public:
+  template <typename... Args>
+  static std::shared_ptr<WorldScene> Create(Args&&... args)
+  {
+    return std::make_shared<WorldScene>(std::forward<Args>(args)...);
+  }
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class Engine<float>;
-#endif
+  WorldScene();
 
-} // namespace dart::collision
+  ~WorldScene();
+
+  bool set_world(std::shared_ptr<simulation::World> world);
+
+protected:
+private:
+  struct Implementation;
+  std::unique_ptr<Implementation> m_impl;
+};
+
+} // namespace dart::application

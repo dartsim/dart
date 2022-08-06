@@ -25,18 +25,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/engine.hpp"
+#pragma once
 
-namespace dart::collision {
+#include "dart/gui/export.hpp"
+#include "dart/gui/type.hpp"
 
-//==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class Engine<double>;
+namespace dart::gui {
 
-#endif
+class DART_GUI_API SceneObject
+{
+public:
+  SceneObject();
+  virtual ~SceneObject();
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class Engine<float>;
-#endif
+protected:
+  const Scene* get_scene() const;
 
-} // namespace dart::collision
+  Scene* get_mutable_scene();
+
+private:
+  friend class Scene;
+  struct Implementation;
+  std::unique_ptr<Implementation> m_impl;
+};
+
+} // namespace dart::gui

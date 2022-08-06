@@ -25,18 +25,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/engine.hpp"
+#include "dart/gui/render_target.hpp"
 
-namespace dart::collision {
+#include "dart/gui/osg_include.hpp"
+#include "dart/gui/scene.hpp"
+
+namespace dart::gui {
 
 //==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class Engine<double>;
+struct RenderTarget::Implementation
+{
+  /**
+   * @brief OSG Viewer object
+   */
+  osg::ref_ptr<osgViewer::Viewer> osg_viewer{nullptr};
 
-#endif
+  Implementation()
+  {
+    // Do nothing
+  }
+};
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class Engine<float>;
-#endif
+//==============================================================================
+RenderTarget::RenderTarget() : m_impl(std::make_unique<Implementation>())
+{
+  // Do nothing
+}
 
-} // namespace dart::collision
+//==============================================================================
+RenderTarget::~RenderTarget()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void RenderTarget::init()
+{
+  m_impl->osg_viewer = new osgViewer::Viewer();
+  m_impl->osg_viewer->setThreadingModel(
+      osgViewer::ViewerBase::ThreadingModel::SingleThreaded);
+  m_impl->osg_viewer->setSceneData(
+      get_mutable_scene()->get_mutable_osg_root_node());
+}
+
+} // namespace dart::gui

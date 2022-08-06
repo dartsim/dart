@@ -34,6 +34,8 @@
 
 namespace dart::gui {
 
+class Engine;
+
 class Camera;
 using CameraPtr = std::shared_ptr<Camera>;
 

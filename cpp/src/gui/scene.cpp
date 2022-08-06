@@ -38,6 +38,8 @@ namespace dart::gui {
 //==============================================================================
 struct Scene::Implementation
 {
+  std::string name;
+
   std::shared_ptr<simulation::World> world;
 
   std::unordered_set<CameraPtr> cameras;
@@ -53,9 +55,6 @@ struct Scene::Implementation
 //==============================================================================
 Scene::Scene() : m_impl(std::make_unique<Implementation>())
 {
-  // Create an empty world
-  m_impl->world = simulation::World::Create();
-
   // Create OSG root node
   m_impl->osg_root_node = new osg::Group();
 }
@@ -67,14 +66,15 @@ Scene::~Scene()
 }
 
 //==============================================================================
-bool Scene::set_world(std::shared_ptr<simulation::World> world)
+void Scene::set_name(const std::string& name)
 {
-  if (world == nullptr) {
-    return false;
-  }
+  m_impl->name = name;
+}
 
-  m_impl->world = std::move(world);
-  return true;
+//==============================================================================
+const std::string& Scene::get_name() const
+{
+  return m_impl->name;
 }
 
 //==============================================================================
@@ -95,6 +95,12 @@ osg::ref_ptr<const osg::Group> Scene::get_osg_root_node() const
 osg::ref_ptr<osg::Group> Scene::get_mutable_osg_root_node()
 {
   return m_impl->osg_root_node;
+}
+
+//==============================================================================
+bool Scene::init()
+{
+  return true;
 }
 
 } // namespace dart::gui

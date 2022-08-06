@@ -25,18 +25,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/engine.hpp"
+#pragma once
 
-namespace dart::collision {
+#include <memory>
+#include <string>
+#include <unordered_map>
 
-//==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class Engine<double>;
+#include "dart/gui/export.hpp"
+#include "dart/gui/image.hpp"
+#include "dart/gui/type.hpp"
 
-#endif
+namespace dart::gui {
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class Engine<float>;
-#endif
+class DART_GUI_API Engine
+{
+private:
+  Engine();
 
-} // namespace dart::collision
+public:
+  /// @return Created scene
+  /// @return nullptr on failure
+  ScenePtr create_scene(const std::string& name);
+
+  ScenePtr get_scene_by_name(const std::string& name);
+
+public:
+  [[nodiscard]] static Engine& Get();
+
+  ~Engine();
+
+protected:
+  std::unordered_map<std::string, ScenePtr> m_scenes;
+
+private:
+  struct Implementation;
+  std::unique_ptr<Implementation> m_impl;
+};
+
+} // namespace dart::gui

@@ -25,18 +25,68 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/engine.hpp"
+#include "dart/gui/engine.hpp"
 
-namespace dart::collision {
+#include "dart/common/logging.hpp"
+#include "dart/common/macro.hpp"
+#include "dart/gui/scene.hpp"
+
+namespace dart::gui {
 
 //==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class Engine<double>;
+struct Engine::Implementation
+{
+  Implementation()
+  {
+    // Do nothing
+  }
+};
 
-#endif
+//==============================================================================
+Engine& Engine::Get()
+{
+  static Engine engine;
+  return engine;
+}
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class Engine<float>;
-#endif
+//==============================================================================
+Engine::Engine() : m_impl(std::make_unique<Implementation>())
+{
+  // Do nothing
+}
 
-} // namespace dart::collision
+//==============================================================================
+ScenePtr Engine::create_scene(const std::string& name)
+{
+  if (auto scene = get_scene_by_name(name)) {
+    DART_DEBUG("A scene was already created with the name {}", name);
+    return nullptr;
+  }
+
+  auto scene = Scene::Create();
+  scene->set_name(name);
+
+  if (!scene->init()) {
+    DART_DEBUG("A scene cannot be created because it failed to initialize");
+    return nullptr;
+  }
+
+  m_scenes[name] = scene;
+
+  return scene;
+}
+
+//==============================================================================
+ScenePtr Engine::get_scene_by_name(const std::string& name)
+{
+  const auto found = m_scenes.find(name);
+  return (found != m_scenes.end()) ? found->second : nullptr;
+}
+
+//==============================================================================
+Engine::~Engine()
+{
+  // Do nothing
+}
+
+} // namespace dart::gui

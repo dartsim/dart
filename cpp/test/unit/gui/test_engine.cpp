@@ -25,18 +25,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/engine.hpp"
+#include <gtest/gtest.h>
 
-namespace dart::collision {
+#include "dart/gui/all.hpp"
+
+using namespace dart;
+using namespace gui;
 
 //==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class Engine<double>;
+TEST(EngineTest, Scene)
+{
+  auto& engine = Engine::Get();
 
-#endif
+  EXPECT_EQ(engine.get_scene_by_name("no_exist"), nullptr);
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class Engine<float>;
-#endif
-
-} // namespace dart::collision
+  auto scene1 = engine.create_scene("scene1");
+  EXPECT_NE(scene1, nullptr);
+  EXPECT_EQ(scene1->get_name(), "scene1");
+  EXPECT_NE(engine.get_scene_by_name("scene1"), nullptr);
+}

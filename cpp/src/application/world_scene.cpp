@@ -25,18 +25,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/engine.hpp"
+#include "dart/application/world_scene.hpp"
 
-namespace dart::collision {
+namespace dart::application {
 
 //==============================================================================
-#if DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE
-template class Engine<double>;
+struct WorldScene::Implementation
+{
+  std::shared_ptr<simulation::World> world;
 
-#endif
+  Implementation()
+  {
+    // Do nothing
+  }
+};
 
-#if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT
-template class Engine<float>;
-#endif
+//==============================================================================
+WorldScene::WorldScene() : Scene(), m_impl(std::make_unique<Implementation>())
+{
+  // Create an empty world
+  m_impl->world = simulation::World::Create();
+}
 
-} // namespace dart::collision
+//==============================================================================
+WorldScene::~WorldScene()
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool WorldScene::set_world(std::shared_ptr<simulation::World> world)
+{
+  if (world == nullptr) {
+    return false;
+  }
+
+  m_impl->world = std::move(world);
+  return true;
+}
+
+} // namespace dart::application
