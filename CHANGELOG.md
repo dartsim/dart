@@ -7,7 +7,7 @@
   * Ubuntu Focal on amd64 / GCC 9.3 / amd64
   * Ubuntu Jammy on amd64 / GCC 11.2 / amd64
   * macOS 12 (Monterey) / Clang 13 / amd64
-  * Windows / Microsoft Visual Studio 2022 / amd64
+  * Windows / Microsoft Visual Studio 2019 / amd64
 
 * Dependency
 

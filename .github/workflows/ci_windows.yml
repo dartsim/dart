@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: ${{ matrix.build_type }}
-    runs-on: windows-2022
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
+          cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ${{ matrix.toolset }} ^
             -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
