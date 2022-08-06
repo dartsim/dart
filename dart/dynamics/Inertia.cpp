@@ -200,8 +200,8 @@ void Inertia::setSpatialTensor(const Eigen::Matrix6d& _spatial)
 }
 
 //==============================================================================
-void Inertia::setSpatialTensor(const Eigen::Matrix6d& _spatial,
-      bool _printWarnings)
+void Inertia::setSpatialTensor(
+    const Eigen::Matrix6d& _spatial, bool _printWarnings)
 {
   if (!verifySpatialTensor(_spatial, _printWarnings))
     dtwarn << "[Inertia::setSpatialTensor] Passing in an invalid spatial "

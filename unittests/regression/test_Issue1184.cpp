@@ -51,16 +51,18 @@ TEST(Issue1184, Accuracy)
   };
 
   std::function<ShapeInfo()> makePlaneGround = []() {
-    return ShapeInfo{std::make_shared<dart::dynamics::PlaneShape>(
-                         Eigen::Vector3d::UnitZ(), 0.0),
-                     0.0};
+    return ShapeInfo{
+        std::make_shared<dart::dynamics::PlaneShape>(
+            Eigen::Vector3d::UnitZ(), 0.0),
+        0.0};
   };
 
   std::function<ShapeInfo()> makeBoxGround = []() {
     const double thickness = 0.1;
-    return ShapeInfo{std::make_shared<dart::dynamics::BoxShape>(
-                         Eigen::Vector3d(100.0, 100.0, thickness)),
-                     -thickness / 2.0};
+    return ShapeInfo{
+        std::make_shared<dart::dynamics::BoxShape>(
+            Eigen::Vector3d(100.0, 100.0, thickness)),
+        -thickness / 2.0};
   };
 
   std::function<dart::dynamics::ShapePtr(double)> makeBoxObject

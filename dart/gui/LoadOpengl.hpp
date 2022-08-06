@@ -34,9 +34,10 @@
 #define DART_GUI_LOADOPENGL_HPP_
 
 #if defined(_WIN32)
-  #include "dart/common/IncludeWindows.hpp"
   #include <GL/gl.h>
   #include <GL/glu.h>
+
+  #include "dart/common/IncludeWindows.hpp"
 #elif defined(__linux__)
   #include <GL/gl.h>
   #include <GL/glu.h>

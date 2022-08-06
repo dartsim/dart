@@ -661,9 +661,10 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T)
       gamma = 1.0 / 12.0 + 1.0 / 720.0 * theta * theta;
     }
 
-    double w[] = {alpha * (_T(2, 1) - _T(1, 2)),
-                  alpha * (_T(0, 2) - _T(2, 0)),
-                  alpha * (_T(1, 0) - _T(0, 1))};
+    double w[]
+        = {alpha * (_T(2, 1) - _T(1, 2)),
+           alpha * (_T(0, 2) - _T(2, 0)),
+           alpha * (_T(1, 0) - _T(0, 1))};
     gamma *= w[0] * _T(0, 3) + w[1] * _T(1, 3) + w[2] * _T(2, 3);
 
     ret << w[0], w[1], w[2],

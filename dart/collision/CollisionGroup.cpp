@@ -383,11 +383,12 @@ auto CollisionGroup::addShapeFrameImpl(
     // PRIMITIVE_MAGIC_NUMBER (defined as 1000 in Shape.cpp). Version is not
     // likely to be 0 because the Shape class starts its version counter at 1,
     // and the version count should monotonically increase.
-    mObjectInfoList.emplace_back(new ObjectInfo{shapeFrame,
-                                                collObj,
-                                                shape ? shape->getID() : 0,
-                                                shape ? shape->getVersion() : 0,
-                                                {}});
+    mObjectInfoList.emplace_back(new ObjectInfo{
+        shapeFrame,
+        collObj,
+        shape ? shape->getID() : 0,
+        shape ? shape->getVersion() : 0,
+        {}});
     mObserver.addShapeFrame(shapeFrame);
 
     it = --mObjectInfoList.end();

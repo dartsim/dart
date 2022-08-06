@@ -178,7 +178,7 @@ TemplatedElementEnumerator<ElementType>::get() const
 //==============================================================================
 template <typename ElementType>
 typename TemplatedElementEnumerator<ElementType>::ElementPtr
-    TemplatedElementEnumerator<ElementType>::operator->() const
+TemplatedElementEnumerator<ElementType>::operator->() const
 {
   return mCurrentElement;
 }
@@ -186,7 +186,7 @@ typename TemplatedElementEnumerator<ElementType>::ElementPtr
 //==============================================================================
 template <typename ElementType>
 typename TemplatedElementEnumerator<ElementType>::ElementRef
-    TemplatedElementEnumerator<ElementType>::operator*() const
+TemplatedElementEnumerator<ElementType>::operator*() const
 {
   return *mCurrentElement;
 }

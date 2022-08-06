@@ -112,12 +112,13 @@ void runIssue1234Test(
   {
     for (const double offset : {-0.1, 0.0, 0.1})
     {
-      for (const auto& normal : {Eigen::Vector3d(0.0, 0.0, 1.0),
-                                 Eigen::Vector3d(0.0, 0.0, -1.0),
-                                 Eigen::Vector3d(0.0, 1.0, 0.0),
-                                 Eigen::Vector3d(0.0, -1.0, 0.0),
-                                 Eigen::Vector3d(1.0, 0.0, 0.0),
-                                 Eigen::Vector3d(-1.0, 0.0, 0.0)})
+      for (const auto& normal :
+           {Eigen::Vector3d(0.0, 0.0, 1.0),
+            Eigen::Vector3d(0.0, 0.0, -1.0),
+            Eigen::Vector3d(0.0, 1.0, 0.0),
+            Eigen::Vector3d(0.0, -1.0, 0.0),
+            Eigen::Vector3d(1.0, 0.0, 0.0),
+            Eigen::Vector3d(-1.0, 0.0, 0.0)})
       {
         if (offset < 0.0)
         {
