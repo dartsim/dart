@@ -94,13 +94,13 @@ auto UriComponent::operator*() const -> reference_const_type
 }
 
 //==============================================================================
-auto UriComponent::operator-> () -> pointer_type
+auto UriComponent::operator->() -> pointer_type
 {
   return &get();
 }
 
 //==============================================================================
-auto UriComponent::operator-> () const -> pointer_const_type
+auto UriComponent::operator->() const -> pointer_const_type
 {
   return &get();
 }

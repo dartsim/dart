@@ -1479,15 +1479,17 @@ int collideCylinderPlane(
 
   // four corners c0 = ( -h/2, -r ), c1 = ( +h/2, -r ), c2 = ( +h/2, +r ), c3 =
   // ( -h/2, +r )
-  Eigen::Vector3d c[4] = {Eigen::Vector3d(-half_height, -cyl_rad, 0.0),
-                          Eigen::Vector3d(+half_height, -cyl_rad, 0.0),
-                          Eigen::Vector3d(+half_height, +cyl_rad, 0.0),
-                          Eigen::Vector3d(-half_height, +cyl_rad, 0.0)};
+  Eigen::Vector3d c[4]
+      = {Eigen::Vector3d(-half_height, -cyl_rad, 0.0),
+         Eigen::Vector3d(+half_height, -cyl_rad, 0.0),
+         Eigen::Vector3d(+half_height, +cyl_rad, 0.0),
+         Eigen::Vector3d(-half_height, +cyl_rad, 0.0)};
 
-  double depth[4] = {(pn - c[0]).dot(nn),
-                     (pn - c[1]).dot(nn),
-                     (pn - c[2]).dot(nn),
-                     (pn - c[3]).dot(nn)};
+  double depth[4]
+      = {(pn - c[0]).dot(nn),
+         (pn - c[1]).dot(nn),
+         (pn - c[2]).dot(nn),
+         (pn - c[3]).dot(nn)};
 
   double penetration = -1.0;
   int found = -1;

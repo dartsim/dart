@@ -11,19 +11,19 @@ jobs:
   build:
     if: github.event_name != 'workflow_dispatch'
     name: ${{ matrix.os }}.${{ matrix.build_type }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # Supported LTS versions
-        os: [ubuntu-bionic, ubuntu-focal]
+        os: [ubuntu-focal, ubuntu-jammy]
         build_type: [Release]
         codecov: [OFF]
         check_format: [OFF]
         build_dartpy: [ON]
         include:
           # For code coverage report to Codecov
-          - os: ubuntu-focal
+          - os: ubuntu-jammy
             build_type: Debug
             codecov: ON
             check_format: ON

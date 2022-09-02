@@ -290,18 +290,20 @@ void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size)
   glScaled(_size(0), _size(1), _size(2));
 
   // Code taken from glut/lib/glut_shapes.c
-  static GLfloat n[6][3] = {{-1.0, 0.0, 0.0},
-                            {0.0, 1.0, 0.0},
-                            {1.0, 0.0, 0.0},
-                            {0.0, -1.0, 0.0},
-                            {0.0, 0.0, 1.0},
-                            {0.0, 0.0, -1.0}};
-  static GLint faces[6][4] = {{0, 1, 2, 3},
-                              {3, 2, 6, 7},
-                              {7, 6, 5, 4},
-                              {4, 5, 1, 0},
-                              {5, 6, 2, 1},
-                              {7, 4, 0, 3}};
+  static GLfloat n[6][3]
+      = {{-1.0, 0.0, 0.0},
+         {0.0, 1.0, 0.0},
+         {1.0, 0.0, 0.0},
+         {0.0, -1.0, 0.0},
+         {0.0, 0.0, 1.0},
+         {0.0, 0.0, -1.0}};
+  static GLint faces[6][4]
+      = {{0, 1, 2, 3},
+         {3, 2, 6, 7},
+         {7, 6, 5, 4},
+         {4, 5, 1, 0},
+         {5, 6, 2, 1},
+         {7, 4, 0, 3}};
   GLfloat v[8][3];
   GLint i;
   GLfloat size = 1;
