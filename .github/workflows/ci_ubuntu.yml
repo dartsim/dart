@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         # Supported LTS versions
-        os: [ubuntu-focal, ubuntu-jammy]
+        os: [ubuntu-jammy]
         build_type: [Release]
         codecov: [OFF]
         check_format: [OFF]
@@ -34,7 +34,7 @@ jobs:
     env:
       # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
       DART_DEV_IMAGE: dartsim/dart-dev
-      DOCKER_TAG: ${{ matrix.os }}-v6.13
+      DOCKER_TAG: ${{ matrix.os }}-v7.0
       COMPILER: gcc
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: "${{ matrix.build_dartpy }}"

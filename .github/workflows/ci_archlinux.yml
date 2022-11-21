@@ -1,0 +1,66 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI Arch Linux
+
+on:
+  push:
+    branches:
+      - "**"
+  schedule:
+    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
+    - cron: "0 2 * * 1,4" # Run every Monday and Thursday at 02:00
+
+jobs:
+  build_2022:
+    name: ${{ matrix.os }}.${{ matrix.platform }}.${{ matrix.compiler }}.${{ matrix.build_type }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [archlinux]
+        platform: [linux/amd64]
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+        build_dartpy: [ON]
+        enable_native_arch: [ON]
+        exclude:
+          - os: archlinux
+            platform: linux/amd64
+            compiler: gcc
+            build_type: Release
+            build_dartpy: ON
+            enable_native_arch: ON
+    env:
+      # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
+      DART_DEV_IMAGE: dartsim/dart-dev
+      DOCKER_TAG: ${{ matrix.os }}-v7.0
+      PLATFORM: ${{ matrix.platform }}
+      COMPILER: ${{ matrix.compiler }}
+      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_DARTPY: ${{ matrix.build_dartpy }}
+      DART_ENABLE_NATIVE_ARCH: ${{ matrix.enable_native_arch }}
+    steps:
+      - name: Event Information
+        run: |
+          echo "Event '${{ github.event.action }}' received from '${{ github.event.client_payload.repository }}' (${{ github.event.client_payload.ref }})"
+      - uses: actions/checkout@v2
+        with:
+          repository: dartsim/dart
+          ref: ${{ github.event.client_payload.ref }}
+
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Pull dev container
+        run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
+
+      - name: Build
+        run: |
+          docker run \
+            -e CI=true \
+            --platform $PLATFORM \
+            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+            --env-file ./.ci/docker/env.list \
+            $DART_DEV_IMAGE:$DOCKER_TAG \
+            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
