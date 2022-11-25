@@ -6,4 +6,14 @@ RUN echo 'Etc/UTC' > /etc/timezone && \
     apt-get install -q -y --no-install-recommends tzdata && \
     rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -q -y --no-install-recommends build-essential cmake pkg-config git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends build-essential cmake pkg-config git && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev && \
+    && rm -rf /var/lib/apt/lists/*
+    
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libopenscenegraph-dev \
+    && rm -rf /var/lib/apt/lists/*
