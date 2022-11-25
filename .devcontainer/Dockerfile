@@ -1,4 +1,9 @@
 FROM ubuntu:20.04
 
-RUN apt-get update && apt-get install -q -y --no-install-recommends build-essential cmake pkg-config git && rm -rf /var/lib/apt/lists/*
+RUN echo 'Etc/UTC' > /etc/timezone && \
+    ln -s /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    apt-get update && \
+    apt-get install -q -y --no-install-recommends tzdata && \
+    rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -q -y --no-install-recommends build-essential cmake pkg-config git && rm -rf /var/lib/apt/lists/*
