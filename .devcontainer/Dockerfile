@@ -12,8 +12,8 @@ RUN apt-get update && \
 
 RUN apt-get update && \
     apt-get install -q -y --no-install-recommends libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev && \
-    && rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*
     
 RUN apt-get update && \
-    apt-get install -q -y --no-install-recommends libopenscenegraph-dev \
-    && rm -rf /var/lib/apt/lists/*
+    apt-get install -q -y --no-install-recommends libopenscenegraph-dev && \
+    rm -rf /var/lib/apt/lists/*
