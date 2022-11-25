@@ -1,0 +1,6 @@
+{
+"name": "C++ env",
+"build": {
+	"dockerfile": "Dockerfile"
+}
+}
