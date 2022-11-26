@@ -27,3 +27,7 @@ RUN apt-get update && \
 RUN apt-get update && \
     apt-get install -q -y --no-install-recommends libfmt-dev && \
     rm -rf /var/lib/apt/lists/*
+    
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends curl wget && \
+    rm -rf /var/lib/apt/lists/*
