@@ -17,6 +17,42 @@ RUN apt-get update && \
 RUN apt-get update && \
     apt-get install -q -y --no-install-recommends libopenscenegraph-dev && \
     rm -rf /var/lib/apt/lists/*
+    
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libnlopt-cxx-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends coinor-libipopt-dev && \
+    rm -rf /var/lib/apt/lists/*
+    
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libbullet-dev && \
+    rm -rf /var/lib/apt/lists/*
+    
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libode-dev && \
+    rm -rf /var/lib/apt/lists/*
+ 
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends liboctomap-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libtinyxml2-dev liburdfdom-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libxi-dev libxmu-dev freeglut3-dev && \
+    rm -rf /var/lib/apt/lists/*
+    
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends libopenscenegraph-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends doxygen && \
+    rm -rf /var/lib/apt/lists/*
 
 ################################################################################################################################
 #
