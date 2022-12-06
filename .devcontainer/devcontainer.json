@@ -13,6 +13,6 @@
         }
     },
     "capAdd": ["SYS_PTRACE"],
-	"securityOpt": ["seccomp=unconfined"],
+    "securityOpt": ["seccomp=unconfined"],
     "remoteUser": "vscode"
 }
