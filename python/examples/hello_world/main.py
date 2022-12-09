@@ -12,7 +12,7 @@ def main():
     print('Robot {} is loaded'.format(kr5.getName()))
 
     for i in range(100):
-        if i % 10 is 0:
+        if i % 10 == 0:
             print('[{}] joint position: {}'.format(world.getSimFrames(), kr5.getPositions()))
         world.step()
 
