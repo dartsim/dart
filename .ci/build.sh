@@ -195,7 +195,7 @@ fi
 
 # dartpy: run a Python example using installed dartpy
 if [ "$BUILD_DARTPY" = "ON" ]; then
-  echo "we got till here"
+  echo $PYTHONPATH
   cd $BUILD_DIR/python/examples/hello_world
   python3 main.py
 fi
