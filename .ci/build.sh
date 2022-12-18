@@ -138,7 +138,10 @@ echo "====================================="
 mkdir build && cd build
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
+elif [ "$OSTYPE" = "darwin" ]; then
+  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/"
 fi
+
 cmake .. \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_VERBOSE=ON \
@@ -195,6 +198,7 @@ fi
 
 # dartpy: run a Python example using installed dartpy
 if [ "$BUILD_DARTPY" = "ON" ]; then
+  echo $PYTHONPATH
   cd $BUILD_DIR/python/examples/hello_world
   python3 main.py
 fi

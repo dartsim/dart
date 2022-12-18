@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
       - name: Install Dependencies
         env:
           INSTALL_OSG_HEAD: OFF  # To avoid building OSG, until 3.7 is released.
