@@ -11,3 +11,8 @@ add_subdirectory(dartpy)
 add_subdirectory(tests)
 add_subdirectory(examples)
 add_subdirectory(tutorials)
+
+message(STATUS "")
+message(STATUS "[ dartpy ]")
+message(STATUS "- PYTHON_EXECUTABLE  : ${PYTHON_EXECUTABLE}")
+message(STATUS "- DARTPY_PYTEST_FOUND: ${DARTPY_PYTEST_FOUND}")
