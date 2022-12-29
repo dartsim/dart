@@ -24,13 +24,14 @@ endif()
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
   "from distutils.sysconfig import get_python_lib;\
-  print(get_python_lib(plat_specific=True, prefix=''))"
+  print(get_python_lib(plat_specific=True))"
   OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 if(NOT IS_ABSOLUTE PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
 endif()
+set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
