@@ -250,7 +250,7 @@ $ make format       # to format the code
 * **ALWAYS** quote singleton variables (e.g. `"${MY_VARIABLE}"` but not `${MY_LIST_VARIABLE}`)
 
 ```cmake
-cmake_minimum_required(VERSION 2.8.11)  # Always declare a minimum version in the top-level CMakeLists.txt.
+cmake_minimum_required(VERSION 3.22)  # Always declare a minimum version in the top-level CMakeLists.txt.
 
 project(dart)  # Only declare a project name in the top-level CMakeLists.txt.
 
