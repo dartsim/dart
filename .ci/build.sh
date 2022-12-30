@@ -140,7 +140,7 @@ mkdir build && cd build
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 elif [[ $OSTYPE = darwin* ]]; then
-  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_BUILD_WITH_INSTALL_RPATH=TRUE -DCMAKE_INSTALL_RPATH=/usr/local/lib"
+  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 fi
 
 cmake .. \
@@ -174,7 +174,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   make pytest
 fi
 
-make -j$num_threads install
+sudo make -j$num_threads install
 
 # Codecov
 if [ "$CODECOV" = "ON" ]; then
