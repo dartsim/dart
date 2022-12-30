@@ -44,8 +44,8 @@ class CMakeBuild(build_ext):
         if platform.system() == "Windows":
             cmake_version = LooseVersion(
                 re.search(r'version\s*([\d.]+)', out.decode()).group(1))
-            if cmake_version < '3.22':
-                raise RuntimeError("CMake >= 3.22 is required on Windows")
+            if cmake_version < '3.22.1':
+                raise RuntimeError("CMake >= 3.22.1 is required on Windows")
 
         distutils.log.set_verbosity(distutils.log.DEBUG)  # Set DEBUG level
 
