@@ -174,7 +174,7 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   make pytest
 fi
 
-sudo make -j$num_threads install
+make -j$num_threads install
 
 # Codecov
 if [ "$CODECOV" = "ON" ]; then
