@@ -140,7 +140,7 @@ mkdir build && cd build
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 elif [[ "$OSTYPE" = "darwin*" ]]; then
-  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/"
+  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 fi
 
 cmake .. \
