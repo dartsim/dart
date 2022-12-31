@@ -15,6 +15,12 @@
   * Updated required versions
     * CMake: 3.22.1
     * FCL: 0.7.0
+  * Removed
+    * FLANN
+
+* Planning
+
+  * Removed planning component and FLANN dependency
 
 ## DART 6
 

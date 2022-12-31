@@ -55,7 +55,6 @@
 #cmakedefine01 HAVE_SNOPT
 #cmakedefine01 HAVE_BULLET
 #cmakedefine01 HAVE_ODE
-#cmakedefine01 HAVE_FLANN
 #cmakedefine01 HAVE_OCTOMAP
 // TODO(JS): Change names to DART_HAVE_*
 // TODO(JS): Use target_compile_definitions(<target_name> PUBLIC -DDART_HAVE_*=1)

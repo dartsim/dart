@@ -26,7 +26,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # gui
 #   osg
 #     render
-# planning
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -41,7 +40,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
 # dart-gui - {dart}, gui, [opengl, glut]
 # dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
-# dart-planning - {dart}, planning, [flann]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -54,7 +52,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
 # gui-osg - (gui), {dart-gui-osg}
-# planning - (dart), {dart-planning}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
@@ -77,7 +74,6 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
-add_subdirectory(planning) # flann
 add_subdirectory(utils) # tinyxml2, bullet
 add_subdirectory(gui) # opengl, glut, bullet
 
