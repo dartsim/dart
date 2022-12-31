@@ -1,12 +1,5 @@
 add_subdirectory(external)
 
-# Enable multi-threaded compilation.
-# We do this here and not in the root folder since the examples and the
-# tutorials do not have enough source files to benefit from this.
-if(MSVC AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-endif()
-
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 
