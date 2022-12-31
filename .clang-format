@@ -53,14 +53,70 @@ ForEachMacros:   [ foreach, Q_FOREACH ]
 # Sort headers by main include file (implicit priority 0),
 # then project and private includes, then system headers
 IncludeCategories:
-  - Regex:     '^<([a-z|_]+)>' # standard library headers
+  - Regex:     '^".*\.h(pp)?"$'          # headers relative to this project
     Priority:  1
-  - Regex:     '^(<[A-z]+)'    # dependency headers
-    Priority:  2
-  - Regex:     '^(<|")dart/'   # DART headers
-    Priority:  3
-  - Regex:     '^".*'          # headers relative to this project
-    Priority:  4
+
+  # DART headers
+  - Regex:     '^<dart\/test\/.*\.h(pp)?>$'   
+    Priority:  20
+  - Regex:     '^<dart\/python\/.*\.h(pp)?>$'   
+    Priority:  21
+  - Regex:     '^<dart\/gui\/.*\.h(pp)?>$'   
+    Priority:  22
+  - Regex:     '^<dart\/simulation\/.*\.h(pp)?>$'   
+    Priority:  23
+  - Regex:     '^<dart\/utils\/.*\.h(pp)?>$'   
+    Priority:  24
+  - Regex:     '^<dart\/collision\/.*\.h(pp)?>$'   
+    Priority:  25
+  - Regex:     '^<dart\/constraint\/.*\.h(pp)?>$'   
+    Priority:  26
+  - Regex:     '^<dart\/dynamics\/.*\.h(pp)?>$'   
+    Priority:  27
+  - Regex:     '^<dart\/lcpsolver\/.*\.h(pp)?>$'   
+    Priority:  28
+  - Regex:     '^<dart\/optimizer\/.*\.h(pp)?>$'   
+    Priority:  29
+  - Regex:     '^<dart\/integration\/.*\.h(pp)?>$'   
+    Priority:  30
+  - Regex:     '^<dart\/math\/.*\.h(pp)?>$'   
+    Priority:  31
+  - Regex:     '^<dart\/common\/.*\.h(pp)?>$'   
+    Priority:  32
+  - Regex:     '^<dart\/.*\.h(pp)?>$'   
+    Priority:  33
+  - Regex:     '^<dart\/external\/.*\.h(pp)?>$'   
+    Priority:  34
+
+  # 3rd-party headers
+  - Regex:     '^<.*\.h(pp)?>$'
+    Priority:  50
+  - Regex:     '^<.*\/.*>$'
+    Priority:  50
+
+  # C++ standard library headers, then C
+  # TODO(JS): Add when new C++ STL header begins with "c" is found
+  - Regex:     '^<charconv>$' 
+    Priority:  100
+  - Regex:     '^<chrono>$'
+    Priority:  100
+  - Regex:     '^<compare>$'
+    Priority:  100
+  - Regex:     '^<complex>$'
+    Priority:  100
+  - Regex:     '^<concepts>$'
+    Priority:  100
+  - Regex:     '^<condition_variable>$'
+    Priority:  100
+  - Regex:     '^<coroutine>$'
+    Priority:  100
+  - Regex:     '^<c.*>$'  # C standard library headers
+    Priority:  110
+  - Regex:     '^<([a-z|_]+)>$'
+    Priority:  100
+
+  - Regex: '.*'
+    Priority: 999
 IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
 IndentFunctionDeclarationAfterType: false
