@@ -5,6 +5,21 @@ if(NOT DART_BUILD_DARTPY)
   return()
 endif()
 
+# Check if the required libraries are available
+set(DARTPY_REQUIRED_LIBS
+  dart
+  dart-utils
+  dart-utils-urdf
+  dart-gui
+  dart-gui-osg
+)
+foreach(lib ${DARTPY_REQUIRED_LIBS})
+  if(NOT TARGET ${lib})
+    message(WARNING "Skipped dartpy due to missing ${lib}!")
+    return()
+  endif()
+endforeach()
+
 set(DART_DARTPY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/dartpy")
 
 add_subdirectory(dartpy)

@@ -11,47 +11,6 @@ on:
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
 
 jobs:
-  build_2019:
-    name: ${{ matrix.build_type }}
-    runs-on: windows-2019
-    strategy:
-      fail-fast: false
-      matrix:
-        toolset: [""]
-        build_type: [Release]
-        # build_shared_libs: [ON, OFF]  # TODO(JS): Enable once shared lib build is resolved
-        build_shared_libs: [OFF]
-    env:
-      BUILD_TYPE: ${{ matrix.build_type }}
-      VCPKG_ROOT: "C:/dartsim/vcpkg"
-      VCPKG_BUILD_TAG: v6.13-2022.07.25-0
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Dependencies
-        shell: cmd
-        run: |
-          mkdir -p C:\dartsim
-          choco install -y wget
-          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-          unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -U pytest
-      - name: Build
-        shell: cmd
-        run: |
-          mkdir build
-          cd build
-          cmake .. -G "Visual Studio 16 2019" -A x64 -Wno-dev ${{ matrix.toolset }} ^
-            -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
-            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
-            -DDART_VERBOSE=ON ^
-            -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
-          cmake --build . --config %BUILD_TYPE% --target ALL_BUILD --parallel
-          ctest --rerun-failed --output-on-failure -C %BUILD_TYPE%
   build_2022:
     name: ${{ matrix.build_type }}
     runs-on: windows-2022
