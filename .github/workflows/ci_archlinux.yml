@@ -11,7 +11,7 @@ on:
     - cron: "0 2 * * 1,4" # Run every Monday and Thursday at 02:00
 
 jobs:
-  build_2022:
+  build:
     name: ${{ matrix.os }}.${{ matrix.platform }}.${{ matrix.compiler }}.${{ matrix.build_type }}
     runs-on: ubuntu-latest
     strategy:

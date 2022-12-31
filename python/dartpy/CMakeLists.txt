@@ -59,11 +59,7 @@ target_include_directories(${pybind_module}
 
 target_link_libraries(${pybind_module}
   PUBLIC
-    dart
-    dart-utils
-    dart-utils-urdf
-    dart-gui
-    dart-gui-osg
+    ${DARTPY_REQUIRED_LIBS}
     ${PYTHON_LIBRARIES}
 )
 if(TARGET dart-optimizer-nlopt)
