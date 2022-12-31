@@ -32,14 +32,14 @@
 
 #include "dart/gui/osg/GridVisual.hpp"
 
-#include <osg/Depth>
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <osg/Depth>
 
 namespace dart {
 namespace gui {

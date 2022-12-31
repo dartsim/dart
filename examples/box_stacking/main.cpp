@@ -30,12 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include <dart/gui/osg/osg.hpp>
+
+#include <dart/utils/utils.hpp>
 
 #include <dart/dart.hpp>
 #include <dart/external/imgui/imgui.h>
-#include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
+
+#include <iostream>
 
 using namespace dart;
 

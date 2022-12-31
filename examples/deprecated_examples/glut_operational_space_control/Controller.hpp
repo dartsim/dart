@@ -33,8 +33,9 @@
 #ifndef EXAMPLES_OPERATIONALSPACECONTROL_CONTROLLER_HPP_
 #define EXAMPLES_OPERATIONALSPACECONTROL_CONTROLLER_HPP_
 
-#include <Eigen/Eigen>
 #include <dart/dart.hpp>
+
+#include <Eigen/Eigen>
 
 /// \brief Operational space controller for 6-dof manipulator
 class Controller

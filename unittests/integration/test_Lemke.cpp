@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 //==============================================================================
 TEST(Lemke, Lemke_1D)

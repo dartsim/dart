@@ -30,14 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "Controller.hpp"
+#include "MyWindow.hpp"
 
-#include <dart/dart.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
 
-#include "Controller.hpp"
-#include "MyWindow.hpp"
+#include <dart/dart.hpp>
+
+#include <iostream>
 
 using namespace std;
 using namespace Eigen;

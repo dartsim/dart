@@ -32,8 +32,6 @@
 
 #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
-#include <algorithm>
-
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
@@ -56,6 +54,8 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+
+#include <algorithm>
 
 namespace dart {
 namespace collision {

@@ -42,14 +42,15 @@
   #include <sys/stat.h>
   #include <sys/types.h>
 #endif
-#include <cstdio>
-#include <iostream>
-#include <vector>
-
 #include "dart/common/Console.hpp"
 #include "dart/gui/GLFuncs.hpp"
 #include "dart/gui/OpenGLRenderInterface.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
+
+#include <iostream>
+#include <vector>
+
+#include <cstdio>
 
 namespace dart {
 namespace gui {

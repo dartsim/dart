@@ -32,13 +32,6 @@
 
 #include "dart/utils/urdf/DartLoader.hpp"
 
-#include <fstream>
-#include <iostream>
-#include <map>
-
-#include <urdf_parser/urdf_parser.h>
-#include <urdf_world/world.h>
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -56,6 +49,13 @@
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/urdf/BackwardCompatibility.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
+
+#include <urdf_parser/urdf_parser.h>
+#include <urdf_world/world.h>
+
+#include <fstream>
+#include <iostream>
+#include <map>
 
 namespace dart {
 namespace utils {

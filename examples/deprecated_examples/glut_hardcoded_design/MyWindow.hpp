@@ -40,11 +40,12 @@
 #ifndef EXAMPLES_HARDCODEDDESIGN_MYWINDOW_HPP_
 #define EXAMPLES_HARDCODEDDESIGN_MYWINDOW_HPP_
 
-#include <cstdarg>
-#include <cstdio>
+#include <dart/gui/gui.hpp>
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+
+#include <cstdarg>
+#include <cstdio>
 
 class MyWindow : public dart::gui::glut::SimWindow
 {

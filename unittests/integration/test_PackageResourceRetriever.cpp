@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/config.hpp"
 #include "dart/utils/PackageResourceRetriever.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using dart::common::Resource;
 using dart::common::ResourcePtr;

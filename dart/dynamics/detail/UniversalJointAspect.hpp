@@ -33,11 +33,11 @@
 #ifndef DART_DYNAMICS_DETAIL_UNIVERSALJOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_UNIVERSALJOINTASPECT_HPP_
 
-#include <string>
+#include "dart/dynamics/GenericJoint.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/GenericJoint.hpp"
+#include <string>
 
 namespace dart {
 namespace dynamics {

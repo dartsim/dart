@@ -33,11 +33,11 @@
 #include "dart/utils/VskParser.hpp"
 
 // Standard Library
+#include <Eigen/Dense>
+
 #include <map>
 #include <sstream>
 #include <stdexcept>
-
-#include <Eigen/Dense>
 
 // Local Files
 #include "dart/common/LocalResourceRetriever.hpp"

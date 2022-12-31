@@ -32,11 +32,11 @@
 
 #include "dart/utils/mjcf/detail/Mesh.hpp"
 
-#include <assimp/scene.h>
-
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
+
+#include <assimp/scene.h>
 
 namespace dart {
 namespace utils {

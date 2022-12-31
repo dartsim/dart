@@ -33,11 +33,11 @@
 #ifndef DART_GUI_OSG_RENDER_WARNINGSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_WARNINGSHAPENODE_HPP_
 
-#include <memory>
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
 #include <osg/Node>
 
-#include "dart/gui/osg/render/ShapeNode.hpp"
+#include <memory>
 
 namespace dart {
 namespace gui {

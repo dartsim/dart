@@ -30,15 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <TestHelpers.hpp>
+#include <dart/simulation/World.hpp>
+
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
-#include <dart/simulation/World.hpp>
+
+#include <TestHelpers.hpp>
 #include <gtest/gtest.h>
 
 //==============================================================================

@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
-#include <Eigen/Core>
-
 #include "dart/common/Composite.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/ProxyAspect.hpp"
 #include "dart/common/RequiresAspect.hpp"
+
+#include <Eigen/Core>
 
 namespace dart {
 namespace dynamics {

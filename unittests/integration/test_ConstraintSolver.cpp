@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/simulation/World.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using namespace dart;
 

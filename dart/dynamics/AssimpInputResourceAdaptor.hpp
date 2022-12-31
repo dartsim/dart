@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 #define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 
+#include "dart/common/Resource.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
 #include <assimp/cfileio.h>
-
-#include "dart/common/Resource.hpp"
-#include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
 namespace dynamics {

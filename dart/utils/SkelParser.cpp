@@ -32,13 +32,6 @@
 
 #include "dart/utils/SkelParser.hpp"
 
-#include <algorithm>
-#include <cstddef>
-#include <vector>
-
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
@@ -76,6 +69,14 @@
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
+
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
+
+#include <algorithm>
+#include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace utils {

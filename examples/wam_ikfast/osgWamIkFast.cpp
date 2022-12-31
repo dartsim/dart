@@ -30,14 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
-
 #include "Helpers.hpp"
 #include "InputHandler.hpp"
 #include "WamWorld.hpp"
+
+#include <dart/gui/osg/osg.hpp>
+
+#include <dart/dart.hpp>
+
+#include <iostream>
 
 int main()
 {

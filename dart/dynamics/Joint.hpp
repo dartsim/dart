@@ -33,10 +33,6 @@
 #ifndef DART_DYNAMICS_JOINT_HPP_
 #define DART_DYNAMICS_JOINT_HPP_
 
-#include <memory>
-#include <string>
-#include <vector>
-
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Subject.hpp"
@@ -45,6 +41,10 @@
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/dynamics/detail/JointAspect.hpp"
 #include "dart/math/MathTypes.hpp"
+
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {

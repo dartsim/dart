@@ -30,13 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sstream>
+#include "TestHelpers.hpp"
+
+#include <dart/utils/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+
 #include <gtest/gtest.h>
 
-#include "TestHelpers.hpp"
+#include <sstream>
 
 using namespace dart;
 

@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/PoolAllocator.hpp>
-#include <gtest/gtest.h>
-
 #include "TestHelpers.hpp"
+
+#include <dart/common/PoolAllocator.hpp>
+
+#include <gtest/gtest.h>
 
 using namespace dart;
 using namespace common;

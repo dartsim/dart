@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_JACOBIANNODE_HPP_
 #define DART_DYNAMICS_JACOBIANNODE_HPP_
 
-#include <memory>
-#include <unordered_set>
-
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Node.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <memory>
+#include <unordered_set>
 
 namespace dart {
 namespace dynamics {

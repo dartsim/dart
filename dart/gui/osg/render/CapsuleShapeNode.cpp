@@ -32,14 +32,14 @@
 
 #include "dart/gui/osg/render/CapsuleShapeNode.hpp"
 
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
+
 #include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
-
-#include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

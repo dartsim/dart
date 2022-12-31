@@ -33,10 +33,10 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 
-#include <vector>
-
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
+
+#include <vector>
 
 namespace dart {
 namespace collision {

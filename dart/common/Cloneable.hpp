@@ -33,10 +33,10 @@
 #ifndef DART_COMMON_CLONEABLE_HPP_
 #define DART_COMMON_CLONEABLE_HPP_
 
+#include "dart/common/Memory.hpp"
+
 #include <memory>
 #include <vector>
-
-#include "dart/common/Memory.hpp"
 
 namespace dart {
 namespace common {

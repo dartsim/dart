@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_POINTMASS_HPP_
 #define DART_DYNAMICS_POINTMASS_HPP_
 
-#include <vector>
+#include "dart/dynamics/Entity.hpp"
+#include "dart/math/Helpers.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/Entity.hpp"
-#include "dart/math/Helpers.hpp"
+#include <vector>
 
 namespace dart {
 namespace dynamics {

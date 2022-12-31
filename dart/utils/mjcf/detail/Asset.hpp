@@ -33,14 +33,14 @@
 #ifndef DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 #define DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 
-#include <unordered_map>
-#include <vector>
-
-#include <tinyxml2.h>
-
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
 #include "dart/utils/mjcf/detail/Mesh.hpp"
+
+#include <tinyxml2.h>
+
+#include <unordered_map>
+#include <vector>
 
 namespace dart {
 namespace utils {

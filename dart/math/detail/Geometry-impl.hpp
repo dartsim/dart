@@ -33,10 +33,10 @@
 #ifndef DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 #define DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 
-#include <unordered_map>
-
 #include "dart/external/convhull_3d/convhull_3d.h"
 #include "dart/math/Geometry.hpp"
+
+#include <unordered_map>
 
 namespace dart {
 namespace math {

@@ -32,9 +32,9 @@
 
 #include "dart/utils/FileInfoC3D.hpp"
 
-#include <cassert>
-
 #include "dart/utils/C3D.hpp"
+
+#include <cassert>
 
 namespace dart {
 namespace utils {

@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Stopwatch.hpp>
-#include <gtest/gtest.h>
-
 #include "TestHelpers.hpp"
+
+#include <dart/common/Stopwatch.hpp>
+
+#include <gtest/gtest.h>
 
 using namespace dart;
 using namespace common;

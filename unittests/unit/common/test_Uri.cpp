@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/common/Uri.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using dart::common::Uri;
 

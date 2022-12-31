@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_BALLJOINT_HPP_
 #define DART_DYNAMICS_BALLJOINT_HPP_
 
-#include <Eigen/Dense>
-
 #include "dart/dynamics/GenericJoint.hpp"
+
+#include <Eigen/Dense>
 
 namespace dart {
 namespace dynamics {

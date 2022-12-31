@@ -33,12 +33,14 @@
 #ifndef EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
   #define EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
 
-  #include <Eigen/Dense>
-  #include <dart/dart.hpp>
-  #include <dart/gui/gui.hpp>
-  #include <stdarg.h>
-
   #include "Controller.hpp"
+
+  #include <dart/gui/gui.hpp>
+
+  #include <dart/dart.hpp>
+
+  #include <Eigen/Dense>
+  #include <stdarg.h>
 
 class MyWindow : public dart::gui::glut::SimWindow
 {
@@ -75,13 +77,13 @@ private:
 #endif // EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
 
 /*
-#include <stdarg.h>
-
 #include "Controller.hpp"
 #include "dynamics/SkeletonDynamics.hpp"
 #include "integration/EulerIntegrator.hpp"
 #include "integration/RK4Integrator.hpp"
 #include "yui/Win3D.hpp"
+
+#include <stdarg.h>
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:

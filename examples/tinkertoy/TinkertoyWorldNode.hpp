@@ -33,9 +33,11 @@
 #ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWORLDNODE_HPP_
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWORLDNODE_HPP_
 
-#include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
+
+#include <dart/dart.hpp>
 
 const double DefaultBlockLength = 0.5;
 const double DefaultBlockWidth = 0.075;

@@ -33,9 +33,9 @@
 #ifndef DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
 #define DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
 
-#include <ode/ode.h>
-
 #include "dart/collision/CollisionDetector.hpp"
+
+#include <ode/ode.h>
 
 #define MAX_COLLIDE_RETURNS 250
 

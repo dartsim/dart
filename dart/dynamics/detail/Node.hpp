@@ -33,10 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_NODE_HPP_
 #define DART_DYNAMICS_DETAIL_NODE_HPP_
 
-#include <cassert>
-
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Node.hpp"
+
+#include <cassert>
 
 namespace dart {
 namespace dynamics {

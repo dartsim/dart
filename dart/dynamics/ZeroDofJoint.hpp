@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_ZERODOFJOINT_HPP_
 #define DART_DYNAMICS_ZERODOFJOINT_HPP_
 
-#include <string>
-
 #include "dart/dynamics/Joint.hpp"
+
+#include <string>
 
 namespace dart {
 namespace dynamics {

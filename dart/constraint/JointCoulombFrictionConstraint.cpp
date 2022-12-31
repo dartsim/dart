@@ -32,12 +32,12 @@
 
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 
-#include <iostream>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+
+#include <iostream>
 
 #define DART_CFM 1e-9
 

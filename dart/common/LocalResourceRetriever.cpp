@@ -32,12 +32,12 @@
 
 #include "dart/common/LocalResourceRetriever.hpp"
 
-#include <fstream>
-#include <iostream>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResource.hpp"
 #include "dart/common/Uri.hpp"
+
+#include <fstream>
+#include <iostream>
 
 namespace dart {
 namespace common {

@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
 #include "dart/common/Timer.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace dart::common;
 

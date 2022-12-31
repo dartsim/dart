@@ -32,9 +32,9 @@
 
 #include "dart/common/ResourceRetriever.hpp"
 
-#include <sstream>
-
 #include "dart/common/Console.hpp"
+
+#include <sstream>
 
 namespace dart {
 namespace common {

@@ -32,10 +32,10 @@
 
 #include "dart/gui/glut/Win3D.hpp"
 
-#include <algorithm>
-
 #include "dart/gui/glut/LoadGlut.hpp"
 #include "dart/math/Constants.hpp"
+
+#include <algorithm>
 
 namespace dart {
 namespace gui {

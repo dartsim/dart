@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <random>
+#include <dart/gui/gui.hpp>
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+
+#include <random>
 
 [[maybe_unused]] const double default_shape_density = 1000;  // kg/m^3
 [[maybe_unused]] const double default_shape_height = 0.1;    // m

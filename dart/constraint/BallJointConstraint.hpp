@@ -33,10 +33,10 @@
 #ifndef DART_CONSTRAINT_BALLJOINTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_BALLJOINTCONSTRAINT_HPP_
 
-#include <Eigen/Dense>
-
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/math/MathTypes.hpp"
+
+#include <Eigen/Dense>
 
 namespace dart {
 namespace constraint {

@@ -33,9 +33,9 @@
 #ifndef DART_GUI_OSG_RENDER_CYLINDERSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_CYLINDERSHAPENODE_HPP_
 
-#include <osg/MatrixTransform>
-
 #include "dart/gui/osg/render/ShapeNode.hpp"
+
+#include <osg/MatrixTransform>
 
 namespace dart {
 

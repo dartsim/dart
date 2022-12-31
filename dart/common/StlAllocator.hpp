@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_STLALLOCATOR_HPP_
 #define DART_COMMON_STLALLOCATOR_HPP_
 
-#include <memory>
-
 #include "dart/common/MemoryAllocator.hpp"
+
+#include <memory>
 
 namespace dart::common {
 

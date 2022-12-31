@@ -33,15 +33,15 @@
 #ifndef DART_UTILS_MJCF_DETAIL_SITE_HPP_
 #define DART_UTILS_MJCF_DETAIL_SITE_HPP_
 
-#include <string>
-
-#include <tinyxml2.h>
-
 #include "dart/common/Optional.hpp"
 #include "dart/math/MathTypes.hpp"
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"
+
+#include <tinyxml2.h>
+
+#include <string>
 
 namespace dart {
 namespace utils {

@@ -33,9 +33,9 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 #define DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 
-#include <cstddef>
-
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <cstddef>
 
 namespace dart {
 

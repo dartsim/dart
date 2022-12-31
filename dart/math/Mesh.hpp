@@ -33,9 +33,9 @@
 #ifndef DART_MATH_MESH_HPP_
 #define DART_MATH_MESH_HPP_
 
-#include <vector>
-
 #include <Eigen/Core>
+
+#include <vector>
 
 namespace dart {
 namespace math {

@@ -33,11 +33,11 @@
 #ifndef DART_UTILS_PACKAGERESOURCERETRIEVER_HPP_
 #define DART_UTILS_PACKAGERESOURCERETRIEVER_HPP_
 
-#include <unordered_map>
-#include <vector>
-
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/ResourceRetriever.hpp"
+
+#include <unordered_map>
+#include <vector>
 
 namespace dart {
 namespace utils {

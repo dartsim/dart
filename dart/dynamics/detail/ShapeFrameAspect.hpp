@@ -33,10 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 
-#include <Eigen/Core>
-
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <Eigen/Core>
 
 namespace dart {
 namespace dynamics {

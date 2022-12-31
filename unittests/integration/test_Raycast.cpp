@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/dart.hpp"
+
+#include <gtest/gtest.h>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif

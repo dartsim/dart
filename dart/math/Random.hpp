@@ -33,9 +33,9 @@
 #ifndef DART_MATH_RANDOM_HPP_
 #define DART_MATH_RANDOM_HPP_
 
-#include <random>
-
 #include <Eigen/Core>
+
+#include <random>
 
 namespace dart {
 namespace math {

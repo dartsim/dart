@@ -33,12 +33,6 @@
 #ifndef DART_UTILS_URDF_DARTLOADER_HPP_
 #define DART_UTILS_URDF_DARTLOADER_HPP_
 
-#include <map>
-#include <string>
-
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
@@ -48,6 +42,12 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/PackageResourceRetriever.hpp"
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <map>
+#include <string>
 
 namespace urdf {
 class ModelInterface;

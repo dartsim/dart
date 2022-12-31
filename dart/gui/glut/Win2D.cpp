@@ -32,9 +32,9 @@
 
 #include "dart/gui/glut/Win2D.hpp"
 
-#include <iostream>
-
 #include "dart/gui/glut/LoadGlut.hpp"
+
+#include <iostream>
 
 namespace dart {
 namespace gui {

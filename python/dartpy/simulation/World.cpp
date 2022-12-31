@@ -30,8 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
 #include <dart/simulation/World.hpp>
+
+#include <dart/dart.hpp>
+
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
