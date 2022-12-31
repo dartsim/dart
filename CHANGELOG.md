@@ -1,3 +1,21 @@
+# DART Changelog
+
+## DART 7
+
+### [DART 7.0.0 (TBD)](https://github.com/dartsim/dart/milestone/18?closed=1)
+
+* Supported Platforms
+
+  * Ubuntu Jammy on amd64 / GCC 11.2 / amd64
+  * macOS 12 (Monterey) / Clang 13 / amd64
+  * Windows / Microsoft Visual Studio 2022 / amd64
+
+* Dependency
+
+  * Updated required versions
+    * CMake: 3.22.1
+    * FCL: 0.7.0
+
 ## DART 6
 
 ### [DART 6.13.0 (TBD)](https://github.com/dartsim/dart/milestone/69?closed=1)
