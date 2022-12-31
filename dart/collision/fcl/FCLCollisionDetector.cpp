@@ -812,7 +812,7 @@ void FCLCollisionDetector::setContactPointComputationMethod(
   if (method == FCL)
   {
     dtwarn << "[FCLCollisionDetector::setContactPointComputationMethod] You "
-           << "chose to use FCL's built in contact point computation while"
+           << "chose to use FCL's built in contact point computation while "
            << "it's buggy (see https://github.com/flexible-collision-library/"
            << "fcl/issues/106) at least until 0.4.0. It's recommended to use "
            << "DART's implementation for the contact point computation by "

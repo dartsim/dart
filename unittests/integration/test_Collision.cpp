@@ -834,10 +834,10 @@ TEST_F(Collision, testConeCone)
   fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
   testCylinderCylinder(fcl_mesh_dart);
 
-  auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  testCylinderCylinder(fcl_mesh_fcl);
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testCylinderCylinder(fcl_mesh_fcl);
 
   auto fcl_prim_dart = FCLCollisionDetector::create();
   fcl_prim_dart->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
