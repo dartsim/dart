@@ -370,3 +370,60 @@ function(dart_build_tests)
   dart_format_add(${test_files})
 
 endfunction()
+
+# ==============================================================================
+macro(dart_fetch_git_repo)
+  set(prefix _ARG)
+  set(options
+  )
+  set(oneValueArgs
+    PROJECT_NAME
+    WORKING_DIR
+    GIT_URL
+    GIT_TAG
+  )
+  set(multiValueArgs
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  get_property(
+    project_base_dir GLOBAL PROPERTY DART_GLOBAL_PROPERTY_PROJECT_BASE_DIR
+  )
+
+  set(${_ARG_PROJECT_NAME}_SOURCE_DIR ${_ARG_WORKING_DIR}/${_ARG_PROJECT_NAME}-src)
+  set(${_ARG_PROJECT_NAME}_BINARY_DIR ${_ARG_WORKING_DIR}/${_ARG_PROJECT_NAME}-build)
+
+  # Variables used configuring dart_fetch_git_repo_sub.cmake.in
+  set(FETCH_PROJECT_NAME ${_ARG_PROJECT_NAME})
+  set(FETCH_SOURCE_DIR ${${_ARG_PROJECT_NAME}_SOURCE_DIR})
+  set(FETCH_BINARY_DIR ${${_ARG_PROJECT_NAME}_BINARY_DIR})
+  set(FETCH_GIT_REPOSITORY ${_ARG_GIT_URL})
+  set(FETCH_GIT_TAG ${_ARG_GIT_TAG})
+
+  configure_file(
+    ${DART_SOURCE_DIR}/cmake/dart_fetch_at_configure_step.cmake.in
+    ${_ARG_WORKING_DIR}/${_ARG_PROJECT_NAME}/CMakeLists.txt
+    @ONLY
+  )
+
+  # Unset them again
+  unset(FETCH_PROJECT_NAME)
+  unset(FETCH_SOURCE_DIR)
+  unset(FETCH_BINARY_DIR)
+  unset(FETCH_GIT_REPOSITORY)
+  unset(FETCH_GIT_TAG)
+
+  # Configure sub-project
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY ${_ARG_WORKING_DIR}/${_ARG_PROJECT_NAME}
+  )
+
+  # Build sub-project which triggers ExternalProject_Add
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" --build .
+    WORKING_DIRECTORY ${_ARG_WORKING_DIR}/${_ARG_PROJECT_NAME}
+  )
+endmacro()
