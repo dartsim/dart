@@ -93,11 +93,11 @@ fi
 # Ref: https://unix.stackexchange.com/a/129401
 if [ "$OSTYPE" = "linux-gnu" ]; then
   num_available_threads=$(nproc)
-elif [ "$OSTYPE" = "darwin" ]; then
+elif [[ $OSTYPE = darwin* ]]; then
   num_available_threads=$(sysctl -n hw.logicalcpu)
 else
   num_available_threads=1
-  echo "$OSTYPE is not supported to detect the number of logical CPU cores."
+  echo "[WARN] $OSTYPE is not supported to detect the number of logical CPU cores."
 fi
 
 if [ "$NUM_CORES" = "MAX" ]; then
@@ -128,6 +128,7 @@ echo ""
 echo " [ SYSTEM INFO ]"
 echo ""
 echo " OS      : $OS $VER ($(uname -m))"
+echo " OSTYPE  : $OSTYPE"
 echo " Cores   : $num_threads / $num_available_threads"
 echo " Compiler: $COMPILER $($CXX --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
 echo " CMake   : $(cmake --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
@@ -138,8 +139,8 @@ echo "====================================="
 mkdir build && cd build
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
-elif [ "$OSTYPE" = "darwin" ]; then
-  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/"
+elif [[ $OSTYPE = darwin* ]]; then
+  install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_INSTALL_RPATH=/usr/local/lib/"
 fi
 
 cmake .. \
