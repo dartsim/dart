@@ -30,19 +30,62 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-# GoogleTest setup
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest/include)
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest)
-add_library(gtest STATIC gtest/src/gtest-all.cc)
-add_library(gtest_main STATIC gtest/src/gtest_main.cc)
-target_link_libraries(gtest_main gtest)
-if(NOT WIN32)
-  target_link_libraries(gtest pthread)
+# Googletest
+if(DART_DOWNLOAD_DEPENDENT_PACKAGES)
+  # Fetch GoogleTest
+  dart_fetch_git_repo(
+    PROJECT_NAME googletest
+    WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/.deps
+    GIT_URL https://github.com/google/googletest.git
+    GIT_TAG release-1.12.1
+  )
+
+  # Set options
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+  set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+
+  # To suppress warning, Policy CMP0042 is not set
+  set(CMAKE_MACOSX_RPATH 1)
+
+  # Adds the targers: gtest, gtest_main, gmock, gmock_main
+  add_subdirectory(
+    ${googletest_SOURCE_DIR}
+    ${googletest_BINARY_DIR}
+    EXCLUDE_FROM_ALL
+  )
+
+  set(GTest_FOUND TRUE)
+
+  # Fetch GoogleBenchmark
+  dart_fetch_git_repo(
+    PROJECT_NAME benchmark
+    WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/.deps
+    GIT_URL https://github.com/google/benchmark.git
+    GIT_TAG v1.7.1
+  )
+
+  # Set options
+  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+
+  # Adds the targers: gtest, gtest_main, gmock, gmock_main
+  add_subdirectory(
+    ${benchmark_SOURCE_DIR}
+    ${benchmark_BINARY_DIR}
+    EXCLUDE_FROM_ALL
+  )
+
+  set(benchmark_FOUND TRUE)
+else()
+  find_package(GTest)
+  if(NOT GTest_FOUND)
+    message("[WARN] Skipping [tests] due to missing [GTest] package.")
+    return()
+  endif()
+
+  find_package(benchmark)
 endif()
-set_target_properties(
-  gtest PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY ${DART_BINARY_DIR}/lib
-)
 
 #===============================================================================
 # This function uses following global properties:

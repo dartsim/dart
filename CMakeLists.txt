@@ -102,6 +102,7 @@ option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # See: https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
 option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
+option(DART_DOWNLOAD_DEPENDENT_PACKAGES "Whether to download dependent package" ON)
 
 #===============================================================================
 # Print intro
