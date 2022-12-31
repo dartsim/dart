@@ -83,7 +83,8 @@ public:
 
   /// \copydoc Function::evalGradient
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const override
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override
   {
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
@@ -108,7 +109,8 @@ public:
 
   /// \copydoc Function::evalGradient
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const override
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override
   {
     _grad[0] = 3 * mA * (mA * _x[0] + mB) * (mA * _x[0] + mB);
     _grad[1] = -1.0;

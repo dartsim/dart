@@ -248,7 +248,8 @@ protected:
 
     // Documentation inherited
     void evalGradient(
-        const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const override;
+        const Eigen::VectorXd& _x,
+        Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   protected:
     /// Pointer to this Objective's HierarchicalIK module
@@ -281,7 +282,8 @@ protected:
 
     // Documentation inherited
     void evalGradient(
-        const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const override;
+        const Eigen::VectorXd& _x,
+        Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   protected:
     /// Pointer to this Constraint's HierarchicalIK module

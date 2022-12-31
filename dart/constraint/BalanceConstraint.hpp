@@ -101,7 +101,8 @@ public:
 
   // Documentation inherited
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const override;
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   /// Set the method that this constraint function will use to compute the
   /// error. See the ErrorMethod_t docs for more information.
@@ -142,7 +143,8 @@ public:
 protected:
   /// Convert the gradient that gets generated via Jacobian methods into a
   /// gradient that can be used by a GradientDescentSolver.
-  void convertJacobianMethodOutputToGradient(Eigen::Map<Eigen::VectorXd>& grad) const;
+  void convertJacobianMethodOutputToGradient(
+      Eigen::Map<Eigen::VectorXd>& grad) const;
 
   /// Pointer to the hierarchical IK that owns this Function. Note that this
   /// Function does not work correctly without a HierarchicalIK.

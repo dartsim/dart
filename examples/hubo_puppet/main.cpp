@@ -76,7 +76,8 @@ public:
   }
 
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const override
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override
   {
     computeResultVector(_x);
 
