@@ -35,7 +35,6 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/config.hpp"
 
 // clang-format off
@@ -49,67 +48,27 @@
   (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
 // clang-format on
 
-#include <fcl/config.h>
-
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-
-  #include <fcl/geometry/bvh/BVH_model.h>
-  #include <fcl/geometry/geometric_shape_to_BVH_model.h>
-  #include <fcl/math/bv/OBBRSS.h>
-  #include <fcl/math/bv/utility.h>
-  #include <fcl/math/geometry.h>
-  #include <fcl/narrowphase/collision.h>
-  #include <fcl/narrowphase/collision_object.h>
-  #include <fcl/narrowphase/distance.h>
-
-#else
-
-  #include <fcl/BV/OBBRSS.h>
-  #include <fcl/BVH/BVH_model.h>
-  #include <fcl/collision.h>
-  #include <fcl/collision_data.h>
-  #include <fcl/collision_object.h>
-  #include <fcl/distance.h>
-  #include <fcl/math/matrix_3f.h>
-  #include <fcl/math/transform.h>
-  #include <fcl/math/vec_3f.h>
-  #include <fcl/shape/geometric_shape_to_BVH_model.h>
-
-#endif // FCL_VERSION_AT_LEAST(0,6,0)
-
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+#include <fcl/config.h>
+#include <fcl/geometry/bvh/BVH_model.h>
+#include <fcl/geometry/geometric_shape_to_BVH_model.h>
+#include <fcl/math/bv/OBBRSS.h>
+#include <fcl/math/bv/utility.h>
+#include <fcl/math/geometry.h>
+#include <fcl/narrowphase/collision.h>
+#include <fcl/narrowphase/collision_object.h>
+#include <fcl/narrowphase/distance.h>
 
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-  #if FCL_VERSION_AT_LEAST(0, 6, 0)
-    #include <fcl/geometry/octree/octree.h>
-  #else
-    #include <fcl/octree.h>
-  #endif // FCL_VERSION_AT_LEAST(0,6,0)
-#endif   // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+  #include <fcl/geometry/octree/octree.h>
+#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 
 #include <memory>
-
-/// \deprecated Use std::shared_ptr() instead
-template <class T>
-using fcl_shared_ptr = std::shared_ptr<T>;
-
-/// \deprecated Use std::weak_ptr() instead
-template <class T>
-using fcl_weak_ptr = std::weak_ptr<T>;
-
-/// \deprecated Use std::make_shared() instead
-template <class T, class... Args>
-DART_DEPRECATED(6.13)
-std::shared_ptr<T> fcl_make_shared(Args&&... args)
-{
-  return std::make_shared<T>(std::forward<Args>(args)...);
-}
 
 namespace dart {
 namespace collision {
 namespace fcl {
 
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
 // Geometric fundamentals
 using Vector3 = ::fcl::Vector3<double>;
 using Matrix3 = ::fcl::Matrix3<double>;
@@ -121,9 +80,9 @@ using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-  #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
-  #endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;
@@ -135,59 +94,6 @@ using CollisionResult = ::fcl::CollisionResult<double>;
 using DistanceRequest = ::fcl::DistanceRequest<double>;
 using DistanceResult = ::fcl::DistanceResult<double>;
 using Contact = ::fcl::Contact<double>;
-#else
-// Geometric fundamentals
-using Vector3 = ::fcl::Vec3f;
-using Matrix3 = ::fcl::Matrix3f;
-using Transform3 = ::fcl::Transform3f;
-// Geometric primitives
-using Box = ::fcl::Box;
-using Cylinder = ::fcl::Cylinder;
-using Cone = ::fcl::Cone;
-using Halfspace = ::fcl::Halfspace;
-using Sphere = ::fcl::Sphere;
-  #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-using OcTree = ::fcl::OcTree;
-  #endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-// Collision objects
-using CollisionObject = ::fcl::CollisionObject;
-using CollisionGeometry = ::fcl::CollisionGeometry;
-using DynamicAABBTreeCollisionManager = ::fcl::DynamicAABBTreeCollisionManager;
-using OBBRSS = ::fcl::OBBRSS;
-using CollisionRequest = ::fcl::CollisionRequest;
-using CollisionResult = ::fcl::CollisionResult;
-using DistanceRequest = ::fcl::DistanceRequest;
-using DistanceResult = ::fcl::DistanceResult;
-using Contact = ::fcl::Contact;
-#endif
-
-#if !FCL_VERSION_AT_LEAST(0, 6, 0)
-using Ellipsoid = ::fcl::Ellipsoid;
-#endif
-
-/// Returns norm of a 3-dim vector
-double length(const dart::collision::fcl::Vector3& t);
-
-/// Returns squared norm of a 3-dim vector
-double length2(const dart::collision::fcl::Vector3& t);
-
-/// Returns translation component of a transform
-dart::collision::fcl::Vector3 getTranslation(
-    const dart::collision::fcl::Transform3& T);
-
-/// Sets translation component of a transform
-void setTranslation(
-    dart::collision::fcl::Transform3& T,
-    const dart::collision::fcl::Vector3& t);
-
-/// Returns rotation component of a transform
-dart::collision::fcl::Matrix3 getRotation(
-    const dart::collision::fcl::Transform3& T);
-
-/// Sets rotation component of a transform
-void setRotation(
-    dart::collision::fcl::Transform3& T,
-    const dart::collision::fcl::Matrix3& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
 void setEulerZYX(
@@ -195,11 +101,6 @@ void setEulerZYX(
     double eulerX,
     double eulerY,
     double eulerZ);
-
-/// Transforms a 3-dim vector by a transform and returns the result
-dart::collision::fcl::Vector3 transform(
-    const dart::collision::fcl::Transform3& t,
-    const dart::collision::fcl::Vector3& v);
 
 } // namespace fcl
 } // namespace collision

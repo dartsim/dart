@@ -99,15 +99,13 @@ void Collision::unrotatedTest(
   double pos = 10.0;
 
   coll1_transform.setIdentity();
-  dart::collision::fcl::setTranslation(
-      coll1_transform, dart::collision::fcl::Vector3(0, 0, 0));
   coll2_transform.setIdentity();
 
   // Let's drop box2 until it collide with box1
   do
   {
     position[_idxAxis] = pos;
-    dart::collision::fcl::setTranslation(coll2_transform, position);
+    coll2_transform.translation() = position;
 
     ::fcl::collide(
         _coll1, coll1_transform, _coll2, coll2_transform, request, result);
@@ -132,7 +130,7 @@ void Collision::unrotatedTest(
   {
     EXPECT_GE(result.getContact(i).penetration_depth, 0.0);
     //		EXPECT_NEAR(result.getContact(i).normal[_idxAxis], -1.0);
-    EXPECT_EQ(dart::collision::fcl::length(result.getContact(i).normal), 1.0);
+    EXPECT_EQ(result.getContact(i).normal.norm(), 1.0);
     EXPECT_NEAR(
         result.getContact(i).pos[_idxAxis], expectedContactPoint, -dpos * 2.0);
   }
@@ -155,15 +153,15 @@ void Collision::dropWithRotation(
   dart::collision::fcl::Transform3 groundTransf;
   groundTransf.setIdentity();
   dart::collision::fcl::Vector3 ground_position(0, 0, 0);
-  dart::collision::fcl::setTranslation(groundTransf, ground_position);
+  groundTransf.translation() = ground_position;
 
   // Dropping object setting
   dart::collision::fcl::Transform3 objectTransf;
-  dart::collision::fcl::Matrix3 rot;
-  dart::collision::fcl::setEulerZYX(rot, EulerZ, EulerY, EulerX);
-  dart::collision::fcl::setRotation(objectTransf, rot);
+  objectTransf.setIdentity();
+  objectTransf.linear()
+      = eulerZYXToMatrix(Eigen::Vector3d(EulerZ, EulerY, EulerX));
   dart::collision::fcl::Vector3 dropping_position(0, 0, 0);
-  dart::collision::fcl::setTranslation(objectTransf, dropping_position);
+  objectTransf.translation() = dropping_position;
 
   //==========================================================================
   // Dropping test in x, y, z aixs each.
@@ -176,7 +174,7 @@ void Collision::dropWithRotation(
     groundObject.side[_idxAxis] = 0.1;
     ground_position = dart::collision::fcl::Vector3(0, 0, 0);
     ground_position[_idxAxis] = -0.05;
-    dart::collision::fcl::setTranslation(groundTransf, ground_position);
+    groundTransf.translation() = ground_position;
 
     // Let's drop the object until it collide with ground
     double posDelta = -0.0001;
@@ -185,7 +183,7 @@ void Collision::dropWithRotation(
     do
     {
       dropping_position[_idxAxis] = initPos;
-      dart::collision::fcl::setTranslation(objectTransf, dropping_position);
+      objectTransf.translation() = dropping_position;
 
       ::fcl::collide(
           _object, objectTransf, &groundObject, groundTransf, request, result);
@@ -194,21 +192,19 @@ void Collision::dropWithRotation(
     } while (result.numContacts() == 0);
 
     std::cout << "Current position of the object: "
-              << dart::collision::fcl::getTranslation(objectTransf) << std::endl
+              << objectTransf.translation().transpose() << std::endl
               << "Number of contacts: " << result.numContacts() << std::endl;
 
     dart::collision::fcl::Transform3 objectTransfInv = objectTransf;
     objectTransfInv.inverse();
     for (std::size_t i = 0; i < result.numContacts(); ++i)
     {
-      dart::collision::fcl::Vector3 posWorld = dart::collision::fcl::transform(
-          objectTransfInv, result.getContact(i).pos);
+      dart::collision::fcl::Vector3 posWorld
+          = objectTransfInv * result.getContact(i).pos;
       std::cout << "----- CONTACT " << i << " --------" << std::endl;
       std::cout << "contact_points: " << result.getContact(i).pos << std::endl;
       std::cout << "contact_points(w): " << posWorld << std::endl;
-      std::cout << "norm: "
-                << dart::collision::fcl::length(result.getContact(i).pos)
-                << std::endl;
+      std::cout << "norm: " << result.getContact(i).pos.norm() << std::endl;
       std::cout << "penetration_depth: "
                 << result.getContact(i).penetration_depth << std::endl;
       std::cout << "normal: " << result.getContact(i).normal << std::endl;
@@ -270,21 +266,21 @@ TEST_F(Collision, FCL_BOX_BOX)
   dart::collision::fcl::Transform3 groundTransf;
   groundTransf.setIdentity();
   dart::collision::fcl::Vector3 ground_position(0.0, 0.0, -0.05);
-  dart::collision::fcl::setTranslation(groundTransf, ground_position);
+  groundTransf.translation() = ground_position;
 
   // Dropping box object setting
   dart::collision::fcl::Box box(0.5, 0.5, 0.5);
   dart::collision::fcl::Transform3 objectTransf;
-  dart::collision::fcl::Matrix3 rot;
-  dart::collision::fcl::setEulerZYX(rot, EulerZ, EulerY, EulerX);
-  dart::collision::fcl::setRotation(objectTransf, rot);
+  objectTransf.setIdentity();
+  objectTransf.linear()
+      = eulerZYXToMatrix(Eigen::Vector3d(EulerZ, EulerY, EulerX));
   dart::collision::fcl::Vector3 dropping_position(0.0, 0.0, 5.0);
-  dart::collision::fcl::setTranslation(objectTransf, dropping_position);
+  objectTransf.translation() = dropping_position;
 
   // Let's drop the object until it collide with ground
   do
   {
-    dart::collision::fcl::setTranslation(objectTransf, dropping_position);
+    objectTransf.translation() = dropping_position;
 
     ::fcl::collide(
         &box, objectTransf, &groundObject, groundTransf, request, result);
@@ -293,7 +289,7 @@ TEST_F(Collision, FCL_BOX_BOX)
   } while (result.numContacts() == 0);
 
   std::cout << "Current position of the object: "
-            << dart::collision::fcl::getTranslation(objectTransf) << std::endl
+            << objectTransf.translation().transpose() << std::endl
             << "Number of contacts: " << result.numContacts() << std::endl;
 
   for (std::size_t i = 0; i < result.numContacts(); ++i)
