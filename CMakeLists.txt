@@ -228,6 +228,9 @@ if(MSVC)
   add_compile_options(/wd4996)
   add_compile_options(/bigobj)
 
+  # Enable multi-threaded compilation.
+  add_compile_options(/MP)
+
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
   add_compile_options(-Wall -Wextra -fPIC)
