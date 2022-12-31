@@ -1697,7 +1697,7 @@ optimizer::FunctionPtr InverseKinematics::Objective::clone(
 }
 
 //==============================================================================
-double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
+double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x) const
 {
   if (nullptr == mIK)
   {
@@ -1720,7 +1720,7 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void InverseKinematics::Objective::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   if (nullptr == mIK)
   {
@@ -1764,7 +1764,7 @@ optimizer::FunctionPtr InverseKinematics::Constraint::clone(
 }
 
 //==============================================================================
-double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
+double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x) const
 {
   if (nullptr == mIK)
   {
@@ -1779,7 +1779,7 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void InverseKinematics::Constraint::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   if (nullptr == mIK)
   {

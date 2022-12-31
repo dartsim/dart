@@ -63,14 +63,15 @@ const std::string& Function::getName() const
 
 //==============================================================================
 void Function::evalGradient(
-    const Eigen::VectorXd& /*_x*/, Eigen::Map<Eigen::VectorXd> /*_grad*/)
+    const Eigen::VectorXd& /*_x*/, Eigen::Map<Eigen::VectorXd> /*_grad*/) const
 {
   dtwarn << "Gradient is not provided by function named [" << mName
          << "]. Use gradient-free algorithm.\n";
 }
 
 //==============================================================================
-void Function::evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad)
+void Function::evalGradient(
+    const Eigen::VectorXd& _x, Eigen::VectorXd& _grad) const
 {
   Eigen::Map<Eigen::VectorXd> tmpGrad(_grad.data(), _grad.size());
   evalGradient(_x, tmpGrad);
@@ -79,7 +80,7 @@ void Function::evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad)
 //==============================================================================
 void Function::evalHessian(
     const Eigen::VectorXd& /*_x*/,
-    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> /*_Hess*/)
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> /*_Hess*/) const
 {
   dterr << "Hessian is not provided by funciton named [" << mName
         << "]. Use Hessian-free algorithm.\n";
@@ -100,14 +101,14 @@ ModularFunction::~ModularFunction()
 }
 
 //==============================================================================
-double ModularFunction::eval(const Eigen::VectorXd& _x)
+double ModularFunction::eval(const Eigen::VectorXd& _x) const
 {
   return mCostFunction(_x);
 }
 
 //==============================================================================
 void ModularFunction::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   mGradientFunction(_x, _grad);
 }
@@ -115,7 +116,7 @@ void ModularFunction::evalGradient(
 //==============================================================================
 void ModularFunction::evalHessian(
     const Eigen::VectorXd& _x,
-    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const
 {
   mHessianFunction(_x, _Hess);
 }
@@ -183,14 +184,14 @@ NullFunction::~NullFunction()
 }
 
 //==============================================================================
-double NullFunction::eval(const Eigen::VectorXd&)
+double NullFunction::eval(const Eigen::VectorXd&) const
 {
   return 0;
 }
 
 //==============================================================================
 void NullFunction::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   _grad.resize(_x.size());
   _grad.setZero();
@@ -199,7 +200,7 @@ void NullFunction::evalGradient(
 //==============================================================================
 void NullFunction::evalHessian(
     const Eigen::VectorXd& _x,
-    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const
 {
   _Hess.resize(pow(_x.size(), 2));
   _Hess.setZero();
