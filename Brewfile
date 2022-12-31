@@ -20,4 +20,5 @@ brew 'tinyxml2'
 brew 'urdfdom'
 
 # dartpy dependencies
+brew 'python3'
 brew 'pybind11'
