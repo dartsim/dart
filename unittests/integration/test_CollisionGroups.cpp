@@ -329,7 +329,7 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   EXPECT_FALSE(group->isSubscribedTo(skel_B_ptr));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CollisionEngine,
     CollisionGroupsTest,
     testing::Values("dart", "fcl", "bullet", "ode"));
