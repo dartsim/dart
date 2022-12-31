@@ -248,7 +248,7 @@ void LineSegmentShape::removeConnection(
     std::size_t _vertexIdx1, std::size_t _vertexIdx2)
 {
   // Search through all connections to remove any that match the request
-  common::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
+  std::vector<Eigen::Vector2i>::iterator it = mConnections.begin();
   while (it != mConnections.end())
   {
     const Eigen::Vector2i c = (*it);
@@ -290,8 +290,7 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 }
 
 //==============================================================================
-const common::aligned_vector<Eigen::Vector2i>&
-LineSegmentShape::getConnections() const
+const std::vector<Eigen::Vector2i>& LineSegmentShape::getConnections() const
 {
   return mConnections;
 }

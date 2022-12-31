@@ -62,7 +62,7 @@ void randomize_transform(
     tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
 }
 
-void randomize_transforms(common::aligned_vector<Eigen::Isometry3d>& tfs)
+void randomize_transforms(std::vector<Eigen::Isometry3d>& tfs)
 {
   for (std::size_t i = 0; i < tfs.size(); ++i)
   {
@@ -149,7 +149,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
   EXPECT_TRANSFORM_NEAR(
       D.getTransform(), Eigen::Isometry3d::Identity(), tolerance);
 
-  common::aligned_vector<Eigen::Isometry3d> tfs;
+  std::vector<Eigen::Isometry3d> tfs;
   tfs.resize(frames.size(), Eigen::Isometry3d::Identity());
 
   randomize_transforms(tfs);
@@ -190,8 +190,8 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Basic forward spatial velocity propagation
   { // The brackets are to allow reusing variable names
-    common::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
-    common::aligned_vector<Eigen::Vector6d> v_total(frames.size());
+    std::vector<Eigen::Vector6d> v_rels(frames.size());
+    std::vector<Eigen::Vector6d> v_total(frames.size());
 
     for (std::size_t i = 0; i < frames.size(); ++i)
     {
@@ -279,11 +279,11 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Basic forward spatial acceleration propagation
   {
-    common::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
-    common::aligned_vector<Eigen::Vector6d> a_rels(frames.size());
+    std::vector<Eigen::Vector6d> v_rels(frames.size());
+    std::vector<Eigen::Vector6d> a_rels(frames.size());
 
-    common::aligned_vector<Eigen::Vector6d> v_total(frames.size());
-    common::aligned_vector<Eigen::Vector6d> a_total(frames.size());
+    std::vector<Eigen::Vector6d> v_total(frames.size());
+    std::vector<Eigen::Vector6d> a_total(frames.size());
 
     for (std::size_t i = 0; i < frames.size(); ++i)
     {

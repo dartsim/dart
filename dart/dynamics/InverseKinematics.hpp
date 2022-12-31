@@ -567,12 +567,12 @@ public:
         const Bounds& _bounds = Bounds(
             Eigen::Vector6d::Constant(-DefaultIKTolerance),
             Eigen::Vector6d::Constant(DefaultIKTolerance)),
-
         double _errorClamp = DefaultIKErrorClamp,
-
-        const Eigen::Vector6d& _errorWeights = Eigen::compose(
-            Eigen::Vector3d::Constant(DefaultIKAngularWeight),
-            Eigen::Vector3d::Constant(DefaultIKLinearWeight)));
+        const Eigen::Vector6d& _errorWeights
+        = (Eigen::Vector6d()
+               << Eigen::Vector3d::Constant(DefaultIKAngularWeight),
+           Eigen::Vector3d::Constant(DefaultIKLinearWeight))
+              .finished());
 
     /// Bounds that define the acceptable range of the Node's transform
     /// relative to its target frame.

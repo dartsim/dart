@@ -33,7 +33,7 @@
 #ifndef DART_GUI_RENDERINTERFACE_HPP_
 #define DART_GUI_RENDERINTERFACE_HPP_
 
-#include "dart/math/MathTypes.hpp"
+#include "dart/common/Deprecated.hpp"
 
 #include <Eigen/Dense>
 #include <assimp/scene.h>
@@ -129,7 +129,7 @@ public:
   virtual void drawList(unsigned int index);
   virtual void drawLineSegments(
       const std::vector<Eigen::Vector3d>& _vertices,
-      const common::aligned_vector<Eigen::Vector2i>& _connections);
+      const std::vector<Eigen::Vector2i>& _connections);
 
   virtual unsigned int compileDisplayList(
       const Eigen::Vector3d& _size, const aiScene* _mesh);

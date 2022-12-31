@@ -123,7 +123,7 @@ public:
   void drawList(GLuint index) override;
   void drawLineSegments(
       const std::vector<Eigen::Vector3d>& _vertices,
-      const common::aligned_vector<Eigen::Vector2i>& _connections) override;
+      const std::vector<Eigen::Vector2i>& _connections) override;
 
   void setPenColor(const Eigen::Vector4d& _col) override;
   void setPenColor(const Eigen::Vector3d& _col) override;
