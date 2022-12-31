@@ -18,7 +18,7 @@
 
 ## DART 6
 
-### [DART 6.13.0 (TBD)](https://github.com/dartsim/dart/milestone/69?closed=1)
+### [DART 6.13.0 (2022-12-31)](https://github.com/dartsim/dart/milestone/69?closed=1)
 
 * Supported Platforms
 
