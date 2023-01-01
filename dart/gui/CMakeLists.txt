@@ -3,7 +3,7 @@ set(target_name ${PROJECT_NAME}-gui)
 set(component_name gui)
 
 # Dependency checks
-dart_check_dependent_target(${target_name} dart-utils)
+dart_check_dependent_target(${target_name} dart-io)
 
 dart_find_package(OpenGL)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
@@ -44,7 +44,7 @@ dart_add_library(${target_name}
 )
 target_link_libraries(${target_name}
   PUBLIC
-    dart-utils
+    dart-io
     OpenGL::GL
     OpenGL::GLU
     GLUT::GLUT
@@ -65,7 +65,7 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(
   ${PROJECT_NAME}
   ${component_name}
-  utils
+  io
   external-lodepng
   external-imgui
 )

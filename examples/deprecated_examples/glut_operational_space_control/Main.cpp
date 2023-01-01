@@ -32,7 +32,7 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
   assert(world != nullptr);
 
   // load skeletons
-  dart::utils::DartLoader dl;
+  dart::io::DartLoader dl;
   dart::dynamics::SkeletonPtr ground
       = dl.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
   dart::dynamics::SkeletonPtr robot

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/sdf/sdf.hpp>
+#include <dart/io/sdf/sdf.hpp>
 
 #include <dart/dart.hpp>
 
@@ -44,7 +44,7 @@ TEST(Issue1583, ServoJointWithPositionLimits)
   const double pos_ub = +0.1;
   const double vel_desired = 1;
 
-  auto skel = dart::utils::SdfParser::readSkeleton(
+  auto skel = dart::io::SdfParser::readSkeleton(
       "dart://sample/sdf/test/test_issue1583.model");
   ASSERT_NE(skel, nullptr);
 

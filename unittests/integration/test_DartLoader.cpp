@@ -34,7 +34,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
-#include "dart/utils/urdf/DartLoader.hpp"
+#include "dart/io/urdf/DartLoader.hpp"
 
 #include <gtest/gtest.h>
 
@@ -42,7 +42,7 @@
 
 using namespace dart;
 using dart::common::Uri;
-using dart::utils::DartLoader;
+using dart::io::DartLoader;
 
 //==============================================================================
 TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)

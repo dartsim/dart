@@ -64,7 +64,7 @@ IncludeCategories:
     Priority: 22
   - Regex: '^<dart\/simulation\/.*\.h(pp)?>$'
     Priority: 23
-  - Regex: '^<dart\/utils\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/io\/.*\.h(pp)?>$'
     Priority: 24
   - Regex: '^<dart\/collision\/.*\.h(pp)?>$'
     Priority: 25

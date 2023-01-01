@@ -32,7 +32,7 @@
 
 #include <dart/gui/gui.hpp>
 
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 #include <dart/dart.hpp>
 
@@ -48,7 +48,7 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
 using namespace dart::gui::glut;
-using namespace dart::utils;
+using namespace dart::io;
 using namespace dart::math;
 
 class Controller

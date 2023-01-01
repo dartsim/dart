@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/urdf/DartLoader.hpp>
+#include <dart/io/urdf/DartLoader.hpp>
 
 #include <dart/dart.hpp>
 
@@ -40,7 +40,7 @@
 //==============================================================================
 TEST(Issue838, MaterialParsing)
 {
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
   dart::dynamics::SkeletonPtr skeleton
       = loader.parseSkeleton("dart://sample/urdf/test/issue838.urdf");
   EXPECT_TRUE(nullptr != skeleton);

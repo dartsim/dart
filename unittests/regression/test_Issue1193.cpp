@@ -32,7 +32,7 @@
 
 #include "TestHelpers.hpp"
 #include "dart/dart.hpp"
-#include "dart/utils/sdf/SdfParser.hpp"
+#include "dart/io/sdf/SdfParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -40,7 +40,7 @@ using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::utils;
+using namespace dart::io;
 
 //==============================================================================
 TEST(Issue1193, AngularVelAdd)

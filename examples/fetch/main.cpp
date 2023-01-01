@@ -32,7 +32,7 @@
 
 #include <dart/gui/osg/osg.hpp>
 
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 #include <dart/collision/bullet/bullet.hpp>
 
@@ -160,7 +160,7 @@ int main()
   using namespace math::suffixes;
 
   // Create a world from ant.xml
-  auto world = utils::MjcfParser::readWorld(
+  auto world = io::MjcfParser::readWorld(
       "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml");
   assert(world);
   world->getConstraintSolver()->setCollisionDetector(

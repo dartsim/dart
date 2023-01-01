@@ -32,8 +32,8 @@
 
 #include <dart/gui/osg/osg.hpp>
 
-#include <dart/utils/urdf/urdf.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
 
@@ -293,7 +293,7 @@ protected:
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
 
   // Load the robot
   dart::dynamics::SkeletonPtr robot

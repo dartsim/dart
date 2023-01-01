@@ -38,7 +38,7 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 #include <dart/dart.hpp>
 
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld = dart::utils::SkelParser::readWorld(
+  dart::simulation::WorldPtr myWorld = dart::io::SkelParser::readWorld(
       "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
   assert(myWorld != nullptr);
 

@@ -35,8 +35,8 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/io/SkelParser.hpp"
 #include "dart/math/Geometry.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -214,7 +214,7 @@ TEST(World, Cloning)
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < fileList.size(); ++i)
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
   for (std::size_t i = 0; i < worlds.size(); ++i)
   {
@@ -305,7 +305,7 @@ TEST(World, ValidatingClones)
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < fileList.size(); ++i)
   {
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
     // Set non default collision detector
 #if HAVE_BULLET
@@ -343,7 +343,7 @@ simulation::WorldPtr createWorld()
 {
   // Create and initialize the world
   simulation::WorldPtr world
-      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = io::SkelParser::readWorld("dart://sample/skel/chain.skel");
   assert(world != nullptr);
 
   // Create and initialize the world
