@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/lcpsolver/ODELCPSolver.hpp"
+#include "dart/math/ODELCPSolver.hpp"
 
 #include "dart/common/Macros.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/external/odelcpsolver/misc.h"
-#include "dart/lcpsolver/Lemke.hpp"
+#include "dart/math/Lemke.hpp"
 
 #include <cstdio>
 
 namespace dart {
-namespace lcpsolver {
+namespace math {
 
 //==============================================================================
 ODELCPSolver::ODELCPSolver()
@@ -236,5 +236,5 @@ bool ODELCPSolver::checkIfSolution(
   return true;
 }
 
-} // namespace lcpsolver
+} // namespace math
 } // namespace dart

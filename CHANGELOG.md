@@ -24,6 +24,7 @@
 
 * Math
 
+  * Merged `lcpsolver` namespace into `math` namespace: [#1702](https://github.com/dartsim/dart/pull/1702)
   * Merged `integration` namespace into `math` namespace: [#1701](https://github.com/dartsim/dart/pull/1701)
   * Made Function::eval() const: [#1698](https://github.com/dartsim/dart/pull/1698)
 
