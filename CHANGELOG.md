@@ -30,7 +30,7 @@
 
 * Dynamics
 
-  * Merged `constraint` namespace into `dynamics` namespace: [#xxxx](https://github.com/dartsim/dart/pull/xxxx)
+  * Merged `constraint` namespace into `dynamics` namespace: [#1709](https://github.com/dartsim/dart/pull/1709)
 
 * IO
 
