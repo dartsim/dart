@@ -200,7 +200,7 @@ endif()
 if(MSVC)
 
   # Visual Studio enables C++17 support by default
-  set(msvc_required_version 1920)
+  set(msvc_required_version 1930) # 1930 = VS 17.0 (https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html)
   if(MSVC_VERSION VERSION_LESS ${msvc_required_version} AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
     message(FATAL_ERROR "Visual Studio ${MSVC_VERSION} is detected, but "
       "${PROJECT_NAME_UPPERCASE} requires ${msvc_required_version} or greater."
@@ -240,8 +240,9 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-  if(GCC_VERSION VERSION_LESS 7.3.0)
-    message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 7.3.0 or greater.")
+  set(gcc_required_version 11.2.0)
+  if(GCC_VERSION VERSION_LESS ${gcc_required_version})
+    message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ ${gcc_required_version} or greater.")
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
@@ -265,8 +266,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
-  if(CLANG_VERSION VERSION_LESS 6.0)
-    message(FATAL_ERROR "The installed Clang version is ${CLANG_VERSION}. ${PROJECT_NAME} requires clang 6.0 or greater.")
+  set(clang_required_version 13.0.0)
+  if(CLANG_VERSION VERSION_LESS ${clang_required_version})
+    message(FATAL_ERROR "The installed Clang version is ${CLANG_VERSION}. ${PROJECT_NAME} requires clang ${clang_required_version} or greater.")
   endif()
   if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")

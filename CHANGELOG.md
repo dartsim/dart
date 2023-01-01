@@ -6,7 +6,7 @@
 
 * Supported Platforms
 
-  * Ubuntu Jammy on amd64 / GCC 11.2 / amd64
+  * Ubuntu 22.04 LTS on amd64 / GCC 11.2 / amd64
   * macOS 12 (Monterey) / Clang 13 / amd64
   * Windows / Microsoft Visual Studio 2022 / amd64
 
