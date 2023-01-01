@@ -32,6 +32,10 @@
 
   * Renamed `utils` namespace to `io` namespace: [#1703](https://github.com/dartsim/dart/pull/1703)
 
+* GUI
+
+  * Made gui-glut optional component:  [#1708](https://github.com/dartsim/dart/pull/1708)
+
 * Planning
 
   * Removed planning component and FLANN dependency: [#1697](https://github.com/dartsim/dart/pull/1697)
