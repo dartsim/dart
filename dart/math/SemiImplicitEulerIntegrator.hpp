@@ -30,23 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_EULERINTEGRATOR_HPP_
-#define DART_INTEGRATION_EULERINTEGRATOR_HPP_
+#ifndef DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
+#define DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
 
-#include "dart/integration/Integrator.hpp"
+#include "dart/math/Integrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
-/// \brief class EulerIntegrator
-class EulerIntegrator : public Integrator
+/// \brief class SemiImplicitEulerIntegrator
+class SemiImplicitEulerIntegrator : public Integrator
 {
 public:
   /// \brief Constructor
-  EulerIntegrator();
+  SemiImplicitEulerIntegrator();
 
   /// \brief Destructor
-  virtual ~EulerIntegrator();
+  virtual ~SemiImplicitEulerIntegrator();
 
   // Documentation inherited
   void integrate(IntegrableSystem* _system, double _dt) override;
@@ -58,7 +58,7 @@ public:
   void integrateVel(IntegrableSystem* _system, double _dt) override;
 };
 
-} // namespace integration
+} // namespace math
 } // namespace dart
 
-#endif // DART_INTEGRATION_EULERINTEGRATOR_HPP_
+#endif // DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_

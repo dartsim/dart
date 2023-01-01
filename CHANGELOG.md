@@ -24,6 +24,7 @@
 
 * Math
 
+  * Merged `integration` namespace into `math` namespace: [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
   * Made Function::eval() const: [#1698](https://github.com/dartsim/dart/pull/1698)
 
 * Planning

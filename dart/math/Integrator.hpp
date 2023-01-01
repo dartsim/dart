@@ -38,7 +38,7 @@
 #include <vector>
 
 namespace dart {
-namespace integration {
+namespace math {
 
 /// \brief Any class that uses an integrator should implement this interface
 class IntegrableSystem
@@ -98,7 +98,7 @@ public:
   virtual void integrateVel(IntegrableSystem* _system, double _dt) = 0;
 };
 
-} // namespace integration
+} // namespace math
 } // namespace dart
 
 #endif // DART_INTEGRATION_INTEGRATOR_HPP_

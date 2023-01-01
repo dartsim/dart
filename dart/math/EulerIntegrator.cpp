@@ -30,22 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/Integrator.hpp"
+#include "dart/math/EulerIntegrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
 //==============================================================================
-IntegrableSystem::IntegrableSystem() {}
+EulerIntegrator::EulerIntegrator() : Integrator() {}
 
 //==============================================================================
-IntegrableSystem::~IntegrableSystem() {}
+EulerIntegrator::~EulerIntegrator() {}
 
 //==============================================================================
-Integrator::Integrator() {}
+void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
+}
 
 //==============================================================================
-Integrator::~Integrator() {}
+void EulerIntegrator::integratePos(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+}
 
-} // namespace integration
+//==============================================================================
+void EulerIntegrator::integrateVel(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
+}
+
+} // namespace math
 } // namespace dart

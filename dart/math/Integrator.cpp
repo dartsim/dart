@@ -30,39 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_RK4INTEGRATOR_HPP_
-#define DART_INTEGRATION_RK4INTEGRATOR_HPP_
-
-#include "dart/integration/Integrator.hpp"
+#include "dart/math/Integrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
-/// \brief class RK4Integrator
-class RK4Integrator : public Integrator
-{
-public:
-  /// \brief Constructor
-  RK4Integrator();
+//==============================================================================
+IntegrableSystem::IntegrableSystem() {}
 
-  /// \brief Destructor
-  virtual ~RK4Integrator();
+//==============================================================================
+IntegrableSystem::~IntegrableSystem() {}
 
-  // Documentation inherited
-  void integrate(IntegrableSystem* _system, double _dt) override;
+//==============================================================================
+Integrator::Integrator() {}
 
-private:
-  /// \brief Initial configurations
-  Eigen::VectorXd q1;
+//==============================================================================
+Integrator::~Integrator() {}
 
-  /// \brief Chache data for generalized velocities
-  Eigen::VectorXd dq1, dq2, dq3, dq4;
-
-  /// \brief Chache data for generalized accelerations
-  Eigen::VectorXd ddq1, ddq2, ddq3, ddq4;
-};
-
-} // namespace integration
+} // namespace math
 } // namespace dart
-
-#endif // DART_INTEGRATION_RK4INTEGRATOR_HPP_

@@ -604,7 +604,7 @@ void FreeJoint::integrateVelocities(double _dt)
 {
   // Integrating the acceleration gives us the new velocity of child body frame.
   // But if there is any linear acceleration, the frame will be displaced. If we
-  // apply euler integration direcly on the spatial acceleration, it will
+  // apply euler integration directly on the spatial acceleration, it will
   // produce the velocity of a point that is instantaneously coincident with the
   // previous location of the child body frame. However, we want to compute the
   // spatial velocity at the current location of the child body frame. To
