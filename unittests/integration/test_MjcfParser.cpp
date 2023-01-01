@@ -71,7 +71,7 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
   EXPECT_EQ(compiler.getCoordinate(), Coordinate::LOCAL);
 
   const auto& option = mujoco.getOption();
-  EXPECT_EQ(option.getIntegrator(), Integrator::RK4);
+  EXPECT_EQ(option.getIntegrator(), utils::MjcfParser::detail::Integrator::RK4);
   EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
 
   const auto& worldbody = mujoco.getWorldbody();

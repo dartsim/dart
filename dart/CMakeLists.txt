@@ -67,7 +67,6 @@ endfunction(dart_add_core_sources)
 # Add subdirectories
 add_subdirectory(common)
 add_subdirectory(math)
-add_subdirectory(integration)
 add_subdirectory(lcpsolver)
 add_subdirectory(optimizer)
 add_subdirectory(dynamics)

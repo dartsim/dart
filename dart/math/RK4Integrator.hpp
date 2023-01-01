@@ -30,35 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
-#define DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
+#ifndef DART_INTEGRATION_RK4INTEGRATOR_HPP_
+#define DART_INTEGRATION_RK4INTEGRATOR_HPP_
 
-#include "dart/integration/Integrator.hpp"
+#include "dart/math/Integrator.hpp"
 
 namespace dart {
-namespace integration {
+namespace math {
 
-/// \brief class SemiImplicitEulerIntegrator
-class SemiImplicitEulerIntegrator : public Integrator
+/// \brief class RK4Integrator
+class RK4Integrator : public Integrator
 {
 public:
   /// \brief Constructor
-  SemiImplicitEulerIntegrator();
+  RK4Integrator();
 
   /// \brief Destructor
-  virtual ~SemiImplicitEulerIntegrator();
+  virtual ~RK4Integrator();
 
   // Documentation inherited
   void integrate(IntegrableSystem* _system, double _dt) override;
 
-  // Documentation inherited
-  void integratePos(IntegrableSystem* _system, double _dt) override;
+private:
+  /// \brief Initial configurations
+  Eigen::VectorXd q1;
 
-  // Documentation inherited
-  void integrateVel(IntegrableSystem* _system, double _dt) override;
+  /// \brief Chache data for generalized velocities
+  Eigen::VectorXd dq1, dq2, dq3, dq4;
+
+  /// \brief Chache data for generalized accelerations
+  Eigen::VectorXd ddq1, ddq2, ddq3, ddq4;
 };
 
-} // namespace integration
+} // namespace math
 } // namespace dart
 
-#endif // DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
+#endif // DART_INTEGRATION_RK4INTEGRATOR_HPP_

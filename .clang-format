@@ -76,8 +76,6 @@ IncludeCategories:
     Priority: 28
   - Regex: '^<dart\/optimizer\/.*\.h(pp)?>$'
     Priority: 29
-  - Regex: '^<dart\/integration\/.*\.h(pp)?>$'
-    Priority: 30
   - Regex: '^<dart\/math\/.*\.h(pp)?>$'
     Priority: 31
   - Regex: '^<dart\/common\/.*\.h(pp)?>$'
