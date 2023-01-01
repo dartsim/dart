@@ -1301,7 +1301,7 @@ protected:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  mutable common::aligned_vector<DataCache> mTreeCache;
+  mutable std::vector<DataCache> mTreeCache;
 
   mutable DataCache mSkelCache;
 

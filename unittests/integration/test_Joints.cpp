@@ -1350,8 +1350,8 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     // -- collect everything so we can cycle through the tests
     std::vector<Joint*> joints;
     std::vector<BodyNode*> bns;
-    common::aligned_vector<Eigen::Isometry3d> desired_tfs;
-    common::aligned_vector<Eigen::Isometry3d> actual_tfs;
+    std::vector<Eigen::Isometry3d> desired_tfs;
+    std::vector<Eigen::Isometry3d> actual_tfs;
 
     joints.push_back(freejoint);
     bns.push_back(freejoint_bn);

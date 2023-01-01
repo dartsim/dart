@@ -6,5 +6,5 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(Eigen3 3.3.4 REQUIRED CONFIG)
+find_package(Eigen3 3.4.0 REQUIRED CONFIG)
 

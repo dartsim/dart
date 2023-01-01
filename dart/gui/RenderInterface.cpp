@@ -120,8 +120,7 @@ void RenderInterface::drawSoftMesh(const aiMesh* /*mesh*/)
 void RenderInterface::drawList(unsigned int /*indeX*/) {}
 
 void RenderInterface::drawLineSegments(
-    const std::vector<Eigen::Vector3d>&,
-    const common::aligned_vector<Eigen::Vector2i>&)
+    const std::vector<Eigen::Vector3d>&, const std::vector<Eigen::Vector2i>&)
 {
 }
 

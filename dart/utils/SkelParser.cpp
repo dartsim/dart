@@ -116,7 +116,7 @@ struct SkelJoint
 };
 
 // first: BodyNode name | second: BodyNode information
-using BodyMap = common::aligned_map<std::string, SkelBodyNode>;
+using BodyMap = std::map<std::string, SkelBodyNode>;
 
 // first: Child BodyNode name | second: Joint information
 using JointMap = std::map<std::string, SkelJoint>;

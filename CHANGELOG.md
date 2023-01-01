@@ -18,6 +18,10 @@
   * Removed
     * FLANN
 
+* Build
+
+  * Increased required Eigen version to 3.4.0: [#1700](https://github.com/dartsim/dart/pull/1700)
+
 * Math
 
   * Made Function::eval() const: [#1698](https://github.com/dartsim/dart/pull/1698)

@@ -106,7 +106,7 @@ TEST(Issue1193, SingleBody)
   auto rootBn = skel->getRootBodyNode();
 
   Eigen::Vector3d initPosition = rootBn->getWorldTransform().translation();
-  Vector6d vels = compose({0, 25, 0}, {0, 0, -100});
+  Vector6d vels(0, 25, 0, 0, 0, -100);
 
   rootBn->getParentJoint()->setVelocities(vels);
 
@@ -135,8 +135,8 @@ TEST(Issue1193, SingleBodyWithOffDiagonalMoi)
   rootBn->setMomentOfInertia(1.1, 1.1, 0.7, 0.1, 0, 0);
   Eigen::Vector3d initPosition = rootBn->getWorldTransform().translation();
 
-  // Setting this to compose({0, 25, 0}, {0, 0, -100}) causes the test to fail.
-  Vector6d vels = compose({0, 2.5, 0}, {0, 0, -10.0});
+  // Setting this to (0, 25, 0, 0, 0, -100) causes the test to fail.
+  const Vector6d vels(0, 2.5, 0, 0, 0, -10.0);
 
   rootBn->getParentJoint()->setVelocities(vels);
 
@@ -166,7 +166,7 @@ TEST(Issue1193, SingleBodyWithJointOffset)
   rootBn->setMomentOfInertia(1.1, 1.1, 0.7, 0.1, 0, 0);
   Eigen::Vector3d initPosition = rootBn->getWorldTransform().translation();
 
-  Vector6d vels = compose({0, 2.5, 0}, {0, 0, -10});
+  Vector6d vels(0, 2.5, 0, 0, 0, -10);
 
   auto* freeJoint = dynamic_cast<FreeJoint*>(rootBn->getParentJoint());
   freeJoint->setVelocities(vels);
@@ -302,7 +302,8 @@ TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
   auto* joint = skel->getJoint("revJoint");
   ASSERT_NE(nullptr, joint);
 
-  link1->getParentJoint()->setVelocities(compose({0, 0.25, 0}, {0, 0, -0.1}));
+  link1->getParentJoint()->setVelocities(
+      Eigen::Vector6d(0, 0.25, 0, 0, 0, -0.1));
   world->step();
   Eigen::Vector3d maxAngMomentumChange = Eigen::Vector3d::Zero();
   Eigen::Vector3d h0 = computeWorldAngularMomentum(skel);

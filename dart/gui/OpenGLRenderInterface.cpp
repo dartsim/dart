@@ -771,7 +771,7 @@ void OpenGLRenderInterface::drawList(GLuint index)
 
 void OpenGLRenderInterface::drawLineSegments(
     const std::vector<Eigen::Vector3d>& _vertices,
-    const common::aligned_vector<Eigen::Vector2i>& _connections)
+    const std::vector<Eigen::Vector2i>& _connections)
 {
   glBegin(GL_LINES);
   for (const Eigen::Vector2i& c : _connections)

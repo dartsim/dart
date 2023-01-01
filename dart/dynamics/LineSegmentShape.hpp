@@ -102,7 +102,7 @@ public:
   void removeConnection(std::size_t _connectionIdx);
 
   /// Get all the connections
-  const common::aligned_vector<Eigen::Vector2i>& getConnections() const;
+  const std::vector<Eigen::Vector2i>& getConnections() const;
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.
@@ -127,7 +127,7 @@ protected:
   std::vector<Eigen::Vector3d> mVertices;
 
   /// Vector of connections
-  common::aligned_vector<Eigen::Vector2i> mConnections;
+  std::vector<Eigen::Vector2i> mConnections;
 
   /// A dummy vertex that can be returned when an out-of-bounds vertex is
   /// requested

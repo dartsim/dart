@@ -210,7 +210,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
           dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime)
   {
-    const common::aligned_vector<Eigen::Vector2i>& connections
+    const std::vector<Eigen::Vector2i>& connections
         = mLineSegmentShape->getConnections();
 
     mElements->clear();
