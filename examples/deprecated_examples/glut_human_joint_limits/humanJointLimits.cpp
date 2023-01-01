@@ -34,7 +34,7 @@
 #include <dart/collision/bullet/bullet.hpp>
 #include <dart/collision/ode/ode.hpp>
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 #include <dart/io/io.hpp>
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
