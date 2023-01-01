@@ -18,6 +18,10 @@
   * Removed
     * FLANN
 
+* Math
+
+  * Made Function::eval() const: [#1698](https://github.com/dartsim/dart/pull/1698)
+
 * Planning
 
   * Removed planning component and FLANN dependency: [#1697](https://github.com/dartsim/dart/pull/1697)
