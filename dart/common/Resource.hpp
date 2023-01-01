@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_RESOURCE_HPP_
 #define DART_COMMON_RESOURCE_HPP_
 
-#include <cstddef>
 #include <memory>
 #include <string>
+
+#include <cstddef>
 
 namespace dart {
 namespace common {

@@ -32,10 +32,10 @@
 
 #include "dart/common/Resource.hpp"
 
+#include "dart/common/Console.hpp"
+
 #include <exception>
 #include <string>
-
-#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {

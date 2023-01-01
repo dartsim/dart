@@ -30,10 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
+
+#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+
+#include <dart/dart.hpp>
 
 using namespace dart;
 

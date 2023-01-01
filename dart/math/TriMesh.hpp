@@ -33,9 +33,9 @@
 #ifndef DART_MATH_TRIMESH_HPP_
 #define DART_MATH_TRIMESH_HPP_
 
-#include <memory>
-
 #include "dart/math/Mesh.hpp"
+
+#include <memory>
 
 namespace dart {
 namespace math {

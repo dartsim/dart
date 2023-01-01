@@ -33,16 +33,16 @@
 #ifndef DART_GUI_OSG_VIEWER_HPP_
 #define DART_GUI_OSG_VIEWER_HPP_
 
-#include <map>
-#include <memory>
-#include <unordered_set>
+#include "dart/common/ClassWithVirtualBase.hpp"
+#include "dart/common/Subject.hpp"
 
 #include <Eigen/Core>
 #include <osgShadow/ShadowTechnique>
 #include <osgViewer/Viewer>
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Subject.hpp"
+#include <map>
+#include <memory>
+#include <unordered_set>
 
 namespace dart {
 

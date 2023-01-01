@@ -33,16 +33,16 @@
 #ifndef DART_DYNAMICS_ENTITY_HPP_
 #define DART_DYNAMICS_ENTITY_HPP_
 
-#include <string>
-#include <vector>
-
-#include <Eigen/Core>
-
 #include "dart/common/Composite.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <Eigen/Core>
+
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {

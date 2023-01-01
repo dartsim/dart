@@ -32,10 +32,10 @@
 
 #include "dart/utils/CompositeResourceRetriever.hpp"
 
-#include <iostream>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/Uri.hpp"
+
+#include <iostream>
 
 namespace dart {
 namespace utils {

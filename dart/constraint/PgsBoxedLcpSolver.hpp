@@ -33,9 +33,9 @@
 #ifndef DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 #define DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 
-#include <vector>
-
 #include "dart/constraint/BoxedLcpSolver.hpp"
+
+#include <vector>
 
 namespace dart {
 namespace constraint {

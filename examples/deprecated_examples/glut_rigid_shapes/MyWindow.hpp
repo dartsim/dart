@@ -39,8 +39,9 @@
 #ifndef EXAMPLES_RIGIDSHAPES_MYWINDOW_HPP_
 #define EXAMPLES_RIGIDSHAPES_MYWINDOW_HPP_
 
-#include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
+
+#include <dart/dart.hpp>
 
 /// MyWindow
 class MyWindow : public dart::gui::glut::SimWindow

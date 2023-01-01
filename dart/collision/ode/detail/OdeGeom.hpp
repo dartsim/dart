@@ -33,10 +33,10 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 
-#include <ode/ode.h>
-
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
+
+#include <ode/ode.h>
 
 namespace dart {
 namespace collision {

@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <type_traits>
-
 #include "dart/collision/ode/detail/OdeHeightmap.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
+
+#include <type_traits>
 
 namespace dart {
 namespace collision {

@@ -30,9 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
+
 #include <dart/utils/urdf/urdf.hpp>
+
+#include <dart/dart.hpp>
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;

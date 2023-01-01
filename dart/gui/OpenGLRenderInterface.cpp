@@ -32,10 +32,6 @@
 
 #include "dart/gui/OpenGLRenderInterface.hpp"
 
-#include <iostream>
-
-#include <assimp/cimport.h>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -48,6 +44,10 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/math/Icosphere.hpp"
+
+#include <assimp/cimport.h>
+
+#include <iostream>
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj* quadObj;

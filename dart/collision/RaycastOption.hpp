@@ -33,8 +33,9 @@
 #ifndef DART_COLLISION_RAYCASTOPTION_HPP_
 #define DART_COLLISION_RAYCASTOPTION_HPP_
 
-#include <cstddef>
 #include <memory>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {

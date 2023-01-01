@@ -33,13 +33,13 @@
 #ifndef DART_MATH_MATHTYPES_HPP_
 #define DART_MATH_MATHTYPES_HPP_
 
-#include <map>
-#include <vector>
+#include "dart/common/Deprecated.hpp"
+#include "dart/common/Memory.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.hpp"
-#include "dart/common/Memory.hpp"
+#include <map>
+#include <vector>
 
 //------------------------------------------------------------------------------
 // Types

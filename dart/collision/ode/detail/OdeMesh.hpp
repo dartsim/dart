@@ -33,10 +33,10 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
 
+#include "dart/collision/ode/detail/OdeGeom.hpp"
+
 #include <assimp/scene.h>
 #include <ode/ode.h>
-
-#include "dart/collision/ode/detail/OdeGeom.hpp"
 
 namespace dart {
 namespace collision {

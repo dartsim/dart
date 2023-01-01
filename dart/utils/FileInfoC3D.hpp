@@ -33,11 +33,11 @@
 #ifndef DART_UTILS_FILEINFOC3D_HPP_
 #define DART_UTILS_FILEINFOC3D_HPP_
 
-#include <vector>
+#include "dart/math/MathTypes.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.hpp"
+#include <vector>
 
 namespace dart {
 namespace utils {

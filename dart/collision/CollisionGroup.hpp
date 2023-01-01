@@ -33,10 +33,6 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_HPP_
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/DistanceOption.hpp"
@@ -46,6 +42,10 @@
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace dart {
 namespace collision {

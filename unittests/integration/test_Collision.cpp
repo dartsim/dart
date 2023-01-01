@@ -30,26 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <gtest/gtest.h>
-
 #include "dart/collision/collision.hpp"
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/math/math.hpp"
+
+#include <gtest/gtest.h>
+
+#include <iostream>
 #if HAVE_ODE
   #include "dart/collision/ode/ode.hpp"
 #endif
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
+#include "TestHelpers.hpp"
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
-
-#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace common;

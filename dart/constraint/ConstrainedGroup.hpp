@@ -33,12 +33,12 @@
 #ifndef DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 #define DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 
-#include <memory>
-#include <vector>
+#include "dart/constraint/SmartPointer.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/constraint/SmartPointer.hpp"
+#include <memory>
+#include <vector>
 
 namespace dart {
 

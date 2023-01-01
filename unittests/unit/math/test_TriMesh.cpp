@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/math/TriMesh.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using namespace dart;
 using namespace math;

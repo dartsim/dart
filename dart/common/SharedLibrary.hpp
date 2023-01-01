@@ -33,12 +33,12 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
-#include <memory>
-#include <string>
-
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Platform.hpp"
+
+#include <memory>
+#include <string>
 
 #if DART_OS_LINUX
 

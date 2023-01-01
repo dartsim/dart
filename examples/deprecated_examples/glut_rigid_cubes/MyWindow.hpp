@@ -33,8 +33,9 @@
 #ifndef EXAMPLES_CUBES_MYWINDOW_HPP_
 #define EXAMPLES_CUBES_MYWINDOW_HPP_
 
-#include <dart/dart.hpp>
 #include <dart/gui/glut/glut.hpp>
+
+#include <dart/dart.hpp>
 
 class MyWindow : public dart::gui::glut::SimWindow
 {

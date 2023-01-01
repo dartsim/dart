@@ -33,10 +33,10 @@
 #ifndef DART_COLLISION_COLLISIONRESULT_HPP_
 #define DART_COLLISION_COLLISIONRESULT_HPP_
 
+#include "dart/collision/Contact.hpp"
+
 #include <unordered_set>
 #include <vector>
-
-#include "dart/collision/Contact.hpp"
 
 namespace dart {
 

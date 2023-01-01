@@ -32,12 +32,6 @@
 
 #include "dart/utils/mjcf/MjcfParser.hpp"
 
-#include <algorithm>
-#include <cstddef>
-#include <vector>
-
-#include <Eigen/Dense>
-
 #include "dart/collision/collision.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
@@ -49,6 +43,13 @@
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
 #include "dart/utils/mjcf/detail/Worldbody.hpp"
+
+#include <Eigen/Dense>
+
+#include <algorithm>
+#include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace utils {

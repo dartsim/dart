@@ -39,14 +39,14 @@
 #ifndef DART_GUI_OSG_IMGUIHANDLER_HPP_
 #define DART_GUI_OSG_IMGUIHANDLER_HPP_
 
-#include <array>
-#include <memory>
-#include <vector>
-
 #include <osg/GraphicsContext>
 #include <osgGA/GUIActionAdapter>
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
+
+#include <array>
+#include <memory>
+#include <vector>
 
 namespace dart {
 namespace gui {

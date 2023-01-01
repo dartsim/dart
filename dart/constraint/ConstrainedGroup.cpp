@@ -32,13 +32,13 @@
 
 #include "dart/constraint/ConstrainedGroup.hpp"
 
-#include <algorithm>
-#include <iostream>
-#include <vector>
-
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
 
 namespace dart {
 namespace constraint {

@@ -33,11 +33,11 @@
 #ifndef DART_COMMON_POOLALLOCATOR_HPP_
 #define DART_COMMON_POOLALLOCATOR_HPP_
 
-#include <array>
-#include <mutex>
-
 #include "dart/common/MemoryAllocator.hpp"
 #include "dart/common/MemoryAllocatorDebugger.hpp"
+
+#include <array>
+#include <mutex>
 
 namespace dart::common {
 

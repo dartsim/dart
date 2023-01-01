@@ -33,12 +33,6 @@
 #ifndef DART_DYNAMICS_BODYNODE_HPP_
 #define DART_DYNAMICS_BODYNODE_HPP_
 
-#include <string>
-#include <vector>
-
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Signal.hpp"
@@ -52,6 +46,12 @@
 #include "dart/dynamics/TemplatedJacobianNode.hpp"
 #include "dart/dynamics/detail/BodyNodeAspect.hpp"
 #include "dart/math/Geometry.hpp"
+
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
+
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {

@@ -37,16 +37,16 @@
 
 #pragma once
 
-#include <string>
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/utils/urdf/BackwardCompatibility.hpp"
 
 #include <urdf_model/model.h>
 #include <urdf_model/pose.h>
 #include <urdf_model/twist.h>
 #include <urdf_world/world.h>
 
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/common/Uri.hpp"
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
+#include <string>
 
 namespace dart {
 namespace utils {

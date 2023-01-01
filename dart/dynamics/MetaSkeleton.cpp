@@ -32,12 +32,12 @@
 
 #include "dart/dynamics/MetaSkeleton.hpp"
 
-#include <algorithm>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
+
+#include <algorithm>
 
 namespace dart {
 namespace dynamics {

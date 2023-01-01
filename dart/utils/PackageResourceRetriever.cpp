@@ -32,13 +32,14 @@
 
 #include "dart/utils/PackageResourceRetriever.hpp"
 
-#include <cassert>
-#include <iostream>
-#include <sstream>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+
+#include <iostream>
+#include <sstream>
+
+#include <cassert>
 
 namespace dart {
 namespace utils {

@@ -32,14 +32,14 @@
 
 #include "dart/utils/XmlHelpers.hpp"
 
-#include <iostream>
-#include <vector>
-
-#include <fmt/format.h>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/math/Geometry.hpp"
+
+#include <fmt/format.h>
+
+#include <iostream>
+#include <vector>
 
 namespace dart {
 namespace utils {

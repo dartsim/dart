@@ -33,8 +33,9 @@
 #ifndef DART_COLLISION_DISTANCE_OPTION_HPP_
 #define DART_COLLISION_DISTANCE_OPTION_HPP_
 
-#include <cstddef>
 #include <memory>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {

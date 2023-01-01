@@ -33,12 +33,13 @@
 #ifndef DART_OPTIMIZER_PROBLEM_HPP_
 #define DART_OPTIMIZER_PROBLEM_HPP_
 
-#include <cstddef>
-#include <vector>
+#include "dart/optimizer/Function.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/optimizer/Function.hpp"
+#include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace optimizer {

@@ -33,11 +33,12 @@
 #ifndef EXAMPLES_ATLASSIMBICON_TERMINALCONDITION_HPP_
 #define EXAMPLES_ATLASSIMBICON_TERMINALCONDITION_HPP_
 
-#include <string>
-#include <vector>
+#include <dart/dart.hpp>
 
 #include <Eigen/Dense>
-#include <dart/dart.hpp>
+
+#include <string>
+#include <vector>
 
 class State;
 

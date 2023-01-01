@@ -33,9 +33,9 @@
 #ifndef DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 #define DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 
-#include <Eigen/Dense>
-
 #include "dart/config.hpp"
+
+#include <Eigen/Dense>
 
 // clang-format off
 #define FCL_VERSION_AT_LEAST(x,y,z)                                            \

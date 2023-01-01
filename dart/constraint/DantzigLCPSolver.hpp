@@ -33,10 +33,10 @@
 #ifndef DART_CONSTRAINT_DANTZIGLCPSOLVER_HPP_
 #define DART_CONSTRAINT_DANTZIGLCPSOLVER_HPP_
 
-#include <cstddef>
-
 #include "dart/config.hpp"
 #include "dart/constraint/LCPSolver.hpp"
+
+#include <cstddef>
 
 namespace dart {
 namespace constraint {

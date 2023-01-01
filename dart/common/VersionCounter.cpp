@@ -32,10 +32,11 @@
 
 #include "dart/common/VersionCounter.hpp"
 
-#include <cassert>
+#include "dart/common/Console.hpp"
+
 #include <iostream>
 
-#include "dart/common/Console.hpp"
+#include <cassert>
 
 namespace dart {
 namespace common {

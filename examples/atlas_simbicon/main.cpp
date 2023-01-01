@@ -30,14 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-#include <dart/gui/osg/osg.hpp>
-#include <dart/utils/urdf/urdf.hpp>
-#include <dart/utils/utils.hpp>
-
 #include "AtlasSimbiconEventHandler.hpp"
 #include "AtlasSimbiconWidget.hpp"
 #include "AtlasSimbiconWorldNode.hpp"
+
+#include <dart/gui/osg/osg.hpp>
+
+#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/utils.hpp>
+
+#include <dart/dart.hpp>
 
 int main()
 {

@@ -33,11 +33,11 @@
 #ifndef DART_UTILS_MJCFPARSER_HPP_
 #define DART_UTILS_MJCFPARSER_HPP_
 
-#include <string>
-
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <string>
 
 namespace dart {
 namespace utils {

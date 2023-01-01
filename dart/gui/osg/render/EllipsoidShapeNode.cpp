@@ -32,16 +32,16 @@
 
 #include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
 
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
+
 #include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Light>
 #include <osg/Material>
 #include <osg/ShapeDrawable>
-
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

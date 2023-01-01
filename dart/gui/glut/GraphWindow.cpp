@@ -38,12 +38,13 @@
 
 #include "dart/gui/glut/GraphWindow.hpp"
 
-#include <cstdio>
+#include "dart/gui/glut/GLUTFuncs.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
+
 #include <iostream>
 #include <string>
 
-#include "dart/gui/glut/GLUTFuncs.hpp"
-#include "dart/gui/glut/LoadGlut.hpp"
+#include <cstdio>
 
 namespace dart {
 namespace gui {

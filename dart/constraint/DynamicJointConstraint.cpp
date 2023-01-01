@@ -32,9 +32,9 @@
 
 #include "dart/constraint/DynamicJointConstraint.hpp"
 
-#include <cassert>
-
 #include "dart/common/Console.hpp"
+
+#include <cassert>
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01

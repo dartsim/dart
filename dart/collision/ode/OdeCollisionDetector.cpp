@@ -32,8 +32,6 @@
 
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 
-#include <ode/ode.h>
-
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
@@ -48,6 +46,8 @@
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+
+#include <ode/ode.h>
 
 namespace dart {
 namespace collision {

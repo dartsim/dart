@@ -33,9 +33,9 @@
 #ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
-#include <memory>
-
 #include "dart/optimizer/ipopt/BackwardCompatibility.hpp"
+
+#include <memory>
 #if IPOPT_VERSION_GE(3, 13, 0)
   #include <IpIpoptApplication.hpp>
   #include <IpTNLP.hpp>

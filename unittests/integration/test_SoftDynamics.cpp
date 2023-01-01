@@ -30,12 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <string>
-#include <vector>
-
-#include <Eigen/Dense>
-#include <gtest/gtest.h>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -44,6 +38,12 @@
 #include "dart/math/Constants.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
+
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
+
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace Eigen;

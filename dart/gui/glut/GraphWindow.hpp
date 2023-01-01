@@ -33,11 +33,11 @@
 #ifndef DART_GUI_GLUT_GRAPHWINDOW_HPP_
 #define DART_GUI_GLUT_GRAPHWINDOW_HPP_
 
-#include <vector>
+#include "dart/gui/glut/Win2D.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/gui/glut/Win2D.hpp"
+#include <vector>
 
 namespace dart {
 namespace gui {

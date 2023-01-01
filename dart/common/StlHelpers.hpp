@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_STLHELPERS_HPP_
 #define DART_COMMON_STLHELPERS_HPP_
 
-#include <cassert>
-#include <cstddef>
+#include "dart/common/Memory.hpp"
+
 #include <vector>
 
-#include "dart/common/Memory.hpp"
+#include <cassert>
+#include <cstddef>
 
 namespace dart {
 namespace common {

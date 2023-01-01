@@ -32,10 +32,6 @@
 
 #include "dart/gui/osg/DefaultEventHandler.hpp"
 
-#include <iostream>
-
-#include <osgGA/GUIEventAdapter>
-
 #include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/gui/osg/MouseEventHandler.hpp"
@@ -43,6 +39,10 @@
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/Viewer.hpp"
 #include "dart/gui/osg/render/ShapeNode.hpp"
+
+#include <osgGA/GUIEventAdapter>
+
+#include <iostream>
 
 namespace dart {
 namespace gui {

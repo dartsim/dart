@@ -30,11 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/math/Random.hpp>
-#include <gtest/gtest.h>
-
 #include "TestHelpers.hpp"
+
+#include <dart/dynamics/Inertia.hpp>
+
+#include <dart/math/Random.hpp>
+
+#include <gtest/gtest.h>
 
 using namespace dart;
 

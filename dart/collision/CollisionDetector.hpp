@@ -33,11 +33,6 @@
 #ifndef DART_COLLISION_COLLISIONDETECTOR_HPP_
 #define DART_COLLISION_COLLISIONDETECTOR_HPP_
 
-#include <map>
-#include <vector>
-
-#include <Eigen/Dense>
-
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/Contact.hpp"
@@ -48,6 +43,11 @@
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/common/Factory.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <Eigen/Dense>
+
+#include <map>
+#include <vector>
 
 namespace dart {
 namespace collision {

@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <numeric>
+#include "dart/dart.hpp"
 
 #include <gtest/gtest.h>
 
-#include "dart/dart.hpp"
+#include <numeric>
 
 using namespace std;
 using namespace Eigen;

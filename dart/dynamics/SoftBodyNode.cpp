@@ -32,10 +32,6 @@
 
 #include "dart/dynamics/SoftBodyNode.hpp"
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -43,6 +39,10 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <map>
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {

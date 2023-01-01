@@ -32,16 +32,17 @@
 
 #include "dart/gui/GLFuncs.hpp"
 
-#include <cstdio>
-#include <iostream>
-#include <string>
-
-#include <Eigen/Eigen>
-
 #include "dart/common/Console.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/glut/GLUTFuncs.hpp"
 #include "dart/math/Constants.hpp"
+
+#include <Eigen/Eigen>
+
+#include <iostream>
+#include <string>
+
+#include <cstdio>
 // TODO(JS): remove once glut become an optional dependency
 
 namespace dart {

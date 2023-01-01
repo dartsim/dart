@@ -32,7 +32,11 @@
 
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 
-#include <map>
+#include "dart/common/Console.hpp"
+#include "dart/common/Filesystem.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>
@@ -41,11 +45,7 @@
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 
-#include "dart/common/Console.hpp"
-#include "dart/common/Filesystem.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/Utils.hpp"
+#include <map>
 
 namespace dart {
 namespace gui {

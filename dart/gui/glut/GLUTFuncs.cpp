@@ -32,14 +32,15 @@
 
 #include "dart/gui/glut/GLUTFuncs.hpp"
 
-#include <cstdio>
-#include <iostream>
-#include <string>
+#include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 #include <Eigen/Eigen>
 
-#include "dart/gui/LoadOpengl.hpp"
-#include "dart/gui/glut/LoadGlut.hpp"
+#include <iostream>
+#include <string>
+
+#include <cstdio>
 
 namespace dart {
 namespace gui {

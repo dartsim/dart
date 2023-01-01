@@ -32,12 +32,13 @@
 
 #include "dart/dynamics/SharedLibraryIkFast.hpp"
 
-#include <cassert>
-#include <sstream>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/SharedLibrary.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+
+#include <sstream>
+
+#include <cassert>
 
 namespace dart {
 namespace dynamics {

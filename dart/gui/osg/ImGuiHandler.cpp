@@ -38,15 +38,15 @@
 
 #include "dart/gui/osg/ImGuiHandler.hpp"
 
-#include <algorithm>
-
-#include <osg/Camera>
-#include <osg/RenderInfo>
-
 #include "dart/common/Console.hpp"
 #include "dart/external/imgui/imgui.h"
 #include "dart/external/imgui/imgui_impl_opengl2.h"
 #include "dart/gui/osg/ImGuiWidget.hpp"
+
+#include <osg/Camera>
+#include <osg/RenderInfo>
+
+#include <algorithm>
 
 namespace dart {
 namespace gui {

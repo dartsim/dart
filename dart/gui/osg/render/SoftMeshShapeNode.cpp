@@ -32,16 +32,16 @@
 
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 
-#include <osg/CullFace>
-#include <osg/Depth>
-#include <osg/Geode>
-#include <osg/Geometry>
-
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/gui/osg/Utils.hpp"
+
+#include <osg/CullFace>
+#include <osg/Depth>
+#include <osg/Geode>
+#include <osg/Geometry>
 
 namespace dart {
 namespace gui {

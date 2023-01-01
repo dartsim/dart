@@ -30,16 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <dart/dynamics/SphereShape.hpp>
-#include <gtest/gtest.h>
-
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <dart/dynamics/SphereShape.hpp>
+
+#include <gtest/gtest.h>
+
+#include <iostream>
 
 class CollisionGroupsTest : public testing::Test,
                             public testing::WithParamInterface<const char*>

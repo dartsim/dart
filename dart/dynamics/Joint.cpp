@@ -32,13 +32,13 @@
 
 #include "dart/dynamics/Joint.hpp"
 
-#include <string>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <string>
 
 namespace dart {
 namespace dynamics {

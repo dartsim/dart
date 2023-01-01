@@ -32,8 +32,6 @@
 
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 
-#include <assimp/scene.h>
-
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/DistanceFilter.hpp"
@@ -53,6 +51,8 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
+
+#include <assimp/scene.h>
 
 namespace dart {
 namespace collision {

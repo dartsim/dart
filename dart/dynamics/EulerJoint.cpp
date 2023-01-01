@@ -32,11 +32,11 @@
 
 #include "dart/dynamics/EulerJoint.hpp"
 
-#include <string>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
+
+#include <string>
 
 namespace dart {
 namespace dynamics {

@@ -33,8 +33,6 @@
 #ifndef DART_DYNAMICS_SKELETON_HPP_
 #define DART_DYNAMICS_SKELETON_HPP_
 
-#include <mutex>
-
 #include "dart/common/NameManager.hpp"
 #include "dart/common/VersionCounter.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -47,6 +45,8 @@
 #include "dart/dynamics/SpecializedNodeManager.hpp"
 #include "dart/dynamics/detail/BodyNodeAspect.hpp"
 #include "dart/dynamics/detail/SkeletonAspect.hpp"
+
+#include <mutex>
 
 namespace dart {
 namespace dynamics {

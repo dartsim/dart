@@ -32,12 +32,12 @@
 
 #include "dart/constraint/ContactSurface.hpp"
 
-#include <utility>
-
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+
+#include <utility>
 
 namespace dart {
 namespace constraint {

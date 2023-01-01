@@ -36,10 +36,10 @@
 #ifndef NDEBUG
   #include <mutex>
 #endif
-#include <iostream>
-
 #include "dart/common/FreeListAllocator.hpp"
 #include "dart/common/PoolAllocator.hpp"
+
+#include <iostream>
 
 namespace dart::common {
 

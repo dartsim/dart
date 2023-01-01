@@ -33,12 +33,12 @@
 #ifndef DART_GUI_OSG_GRIDVISUAL_HPP_
 #define DART_GUI_OSG_GRIDVISUAL_HPP_
 
-#include <osg/Geode>
-#include <osg/LineWidth>
-
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Viewer.hpp"
+
+#include <osg/Geode>
+#include <osg/LineWidth>
 
 namespace dart {
 namespace gui {

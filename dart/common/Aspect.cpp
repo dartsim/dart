@@ -32,11 +32,12 @@
 
 #include "dart/common/Aspect.hpp"
 
-#include <cassert>
+#include "dart/common/Console.hpp"
+
 #include <iostream>
 #include <string>
 
-#include "dart/common/Console.hpp"
+#include <cassert>
 
 namespace dart {
 namespace common {

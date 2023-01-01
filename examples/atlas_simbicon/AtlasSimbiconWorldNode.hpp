@@ -33,11 +33,13 @@
 #ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWORLDNODE_HPP_
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWORLDNODE_HPP_
 
-#include <dart/dart.hpp>
+#include "Controller.hpp"
+
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
 
-#include "Controller.hpp"
+#include <dart/dart.hpp>
 
 class AtlasSimbiconWorldNode : public dart::gui::osg::RealTimeWorldNode
 {

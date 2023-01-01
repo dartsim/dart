@@ -33,11 +33,11 @@
 #ifndef DART_DYNAMICS_WELDJOINT_HPP_
 #define DART_DYNAMICS_WELDJOINT_HPP_
 
-#include <string>
+#include "dart/dynamics/ZeroDofJoint.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/ZeroDofJoint.hpp"
+#include <string>
 
 namespace dart {
 namespace dynamics {

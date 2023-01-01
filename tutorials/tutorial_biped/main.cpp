@@ -30,9 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
+
 #include <dart/utils/utils.hpp>
+
+#include <dart/dart.hpp>
 
 const double default_speed_increment = 0.5;
 
