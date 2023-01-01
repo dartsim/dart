@@ -28,7 +28,13 @@ set(component_name gui-glut)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_link_libraries(${target_name} PUBLIC dart-gui GLUT::GLUT)
+target_link_libraries(${target_name}
+  PUBLIC
+    dart-gui
+    GLUT::GLUT
+  PRIVATE
+    ${PROJECT_NAME}-external-lodepng
+)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

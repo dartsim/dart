@@ -22,7 +22,6 @@ target_link_libraries(${target_name}
     dart-io
     OpenGL::GL
     OpenGL::GLU
-    ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
 )
 if(APPLE)
@@ -40,7 +39,6 @@ add_component_dependencies(
   ${PROJECT_NAME}
   ${component_name}
   io
-  external-lodepng
   external-imgui
 )
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL)
