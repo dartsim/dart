@@ -31,7 +31,7 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/io/CompositeResourceRetriever.hpp"
 
 #include <gtest/gtest.h>
 
@@ -39,7 +39,7 @@ using dart::common::Resource;
 using dart::common::ResourcePtr;
 using dart::common::ResourceRetriever;
 using dart::common::Uri;
-using dart::utils::CompositeResourceRetriever;
+using dart::io::CompositeResourceRetriever;
 
 TEST(CompositeResourceRetriever, exists_NothingRegistered_ReturnsFalse)
 {

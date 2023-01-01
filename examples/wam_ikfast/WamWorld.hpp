@@ -32,8 +32,8 @@
 
 #include <dart/gui/osg/osg.hpp>
 
-#include <dart/utils/urdf/urdf.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
 

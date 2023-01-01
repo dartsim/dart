@@ -35,7 +35,7 @@
 
 #include "TestHelpers.hpp"
 #include "dart/dart.hpp"
-#include "dart/utils/sdf/sdf.hpp"
+#include "dart/io/sdf/sdf.hpp"
 
 #include <gtest/gtest.h>
 
@@ -43,7 +43,7 @@ using namespace dart;
 using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::utils;
+using namespace dart::io;
 
 //==============================================================================
 WorldPtr readWorld(const common::Uri& uri)

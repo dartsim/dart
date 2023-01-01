@@ -35,7 +35,7 @@
 
 #include <dart/gui/osg/osg.hpp>
 
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 #include <dart/dart.hpp>
 

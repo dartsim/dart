@@ -11,7 +11,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 
 def main():
-    world = dart.utils.SkelParser.readWorld("dart://sample/skel/cubes.skel")
+    world = dart.io.SkelParser.readWorld("dart://sample/skel/cubes.skel")
     world.setGravity([0, -9.81, 0])
 
 

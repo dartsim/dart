@@ -32,8 +32,8 @@
 
 #include <dart/gui/osg/osg.hpp>
 
-#include <dart/utils/urdf/urdf.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
 #include <dart/external/imgui/imgui.h>
@@ -653,7 +653,7 @@ protected:
 
 dynamics::SkeletonPtr createRobot(const std::string& name)
 {
-  auto urdfParser = dart::utils::DartLoader();
+  auto urdfParser = dart::io::DartLoader();
 
   // Load the robot
   auto robot
@@ -670,7 +670,7 @@ dynamics::SkeletonPtr createRobot(const std::string& name)
 
 dynamics::SkeletonPtr createGround()
 {
-  auto urdfParser = dart::utils::DartLoader();
+  auto urdfParser = dart::io::DartLoader();
 
   auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
 

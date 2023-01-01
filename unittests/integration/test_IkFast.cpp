@@ -32,7 +32,7 @@
 
 #include "TestHelpers.hpp"
 
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
 
@@ -116,7 +116,7 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 //==============================================================================
 TEST(IkFast, LoadWamArmIk)
 {
-  utils::DartLoader urdfParser;
+  io::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
       "herb_description", DART_DATA_PATH "/urdf/wam");
   auto wam = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");

@@ -149,7 +149,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 
 def main():
-    world = dart.utils.SkelParser.readWorld('dart://sample/skel/fullbody1.skel')
+    world = dart.io.SkelParser.readWorld('dart://sample/skel/fullbody1.skel')
     world.setGravity([0, -9.81, 0])
 
     biped = world.getSkeleton('fullbody1')

@@ -19,7 +19,7 @@ else()
   set(DARTPY_PYTEST_FOUND TRUE PARENT_SCOPE)
 endif()
 
-set(dartpy_test_utils
+set(dartpy_test_io
   util.py
 )
 
@@ -31,7 +31,7 @@ if(DARTPY_PYTEST_FOUND)
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest [sources]"
     COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES ${dartpy_test_files} ${dartpy_test_utils}
+    SOURCES ${dartpy_test_files} ${dartpy_test_io}
     DEPENDS dartpy
   )
 else()

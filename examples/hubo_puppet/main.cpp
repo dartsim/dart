@@ -32,8 +32,8 @@
 
 #include <dart/gui/osg/osg.hpp>
 
-#include <dart/utils/urdf/urdf.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
 
@@ -1175,7 +1175,7 @@ SkeletonPtr createGround()
 
 SkeletonPtr createHubo()
 {
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
   loader.addPackageDirectory("drchubo", DART_DATA_PATH "/urdf/drchubo");
   SkeletonPtr hubo
       = loader.parseSkeleton(DART_DATA_PATH "/urdf/drchubo/drchubo.urdf");

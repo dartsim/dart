@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/urdf/DartLoader.hpp>
+#include <dart/io/urdf/DartLoader.hpp>
 
 #include <dart/dart.hpp>
 

@@ -43,40 +43,40 @@ if(TARGET dart-optimizer-nlopt)
   target_link_libraries(test_Optimizer dart-optimizer-nlopt)
 endif()
 
-if(TARGET dart-utils)
+if(TARGET dart-io)
 
   dart_add_test("integration" test_CompositeResourceRetriever)
-  target_link_libraries(test_CompositeResourceRetriever dart-utils)
+  target_link_libraries(test_CompositeResourceRetriever dart-io)
 
   dart_add_test("integration" test_DartResourceRetriever)
-  target_link_libraries(test_DartResourceRetriever dart-utils)
+  target_link_libraries(test_DartResourceRetriever dart-io)
   
   dart_add_test("integration" test_FileInfoWorld)
-  target_link_libraries(test_FileInfoWorld dart-utils)
+  target_link_libraries(test_FileInfoWorld dart-io)
 
   dart_add_test("integration" test_PackageResourceRetriever)
-  target_link_libraries(test_PackageResourceRetriever dart-utils)
+  target_link_libraries(test_PackageResourceRetriever dart-io)
 
   dart_add_test("integration" test_MjcfParser)
-  target_link_libraries(test_MjcfParser dart-utils)
+  target_link_libraries(test_MjcfParser dart-io)
   
   dart_add_test("integration" test_SdfParser)
-  target_link_libraries(test_SdfParser dart-utils)
+  target_link_libraries(test_SdfParser dart-io)
   
   dart_add_test("integration" test_SkelParser)
-  target_link_libraries(test_SkelParser dart-utils)
+  target_link_libraries(test_SkelParser dart-io)
 
   if(NOT MSVC) 
     dart_add_test("integration" test_VskParser)
-    target_link_libraries(test_VskParser dart-utils)
+    target_link_libraries(test_VskParser dart-io)
   endif()
 
 endif()
 
-if(TARGET dart-utils-urdf)
+if(TARGET dart-io-urdf)
   if(NOT MSVC)
     dart_add_test("integration" test_DartLoader)
-    target_link_libraries(test_DartLoader dart-utils-urdf)
+    target_link_libraries(test_DartLoader dart-io-urdf)
   endif()
 
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
@@ -91,7 +91,7 @@ if(TARGET dart-utils-urdf)
 
   if(BUILD_SHARED_LIBS)
     dart_add_test("integration" test_IkFast)
-    target_link_libraries(test_IkFast dart-utils-urdf)
+    target_link_libraries(test_IkFast dart-io-urdf)
     add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
   endif()
 endif()
@@ -124,10 +124,10 @@ if(TARGET dart-collision-ode)
   target_link_libraries(test_ForceDependentSlip dart-collision-ode)
 endif()
 
-if(TARGET dart-utils)
+if(TARGET dart-io)
 
   dart_add_test("integration" test_Collision)
-  target_link_libraries(test_Collision dart-utils)
+  target_link_libraries(test_Collision dart-io)
   if(TARGET dart-collision-bullet)
     target_link_libraries(test_Collision dart-collision-bullet)
   endif()
@@ -136,32 +136,32 @@ if(TARGET dart-utils)
   endif()
 
   dart_add_test("integration" test_Dynamics)
-  target_link_libraries(test_Dynamics dart-utils)
+  target_link_libraries(test_Dynamics dart-io)
 
   dart_add_test("integration" test_Joints)
-  target_link_libraries(test_Joints dart-utils)
+  target_link_libraries(test_Joints dart-io)
 
   dart_add_test("integration" test_JointForceTorque)
-  target_link_libraries(test_JointForceTorque dart-utils)
+  target_link_libraries(test_JointForceTorque dart-io)
 
   dart_add_test("integration" test_Skeleton)
-  target_link_libraries(test_Skeleton dart-utils)
+  target_link_libraries(test_Skeleton dart-io)
 
   dart_add_test("integration" test_MetaSkeleton)
-  target_link_libraries(test_MetaSkeleton dart-utils)
+  target_link_libraries(test_MetaSkeleton dart-io)
 
   dart_add_test("integration" test_SoftDynamics)
-  target_link_libraries(test_SoftDynamics dart-utils)
+  target_link_libraries(test_SoftDynamics dart-io)
 
   dart_add_test("integration" test_World)
-  target_link_libraries(test_World dart-utils)
+  target_link_libraries(test_World dart-io)
   if(TARGET dart-collision-bullet)
     target_link_libraries(test_World dart-collision-bullet)
   endif()
 
-  if(TARGET dart-utils-urdf)
+  if(TARGET dart-io-urdf)
     dart_add_test("integration" test_ForwardKinematics)
-    target_link_libraries(test_ForwardKinematics dart-utils-urdf)
+    target_link_libraries(test_ForwardKinematics dart-io-urdf)
   endif()
 
 endif()

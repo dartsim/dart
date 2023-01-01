@@ -4,8 +4,8 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components collision-bullet utils-urdf gui)
-set(required_libraries dart dart-collision-bullet dart-utils-urdf dart-gui)
+set(required_components collision-bullet io-urdf gui)
+set(required_libraries dart dart-collision-bullet dart-io-urdf dart-gui)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_tutorial_in_source(${example_name} LINK_LIBRARIES ${required_libraries})

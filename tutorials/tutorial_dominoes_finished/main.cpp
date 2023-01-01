@@ -32,7 +32,7 @@
 
 #include <dart/gui/gui.hpp>
 
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include <dart/dart.hpp>
 
@@ -470,7 +470,7 @@ SkeletonPtr createFloor()
 SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
   SkeletonPtr manipulator
       = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   manipulator->setName("manipulator");

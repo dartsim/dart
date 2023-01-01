@@ -8,8 +8,8 @@ endif()
 # Check if the required libraries are available
 set(DARTPY_REQUIRED_LIBS
   dart
-  dart-utils
-  dart-utils-urdf
+  dart-io
+  dart-io-urdf
   dart-gui
   dart-gui-osg
 )

@@ -5,9 +5,9 @@ import dartpy as dart
 
 
 def read_world(uri: dart.common.Uri):
-    options = dart.utils.SdfParser.Options()
-    options.mDefaultRootJointType = dart.utils.SdfParser.RootJointType.FIXED
-    world = dart.utils.SdfParser.readWorld(uri, options)
+    options = dart.io.SdfParser.Options()
+    options.mDefaultRootJointType = dart.io.SdfParser.RootJointType.FIXED
+    world = dart.io.SdfParser.readWorld(uri, options)
     for i in range(world.getNumSkeletons()):
         skel = world.getSkeleton(i)
         for j in range(skel.getNumJoints()):
