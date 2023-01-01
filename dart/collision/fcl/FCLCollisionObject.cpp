@@ -32,7 +32,6 @@
 
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
-#include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
@@ -105,7 +104,7 @@ void FCLCollisionObject::updateEngineData()
     bvhModel->endUpdateModel();
   }
 
-  mFCLCollisionObject->setTransform(FCLTypes::convertTransform(getTransform()));
+  mFCLCollisionObject->setTransform(getTransform());
   mFCLCollisionObject->computeAABB();
 }
 

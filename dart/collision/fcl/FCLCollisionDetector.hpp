@@ -36,7 +36,7 @@
 #include <vector>
 
 #include "dart/collision/CollisionDetector.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace collision {

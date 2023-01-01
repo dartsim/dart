@@ -39,7 +39,6 @@
 #include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -511,19 +510,11 @@ template <typename BV>
   const double front = -d / 2;
   const double back = d / 2;
 
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
   points[0] << 0, 0, hTop;
   points[1] << right, back, hBottom;
   points[2] << left, back, hBottom;
   points[3] << left, front, hBottom;
   points[4] << right, front, hBottom;
-#else
-  points[0].setValue(0, 0, hTop);
-  points[1].setValue(right, back, hBottom);
-  points[2].setValue(left, back, hBottom);
-  points[3].setValue(left, front, hBottom);
-  points[4].setValue(right, front, hBottom);
-#endif
 
   faces[0].set(0, 1, 2);
   faces[1].set(0, 2, 3);
@@ -534,11 +525,7 @@ template <typename BV>
 
   for (unsigned int i = 0; i < points.size(); ++i)
   {
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
-    points[i] = pose * points[i];
-#else
-    points[i] = pose.transform(points[i]);
-#endif
+    points[i].noalias() = pose * points[i];
   }
 
   model->beginModel();
@@ -944,7 +931,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
-      geom = new fcl::Ellipsoid(FCLTypes::convertVector3(radii));
+      geom = new fcl::Ellipsoid(radii);
     }
     else
     {
@@ -1017,7 +1004,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       const Eigen::Vector3d normal = plane->getNormal();
       const double offset = plane->getOffset();
 
-      geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
+      geom = new fcl::Halfspace(normal, offset);
     }
     else
     {
@@ -1323,7 +1310,7 @@ void postProcessFCL(
   {
     for (auto i = 0u; i < numContacts; ++i)
     {
-      if (fcl::length2(fclResult.getContact(i).normal)
+      if (fclResult.getContact(i).normal.squaredNorm()
           < Contact::getNormalEpsilonSquared())
       {
         // Skip this contact. This is because we assume that a contact with
@@ -1360,7 +1347,7 @@ void postProcessFCL(
     if (markForDeletion[i])
       continue;
 
-    if (fcl::length2(fclResult.getContact(i).normal)
+    if (fclResult.getContact(i).normal.squaredNorm()
         < Contact::getNormalEpsilonSquared())
     {
       // Skip this contact. This is because we assume that a contact with
@@ -1408,7 +1395,7 @@ void postProcessDART(
 
     if (option.enableContact)
     {
-      pair1.normal = FCLTypes::convertVector3(-c.normal);
+      pair1.normal = -c.normal;
       if (Contact::isZeroNormal(pair1.normal))
       {
         // This is an invalid contact, as it contains a zero length normal.
@@ -1438,8 +1425,8 @@ void postProcessDART(
           c,
           *fclMeshA,
           *fclMeshB,
-          FCLTypes::convertTransform(pair1.collisionObject1->getTransform()),
-          FCLTypes::convertTransform(pair1.collisionObject2->getTransform()),
+          pair1.collisionObject1->getTransform(),
+          pair1.collisionObject2->getTransform(),
           pair1.point,
           pair2.point);
 
@@ -1517,10 +1504,8 @@ void interpreteDistanceResult(
 
   if (option.enableNearestPoints)
   {
-    result.nearestPoint1
-        = FCLTypes::convertVector3(fclResult.nearest_points[0]);
-    result.nearestPoint2
-        = FCLTypes::convertVector3(fclResult.nearest_points[1]);
+    result.nearestPoint1 = fclResult.nearest_points[0];
+    result.nearestPoint2 = fclResult.nearest_points[1];
   }
 }
 
@@ -1539,13 +1524,13 @@ int evalContactPosition(
   const auto& tri1 = mesh1.tri_indices[id1];
   const auto& tri2 = mesh2.tri_indices[id2];
 
-  const auto v1 = fcl::transform(transform1, mesh1.vertices[tri1[0]]);
-  const auto v2 = fcl::transform(transform1, mesh1.vertices[tri1[1]]);
-  const auto v3 = fcl::transform(transform1, mesh1.vertices[tri1[2]]);
+  const fcl::Vector3 v1 = transform1 * mesh1.vertices[tri1[0]];
+  const fcl::Vector3 v2 = transform1 * mesh1.vertices[tri1[1]];
+  const fcl::Vector3 v3 = transform1 * mesh1.vertices[tri1[2]];
 
-  const auto p1 = fcl::transform(transform2, mesh2.vertices[tri2[0]]);
-  const auto p2 = fcl::transform(transform2, mesh2.vertices[tri2[1]]);
-  const auto p3 = fcl::transform(transform2, mesh2.vertices[tri2[2]]);
+  const fcl::Vector3 p1 = transform2 * mesh2.vertices[tri2[0]];
+  const fcl::Vector3 p2 = transform2 * mesh2.vertices[tri2[1]];
+  const fcl::Vector3 p3 = transform2 * mesh2.vertices[tri2[2]];
 
   fcl::Vector3 contact1;
   fcl::Vector3 contact2;
@@ -1679,8 +1664,8 @@ Contact convertContact(
 
   if (option.enableContact)
   {
-    contact.point = FCLTypes::convertVector3(fclContact.pos);
-    contact.normal = -FCLTypes::convertVector3(fclContact.normal);
+    contact.point = fclContact.pos;
+    contact.normal = -fclContact.normal;
     contact.penetrationDepth = fclContact.penetration_depth;
     contact.triID1 = fclContact.b1;
     contact.triID2 = fclContact.b2;
