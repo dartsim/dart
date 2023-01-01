@@ -32,7 +32,7 @@
 
 #include <dart/config.hpp>
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
 
   #include <dart/collision/bullet/bullet.hpp>
 
@@ -81,4 +81,4 @@ void BulletCollisionDetector(py::module& m)
 } // namespace python
 } // namespace dart
 
-#endif // HAVE_BULLET
+#endif // DART_HAVE_BULLET
