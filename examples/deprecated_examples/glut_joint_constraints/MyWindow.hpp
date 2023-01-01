@@ -35,7 +35,7 @@
 
 #include "Controller.hpp"
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
 #include <dart/dart.hpp>
 

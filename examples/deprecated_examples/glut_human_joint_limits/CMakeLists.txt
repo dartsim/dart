@@ -22,11 +22,11 @@ if(NOT Threads_FOUND)
   return()
 endif()
 
-set(required_components io-urdf gui collision-ode collision-bullet)
+set(required_components io-urdf gui-glut collision-ode collision-bullet)
 set(required_libraries
   dart
   dart-io-urdf
-  dart-gui
+  dart-gui-glut
   dart-collision-ode
   dart-collision-bullet
   ${TinyDNN_LIBRARIES}

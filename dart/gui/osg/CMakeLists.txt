@@ -39,7 +39,7 @@ add_subdirectory(render)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
-target_link_libraries(${target_name} dart-gui osg::osg)
+target_link_libraries(${target_name} PUBLIC dart-gui osg::osg)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

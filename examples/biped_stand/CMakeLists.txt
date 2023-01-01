@@ -4,7 +4,7 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components io-urdf gui)
+set(required_components io-urdf gui-osg)
 set(required_libraries dart dart-io-urdf dart-gui-osg)
 
 if(DART_IN_SOURCE_BUILD)

@@ -39,7 +39,7 @@
 #ifndef EXAMPLES_RIGIDSHAPES_MYWINDOW_HPP_
 #define EXAMPLES_RIGIDSHAPES_MYWINDOW_HPP_
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
 #include <dart/dart.hpp>
 

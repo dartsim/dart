@@ -36,7 +36,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
 # dart-io - {dart}, io, io/sdf, [tinyxml2]
 # dart-io-urdf - {dart-io}, io/urdf, [urdfdom]
-# dart-gui - {dart}, gui, [opengl, glut]
+# dart-gui - {dart}, gui, [opengl]
+# dart-gui-glut - {dart-gui}, gui/glut, [glut]
 # dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
 
 #===============================================================================

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
 #include <dart/io/io.hpp>
 
