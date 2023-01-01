@@ -17,7 +17,7 @@
 
 #include "dart/gui/glut/MotionBlurSimWindow.hpp"
 
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/gui/GLFuncs.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
 

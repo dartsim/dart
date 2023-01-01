@@ -32,7 +32,7 @@
 
 #include "TestHelpers.hpp"
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"

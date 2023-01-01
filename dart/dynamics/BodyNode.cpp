@@ -35,13 +35,12 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Chain.hpp"
+#include "dart/dynamics/ContactSurface.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Marker.hpp"
-#include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/math/Helpers.hpp"
 
 #include <algorithm>
 #include <string>

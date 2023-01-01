@@ -364,7 +364,7 @@ Now we can create the BallJointConstraint:
 
 ```cpp
 mBallConstraint =
-    std::make_shared<dart::constraint::BallJointConstraint>(tip, location);
+    std::make_shared<dart::dynamics::BallJointConstraint>(tip, location);
 ```
 
 And then add it to the world:

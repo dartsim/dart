@@ -38,7 +38,7 @@ using namespace math;
 
 Controller::Controller(
     const dynamics::SkeletonPtr& _skel,
-    constraint::ConstraintSolver* _collisionSolver,
+    dynamics::ConstraintSolver* _collisionSolver,
     double _t)
 {
   mSkel = _skel;

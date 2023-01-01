@@ -40,7 +40,7 @@ using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
-using namespace constraint;
+using namespace dynamics;
 
 int main(int argc, char* argv[])
 {

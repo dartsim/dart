@@ -22,8 +22,8 @@ def test_ball_joint_constraint():
     offset1 = [0, 0.025, 0]
     joint_pos = bd1.getTransform().multiply(offset1)
     offset2 = bd2.getTransform().inverse().multiply(joint_pos)
-    constraint = dart.constraint.BallJointConstraint(bd1, bd2, joint_pos)
-    assert constraint.getType() == dart.constraint.BallJointConstraint.getStaticType()
+    constraint = dart.dynamics.BallJointConstraint(bd1, bd2, joint_pos)
+    assert constraint.getType() == dart.dynamics.BallJointConstraint.getStaticType()
 
     # Add ball joint constraint to the constraint solver
     constraint_solver = world.getConstraintSolver()
