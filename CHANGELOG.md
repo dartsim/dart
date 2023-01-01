@@ -20,7 +20,7 @@
 
 * Planning
 
-  * Removed planning component and FLANN dependency
+  * Removed planning component and FLANN dependency: [#1697](https://github.com/dartsim/dart/pull/1697)
 
 ## DART 6
 
