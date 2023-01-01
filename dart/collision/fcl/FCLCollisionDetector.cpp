@@ -890,9 +890,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   using dynamics::VoxelGridShape;
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
 
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -1033,10 +1033,10 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
   }
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType)
   {
-  #if FCL_HAVE_OCTOMAP
+  #if FCL_DART_HAVE_OCTOMAP
     assert(dynamic_cast<const VoxelGridShape*>(shape.get()));
 
     auto octreeShape = static_cast<const VoxelGridShape*>(shape.get());
@@ -1050,9 +1050,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
           << "Creating a sphere with 0.1 radius instead.\n";
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
-  #endif // FCL_HAVE_OCTOMAP
+  #endif // FCL_DART_HAVE_OCTOMAP
   }
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
   else
   {
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "

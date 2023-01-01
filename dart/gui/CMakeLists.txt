@@ -15,9 +15,9 @@ else()
   dart_check_optional_package(GLUT "dart-gui" "freeglut3")
 endif()
 if(GLUT_FOUND)
-  set(HAVE_GLUT TRUE)
+  set(DART_HAVE_GLUT TRUE)
 else()
-  set(HAVE_GLUT FALSE)
+  set(DART_HAVE_GLUT FALSE)
 endif()
 
 # Search all header and source files

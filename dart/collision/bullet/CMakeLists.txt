@@ -35,10 +35,10 @@ if(BULLET_FOUND)
     endif()
   endif()
 
-  set(HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
+  set(DART_HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
 else()
   message(WARNING "Looking for Bullet - NOT found, to use dart-collision-bullet, please install libbullet-dev")
-  set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
+  set(DART_HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
   return()
 endif()
 

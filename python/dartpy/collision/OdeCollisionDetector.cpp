@@ -32,7 +32,7 @@
 
 #include <dart/config.hpp>
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
 
   #include <dart/collision/ode/ode.hpp>
 
@@ -81,4 +81,4 @@ void OdeCollisionDetector(py::module& m)
 } // namespace python
 } // namespace dart
 
-#endif // HAVE_ODE
+#endif // DART_HAVE_ODE

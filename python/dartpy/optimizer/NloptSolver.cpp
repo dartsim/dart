@@ -31,7 +31,7 @@
  */
 
 #include <dart/config.hpp>
-#if HAVE_NLOPT
+#if DART_HAVE_NLOPT
 
   #include "eigen_pybind.h"
 
@@ -163,4 +163,4 @@ void NloptSolver(py::module& m)
 } // namespace python
 } // namespace dart
 
-#endif // HAVE_NLOPT
+#endif // DART_HAVE_NLOPT
