@@ -31,7 +31,7 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/lcpsolver/Lemke.hpp"
+#include "dart/math/Lemke.hpp"
 
 #include <gtest/gtest.h>
 
@@ -48,10 +48,10 @@ TEST(Lemke, Lemke_1D)
   A << 1;
   b.resize(1);
   b << -1.5;
-  err = dart::lcpsolver::Lemke(A, b, f);
+  err = dart::math::Lemke(A, b, f);
 
   EXPECT_EQ(err, 0);
-  EXPECT_TRUE(dart::lcpsolver::validate(A, (*f), b));
+  EXPECT_TRUE(dart::math::validate(A, (*f), b));
 }
 
 //==============================================================================
@@ -67,10 +67,10 @@ TEST(Lemke, Lemke_2D)
   A << 3.12, 0.1877, 0.1877, 3.254;
   b.resize(2);
   b << -0.00662, -0.006711;
-  err = dart::lcpsolver::Lemke(A, b, f);
+  err = dart::math::Lemke(A, b, f);
 
   EXPECT_EQ(err, 0);
-  EXPECT_TRUE(dart::lcpsolver::validate(A, (*f), b));
+  EXPECT_TRUE(dart::math::validate(A, (*f), b));
 }
 
 //==============================================================================
@@ -89,10 +89,10 @@ TEST(Lemke, Lemke_4D)
   b.resize(4);
   b << -0.01008, -0.009494, -0.07234, -0.07177;
 
-  err = dart::lcpsolver::Lemke(A, b, f);
+  err = dart::math::Lemke(A, b, f);
 
   EXPECT_EQ(err, 0);
-  EXPECT_TRUE(dart::lcpsolver::validate(A, (*f), b));
+  EXPECT_TRUE(dart::math::validate(A, (*f), b));
 }
 
 //==============================================================================
@@ -114,10 +114,10 @@ TEST(Lemke, Lemke_6D)
   b.resize(6);
   b << 0.1649, -0.0025, -0.0904, -0.0093, -0.0000, -0.0889;
 
-  err = dart::lcpsolver::Lemke(A, b, f);
+  err = dart::math::Lemke(A, b, f);
 
   EXPECT_EQ(err, 0);
-  EXPECT_TRUE(dart::lcpsolver::validate(A, (*f), b));
+  EXPECT_TRUE(dart::math::validate(A, (*f), b));
 }
 
 //==============================================================================
@@ -150,10 +150,10 @@ TEST(Lemke, Lemke_12D)
   b << -0.00981, -1.458e-10, 5.357e-10, -0.0098, -1.44e-10, 5.298e-10,
       -0.009807, -1.399e-10, 5.375e-10, -0.009807, -1.381e-10, 5.316e-10;
 
-  err = dart::lcpsolver::Lemke(A, b, f);
+  err = dart::math::Lemke(A, b, f);
 
   EXPECT_EQ(err, 0);
-  EXPECT_TRUE(dart::lcpsolver::validate(A, (*f), b));
+  EXPECT_TRUE(dart::math::validate(A, (*f), b));
 }
 
 //==============================================================================

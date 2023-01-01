@@ -36,7 +36,7 @@
 #include <Eigen/Dense>
 
 namespace dart {
-namespace lcpsolver {
+namespace math {
 
 /// \brief
 int Lemke(
@@ -48,7 +48,7 @@ bool validate(
     const Eigen::VectorXd& _z,
     const Eigen::VectorXd& _q);
 
-} // namespace lcpsolver
+} // namespace math
 } // namespace dart
 
 #endif // DART_LCPSOLVER_LEMKE_HPP_

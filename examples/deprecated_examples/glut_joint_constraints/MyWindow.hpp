@@ -31,16 +31,16 @@
  */
 
 #ifndef EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
-  #define EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
+#define EXAMPLES_JOINTCONSTRAINTS_MYWINDOW_HPP_
 
-  #include "Controller.hpp"
+#include "Controller.hpp"
 
-  #include <dart/gui/gui.hpp>
+#include <dart/gui/gui.hpp>
 
-  #include <dart/dart.hpp>
+#include <dart/dart.hpp>
 
-  #include <Eigen/Dense>
-  #include <stdarg.h>
+#include <Eigen/Dense>
+#include <stdarg.h>
 
 class MyWindow : public dart::gui::glut::SimWindow
 {

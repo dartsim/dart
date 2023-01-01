@@ -72,8 +72,6 @@ IncludeCategories:
     Priority: 26
   - Regex: '^<dart\/dynamics\/.*\.h(pp)?>$'
     Priority: 27
-  - Regex: '^<dart\/lcpsolver\/.*\.h(pp)?>$'
-    Priority: 28
   - Regex: '^<dart\/optimizer\/.*\.h(pp)?>$'
     Priority: 29
   - Regex: '^<dart\/math\/.*\.h(pp)?>$'
