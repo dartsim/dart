@@ -58,23 +58,23 @@ public:
   const std::string& getName() const;
 
   /// Evaluates and returns the objective function at the point x
-  virtual double eval(const Eigen::VectorXd& x) = 0;
+  virtual double eval(const Eigen::VectorXd& x) const = 0;
 
   /// Evaluates and returns the objective function at the point x
   virtual void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad);
+      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const;
 
   /// Evaluates and return the objective function at the point x.
   ///
   /// If you have a raw array that the gradient will be passed in, then use
   /// evalGradient(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)
   /// for better performance.
-  void evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad);
+  void evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad) const;
 
   /// Evaluates and return the objective function at the point x
   virtual void evalHessian(
       const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const;
 
 protected:
   /// Name of this function
@@ -107,18 +107,19 @@ public:
 
   /// eval() will now call whatever CostFunction you set using
   /// setCostFunction()
-  double eval(const Eigen::VectorXd& _x) override;
+  double eval(const Eigen::VectorXd& _x) const override;
 
   /// evalGradient() will now call whatever GradientFunction you set
   /// using setGradientFunction()
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   /// evalHessian() will now call whatever HessianFunction you set using
   /// setHessianFunction()
   void evalHessian(
       const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const override;
 
   /// Set the function that gets called by eval()
   void setCostFunction(CostFunction _cost);
@@ -165,18 +166,19 @@ public:
   ~NullFunction() override;
 
   /// eval() will always return exactly zero
-  double eval(const Eigen::VectorXd&) override;
+  double eval(const Eigen::VectorXd&) const override;
 
   /// evalGradient will always set _grad to a zero vector that
   /// matches the dimensionality of _x
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   /// evalHessian() will always set _Hess to a zero matrix that matches
   /// the dimensionality of _x
   void evalHessian(
       const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const override;
 };
 
 /// class MultiFunction
@@ -193,8 +195,7 @@ public:
   virtual void operator()(
       const Eigen::VectorXd& _x,
       Eigen::Map<Eigen::VectorXd>& _f,
-      Eigen::Map<Eigen::MatrixXd>& _grad)
-      = 0;
+      Eigen::Map<Eigen::MatrixXd>& _grad) const = 0;
 };
 
 } // namespace optimizer

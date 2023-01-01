@@ -407,7 +407,7 @@ optimizer::FunctionPtr HierarchicalIK::Objective::clone(
 }
 
 //==============================================================================
-double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x)
+double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
 
@@ -432,7 +432,7 @@ double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void HierarchicalIK::Objective::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
 
@@ -484,7 +484,7 @@ optimizer::FunctionPtr HierarchicalIK::Constraint::clone(
 }
 
 //==============================================================================
-double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
+double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
   if (nullptr == hik)
@@ -527,7 +527,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void HierarchicalIK::Constraint::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
 

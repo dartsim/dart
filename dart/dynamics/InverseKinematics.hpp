@@ -1333,25 +1333,26 @@ public:
   optimizer::FunctionPtr clone(InverseKinematics* _newIK) const override;
 
   // Documentation inherited
-  double eval(const Eigen::VectorXd& _x) override;
+  double eval(const Eigen::VectorXd& _x) const override;
 
   // Documentation inherited
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
 protected:
   /// Pointer to this Objective's IK module
   sub_ptr<InverseKinematics> mIK;
 
   /// Cache for the gradient of the Objective
-  Eigen::VectorXd mGradCache;
+  mutable Eigen::VectorXd mGradCache;
 
   /// Cache for the null space SVD
-  Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  mutable Eigen::JacobiSVD<math::Jacobian> mSVDCache;
   // TODO(JS): Need to define aligned operator new for this?
 
   /// Cache for the null space
-  Eigen::MatrixXd mNullSpaceCache;
+  mutable Eigen::MatrixXd mNullSpaceCache;
 
 public:
   // To get byte-aligned Eigen vectors
@@ -1379,11 +1380,12 @@ public:
   optimizer::FunctionPtr clone(InverseKinematics* _newIK) const override;
 
   // Documentation inherited
-  double eval(const Eigen::VectorXd& _x) override;
+  double eval(const Eigen::VectorXd& _x) const override;
 
   // Documentation inherited
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
 protected:
   /// Pointer to this Constraint's IK module

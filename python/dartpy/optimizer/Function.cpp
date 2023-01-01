@@ -50,7 +50,7 @@ public:
   using Function::Function;
 
   // Trampoline for virtual function
-  double eval(const Eigen::VectorXd& x) override
+  double eval(const Eigen::VectorXd& x) const override
   {
     PYBIND11_OVERLOAD_PURE(
         double,   // Return type
@@ -61,7 +61,7 @@ public:
 
   // Trampoline for virtual function
   void evalGradient(
-      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) const override
   {
     PYBIND11_OVERLOAD(
         void,         // Return type

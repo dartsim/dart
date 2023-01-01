@@ -69,14 +69,15 @@ public:
     mResultVector.setZero(dofs);
   }
 
-  double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& _x) const override
   {
     computeResultVector(_x);
     return 0.5 * mResultVector.dot(mResultVector);
   }
 
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
+      const Eigen::VectorXd& _x,
+      Eigen::Map<Eigen::VectorXd> _grad) const override
   {
     computeResultVector(_x);
 
@@ -86,7 +87,7 @@ public:
       _grad[i] = mResultVector[i];
   }
 
-  void computeResultVector(const Eigen::VectorXd& _x)
+  void computeResultVector(const Eigen::VectorXd& _x) const
   {
     mResultVector.setZero();
 
@@ -118,7 +119,7 @@ public:
   bool enforceIdealPosture;
 
 protected:
-  Eigen::VectorXd mResultVector;
+  mutable Eigen::VectorXd mResultVector;
 
   Eigen::VectorXd mIdeal;
 
