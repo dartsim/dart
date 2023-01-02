@@ -85,17 +85,6 @@ if(DART_ENABLE_SIMD)
   endif()
 endif()
 
-# CodeCov settings
-# Reference: https://github.com/codecov/example-cpp11-cmake
-if(DART_CODECOV AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  list(APPEND link_options_public --coverage)
-  list(APPEND compile_options_public
-    -O0         # no optimization
-    -g          # generate debug info
-    --coverage  # sets all required flags
-  )
-endif()
-
 # Add component
 dart_add_component(
   PROJECT_NAME

@@ -129,6 +129,17 @@ message(STATUS "- C++  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}"
 message(STATUS "")
 
 #===============================================================================
+# CodeCov settings
+#===============================================================================
+if(DART_CODECOV)
+  include(CodeCoverage)
+  setup_target_for_coverage(codecov ctest coverage)
+  set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage"
+  )
+endif()
+
+#===============================================================================
 # Build type settings
 #===============================================================================
 if(NOT CMAKE_BUILD_TYPE)
