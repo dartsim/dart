@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2022, The DART development contributors
+# Copyright (c) 2011-2023, The DART development contributors
 
 # TODO(JS): Improve the way of handling the test cases
 
