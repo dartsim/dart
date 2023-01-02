@@ -46,14 +46,6 @@ set(project_version_major ${DART_MAJOR_VERSION})
 set(include_base_path include/${org_name}/${project_name}${project_version_major})
 set(include_path ${include_base_path}/${project_name})
 
-set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
-set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
-if(DART_VERBOSE)
-  message(STATUS ${DART_CONFIG_HPP_OUT})
-endif()
-configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION ${include_path})
-
 add_subdirectory(external)
 
 dart_add_project(
@@ -70,6 +62,14 @@ dart_add_project(
     gui
   GENERATE_META_HEADER
 )
+
+set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
+if(DART_VERBOSE)
+  message(STATUS ${DART_CONFIG_HPP_OUT})
+endif()
+configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION ${include_path})
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
