@@ -86,7 +86,10 @@ class BodyContactCondition : public TerminalCondition
 {
 public:
   /// \brief Constructor
-  BodyContactCondition(State* _state, dart::dynamics::BodyNode* _body);
+  BodyContactCondition(
+      State* _state,
+      dart::dynamics::BodyNode* _body,
+      dart::dynamics::ConstraintSolver* constraintSolver);
 
   /// \brief Destructor
   virtual ~BodyContactCondition();
@@ -97,6 +100,8 @@ public:
 protected:
   /// \brief Body node to be tested
   dart::dynamics::BodyNode* mBodyNode;
+
+  dart::dynamics::ConstraintSolver* mConstraintSolver;
 };
 
 #endif // EXAMPLES_ATLASSIMBICON_TERMINALCONDITION_HPP_

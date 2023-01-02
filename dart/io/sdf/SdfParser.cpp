@@ -248,15 +248,6 @@ Options::Options(
 }
 
 //==============================================================================
-simulation::WorldPtr readSdfFile(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
-{
-  Options options;
-  options.mResourceRetriever = nullOrRetriever;
-  return readWorld(uri, options);
-}
-
-//==============================================================================
 bool checkVersion(
     const tinyxml2::XMLElement& sdfElement, const common::Uri& uri)
 {

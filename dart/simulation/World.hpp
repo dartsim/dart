@@ -188,10 +188,6 @@ public:
   // Collision checking
   //--------------------------------------------------------------------------
 
-  /// Deprecated. Please use checkCollision(~) instead.
-  DART_DEPRECATED(6.0)
-  bool checkCollision(bool checkAllCollisions);
-
   /// Perform collision checking with 'option' over all the feasible collision
   /// pairs in this World, and the result will be stored 'result'. If no
   /// argument is passed in then it will return just whether there is collision

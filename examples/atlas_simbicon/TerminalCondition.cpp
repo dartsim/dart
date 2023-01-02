@@ -40,7 +40,7 @@
 
 using namespace std;
 
-using namespace dart::dynamics;
+using namespace dart::collision;
 using namespace dart::dynamics;
 
 //==============================================================================
@@ -71,8 +71,13 @@ bool TimerCondition::isSatisfied()
 }
 
 //==============================================================================
-BodyContactCondition::BodyContactCondition(State* _state, BodyNode* _body)
-  : TerminalCondition(_state), mBodyNode(_body)
+BodyContactCondition::BodyContactCondition(
+    State* _state,
+    BodyNode* _body,
+    dart::dynamics::ConstraintSolver* constraintSolver)
+  : TerminalCondition(_state),
+    mBodyNode(_body),
+    mConstraintSolver(constraintSolver)
 {
   assert(_state != nullptr);
   assert(_body != nullptr);
@@ -96,14 +101,13 @@ bool BodyContactCondition::isSatisfied()
   }
 
   // TODO(JS): Need more elegant condition check method
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  if (mBodyNode->isColliding())
-    DART_SUPPRESS_DEPRECATED_END
-    {
-      //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."
-      //          << std::endl;
-      return true;
-    }
+  const CollisionResult& result = mConstraintSolver->getLastCollisionResult();
+  if (result.inCollision(mBodyNode))
+  {
+    //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."
+    //          << std::endl;
+    return true;
+  }
   else
   {
     //    dtmsg << "Waiting for BodyNode [" << mBodyNode->getName()

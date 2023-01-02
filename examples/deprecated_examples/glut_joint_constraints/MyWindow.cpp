@@ -61,7 +61,7 @@ void MyWindow::timeStepping()
   }
 }
 
-void MyWindow::drawSkels()
+void MyWindow::drawSkeletons() const
 {
   for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
     drawSkeleton(mWorld->getSkeleton(i).get());

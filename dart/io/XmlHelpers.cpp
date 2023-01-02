@@ -716,19 +716,6 @@ bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name)
 }
 
 //==============================================================================
-std::string getAttribute(tinyxml2::XMLElement* element, const char* const name)
-{
-  return getAttributeString(element, name);
-}
-
-//==============================================================================
-void getAttribute(
-    tinyxml2::XMLElement* element, const char* const name, double* d)
-{
-  *d = getAttributeDouble(element, name);
-}
-
-//==============================================================================
 std::string getAttributeString(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {

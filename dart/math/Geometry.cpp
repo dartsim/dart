@@ -1600,13 +1600,6 @@ Eigen::Isometry3d computeTransform(
 }
 
 //==============================================================================
-Eigen::Isometry3d getFrameOriginAxisZ(
-    const Eigen::Vector3d& _origin, const Eigen::Vector3d& _axisZ)
-{
-  return computeTransform(_axisZ, _origin, AxisType::AXIS_Z);
-}
-
-//==============================================================================
 SupportPolygon computeSupportPolgyon(
     const SupportGeometry& _geometry,
     const Eigen::Vector3d& _axis1,

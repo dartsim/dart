@@ -72,7 +72,7 @@ void MyWindow::timeStepping()
 }
 
 //==============================================================================
-void MyWindow::drawSkels()
+void MyWindow::drawSkeletons() const
 {
   //  glEnable(GL_LIGHTING);
   //  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

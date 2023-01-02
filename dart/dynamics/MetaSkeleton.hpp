@@ -834,10 +834,6 @@ public:
   /// Get the potential energy of this MetaSkeleton
   virtual double computePotentialEnergy() const = 0;
 
-  /// Clear collision flags of the BodyNodes in this MetaSkeleton
-  DART_DEPRECATED(6.0)
-  virtual void clearCollidingBodies() = 0;
-
   /// \}
 
   //----------------------------------------------------------------------------

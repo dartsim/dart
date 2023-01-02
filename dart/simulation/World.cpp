@@ -533,19 +533,6 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
 }
 
 //==============================================================================
-bool World::checkCollision(bool checkAllCollisions)
-{
-  collision::CollisionOption option;
-
-  if (checkAllCollisions)
-    option.maxNumContacts = 1e+3;
-  else
-    option.maxNumContacts = 1u;
-
-  return checkCollision(option);
-}
-
-//==============================================================================
 bool World::checkCollision(
     const collision::CollisionOption& option,
     collision::CollisionResult* result)
