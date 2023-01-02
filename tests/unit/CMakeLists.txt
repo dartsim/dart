@@ -9,4 +9,4 @@
 set(test_type "TEST_UNIT")
 
 add_subdirectory(common)
-# add_subdirectory(math)
+add_subdirectory(math)

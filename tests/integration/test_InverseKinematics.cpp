@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
 #include "dart/config.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

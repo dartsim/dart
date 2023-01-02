@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
 #include "dart/io/urdf/DartLoader.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

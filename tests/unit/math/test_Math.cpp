@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
 #include "dart/common/Stopwatch.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

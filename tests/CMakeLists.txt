@@ -109,7 +109,14 @@ function(dart_add_test test_type target_name) # ARGN for source files
 
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
-  target_link_libraries(${target_name} dart gtest gtest_main)
+  target_link_libraries(${target_name}
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-common
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-math
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-test
+    gtest
+    gtest_main
+  )
 
   dart_format_add(${sources})
 
@@ -138,11 +145,11 @@ add_subdirectory(src)
 #   fixed even after further changes are made
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
-# if(NOT MSVC)
-#   # Disabled due to limitied disk space in CI image
-#   add_subdirectory(integration)
-#   add_subdirectory(regression)
-# endif()
+if(NOT MSVC)
+#  # Disabled due to limitied disk space in CI image
+ add_subdirectory(integration)
+  add_subdirectory(regression)
+endif()
 add_subdirectory(unit)
 
 # Print tests

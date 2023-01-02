@@ -30,12 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
 #include "dart/dart.hpp"
 #include "dart/io/io.hpp"
 #include "dart/io/mjcf/detail/MujocoModel.hpp"
 #include "dart/io/mjcf/detail/Types.hpp"
 #include "dart/io/mjcf/detail/Utils.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

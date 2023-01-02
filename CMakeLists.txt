@@ -270,6 +270,10 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   add_compile_options(-Wall -Wextra -fPIC)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
+    # TODO(JS): Remove "-Wno-error=deprecated-declarations" once glut is removed.
+    if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+      add_compile_options(-Wno-error=deprecated-declarations)
+    endif()
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)

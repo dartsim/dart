@@ -1,13 +1,17 @@
-#include <fstream>
-#include <dart/common/Console.hpp>
-#include <dart/common/Memory.hpp>
-#include <dart/config.hpp>
 #include <dart/optimizer/Function.hpp>
 #include <dart/optimizer/GenericMultiObjectiveProblem.hpp>
 #include <dart/optimizer/MultiObjectiveSolver.hpp>
+
+#include <dart/common/Console.hpp>
+#include <dart/common/Memory.hpp>
+
+#include <dart/config.hpp>
+
 #include <gtest/gtest.h>
+
+#include <fstream>
 #if DART_HAVE_PAGMO
-#  include <dart/optimizer/pagmo/pagmo.hpp>
+  #include <dart/optimizer/pagmo/pagmo.hpp>
 #endif
 
 using namespace dart;

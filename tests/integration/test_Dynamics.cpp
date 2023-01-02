@@ -30,7 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -40,6 +39,8 @@
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

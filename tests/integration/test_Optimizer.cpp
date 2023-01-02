@@ -31,7 +31,6 @@
  */
 
 // For problem
-#include <dart/test/TestHelpers.hpp>
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -40,6 +39,8 @@
 #include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/GradientDescentSolver.hpp"
 #include "dart/optimizer/Problem.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

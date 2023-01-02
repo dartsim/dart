@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/collision.hpp"
-#include "dart/dynamics/fcl/fcl.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/dynamics.hpp"
@@ -46,9 +44,10 @@
 #if DART_HAVE_BULLET
   #include "dart/dynamics/dynamics.hpp"
 #endif
-#include <dart/test/TestHelpers.hpp>
 #include "dart/io/io.hpp"
 #include "dart/simulation/simulation.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 using namespace dart;
 using namespace common;

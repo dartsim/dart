@@ -32,8 +32,6 @@
 
 #include <dart/test/TestHelpers.hpp>
 
-#include <dart/io/urdf/urdf.hpp>
-
 #include <dart/dart.hpp>
 
 #include <gtest/gtest.h>

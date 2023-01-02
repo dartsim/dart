@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "GTestUtils.hpp"
-#include <dart/test/TestHelpers.hpp>
 #include "dart/dart.hpp"
 #include "dart/io/io.hpp"
+
+#include <dart/test/GTestUtils.hpp>
+#include <dart/test/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

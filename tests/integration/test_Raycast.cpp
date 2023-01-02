@@ -31,13 +31,10 @@
  */
 
 #include "dart/dart.hpp"
-#include "dart/dynamics/fcl/fcl.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
-#if DART_HAVE_BULLET
-  #include "dart/dynamics/dynamics.hpp"
-#endif
-#include <dart/test/TestHelpers.hpp>
 
 using namespace dart;
 
