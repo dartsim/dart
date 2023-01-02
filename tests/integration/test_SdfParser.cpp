@@ -37,7 +37,7 @@
 #include "dart/io/sdf/SdfParser.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

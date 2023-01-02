@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <dart/io/urdf/DartLoader.hpp>
 
@@ -58,7 +58,7 @@ TEST(Issue838, MaterialParsing)
     const Eigen::Vector4d& c = colors[i];
     skeleton->getBodyNode(i)->eachShapeNodeWith<dart::dynamics::VisualAspect>(
         [&](const dart::dynamics::ShapeNode* shapeNode) {
-          EXPECT_TRUE(equals(shapeNode->getVisualAspect()->getRGBA(), c));
+          EXPECT_TRUE(test::equals(shapeNode->getVisualAspect()->getRGBA(), c));
         });
   }
 }

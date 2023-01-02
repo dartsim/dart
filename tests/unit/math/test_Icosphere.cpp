@@ -32,7 +32,7 @@
 
 #include "dart/math/Icosphere.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 
 #include <gtest/gtest.h>
 

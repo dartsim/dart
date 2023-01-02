@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <dart/dart.hpp>
 
@@ -131,6 +131,6 @@ TEST(Issue1243, State)
   const Eigen::Isometry3d rewind_tf
       = box_skel->getRootBodyNode()->getTransform();
 
-  EXPECT_FALSE(equals(bookmark_tf, final_tf));
-  EXPECT_TRUE(equals(bookmark_tf, rewind_tf));
+  EXPECT_FALSE(test::equals(bookmark_tf, final_tf));
+  EXPECT_TRUE(test::equals(bookmark_tf, rewind_tf));
 }

@@ -30,26 +30,4 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Logging.hpp>
-
-#include <gtest/gtest.h>
-
-using namespace dart;
-
-//==============================================================================
-TEST(LoggingTest, Basics)
-{
-  DART_TRACE("trace log");
-  DART_DEBUG("debug log");
-  DART_INFO("info log");
-  DART_WARN("warn log");
-  DART_ERROR("error log");
-  DART_FATAL("fatal log");
-}
-
-//==============================================================================
-TEST(LoggingTest, Arguments)
-{
-  [[maybe_unused]] int val = 10;
-  DART_INFO("Log with param '{}' and '{}'", 1, val);
-}
+#include "dart/test/io/TestHelpers.hpp"

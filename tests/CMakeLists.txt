@@ -146,8 +146,8 @@ add_subdirectory(src)
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
 if(NOT MSVC)
-#  # Disabled due to limitied disk space in CI image
- add_subdirectory(integration)
+  # Disabled due to limitied disk space in CI image
+  # add_subdirectory(integration)
   add_subdirectory(regression)
 endif()
 add_subdirectory(unit)

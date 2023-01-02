@@ -43,7 +43,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 
