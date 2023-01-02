@@ -88,11 +88,7 @@ endif()
 # CodeCov settings
 # Reference: https://github.com/codecov/example-cpp11-cmake
 if(DART_CODECOV AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-    list(APPEND link_options_public --coverage)
-  else()
-    list(APPEND link_libraries_public_skip_checking --coverage)
-  endif()
+  list(APPEND link_options_public --coverage)
   list(APPEND compile_options_public
     -O0         # no optimization
     -g          # generate debug info
