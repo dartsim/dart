@@ -36,7 +36,7 @@ dart_add_component(
     ${DART_BINARY_DIR}
   COMPONENT_NAME
     ${component_name}
-  COMPONENT_DEPENDENCY_PACKAGES
+  DEPENDENT_PACKAGES_REQUIRED
     OpenGL
   TARGET_LINK_LIBRARIES_PUBLIC
     ${target_link_libraries_public}
