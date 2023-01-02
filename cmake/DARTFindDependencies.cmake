@@ -145,8 +145,6 @@ endif()
 # Optional dependencies
 #=======================
 
-option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
-mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
 
 # find_package(Threads)

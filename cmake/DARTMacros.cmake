@@ -131,16 +131,19 @@ endfunction()
 
 #===============================================================================
 macro(dart_check_optional_package variable component dependency)
-  option(DART_SKIP_${variable} "If ON, do not use ${variable} even if it is found." OFF)
-  mark_as_advanced(DART_SKIP_${variable})
-  if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable}})
-    set(DART_HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
+  # Use upper case for the package names
+  string(TOUPPER ${variable} variable_upper)
+
+  option(DART_SKIP_${variable_upper} "If ON, do not use ${variable_upper} even if it is found." OFF)
+  mark_as_advanced(DART_SKIP_${variable_upper})
+  if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable_upper}})
+    set(DART_HAVE_${variable_upper} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
                      " found")
     endif()
   else()
-    set(DART_HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
+    set(DART_HAVE_${variable_upper} FALSE CACHE BOOL "Check if ${variable_upper} found." FORCE)
     if(NOT ${${variable}_FOUND})
       if(ARGV3) # version
         message(WARNING "Looking for ${dependency} - NOT found, to use"
@@ -149,9 +152,9 @@ macro(dart_check_optional_package variable component dependency)
         message(WARNING "Looking for ${dependency} - NOT found, to use"
                         " ${component}, please install ${dependency}")
       endif()
-    elseif(${DART_SKIP_${variable}} AND DART_VERBOSE)
+    elseif(${DART_SKIP_${variable_upper}} AND DART_VERBOSE)
       message(STATUS "Not using ${dependency} - version ${${variable}_VERSION}"
-                     " even if found because DART_SKIP_${variable} is ON.")
+                     " even if found because DART_SKIP_${variable_upper} is ON.")
     endif()
     return()
   endif()
@@ -591,11 +594,13 @@ function(dart_add_component_sub_directory)
 
   # Check dependencies
   foreach(package ${dependent_packages})
+    string(TOUPPER ${package} package_upper)
     dart_check_optional_package(${package} ${current_target_name} ${package})
-    if(NOT DART_HAVE_${package})
+    if(NOT DART_HAVE_${package_upper})
       message(STATUS "Skipping <todo> because of missing dependency package ${package}")
       return()
     endif()
+    list(APPEND target_compile_definitions_public -DDART_HAVE_${package_upper}=1)
   endforeach()
 
   # Add sub-directories
