@@ -44,7 +44,7 @@ class Controller
 public:
   Controller(
       const dart::dynamics::SkeletonPtr& _skel,
-      dart::constraint::ConstraintSolver* _collisionSolver,
+      dart::dynamics::ConstraintSolver* _collisionSolver,
       double _t);
   virtual ~Controller() {}
 
@@ -90,7 +90,7 @@ protected:
   Eigen::VectorXd adjustAngMomentum(
       Eigen::VectorXd _deltaMomentum, Eigen::VectorXd _controlledAxis);
   dart::dynamics::SkeletonPtr mSkel;
-  dart::constraint::ConstraintSolver* mCollisionHandle;
+  dart::dynamics::ConstraintSolver* mCollisionHandle;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;

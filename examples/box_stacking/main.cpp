@@ -356,25 +356,25 @@ protected:
     {
       // auto solver
       //     =
-      //     std::make_unique<constraint::SequentialImpulseConstraintSolver>(
+      //     std::make_unique<dynamics::SequentialImpulseConstraintSolver>(
       //         mWorld->getTimeStep());
-      auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+      auto lcpSolver = std::make_shared<dynamics::DantzigBoxedLcpSolver>();
       auto solver
-          = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
+          = std::make_unique<dynamics::BoxedLcpConstraintSolver>(lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else if (solverType == 1)
     {
-      auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+      auto lcpSolver = std::make_shared<dynamics::DantzigBoxedLcpSolver>();
       auto solver
-          = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
+          = std::make_unique<dynamics::BoxedLcpConstraintSolver>(lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else if (solverType == 2)
     {
-      auto lcpSolver = std::make_shared<constraint::PgsBoxedLcpSolver>();
+      auto lcpSolver = std::make_shared<dynamics::PgsBoxedLcpSolver>();
       auto solver
-          = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
+          = std::make_unique<dynamics::BoxedLcpConstraintSolver>(lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     }
     else

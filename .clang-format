@@ -68,8 +68,6 @@ IncludeCategories:
     Priority: 24
   - Regex: '^<dart\/collision\/.*\.h(pp)?>$'
     Priority: 25
-  - Regex: '^<dart\/constraint\/.*\.h(pp)?>$'
-    Priority: 26
   - Regex: '^<dart\/dynamics\/.*\.h(pp)?>$'
     Priority: 27
   - Regex: '^<dart\/optimizer\/.*\.h(pp)?>$'

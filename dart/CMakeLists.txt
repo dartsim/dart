@@ -16,7 +16,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #   dart
 #   fcl
 #   bullet
-# constraint
 # simulation
 # io
 #   sdf
@@ -29,7 +28,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
 # dart - common, math, optimizer, dynamics, collision,
-#        collision/dart, collision/fcl, constraint, simulation, [assimp, eigen3,
+#        collision/dart, collision/fcl, simulation, [assimp, eigen3,
 #        fcl, fmt, libccd]
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
 # dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
@@ -69,7 +68,6 @@ add_subdirectory(math)
 add_subdirectory(optimizer)
 add_subdirectory(dynamics)
 add_subdirectory(collision)
-add_subdirectory(constraint)
 add_subdirectory(simulation)
 add_subdirectory(io) # tinyxml2, bullet
 add_subdirectory(gui) # opengl, glut, bullet

@@ -42,7 +42,7 @@ using namespace Eigen;
 
 using namespace dart;
 using namespace math;
-using namespace constraint;
+using namespace dynamics;
 using namespace dynamics;
 
 //==============================================================================

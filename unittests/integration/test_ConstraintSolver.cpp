@@ -31,8 +31,8 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/constraint/ContactSurface.hpp"
+#include "dart/dynamics/ConstraintSolver.hpp"
+#include "dart/dynamics/ContactSurface.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
@@ -56,10 +56,10 @@ TEST(ConstraintSolver, DefaultConstactSurfaceHandler)
 //==============================================================================
 TEST(ConstraintSolver, CustomConstactSurfaceHandler)
 {
-  class CustomHandler : public constraint::ContactSurfaceHandler
+  class CustomHandler : public dynamics::ContactSurfaceHandler
   {
   public:
-    constraint::ContactSurfaceParams createParams(
+    dynamics::ContactSurfaceParams createParams(
         const collision::Contact& contact,
         const size_t numContactsOnCollisionObject) const override
     {
@@ -144,7 +144,7 @@ TEST(ConstraintSolver, CustomConstactSurfaceHandler)
 //==============================================================================
 TEST(ConstraintSolver, ConstactSurfaceHandlerIsCalled)
 {
-  class ValueHandler : public constraint::ContactSurfaceHandler
+  class ValueHandler : public dynamics::ContactSurfaceHandler
   {
   public:
     ValueHandler(int value) : mValue(value)
@@ -152,7 +152,7 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIsCalled)
       // Do nothing
     }
 
-    constraint::ContactSurfaceParams createParams(
+    dynamics::ContactSurfaceParams createParams(
         const collision::Contact& contact,
         const size_t numContactsOnCollisionObject) const override
     {
@@ -207,7 +207,7 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIsCalled)
 //==============================================================================
 TEST(ConstraintSolver, ConstactSurfaceHandlerIgnoreParent)
 {
-  class IgnoreParentHandler : public constraint::ContactSurfaceHandler
+  class IgnoreParentHandler : public dynamics::ContactSurfaceHandler
   {
   public:
     IgnoreParentHandler(int value) : mValue(value)
@@ -215,11 +215,11 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIgnoreParent)
       // Do nothing
     }
 
-    constraint::ContactSurfaceParams createParams(
+    dynamics::ContactSurfaceParams createParams(
         const collision::Contact& /*contact*/,
         const size_t /*numContactsOnCollisionObject*/) const override
     {
-      auto params = constraint::ContactSurfaceParams{};
+      auto params = dynamics::ContactSurfaceParams{};
       mCalled = true;
       params.mPrimaryFrictionCoeff = mValue;
 

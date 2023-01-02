@@ -32,7 +32,6 @@
 
 #include "TestHelpers.hpp"
 #include "dart/common/common.hpp"
-#include "dart/constraint/constraint.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -42,11 +41,11 @@ using namespace dart;
 
 //==============================================================================
 void testContactWithKinematicJoint(
-    const constraint::BoxedLcpSolverPtr& lcpSolver, double tol)
+    const dynamics::BoxedLcpSolverPtr& lcpSolver, double tol)
 {
   auto world = std::make_shared<simulation::World>();
   world->setConstraintSolver(
-      std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver));
+      std::make_unique<dynamics::BoxedLcpConstraintSolver>(lcpSolver));
 
   auto skeleton1 = dynamics::Skeleton::create("skeleton1");
   auto pair1 = skeleton1->createJointAndBodyNodePair<dynamics::FreeJoint>();
@@ -93,13 +92,13 @@ void testContactWithKinematicJoint(
 TEST(ContactConstraint, ContactWithKinematicJoint)
 {
   testContactWithKinematicJoint(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>(), 1e-6);
+      std::make_shared<dynamics::DantzigBoxedLcpSolver>(), 1e-6);
 
 #ifdef DART_ARCH_32BITS
   testContactWithKinematicJoint(
-      std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-3);
+      std::make_shared<dynamics::PgsBoxedLcpSolver>(), 1e-3);
 #else
   testContactWithKinematicJoint(
-      std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-4);
+      std::make_shared<dynamics::PgsBoxedLcpSolver>(), 1e-4);
 #endif
 }

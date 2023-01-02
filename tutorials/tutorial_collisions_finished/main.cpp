@@ -288,7 +288,7 @@ protected:
     // Compute the offset where the JointConstraint should be located
     Eigen::Vector3d offset = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
     offset = tail->getWorldTransform() * offset;
-    auto constraint = std::make_shared<dart::constraint::BallJointConstraint>(
+    auto constraint = std::make_shared<dart::dynamics::BallJointConstraint>(
         head, tail, offset);
 
     mWorld->getConstraintSolver()->addConstraint(constraint);
@@ -301,7 +301,7 @@ protected:
   {
     for (std::size_t i = 0; i < mJointConstraints.size(); ++i)
     {
-      const dart::constraint::DynamicJointConstraintPtr& constraint
+      const dart::dynamics::DynamicJointConstraintPtr& constraint
           = mJointConstraints[i];
 
       if (constraint->getBodyNode1()->getSkeleton() == skel
@@ -326,7 +326,7 @@ protected:
 
   /// History of the active JointConstraints so that we can properly delete them
   /// when a Skeleton gets removed
-  std::vector<dart::constraint::DynamicJointConstraintPtr> mJointConstraints;
+  std::vector<dart::dynamics::DynamicJointConstraintPtr> mJointConstraints;
 
   /// A blueprint Skeleton that we will use to spawn balls
   SkeletonPtr mOriginalBall;

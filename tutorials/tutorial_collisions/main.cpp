@@ -232,7 +232,7 @@ protected:
   {
     for (std::size_t i = 0; i < mJointConstraints.size(); ++i)
     {
-      const dart::constraint::DynamicJointConstraintPtr& constraint
+      const dart::dynamics::DynamicJointConstraintPtr& constraint
           = mJointConstraints[i];
 
       if (constraint->getBodyNode1()->getSkeleton() == skel
@@ -257,7 +257,7 @@ protected:
 
   /// History of the active JointConstraints so that we can properly delete them
   /// when a Skeleton gets removed
-  std::vector<dart::constraint::DynamicJointConstraintPtr> mJointConstraints;
+  std::vector<dart::dynamics::DynamicJointConstraintPtr> mJointConstraints;
 
   /// A blueprint Skeleton that we will use to spawn balls
   SkeletonPtr mOriginalBall;

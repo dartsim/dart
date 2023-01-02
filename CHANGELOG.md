@@ -28,6 +28,10 @@
   * Merged `integration` namespace into `math` namespace: [#1701](https://github.com/dartsim/dart/pull/1701)
   * Made Function::eval() const: [#1698](https://github.com/dartsim/dart/pull/1698)
 
+* Dynamics
+
+  * Merged `constraint` namespace into `dynamics` namespace: [#1709](https://github.com/dartsim/dart/pull/1709)
+
 * IO
 
   * Renamed `utils` namespace to `io` namespace: [#1703](https://github.com/dartsim/dart/pull/1703)

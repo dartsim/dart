@@ -35,7 +35,6 @@
 
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/ProxyAspect.hpp"
-#include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Inertia.hpp"
 #include "dart/dynamics/Node.hpp"
 
@@ -43,9 +42,6 @@ namespace dart {
 namespace dynamics {
 
 class Skeleton;
-
-const double DART_DEFAULT_FRICTION_COEFF = 1.0;
-const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 
 namespace detail {
 

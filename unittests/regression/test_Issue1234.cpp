@@ -37,9 +37,8 @@
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
-#include <dart/constraint/ConstraintSolver.hpp>
-
 #include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/ConstraintSolver.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>

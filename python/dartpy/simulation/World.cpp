@@ -253,7 +253,7 @@ void World(py::module& m)
           })
       .def(
           "getConstraintSolver",
-          +[](dart::simulation::World* self) -> constraint::ConstraintSolver* {
+          +[](dart::simulation::World* self) -> dynamics::ConstraintSolver* {
             return self->getConstraintSolver();
           },
           ::py::return_value_policy::reference_internal)

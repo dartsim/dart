@@ -103,7 +103,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   using namespace Eigen;
   using namespace dart::math;
   using namespace dart::collision;
-  using namespace dart::constraint;
+  using namespace dart::dynamics;
   using namespace dart::dynamics;
   using namespace dart::simulation;
   using namespace dart::io;
