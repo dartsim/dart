@@ -23,7 +23,7 @@ dart_add_component(
   COMPONENT_NAME
     ${component_name}
   COMPONENT_DEPENDENCIES
-    common math optimizer collision dynamics
+    common math optimization collision dynamics
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
   SUB_DIRECTORIES

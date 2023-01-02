@@ -36,7 +36,7 @@ using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
-class RelaxedPosture : public dart::optimizer::Function
+class RelaxedPosture : public dart::optimization::Function
 {
 public:
   RelaxedPosture(
@@ -1414,8 +1414,8 @@ void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& hubo)
 
 void setupWholeBodySolver(const SkeletonPtr& hubo)
 {
-  std::shared_ptr<dart::optimizer::GradientDescentSolver> solver
-      = std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
+  std::shared_ptr<dart::optimization::GradientDescentSolver> solver
+      = std::dynamic_pointer_cast<dart::optimization::GradientDescentSolver>(
           hubo->getIK(true)->getSolver());
 
   std::size_t nDofs = hubo->getNumDofs();

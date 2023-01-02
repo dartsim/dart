@@ -36,9 +36,9 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/optimizer/Function.hpp"
-#include "dart/optimizer/GradientDescentSolver.hpp"
-#include "dart/optimizer/Problem.hpp"
+#include "dart/optimization/Function.hpp"
+#include "dart/optimization/GradientDescentSolver.hpp"
+#include "dart/optimization/Problem.hpp"
 
 #include <dart/test/TestHelpers.hpp>
 
@@ -51,18 +51,18 @@
 
 #include <cstdio>
 #if DART_HAVE_NLOPT
-  #include "dart/optimizer/nlopt/NloptSolver.hpp"
+  #include "dart/optimization/nlopt/NloptSolver.hpp"
 #endif
 #if DART_HAVE_IPOPT
-  #include "dart/optimizer/ipopt/IpoptSolver.hpp"
+  #include "dart/optimization/ipopt/IpoptSolver.hpp"
 #endif
 #if DART_HAVE_SNOPT
-  #include "dart/optimizer/snopt/SnoptSolver.hpp"
+  #include "dart/optimization/snopt/SnoptSolver.hpp"
 #endif
 
 using namespace std;
 using namespace Eigen;
-using namespace dart::optimizer;
+using namespace dart::optimization;
 using namespace dart::dynamics;
 
 //==============================================================================
@@ -264,7 +264,7 @@ TEST(Optimizer, OutStream)
   std::string outputString = ss.str();
 
   // Print the progress to a file
-  std::string outputFile = "test_optimizer_outstream.txt";
+  std::string outputFile = "test_optimization_outstream.txt";
   std::ofstream ofs(outputFile);
   EXPECT_TRUE(ofs.is_open());
   solver.setOutStream(&ofs);
