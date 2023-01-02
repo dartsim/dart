@@ -61,18 +61,6 @@ const std::string& EllipsoidShape::getStaticType()
 }
 
 //==============================================================================
-void EllipsoidShape::setSize(const Eigen::Vector3d& diameters)
-{
-  setDiameters(diameters);
-}
-
-//==============================================================================
-const Eigen::Vector3d& EllipsoidShape::getSize() const
-{
-  return getDiameters();
-}
-
-//==============================================================================
 void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 {
   assert(diameters[0] > 0.0);

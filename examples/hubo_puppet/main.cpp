@@ -1171,9 +1171,9 @@ SkeletonPtr createGround()
 SkeletonPtr createHubo()
 {
   dart::io::DartLoader loader;
-  loader.addPackageDirectory("drchubo", DART_DATA_PATH "/urdf/drchubo");
+  loader.addPackageDirectory("drchubo", DART_DATA_LOCAL_PATH "/urdf/drchubo");
   SkeletonPtr hubo
-      = loader.parseSkeleton(DART_DATA_PATH "/urdf/drchubo/drchubo.urdf");
+      = loader.parseSkeleton(DART_DATA_LOCAL_PATH "/urdf/drchubo/drchubo.urdf");
 
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
   {

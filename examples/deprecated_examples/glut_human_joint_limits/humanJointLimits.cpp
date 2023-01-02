@@ -119,7 +119,7 @@ public:
 
 int main(int argc, char* argv[])
 {
-  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH
+  WorldPtr world = SkelParser::readWorld(DART_DATA_LOCAL_PATH
                                          "/skel/kima/kima_human_edited.skel");
   assert(world != nullptr);
 

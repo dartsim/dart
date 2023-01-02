@@ -1558,12 +1558,6 @@ void BodyNode::dirtyAcceleration()
 }
 
 //==============================================================================
-void BodyNode::notifyArticulatedInertiaUpdate()
-{
-  dirtyArticulatedInertia();
-}
-
-//==============================================================================
 void BodyNode::dirtyArticulatedInertia()
 {
   const SkeletonPtr& skel = getSkeleton();
@@ -1572,21 +1566,9 @@ void BodyNode::dirtyArticulatedInertia()
 }
 
 //==============================================================================
-void BodyNode::notifyExternalForcesUpdate()
-{
-  dirtyExternalForces();
-}
-
-//==============================================================================
 void BodyNode::dirtyExternalForces()
 {
   SKEL_SET_FLAGS(mExternalForces);
-}
-
-//==============================================================================
-void BodyNode::notifyCoriolisUpdate()
-{
-  dirtyCoriolisForces();
 }
 
 //==============================================================================

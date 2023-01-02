@@ -23,7 +23,7 @@ load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/relea
 SkeletonPtr loadBiped()
 {
 ...
-    WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/biped.skel");
+    WorldPtr world = SkelParser::readWorld(DART_DATA_LOCAL_PATH"skel/biped.skel");
     SkeletonPtr biped = world->getSkeleton("biped");
 ...
 }
@@ -329,7 +329,7 @@ We first load a skateboard from **skateboard.skel**:
 ```cpp
 void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
-    WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/skateboard.skel");
+    WorldPtr world = SkelParser::readWorld(DART_DATA_LOCAL_PATH"skel/skateboard.skel");
     SkeletonPtr skateboard = world->getSkeleton(0);
 ...
 }

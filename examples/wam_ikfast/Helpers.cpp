@@ -67,9 +67,9 @@ dart::dynamics::SkeletonPtr createWam()
 {
   dart::io::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
-      "herb_description", DART_DATA_PATH "/urdf/wam");
+      "herb_description", DART_DATA_LOCAL_PATH "/urdf/wam");
   dart::dynamics::SkeletonPtr wam
-      = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
+      = urdfParser.parseSkeleton(DART_DATA_LOCAL_PATH "/urdf/wam/wam.urdf");
 
   return wam;
 }

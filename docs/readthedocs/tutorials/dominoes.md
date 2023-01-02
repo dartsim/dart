@@ -232,7 +232,7 @@ Now we'll have ``loader`` parse the file into a Skeleton:
 
 ```cpp
 SkeletonPtr manipulator =
-    loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+    loader.parseSkeleton(DART_DATA_LOCAL_PATH"urdf/KR5/KR5 sixx R650.urdf");
 ```
 
 And we should give the Skeleton a convenient name:
