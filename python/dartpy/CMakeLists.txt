@@ -75,6 +75,9 @@ endif()
 # Remove debug postfix for dartpy
 set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")
 
+# Suppress the warning about undefined symbols on macOS
+target_link_libraries(${pybind_module} PUBLIC "$<$<PLATFORM_ID:Darwin>:-undefined dynamic_lookup>")
+
 # Get the path to the bind module
 set(PYBIND_MODULE $<TARGET_FILE:${pybind_module}>)
 
