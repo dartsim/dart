@@ -111,11 +111,12 @@ target_include_directories(dart BEFORE
 target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
-    ${PROJECT_NAME}-external-odelcpsolver
     Eigen3::Eigen
     ccd
     fcl
     assimp
+  PRIVATE
+    ${PROJECT_NAME}-external-odelcpsolver
 )
 if(TARGET fmt::fmt-header-only)
   target_link_libraries(dart PUBLIC fmt::fmt-header-only)
@@ -193,7 +194,7 @@ endif()
 
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
-add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
+add_component_dependencies(${PROJECT_NAME} dart)
 add_component_dependency_packages(${PROJECT_NAME} dart
   assimp Eigen3 ccd fcl fmt
 )
