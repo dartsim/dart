@@ -22,9 +22,9 @@ dart_add_component(
     ${DART_BINARY_DIR}
   COMPONENT_NAME
     ${component_name}
-  COMPONENT_DEPENDENCIES
+  DEPENDENT_COMPONENTS
     common math optimization collision dynamics simulation
-  COMPONENT_DEPENDENCY_PACKAGES
+  DEPENDENT_PACKAGES_REQUIRED
     tinyxml2
   TARGET_LINK_LIBRARIES_PUBLIC
     tinyxml2::tinyxml2

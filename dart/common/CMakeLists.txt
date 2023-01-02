@@ -97,7 +97,7 @@ dart_add_component(
     ${DART_BINARY_DIR}
   COMPONENT_NAME
     ${component_name}
-  COMPONENT_DEPENDENCY_PACKAGES
+  DEPENDENT_PACKAGES_REQUIRED
     ${component_dependency_packages}
   TARGET_LINK_LIBRARIES_PUBLIC
     ${link_libraries_public}

@@ -22,7 +22,7 @@ dart_add_component(
     ${DART_BINARY_DIR}
   COMPONENT_NAME
     ${component_name}
-  COMPONENT_DEPENDENCIES
+  DEPENDENT_COMPONENTS
     common math optimization collision dynamics
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17

@@ -366,6 +366,9 @@ function(dart_add_component)
     PROJECT_BINARY_DIR
   )
   set(multiValueArgs
+    DEPENDENT_COMPONENTS
+    DEPENDENT_PACKAGES_REQUIRED
+    DEPENDENT_PACKAGES_OPTIONAL
     TARGET_LINK_LIBRARIES_PUBLIC
     TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING
     TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL
@@ -375,8 +378,6 @@ function(dart_add_component)
     TARGET_COMPILE_OPTIONS_PUBLIC
     TARGET_COMPILE_OPTIONS_PRIVATE
     TARGET_COMPILE_DEFINITIONS_PUBLIC
-    COMPONENT_DEPENDENCIES
-    COMPONENT_DEPENDENCY_PACKAGES
     SUB_DIRECTORIES
   )
   cmake_parse_arguments(
@@ -399,11 +400,11 @@ function(dart_add_component)
   set(compile_options_public ${${prefix}_TARGET_COMPILE_OPTIONS_PUBLIC})
   set(compile_options_private ${${prefix}_TARGET_COMPILE_OPTIONS_PRIVATE})
   set(target_compile_definitions_public ${${prefix}_TARGET_COMPILE_DEFINITIONS_PUBLIC})
-  set(dependent_components ${${prefix}_COMPONENT_DEPENDENCIES})
-  set(dependent_packages ${${prefix}_COMPONENT_DEPENDENCY_PACKAGES})
+  set(dependent_components ${${prefix}_DEPENDENT_COMPONENTS})
+  set(dependent_packages ${${prefix}_DEPENDENT_PACKAGES_REQUIRED})
   set(sub_directories ${${prefix}_SUB_DIRECTORIES})
 
-  # Return if 
+  # Check if the component is enabled
   if(NOT DART_BUILD_COMP_${component_name})
     message(WARNING "Skipping component <${component_name}> because DART_BUILD_COMP_${component_name} is not set or set to OFF")
     return()
@@ -444,7 +445,7 @@ function(dart_add_component)
   set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
   set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_BASE_PATH ${include_base_path})
   set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_PATH ${include_path})
-  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_DEPENDENCY_PACKAGES "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_DEPENDENT_PACKAGES_REQUIRED "")
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_NAME ${target_name})
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC "")
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE "")
@@ -464,7 +465,7 @@ function(dart_add_component)
   endforeach()
   get_property(current_component_headers                 GLOBAL PROPERTY _DART_CURRENT_COMPONENT_HEADERS)
   get_property(current_component_sources                 GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SOURCES)
-  get_property(current_component_dependency_packages     GLOBAL PROPERTY _DART_CURRENT_COMPONENT_DEPENDENCY_PACKAGES)
+  get_property(current_component_dependency_packages     GLOBAL PROPERTY _DART_CURRENT_DEPENDENT_PACKAGES_REQUIRED)
   get_property(current_target_link_libraries_public      GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC)
   get_property(current_target_link_libraries_private     GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE)
   get_property(current_target_compile_definitions_public GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_DEFINITIONS_PUBLIC)
@@ -569,7 +570,7 @@ function(dart_add_component_sub_directory)
   set(multiValueArgs
     TARGET_LINK_LIBRARIES_PUBLIC
     TARGET_LINK_LIBRARIES_PRIVATE
-    COMPONENT_DEPENDENCY_PACKAGES
+    DEPENDENT_PACKAGES_REQUIRED
     TARGET_COMPILE_DEFINITIONS_PUBLIC
     TARGET_COMPILE_OPTIONS_PUBLIC
     SUB_DIRECTORIES
@@ -581,7 +582,7 @@ function(dart_add_component_sub_directory)
   # Shorter variable names for readability
   set(link_libraries_public ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC})
   set(link_libraries_private ${${prefix}_TARGET_LINK_LIBRARIES_PRIVATE})
-  set(dependent_packages ${${prefix}_COMPONENT_DEPENDENCY_PACKAGES})
+  set(dependent_packages ${${prefix}_DEPENDENT_PACKAGES_REQUIRED})
   set(target_compile_definitions_public ${${prefix}_TARGET_COMPILE_DEFINITIONS_PUBLIC})
   set(target_compile_options_public ${${prefix}_TARGET_COMPILE_OPTIONS_PUBLIC})
   set(sub_directories ${${prefix}_SUB_DIRECTORIES})
@@ -628,7 +629,7 @@ function(dart_add_component_sub_directory)
   set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_COMPILE_OPTIONS_PUBLIC ${target_compile_options_public})
 
   # Component settings
-  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_DEPENDENCY_PACKAGES ${dependent_packages})
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_DEPENDENT_PACKAGES_REQUIRED ${dependent_packages})
 
   # Install headers
   install(
