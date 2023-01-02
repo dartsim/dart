@@ -353,7 +353,7 @@ endfunction()
 
 #===============================================================================
 function(dart_add_component)
-  set(prefix dart_add_component)
+  set(prefix _ARG)
   set(options
     GENERATE_META_HEADER
     FORMAT_CODE
@@ -385,24 +385,22 @@ function(dart_add_component)
   )
 
   # Shorter variable names for readability
-  set(project_source_dir ${${prefix}_PROJECT_SOURCE_DIR})
-  set(project_binary_dir ${${prefix}_PROJECT_BINARY_DIR})
-  set(component_name ${${prefix}_COMPONENT_NAME})
+  set(project_source_dir ${_ARG_PROJECT_SOURCE_DIR})
+  set(project_binary_dir ${_ARG_PROJECT_BINARY_DIR})
+  set(component_name ${_ARG_COMPONENT_NAME})
   set(org_name dartsim)
-  set(project_name ${${prefix}_PROJECT_NAME})
-  set(project_version_major ${${prefix}_PROJECT_VERSION_MAJOR})
-  set(link_libraries_public ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC})
-  set(link_libraries_public_skip_checking ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING})
-  set(link_libraries_public_optional ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL})
-  set(link_libraries_private ${${prefix}_TARGET_LINK_LIBRARIES_PRIVATE})
-  set(link_options_public ${${prefix}_TARGET_LINK_OPTIONS_PUBLIC})
-  set(compile_features_public ${${prefix}_TARGET_COMPILE_FEATURES_PUBLIC})
-  set(compile_options_public ${${prefix}_TARGET_COMPILE_OPTIONS_PUBLIC})
-  set(compile_options_private ${${prefix}_TARGET_COMPILE_OPTIONS_PRIVATE})
-  set(target_compile_definitions_public ${${prefix}_TARGET_COMPILE_DEFINITIONS_PUBLIC})
-  set(dependent_components ${${prefix}_DEPENDENT_COMPONENTS})
-  set(dependent_packages ${${prefix}_DEPENDENT_PACKAGES_REQUIRED})
-  set(sub_directories ${${prefix}_SUB_DIRECTORIES})
+  set(project_name ${_ARG_PROJECT_NAME})
+  set(project_version_major ${_ARG_PROJECT_VERSION_MAJOR})
+  set(link_libraries_public ${_ARG_TARGET_LINK_LIBRARIES_PUBLIC})
+  set(link_libraries_public_skip_checking ${_ARG_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING})
+  set(link_libraries_public_optional ${_ARG_TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL})
+  set(link_libraries_private ${_ARG_TARGET_LINK_LIBRARIES_PRIVATE})
+  set(link_options_public ${_ARG_TARGET_LINK_OPTIONS_PUBLIC})
+  set(compile_features_public ${_ARG_TARGET_COMPILE_FEATURES_PUBLIC})
+  set(compile_options_public ${_ARG_TARGET_COMPILE_OPTIONS_PUBLIC})
+  set(compile_options_private ${_ARG_TARGET_COMPILE_OPTIONS_PRIVATE})
+  set(dependent_components ${_ARG_DEPENDENT_COMPONENTS})
+  set(sub_directories ${_ARG_SUB_DIRECTORIES})
 
   # Check if the component is enabled
   if(NOT DART_BUILD_COMP_${component_name})
@@ -410,7 +408,7 @@ function(dart_add_component)
     return()
   endif()
 
-  # Check dependencies
+  # Check component dependencies
   get_property(enabled_components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
   foreach(dep_comp ${dependent_components})
     if(NOT ${dep_comp} IN_LIST enabled_components)
@@ -428,6 +426,38 @@ function(dart_add_component)
     if(NOT TARGET ${dep})
       message(WARNING "Skipping component <${component_name}> because of missing library <${dep}>")
       return()
+    endif()
+  endforeach()
+
+  # Check required dependencies
+  foreach(package ${_ARG_DEPENDENT_PACKAGES_REQUIRED})
+    string(TOUPPER ${package} package_upper)
+    if(${package}_FOUND OR ${package_upper}_FOUND)
+      if(NOT DART_SKIP_${package_upper})
+        list(APPEND _ARG_DEPENDENT_PACKAGES_REQUIRED ${package})
+      else()
+        message("[WARN] Skipped component [${_ARG_COMPONENT_NAME}] as [DART_SKIP_${package_upper}=ON] is set")
+        return()
+      endif()
+    else()
+      message("[WARN] Skipped component [${_ARG_COMPONENT_NAME}] due to missing [${package}]")
+      return()
+    endif()
+  endforeach()
+
+  # Check optional dependencies
+  foreach(package ${_ARG_DEPENDENT_PACKAGES_OPTIONAL})
+    string(TOUPPER ${package} package_upper)
+    if(${package}_FOUND)
+      if(NOT DART_SKIP_${package_upper})
+        list(APPEND _ARG_TARGET_COMPILE_DEFINITIONS_PUBLIC -DDART_HAVE_${package_upper}=1)
+      else()
+        list(APPEND _ARG_TARGET_COMPILE_DEFINITIONS_PUBLIC -DDART_HAVE_${package_upper}=0)
+        message("[WARN] Building component [${_ARG_COMPONENT_NAME}] without [${package}] as [DART_SKIP_${package_upper}=ON] is set")
+      endif()
+    else()
+      list(APPEND _ARG_TARGET_COMPILE_DEFINITIONS_PUBLIC -DDART_HAVE_${package_upper}=0)
+      message("[WARN] Building component [${_ARG_COMPONENT_NAME}] without [${package}] as it's not found")
     endif()
   endforeach()
 
@@ -513,14 +543,14 @@ function(dart_add_component)
 
   # Set compile definitions
   target_compile_definitions(
-    ${target_name} PUBLIC ${target_compile_definitions_public}
+    ${target_name} PUBLIC ${_ARG_TARGET_COMPILE_DEFINITIONS_PUBLIC}
   )
   target_compile_definitions(
     ${target_name} PUBLIC ${current_target_compile_definitions_public}
   )
 
   # Format files
-  if(${prefix}_FORMAT_CODE)
+  if(_ARG_FORMAT_CODE)
     dart_format_add(${headers} ${sources})
   endif()
 
@@ -533,11 +563,11 @@ function(dart_add_component)
   add_component_dependency_packages(
     ${project_name}
     ${component_name}
-    ${dependent_packages} ${current_component_dependency_packages}
+    ${_ARG_DEPENDENT_PACKAGES_REQUIRED} ${current_component_dependency_packages}
   )
 
   # Generate a meta header for the component
-  if(${prefix}_GENERATE_META_HEADER)
+  if(_ARG_GENERATE_META_HEADER)
     dart_generate_meta_header_from_abs_paths(
       "${CMAKE_CURRENT_BINARY_DIR}/${component_name}.hpp"
       ${project_source_dir}
@@ -562,7 +592,7 @@ endfunction()
 
 #===============================================================================
 function(dart_add_component_sub_directory)
-  set(prefix dart_add_component_sub_directory)
+  set(prefix _ARG)
   set(options
   )
   set(oneValueArgs
@@ -580,12 +610,12 @@ function(dart_add_component_sub_directory)
   )
 
   # Shorter variable names for readability
-  set(link_libraries_public ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC})
-  set(link_libraries_private ${${prefix}_TARGET_LINK_LIBRARIES_PRIVATE})
-  set(dependent_packages ${${prefix}_DEPENDENT_PACKAGES_REQUIRED})
-  set(target_compile_definitions_public ${${prefix}_TARGET_COMPILE_DEFINITIONS_PUBLIC})
-  set(target_compile_options_public ${${prefix}_TARGET_COMPILE_OPTIONS_PUBLIC})
-  set(sub_directories ${${prefix}_SUB_DIRECTORIES})
+  set(link_libraries_public ${_ARG_TARGET_LINK_LIBRARIES_PUBLIC})
+  set(link_libraries_private ${_ARG_TARGET_LINK_LIBRARIES_PRIVATE})
+  set(dependent_packages ${_ARG_DEPENDENT_PACKAGES_REQUIRED})
+  set(target_compile_definitions_public ${_ARG_TARGET_COMPILE_DEFINITIONS_PUBLIC})
+  set(target_compile_options_public ${_ARG_TARGET_COMPILE_OPTIONS_PUBLIC})
+  set(sub_directories ${_ARG_SUB_DIRECTORIES})
 
   # Context variables
   get_property(component_base_path    GLOBAL PROPERTY _DART_CURRENT_COMPONENT_BASE_PATH)
