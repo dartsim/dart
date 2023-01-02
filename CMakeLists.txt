@@ -91,7 +91,6 @@ endif()
 # errors.
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
-option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_BUILD_DARTPY "Build dartpy" ON)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
@@ -380,10 +379,6 @@ endif(DART_VERBOSE)
 
 if(DART_BUILD_DARTPY)
   add_subdirectory(python)
-endif()
-
-if(DART_BUILD_EXTRAS)
-  add_subdirectory(extras)
 endif()
 
 # Add 'ALL' target that builds everything
