@@ -497,9 +497,7 @@ function(dart_add_component)
   target_link_libraries(${target_name} PRIVATE ${current_target_link_libraries_private})
 
   # Set link options
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-    target_link_options(${target_name} PUBLIC ${link_options})
-  endif()
+  target_link_options(${target_name} PUBLIC ${link_options})
 
   # Set compile features
   target_compile_features(${target_name} PUBLIC ${compile_features_public})
