@@ -1103,18 +1103,6 @@ double MetaSkeleton::computeLagrangian() const
 }
 
 //==============================================================================
-double MetaSkeleton::getKineticEnergy() const
-{
-  return computeKineticEnergy();
-}
-
-//==============================================================================
-double MetaSkeleton::getPotentialEnergy() const
-{
-  return computePotentialEnergy();
-}
-
-//==============================================================================
 void MetaSkeleton::setColor(const Eigen::Vector3d& color)
 {
   eachBodyNode([&](BodyNode* bodyNode) { bodyNode->setColor(color); });

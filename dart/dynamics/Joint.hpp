@@ -630,10 +630,6 @@ public:
 
   //----------------------------------------------------------------------------
 
-  /// Get potential energy
-  DART_DEPRECATED(6.1)
-  double getPotentialEnergy() const;
-
   /// Compute and return the potential energy
   virtual double computePotentialEnergy() const = 0;
 

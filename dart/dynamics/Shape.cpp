@@ -40,26 +40,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Shape::Shape(ShapeType type)
-  : mBoundingBox(),
-    mIsBoundingBoxDirty(true),
-    mVolume(0.0),
-    mIsVolumeDirty(true),
-    mID(mCounter++),
-    mVariance(STATIC),
-    mType(type),
-    onVersionChanged(mVersionChangedSignal)
-{
-  mVersion = 1;
-}
-
-//==============================================================================
 Shape::Shape()
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
     mVariance(STATIC),
-    mType(UNSUPPORTED),
     onVersionChanged(mVersionChangedSignal)
 {
   mVersion = 1;
@@ -105,12 +90,6 @@ double Shape::getVolume() const
 std::size_t Shape::getID() const
 {
   return mID;
-}
-
-//==============================================================================
-Shape::ShapeType Shape::getShapeType() const
-{
-  return mType;
 }
 
 //==============================================================================

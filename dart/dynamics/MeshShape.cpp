@@ -132,7 +132,7 @@ MeshShape::MeshShape(
     const aiScene* mesh,
     const common::Uri& path,
     common::ResourceRetrieverPtr resourceRetriever)
-  : Shape(MESH),
+  : Shape(),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
     mAlphaMode(BLEND),
