@@ -7,11 +7,9 @@ assignees: ''
 
 ---
 
-> If you're not reporting a bug, please use the [forum](https://dartsim.discourse.group/) to ask questions.
-
 ### Bug Report
 > Please answer the following questions for yourself before reporting a bug.
-- [ ] I checked the [documentation](http://dartsim.github.io/) and the [forum](https://dartsim.discourse.group/) but found no answer.
+- [ ] I checked the [documentation](http://dartsim.github.io/) but found no answer.
 - [ ] I checked to make sure that this issue has not already been filed.
 
 #### Environment
