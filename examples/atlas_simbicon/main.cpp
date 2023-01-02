@@ -34,11 +34,6 @@
 #include "AtlasSimbiconWidget.hpp"
 #include "AtlasSimbiconWorldNode.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/io/io.hpp>
-#include <dart/io/urdf/urdf.hpp>
-
 #include <dart/dart.hpp>
 
 int main()

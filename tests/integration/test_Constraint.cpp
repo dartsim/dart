@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include <dart/test/TestHelpers.hpp>
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/dart/DARTCollisionDetector.hpp"
 #include "dart/io/SkelParser.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"

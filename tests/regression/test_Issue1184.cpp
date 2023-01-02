@@ -32,7 +32,7 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/dynamics/bullet/BulletCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>

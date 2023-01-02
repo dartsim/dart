@@ -35,10 +35,6 @@
 
 #include "Controller.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/io/io.hpp>
-
 #include <dart/dart.hpp>
 
 class AtlasSimbiconWorldNode : public dart::gui::osg::RealTimeWorldNode

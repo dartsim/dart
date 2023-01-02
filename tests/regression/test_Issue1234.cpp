@@ -34,8 +34,8 @@
 
 #include <dart/io/DartResourceRetriever.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/dynamics/bullet/BulletCollisionDetector.hpp>
+#include <dart/dynamics/ode/OdeCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/ConstraintSolver.hpp>

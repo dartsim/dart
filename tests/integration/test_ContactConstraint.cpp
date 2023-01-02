@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
+#include <dart/test/TestHelpers.hpp>
 #include "dart/common/common.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/World.hpp"

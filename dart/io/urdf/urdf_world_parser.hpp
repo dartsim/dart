@@ -39,7 +39,6 @@
 
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
-#include "dart/io/urdf/BackwardCompatibility.hpp"
 
 #include <urdf_model/model.h>
 #include <urdf_model/pose.h>

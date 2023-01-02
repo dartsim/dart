@@ -32,8 +32,6 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/io/urdf/urdf.hpp>
-
 #include <dart/dart.hpp>
 
 int main(int argc, char* argv[])

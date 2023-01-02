@@ -30,10 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_DETAIL_MESH_IMPL_HPP_
-#define DART_MATH_DETAIL_MESH_IMPL_HPP_
+#pragma once
 
-#include "dart/math/Mesh.hpp"
+#ifndef DART_MATH_DETAIL_MESH_IMPL_HPP_
+  #define DART_MATH_DETAIL_MESH_IMPL_HPP_
+
+  #include "dart/math/Mesh.hpp"
 
 namespace dart {
 namespace math {

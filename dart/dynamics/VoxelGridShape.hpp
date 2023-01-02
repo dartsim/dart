@@ -37,9 +37,9 @@
 
 #if DART_HAVE_OCTOMAP
 
-  #include "dart/collision/fcl/BackwardCompatibility.hpp"
   #include "dart/dynamics/Frame.hpp"
   #include "dart/dynamics/Shape.hpp"
+  #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
 
   #include <octomap/octomap.h>
 

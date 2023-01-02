@@ -46,6 +46,7 @@ endmacro()
 # Generate header file.
 # Usage:
 #   dart_generate_include_header_file(file_path target_dir [headers...])
+# Deprecated in DART 7
 #===============================================================================
 macro(dart_generate_include_header_file file_path target_dir)
   file(WRITE ${file_path} "// Automatically generated file by cmake\n\n")
@@ -53,6 +54,27 @@ macro(dart_generate_include_header_file file_path target_dir)
     file(APPEND ${file_path} "#include \"${target_dir}${header}\"\n")
   endforeach()
 endmacro()
+
+#===============================================================================
+# Generate header file.
+# Usage:
+#   dart_generate_meta_header(file_path target_dir [headers...])
+#===============================================================================
+function(dart_generate_meta_header file_path target_dir)
+  file(WRITE ${file_path} "// Automatically generated file by cmake\n\n")
+  foreach(header ${ARGN})
+    file(APPEND ${file_path} "#include \"${target_dir}${header}\"\n")
+  endforeach()
+endfunction()
+
+#===============================================================================
+function(dart_generate_meta_header_from_abs_paths output_filepath base_path)
+  file(WRITE ${output_filepath} "// Automatically generated file by cmake\n\n")
+  foreach(header ${ARGN})
+    file(RELATIVE_PATH path_rel ${base_path}/ ${header})
+    file(APPEND ${output_filepath} "#include \"${path_rel}\"\n")
+  endforeach()
+endfunction()
 
 #===============================================================================
 # Add library and set target properties
@@ -271,103 +293,477 @@ function(dart_build_tutorial_in_source target)
   dart_add_tutorial(${target})
 endfunction()
 
-
-# ==============================================================================
-# dart_build_tests()
-#
-function(dart_build_tests)
-  set(prefix _ARG)
+#===============================================================================
+function(dart_add_project)
+  set(prefix dart_add_project)
   set(options
-    GLOB_SOURCES
+    GENERATE_META_HEADER
   )
   set(oneValueArgs
-    COMPONENT_NAME
-    TARGET_PREFIX
-    TYPE
+    PROJECT_NAME
+    PROJECT_VERSION_MAJOR
   )
   set(multiValueArgs
-    INCLUDE_DIRS
-    LINK_LIBRARIES
-    SOURCES
+    COMPONENTS
   )
   cmake_parse_arguments(
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
   )
 
-  if(NOT _ARG_TARGET_PREFIX)
-    set(_ARG_TARGET_PREFIX UNIT)
+  # Shorter variable names for readability
+  set(org_name dartsim)
+  set(project_name ${${prefix}_PROJECT_NAME})
+  set(project_version_major ${${prefix}_PROJECT_VERSION_MAJOR})
+  set(components ${${prefix}_COMPONENTS})
+
+  # Include path
+  set(include_base_path include/${org_name}/${project_name}${project_version_major})
+  set(include_path ${include_base_path}/${project_name})
+
+  # Add components
+  foreach(component ${components})
+    add_subdirectory(${component})
+  endforeach()
+
+  # Generate project meta header
+  set(component_meta_headers)
+  get_property(enabled_components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
+  # TODO(JS): Remove this
+  list(REMOVE_ITEM enabled_components external-imgui)
+  foreach(component ${enabled_components})
+    list(APPEND component_meta_headers "${component}/${component}.hpp")
+  endforeach()
+  if(${prefix}_GENERATE_META_HEADER)
+    dart_get_filename_components(header_names "${project_name} headers" ${hdrs})
+    dart_generate_meta_header(
+      "${CMAKE_CURRENT_BINARY_DIR}/${project_name}.hpp"
+      "${project_name}/"
+      ${component_meta_headers}
+    )
+    install(
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/${project_name}.hpp
+      DESTINATION ${include_path}
+      COMPONENT headers
+    )
+  endif()
+endfunction()
+
+#===============================================================================
+function(dart_add_component)
+  set(prefix dart_add_component)
+  set(options
+    GENERATE_META_HEADER
+    FORMAT_CODE
+  )
+  set(oneValueArgs
+    COMPONENT_NAME
+    PROJECT_NAME
+    PROJECT_VERSION_MAJOR
+    PROJECT_SOURCE_DIR
+    PROJECT_BINARY_DIR
+  )
+  set(multiValueArgs
+    TARGET_LINK_LIBRARIES_PUBLIC
+    TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING
+    TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL
+    TARGET_LINK_LIBRARIES_PRIVATE
+    TARGET_LINK_OPTIONS_PUBLIC
+    TARGET_COMPILE_FEATURES_PUBLIC
+    TARGET_COMPILE_OPTIONS_PUBLIC
+    TARGET_COMPILE_OPTIONS_PRIVATE
+    TARGET_COMPILE_DEFINITIONS_PUBLIC
+    COMPONENT_DEPENDENCIES
+    COMPONENT_DEPENDENCY_PACKAGES
+    SUB_DIRECTORIES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  # Shorter variable names for readability
+  set(project_source_dir ${${prefix}_PROJECT_SOURCE_DIR})
+  set(project_binary_dir ${${prefix}_PROJECT_BINARY_DIR})
+  set(component_name ${${prefix}_COMPONENT_NAME})
+  set(org_name dartsim)
+  set(project_name ${${prefix}_PROJECT_NAME})
+  set(project_version_major ${${prefix}_PROJECT_VERSION_MAJOR})
+  set(link_libraries_public ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC})
+  set(link_libraries_public_skip_checking ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING})
+  set(link_libraries_public_optional ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL})
+  set(link_libraries_private ${${prefix}_TARGET_LINK_LIBRARIES_PRIVATE})
+  set(link_options_public ${${prefix}_TARGET_LINK_OPTIONS_PUBLIC})
+  set(compile_features_public ${${prefix}_TARGET_COMPILE_FEATURES_PUBLIC})
+  set(compile_options_public ${${prefix}_TARGET_COMPILE_OPTIONS_PUBLIC})
+  set(compile_options_private ${${prefix}_TARGET_COMPILE_OPTIONS_PRIVATE})
+  set(target_compile_definitions_public ${${prefix}_TARGET_COMPILE_DEFINITIONS_PUBLIC})
+  set(dependent_components ${${prefix}_COMPONENT_DEPENDENCIES})
+  set(dependent_packages ${${prefix}_COMPONENT_DEPENDENCY_PACKAGES})
+  set(sub_directories ${${prefix}_SUB_DIRECTORIES})
+
+  # Return if 
+  if(NOT DART_BUILD_COMP_${component_name})
+    message(WARNING "Skipping component <${component_name}> because DART_BUILD_COMP_${component_name} is not set or set to OFF")
+    return()
   endif()
 
-  if(NOT _ARG_TYPE)
-    message(FATAL_ERROR "TYPE is not set!")
-  endif()
-
-  foreach(dep ${_ARG_LINK_LIBRARIES})
+  # Check dependencies
+  get_property(enabled_components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
+  foreach(dep_comp ${dependent_components})
+    if(NOT ${dep_comp} IN_LIST enabled_components)
+      message(WARNING "Skipping component <${component_name}> because of missing component <${dep_comp}>")
+      return()
+    endif()
+  endforeach()
+  foreach(dep ${link_libraries_public})
     if(NOT TARGET ${dep})
-      if(_ARG__ARG_COMPONENT_NAME)
-        message(WARNING "Skipping tests for component [${_ARG_COMPONENT_NAME}] due to missing component target [${dep}]")
-      else()
-        message(WARNING "Skipping tests due to missing component target [${dep}]")
-      endif()
+      message(WARNING "Skipping component <${component_name}> because of missing library <${dep}>")
+      return()
+    endif()
+  endforeach()
+  foreach(dep ${link_libraries_private})
+    if(NOT TARGET ${dep})
+      message(WARNING "Skipping component <${component_name}> because of missing library <${dep}>")
       return()
     endif()
   endforeach()
 
-  # Glob all the test files
-  if(_ARG_GLOB_SOURCES)
-    file(GLOB_RECURSE glob_test_files RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "test_*.cpp")
-    list(APPEND test_files ${glob_test_files})
-  endif()
-  list(APPEND test_files ${_ARG_SOURCES})
-  if(test_files)
-    list(SORT test_files)
+  # Target name
+  set(target_base ${project_name}${project_version_major})
+  set(target_name ${target_base}-${component_name})
+
+  # Include path
+  set(include_base_path include/${org_name}/${project_name}${project_version_major})
+  set(include_path ${include_base_path}/${project_name})
+
+  # Set context properties
+  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_HEADERS "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SOURCES "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_BASE_PATH ${include_base_path})
+  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_PATH ${include_path})
+  set_property(GLOBAL PROPERTY _DART_CURRENT_COMPONENT_DEPENDENCY_PACKAGES "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_NAME ${target_name})
+  set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_DEFINITIONS_PUBLIC "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_OPTIONS_PUBLIC "")
+
+  # Add library
+  add_library(${target_name})
+
+  # Collect sources
+  file(GLOB headers "*.hpp")
+  file(GLOB sources "*.cpp")
+
+  # Collect sources of sub-directories
+  foreach(sub_directory ${sub_directories})
+    add_subdirectory(${sub_directory})
+  endforeach()
+  get_property(current_component_headers                 GLOBAL PROPERTY _DART_CURRENT_COMPONENT_HEADERS)
+  get_property(current_component_sources                 GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SOURCES)
+  get_property(current_component_dependency_packages     GLOBAL PROPERTY _DART_CURRENT_COMPONENT_DEPENDENCY_PACKAGES)
+  get_property(current_target_link_libraries_public      GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC)
+  get_property(current_target_link_libraries_private     GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE)
+  get_property(current_target_compile_definitions_public GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_DEFINITIONS_PUBLIC)
+  get_property(current_target_compile_options_public     GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_OPTIONS_PUBLIC)
+
+  # Add sources
+  target_sources(${target_name}
+    PRIVATE
+      ${headers}
+      ${sources}
+      ${current_component_headers}
+      ${current_component_sources}
+  )
+
+  # Set include directory
+  target_include_directories(
+    ${target_name}
+    PUBLIC
+      $<BUILD_INTERFACE:${project_source_dir}>
+      $<BUILD_INTERFACE:${project_binary_dir}>
+      $<INSTALL_INTERFACE:${include_base_path}>
+  )
+
+  # Set link libraries
+  foreach(dependent_component ${dependent_components})
+    set(dependent_component_target_name ${target_base}-${dependent_component})
+    target_link_libraries(${target_name} PUBLIC ${dependent_component_target_name})
+  endforeach()
+  target_link_libraries(${target_name} PUBLIC ${link_libraries_public})
+  target_link_libraries(${target_name} PUBLIC ${link_libraries_public_skip_checking})
+  target_link_libraries(${target_name} PUBLIC ${current_target_link_libraries_public})
+  target_link_libraries(${target_name} PRIVATE ${link_libraries_private})
+  target_link_libraries(${target_name} PRIVATE ${current_target_link_libraries_private})
+
+  # Set link options
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+    target_link_options(${target_name} PUBLIC ${link_options})
   endif()
 
-  foreach(source ${test_files})
-    # Set target name
-    if(_ARG_TARGET_PREFIX)
-      set(target_name ${_ARG_TARGET_PREFIX}_)
-    else()
-      set(target_name )
+  # Set compile features
+  target_compile_features(${target_name} PUBLIC ${compile_features_public})
+
+  # Set compile options
+  target_compile_options(${target_name} PUBLIC ${compile_options_public})
+  target_compile_options(${target_name} PUBLIC ${current_target_compile_options_public})
+  target_compile_options(${target_name} PRIVATE ${compile_options_private})
+
+  # Set compile definitions
+  target_compile_definitions(
+    ${target_name} PUBLIC ${target_compile_definitions_public}
+  )
+  target_compile_definitions(
+    ${target_name} PUBLIC ${current_target_compile_definitions_public}
+  )
+
+  # Format files
+  if(${prefix}_FORMAT_CODE)
+    dart_format_add(${headers} ${sources})
+  endif()
+
+  # Component settings
+  add_component(${project_name} ${component_name})
+  add_component_targets(${project_name} ${component_name} ${target_name})
+  add_component_dependencies(${project_name} ${component_name}
+    ${dependent_components}
+  )
+  add_component_dependency_packages(
+    ${project_name}
+    ${component_name}
+    ${dependent_packages} ${current_component_dependency_packages}
+  )
+
+  # Generate a meta header for the component
+  if(${prefix}_GENERATE_META_HEADER)
+    dart_generate_meta_header_from_abs_paths(
+      "${CMAKE_CURRENT_BINARY_DIR}/${component_name}.hpp"
+      ${project_source_dir}
+      ${headers}
+      ${current_component_headers}
+    )
+    install(
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/${component_name}.hpp
+      DESTINATION ${include_path}/${component_name}
+      COMPONENT headers
+    )
+  endif()
+
+  # Install headers
+  install(
+    FILES ${headers}
+    DESTINATION ${include_path}/${component_name}
+    COMPONENT headers
+  )
+
+endfunction()
+
+#===============================================================================
+function(dart_add_component_sub_directory)
+  set(prefix dart_add_component_sub_directory)
+  set(options
+  )
+  set(oneValueArgs
+  )
+  set(multiValueArgs
+    TARGET_LINK_LIBRARIES_PUBLIC
+    TARGET_LINK_LIBRARIES_PRIVATE
+    COMPONENT_DEPENDENCY_PACKAGES
+    TARGET_COMPILE_DEFINITIONS_PUBLIC
+    TARGET_COMPILE_OPTIONS_PUBLIC
+    SUB_DIRECTORIES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  # Shorter variable names for readability
+  set(link_libraries_public ${${prefix}_TARGET_LINK_LIBRARIES_PUBLIC})
+  set(link_libraries_private ${${prefix}_TARGET_LINK_LIBRARIES_PRIVATE})
+  set(dependent_packages ${${prefix}_COMPONENT_DEPENDENCY_PACKAGES})
+  set(target_compile_definitions_public ${${prefix}_TARGET_COMPILE_DEFINITIONS_PUBLIC})
+  set(target_compile_options_public ${${prefix}_TARGET_COMPILE_OPTIONS_PUBLIC})
+  set(sub_directories ${${prefix}_SUB_DIRECTORIES})
+
+  # Context variables
+  get_property(component_base_path    GLOBAL PROPERTY _DART_CURRENT_COMPONENT_BASE_PATH)
+  get_property(include_base_path      GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_BASE_PATH)
+  get_property(include_path           GLOBAL PROPERTY _DART_CURRENT_COMPONENT_INCLUDE_PATH)
+  get_property(current_target_name    GLOBAL PROPERTY _DART_CURRENT_TARGET_NAME)
+
+  # Check dependencies
+  foreach(package ${dependent_packages})
+    dart_check_optional_package(${package} ${current_target_name} ${package})
+    if(NOT DART_HAVE_${package})
+      message(STATUS "Skipping <todo> because of missing dependency package ${package}")
+      return()
+    endif()
+  endforeach()
+
+  # Add sub-directories
+  foreach(sub_directory ${sub_directories})
+    add_subdirectory(${sub_directory})
+  endforeach()
+
+  # Paths
+  file(RELATIVE_PATH component_rel_path ${component_base_path} ${CMAKE_CURRENT_SOURCE_DIR})
+
+  # Add sources
+  file(GLOB headers "*.hpp")
+  file(GLOB sources "*.cpp")
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_HEADERS ${headers})
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_SOURCES ${sources})
+
+  # Set link libraries
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC ${link_libraries_public})
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE ${link_libraries_private})
+
+  # Set compile definitions
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_COMPILE_DEFINITIONS_PUBLIC ${target_compile_definitions_public})
+
+  # Set compile options
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_COMPILE_OPTIONS_PUBLIC ${target_compile_options_public})
+
+  # Component settings
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_COMPONENT_DEPENDENCY_PACKAGES ${dependent_packages})
+
+  # Install headers
+  install(
+    FILES ${headers}
+    DESTINATION ${include_path}/${component_name}/${component_rel_path}
+    COMPONENT headers
+  )
+
+  # Format files
+  dart_format_add(${headers} ${sources})
+endfunction()
+
+# ==============================================================================
+# cmake-format: off
+# dart_build_tests(
+#   TYPE <test_type>
+#   SOURCES <sources>
+#   [INCLUDE_DIRS <include_dependencies>]
+#   [LINK_LIBRARIES <library_dependencies>]
+#   [LINK_DART_LIBRARIES <library_dependencies>]
+#   [TEST_LIST <output_var>]
+# )
+#
+# Build multiple tests. Arguments are as follows:
+#
+# - TYPE           : Required. Preferably UNIT or INTEGRATION.
+#
+# - TARGET_PREFIX  : Optional. Prefix of the target name.
+#
+# - SOURCES        : Required. The list of source files for your tests. Each file
+#                    will turn into a test.
+#
+# - INCLUDE_DIRS   : Optional. Additional include directories that should be
+#                    visible to all the tests.
+#
+# - LINK_LIBRARIES : Optional. Additional library dependencies that every test
+#                    should link to including the library built by this project.
+#                    'gtest' and 'gtest_main' will be automatically linked.
+#
+# - LINK_DART_LIBRARIES:
+#                    Optional. DART library dependencies.
+#
+# - COMPILE_DEFINITIONS:
+#
+# - TEST_LIST      : Optional. Provide a variable which will be given the list of the
+#                    target names of the tests generated by this function.
+# cmake-format: on
+function(dart_build_tests)
+  set(prefix dart_build_tests)
+  set(options)
+  set(oneValueArgs TYPE TARGET_PREFIX TEST_LIST)
+  set(multiValueArgs SOURCES INCLUDE_DIRS LINK_LIBRARIES LINK_DART_LIBRARIES
+                     COMPILE_DEFINITIONS
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT dart_build_tests_TYPE)
+    message(
+      FATAL_ERROR "DEVELOPER ERROR: You must specify a TYPE for your tests!"
+    )
+  endif()
+
+  set(test_type ${dart_build_tests_TYPE})
+
+  if(NOT DEFINED dart_build_tests_SOURCES)
+    message(STATUS "No tests have been specified for ${test_type}")
+  else()
+    list(LENGTH dart_build_tests_SOURCES num_tests)
+    message(STATUS "Adding ${num_tests} ${test_type} tests")
+  endif()
+
+  if(dart_build_tests_TEST_LIST)
+    set(${dart_build_tests_TEST_LIST} "")
+  endif()
+
+  foreach(source ${dart_build_tests_SOURCES})
+
+    # Set target name: <TYPE>[_<TARGET_PREFIX>]_<source>
+    set(target_name ${test_type})
+    if(dart_build_tests_TARGET_PREFIX)
+      set(target_name "${target_name}_${dart_build_tests_TARGET_PREFIX}")
     endif()
     get_filename_component(source_name ${source} NAME_WE)
     string(REPLACE "test_" "" source_name ${source_name})
     get_filename_component(source_dir ${source} DIRECTORY)
     if(source_dir)
       string(REPLACE "/" "_" source_prefix ${source_dir})
-      set(target_name "${target_name}${source_prefix}_${source_name}")
+      set(target_name "${target_name}_${source_prefix}_${source_name}")
     else()
-      set(target_name "${target_name}${source_name}")
+      set(target_name "${target_name}_${source_name}")
     endif()
 
-    if(MSVC)
-      add_executable(${target_name} ${source})
-    else()
-      add_executable(${target_name} EXCLUDE_FROM_ALL ${source})
-    endif()
+    add_executable(${target_name} ${source})
     add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
-
-    # Include directories
     target_include_directories(
-      ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
+      ${target_name} PRIVATE ${dart_build_tests_INCLUDE_DIRS}
     )
 
-    # Link libraries
     target_link_libraries(${target_name} PRIVATE gtest gtest_main)
-    target_link_libraries(
-      ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
-    )
+
     if(UNIX)
       # gtest requies pthread when compiled on a Unix machine
       target_link_libraries(${target_name} PRIVATE pthread)
     endif()
 
-    # Add the test target to the list
-    dart_property_add(DART_${_ARG_TYPE}_TESTS ${target_name})
+    target_link_libraries(
+      ${target_name} PRIVATE ${dart_build_tests_LINK_LIBRARIES}
+    )
 
+    if(dart_build_tests_COMPILE_DEFINITIONS)
+      target_compile_definitions(
+        ${target_name} PRIVATE ${dart_build_tests_COMPILE_DEFINITIONS}
+      )
+    endif()
+
+    foreach(dart_lib ${dart_build_tests_LINK_DART_LIBRARIES})
+      if(NOT TARGET ${dart_lib})
+        message(FATAL_ERROR "Invalid target: ${dart_lib}")
+      endif()
+      target_link_libraries(${target_name} PRIVATE ${dart_lib})
+    endforeach()
+
+    if(dart_build_tests_TEST_LIST)
+      list(APPEND ${dart_build_tests_TEST_LIST} ${target_name})
+    endif()
+
+    dart_property_add(DART_${test_type}_TESTS ${target_name})
   endforeach()
 
-  dart_format_add(${test_files})
+  if(dart_build_tests_TEST_LIST)
+    set(${dart_build_tests_TEST_LIST} "${${dart_build_tests_TEST_LIST}}"
+        PARENT_SCOPE
+    )
+  endif()
+
+  dart_format_add(${dart_build_tests_SOURCES})
 
 endfunction()
 

@@ -208,6 +208,22 @@ DART_COMMON_DECLARE_SHARED_WEAK(WeldJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)
 
 } // namespace dynamics
+
+//-----------------------------------------------------------------------------
+// Collision
+//-----------------------------------------------------------------------------
+
+namespace collision {
+
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
+
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
+
+} // namespace collision
+
 } // namespace dart
 
 #endif // DART_DYNAMICS_SMARTPOINTER_HPP_

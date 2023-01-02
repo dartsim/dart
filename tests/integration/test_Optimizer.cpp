@@ -31,7 +31,7 @@
  */
 
 // For problem
-#include "TestHelpers.hpp"
+#include <dart/test/TestHelpers.hpp>
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"

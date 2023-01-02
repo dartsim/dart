@@ -33,8 +33,6 @@
 #ifndef EXAMPLES_HYBRIDDYNAMICS_MYWINDOW_HPP_
 #define EXAMPLES_HYBRIDDYNAMICS_MYWINDOW_HPP_
 
-#include <dart/gui/glut/glut.hpp>
-
 #include <dart/dart.hpp>
 
 /// \brief

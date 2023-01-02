@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #include "dart/common/Logging.hpp"
 #include "dart/common/StlAllocator.hpp"
 

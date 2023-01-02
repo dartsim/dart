@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
-#include "dart/collision/ode/OdeCollisionDetector.hpp"
+#include <dart/test/TestHelpers.hpp>
+#include "dart/dynamics/ode/OdeCollisionDetector.hpp"
 #include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Geometry.hpp"

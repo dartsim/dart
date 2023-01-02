@@ -1,28 +1,13 @@
-add_subdirectory(external)
+# Copyright (c) 2011-2022, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
-
-#===============================================================================
-# Source directories
-#===============================================================================
-# common
-# math
-# optimizer
-#   ipopt
-#   nlopt
-# dynamics
-# collision
-#   dart
-#   fcl
-#   bullet
-# simulation
-# io
-#   sdf
-#   urdf
-# gui
-#   osg
-#     render
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -40,37 +25,26 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
 
 #===============================================================================
-# Components - (dependency component), {dependency targets}
+# Components: (dependency component), {external dependency}, [optional external dependency]
 #===============================================================================
-# dart - {dart}
-# optimizer-ipopt - (dart), {dart-optimizer-ipopt}
-# optimizer-nlopt - (dart), {dart-optimizer-nlopt}
-# collision-bullet - (dart), {dart-collision-bullet}
-# io - (collision-bullet), {dart-io}
-# io-urdf - (io), {dart-io-urdf}
-# gui - (io), {dart-gui}
-# gui-osg - (gui), {dart-gui-osg}
+#
+# external-imgui: OpenGL
+#
+# common: {Eigen3}
+# math: (common), {Eigen3}
+# optimizer: (common), (math), {Eigen3}, [NLOPT], [IPOPT], [pagmo]
+# collision: <todo>
+# dynamics: (common), (math), (optimizer), (collision), {assimp}, {octomap}, [Bullet], {fcl}, [ODE]
+# simulation: (common), (math), (optimizer), (collision), (dynamics)
+# io: (common), (math), (optimizer), (collision), (dynamics), (simulation), {tinyxml2}, [urdfdom]
+# gui: (external-imgui), (common), (math), (optimizer), (collision), (dynamics), (simulation), (io), {OpenGL}, [GLUT], [OpenSceneGraph]
 
-# Component. This should be called before adding subdirectories.
-add_component(${PROJECT_NAME} dart)
+set(org_name dartsim)
+set(project_name ${PROJECT_NAME})
+set(project_version_major ${DART_MAJOR_VERSION})
 
-function(dart_add_core_headers)
-  dart_property_add(DART_CORE_HEADERS ${ARGN})
-endfunction(dart_add_core_headers)
-
-function(dart_add_core_sources)
-  dart_property_add(DART_CORE_SOURCES ${ARGN})
-endfunction(dart_add_core_sources)
-
-# Add subdirectories
-add_subdirectory(common)
-add_subdirectory(math)
-add_subdirectory(optimizer)
-add_subdirectory(dynamics)
-add_subdirectory(collision)
-add_subdirectory(simulation)
-add_subdirectory(io) # tinyxml2, bullet
-add_subdirectory(gui) # opengl, glut, bullet
+set(include_base_path include/${org_name}/${project_name}${project_version_major})
+set(include_path ${include_base_path}/${project_name})
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
 set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
@@ -78,7 +52,24 @@ if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_HPP_OUT})
 endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION ${include_path})
+
+add_subdirectory(external)
+
+dart_add_project(
+  PROJECT_NAME ${PROJECT_NAME}
+  PROJECT_VERSION_MAJOR ${DART_MAJOR_VERSION}
+  COMPONENTS
+    common
+    math
+    optimizer
+    collision
+    dynamics
+    simulation
+    io
+    gui
+  GENERATE_META_HEADER
+)
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -90,128 +81,7 @@ if(DART_VERBOSE)
   endforeach()
 else()
   list(LENGTH components components_length)
-  message(STATUS "Adding ${components_length} components including "
-    "the default component 'dart'")
+  message(STATUS "Adding ${components_length} components")
 endif()
-
-# Set header and source files
-get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
-dart_add_core_headers(${dart_hpp})
-get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
-get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
-
-# Add target
-dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
-target_include_directories(dart BEFORE
-  PUBLIC
-    $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>
-)
-target_link_libraries(dart
-  PUBLIC
-    ${CMAKE_DL_LIBS}
-    Eigen3::Eigen
-    ccd
-    fcl
-    assimp
-  PRIVATE
-    ${PROJECT_NAME}-external-odelcpsolver
-)
-if(TARGET fmt::fmt-header-only)
-  target_link_libraries(dart PUBLIC fmt::fmt-header-only)
-elseif(TARGET fmt::fmt)
-  target_link_libraries(dart PUBLIC fmt::fmt)
-else()
-  message(FATAL_ERROR "Failed to find fmt targets")
-endif()
-
-# spdlog settings
-if(spdlog_FOUND)
-  # Prefer header only target
-  if(TARGET spdlog::spdlog_header_only)
-    target_link_libraries(dart PUBLIC spdlog::spdlog_header_only)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
-  elseif(TARGET spdlog::spdlog)
-    target_link_libraries(dart PUBLIC spdlog::spdlog)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
-  else()
-    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
-  endif()
-else()
-  target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
-endif()
-
-# octomap settings
-if(TARGET octomap)
-  target_link_libraries(dart PUBLIC octomap)
-endif()
-
-# C++ standard settings
-target_compile_features(dart PUBLIC cxx_std_17)
-if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
-  target_link_libraries(dart PUBLIC "stdc++fs")
-endif()
-
-# Build DART with all available SIMD instructions
-if(DART_ENABLE_SIMD)
-  if(MSVC)
-    target_compile_options(dart PUBLIC /arch:SSE2 /arch:AVX /arch:AVX2)
-    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
-    # enabled for x64 by default. The option will be ignored on x64 with a
-    # warning message. If anyone knows how to detect the system's architecture
-    # in CMake time, then I would gratefully apply these options differently
-    # depending on the architectures.
-  elseif(CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(dart PUBLIC -march=native)
-    if(GCC_VERSION VERSION_GREATER 7.0)
-      target_compile_options(dart PUBLIC -faligned-new)
-    endif()
-  elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    target_compile_options(dart PUBLIC -march=native -faligned-new)
-  endif()
-endif()
-
-# Active log level
-if(DART_ACTIVE_LOG_LEVEL STREQUAL "TRACE")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=0)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "DEBUG")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=1)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "INFO")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=2)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "WARN")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=3)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "ERROR")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=4)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "FATAL")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=5)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "OFF")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=6)
-else()
-  message(FATAL_ERROR "Invalid active log level: ${DART_ACTIVE_LOG_LEVEL}")
-endif()
-
-# Default component
-add_component_targets(${PROJECT_NAME} dart dart)
-add_component_dependencies(${PROJECT_NAME} dart)
-add_component_dependency_packages(${PROJECT_NAME} dart
-  assimp Eigen3 ccd fcl fmt
-)
-if(TARGET octomap)
-  add_component_dependency_packages(${PROJECT_NAME} dart octomap)
-endif()
-if(spdlog_FOUND)
-  add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
-endif()
-
-if(MSVC)
-  set_target_properties(
-    ${target} PROPERTIES
-    STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
-  )
-endif()
-
-install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})

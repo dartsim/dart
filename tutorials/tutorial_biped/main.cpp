@@ -30,10 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/glut/glut.hpp>
-
-#include <dart/io/io.hpp>
-
 #include <dart/dart.hpp>
 
 const double default_speed_increment = 0.5;

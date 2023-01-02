@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
+#include <dart/test/TestHelpers.hpp>
 #include "dart/config.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"

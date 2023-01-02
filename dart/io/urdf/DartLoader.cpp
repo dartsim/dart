@@ -46,7 +46,6 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/io/DartResourceRetriever.hpp"
-#include "dart/io/urdf/BackwardCompatibility.hpp"
 #include "dart/io/urdf/urdf_world_parser.hpp"
 #include "dart/simulation/World.hpp"
 

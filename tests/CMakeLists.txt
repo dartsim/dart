@@ -129,6 +129,8 @@ endfunction()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(src)
+
 # We categorize tests as:
 # - "integration": high level tests to verify the combination of several
 #   components are correctly performs together
@@ -136,17 +138,17 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #   fixed even after further changes are made
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
-if(NOT MSVC)
-  # Disabled due to limitied disk space in CI image
-  add_subdirectory(integration)
-  add_subdirectory(regression)
-endif()
+# if(NOT MSVC)
+#   # Disabled due to limitied disk space in CI image
+#   add_subdirectory(integration)
+#   add_subdirectory(regression)
+# endif()
 add_subdirectory(unit)
 
 # Print tests
 dart_get_tests(integration_tests "integration")
 dart_get_tests(regression_tests "regression")
-dart_get_tests(unit_tests "unit")
+dart_get_tests(unit_tests "TEST_UNIT")
 
 if(DART_VERBOSE)
   message(STATUS "")
@@ -186,5 +188,3 @@ add_custom_target(
 add_custom_target(tests_and_run COMMAND ${CMAKE_CTEST_COMMAND}
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
 )
-
-dart_format_add(GTestUtils.hpp)

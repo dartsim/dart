@@ -32,7 +32,7 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/collision/CollisionResult.hpp>
+#include <dart/dynamics/CollisionResult.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>

@@ -34,8 +34,6 @@
 #include "InputHandler.hpp"
 #include "WamWorld.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
 #include <dart/dart.hpp>
 
 #include <iostream>

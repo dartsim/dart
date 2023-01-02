@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenSceneGraph 3.0 QUIET
+find_package(OpenSceneGraph 3.6.5 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
@@ -32,7 +32,7 @@ else()
       set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
     endif()
   endif()
-  message(STATUS "${warning_msg} -- we will skip dart-gui-osg\n"
+  message(STATUS "${warning_msg} -- we will skip the OpenSceneGraph support in dart-gui\n"
           "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
   return()
 endif()

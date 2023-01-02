@@ -32,8 +32,8 @@
 
 #include "dart/dynamics/ContactSurface.hpp"
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/Contact.hpp"
+#include "dart/dynamics/CollisionObject.hpp"
+#include "dart/dynamics/Contact.hpp"
 #include "dart/dynamics/ContactConstraint.hpp"
 #include "dart/dynamics/ContactSurface.hpp"
 

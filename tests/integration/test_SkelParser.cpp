@@ -31,7 +31,7 @@
  */
 
 #include "GTestUtils.hpp"
-#include "TestHelpers.hpp"
+#include <dart/test/TestHelpers.hpp>
 #include "dart/dart.hpp"
 #include "dart/io/io.hpp"
 
