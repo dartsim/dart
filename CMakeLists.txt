@@ -332,9 +332,9 @@ if(TARGET dart)
   # Add a "tests" target to build unit tests.
   enable_testing()
   if(MSVC)
-    add_subdirectory(unittests)
+    add_subdirectory(tests)
   else()
-    add_subdirectory(unittests EXCLUDE_FROM_ALL)
+    add_subdirectory(tests EXCLUDE_FROM_ALL)
   endif()
 
   # Add example subdirectories and an "examples" target.
@@ -636,7 +636,7 @@ endif()
 #===============================================================================
 message(STATUS "")
 message(STATUS "Run 'make' to build all the components")
-message(STATUS "Run 'make tests' to build all the unittests")
+message(STATUS "Run 'make tests' to build all the tests")
 message(STATUS "Run 'make examples' to build all the examples")
 message(STATUS "Run 'make tutorials' to build all the tutorials")
 message(STATUS "Run 'make view_docs' to see the API documentation")

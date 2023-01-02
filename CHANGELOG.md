@@ -18,8 +18,9 @@
   * Removed
     * FLANN
 
-* Build
+* Build/Test
 
+  * Rename `unittests` to `tests`: [#1711](https://github.com/dartsim/dart/pull/1711)
   * Made odelcpsolver and lodepng private targets: [#1710](https://github.com/dartsim/dart/pull/1710)
   * Increased required Eigen version to 3.4.0: [#1700](https://github.com/dartsim/dart/pull/1700)
 
