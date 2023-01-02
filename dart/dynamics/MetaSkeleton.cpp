@@ -176,18 +176,18 @@ static Eigen::VectorXd getValuesFromVector(
 
   for (std::size_t i = 0; i < _indices.size(); ++i)
   {
-    const DegreeOfFreedom* dof = skel->getDof(_indices[i]);
-    if (dof)
+    const std::size_t index = _indices[i];
+    if (const DegreeOfFreedom* dof = skel->getDof(index))
     {
       values[i] = (dof->*getValue)();
     }
     else
     {
       values[i] = 0.0;
-      if (i < skel->getNumDofs())
+      if (index < skel->getNumDofs())
       {
         dterr << "[MetaSkeleton::" << _fname << "] Requesting value for "
-              << "DegreeOfFreedom #" << _indices[i] << " ("
+              << "DegreeOfFreedom #" << index << " ("
               << "entry #" << i << " in _indices), but this index has expired! "
               << "ReferentialSkeletons should call update() after structural "
               << "changes have been made to the BodyNodes they refer to. The "
@@ -196,7 +196,7 @@ static Eigen::VectorXd getValuesFromVector(
       else
       {
         dterr << "[MetaSkeleton::" << _fname << "] Requesting out of bounds "
-              << "DegreeOfFreedom #" << _indices[i] << " (entry #" << i
+              << "DegreeOfFreedom #" << index << " (entry #" << i
               << " in _indices) for MetaSkeleton named [" << skel->getName()
               << "] (" << skel << "). The max index is (" << skel->getNumDofs()
               << "). The return value for this entry will be zero.\n";
