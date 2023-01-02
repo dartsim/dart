@@ -10,6 +10,11 @@
 set(project_name ${PROJECT_NAME})
 set(component_name common)
 
+# Component dependency packages
+set(component_dependency_packages
+  Eigen3
+)
+
 # Link libraries
 set(link_libraries_public
   Eigen3::Eigen
@@ -17,8 +22,10 @@ set(link_libraries_public
 
 # fmt settings
 if(TARGET fmt::fmt-header-only)
+  list(APPEND component_dependency_packages fmt)
   list(APPEND link_libraries_public fmt::fmt-header-only)
 elseif(TARGET fmt::fmt)
+  list(APPEND component_dependency_packages fmt)
   list(APPEND link_libraries_public fmt::fmt)
 else()
   message(FATAL_ERROR "Failed to find fmt targets")
@@ -28,9 +35,11 @@ endif()
 if(spdlog_FOUND)
   # Prefer header only target
   if(TARGET spdlog::spdlog_header_only)
+    list(APPEND component_dependency_packages spdlog)
     list(APPEND link_libraries_public spdlog::spdlog_header_only)
     list(APPEND compile_definitions_public -DDART_HAVE_spdlog=1)
   elseif(TARGET spdlog::spdlog)
+    list(APPEND component_dependency_packages spdlog)
     list(APPEND link_libraries_public spdlog::spdlog)
     list(APPEND compile_definitions_public -DDART_HAVE_spdlog=1)
   else()
@@ -104,7 +113,7 @@ dart_add_component(
   COMPONENT_NAME
     ${component_name}
   COMPONENT_DEPENDENCY_PACKAGES
-    Eigen3
+    ${component_dependency_packages}
   TARGET_LINK_LIBRARIES_PUBLIC
     ${link_libraries_public}
   TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING
