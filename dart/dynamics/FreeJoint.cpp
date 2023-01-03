@@ -80,13 +80,6 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 }
 
 //==============================================================================
-void FreeJoint::setTransform(
-    Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
-{
-  return setTransformOf(joint, tf, withRespectTo);
-}
-
-//==============================================================================
 void FreeJoint::setTransformOf(
     Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
@@ -107,13 +100,6 @@ void FreeJoint::setTransformOf(
 }
 
 //==============================================================================
-void FreeJoint::setTransform(
-    BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
-{
-  setTransformOf(bodyNode, tf, withRespectTo);
-}
-
-//==============================================================================
 void FreeJoint::setTransformOf(
     BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
@@ -121,16 +107,6 @@ void FreeJoint::setTransformOf(
     return;
 
   setTransformOf(bodyNode->getParentJoint(), tf, withRespectTo);
-}
-
-//==============================================================================
-void FreeJoint::setTransform(
-    Skeleton* skeleton,
-    const Eigen::Isometry3d& tf,
-    const Frame* withRespectTo,
-    bool applyToAllRootBodies)
-{
-  setTransformOf(skeleton, tf, withRespectTo, applyToAllRootBodies);
 }
 
 //==============================================================================
