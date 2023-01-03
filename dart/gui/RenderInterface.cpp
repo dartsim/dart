@@ -90,14 +90,6 @@ void RenderInterface::drawSphere(
 {
 }
 
-void RenderInterface::drawMultiSphere(
-    const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/,
-    int /*slices*/,
-    int /*stacks*/)
-{
-  // Do nothing
-}
-
 void RenderInterface::drawMultiSphereConvexHull(
     const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/,
     std::size_t /*subdivisions*/)

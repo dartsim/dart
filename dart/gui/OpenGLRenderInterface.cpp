@@ -221,23 +221,6 @@ void drawOpenCylinderConnectingTwoSpheres(
   glPopMatrix();
 }
 
-void OpenGLRenderInterface::drawMultiSphere(
-    const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
-    int slices,
-    int stacks)
-{
-  // Draw spheres
-  for (const auto& sphere : spheres)
-  {
-    glPushMatrix();
-    {
-      glTranslated(sphere.second.x(), sphere.second.y(), sphere.second.z());
-      drawSphere(sphere.first, slices, stacks);
-    }
-    glPopMatrix();
-  }
-}
-
 void OpenGLRenderInterface::drawMultiSphereConvexHull(
     const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
     std::size_t subdivisions)

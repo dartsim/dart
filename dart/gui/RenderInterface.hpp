@@ -33,8 +33,6 @@
 #ifndef DART_GUI_RENDERINTERFACE_HPP_
 #define DART_GUI_RENDERINTERFACE_HPP_
 
-#include "dart/common/Deprecated.hpp"
-
 #include <Eigen/Dense>
 #include <assimp/scene.h>
 
@@ -103,11 +101,6 @@ public:
   virtual void scale(const Eigen::Vector3d& _scale);           // glScale
 
   virtual void drawSphere(double radius, int slices = 16, int stacks = 16);
-  DART_DEPRECATED(6.11)
-  virtual void drawMultiSphere(
-      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
-      int slices = 16,
-      int stacks = 16);
   virtual void drawMultiSphereConvexHull(
       const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
       std::size_t subdivisions);

@@ -41,12 +41,6 @@ namespace python {
 
 void DartLoader(py::module& m)
 {
-  auto dartLoaderFlags
-      = ::py::enum_<io::DartLoader::Flags>(m, "DartLoaderFlags")
-            .value("NONE", io::DartLoader::Flags::NONE)
-            .value("FIXED_BASE_LINK", io::DartLoader::Flags::FIXED_BASE_LINK)
-            .value("DEFAULT", io::DartLoader::Flags::DEFAULT);
-
   auto dartLoaderRootJointType
       = ::py::enum_<io::DartLoader::RootJointType>(m, "DartLoaderRootJointType")
             .value("FLOATING", io::DartLoader::RootJointType::FLOATING)
@@ -87,38 +81,9 @@ void DartLoader(py::module& m)
                 ::py::arg("packageDirectory"))
             .def(
                 "parseSkeleton",
-                +[](dart::io::DartLoader* self,
-                    const dart::common::Uri& uri,
-                    const common::ResourceRetrieverPtr& resourceRetriever,
-                    unsigned int flags) -> dart::dynamics::SkeletonPtr {
-                  DART_SUPPRESS_DEPRECATED_BEGIN
-                  return self->parseSkeleton(uri, resourceRetriever, flags);
-                  DART_SUPPRESS_DEPRECATED_END
-                },
-                ::py::arg("uri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = io::DartLoader::DEFAULT)
-            .def(
-                "parseSkeleton",
                 ::py::overload_cast<const common::Uri&>(
                     &io::DartLoader::parseSkeleton),
                 ::py::arg("uri"))
-            .def(
-                "parseSkeletonString",
-                +[](io::DartLoader* self,
-                    const std::string& urdfString,
-                    const common::Uri& baseUri,
-                    const common::ResourceRetrieverPtr& resourceRetriever,
-                    unsigned int flags) -> dynamics::SkeletonPtr {
-                  DART_SUPPRESS_DEPRECATED_BEGIN
-                  return self->parseSkeletonString(
-                      urdfString, baseUri, resourceRetriever, flags);
-                  DART_SUPPRESS_DEPRECATED_END
-                },
-                ::py::arg("urdfString"),
-                ::py::arg("baseUri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = io::DartLoader::DEFAULT)
             .def(
                 "parseSkeletonString",
                 ::py::overload_cast<const std::string&, const common::Uri&>(
@@ -127,38 +92,9 @@ void DartLoader(py::module& m)
                 ::py::arg("baseUri"))
             .def(
                 "parseWorld",
-                +[](io::DartLoader* self,
-                    const common::Uri& _uri,
-                    const common::ResourceRetrieverPtr& resourceRetriever,
-                    unsigned int flags) -> simulation::WorldPtr {
-                  DART_SUPPRESS_DEPRECATED_BEGIN
-                  return self->parseWorld(_uri, resourceRetriever, flags);
-                  DART_SUPPRESS_DEPRECATED_END
-                },
-                ::py::arg("uri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = io::DartLoader::DEFAULT)
-            .def(
-                "parseWorld",
                 ::py::overload_cast<const common::Uri&>(
                     &io::DartLoader::parseWorld),
                 ::py::arg("uri"))
-            .def(
-                "parseWorldString",
-                +[](io::DartLoader* self,
-                    const std::string& urdfString,
-                    const common::Uri& baseUri,
-                    const common::ResourceRetrieverPtr& resourceRetriever,
-                    unsigned int flags) -> simulation::WorldPtr {
-                  DART_SUPPRESS_DEPRECATED_BEGIN
-                  return self->parseWorldString(
-                      urdfString, baseUri, resourceRetriever, flags);
-                  DART_SUPPRESS_DEPRECATED_END
-                },
-                ::py::arg("urdfString"),
-                ::py::arg("baseUri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = io::DartLoader::DEFAULT)
             .def(
                 "parseWorldString",
                 ::py::overload_cast<const std::string&, const common::Uri&>(
@@ -166,7 +102,6 @@ void DartLoader(py::module& m)
                 ::py::arg("urdfString"),
                 ::py::arg("baseUri"));
 
-  dartLoader.attr("Flags") = dartLoaderFlags;
   dartLoader.attr("RootJointType") = dartLoaderRootJointType;
   dartLoader.attr("Options") = dartLoaderOptions;
 }
