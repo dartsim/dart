@@ -22,10 +22,10 @@ dart_add_component(
     ${DART_BINARY_DIR}
   COMPONENT_NAME
     ${component_name}
-  COMPONENT_DEPENDENCIES
+  DEPENDENT_COMPONENTS
     external-imgui  # TODO(JS): Make this a private dependency
     common math optimization collision dynamics simulation io
-  COMPONENT_DEPENDENCY_PACKAGES
+  DEPENDENT_PACKAGES_REQUIRED
     OpenGL
   TARGET_LINK_LIBRARIES_PUBLIC
     OpenGL::GL

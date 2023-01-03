@@ -35,19 +35,17 @@ endif()
 if(spdlog_FOUND)
   # Prefer header only target
   if(TARGET spdlog::spdlog_header_only)
-    list(APPEND component_dependency_packages spdlog)
+    list(APPEND component_dependency_packages_optional spdlog)
     list(APPEND link_libraries_public spdlog::spdlog_header_only)
-    list(APPEND compile_definitions_public -DDART_HAVE_spdlog=1)
   elseif(TARGET spdlog::spdlog)
-    list(APPEND component_dependency_packages spdlog)
+    list(APPEND component_dependency_packages_optional spdlog)
     list(APPEND link_libraries_public spdlog::spdlog)
-    list(APPEND compile_definitions_public -DDART_HAVE_spdlog=1)
   else()
     message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
-    list(APPEND compile_definitions_public -DDART_HAVE_spdlog=0)
+    list(APPEND compile_definitions_public -DDART_HAVE_SPDLOG=0)
   endif()
 else()
-  list(APPEND compile_definitions_public -DDART_HAVE_spdlog=0)
+  list(APPEND compile_definitions_public -DDART_HAVE_SPDLOG=0)
 endif()
 
 # Active log level
@@ -97,8 +95,10 @@ dart_add_component(
     ${DART_BINARY_DIR}
   COMPONENT_NAME
     ${component_name}
-  COMPONENT_DEPENDENCY_PACKAGES
+  DEPENDENT_PACKAGES_REQUIRED
     ${component_dependency_packages}
+  DEPENDENT_PACKAGES_OPTIONAL
+    ${component_dependency_packages_optional}
   TARGET_LINK_LIBRARIES_PUBLIC
     ${link_libraries_public}
   TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING

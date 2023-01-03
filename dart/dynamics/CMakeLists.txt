@@ -22,9 +22,9 @@ dart_add_component(
     ${DART_BINARY_DIR}
   COMPONENT_NAME
     ${component_name}
-  COMPONENT_DEPENDENCIES
+  DEPENDENT_COMPONENTS
     common math optimization collision
-  COMPONENT_DEPENDENCY_PACKAGES
+  DEPENDENT_PACKAGES_REQUIRED
     assimp octomap
   TARGET_LINK_LIBRARIES_PUBLIC
     assimp octomap
