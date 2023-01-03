@@ -1,0 +1,22 @@
+{
+    "name": "libdart C++",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:1": {
+            "installZsh": "true",
+            "username": "vscode",
+            "uid": "1000",
+            "gid": "1000",
+            "upgradePackages": "true"
+        }
+    },
+    "capAdd": [
+        "SYS_PTRACE"
+    ],
+    "securityOpt": [
+        "seccomp=unconfined"
+    ],
+    "remoteUser": "vscode"
+}
