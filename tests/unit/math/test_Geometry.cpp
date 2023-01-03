@@ -33,7 +33,7 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 
 #include <gtest/gtest.h>
 
@@ -41,6 +41,7 @@
 
 using namespace dart;
 using namespace math;
+using namespace Eigen;
 
 #define LIE_GROUP_OPT_TOL 1e-12
 
@@ -85,8 +86,8 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
-  EXPECT_TRUE(equals(mat1, eulerXYXToMatrix(matrixToEulerXYX(mat1))));
+  EXPECT_TRUE(test::equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, eulerXYXToMatrix(matrixToEulerXYX(mat1))));
 
   // XYZ
   mat1 = math::eulerXYZToMatrix(angle);
@@ -96,8 +97,8 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
-  EXPECT_TRUE(equals(mat1, eulerXYZToMatrix(matrixToEulerXYZ(mat1))));
+  EXPECT_TRUE(test::equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, eulerXYZToMatrix(matrixToEulerXYZ(mat1))));
 
   // XZX
   mat1 = math::eulerXZXToMatrix(angle);
@@ -107,7 +108,7 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, mat2));
   // EXPECT_TRUE(equals(mat1, eulerXZXToMatrix(matrixToEulerXZX(mat1))));
 
   // XZY
@@ -118,8 +119,8 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
-  EXPECT_TRUE(equals(mat1, eulerXZYToMatrix(matrixToEulerXZY(mat1))));
+  EXPECT_TRUE(test::equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, eulerXZYToMatrix(matrixToEulerXZY(mat1))));
 
   // YXY
   mat1 = math::eulerYXYToMatrix(angle);
@@ -129,7 +130,7 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, mat2));
   // EXPECT_TRUE(equals(mat1, eulerYXYToMatrix(matrixToEulerYXY(mat1))));
 
   // YXZ
@@ -140,8 +141,8 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
-  EXPECT_TRUE(equals(mat1, eulerYXZToMatrix(matrixToEulerYXZ(mat1))));
+  EXPECT_TRUE(test::equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, eulerYXZToMatrix(matrixToEulerYXZ(mat1))));
 
   // YZX
   mat1 = math::eulerYZXToMatrix(angle);
@@ -151,8 +152,8 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
-  EXPECT_TRUE(equals(mat1, eulerYZXToMatrix(matrixToEulerYZX(mat1))));
+  EXPECT_TRUE(test::equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, eulerYZXToMatrix(matrixToEulerYZX(mat1))));
 
   // YZY
   mat1 = math::eulerYZYToMatrix(angle);
@@ -162,7 +163,7 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, mat2));
   // EXPECT_TRUE(equals(mat1, eulerYZYToMatrix(matrixToEulerYZY(mat1))));
 
   // ZXY
@@ -173,8 +174,8 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
-  EXPECT_TRUE(equals(mat1, eulerZXYToMatrix(matrixToEulerZXY(mat1))));
+  EXPECT_TRUE(test::equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, eulerZXYToMatrix(matrixToEulerZXY(mat1))));
 
   // ZYX
   mat1 = math::eulerZYXToMatrix(angle);
@@ -184,8 +185,8 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
-  EXPECT_TRUE(equals(mat1, eulerZYXToMatrix(matrixToEulerZYX(mat1))));
+  EXPECT_TRUE(test::equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, eulerZYXToMatrix(matrixToEulerZYX(mat1))));
 
   // ZXZ
   mat1 = math::eulerZXZToMatrix(angle);
@@ -195,7 +196,7 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, mat2));
   // EXPECT_TRUE(equals(mat1, eulerZXZToMatrix(matrixToEulerZXZ(mat1))));
 
   // ZYZ
@@ -206,7 +207,7 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 
   EXPECT_TRUE(math::verifyRotation(mat1));
   EXPECT_TRUE(math::verifyRotation(mat2));
-  EXPECT_TRUE(equals(mat1, mat2));
+  EXPECT_TRUE(test::equals(mat1, mat2));
   // EXPECT_TRUE(equals(mat1, eulerZYZToMatrix(matrixToEulerZYZ(mat1))));
 }
 

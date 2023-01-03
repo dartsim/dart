@@ -47,7 +47,7 @@
 #include "dart/io/io.hpp"
 #include "dart/simulation/simulation.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 using namespace dart;
 using namespace common;

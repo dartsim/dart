@@ -36,7 +36,7 @@
 #include "dart/io/mjcf/detail/Types.hpp"
 #include "dart/io/mjcf/detail/Utils.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

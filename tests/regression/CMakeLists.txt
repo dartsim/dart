@@ -8,8 +8,6 @@
 
 # TODO(JS): Improve the way of handling the test cases
 
-dart_add_test("regression" test_Issue1243 test_Issue1243.cpp)
-
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
   dart_add_test("regression" test_Issue1583)
   target_link_libraries(test_Issue1583 ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
@@ -43,7 +41,10 @@ endif()
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
 
   dart_add_test("regression" test_Issue1184)
-  target_link_libraries(test_Issue1184 ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
+  target_link_libraries(test_Issue1184
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
+  )
 
 endif()
 
@@ -51,6 +52,12 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision AND TARGET ${PROJECT_NA
 
   dart_add_test("regression" test_Issue1234)
   target_link_libraries(test_Issue1234
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+  )
+
+  dart_add_test("regression" test_Issue1243 test_Issue1243.cpp)
+  target_link_libraries(test_Issue1243
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
   )

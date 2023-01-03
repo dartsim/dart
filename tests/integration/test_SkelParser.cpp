@@ -33,8 +33,8 @@
 #include "dart/dart.hpp"
 #include "dart/io/io.hpp"
 
-#include <dart/test/GTestUtils.hpp>
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 
 #include <dart/math/Random.hpp>
 

@@ -36,7 +36,7 @@
 #include "dart/io/SkelParser.hpp"
 #include "dart/math/Geometry.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

@@ -34,7 +34,7 @@
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/io/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

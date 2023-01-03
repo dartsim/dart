@@ -33,9 +33,11 @@
 #ifndef DART_OPTIMIZER_PAGMO_PAGMOMULTIOBJECTIVESOLVER_HPP_
 #define DART_OPTIMIZER_PAGMO_PAGMOMULTIOBJECTIVESOLVER_HPP_
 
-#include <random>
-#include <pagmo/pagmo.hpp>
 #include "dart/optimization/MultiObjectiveSolver.hpp"
+
+#include <pagmo/pagmo.hpp>
+
+#include <random>
 
 #define DART_PAGMO_DEFAULT_SOLVER Algorithm::Global_MOEAD
 

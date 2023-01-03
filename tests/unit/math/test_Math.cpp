@@ -37,7 +37,7 @@
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <dart/test/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 
 #include <gtest/gtest.h>
 
@@ -48,6 +48,7 @@ using namespace common;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
+using namespace Eigen;
 
 #define MATH_TOL 0.000001
 #define MATH_EPS 0.000001
@@ -1373,13 +1374,13 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
     Jacobian resJ2 = AdTJac2(T, dynamicJ);
     Jacobian resJ3 = AdTJac3(T, fixedJ);
 
-    EXPECT_TRUE(equals(resJ1, resJ2));
-    EXPECT_TRUE(equals(resJ2, resJ3));
+    EXPECT_TRUE(test::equals(resJ1, resJ2));
+    EXPECT_TRUE(test::equals(resJ2, resJ3));
 
     Jacobian resJ4 = AdInvTJac(T, dynamicJ);
     Jacobian resJ5 = AdInvTJacFixed(T, fixedJ);
 
-    EXPECT_TRUE(equals(resJ4, resJ5));
+    EXPECT_TRUE(test::equals(resJ4, resJ5));
   }
 
   // Test2: performance

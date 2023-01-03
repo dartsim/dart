@@ -30,4 +30,4 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/test/TestHelpers.hpp"
+#include "dart/test/Empty.hpp"
