@@ -46,18 +46,18 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
   )
 
-  dart_add_test("regression" test_Issue1243 test_Issue1243.cpp)
-  target_link_libraries(test_Issue1243
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
-  )
-
 endif()
 
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision AND TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
 
   dart_add_test("regression" test_Issue1234)
   target_link_libraries(test_Issue1234
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+  )
+
+  dart_add_test("regression" test_Issue1243 test_Issue1243.cpp)
+  target_link_libraries(test_Issue1243
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
   )
