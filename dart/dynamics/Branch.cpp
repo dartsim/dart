@@ -122,7 +122,7 @@ BranchPtr Branch::cloneBranch(const std::string& cloneName) const
 }
 
 //==============================================================================
-MetaSkeletonPtr Branch::cloneMetaSkeleton(const std::string& cloneName) const
+MetaSkeletonPtr Branch::clone(const std::string& cloneName) const
 {
   return cloneBranch(cloneName);
 }

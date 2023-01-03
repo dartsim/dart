@@ -193,14 +193,6 @@ public:
   /// Return the last collision checking result
   const collision::CollisionResult& getLastCollisionResult() const;
 
-  /// Set LCP solver
-  DART_DEPRECATED(6.7)
-  void setLCPSolver(std::unique_ptr<LCPSolver> lcpSolver);
-
-  /// Get LCP solver
-  DART_DEPRECATED(6.7)
-  LCPSolver* getLCPSolver() const;
-
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
 

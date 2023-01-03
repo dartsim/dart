@@ -336,26 +336,6 @@ const collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 }
 
 //==============================================================================
-void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> /*lcpSolver*/)
-{
-  dtwarn << "[ConstraintSolver::setLCPSolver] This function is deprecated in "
-         << "DART 6.7. Please use "
-         << "BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. "
-         << "Doing nothing.";
-}
-
-//==============================================================================
-LCPSolver* ConstraintSolver::getLCPSolver() const
-{
-  dtwarn << "[ConstraintSolver::getLCPSolver] This function is deprecated in "
-         << "DART 6.7. Please use "
-         << "BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. "
-         << "Returning nullptr.";
-
-  return nullptr;
-}
-
-//==============================================================================
 void ConstraintSolver::solve()
 {
   for (auto& skeleton : mSkeletons)

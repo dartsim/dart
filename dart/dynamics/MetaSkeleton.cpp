@@ -329,7 +329,7 @@ static double getValueFromIndex(
 //==============================================================================
 MetaSkeletonPtr MetaSkeleton::cloneMetaSkeleton() const
 {
-  return cloneMetaSkeleton(getName());
+  return clone(getName());
 }
 
 //==============================================================================
