@@ -46,23 +46,8 @@ namespace optimization {
 
 //==============================================================================
 NloptSolver::NloptSolver(
-    const Solver::Properties& properties, nlopt::algorithm alg)
-  : NloptSolver(properties, convertAlgorithm(alg))
-{
-  // Do nothing
-}
-
-//==============================================================================
-NloptSolver::NloptSolver(
     const Solver::Properties& properties, NloptSolver::Algorithm alg)
   : Solver(properties), mOpt(nullptr), mAlg(convertAlgorithm(alg)), mMinF(0.0)
-{
-  // Do nothing
-}
-
-//==============================================================================
-NloptSolver::NloptSolver(std::shared_ptr<Problem> problem, nlopt::algorithm alg)
-  : NloptSolver(std::move(problem), convertAlgorithm(alg))
 {
   // Do nothing
 }
@@ -207,14 +192,14 @@ std::string NloptSolver::getType() const
 //==============================================================================
 std::shared_ptr<Solver> NloptSolver::clone() const
 {
-  return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm2());
+  return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm());
 }
 
 //==============================================================================
 void NloptSolver::copy(const NloptSolver& other)
 {
   setProperties(other.getSolverProperties());
-  setAlgorithm(other.getAlgorithm2());
+  setAlgorithm(other.getAlgorithm());
 }
 
 //==============================================================================
@@ -225,25 +210,13 @@ NloptSolver& NloptSolver::operator=(const NloptSolver& other)
 }
 
 //==============================================================================
-void NloptSolver::setAlgorithm(nlopt::algorithm alg)
-{
-  setAlgorithm(convertAlgorithm(alg));
-}
-
-//==============================================================================
 void NloptSolver::setAlgorithm(NloptSolver::Algorithm alg)
 {
   mAlg = convertAlgorithm(alg);
 }
 
 //==============================================================================
-nlopt::algorithm NloptSolver::getAlgorithm() const
-{
-  return convertAlgorithm(getAlgorithm2());
-}
-
-//==============================================================================
-NloptSolver::Algorithm NloptSolver::getAlgorithm2() const
+NloptSolver::Algorithm NloptSolver::getAlgorithm() const
 {
   return convertAlgorithm(mAlg);
 }

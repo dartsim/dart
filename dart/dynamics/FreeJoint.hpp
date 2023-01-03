@@ -33,7 +33,6 @@
 #ifndef DART_DYNAMICS_FREEJOINT_HPP_
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/dynamics/GenericJoint.hpp"
 
 #include <Eigen/Dense>
@@ -92,30 +91,8 @@ public:
   /// If the given joint is a FreeJoint, then set the transform of the given
   /// Joint's child BodyNode so that its transform with respect to
   /// "withRespecTo" is equal to "tf".
-  ///
-  /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
-  DART_DEPRECATED(6.9)
-  static void setTransform(
-      Joint* joint,
-      const Eigen::Isometry3d& tf,
-      const Frame* withRespectTo = Frame::World());
-
-  /// If the given joint is a FreeJoint, then set the transform of the given
-  /// Joint's child BodyNode so that its transform with respect to
-  /// "withRespecTo" is equal to "tf".
   static void setTransformOf(
       Joint* joint,
-      const Eigen::Isometry3d& tf,
-      const Frame* withRespectTo = Frame::World());
-
-  /// If the parent Joint of the given BodyNode is a FreeJoint, then set the
-  /// transform of the given BodyNode so that its transform with respect to
-  /// "withRespecTo" is equal to "tf".
-  ///
-  /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
-  DART_DEPRECATED(6.9)
-  static void setTransform(
-      BodyNode* bodyNode,
       const Eigen::Isometry3d& tf,
       const Frame* withRespectTo = Frame::World());
 
@@ -126,19 +103,6 @@ public:
       BodyNode* bodyNode,
       const Eigen::Isometry3d& tf,
       const Frame* withRespectTo = Frame::World());
-
-  /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
-  /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
-  /// it will be applied to only the default root BodyNode that will be obtained
-  /// by Skeleton::getRootBodyNode().
-  ///
-  /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
-  DART_DEPRECATED(6.9)
-  static void setTransform(
-      Skeleton* skeleton,
-      const Eigen::Isometry3d& tf,
-      const Frame* withRespectTo = Frame::World(),
-      bool applyToAllRootBodies = true);
 
   /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
   /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
