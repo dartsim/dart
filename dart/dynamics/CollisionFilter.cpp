@@ -45,13 +45,6 @@ CollisionFilter::~CollisionFilter()
 }
 
 //==============================================================================
-bool CollisionFilter::needCollision(
-    const CollisionObject* object1, const CollisionObject* object2) const
-{
-  return !ignoresCollision(object1, object2);
-}
-
-//==============================================================================
 void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
 {
   // nullptr is not an allowed filter

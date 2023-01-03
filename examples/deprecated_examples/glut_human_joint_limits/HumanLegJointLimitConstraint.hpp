@@ -36,7 +36,7 @@
 #include <dart/dart.hpp>
 #include <tiny_dnn/tiny_dnn.h>
 
-DART_COMMON_MAKE_SHARED_WEAK(HumanLegJointLimitConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(HumanLegJointLimitConstraint)
 
 /// HumanLegJointLimitConstraint handles joint position limits on human leg,
 /// representing range of motion of hip, knee and ankle joints.
