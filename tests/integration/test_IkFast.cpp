@@ -116,8 +116,8 @@ TEST(IkFast, LoadWamArmIk)
 {
   io::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
-      "herb_description", DART_DATA_PATH "/urdf/wam");
-  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
+      "herb_description", DART_DATA_LOCAL_PATH "/urdf/wam");
+  auto wam = urdfParser.parseSkeleton(DART_DATA_LOCAL_PATH "/urdf/wam/wam.urdf");
   ASSERT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");

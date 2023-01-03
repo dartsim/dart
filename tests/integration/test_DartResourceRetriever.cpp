@@ -56,7 +56,7 @@ TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
   EXPECT_EQ(retriever->getFilePath("dart://sample/does/not/exist"), "");
   EXPECT_EQ(
       retriever->getFilePath("dart://sample/skel/shapes.skel"),
-      DART_DATA_PATH "skel/shapes.skel");
+      DART_DATA_LOCAL_PATH "skel/shapes.skel");
 
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));

@@ -157,10 +157,6 @@ public:
   std::size_t incrementVersion();
 
   /// Call UpdateProperties(this) and incrementVersion()
-  DART_DEPRECATED(6.2)
-  void notifyPropertiesUpdate();
-
-  /// Call UpdateProperties(this) and incrementVersion()
   void notifyPropertiesUpdated();
 
 protected:
@@ -411,23 +407,6 @@ std::size_t AspectWithVersionedProperties<
     return comp->incrementVersion();
 
   return 0;
-}
-
-//==============================================================================
-template <
-    class BaseT,
-    class DerivedT,
-    typename PropertiesData,
-    class CompositeT,
-    void (*updateProperties)(DerivedT*)>
-void AspectWithVersionedProperties<
-    BaseT,
-    DerivedT,
-    PropertiesData,
-    CompositeT,
-    updateProperties>::notifyPropertiesUpdate()
-{
-  notifyPropertiesUpdated();
 }
 
 //==============================================================================

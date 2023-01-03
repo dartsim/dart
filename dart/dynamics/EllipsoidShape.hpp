@@ -56,16 +56,6 @@ public:
   static const std::string& getStaticType();
 
   /// \brief Set diameters of this ellipsoid.
-  /// \deprecated Deprecated in 6.2. Please use setDiameters() instead.
-  DART_DEPRECATED(6.2)
-  void setSize(const Eigen::Vector3d& diameters);
-
-  /// \brief Get diameters of this ellipsoid.
-  /// \deprecated Deprecated in 6.2. Please use getDiameters() instead.
-  DART_DEPRECATED(6.2)
-  const Eigen::Vector3d& getSize() const;
-
-  /// \brief Set diameters of this ellipsoid.
   void setDiameters(const Eigen::Vector3d& diameters);
 
   /// \brief Get diameters of this ellipsoid.

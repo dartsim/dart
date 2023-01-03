@@ -102,9 +102,6 @@ private:
   Spheres mSpheres;
 };
 
-DART_DEPRECATED(6.2)
-typedef MultiSphereConvexHullShape MultiSphereShape;
-
 } // namespace dynamics
 } // namespace dart
 
