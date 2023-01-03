@@ -34,7 +34,6 @@
 #define DART_UTILS_XMLHELPERS_HPP_
 
 #include "dart/common/Console.hpp"
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/math/Geometry.hpp"

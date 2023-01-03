@@ -33,7 +33,6 @@
 #ifndef DART_DYNAMICS_JOINT_HPP_
 #define DART_DYNAMICS_JOINT_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"

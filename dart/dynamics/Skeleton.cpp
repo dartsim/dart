@@ -33,7 +33,6 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -955,19 +954,6 @@ static std::vector<const T*>& convertToConstPtrVector(
 }
 
 //==============================================================================
-const std::vector<BodyNode*>& Skeleton::getBodyNodes()
-{
-  return mSkelCache.mBodyNodes;
-}
-
-//==============================================================================
-const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
-{
-  return convertToConstPtrVector<BodyNode>(
-      mSkelCache.mBodyNodes, mSkelCache.mConstBodyNodes);
-}
-
-//==============================================================================
 std::vector<BodyNode*> Skeleton::getBodyNodes(const std::string& name)
 {
   auto bodyNode = getBodyNode(name);
@@ -1105,32 +1091,6 @@ const Joint* Skeleton::getJoint(const std::string& name) const
 }
 
 //==============================================================================
-std::vector<Joint*> Skeleton::getJoints()
-{
-  const auto& bodyNodes = getBodyNodes();
-
-  std::vector<Joint*> joints;
-  joints.reserve(bodyNodes.size());
-  for (const auto& bodyNode : bodyNodes)
-    joints.emplace_back(bodyNode->getParentJoint());
-
-  return joints;
-}
-
-//==============================================================================
-std::vector<const Joint*> Skeleton::getJoints() const
-{
-  const auto& bodyNodes = getBodyNodes();
-
-  std::vector<const Joint*> joints;
-  joints.reserve(bodyNodes.size());
-  for (const auto& bodyNode : bodyNodes)
-    joints.emplace_back(bodyNode->getParentJoint());
-
-  return joints;
-}
-
-//==============================================================================
 std::vector<Joint*> Skeleton::getJoints(const std::string& name)
 {
   auto joint = getJoint(name);
@@ -1201,19 +1161,6 @@ DegreeOfFreedom* Skeleton::getDof(const std::string& _name)
 const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 {
   return mNameMgrForDofs.getObject(_name);
-}
-
-//==============================================================================
-const std::vector<DegreeOfFreedom*>& Skeleton::getDofs()
-{
-  return mSkelCache.mDofs;
-}
-
-//==============================================================================
-std::vector<const DegreeOfFreedom*> Skeleton::getDofs() const
-{
-  return convertToConstPtrVector<DegreeOfFreedom>(
-      mSkelCache.mDofs, mSkelCache.mConstDofs);
 }
 
 //==============================================================================

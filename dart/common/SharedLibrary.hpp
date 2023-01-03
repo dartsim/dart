@@ -33,7 +33,6 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Platform.hpp"
 
@@ -97,11 +96,11 @@ public:
   ///
   /// \note SharedLibrary should be always created from this create function.
   /// \param[in] path The path to the shared library. The path can be a relative
-  /// path or an absolute path. If the path doens't exist this function returns
+  /// path or an absolute path. If the path doesn't exist this function returns
   /// nullptr. If the path exist, the path will be stored as the canonical path
   /// where a canonical path is an absolute path that has no elements which are
   /// symbolic links, and no dot or dot dot elements such as
-  /// "/path/../to/yourfile".
+  /// "/path/../to/your/file".
   /// \return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
   static std::shared_ptr<SharedLibrary> create(const std::string& path);
@@ -112,7 +111,7 @@ public:
   /// ProtectedConstructionTag is necessary to enforce creating SharedLibrary
   /// using std::make_shared.
   ///
-  /// \note Please use create() to contruct SharedLibrary instead of this
+  /// \note Please use create() to construct SharedLibrary instead of this
   /// constructor.
   /// \param[in] path The canonical path to the shared library.
   /// \return Pointer to the created SharedLibrary upon success in loading.
@@ -121,9 +120,6 @@ public:
 
   /// Destructor.
   virtual ~SharedLibrary();
-
-  /// Returns the path to the shared library file.
-  const common::filesystem::path& getCanonicalPath() const;
 
   /// Returns the path to the shared library file.
   const std::string& path() const;
@@ -143,14 +139,7 @@ protected:
 
   /// Canonical path to the shared library where a canonical path is an absolute
   /// path that has no elements which are symbolic links, and no dot or dot dot
-  /// elements such as "/path/../to/yourfile".
-  /// \deprecated Use mCanonicalPath2 instead.
-  common::filesystem::path mCanonicalPath;
-  // TODO(JS): Remove in DART 7.
-
-  /// Canonical path to the shared library where a canonical path is an absolute
-  /// path that has no elements which are symbolic links, and no dot or dot dot
-  /// elements such as "/path/../to/yourfile".
+  /// elements such as "/path/../to/your/file".
   std::string mPath;
 
   /// Handle to the loaded library.

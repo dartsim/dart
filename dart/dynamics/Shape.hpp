@@ -35,7 +35,6 @@
 
 #include "dart/common/Castable.hpp"
 #include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"

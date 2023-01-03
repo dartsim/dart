@@ -1442,20 +1442,12 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   world->getConstraintSolver()->setCollisionDetector(cd);
   world->addSkeleton(boxSkeleton1);
   world->addSkeleton(boxSkeleton2);
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  EXPECT_FALSE(boxBodyNode1->isColliding());
-  EXPECT_FALSE(boxBodyNode2->isColliding());
-  DART_SUPPRESS_DEPRECATED_END
 
   const collision::CollisionResult& result1 = world->getLastCollisionResult();
   EXPECT_FALSE(result1.inCollision(boxBodyNode1));
   EXPECT_FALSE(result1.inCollision(boxBodyNode2));
 
   world->step();
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  EXPECT_TRUE(boxBodyNode1->isColliding());
-  EXPECT_TRUE(boxBodyNode2->isColliding());
-  DART_SUPPRESS_DEPRECATED_END
 
   const collision::CollisionResult& result2 = world->getLastCollisionResult();
   EXPECT_TRUE(result2.inCollision(boxBodyNode1));

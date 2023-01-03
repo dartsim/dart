@@ -71,18 +71,6 @@ struct BodyNodeAspectProperties
   /// Indicates whether this node is collidable;
   bool mIsCollidable;
 
-  /// Coefficient of friction
-  /// \deprecated Deprecated since DART 6.10. Please set the friction
-  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
-  /// next major release.
-  double mFrictionCoeff;
-
-  /// Coefficient of restitution
-  /// \deprecated Deprecated since DART 6.10. Please set the restitution
-  /// coefficient per ShapeNode of the BodyNode. This will be removed in the
-  /// next major release.
-  double mRestitutionCoeff;
-
   /// Gravity will be applied if true
   bool mGravityMode;
 

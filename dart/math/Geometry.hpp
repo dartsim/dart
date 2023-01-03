@@ -33,7 +33,6 @@
 #ifndef DART_MATH_GEOMETRY_HPP_
 #define DART_MATH_GEOMETRY_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/MathTypes.hpp"
 

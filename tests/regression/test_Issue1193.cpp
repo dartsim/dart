@@ -84,13 +84,12 @@ const int g_iters = 100000;
 Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
 {
   Eigen::Vector3d angMomentum = Eigen::Vector3d::Zero();
-  for (auto* bn : skel->getBodyNodes())
-  {
+  skel->eachBodyNode([&](const BodyNode* bn) {
     angMomentum += dart::math::dAdInvT(
                        bn->getWorldTransform(),
                        bn->getSpatialInertia() * bn->getSpatialVelocity())
                        .head<3>();
-  }
+  });
   return angMomentum;
 }
 

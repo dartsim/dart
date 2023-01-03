@@ -33,7 +33,6 @@
 #ifndef DART_UTILS_MJCF_DETAIL_SITE_HPP_
 #define DART_UTILS_MJCF_DETAIL_SITE_HPP_
 
-#include "dart/common/Optional.hpp"
 #include "dart/io/mjcf/detail/Compiler.hpp"
 #include "dart/io/mjcf/detail/Error.hpp"
 #include "dart/io/mjcf/detail/Types.hpp"
@@ -41,6 +40,7 @@
 
 #include <tinyxml2.h>
 
+#include <optional>
 #include <string>
 
 namespace dart {
