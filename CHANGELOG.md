@@ -6,7 +6,9 @@
 
 * Supported Platforms
 
-  * Ubuntu 22.04 LTS on amd64 / GCC 11.2 / amd64
+  * Linux
+    * Ubuntu 22.04 LTS on amd64 / GCC 11.2 / amd64
+    * (experimental) Arch Linux
   * macOS 12 (Monterey) / Clang 13 / amd64
   * Windows / Microsoft Visual Studio 2022 / amd64
 
