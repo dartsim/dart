@@ -109,7 +109,14 @@ function(dart_add_test test_type target_name) # ARGN for source files
 
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
-  target_link_libraries(${target_name} dart gtest gtest_main)
+  target_link_libraries(${target_name}
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-common
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-math
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-test
+    gtest
+    gtest_main
+  )
 
   dart_format_add(${sources})
 
@@ -129,6 +136,8 @@ endfunction()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(src)
+
 # We categorize tests as:
 # - "integration": high level tests to verify the combination of several
 #   components are correctly performs together
@@ -137,8 +146,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
 if(NOT MSVC)
-  # Disabled due to limitied disk space in CI image
-  add_subdirectory(integration)
+#  # Disabled due to limitied disk space in CI image
+ add_subdirectory(integration)
   add_subdirectory(regression)
 endif()
 add_subdirectory(unit)
@@ -146,7 +155,7 @@ add_subdirectory(unit)
 # Print tests
 dart_get_tests(integration_tests "integration")
 dart_get_tests(regression_tests "regression")
-dart_get_tests(unit_tests "unit")
+dart_get_tests(unit_tests "TEST_UNIT")
 
 if(DART_VERBOSE)
   message(STATUS "")
@@ -186,5 +195,3 @@ add_custom_target(
 add_custom_target(tests_and_run COMMAND ${CMAKE_CTEST_COMMAND}
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
 )
-
-dart_format_add(GTestUtils.hpp)

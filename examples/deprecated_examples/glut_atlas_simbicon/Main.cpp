@@ -33,9 +33,6 @@
 #include "Controller.hpp"
 #include "MyWindow.hpp"
 
-#include <dart/io/io.hpp>
-#include <dart/io/urdf/urdf.hpp>
-
 #include <dart/dart.hpp>
 
 #include <iostream>

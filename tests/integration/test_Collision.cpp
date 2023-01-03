@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/collision.hpp"
-#include "dart/collision/fcl/fcl.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/dynamics.hpp"
@@ -41,14 +39,15 @@
 
 #include <iostream>
 #if DART_HAVE_ODE
-  #include "dart/collision/ode/ode.hpp"
+  #include "dart/dynamics/dynamics.hpp"
 #endif
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/bullet.hpp"
+  #include "dart/dynamics/dynamics.hpp"
 #endif
-#include "TestHelpers.hpp"
 #include "dart/io/io.hpp"
 #include "dart/simulation/simulation.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 using namespace dart;
 using namespace common;

@@ -33,8 +33,8 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 #define DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 
-#include "dart/collision/CollisionDetector.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/dynamics/CollisionDetector.hpp"
 #include "dart/dynamics/ConstrainedGroup.hpp"
 #include "dart/dynamics/ConstraintBase.hpp"
 #include "dart/dynamics/SmartPointer.hpp"

@@ -33,8 +33,6 @@
 #include "TinkertoyWidget.hpp"
 #include "TinkertoyWorldNode.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
 #include <dart/dart.hpp>
 
 //==============================================================================

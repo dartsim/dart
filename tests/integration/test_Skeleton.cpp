@@ -30,7 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -38,6 +37,8 @@
 #include "dart/io/SkelParser.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <dart/test/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

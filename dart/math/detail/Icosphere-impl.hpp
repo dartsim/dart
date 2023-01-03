@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #include "dart/math/Constants.hpp"
 #include "dart/math/Icosphere.hpp"
 

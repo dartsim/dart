@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #include "dart/math/Random.hpp"
 
 namespace dart {

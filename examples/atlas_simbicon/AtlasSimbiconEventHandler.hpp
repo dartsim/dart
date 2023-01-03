@@ -35,10 +35,6 @@
 
 #include "AtlasSimbiconWorldNode.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/io/io.hpp>
-
 #include <dart/dart.hpp>
 
 class AtlasSimbiconEventHandler : public osgGA::GUIEventHandler

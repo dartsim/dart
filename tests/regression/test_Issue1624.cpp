@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
 #include "dart/dart.hpp"
 #include "dart/io/sdf/SdfParser.hpp"
 
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/test/TestHelpers.hpp>
+
+#include <dart/dynamics/ode/OdeCollisionDetector.hpp>
 
 #include <gtest/gtest.h>
 

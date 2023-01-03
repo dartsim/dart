@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/glut/glut.hpp>
-
 #include <dart/dart.hpp>
 
 const double default_height = 1.0; // m

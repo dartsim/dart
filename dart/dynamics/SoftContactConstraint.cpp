@@ -32,9 +32,9 @@
 
 #include "dart/dynamics/SoftContactConstraint.hpp"
 
-#include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/CollisionObject.hpp"
 #include "dart/dynamics/ContactSurface.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"

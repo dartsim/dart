@@ -30,14 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/fcl.hpp"
 #include "dart/dart.hpp"
 
+#include <dart/test/TestHelpers.hpp>
+
 #include <gtest/gtest.h>
-#if DART_HAVE_BULLET
-  #include "dart/collision/bullet/bullet.hpp"
-#endif
-#include "TestHelpers.hpp"
 
 using namespace dart;
 

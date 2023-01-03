@@ -32,7 +32,6 @@
 
 #include "dart/io/mjcf/MjcfParser.hpp"
 
-#include "dart/collision/collision.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/dynamics.hpp"

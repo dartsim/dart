@@ -32,10 +32,6 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/gui/glut/glut.hpp>
-
-#include <dart/io/io.hpp>
-
 #include <dart/dart.hpp>
 
 #include <iostream>

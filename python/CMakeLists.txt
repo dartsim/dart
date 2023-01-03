@@ -7,11 +7,14 @@ endif()
 
 # Check if the required libraries are available
 set(DARTPY_REQUIRED_LIBS
-  dart
-  dart-io
-  dart-io-urdf
-  dart-gui
-  dart-gui-osg
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-common
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-math
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimizer
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-gui
 )
 foreach(lib ${DARTPY_REQUIRED_LIBS})
   if(NOT TARGET ${lib})

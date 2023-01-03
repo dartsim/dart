@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/test/TestHelpers.hpp>
+
 #include <dart/io/urdf/DartLoader.hpp>
 
 #include <dart/dart.hpp>
 
-#include <TestHelpers.hpp>
 #include <gtest/gtest.h>
 
 using namespace dart::collision;

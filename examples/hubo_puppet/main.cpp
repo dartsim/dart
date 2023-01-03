@@ -30,11 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/io/io.hpp>
-#include <dart/io/urdf/urdf.hpp>
-
 #include <dart/dart.hpp>
 
 using namespace dart::math;

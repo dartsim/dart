@@ -34,7 +34,7 @@
 
 #if DART_HAVE_ODE
 
-  #include <dart/collision/ode/ode.hpp>
+  #include <dart/dynamics/dynamics.hpp>
 
   #include <pybind11/pybind11.h>
 
