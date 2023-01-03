@@ -32,8 +32,6 @@
 
 #include "dart/optimization/pagmo/PagmoMultiObjectiveSolver.hpp"
 
-#include <memory>
-#include <Eigen/Dense>
 #include "dart/common/Console.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/math/Constants.hpp"
@@ -41,6 +39,10 @@
 #include "dart/optimization/MultiObjectiveProblem.hpp"
 #include "dart/optimization/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"
 #include "dart/optimization/pagmo/PagmoUtils.hpp"
+
+#include <Eigen/Dense>
+
+#include <memory>
 
 namespace dart {
 namespace optimization {
@@ -123,17 +125,14 @@ static pagmo::algorithm createPagmoAlgorithm(
   switch (properties.mAlgorithm)
   {
 #ifdef PAGMO_WITH_NLOPT
-    case PagmoMultiObjectiveSolver::Algorithm::Local_nlopt_COBYLA:
-    {
+    case PagmoMultiObjectiveSolver::Algorithm::Local_nlopt_COBYLA: {
       return createNloptCobyla(properties);
     }
 #endif
-    case PagmoMultiObjectiveSolver::Algorithm::Global_MOEAD:
-    {
+    case PagmoMultiObjectiveSolver::Algorithm::Global_MOEAD: {
       return createMoead(properties);
     }
-    case PagmoMultiObjectiveSolver::Algorithm::Global_NSGA2:
-    {
+    case PagmoMultiObjectiveSolver::Algorithm::Global_NSGA2: {
       return createNsga2(properties);
     }
   }
