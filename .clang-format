@@ -56,6 +56,8 @@ IncludeCategories:
     Priority: 1
 
   # DART headers
+  - Regex: '^<dart\/config.hpp>$'
+    Priority: 10
   - Regex: '^<dart\/test\/.*\.h(pp)?>$'
     Priority: 20
   - Regex: '^<dart\/python\/.*\.h(pp)?>$'

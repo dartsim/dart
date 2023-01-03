@@ -1,9 +1,11 @@
-#include <dart/optimization/optimization.hpp>
+#include <dart/config.hpp>
+
+#include <dart/optimization/Function.hpp>
+#include <dart/optimization/GenericMultiObjectiveProblem.hpp>
+#include <dart/optimization/MultiObjectiveSolver.hpp>
 
 #include <dart/common/Console.hpp>
 #include <dart/common/Memory.hpp>
-
-#include <dart/config.hpp>
 
 #include <gtest/gtest.h>
 
