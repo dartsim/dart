@@ -330,6 +330,8 @@ function(dart_add_project)
 
   # Generate project meta header
   set(component_meta_headers)
+  # TODO(JS): Improve the way of adding config.hpp
+  list(APPEND component_meta_headers config.hpp)
   get_property(enabled_components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
   # TODO(JS): Remove this
   list(REMOVE_ITEM enabled_components external-imgui)
