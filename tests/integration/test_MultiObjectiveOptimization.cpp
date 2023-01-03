@@ -1,6 +1,4 @@
-#include <dart/optimization/Function.hpp>
-#include <dart/optimization/GenericMultiObjectiveProblem.hpp>
-#include <dart/optimization/MultiObjectiveSolver.hpp>
+#include <dart/optimization/optimization.hpp>
 
 #include <dart/common/Console.hpp>
 #include <dart/common/Memory.hpp>
@@ -10,9 +8,6 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
-#if DART_HAVE_PAGMO
-  #include <dart/optimization/pagmo/pagmo.hpp>
-#endif
 
 using namespace dart;
 using namespace dart::optimization;
