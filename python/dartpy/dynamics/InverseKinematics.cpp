@@ -435,27 +435,26 @@ void InverseKinematics(py::module& m)
       .def(
           "setObjective",
           +[](dart::dynamics::InverseKinematics* self,
-              const std::shared_ptr<dart::optimizer::Function>& _objective) {
+              const std::shared_ptr<dart::optimization::Function>& _objective) {
             self->setObjective(_objective);
           },
           ::py::arg("objective"))
       .def(
           "getObjective",
           +[](const dart::dynamics::InverseKinematics* self)
-              -> std::shared_ptr<const dart::optimizer::Function> {
+              -> std::shared_ptr<const dart::optimization::Function> {
             return self->getObjective();
           })
       .def(
           "setNullSpaceObjective",
           +[](dart::dynamics::InverseKinematics* self,
-              const std::shared_ptr<dart::optimizer::Function>& _nsObjective) {
-            self->setNullSpaceObjective(_nsObjective);
-          },
+              const std::shared_ptr<dart::optimization::Function>&
+                  _nsObjective) { self->setNullSpaceObjective(_nsObjective); },
           ::py::arg("nsObjective"))
       .def(
           "getNullSpaceObjective",
           +[](const dart::dynamics::InverseKinematics* self)
-              -> std::shared_ptr<const dart::optimizer::Function> {
+              -> std::shared_ptr<const dart::optimization::Function> {
             return self->getNullSpaceObjective();
           })
       .def(
@@ -473,7 +472,7 @@ void InverseKinematics(py::module& m)
       .def(
           "getProblem",
           +[](const dart::dynamics::InverseKinematics* self)
-              -> std::shared_ptr<const dart::optimizer::Problem> {
+              -> std::shared_ptr<const dart::optimization::Problem> {
             return self->getProblem();
           })
       .def(
@@ -490,14 +489,14 @@ void InverseKinematics(py::module& m)
       .def(
           "setSolver",
           +[](dart::dynamics::InverseKinematics* self,
-              const std::shared_ptr<dart::optimizer::Solver>& _newSolver) {
+              const std::shared_ptr<dart::optimization::Solver>& _newSolver) {
             self->setSolver(_newSolver);
           },
           ::py::arg("newSolver"))
       .def(
           "getSolver",
           +[](dart::dynamics::InverseKinematics* self)
-              -> std::shared_ptr<dart::optimizer::Solver> {
+              -> std::shared_ptr<dart::optimization::Solver> {
             return self->getSolver();
           })
       .def(

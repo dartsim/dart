@@ -105,7 +105,7 @@ option(DART_DOWNLOAD_DEPENDENT_PACKAGES "Whether to download dependent package" 
 
 option(DART_BUILD_COMP_common       "Build component 'common'"       ON)
 option(DART_BUILD_COMP_math         "Build component 'math'"         ON)
-option(DART_BUILD_COMP_optimizer    "Build component 'optimizer'"    ON)
+option(DART_BUILD_COMP_optimization    "Build component 'optimization'"    ON)
 option(DART_BUILD_COMP_collision    "Build component 'collision'"    ON)
 option(DART_BUILD_COMP_dynamics     "Build component 'dynamics'"     ON)
 option(DART_BUILD_COMP_simulation   "Build component 'simulation'"   ON)

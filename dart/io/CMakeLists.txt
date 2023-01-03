@@ -23,7 +23,7 @@ dart_add_component(
   COMPONENT_NAME
     ${component_name}
   COMPONENT_DEPENDENCIES
-    common math optimizer collision dynamics simulation
+    common math optimization collision dynamics simulation
   COMPONENT_DEPENDENCY_PACKAGES
     tinyxml2
   TARGET_LINK_LIBRARIES_PUBLIC

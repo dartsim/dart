@@ -4,7 +4,7 @@ import dartpy as dart
 
 
 # Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
-class SampleObjFunc(dart.optimizer.Function):
+class SampleObjFunc(dart.optimization.Function):
     def eval(self, x):
         return math.sqrt(x[1])
 
@@ -13,7 +13,7 @@ class SampleObjFunc(dart.optimizer.Function):
         grad[1] = 0.5 / (math.sqrt(x[1]) + 0.000001)
 
 
-class SampleConstFunc(dart.optimizer.Function):
+class SampleConstFunc(dart.optimization.Function):
     def __init__(self, a, b):
         super(SampleConstFunc, self).__init__()
         self.a = a
@@ -28,7 +28,7 @@ class SampleConstFunc(dart.optimizer.Function):
 
 
 def test_gradient_descent_solver():
-    prob = dart.optimizer.Problem(2)
+    prob = dart.optimization.Problem(2)
     assert prob.getDimension() is 2
 
     prob.setLowerBounds([-1e100, 0])
@@ -39,7 +39,7 @@ def test_gradient_descent_solver():
     obj = SampleObjFunc()
     prob.setObjective(obj)
 
-    solver = dart.optimizer.GradientDescentSolver(prob)
+    solver = dart.optimization.GradientDescentSolver(prob)
     success = solver.solve()
     assert success is True
 
@@ -53,10 +53,10 @@ def test_gradient_descent_solver():
 
 
 def test_nlopt_solver():
-    if not hasattr(dart.optimizer, 'NloptSolver'):
+    if not hasattr(dart.optimization, 'NloptSolver'):
         return
 
-    prob = dart.optimizer.Problem(2)
+    prob = dart.optimization.Problem(2)
     assert prob.getDimension() is 2
 
     prob.setLowerBounds([-1e100, 0])
@@ -72,8 +72,8 @@ def test_nlopt_solver():
     prob.addIneqConstraint(const1)
     prob.addIneqConstraint(const2)
 
-    solver = dart.optimizer.NloptSolver(prob)
-    solver.setAlgorithm(dart.optimizer.NloptSolver.Algorithm.LD_MMA)
+    solver = dart.optimization.NloptSolver(prob)
+    solver.setAlgorithm(dart.optimization.NloptSolver.Algorithm.LD_MMA)
     success = solver.solve()
     assert success is True
 

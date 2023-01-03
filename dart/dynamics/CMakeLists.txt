@@ -23,7 +23,7 @@ dart_add_component(
   COMPONENT_NAME
     ${component_name}
   COMPONENT_DEPENDENCIES
-    common math optimizer collision
+    common math optimization collision
   COMPONENT_DEPENDENCY_PACKAGES
     assimp octomap
   TARGET_LINK_LIBRARIES_PUBLIC

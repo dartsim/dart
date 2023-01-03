@@ -12,11 +12,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
-# dart - common, math, optimizer, dynamics, collision,
+# dart - common, math, optimization, dynamics, collision,
 #        collision/dart, collision/fcl, simulation, [assimp, eigen3,
 #        fcl, fmt, libccd]
-# dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
-# dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
+# dart-optimization-ipopt - {dart}, optimization/ipopt, [ipopt]
+# dart-optimization-nlopt - {dart}, optimization/nlopt, [nlopt]
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
 # dart-io - {dart}, io, io/sdf, [tinyxml2]
 # dart-io-urdf - {dart-io}, io/urdf, [urdfdom]
@@ -32,12 +32,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #
 # common: {Eigen3}
 # math: (common), {Eigen3}
-# optimizer: (common), (math), {Eigen3}, [NLOPT], [IPOPT], [pagmo]
+# optimization: (common), (math), {Eigen3}, [NLOPT], [IPOPT], [pagmo]
 # collision: <todo>
-# dynamics: (common), (math), (optimizer), (collision), {assimp}, {octomap}, [Bullet], {fcl}, [ODE]
-# simulation: (common), (math), (optimizer), (collision), (dynamics)
-# io: (common), (math), (optimizer), (collision), (dynamics), (simulation), {tinyxml2}, [urdfdom]
-# gui: (external-imgui), (common), (math), (optimizer), (collision), (dynamics), (simulation), (io), {OpenGL}, [GLUT], [OpenSceneGraph]
+# dynamics: (common), (math), (optimization), (collision), {assimp}, {octomap}, [Bullet], {fcl}, [ODE]
+# simulation: (common), (math), (optimization), (collision), (dynamics)
+# io: (common), (math), (optimization), (collision), (dynamics), (simulation), {tinyxml2}, [urdfdom]
+# gui: (external-imgui), (common), (math), (optimization), (collision), (dynamics), (simulation), (io), {OpenGL}, [GLUT], [OpenSceneGraph]
 
 set(org_name dartsim)
 set(project_name ${PROJECT_NAME})
@@ -54,7 +54,7 @@ dart_add_project(
   COMPONENTS
     common
     math
-    optimizer
+    optimization
     collision
     dynamics
     simulation

@@ -28,7 +28,7 @@ target_link_libraries(${target_name}
     gtest
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-common
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-math
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimizer
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation

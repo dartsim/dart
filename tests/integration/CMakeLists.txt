@@ -38,8 +38,8 @@ dart_add_test("integration" test_Optimizer)
 dart_add_test("integration" test_ScrewJoint)
 dart_add_test("integration" test_Subscriptions)
 
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimizer)
-  target_link_libraries(test_Optimizer ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimizer)
+if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
+  target_link_libraries(test_Optimizer ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
 endif()
 
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
@@ -100,9 +100,9 @@ dart_format_add(
   SharedLibraryWamIkFast.cpp
 )
 
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimizer)
+if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
   dart_add_test("integration" test_MultiObjectiveOptimization)
-  target_link_libraries(test_MultiObjectiveOptimization ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimizer)
+  target_link_libraries(test_MultiObjectiveOptimization ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
 endif()
 
 dart_add_test("integration" test_Distance)
