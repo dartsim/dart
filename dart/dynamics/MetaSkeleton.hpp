@@ -71,10 +71,7 @@ public:
   virtual ~MetaSkeleton() = default;
 
   /// Creates an identical clone of this MetaSkeleton
-  virtual MetaSkeletonPtr cloneMetaSkeleton(
-      const std::string& cloneName) const = 0;
-  // TODO: In DART7, rename this to clone() and change the current
-  // Skeleton::clone() to override it.
+  virtual MetaSkeletonPtr clone(const std::string& cloneName) const = 0;
 
   /// Creates an identical clone of this MetaSkeleton
   MetaSkeletonPtr cloneMetaSkeleton() const;

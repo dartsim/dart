@@ -56,18 +56,6 @@ namespace dynamics {
 class ConstraintSolver
 {
 public:
-  /// Constructor
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use other constructors that
-  /// doesn't take timespte. Timestep should be set by the owner of this solver
-  /// such as dart::simulation::World when the solver added.
-  DART_DEPRECATED(6.8)
-  explicit ConstraintSolver(double timeStep);
-
-  // TODO(JS): Remove timeStep. The timestep can be set by world when a
-  // constraint solver is assigned to a world.
-  // Deprecate
-
   /// Default constructor
   ConstraintSolver();
 
@@ -192,14 +180,6 @@ public:
 
   /// Return the last collision checking result
   const collision::CollisionResult& getLastCollisionResult() const;
-
-  /// Set LCP solver
-  DART_DEPRECATED(6.7)
-  void setLCPSolver(std::unique_ptr<LCPSolver> lcpSolver);
-
-  /// Get LCP solver
-  DART_DEPRECATED(6.7)
-  LCPSolver* getLCPSolver() const;
 
   /// Solve constraint impulses and apply them to the skeletons
   void solve();

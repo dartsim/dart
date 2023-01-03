@@ -211,8 +211,7 @@ public:
   using MetaSkeleton::cloneMetaSkeleton;
 
   // Documentation inherited
-  MetaSkeletonPtr cloneMetaSkeleton(
-      const std::string& cloneName) const override;
+  MetaSkeletonPtr clone(const std::string& cloneName) const override;
 
   /// Returns false if the original assembly of this Linkage has been broken in
   /// some way

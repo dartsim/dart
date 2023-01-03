@@ -198,7 +198,7 @@ ChainPtr Chain::cloneChain(const std::string& cloneName) const
 }
 
 //==============================================================================
-MetaSkeletonPtr Chain::cloneMetaSkeleton(const std::string& cloneName) const
+MetaSkeletonPtr Chain::clone(const std::string& cloneName) const
 {
   return cloneChain(cloneName);
 }

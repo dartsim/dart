@@ -87,61 +87,6 @@ public:
   /// Virtual destructor
   virtual ~InverseKinematics();
 
-  /// Solve the IK Problem.
-  ///
-  /// The initial guess for the IK optimization problem is the current joint
-  /// positions of the target system. If the iterative solver fails to find a
-  /// successive solution, it attempts more to solve the problem with other seed
-  /// configurations or random configurations if enough seed is not provided.
-  ///
-  /// Here is the pseudocode as described above:
-  ///
-  /// \code
-  /// attempts <- 0
-  /// initial_guess <- current_joint_positions
-  /// while attempts <= max_attempts:
-  ///   result <- solve(initial_guess)
-  ///   if result = success:
-  ///     return
-  ///   else:
-  ///     attempts <- attempts + 1
-  ///     if attempts <= num_seed:
-  ///       initial_guess <- seed[attempts - 1]
-  ///     else:
-  ///       initial_guess <- random_configuration  // within the bounds
-  /// \endcode
-  ///
-  /// By default, the max_attempts is 1, but this can be changed by calling
-  /// InverseKinematics::getSolver() and casting the SolverPtr to an
-  /// optimization::GradientDescentSolver (unless you have changed the Solver
-  /// type) and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
-  ///
-  /// By default, the list of seeds is empty, but they can be added by calling
-  /// InverseKinematics::getProblem() and then using
-  /// Problem::addSeed(Eigen::VectorXd).
-  ///
-  /// By default, the Skeleton itself will retain the solved joint positions.
-  /// If you pass in false for _applySolution, then the joint positions will be
-  /// returned to their original positions after the problem is solved.
-  ///
-  /// Calling this function will automatically call Position::setLowerBounds(~)
-  /// and Position::setUpperBounds(~) with the lower/upper position bounds of
-  /// the corresponding Degrees Of Freedom. Problem::setDimension(~) will be
-  /// taken care of automatically, and Problem::setInitialGuess(~) will be
-  /// called with the current positions of the Degrees Of Freedom.
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use solveAndApply() instead.
-  DART_DEPRECATED(6.8)
-  bool solve(bool applySolution = true);
-
-  /// Same as solve(bool), but the positions vector will be filled with the
-  /// solved positions.
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use solveAndApply() or
-  /// findSolution() instead.
-  DART_DEPRECATED(6.8)
-  bool solve(Eigen::VectorXd& positions, bool applySolution = true);
-
   /// Finds a solution of the IK problem without applying the solution.
   ///
   /// The initial guess for the IK optimization problem is the current joint

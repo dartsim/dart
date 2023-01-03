@@ -143,7 +143,7 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
 }
 
 //==============================================================================
-MetaSkeletonPtr Group::cloneMetaSkeleton(const std::string& cloneName) const
+MetaSkeletonPtr Group::clone(const std::string& cloneName) const
 {
   return cloneGroup(cloneName);
 }

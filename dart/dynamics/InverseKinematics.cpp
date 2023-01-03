@@ -55,29 +55,6 @@ InverseKinematics::~InverseKinematics()
 }
 
 //==============================================================================
-bool InverseKinematics::solve(bool applySolution)
-{
-  if (applySolution)
-  {
-    return solveAndApply(true);
-  }
-  else
-  {
-    Eigen::VectorXd positions;
-    return findSolution(positions);
-  }
-}
-
-//==============================================================================
-bool InverseKinematics::solve(Eigen::VectorXd& positions, bool applySolution)
-{
-  if (applySolution)
-    return solveAndApply(positions, true);
-  else
-    return findSolution(positions);
-}
-
-//==============================================================================
 bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
 {
   if (nullptr == mSolver)

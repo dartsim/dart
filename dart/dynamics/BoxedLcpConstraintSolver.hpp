@@ -42,25 +42,6 @@ namespace dynamics {
 class BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
-  /// Constructor
-  ///
-  /// \param[in] timeStep Simulation time step
-  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
-  /// passed, Dantzig solver will be used.
-  /// \param[in] secondaryBoxedLcpSolver The secondary boxed-LCP solver. When
-  /// nullptr is passed, PGS solver will be used. This is to make the default
-  /// solver setting to be Dantzig + PGS. In order to disable use of secondary
-  /// solver, call setSecondaryBoxedLcpSolver(nullptr) explicitly.
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use other constructors that
-  /// doesn't take timespte. Timestep should be set by the owner of this solver
-  /// such as dart::simulation::World when the solver added.
-  DART_DEPRECATED(6.8)
-  BoxedLcpConstraintSolver(
-      double timeStep,
-      BoxedLcpSolverPtr boxedLcpSolver = nullptr,
-      BoxedLcpSolverPtr secondaryBoxedLcpSolver = nullptr);
-
   /// Constructos with default primary and secondary LCP solvers, which are
   /// Dantzig and PGS, respectively.
   BoxedLcpConstraintSolver();
