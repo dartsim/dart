@@ -11,7 +11,6 @@ dart_build_tests(
   SOURCES
     test_Aspect.cpp
     test_Building.cpp
-    test_Common.cpp
     test_Concurrency.cpp
     test_Constraint.cpp
     test_Frames.cpp

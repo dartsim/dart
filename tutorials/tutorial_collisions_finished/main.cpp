@@ -351,7 +351,7 @@ template <class JointType>
 BodyNode* addRigidBody(
     const SkeletonPtr& chain,
     const std::string& name,
-    Shape::ShapeType type,
+    const std::string& type,
     BodyNode* parent = nullptr)
 {
   // Set the Joint properties
@@ -375,17 +375,17 @@ BodyNode* addRigidBody(
 
   // Make the shape based on the requested Shape type
   ShapePtr shape;
-  if (Shape::BOX == type)
+  if (BoxShape::getStaticType() == type)
   {
     shape = std::make_shared<BoxShape>(Eigen::Vector3d(
         default_shape_width, default_shape_width, default_shape_height));
   }
-  else if (Shape::CYLINDER == type)
+  else if (CylinderShape::getStaticType() == type)
   {
     shape = std::make_shared<CylinderShape>(
         default_shape_width / 2.0, default_shape_height);
   }
-  else if (Shape::ELLIPSOID == type)
+  else if (EllipsoidShape::getStaticType() == type)
   {
     shape = std::make_shared<EllipsoidShape>(
         default_shape_height * Eigen::Vector3d::Ones());
@@ -520,7 +520,7 @@ SkeletonPtr createBall()
   SkeletonPtr ball = Skeleton::create("rigid_ball");
 
   // Give the ball a body
-  addRigidBody<FreeJoint>(ball, "rigid ball", Shape::ELLIPSOID);
+  addRigidBody<FreeJoint>(ball, "rigid ball", EllipsoidShape::getStaticType());
 
   setAllColors(ball, dart::Color::Red());
 
@@ -532,9 +532,12 @@ SkeletonPtr createRigidChain()
   SkeletonPtr chain = Skeleton::create("rigid_chain");
 
   // Add bodies to the chain
-  BodyNode* bn = addRigidBody<FreeJoint>(chain, "rigid box 1", Shape::BOX);
-  bn = addRigidBody<BallJoint>(chain, "rigid cyl 2", Shape::CYLINDER, bn);
-  bn = addRigidBody<BallJoint>(chain, "rigid box 3", Shape::BOX, bn);
+  BodyNode* bn = addRigidBody<FreeJoint>(
+      chain, "rigid box 1", BoxShape::getStaticType());
+  bn = addRigidBody<BallJoint>(
+      chain, "rigid cyl 2", CylinderShape::getStaticType(), bn);
+  bn = addRigidBody<BallJoint>(
+      chain, "rigid box 3", BoxShape::getStaticType(), bn);
 
   setAllColors(chain, dart::Color::Orange());
 
@@ -546,12 +549,18 @@ SkeletonPtr createRigidRing()
   SkeletonPtr ring = Skeleton::create("rigid_ring");
 
   // Add bodies to the ring
-  BodyNode* bn = addRigidBody<FreeJoint>(ring, "rigid box 1", Shape::BOX);
-  bn = addRigidBody<BallJoint>(ring, "rigid cyl 2", Shape::CYLINDER, bn);
-  bn = addRigidBody<BallJoint>(ring, "rigid box 3", Shape::BOX, bn);
-  bn = addRigidBody<BallJoint>(ring, "rigid cyl 4", Shape::CYLINDER, bn);
-  bn = addRigidBody<BallJoint>(ring, "rigid box 5", Shape::BOX, bn);
-  bn = addRigidBody<BallJoint>(ring, "rigid cyl 6", Shape::CYLINDER, bn);
+  BodyNode* bn
+      = addRigidBody<FreeJoint>(ring, "rigid box 1", BoxShape::getStaticType());
+  bn = addRigidBody<BallJoint>(
+      ring, "rigid cyl 2", CylinderShape::getStaticType(), bn);
+  bn = addRigidBody<BallJoint>(
+      ring, "rigid box 3", BoxShape::getStaticType(), bn);
+  bn = addRigidBody<BallJoint>(
+      ring, "rigid cyl 4", CylinderShape::getStaticType(), bn);
+  bn = addRigidBody<BallJoint>(
+      ring, "rigid box 5", BoxShape::getStaticType(), bn);
+  bn = addRigidBody<BallJoint>(
+      ring, "rigid cyl 6", CylinderShape::getStaticType(), bn);
 
   setAllColors(ring, dart::Color::Blue());
 

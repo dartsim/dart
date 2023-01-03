@@ -33,7 +33,6 @@
 #ifndef DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 #define DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Singleton.hpp"
 
@@ -51,19 +50,6 @@ namespace detail {
 class SharedLibraryManager final : public Singleton<SharedLibraryManager>
 {
 public:
-  /// Loads the shared library with the specified path.
-  ///
-  /// \param[in] path The path to the shared library. If the path doesn't
-  /// include the extension, this function will use the best guess depending on
-  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
-  /// Windows).
-  /// \return Pointer to the shared library upon success. Otherwise, returns
-  /// nullptr.
-  /// \deprecated Deprecated in 6.10. Please use load(const std::string&)
-  /// instead.
-  DART_DEPRECATED(6.10)
-  std::shared_ptr<SharedLibrary> load(const common::filesystem::path& path);
-
   /// Loads the shared library with the specified path.
   ///
   /// \param[in] path The path to the shared library. If the path doesn't

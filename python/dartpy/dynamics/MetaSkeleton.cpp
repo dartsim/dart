@@ -154,17 +154,20 @@ void MetaSkeleton(py::module& m)
           "getJoints",
           +[](dart::dynamics::MetaSkeleton* self)
               -> std::vector<dart::dynamics::Joint*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getJoints();
-            DART_SUPPRESS_DEPRECATED_END
+            std::vector<dart::dynamics::Joint*> out;
+            self->eachJoint(
+                [&](dart::dynamics::Joint* joint) { out.push_back(joint); });
+            return out;
           })
       .def(
           "getJoints",
           +[](const dart::dynamics::MetaSkeleton* self)
               -> std::vector<const dart::dynamics::Joint*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getJoints();
-            DART_SUPPRESS_DEPRECATED_END
+            std::vector<const dart::dynamics::Joint*> out;
+            self->eachJoint([&](const dart::dynamics::Joint* joint) {
+              out.push_back(joint);
+            });
+            return out;
           })
       .def(
           "getJoints",
@@ -220,9 +223,11 @@ void MetaSkeleton(py::module& m)
           "getDofs",
           +[](dart::dynamics::MetaSkeleton* self)
               -> std::vector<dart::dynamics::DegreeOfFreedom*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getDofs();
-            DART_SUPPRESS_DEPRECATED_END
+            std::vector<dart::dynamics::DegreeOfFreedom*> out;
+            self->eachDof([&](dart::dynamics::DegreeOfFreedom* dof) {
+              out.push_back(dof);
+            });
+            return out;
           },
           ::py::return_value_policy::reference_internal)
       .def(

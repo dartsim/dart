@@ -77,21 +77,6 @@ namespace io {
 class DartLoader
 {
 public:
-  /// \deprecated Deprecated in 6.11. Use RootJointType and Options instead.
-  ///
-  /// Flags for specifying URDF file parsing policies.
-  enum Flags
-  {
-    NONE = 0,
-
-    /// Parser the root link's joint type to be "fixed" joint when not
-    /// specified.
-    FIXED_BASE_LINK = 1 << 1,
-
-    /// The default flgas
-    DEFAULT = NONE,
-  };
-
   /// Root joint type to be used when the parent joint of the root link is not
   /// specified in the URDF file.
   enum class RootJointType
@@ -156,44 +141,14 @@ public:
       const std::string& packageName, const std::string& packageDirectory);
 
   /// Parse a file to produce a Skeleton
-  DART_DEPRECATED(6.11)
-  dynamics::SkeletonPtr parseSkeleton(
-      const common::Uri& uri,
-      const common::ResourceRetrieverPtr& resourceRetriever,
-      unsigned int flags = DEFAULT);
-
-  /// Parse a file to produce a Skeleton
   dynamics::SkeletonPtr parseSkeleton(const common::Uri& uri);
-
-  /// Parse a text string to produce a Skeleton
-  DART_DEPRECATED(6.11)
-  dynamics::SkeletonPtr parseSkeletonString(
-      const std::string& urdfString,
-      const common::Uri& baseUri,
-      const common::ResourceRetrieverPtr& resourceRetriever,
-      unsigned int flags = DEFAULT);
 
   /// Parse a text string to produce a Skeleton
   dynamics::SkeletonPtr parseSkeletonString(
       const std::string& urdfString, const common::Uri& baseUri);
 
   /// Parse a file to produce a World
-  DART_DEPRECATED(6.11)
-  dart::simulation::WorldPtr parseWorld(
-      const common::Uri& uri,
-      const common::ResourceRetrieverPtr& resourceRetriever,
-      unsigned int flags = DEFAULT);
-
-  /// Parse a file to produce a World
   dart::simulation::WorldPtr parseWorld(const common::Uri& uri);
-
-  /// Parse a text string to produce a World
-  DART_DEPRECATED(6.11)
-  dart::simulation::WorldPtr parseWorldString(
-      const std::string& urdfString,
-      const common::Uri& baseUri,
-      const common::ResourceRetrieverPtr& resourceRetriever,
-      unsigned int flags = DEFAULT);
 
   /// Parse a text string to produce a World
   dart::simulation::WorldPtr parseWorldString(

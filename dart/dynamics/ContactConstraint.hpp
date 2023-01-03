@@ -57,10 +57,6 @@ public:
       double timeStep,
       const ContactSurfaceParams& contactSurfaceParams);
 
-  /// Constructor
-  DART_DEPRECATED(6.13)
-  ContactConstraint(collision::Contact& contact, double timeStep);
-
   /// Destructor
   ~ContactConstraint() override = default;
 
@@ -146,28 +142,6 @@ protected:
 
   // Documentation inherited
   bool isActive() const override;
-
-  DART_DEPRECATED(6.13)
-  static double computeFrictionCoefficient(
-      const dynamics::ShapeNode* shapeNode);
-  DART_DEPRECATED(6.13)
-  static double computePrimaryFrictionCoefficient(
-      const dynamics::ShapeNode* shapeNode);
-  DART_DEPRECATED(6.13)
-  static double computeSecondaryFrictionCoefficient(
-      const dynamics::ShapeNode* shapeNode);
-  DART_DEPRECATED(6.13)
-  static double computePrimarySlipCompliance(
-      const dynamics::ShapeNode* shapeNode);
-  DART_DEPRECATED(6.13)
-  static double computeSecondarySlipCompliance(
-      const dynamics::ShapeNode* shapeNode);
-  DART_DEPRECATED(6.13)
-  static Eigen::Vector3d computeWorldFirstFrictionDir(
-      const dynamics::ShapeNode* shapenode);
-  DART_DEPRECATED(6.13)
-  static double computeRestitutionCoefficient(
-      const dynamics::ShapeNode* shapeNode);
 
 private:
   using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;

@@ -33,13 +33,14 @@
 #ifndef DART_UTILS_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 
-#include "dart/common/Optional.hpp"
 #include "dart/io/mjcf/detail/Error.hpp"
 #include "dart/io/mjcf/detail/Types.hpp"
 #include "dart/math/MathTypes.hpp"
 
 #include <Eigen/Core>
 #include <tinyxml2.h>
+
+#include <optional>
 
 namespace dart {
 namespace io {

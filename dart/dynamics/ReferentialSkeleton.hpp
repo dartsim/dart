@@ -106,12 +106,6 @@ public:
   /// implementation dependent, and prints a warning.
   const BodyNode* getBodyNode(const std::string& name) const override;
 
-  // Documentation inherited
-  const std::vector<BodyNode*>& getBodyNodes() override;
-
-  // Documentation inherited
-  const std::vector<const BodyNode*>& getBodyNodes() const override;
-
   /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
   /// \note ReferentialSkeleton can contain multiple BodyNodes with the same
@@ -157,12 +151,6 @@ public:
   /// implementation dependent, and prints a warning.
   const Joint* getJoint(const std::string& name) const override;
 
-  // Documentation inherited
-  std::vector<Joint*> getJoints() override;
-
-  // Documentation inherited
-  std::vector<const Joint*> getJoints() const override;
-
   /// \copydoc MetaSkeleton::getJoints(const std::string&).
   ///
   /// \note ReferentialSkeleton can contain multiple Joints with the same
@@ -190,12 +178,6 @@ public:
 
   // Documentation inherited
   const DegreeOfFreedom* getDof(std::size_t _idx) const override;
-
-  // Documentation inherited
-  const std::vector<DegreeOfFreedom*>& getDofs() override;
-
-  // Documentation inherited
-  std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
   std::size_t getIndexOf(

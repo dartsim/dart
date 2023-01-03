@@ -35,7 +35,6 @@
 
 #include "dart/common/Castable.hpp"
 #include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
@@ -57,26 +56,6 @@ class Shape : public virtual common::Subject,
 public:
   using VersionChangedSignal
       = common::Signal<void(Shape* shape, std::size_t version)>;
-
-  /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  enum ShapeType
-  {
-    SPHERE,
-    BOX,
-    ELLIPSOID,
-    CYLINDER,
-    CAPSULE,
-    CONE,
-    PYRAMID,
-    RECTANGULAR_PYRAMID,
-    PLANE,
-    MULTISPHERE,
-    MESH,
-    SOFT_MESH,
-    LINE_SEGMENT,
-    HEIGHTMAP,
-    UNSUPPORTED
-  };
 
   /// DataVariance can be used by renderers to determine whether it should
   /// expect data for this shape to change during each update.

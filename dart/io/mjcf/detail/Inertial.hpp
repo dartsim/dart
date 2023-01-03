@@ -33,12 +33,13 @@
 #ifndef DART_UTILS_MJCF_DETAIL_INERTIAL_HPP_
 #define DART_UTILS_MJCF_DETAIL_INERTIAL_HPP_
 
-#include "dart/common/Optional.hpp"
 #include "dart/io/mjcf/detail/Compiler.hpp"
 #include "dart/io/mjcf/detail/Error.hpp"
 #include "dart/math/MathTypes.hpp"
 
 #include <tinyxml2.h>
+
+#include <optional>
 
 namespace dart {
 namespace io {

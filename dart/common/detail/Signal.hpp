@@ -98,13 +98,6 @@ void Signal<_Res(_ArgTypes...), Combiner>::disconnectAll()
 
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
-void Signal<_Res(_ArgTypes...), Combiner>::cleanupConnections()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 std::size_t Signal<_Res(_ArgTypes...), Combiner>::getNumConnections() const
 {
   return mConnectionBodies.size();
@@ -189,13 +182,6 @@ template <typename... _ArgTypes>
 void Signal<void(_ArgTypes...)>::disconnectAll()
 {
   mConnectionBodies.clear();
-}
-
-//==============================================================================
-template <typename... _ArgTypes>
-void Signal<void(_ArgTypes...)>::cleanupConnections()
-{
-  // Do nothing
 }
 
 //==============================================================================

@@ -224,32 +224,12 @@ BodyNodeState::BodyNodeState(const Eigen::Vector6d& Fext) : mFext(Fext)
 //==============================================================================
 BodyNodeAspectProperties::BodyNodeAspectProperties(
     const std::string& name,
-    const Inertia& _inertia,
-    bool _isCollidable,
-    double _frictionCoeff,
-    double _restitutionCoeff,
-    bool _gravityMode)
-  : mName(name),
-    mInertia(_inertia),
-    mIsCollidable(_isCollidable),
-    mFrictionCoeff(_frictionCoeff),
-    mRestitutionCoeff(_restitutionCoeff),
-    mGravityMode(_gravityMode)
-{
-  // Do nothing
-}
-
-//==============================================================================
-BodyNodeAspectProperties::BodyNodeAspectProperties(
-    const std::string& name,
     const Inertia& inertia,
     bool isCollidable,
     bool gravityMode)
   : mName(name),
     mInertia(inertia),
     mIsCollidable(isCollidable),
-    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
-    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
     mGravityMode(gravityMode)
 {
   // Do nothing
@@ -341,10 +321,6 @@ void BodyNode::setAspectProperties(const AspectProperties& properties)
   setName(properties.mName);
   setInertia(properties.mInertia);
   setGravityMode(properties.mGravityMode);
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  setFrictionCoeff(properties.mFrictionCoeff);
-  setRestitutionCoeff(properties.mRestitutionCoeff);
-  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -663,61 +639,6 @@ Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(
 }
 
 //==============================================================================
-void BodyNode::setFrictionCoeff(double coeff)
-{
-  // Below code block is to set the friction coefficients of all the current
-  // dynamics aspects of this BodyNode as a stopgap solution. However, this
-  // won't help for new ShapeNodes that get added later.
-  eachShapeNodeWith<DynamicsAspect>([&](ShapeNode* shapeNode) {
-    auto* dynamicsAspect = shapeNode->getDynamicsAspect();
-    dynamicsAspect->setFrictionCoeff(coeff);
-  });
-
-  if (mAspectProperties.mFrictionCoeff == coeff)
-    return;
-
-  assert(
-      0.0 <= coeff && "Coefficient of friction should be non-negative value.");
-  mAspectProperties.mFrictionCoeff = coeff;
-
-  incrementVersion();
-}
-
-//==============================================================================
-double BodyNode::getFrictionCoeff() const
-{
-  return mAspectProperties.mFrictionCoeff;
-}
-
-//==============================================================================
-void BodyNode::setRestitutionCoeff(double coeff)
-{
-  // Below code block is to set the restitution coefficients of all the current
-  // dynamics aspects of this BodyNode as a stopgap solution. However, this
-  // won't help for new ShapeNodes that get added later.
-  eachShapeNodeWith<DynamicsAspect>([&](ShapeNode* shapeNode) {
-    auto* dynamicsAspect = shapeNode->getDynamicsAspect();
-    dynamicsAspect->setRestitutionCoeff(coeff);
-  });
-
-  if (coeff == mAspectProperties.mRestitutionCoeff)
-    return;
-
-  assert(
-      0.0 <= coeff && coeff <= 1.0
-      && "Coefficient of restitution should be in range of [0, 1].");
-  mAspectProperties.mRestitutionCoeff = coeff;
-
-  incrementVersion();
-}
-
-//==============================================================================
-double BodyNode::getRestitutionCoeff() const
-{
-  return mAspectProperties.mRestitutionCoeff;
-}
-
-//==============================================================================
 std::size_t BodyNode::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
@@ -947,32 +868,6 @@ const Joint* BodyNode::getChildJoint(std::size_t _index) const
 
 //==============================================================================
 DART_BAKE_SPECIALIZED_NODE_DEFINITIONS(BodyNode, ShapeNode)
-
-//==============================================================================
-const std::vector<ShapeNode*> BodyNode::getShapeNodes()
-{
-  const auto numShapeNodes = getNumShapeNodes();
-
-  std::vector<ShapeNode*> shapeNodes(numShapeNodes);
-
-  for (auto i = 0u; i < numShapeNodes; ++i)
-    shapeNodes[i] = getShapeNode(i);
-
-  return shapeNodes;
-}
-
-//==============================================================================
-const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
-{
-  const auto numShapeNodes = getNumShapeNodes();
-
-  std::vector<const ShapeNode*> shapeNodes(numShapeNodes);
-
-  for (auto i = 0u; i < numShapeNodes; ++i)
-    shapeNodes[i] = getShapeNode(i);
-
-  return shapeNodes;
-}
 
 //==============================================================================
 void BodyNode::removeAllShapeNodes()

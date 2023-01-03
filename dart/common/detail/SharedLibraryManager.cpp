@@ -37,16 +37,11 @@
 
 #include <fstream>
 
+#include <cassert>
+
 namespace dart {
 namespace common {
 namespace detail {
-
-//==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
-    const common::filesystem::path& path)
-{
-  return load(path.string());
-}
 
 //==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
@@ -87,7 +82,6 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
     return nullptr;
 
   mSharedLibraries[canonicalPath] = newLib;
-  assert(canonicalPath == newLib->getCanonicalPath());
 
   return newLib;
 }

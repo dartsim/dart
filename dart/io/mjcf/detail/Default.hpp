@@ -33,7 +33,6 @@
 #ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 #define DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 
-#include "dart/common/Optional.hpp"
 #include "dart/io/mjcf/detail/Error.hpp"
 #include "dart/io/mjcf/detail/GeomAttributes.hpp"
 #include "dart/io/mjcf/detail/JointAttributes.hpp"
@@ -42,6 +41,7 @@
 
 #include <tinyxml2.h>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 

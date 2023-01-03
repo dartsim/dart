@@ -202,26 +202,6 @@ ConstConstraintBasePtr ConstraintSolver::getConstraint(std::size_t index) const
 }
 
 //==============================================================================
-std::vector<ConstraintBasePtr> ConstraintSolver::getConstraints()
-{
-  // Return a copy of constraint list not to expose the implementation detail
-  // that the constraint pointers are held in a vector, in case we want to
-  // change this implementation in the future.
-  return mManualConstraints;
-}
-
-//==============================================================================
-std::vector<ConstConstraintBasePtr> ConstraintSolver::getConstraints() const
-{
-  std::vector<ConstConstraintBasePtr> constraints;
-  constraints.reserve(mManualConstraints.size());
-  for (auto& constraint : mManualConstraints)
-    constraints.push_back(constraint);
-
-  return constraints;
-}
-
-//==============================================================================
 void ConstraintSolver::clearLastCollisionResult()
 {
   mCollisionResult.clear();
@@ -342,12 +322,6 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
-}
-
-//==============================================================================
-bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& skeleton) const
-{
-  return hasSkeleton(skeleton);
 }
 
 //==============================================================================

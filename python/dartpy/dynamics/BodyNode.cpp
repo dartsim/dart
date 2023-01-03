@@ -926,9 +926,10 @@ void BodyNode(py::module& m)
           "getShapeNodes",
           +[](dart::dynamics::BodyNode* self)
               -> const std::vector<dart::dynamics::ShapeNode*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getShapeNodes();
-            DART_SUPPRESS_DEPRECATED_END
+            std::vector<dart::dynamics::ShapeNode*> out;
+            self->eachShapeNode(
+                [&](dart::dynamics::ShapeNode* sn) { out.push_back(sn); });
+            return out;
           },
           ::py::return_value_policy::reference_internal)
       .def(

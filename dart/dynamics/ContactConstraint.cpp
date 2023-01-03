@@ -58,17 +58,6 @@ double ContactConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
 ContactConstraint::ContactConstraint(
-    collision::Contact& contact, double timeStep)
-  : ContactConstraint(
-      contact,
-      timeStep,
-      DefaultContactSurfaceHandler().createParams(contact, 1u))
-{
-  // Do nothing
-}
-
-//==============================================================================
-ContactConstraint::ContactConstraint(
     collision::Contact& contact,
     double timeStep,
     const ContactSurfaceParams& contactSurfaceParams)
@@ -689,58 +678,6 @@ void ContactConstraint::getRelVelocity(double* relVel)
 bool ContactConstraint::isActive() const
 {
   return mActive;
-}
-
-//==============================================================================
-double ContactConstraint::computeFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeFrictionCoefficient(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computePrimaryFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
-      shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeSecondaryFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
-      shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computePrimarySlipCompliance(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computePrimarySlipCompliance(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeSecondarySlipCompliance(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
-      shapeNode);
-}
-
-//==============================================================================
-Eigen::Vector3d ContactConstraint::computeWorldFirstFrictionDir(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeRestitutionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeRestitutionCoefficient(shapeNode);
 }
 
 //==============================================================================

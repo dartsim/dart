@@ -145,27 +145,6 @@ void Shape(py::module& m)
             .def_readonly(
                 "onVersionChanged", &dart::dynamics::Shape::onVersionChanged);
 
-#define DARTPY_DEFINE_SHAPE_TYPE(val)                                          \
-  .value(#val, dart::dynamics::Shape::ShapeType::val)
-
-  // clang-format off
-  ::py::enum_<dart::dynamics::Shape::ShapeType>(shape, "ShapeType")
-      DARTPY_DEFINE_SHAPE_TYPE(SPHERE)
-      DARTPY_DEFINE_SHAPE_TYPE(BOX)
-      DARTPY_DEFINE_SHAPE_TYPE(ELLIPSOID)
-      DARTPY_DEFINE_SHAPE_TYPE(CYLINDER)
-      DARTPY_DEFINE_SHAPE_TYPE(CAPSULE)
-      DARTPY_DEFINE_SHAPE_TYPE(CONE)
-      DARTPY_DEFINE_SHAPE_TYPE(PLANE)
-      DARTPY_DEFINE_SHAPE_TYPE(MULTISPHERE)
-      DARTPY_DEFINE_SHAPE_TYPE(MESH)
-      DARTPY_DEFINE_SHAPE_TYPE(SOFT_MESH)
-      DARTPY_DEFINE_SHAPE_TYPE(LINE_SEGMENT)
-      DARTPY_DEFINE_SHAPE_TYPE(HEIGHTMAP)
-      DARTPY_DEFINE_SHAPE_TYPE(UNSUPPORTED)
-      .export_values();
-  // clang-format on
-
 #define DARTPY_DEFINE_DATA_VARIANCE(val)                                       \
   .value(#val, dart::dynamics::Shape::DataVariance::val)
 

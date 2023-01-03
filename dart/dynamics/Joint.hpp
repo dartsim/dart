@@ -33,7 +33,6 @@
 #ifndef DART_DYNAMICS_JOINT_HPP_
 #define DART_DYNAMICS_JOINT_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
@@ -195,35 +194,11 @@ public:
 
   /// Sets whether enforcing joint position and velocity limits.
   ///
-  /// The joint position limit is valid when the actuator type is one of
-  /// PASSIVE/FORCE.
-  ///
-  /// \sa ActuatorType
-  ///
-  /// \deprecated Deprecated since DART 6.10. Please use
-  /// setLimitEnforcement() instead
-  DART_DEPRECATED(6.10)
-  void setPositionLimitEnforced(bool enforced);
-
-  /// Sets whether enforcing joint position and velocity limits.
-  ///
   /// This enforcement is only enabled when the actuator type is PASSIVE or
   /// FORCE.
   ///
   /// \sa ActuatorType
   void setLimitEnforcement(bool enforced);
-
-  /// Returns whether enforcing joint position limit
-  ///
-  /// This enforcement is only enabled when the actuator type is PASSIVE or
-  /// FORCE.
-  ///
-  /// \sa ActuatorType
-  ///
-  /// \deprecated Deprecated since DART 6.10. Please use
-  /// areLimitsEnforced() instead
-  DART_DEPRECATED(6.10)
-  bool isPositionLimitEnforced() const;
 
   /// Returns whether enforcing joint position and velocity limits
   ///

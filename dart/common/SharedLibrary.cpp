@@ -56,37 +56,21 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibrary::create(
-    const common::filesystem::path& path)
-{
-  return create(path.string());
-}
-
-//==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
 {
   return detail::SharedLibraryManager::getSingleton().load(path);
 }
 
 //==============================================================================
-SharedLibrary::SharedLibrary(
-    ProtectedConstructionTag, const common::filesystem::path& canonicalPath)
-  : SharedLibrary(ProtectedConstruction, canonicalPath.string())
+SharedLibrary::SharedLibrary(ProtectedConstructionTag, const std::string& path)
+  : mPath(path), mInstance(nullptr)
 {
-  // Do nothing
-}
-
-//==============================================================================
-SharedLibrary::SharedLibrary(
-    ProtectedConstructionTag, const std::string& canonicalPath)
-  : mCanonicalPath(canonicalPath), mPath(canonicalPath), mInstance(nullptr)
-{
-  mInstance = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.c_str()));
+  mInstance = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(path.c_str()));
 
   if (!mInstance)
   {
-    dterr << "[SharedLibrary::load] Failed to load dynamic library '"
-          << canonicalPath << "': " << getLastError() << "\n";
+    dterr << "[SharedLibrary::load] Failed to load dynamic library '" << path
+          << "': " << getLastError() << "\n";
   }
 }
 
@@ -101,12 +85,6 @@ SharedLibrary::~SharedLibrary()
     dterr << "[SharedLibrary::~SharedLibrary] Failed to unload library '"
           << mPath << "': " << getLastError() << "\n";
   }
-}
-
-//==============================================================================
-const common::filesystem::path& SharedLibrary::getCanonicalPath() const
-{
-  return mCanonicalPath;
 }
 
 //==============================================================================

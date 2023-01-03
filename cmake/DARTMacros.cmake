@@ -45,19 +45,6 @@ endmacro()
 #===============================================================================
 # Generate header file.
 # Usage:
-#   dart_generate_include_header_file(file_path target_dir [headers...])
-# Deprecated in DART 7
-#===============================================================================
-macro(dart_generate_include_header_file file_path target_dir)
-  file(WRITE ${file_path} "// Automatically generated file by cmake\n\n")
-  foreach(header ${ARGN})
-    file(APPEND ${file_path} "#include \"${target_dir}${header}\"\n")
-  endforeach()
-endmacro()
-
-#===============================================================================
-# Generate header file.
-# Usage:
 #   dart_generate_meta_header(file_path target_dir [headers...])
 #===============================================================================
 function(dart_generate_meta_header file_path target_dir)

@@ -33,9 +33,7 @@
 #ifndef DART_UTILS_SDFPARSER_HPP_
 #define DART_UTILS_SDFPARSER_HPP_
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 
 namespace dart {
@@ -72,16 +70,8 @@ struct Options
 simulation::WorldPtr readWorld(
     const common::Uri& uri, const Options& options = Options());
 
-DART_DEPRECATED(6.12)
-simulation::WorldPtr readWorld(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
-
 dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options = Options());
-
-DART_DEPRECATED(6.12)
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retrievers);
 
 } // namespace SdfParser
 

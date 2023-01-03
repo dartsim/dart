@@ -391,8 +391,11 @@ void Skeleton(py::module& m)
       .def(
           "getBodyNodes",
           +[](dart::dynamics::Skeleton* self)
-              -> const std::vector<dart::dynamics::BodyNode*>& {
-            return self->getBodyNodes();
+              -> std::vector<dart::dynamics::BodyNode*> {
+            std::vector<dart::dynamics::BodyNode*> out;
+            self->eachBodyNode(
+                [&](dart::dynamics::BodyNode* bn) { out.push_back(bn); });
+            return out;
           })
       .def(
           "getBodyNodes",
@@ -459,13 +462,20 @@ void Skeleton(py::module& m)
           "getJoints",
           +[](dart::dynamics::Skeleton* self)
               -> std::vector<dart::dynamics::Joint*> {
-            return self->getJoints();
+            std::vector<dart::dynamics::Joint*> out;
+            self->eachJoint(
+                [&](dart::dynamics::Joint* joint) { out.push_back(joint); });
+            return out;
           })
       .def(
           "getJoints",
           +[](const dart::dynamics::Skeleton* self)
               -> std::vector<const dart::dynamics::Joint*> {
-            return self->getJoints();
+            std::vector<const dart::dynamics::Joint*> out;
+            self->eachJoint([&](const dart::dynamics::Joint* joint) {
+              out.push_back(joint);
+            });
+            return out;
           })
       .def(
           "getJoints",
@@ -529,7 +539,11 @@ void Skeleton(py::module& m)
           "getDofs",
           +[](const dart::dynamics::Skeleton* self)
               -> std::vector<const dart::dynamics::DegreeOfFreedom*> {
-            return self->getDofs();
+            std::vector<const dart::dynamics::DegreeOfFreedom*> out;
+            self->eachDof([&](const dart::dynamics::DegreeOfFreedom* dof) {
+              out.push_back(dof);
+            });
+            return out;
           })
       .def(
           "getIndexOf",

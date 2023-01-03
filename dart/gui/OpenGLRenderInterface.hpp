@@ -95,10 +95,6 @@ public:
   GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
   void drawSphere(double radius, int slices = 16, int stacks = 16) override;
-  void drawMultiSphere(
-      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
-      int slices = 16,
-      int stacks = 16) override;
   void drawMultiSphereConvexHull(
       const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
       std::size_t subdivisions) override;
