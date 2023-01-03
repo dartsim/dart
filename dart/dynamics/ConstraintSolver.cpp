@@ -45,12 +45,10 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/JointConstraint.hpp"
 #include "dart/dynamics/JointCoulombFrictionConstraint.hpp"
-#include "dart/dynamics/LCPSolver.hpp"
 #include "dart/dynamics/MimicMotorConstraint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftContactConstraint.hpp"
-#include "dart/dynamics/dart/DARTCollisionDetector.hpp"
 #include "dart/dynamics/fcl/FCLCollisionDetector.hpp"
 
 #include <algorithm>
@@ -59,26 +57,6 @@ namespace dart {
 namespace dynamics {
 
 using namespace dynamics;
-
-//==============================================================================
-ConstraintSolver::ConstraintSolver(double timeStep)
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
-    mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
-    mCollisionOption(collision::CollisionOption(
-        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
-    mTimeStep(timeStep),
-    mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>())
-{
-  assert(timeStep > 0.0);
-
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-      mCollisionDetector);
-
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
-  // incorrect contact point computation.
-  // (see: https://github.com/flexible-collision-library/fcl/issues/106)
-}
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver()
