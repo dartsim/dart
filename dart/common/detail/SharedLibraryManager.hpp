@@ -59,19 +59,6 @@ public:
   /// Windows).
   /// \return Pointer to the shared library upon success. Otherwise, returns
   /// nullptr.
-  /// \deprecated Deprecated in 6.10. Please use load(const std::string&)
-  /// instead.
-  DART_DEPRECATED(6.10)
-  std::shared_ptr<SharedLibrary> load(const common::filesystem::path& path);
-
-  /// Loads the shared library with the specified path.
-  ///
-  /// \param[in] path The path to the shared library. If the path doesn't
-  /// include the extension, this function will use the best guess depending on
-  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
-  /// Windows).
-  /// \return Pointer to the shared library upon success. Otherwise, returns
-  /// nullptr.
   std::shared_ptr<SharedLibrary> load(const std::string& path);
 
 protected:

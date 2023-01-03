@@ -87,19 +87,6 @@ struct BodyNodeAspectProperties
   bool mGravityMode;
 
   /// Constructor
-  /// \deprecated Deprecated since DART 6.10 because the friction and
-  /// restitution properties shouldn't be included in this constructor since
-  /// they are deprecated.
-  DART_DEPRECATED(6.10)
-  BodyNodeAspectProperties(
-      const std::string& name,
-      const Inertia& _inertia,
-      bool _isCollidable,
-      double _frictionCoeff,
-      double _restitutionCoeff,
-      bool _gravityMode);
-
-  /// Constructor
   BodyNodeAspectProperties(
       const std::string& name = "BodyNode",
       const Inertia& inertia = Inertia(),

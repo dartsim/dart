@@ -104,41 +104,7 @@ public:
   /// "/path/../to/yourfile".
   /// \return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
-  /// \deprecated Deprecated in 6.10. Please use create(const std::string&)
-  /// instead.
-  DART_DEPRECATED(6.10)
-  static std::shared_ptr<SharedLibrary> create(
-      const common::filesystem::path& path);
-
-  /// Creates a SharedLibrary from a path to the shared library.
-  ///
-  /// \note SharedLibrary should be always created from this create function.
-  /// \param[in] path The path to the shared library. The path can be a relative
-  /// path or an absolute path. If the path doens't exist this function returns
-  /// nullptr. If the path exist, the path will be stored as the canonical path
-  /// where a canonical path is an absolute path that has no elements which are
-  /// symbolic links, and no dot or dot dot elements such as
-  /// "/path/../to/yourfile".
-  /// \return Pointer to the created SharedLibrary upon success in loading.
-  /// Otherwise, returns nullptr.
   static std::shared_ptr<SharedLibrary> create(const std::string& path);
-
-  /// Constructs from a path to the shared library.
-  ///
-  /// This constructor is only called by detail::SharedLibraryManager.
-  /// ProtectedConstructionTag is necessary to enforce creating SharedLibrary
-  /// using std::make_shared.
-  ///
-  /// \note Please use create() to contruct SharedLibrary instead of this
-  /// constructor.
-  /// \param[in] path The canonical path to the shared library.
-  /// \return Pointer to the created SharedLibrary upon success in loading.
-  /// Otherwise, returns nullptr.
-  /// \deprecated Deprecated in 6.10. Please use
-  /// SharedLibrary(ProtectedConstructionTag, const std::string&) instead.
-  DART_DEPRECATED(6.10)
-  explicit SharedLibrary(
-      ProtectedConstructionTag, const common::filesystem::path& path);
 
   /// Constructs from a path to the shared library.
   ///
