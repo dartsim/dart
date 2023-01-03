@@ -63,8 +63,8 @@ const double DefaultIKLinearWeight = 1.0;
 /// optimization problem. It generates constraint functions based on the
 /// specified InverseKinematics::ErrorMethod and
 /// InverseKinematics::GradientMethod. The optimization problem is then solved
-/// by any classes derived from optimization::Solver class. The default solver is
-/// optimization::GradientDescentSolver.
+/// by any classes derived from optimization::Solver class. The default solver
+/// is optimization::GradientDescentSolver.
 ///
 /// It also provides a convenient way of specifying a configuration space
 /// objective and a null space objective. It is also possible to fully customize
@@ -113,8 +113,8 @@ public:
   ///
   /// By default, the max_attempts is 1, but this can be changed by calling
   /// InverseKinematics::getSolver() and casting the SolverPtr to an
-  /// optimization::GradientDescentSolver (unless you have changed the Solver type)
-  /// and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
+  /// optimization::GradientDescentSolver (unless you have changed the Solver
+  /// type) and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
   ///
   /// By default, the list of seeds is empty, but they can be added by calling
   /// InverseKinematics::getProblem() and then using
@@ -168,8 +168,8 @@ public:
   ///
   /// By default, the max_attempts is 1, but this can be changed by calling
   /// InverseKinematics::getSolver() and casting the SolverPtr to an
-  /// optimization::GradientDescentSolver (unless you have changed the Solver type)
-  /// and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
+  /// optimization::GradientDescentSolver (unless you have changed the Solver
+  /// type) and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
   ///
   /// By default, the list of seeds is empty, but they can be added by calling
   /// InverseKinematics::getProblem() and then using

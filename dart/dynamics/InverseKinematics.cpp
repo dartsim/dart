@@ -191,7 +191,8 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
 
   newIK->setSolver(mSolver->clone());
 
-  const std::shared_ptr<optimization::Problem>& newProblem = newIK->getProblem();
+  const std::shared_ptr<optimization::Problem>& newProblem
+      = newIK->getProblem();
   newProblem->setObjective(cloneIkFunc(mProblem->getObjective(), newIK.get()));
 
   newProblem->removeAllEqConstraints();
@@ -1516,7 +1517,8 @@ const std::shared_ptr<optimization::Problem>& InverseKinematics::getProblem()
 }
 
 //==============================================================================
-std::shared_ptr<const optimization::Problem> InverseKinematics::getProblem() const
+std::shared_ptr<const optimization::Problem> InverseKinematics::getProblem()
+    const
 {
   return mProblem;
 }

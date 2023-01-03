@@ -97,12 +97,16 @@ void Problem(py::module& m)
       .def(
           "setObjective",
           +[](dart::optimization::Problem* self,
-              dart::optimization::FunctionPtr _obj) { self->setObjective(_obj); },
+              dart::optimization::FunctionPtr _obj) {
+            self->setObjective(_obj);
+          },
           ::py::arg("obj"))
       .def(
           "getObjective",
           +[](const dart::optimization::Problem* self)
-              -> dart::optimization::FunctionPtr { return self->getObjective(); })
+              -> dart::optimization::FunctionPtr {
+            return self->getObjective();
+          })
       .def(
           "addEqConstraint",
           +[](dart::optimization::Problem* self,

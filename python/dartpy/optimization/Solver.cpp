@@ -112,7 +112,8 @@ void Solver(py::module& m)
           ::py::arg("ostream"),
           ::py::arg("printFinalResult"),
           ::py::arg("resultFile"))
-      .def_readwrite("mProblem", &dart::optimization::Solver::Properties::mProblem)
+      .def_readwrite(
+          "mProblem", &dart::optimization::Solver::Properties::mProblem)
       .def_readwrite(
           "mTolerance", &dart::optimization::Solver::Properties::mTolerance)
       .def_readwrite(
@@ -179,7 +180,9 @@ void Solver(py::module& m)
           ::py::arg("problem"))
       .def(
           "solve",
-          +[](dart::optimization::Solver* self) -> bool { return self->solve(); })
+          +[](dart::optimization::Solver* self) -> bool {
+            return self->solve();
+          })
       .def(
           "getType",
           +[](const dart::optimization::Solver* self) -> std::string {
@@ -263,7 +266,8 @@ void Solver(py::module& m)
           })
       .def(
           "setResultFileName",
-          +[](dart::optimization::Solver* self, const std::string& _resultFile) {
+          +[](dart::optimization::Solver* self,
+              const std::string& _resultFile) {
             self->setResultFileName(_resultFile);
           },
           ::py::arg("resultFile"))

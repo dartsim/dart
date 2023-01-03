@@ -115,7 +115,8 @@ void Function(py::module& m)
   ::py::class_<
       dart::optimization::ModularFunction,
       dart::optimization::Function,
-      std::shared_ptr<dart::optimization::ModularFunction>>(m, "ModularFunction")
+      std::shared_ptr<dart::optimization::ModularFunction>>(
+      m, "ModularFunction")
       //      .def(::py::init<>())
       //      .def(::py::init<const std::string &>(),
       //      ::py::arg("name"))
@@ -162,7 +163,8 @@ void Function(py::module& m)
           },
           ::py::arg("hessian"))
       .def(
-          "clearHessianFunction", +[](dart::optimization::ModularFunction* self) {
+          "clearHessianFunction",
+          +[](dart::optimization::ModularFunction* self) {
             self->clearHessianFunction();
           });
 }

@@ -448,9 +448,8 @@ void InverseKinematics(py::module& m)
       .def(
           "setNullSpaceObjective",
           +[](dart::dynamics::InverseKinematics* self,
-              const std::shared_ptr<dart::optimization::Function>& _nsObjective) {
-            self->setNullSpaceObjective(_nsObjective);
-          },
+              const std::shared_ptr<dart::optimization::Function>&
+                  _nsObjective) { self->setNullSpaceObjective(_nsObjective); },
           ::py::arg("nsObjective"))
       .def(
           "getNullSpaceObjective",

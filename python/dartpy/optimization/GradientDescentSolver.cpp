@@ -115,7 +115,8 @@ void GradientDescentSolver(py::module& m)
           ::py::arg("ineqConstraintWeights"))
       .def_readwrite(
           "mStepSize",
-          &dart::optimization::GradientDescentSolver::UniqueProperties::mStepSize)
+          &dart::optimization::GradientDescentSolver::UniqueProperties::
+              mStepSize)
       .def_readwrite(
           "mMaxAttempts",
           &dart::optimization::GradientDescentSolver::UniqueProperties::
@@ -233,9 +234,8 @@ void GradientDescentSolver(py::module& m)
               -> std::size_t { return self->getMaxAttempts(); })
       .def(
           "setPerturbationStep",
-          +[](dart::optimization::GradientDescentSolver* self, std::size_t _step) {
-            self->setPerturbationStep(_step);
-          },
+          +[](dart::optimization::GradientDescentSolver* self,
+              std::size_t _step) { self->setPerturbationStep(_step); },
           ::py::arg("step"))
       .def(
           "getPerturbationStep",

@@ -160,7 +160,8 @@ const std::shared_ptr<optimization::Function>& HierarchicalIK::getObjective()
 }
 
 //==============================================================================
-std::shared_ptr<const optimization::Function> HierarchicalIK::getObjective() const
+std::shared_ptr<const optimization::Function> HierarchicalIK::getObjective()
+    const
 {
   return mObjective;
 }

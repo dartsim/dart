@@ -125,13 +125,12 @@ public:
   virtual std::shared_ptr<HierarchicalIK> clone(
       const SkeletonPtr& _newSkel) const = 0;
 
-  /// This class should be inherited by optimization::Function classes that have a
-  /// dependency on the HierarchicalIK module that they belong to. If you
-  /// pass an HierarchicalIK::Function into the Problem of an
-  /// HierarchicalIK module, then it will be properly cloned whenever the
-  /// HierarchicalIK module that it belongs to gets cloned. Any Function
-  /// classes in the Problem that do not inherit HierarchicalIK::Function
-  /// will just be copied over by reference.
+  /// This class should be inherited by optimization::Function classes that have
+  /// a dependency on the HierarchicalIK module that they belong to. If you pass
+  /// an HierarchicalIK::Function into the Problem of an HierarchicalIK module,
+  /// then it will be properly cloned whenever the HierarchicalIK module that it
+  /// belongs to gets cloned. Any Function classes in the Problem that do not
+  /// inherit HierarchicalIK::Function will just be copied over by reference.
   class Function
   {
   public:
