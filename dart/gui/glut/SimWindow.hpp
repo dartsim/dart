@@ -64,12 +64,6 @@ public:
 
   virtual void drawSkeletons() const;
 
-  DART_DEPRECATED(6.0)
-  virtual void drawSkels();
-
-  DART_DEPRECATED(6.0)
-  virtual void drawEntities();
-
   /// \brief
   void displayTimer(int _val) override;
 

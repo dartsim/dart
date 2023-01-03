@@ -104,7 +104,7 @@ protected:
   dart::dynamics::SkeletonPtr mAtlasRobot;
 
   /// \brief Conllision detector
-  dart::dynamics::ConstraintSolver* mConstratinSolver;
+  dart::dynamics::ConstraintSolver* mConstraintSolver;
 
   /// \brief List of state machines
   std::vector<StateMachine*> mStateMachines;

@@ -69,11 +69,6 @@ struct Options
       RootJointType defaultRootJointType = RootJointType::FLOATING);
 };
 
-DART_DEPRECATED(6.0)
-simulation::WorldPtr readSdfFile(
-    const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retriever = nullptr);
-
 simulation::WorldPtr readWorld(
     const common::Uri& uri, const Options& options = Options());
 

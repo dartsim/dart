@@ -51,7 +51,7 @@ public:
   void timeStepping() override;
 
   // Documentation inherited
-  void drawSkels() override;
+  void drawSkeletons() const override;
 
   // Documentation inherited
   void keyboard(unsigned char _key, int _x, int _y) override;

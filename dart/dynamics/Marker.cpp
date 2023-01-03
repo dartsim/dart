@@ -65,18 +65,6 @@ void Marker::setAspectProperties(const AspectProperties& properties)
 }
 
 //==============================================================================
-BodyNode* Marker::getBodyNode()
-{
-  return getBodyNodePtr();
-}
-
-//==============================================================================
-const BodyNode* Marker::getBodyNode() const
-{
-  return getBodyNodePtr();
-}
-
-//==============================================================================
 Eigen::Vector3d Marker::getLocalPosition() const
 {
   return getRelativeTransform().translation();

@@ -49,7 +49,7 @@ using namespace dynamics;
 Controller::Controller(
     SkeletonPtr _atlasRobot, ConstraintSolver* _collisionSolver)
   : mAtlasRobot(_atlasRobot),
-    mConstratinSolver(_collisionSolver),
+    mConstraintSolver(_collisionSolver),
     mCurrentStateMachine(nullptr),
     mPelvisHarnessOn(false),
     mLeftFootHarnessOn(false),
@@ -254,7 +254,7 @@ void Controller::harnessPelvis()
 
   BodyNode* bd = mAtlasRobot->getBodyNode("pelvis");
   mWeldJointConstraintPelvis = std::make_shared<WeldJointConstraint>(bd);
-  mConstratinSolver->addConstraint(mWeldJointConstraintPelvis);
+  mConstraintSolver->addConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = true;
 
   if (mVerbosity)
@@ -267,7 +267,7 @@ void Controller::unharnessPelvis()
   if (!mPelvisHarnessOn)
     return;
 
-  mConstratinSolver->removeConstraint(mWeldJointConstraintPelvis);
+  mConstraintSolver->removeConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = false;
 
   if (mVerbosity)
@@ -294,7 +294,7 @@ void Controller::unharnessLeftFoot()
   if (!mLeftFootHarnessOn)
     return;
 
-  mConstratinSolver->removeConstraint(mWeldJointConstraintLeftFoot);
+  mConstraintSolver->removeConstraint(mWeldJointConstraintLeftFoot);
   mLeftFootHarnessOn = false;
 
   if (mVerbosity)
@@ -321,7 +321,7 @@ void Controller::unharnessRightFoot()
   if (!mRightFootHarnessOn)
     return;
 
-  mConstratinSolver->removeConstraint(mWeldJointConstraintRightFoot);
+  mConstraintSolver->removeConstraint(mWeldJointConstraintRightFoot);
   mRightFootHarnessOn = false;
 
   if (mVerbosity)
@@ -433,9 +433,11 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   State* state3 = new State(mAtlasRobot, "3");
 
   TerminalCondition* cond0 = new TimerCondition(state0, 0.3);
-  TerminalCondition* cond1 = new BodyContactCondition(state1, _getRightFoot());
+  TerminalCondition* cond1
+      = new BodyContactCondition(state1, _getRightFoot(), mConstraintSolver);
   TerminalCondition* cond2 = new TimerCondition(state2, 0.3);
-  TerminalCondition* cond3 = new BodyContactCondition(state3, _getLeftFoot());
+  TerminalCondition* cond3
+      = new BodyContactCondition(state3, _getLeftFoot(), mConstraintSolver);
 
   state0->setTerminalCondition(cond0);
   state1->setTerminalCondition(cond1);
@@ -640,9 +642,11 @@ StateMachine* Controller::_createWalkingStateMachine()
   State* state3 = new State(mAtlasRobot, "3");
 
   TerminalCondition* cond0 = new TimerCondition(state0, 0.3);
-  TerminalCondition* cond1 = new BodyContactCondition(state1, _getRightFoot());
+  TerminalCondition* cond1
+      = new BodyContactCondition(state1, _getRightFoot(), mConstraintSolver);
   TerminalCondition* cond2 = new TimerCondition(state2, 0.3);
-  TerminalCondition* cond3 = new BodyContactCondition(state3, _getLeftFoot());
+  TerminalCondition* cond3
+      = new BodyContactCondition(state3, _getLeftFoot(), mConstraintSolver);
 
   state0->setTerminalCondition(cond0);
   state1->setTerminalCondition(cond1);

@@ -978,27 +978,6 @@ double ReferentialSkeleton::computePotentialEnergy() const
 }
 
 //==============================================================================
-void ReferentialSkeleton::clearCollidingBodies()
-{
-  for (auto i = 0u; i < getNumBodyNodes(); ++i)
-  {
-    auto bodyNode = getBodyNode(i);
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    bodyNode->setColliding(false);
-    DART_SUPPRESS_DEPRECATED_END
-
-    auto softBodyNode = bodyNode->asSoftBodyNode();
-    if (softBodyNode)
-    {
-      auto& pointMasses = softBodyNode->getPointMasses();
-
-      for (auto pointMass : pointMasses)
-        pointMass->setColliding(false);
-    }
-  }
-}
-
-//==============================================================================
 Eigen::Vector3d ReferentialSkeleton::getCOM(const Frame* _withRespectTo) const
 {
   Eigen::Vector3d com = Eigen::Vector3d::Zero();

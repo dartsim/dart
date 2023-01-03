@@ -40,7 +40,7 @@
 
 using namespace std;
 
-using namespace dart::dynamics;
+using namespace dart::collision;
 using namespace dart::dynamics;
 
 //==============================================================================

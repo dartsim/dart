@@ -349,10 +349,6 @@ public:
   // Documentation inherited
   double computePotentialEnergy() const override;
 
-  // Documentation inherited
-  DART_DEPRECATED(6.0)
-  void clearCollidingBodies() override;
-
   /// \}
 
   //----------------------------------------------------------------------------

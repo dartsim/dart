@@ -452,11 +452,6 @@ Eigen::Isometry3d computeTransform(
     const Eigen::Vector3d& translation,
     AxisType axisType = AxisType::AXIS_X);
 
-/// Generate frame given origin and z-axis
-DART_DEPRECATED(6.0)
-Eigen::Isometry3d getFrameOriginAxisZ(
-    const Eigen::Vector3d& _origin, const Eigen::Vector3d& _axisZ);
-
 /// \brief Check if determinant of _R is equat to 1 and all the elements are not
 /// NaN values.
 bool verifyRotation(const Eigen::Matrix3d& _R);

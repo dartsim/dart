@@ -66,18 +66,6 @@ public:
   /// Set the AspectProperties of this Marker
   void setAspectProperties(const AspectProperties& properties);
 
-  /// Get the BodyNode this Marker belongs to
-  ///
-  /// Deprecated: Use getBodyNodePtr() instead
-  DART_DEPRECATED(6.0)
-  BodyNode* getBodyNode();
-
-  /// Get the (const) BodyNode this Marker belongs to
-  ///
-  /// Deprecated: Use getBodyNodePtr() instead
-  DART_DEPRECATED(6.0)
-  const BodyNode* getBodyNode() const;
-
   /// Get position of this marker in the parent body node coordinates
   Eigen::Vector3d getLocalPosition() const;
 
