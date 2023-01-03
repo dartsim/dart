@@ -816,16 +816,8 @@ public:
   /// Return Lagrangian of this body
   double computeLagrangian(const Eigen::Vector3d& gravity) const;
 
-  /// Return kinetic energy.
-  DART_DEPRECATED(6.1)
-  virtual double getKineticEnergy() const;
-
   /// Return kinetic energy
   double computeKineticEnergy() const;
-
-  /// Return potential energy.
-  DART_DEPRECATED(6.1)
-  virtual double getPotentialEnergy(const Eigen::Vector3d& _gravity) const;
 
   /// Return potential energy.
   double computePotentialEnergy(const Eigen::Vector3d& gravity) const;

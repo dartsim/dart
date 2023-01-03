@@ -1995,24 +1995,12 @@ double BodyNode::computeLagrangian(const Eigen::Vector3d& gravity) const
 }
 
 //==============================================================================
-double BodyNode::getKineticEnergy() const
-{
-  return computeKineticEnergy();
-}
-
-//==============================================================================
 double BodyNode::computeKineticEnergy() const
 {
   const Eigen::Vector6d& V = getSpatialVelocity();
   const Eigen::Matrix6d& G = mAspectProperties.mInertia.getSpatialTensor();
 
   return 0.5 * V.dot(G * V);
-}
-
-//==============================================================================
-double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
-{
-  return computePotentialEnergy(_gravity);
 }
 
 //==============================================================================

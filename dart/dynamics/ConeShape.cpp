@@ -32,10 +32,6 @@
 
 #include "dart/dynamics/ConeShape.hpp"
 
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
-#include "dart/math/Helpers.hpp"
-
 #include <cmath>
 
 namespace dart {
@@ -43,7 +39,7 @@ namespace dynamics {
 
 //==============================================================================
 ConeShape::ConeShape(double radius, double height)
-  : Shape(CONE), mRadius(radius), mHeight(height)
+  : Shape(), mRadius(radius), mHeight(height)
 {
   assert(0.0 < radius);
   assert(0.0 < height);

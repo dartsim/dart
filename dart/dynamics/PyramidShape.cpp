@@ -33,9 +33,6 @@
 #include "dart/dynamics/PyramidShape.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
-#include "dart/math/Helpers.hpp"
 
 #include <cmath>
 
@@ -44,10 +41,7 @@ namespace dynamics {
 
 //==============================================================================
 PyramidShape::PyramidShape(double baseWidth, double baseDepth, double height)
-  : Shape(PYRAMID),
-    mBaseWidth(baseWidth),
-    mBaseDepth(baseDepth),
-    mHeight(height)
+  : Shape(), mBaseWidth(baseWidth), mBaseDepth(baseDepth), mHeight(height)
 {
   assert(0.0 < baseWidth);
   assert(0.0 < baseDepth);

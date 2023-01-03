@@ -38,7 +38,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(BOX), mSize(_size)
+BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(), mSize(_size)
 {
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);

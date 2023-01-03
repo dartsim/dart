@@ -32,13 +32,11 @@
 
 #include "dart/dynamics/SphereShape.hpp"
 
-#include "dart/math/Helpers.hpp"
-
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-SphereShape::SphereShape(double radius) : Shape(SPHERE)
+SphereShape::SphereShape(double radius) : Shape()
 {
   setRadius(radius);
 }

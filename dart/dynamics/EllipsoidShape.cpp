@@ -32,14 +32,11 @@
 
 #include "dart/dynamics/EllipsoidShape.hpp"
 
-#include "dart/math/Helpers.hpp"
-
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& diameters)
-  : Shape(ELLIPSOID)
+EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& diameters) : Shape()
 {
   setDiameters(diameters);
 }

@@ -821,15 +821,7 @@ public:
   double computeLagrangian() const;
 
   /// Get the kinetic energy of this MetaSkeleton
-  DART_DEPRECATED(6.1)
-  double getKineticEnergy() const;
-
-  /// Get the kinetic energy of this MetaSkeleton
   virtual double computeKineticEnergy() const = 0;
-
-  /// Get the potential energy of this MetaSkeleton
-  DART_DEPRECATED(6.1)
-  double getPotentialEnergy() const;
 
   /// Get the potential energy of this MetaSkeleton
   virtual double computePotentialEnergy() const = 0;

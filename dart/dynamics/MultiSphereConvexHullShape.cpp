@@ -32,16 +32,14 @@
 
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
-#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
 MultiSphereConvexHullShape::MultiSphereConvexHullShape(const Spheres& spheres)
-  : Shape(MULTISPHERE)
+  : Shape()
 {
   addSpheres(spheres);
 }
