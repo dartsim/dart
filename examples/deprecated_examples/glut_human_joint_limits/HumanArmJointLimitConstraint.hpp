@@ -36,7 +36,7 @@
 #  include <dart/dart.hpp>
 #  include <tiny_dnn/tiny_dnn.h>
 
-DART_COMMON_MAKE_SHARED_WEAK(HumanArmJointLimitConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(HumanArmJointLimitConstraint)
 
 /// HumanArmJointLimitConstraint handles joint position limits on human arm,
 /// representing range of motion of shoulder and elbow joints.
