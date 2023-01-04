@@ -30,32 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STLHELPERS_HPP_
-#define DART_COMMON_STLHELPERS_HPP_
+#include "dart/physics/MultiBody.hpp"
 
-#include <dart/common/Memory.hpp>
-
-#include <vector>
-
-#include <cassert>
-#include <cstddef>
-
-namespace dart {
-namespace common {
+namespace dart::physics {
 
 //==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(
-    std::size_t index, const std::vector<T>& vec)
-{
-  assert(index < vec.size());
-  if (index < vec.size())
-    return vec[index];
+DART_TEMPLATE_CLASS_SOURCE(PHYSICS, MultiBody);
 
-  return nullptr;
-}
-
-} // namespace common
-} // namespace dart
-
-#endif // DART_COMMON_STLHELPERS_HPP_
+} // namespace dart::physics

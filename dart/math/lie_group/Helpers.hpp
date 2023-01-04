@@ -268,5 +268,6 @@ math::Matrix<typename Derived::Scalar, 3, 3> skew(
   };
   // clang-format on
 }
+// TODO(JS): Add analytic function of skew(x) * skew(x) for |x|=1
 
 } // namespace dart::math

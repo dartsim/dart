@@ -32,12 +32,23 @@
 
 #pragma once
 
-#include <dart/simulation/Export.hpp>
+#include <dart/math/math.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/physics/Fwd.hpp>
 
-namespace dart::simulation {
+namespace dart::physics {
 
-DART_DECLARE_CLASS_POINTERS(World)
+template <typename S>
+class MultiBodyLink
+{
+public:
+  using Scalar = S;
 
-} // namespace dart::simulation
+  MultiBodyLink() = default;
+
+private:
+};
+
+DART_TEMPLATE_CLASS_HEADER(PHYSICS, MultiBodyLink);
+
+} // namespace dart::physics

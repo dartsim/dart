@@ -32,12 +32,31 @@
 
 #pragma once
 
-#include <dart/simulation/Export.hpp>
+#include <dart/physics/Fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+namespace dart::physics {
 
-namespace dart::simulation {
+enum class MultiBodyJointType
+{
+  FIXED = 0,
+  REVOLUTE,
+  PRISMATIC,
+  BALL,
+  FREE,
+  CUSTOM,
+};
 
-DART_DECLARE_CLASS_POINTERS(World)
+template <typename S>
+class MultiBodyJoint
+{
+public:
+  using Scalar = S;
 
-} // namespace dart::simulation
+  MultiBodyJoint() = default;
+
+private:
+};
+
+DART_TEMPLATE_CLASS_HEADER(PHYSICS, MultiBodyJoint);
+
+} // namespace dart::physics

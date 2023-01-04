@@ -32,12 +32,18 @@
 
 #pragma once
 
-#include <dart/simulation/Export.hpp>
+#include <dart/common/Fwd.hpp>
+#include <dart/common/allocator/StdAlignedAllocator.hpp>
+#include <dart/common/allocator/StdAllocator.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <vector>
 
-namespace dart::simulation {
+namespace dart::common {
 
-DART_DECLARE_CLASS_POINTERS(World)
+template <typename T, typename AllocatorT = StdAllocator<T>>
+using StdVector = std::vector<T, AllocatorT>;
 
-} // namespace dart::simulation
+template <typename T, typename AllocatorT = StdAlignedAllocator<T>>
+using StdAlignedVector = std::vector<T, AllocatorT>;
+
+} // namespace dart::common

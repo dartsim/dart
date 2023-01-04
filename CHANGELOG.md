@@ -2,6 +2,8 @@
 
 ## DART 7
 
+> Note: DART 7 is not backward compatible with DART 6 and still under development. The following changelog is not final.
+
 ### [DART 7.0.0 (TBD)](https://github.com/dartsim/dart/milestone/18?closed=1)
 
 * Supported Platforms

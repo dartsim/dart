@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/Aspect.hpp>
 
-#include <dart/common/StlHelpers.hpp>
+#include <dart/common/StlUtils.hpp>
 
 namespace dart {
 namespace common {

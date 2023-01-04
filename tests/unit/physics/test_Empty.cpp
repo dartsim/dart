@@ -30,14 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/physics/physics.hpp"
 
-#include <dart/simulation/Export.hpp>
+#include <gtest/gtest.h>
 
-#include <dart/dynamics/Fwd.hpp>
+using namespace dart;
+using namespace physics;
 
-namespace dart::simulation {
+template <typename S>
+struct PhysicsEmptyTest : public testing::Test
+{
+  using Scalar = S;
+};
 
-DART_DECLARE_CLASS_POINTERS(World)
+using Types = testing::Types<float, double>;
+TYPED_TEST_SUITE(PhysicsEmptyTest, Types);
 
-} // namespace dart::simulation
+//==============================================================================
+TYPED_TEST(PhysicsEmptyTest, Empty)
+{
+  using S = typename TestFixture::Scalar;
+
+  auto world = World<S>();
+
+  auto mb_1 = world.createMultiBody();
+  EXPECT_TRUE(mb_1 != nullptr);
+  EXPECT_EQ(mb_1->getNumDofs(), 0);
+
+  auto mb_2 = world.createMultiBody();
+  EXPECT_TRUE(mb_2 != nullptr);
+  EXPECT_EQ(mb_2->getNumDofs(), 0);
+
+  auto pos = mb_1->getPositions();
+  EXPECT_EQ(pos.size(), 0);
+
+  world.setSimulationMode();
+}

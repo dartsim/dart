@@ -30,14 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/physics/World.hpp"
 
-#include <dart/simulation/Export.hpp>
+namespace dart::physics {
 
-#include <dart/dynamics/Fwd.hpp>
+//==============================================================================
+DART_TEMPLATE_CLASS_SOURCE(PHYSICS, World);
 
-namespace dart::simulation {
-
-DART_DECLARE_CLASS_POINTERS(World)
-
-} // namespace dart::simulation
+} // namespace dart::physics

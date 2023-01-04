@@ -33,7 +33,7 @@
 #include "dart/optimization/pagmo/PagmoMultiObjectiveSolver.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/StlHelpers.hpp"
+#include "dart/common/StlUtils.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/optimization/Function.hpp"
 #include "dart/optimization/MultiObjectiveProblem.hpp"

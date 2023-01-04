@@ -33,7 +33,7 @@
 #include "dart/optimization/nlopt/NloptSolver.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/StlHelpers.hpp"
+#include "dart/common/StlUtils.hpp"
 #include "dart/optimization/Function.hpp"
 #include "dart/optimization/Problem.hpp"
 

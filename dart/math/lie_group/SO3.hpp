@@ -294,6 +294,7 @@ Matrix3<S> SO3<S>::LeftJacobian(
   const Matrix3<S> A = skew(xi);
   J.noalias() += ((1 - ct) / t2) * A;
   J.noalias() += ((t - st) / t3) * A * A;
+  // TODO(JS): Optimize above three lines
 
   return J;
 }

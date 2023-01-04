@@ -79,7 +79,13 @@ public:
   };
 
   /// Default constructor
-  explicit StdAlignedAllocator(
+  ///
+  /// Note that this constructor is intentionally not explicit to allow for
+  /// implicit conversions from the base allocator type to the derived allocator
+  /// type.
+  ///
+  /// @param[in] baseAllocator: The allocator to use for memory allocation.
+  StdAlignedAllocator(
       AlignedAllocator& baseAllocator
       = AlignedAllocator::GetDefault()) noexcept;
 

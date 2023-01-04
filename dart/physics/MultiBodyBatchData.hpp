@@ -32,12 +32,55 @@
 
 #pragma once
 
-#include <dart/simulation/Export.hpp>
+#include <dart/common/Containers.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/physics/MultiBodyJoint.hpp>
+#include <dart/physics/MultiBodyLink.hpp>
 
-namespace dart::simulation {
+namespace dart::physics {
 
-DART_DECLARE_CLASS_POINTERS(World)
+template <typename S>
+struct MultiBodyBatchData
+{
+  /// @{ @name Size: number of multibodies
 
-} // namespace dart::simulation
+  std::vector<size_t> link_count;
+  std::vector<size_t> link_offset;
+
+  std::vector<size_t> dofs_count;
+  std::vector<size_t> dofs_offset;
+
+  std::vector<bool> removed;
+
+  /// @}
+
+  /// @{ @name Size: total number of links
+
+  // Link properties
+  std::vector<math::SE3<S>> transforms;
+
+  /// @}
+
+  /// @{ @name Size: total dimension of generalized coordinates
+
+  math::VectorX<S> positions;
+
+  /// @}
+
+  void reset()
+  {
+    link_count = {0};
+    link_offset = {0};
+
+    dofs_count = {0};
+    dofs_offset = {0};
+
+    removed = {false};
+
+    transforms.clear();
+
+    positions.resize(0);
+  }
+};
+
+} // namespace dart::physics

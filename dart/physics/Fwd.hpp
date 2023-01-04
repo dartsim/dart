@@ -32,12 +32,21 @@
 
 #pragma once
 
-#include <dart/simulation/Export.hpp>
+#include <dart/collision/Fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/physics/Export.hpp>
 
-namespace dart::simulation {
+namespace dart::physics {
 
-DART_DECLARE_CLASS_POINTERS(World)
+DART_DECLARE_CLASS_POINTERS_S(MultiBodyBatch);
 
-} // namespace dart::simulation
+DART_DECLARE_CLASS_POINTERS_S(MultiBodyBase);
+DART_DECLARE_CLASS_POINTERS_S(MultiBody);
+DART_DECLARE_CLASS_POINTERS_S(MultiBodyView);
+
+DART_DECLARE_CLASS_POINTERS_S(MultiBodyLink);
+DART_DECLARE_CLASS_POINTERS_S(MultiBodyJoint);
+
+DART_DECLARE_CLASS_POINTERS_S(World);
+
+} // namespace dart::physics

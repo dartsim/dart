@@ -83,7 +83,6 @@ GTEST_TEST(StlAllocatorTest, StdVector)
     EXPECT_EQ(vec.capacity(), 2);
   }
 
-#if !defined(_MSC_VER)
   {
     AllocatorLinear base_allocator(0);
     try {
@@ -109,7 +108,32 @@ GTEST_TEST(StlAllocatorTest, StdVector)
       EXPECT_TRUE(false);
     }
   }
-#endif
+
+  {
+    AlignedAllocatorLinear base_allocator(0);
+    try {
+      std::vector<int, StdAlignedAllocator<int>> vec(
+          base_allocator); // equivalent to std::vector<int, StlAllocator<int>>
+      EXPECT_EQ(vec.size(), 0);
+      vec.resize(1);
+      EXPECT_EQ(vec.size(), 1);
+      // Cannot allocator more than one because the base_allocator only can
+      // allocate up to sizeof(int) + 1.
+      try {
+        vec.resize(2);
+      } catch (std::bad_alloc& /*e*/) {
+        EXPECT_TRUE(true);
+      } catch (...) {
+        EXPECT_TRUE(false);
+      }
+      EXPECT_EQ(vec.size(), 1);
+      vec.get_allocator().print();
+    } catch (std::bad_alloc& /*e*/) {
+      EXPECT_TRUE(true);
+    } catch (...) {
+      EXPECT_TRUE(false);
+    }
+  }
 }
 
 //==============================================================================

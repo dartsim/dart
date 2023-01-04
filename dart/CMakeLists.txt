@@ -20,6 +20,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
 # math: (common), {Eigen3}
 # optimization: (common), (math), {Eigen3}, [NLOPT], [IPOPT], [pagmo]
 # collision: <todo>
+# physics: <todo>
 # dynamics: (common), (math), (optimization), (collision), {assimp}, {octomap}, [Bullet], {fcl}, [ODE]
 # simulation: (common), (math), (optimization), (collision), (dynamics)
 # io: (common), (math), (optimization), (collision), (dynamics), (simulation), {tinyxml2}, [urdfdom]
@@ -42,6 +43,7 @@ dart_add_project(
     math
     optimization
     collision
+    physics
     dynamics
     simulation
     io

@@ -34,7 +34,7 @@
 #define DART_COMMON_FACTORY_HPP_
 
 #include <dart/common/Singleton.hpp>
-#include <dart/common/StlHelpers.hpp>
+#include <dart/common/StlUtils.hpp>
 
 #include <functional>
 #include <memory>

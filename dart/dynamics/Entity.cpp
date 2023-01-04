@@ -33,7 +33,7 @@
 #include "dart/dynamics/Entity.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/StlHelpers.hpp"
+#include "dart/common/StlUtils.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Shape.hpp"
 

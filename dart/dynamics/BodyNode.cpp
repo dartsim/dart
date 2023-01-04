@@ -33,7 +33,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/StlHelpers.hpp"
+#include "dart/common/StlUtils.hpp"
 #include "dart/dynamics/Chain.hpp"
 #include "dart/dynamics/ContactSurface.hpp"
 #include "dart/dynamics/EndEffector.hpp"
