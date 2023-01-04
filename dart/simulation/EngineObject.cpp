@@ -15,6 +15,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,22 +36,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <dart/simulation/Export.hpp>
-
-#include <dart/dynamics/Fwd.hpp>
+#include "dart/simulation/EngineObject.hpp"
 
 namespace dart::simulation {
 
-DART_DECLARE_CLASS_POINTERS(World)
-
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-
-DART_DECLARE_CLASS_POINTERS_S(EngineObject);
-DART_DECLARE_CLASS_POINTERS_S(DynamicsWorld);
-
-DART_DECLARE_CLASS_POINTERS_S(DynamicsWorldObject);
-DART_DECLARE_CLASS_POINTERS_S(RigidBody);
+DART_TEMPLATE_CLASS_SOURCE(SIMULATION, EngineObject);
 
 } // namespace dart::simulation

@@ -30,22 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <dart/simulation/simulation.hpp>
 
-#include <dart/simulation/Export.hpp>
+#include <gtest/gtest.h>
 
-#include <dart/dynamics/Fwd.hpp>
+using namespace dart;
+using namespace math;
+using namespace simulation;
 
-namespace dart::simulation {
+//==============================================================================
+GTEST_TEST(SimulationTest, CreateDynamicsWorld)
+{
+  auto engine = Engine<double>(false);
+  EXPECT_TRUE(!engine.isStarted());
 
-DART_DECLARE_CLASS_POINTERS(World)
+  EXPECT_TRUE(!engine.createDynamicsWorld());
+  EXPECT_TRUE(!engine.destroyDynamicsWorld(nullptr));
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
+  engine.start();
+  auto world = engine.createDynamicsWorld();
+  EXPECT_TRUE(world);
 
-DART_DECLARE_CLASS_POINTERS_S(EngineObject);
-DART_DECLARE_CLASS_POINTERS_S(DynamicsWorld);
+  EXPECT_TRUE(!engine.destroyDynamicsWorld(nullptr));
+}
 
-DART_DECLARE_CLASS_POINTERS_S(DynamicsWorldObject);
-DART_DECLARE_CLASS_POINTERS_S(RigidBody);
+//==============================================================================
+GTEST_TEST(SimulationTest, CreateRigidBody)
+{
+  auto engine = Engine<double>();
+  ASSERT_TRUE(engine.isStarted());
 
-} // namespace dart::simulation
+  auto world = engine.createDynamicsWorld();
+  ASSERT_TRUE(world);
+
+  ASSERT_TRUE(world->isEditMode());
+  ASSERT_TRUE(!world->isSimulationMode());
+
+  auto rb1 = world->createRigidBody();
+  EXPECT_TRUE(rb1);
+
+  world->setEditMode(false);
+
+  world->step();
+}

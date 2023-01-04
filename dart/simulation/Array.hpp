@@ -32,20 +32,20 @@
 
 #pragma once
 
-#include <dart/simulation/Export.hpp>
+#include <dart/simulation/SmartPointer.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <vector>
 
 namespace dart::simulation {
 
-DART_DECLARE_CLASS_POINTERS(World)
+template <typename T>
+class Array
+{
+public:
+  Array() = default;
+  ~Array() = default;
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-
-DART_DECLARE_CLASS_POINTERS_S(EngineObject);
-DART_DECLARE_CLASS_POINTERS_S(DynamicsWorld);
-
-DART_DECLARE_CLASS_POINTERS_S(DynamicsWorldObject);
-DART_DECLARE_CLASS_POINTERS_S(RigidBody);
+private:
+};
 
 } // namespace dart::simulation
