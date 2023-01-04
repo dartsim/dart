@@ -1,2 +1,1 @@
-FROM dartsim/dart-dev:ubuntu-focal-v6.13
-
+FROM dartsim/dart-dev:ubuntu-jammy-v7.0

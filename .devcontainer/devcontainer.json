@@ -12,7 +12,11 @@
             "upgradePackages": "true"
         }
     },
-    "capAdd": ["SYS_PTRACE"],
-    "securityOpt": ["seccomp=unconfined"],
+    "capAdd": [
+        "SYS_PTRACE"
+    ],
+    "securityOpt": [
+        "seccomp=unconfined"
+    ],
     "remoteUser": "vscode"
 }
