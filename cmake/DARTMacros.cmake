@@ -778,6 +778,14 @@ function(dart_build_tests)
       list(APPEND ${dart_build_tests_TEST_LIST} ${target_name})
     endif()
 
+    # Add executable target
+    add_custom_target(
+      RUN_${target_name}
+      COMMAND ${target_name}
+      COMMENT "Running ${target_name}..."
+      VERBATIM
+    )
+
     dart_property_add(DART_${test_type}_TESTS ${target_name})
   endforeach()
 
