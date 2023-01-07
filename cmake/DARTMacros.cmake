@@ -73,6 +73,7 @@ function(dart_generate_export_header)
     DESTINATION
     EXPORT_FILE_NAME
     BASE_NAME
+    BASE_DIR
   )
   set(multiValueArgs)
   cmake_parse_arguments(
@@ -156,7 +157,7 @@ function(dart_generate_export_header)
 
   # Install generated export files
   set(include_base_path ${CMAKE_INSTALL_INCLUDEDIR}/${org_name}/${project_name}${project_version_major})
-  set(export_install_path "${include_base_path}")
+  set(export_install_path "${include_base_path}/${_ARG_BASE_DIR}")
   set(detail_export_install_path "${export_install_path}/detail/")
   install(FILES "${export_file_path}"
     DESTINATION "${export_install_path}"
@@ -697,6 +698,7 @@ function(dart_add_component)
       DESTINATION ${current_include_binary_dir}
       EXPORT_FILE_NAME Export.hpp
       BASE_NAME DART_${_ARG_COMPONENT_NAME}
+      BASE_DIR ${relative_include_source_dir}
     )
   endif()
 
