@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_PYRAMIDSHAPE_HPP_
 #define DART_DYNAMICS_PYRAMIDSHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -46,7 +47,7 @@ namespace dynamics {
 /// to the apex is aligned with the Z-axis while the lateral and the
 /// longitudinal lengths of the base are aligned with the X-axis and Y-axis,
 /// respectively.
-class PyramidShape : public Shape
+class DART_DYNAMICS_API PyramidShape : public Shape
 {
 public:
   /// Constructor.

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_ZERODOFJOINT_HPP_
 #define DART_DYNAMICS_ZERODOFJOINT_HPP_
 
+#include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Joint.hpp"
 
 #include <string>
@@ -44,7 +45,7 @@ class BodyNode;
 class Skeleton;
 
 /// class ZeroDofJoint
-class ZeroDofJoint : public Joint
+class DART_DYNAMICS_API ZeroDofJoint : public Joint
 {
 public:
   struct Properties : Joint::Properties

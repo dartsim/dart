@@ -36,6 +36,7 @@
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/sub_ptr.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/math/Geometry.hpp"
@@ -72,7 +73,7 @@ const double DefaultIKLinearWeight = 1.0;
 /// safely cloned  over to another JacobianNode, as long as every
 /// optimization::Function that depends on the JacobianNode inherits the
 /// InverseKinematics::Function class and correctly overloads the clone function
-class InverseKinematics : public common::Subject
+class DART_DYNAMICS_API InverseKinematics : public common::Subject
 {
 public:
   /// Create an InverseKinematics module for a specified node

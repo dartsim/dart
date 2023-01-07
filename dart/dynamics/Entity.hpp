@@ -36,6 +36,7 @@
 #include "dart/common/Composite.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -58,7 +59,7 @@ class Frame;
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Entity : public virtual common::Subject
+class DART_DYNAMICS_API Entity : public virtual common::Subject
 {
 public:
   friend class Frame;
@@ -220,7 +221,7 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 /// The Detachable class is a special case of the Entity base class. Detachable
 /// allows the Entity's reference Frame to be changed arbitrarily by the user.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Detachable : public virtual Entity
+class DART_DYNAMICS_API Detachable : public virtual Entity
 {
 public:
   /// Constructor

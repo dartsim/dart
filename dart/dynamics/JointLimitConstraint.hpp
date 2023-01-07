@@ -47,7 +47,7 @@ class Joint;
 namespace dynamics {
 
 /// JointLimitConstraint handles joint position and velocity limits
-class JointLimitConstraint : public ConstraintBase
+class DART_DYNAMICS_API JointLimitConstraint : public ConstraintBase
 {
 public:
   /// Constructor

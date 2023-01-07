@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 
 #include "dart/common/Castable.hpp"
+#include "dart/dynamics/Export.hpp"
 
 #include <Eigen/Core>
 
@@ -42,7 +43,7 @@
 namespace dart {
 namespace dynamics {
 
-class BoxedLcpSolver : public common::Castable<BoxedLcpSolver>
+class DART_DYNAMICS_API BoxedLcpSolver : public common::Castable<BoxedLcpSolver>
 {
 public:
   /// Destructor

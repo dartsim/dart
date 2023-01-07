@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_SCREWJOINT_HPP_
 #define DART_DYNAMICS_SCREWJOINT_HPP_
 
+#include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/detail/ScrewJointAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class ScrewJoint
-class ScrewJoint : public detail::ScrewJointBase
+class DART_DYNAMICS_API ScrewJoint : public detail::ScrewJointBase
 {
 public:
   friend class Skeleton;

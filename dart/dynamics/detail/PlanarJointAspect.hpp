@@ -62,7 +62,7 @@ enum class PlaneType : int
 /// it use mTransAxis1 and mTransAxis2. mRotAxis has no authority; it will
 /// always be recomputed from mTransAxis1 and mTransAxis2 when copying it into a
 /// PlanarJoint
-struct PlanarJointUniqueProperties
+struct DART_DYNAMICS_API PlanarJointUniqueProperties
 {
   /// Plane type
   PlaneType mPlaneType;
@@ -109,8 +109,9 @@ struct PlanarJointUniqueProperties
 };
 
 //==============================================================================
-struct PlanarJointProperties : GenericJoint<math::R3Space>::Properties,
-                               PlanarJointUniqueProperties
+struct DART_DYNAMICS_API PlanarJointProperties
+  : GenericJoint<math::R3Space>::Properties,
+    PlanarJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(PlanarJointProperties)
 

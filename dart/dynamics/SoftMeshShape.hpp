@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 #define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 #include <Eigen/Dense>
@@ -44,7 +45,7 @@ namespace dynamics {
 class SoftBodyNode;
 
 // TODO(JS): Implement
-class SoftMeshShape : public Shape
+class DART_DYNAMICS_API SoftMeshShape : public Shape
 {
 public:
   friend class SoftBodyNode;

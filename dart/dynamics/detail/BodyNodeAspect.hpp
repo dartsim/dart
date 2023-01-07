@@ -46,7 +46,7 @@ class Skeleton;
 namespace detail {
 
 //==============================================================================
-struct BodyNodeState
+struct DART_DYNAMICS_API BodyNodeState
 {
   /// External spatial force
   Eigen::Vector6d mFext;
@@ -60,7 +60,7 @@ struct BodyNodeState
 };
 
 //==============================================================================
-struct BodyNodeAspectProperties
+struct DART_DYNAMICS_API BodyNodeAspectProperties
 {
   /// Name of the Entity
   std::string mName;

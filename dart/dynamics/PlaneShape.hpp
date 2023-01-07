@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_PLANESHAPE_HPP_
 #define DART_DYNAMICS_PLANESHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// PlaneShape represents infinite plane has normal and offset as properties.
-class PlaneShape : public Shape
+class DART_DYNAMICS_API PlaneShape : public Shape
 {
 public:
   /// Constructor

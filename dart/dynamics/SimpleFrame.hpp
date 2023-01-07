@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_SIMPLEFRAME_HPP_
 #define DART_DYNAMICS_SIMPLEFRAME_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 
 namespace dart {
@@ -48,7 +49,7 @@ namespace dynamics {
 /// (such as position, velocity, and acceleration) can be modified. Conversely,
 /// the SimpleFrame class is nothing but a simple abstract Frame whose
 /// properties can be arbitrarily set and modified by the user.
-class SimpleFrame : public Detachable, public ShapeFrame
+class DART_DYNAMICS_API SimpleFrame : public Detachable, public ShapeFrame
 {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SimpleFrame)

@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_SPHERESHAPE_HPP_
 #define DART_DYNAMICS_SPHERESHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class SphereShape : public Shape
+class DART_DYNAMICS_API SphereShape : public Shape
 {
 public:
   /// Constructor.

@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class DantzigBoxedLcpSolver : public BoxedLcpSolver
+class DART_DYNAMICS_API DantzigBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
   // Documentation inherited.

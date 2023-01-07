@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 #define DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 #include <cstddef>
@@ -71,7 +72,7 @@ struct ConstraintInfo
 };
 
 /// Constraint is a base class of concrete constraints classes
-class ConstraintBase
+class DART_DYNAMICS_API ConstraintBase
 {
 public:
   /// Returns a string representing the constraint type

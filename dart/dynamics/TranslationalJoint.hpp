@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_TRANSLATIONALJOINT_HPP_
 #define DART_DYNAMICS_TRANSLATIONALJOINT_HPP_
 
+#include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/GenericJoint.hpp"
 
 #include <string>
@@ -41,7 +42,7 @@ namespace dart {
 namespace dynamics {
 
 /// class TranslationalJoint
-class TranslationalJoint : public GenericJoint<math::R3Space>
+class DART_DYNAMICS_API TranslationalJoint : public GenericJoint<math::R3Space>
 {
 public:
   friend class Skeleton;

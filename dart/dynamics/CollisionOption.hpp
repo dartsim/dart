@@ -33,6 +33,8 @@
 #ifndef DART_COLLISION_COLLISIONOPTION_HPP_
 #define DART_COLLISION_COLLISIONOPTION_HPP_
 
+#include "dart/dynamics/Export.hpp"
+
 #include <memory>
 
 #include <cstddef>
@@ -42,7 +44,7 @@ namespace collision {
 
 class CollisionFilter;
 
-struct CollisionOption
+struct DART_DYNAMICS_API CollisionOption
 {
   /// Flag whether the collision detector computes contact information (contact
   /// point, normal, and penetration depth). If it is set to false, only the

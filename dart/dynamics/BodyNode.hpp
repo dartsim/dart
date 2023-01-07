@@ -37,6 +37,7 @@
 #include "dart/common/Signal.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/Node.hpp"
@@ -71,7 +72,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class BodyNode
+class DART_DYNAMICS_API BodyNode
   : public detail::BodyNodeCompositeBase,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector, Marker>,
     public SkeletonRefCountingBase,

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_CAPSULESHAPE_HPP_
 #define DART_DYNAMICS_CAPSULESHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -40,7 +41,7 @@ namespace dynamics {
 
 /// CapsuleShape represents a three-dimensional geometric shape consisting of a
 /// cylinder with hemispherical ends.
-class CapsuleShape : public Shape
+class DART_DYNAMICS_API CapsuleShape : public Shape
 {
 public:
   /// Constructor.

@@ -36,6 +36,7 @@
 #include "dart/dynamics/CollisionDetector.hpp"
 #include "dart/dynamics/ConstrainedGroup.hpp"
 #include "dart/dynamics/ConstraintBase.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 #include <Eigen/Dense>
@@ -52,7 +53,7 @@ class ShapeNodeCollisionObject;
 namespace dynamics {
 
 /// ConstraintSolver manages constraints and computes constraint impulses
-class ConstraintSolver
+class DART_DYNAMICS_API ConstraintSolver
 {
 public:
   /// Default constructor

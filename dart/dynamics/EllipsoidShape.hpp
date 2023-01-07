@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_ELLIPSOIDSHAPE_HPP_
 #define DART_DYNAMICS_ELLIPSOIDSHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class EllipsoidShape : public Shape
+class DART_DYNAMICS_API EllipsoidShape : public Shape
 {
 public:
   /// \brief Constructor.

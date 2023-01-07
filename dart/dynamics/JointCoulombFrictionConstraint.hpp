@@ -45,7 +45,7 @@ class Joint;
 namespace dynamics {
 
 /// Joint Coulomb friction constraint
-class JointCoulombFrictionConstraint : public ConstraintBase
+class DART_DYNAMICS_API JointCoulombFrictionConstraint : public ConstraintBase
 {
 public:
   /// Constructor
