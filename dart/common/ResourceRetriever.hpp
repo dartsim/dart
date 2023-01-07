@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_RESOURCERETRIEVER_HPP_
 #define DART_COMMON_RESOURCERETRIEVER_HPP_
 
+#include "dart/common/Export.hpp"
 #include "dart/common/Resource.hpp"
 #include "dart/common/Uri.hpp"
 
@@ -44,7 +45,7 @@ namespace common {
 
 /// ResourceRetriever provides methods for testing for the existance of and
 /// accessing the content of a resource specified by URI.
-class ResourceRetriever
+class DART_COMMON_API ResourceRetriever
 {
 public:
   virtual ~ResourceRetriever() = default;

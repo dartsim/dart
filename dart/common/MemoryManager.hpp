@@ -33,19 +33,20 @@
 #ifndef DART_COMMON_MEMORYMANAGER_HPP_
 #define DART_COMMON_MEMORYMANAGER_HPP_
 
-#ifndef NDEBUG
-  #include <mutex>
-#endif
+#include "dart/common/Export.hpp"
 #include "dart/common/FreeListAllocator.hpp"
 #include "dart/common/PoolAllocator.hpp"
 
 #include <iostream>
+#ifndef NDEBUG
+  #include <mutex>
+#endif
 
 namespace dart::common {
 
 /// A composite memory allocator that contains various memory allocators that
 /// are optimized for different use cases.
-class MemoryManager final
+class DART_COMMON_API MemoryManager final
 {
 public:
   /// Type of the memory allocators

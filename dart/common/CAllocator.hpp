@@ -33,13 +33,14 @@
 #ifndef DART_COMMON_CALLOCATOR_HPP_
 #define DART_COMMON_CALLOCATOR_HPP_
 
+#include "dart/common/Export.hpp"
 #include "dart/common/MemoryAllocator.hpp"
 
 namespace dart::common {
 
 /// A stateless memory allocator (in release mode) that uses std::malloc and
 /// std::free for memory allocation and deallocation.
-class CAllocator : public MemoryAllocator
+class DART_COMMON_API CAllocator : public MemoryAllocator
 {
 public:
   /// Constructor

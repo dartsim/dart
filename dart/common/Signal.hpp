@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_SIGNAL_HPP_
 #define DART_COMMON_SIGNAL_HPP_
 
+#include "dart/common/Export.hpp"
 #include "dart/common/detail/ConnectionBody.hpp"
 
 #include <functional>
@@ -43,7 +44,7 @@ namespace dart {
 namespace common {
 
 /// class Connection
-class Connection
+class DART_COMMON_API Connection
 {
 public:
   /// Default constructor
