@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_FILEINFOC3D_HPP_
 #define DART_UTILS_FILEINFOC3D_HPP_
 
+#include "dart/io/Export.hpp"
 #include "dart/math/MathTypes.hpp"
 
 #include <Eigen/Dense>
@@ -42,7 +43,7 @@
 namespace dart {
 namespace io {
 
-class FileInfoC3D
+class DART_IO_API FileInfoC3D
 {
 public:
   FileInfoC3D();

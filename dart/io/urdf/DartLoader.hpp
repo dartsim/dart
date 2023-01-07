@@ -40,6 +40,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/io/CompositeResourceRetriever.hpp"
+#include "dart/io/Export.hpp"
 #include "dart/io/PackageResourceRetriever.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -74,7 +75,7 @@ namespace io {
 /**
  * @class DartLoader
  */
-class DartLoader
+class DART_IO_API DartLoader
 {
 public:
   /// Root joint type to be used when the parent joint of the root link is not

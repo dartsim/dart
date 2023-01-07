@@ -44,8 +44,8 @@
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/CollisionOption.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+#include "dart/simulation/Export.hpp"
 #include "dart/simulation/Recording.hpp"
 #include "dart/simulation/SmartPointer.hpp"
 
@@ -79,7 +79,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class World : public virtual common::Subject
+class DART_SIMULATION_API World : public virtual common::Subject
 {
 public:
   using NameChangedSignal = common::Signal<void(
