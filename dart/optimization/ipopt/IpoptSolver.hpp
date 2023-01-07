@@ -53,7 +53,7 @@ class Problem;
 class DartTNLP;
 
 /// \brief class IpoptSolver
-class IpoptSolver : public Solver
+class DART_OPTIMIZATION_API IpoptSolver : public Solver
 {
 public:
   /// Default constructor

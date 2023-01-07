@@ -33,6 +33,7 @@
 #ifndef DART_OPTIMIZER_PROBLEM_HPP_
 #define DART_OPTIMIZER_PROBLEM_HPP_
 
+#include "dart/optimization/Export.hpp"
 #include "dart/optimization/Function.hpp"
 
 #include <Eigen/Dense>
@@ -45,7 +46,7 @@ namespace dart {
 namespace optimization {
 
 /// \brief class Problem
-class Problem
+class DART_OPTIMIZATION_API Problem
 {
 public:
   /// \brief Constructor
