@@ -46,7 +46,8 @@ namespace optimization {
 
 class MultiObjectiveProblem;
 
-class PagmoMultiObjectiveSolver : public MultiObjectiveSolver
+class DART_OPTIMIZATION_API PagmoMultiObjectiveSolver
+  : public MultiObjectiveSolver
 {
 public:
   /// Reference: https://esa.github.io/pagmo2/docs/algorithm_list.html

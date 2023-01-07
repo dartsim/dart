@@ -32,6 +32,7 @@ dart_add_component(
     cxx_std_17
   SUB_DIRECTORIES
     nlopt ipopt pagmo
+  GENERATE_EXPORT_HEADER
   GENERATE_META_HEADER
   FORMAT_CODE
 )
