@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_POOLALLOCATOR_HPP_
 #define DART_COMMON_POOLALLOCATOR_HPP_
 
+#include "dart/common/Export.hpp"
 #include "dart/common/MemoryAllocator.hpp"
 #include "dart/common/MemoryAllocatorDebugger.hpp"
 
@@ -43,7 +44,7 @@ namespace dart::common {
 
 /// Memory allocator optimized for allocating many objects of the same or
 /// similar sizes
-class PoolAllocator : public MemoryAllocator
+class DART_COMMON_API PoolAllocator : public MemoryAllocator
 {
 public:
   using Debug = MemoryAllocatorDebugger<PoolAllocator>;

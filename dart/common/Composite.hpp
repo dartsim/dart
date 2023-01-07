@@ -34,6 +34,7 @@
 #define DART_COMMON_COMPOSITE_HPP_
 
 #include "dart/common/ClassWithVirtualBase.hpp"
+#include "dart/common/Export.hpp"
 #include "dart/common/detail/CompositeData.hpp"
 
 namespace dart {
@@ -49,7 +50,7 @@ namespace common {
 /// would be beneficial to have constant-time access to those Aspect types. To
 /// get constant-time access to specific Aspect types, you can use the templated
 /// class SpecializedForAspect.
-class Composite
+class DART_COMMON_API Composite
 {
 public:
   using State = detail::CompositeState;

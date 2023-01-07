@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_CONSOLE_HPP_
 #define DART_COMMON_CONSOLE_HPP_
 
+#include "dart/common/Export.hpp"
+
 #include <ostream>
 #include <string>
 
@@ -52,10 +54,10 @@ namespace dart {
 namespace common {
 
 /// \brief
-std::ostream& colorMsg(const std::string& _msg, int _color);
+DART_COMMON_API std::ostream& colorMsg(const std::string& _msg, int _color);
 
 /// \brief
-std::ostream& colorErr(
+DART_COMMON_API std::ostream& colorErr(
     const std::string& _msg,
     const std::string& _file,
     unsigned int _line,

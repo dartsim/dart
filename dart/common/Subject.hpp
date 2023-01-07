@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_SUBJECT_HPP_
 #define DART_COMMON_SUBJECT_HPP_
 
+#include "dart/common/Export.hpp"
+
 #include <set>
 
 namespace dart {
@@ -54,7 +56,7 @@ class Observer;
 /// dart::sub_ptr is a templated smart pointer that will change itself into a
 /// nullptr when its Subject is destroyed. It offers one of the easiest ways to
 /// take advantage of the Subject/Observer pattern.
-class Subject
+class DART_COMMON_API Subject
 {
 public:
   friend class Observer;

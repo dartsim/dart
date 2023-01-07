@@ -695,7 +695,7 @@ function(dart_add_component)
     dart_generate_export_header(
       TARGET_NAME ${target_name}
       DESTINATION ${current_include_binary_dir}
-      EXPORT_FILE_NAME export.hpp
+      EXPORT_FILE_NAME Export.hpp
       BASE_NAME DART_${_ARG_COMPONENT_NAME}
     )
   endif()
