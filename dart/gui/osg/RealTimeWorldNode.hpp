@@ -33,6 +33,7 @@
 #ifndef DART_GUI_OSG_REALTIMEWORLDNODE_HPP_
 #define DART_GUI_OSG_REALTIMEWORLDNODE_HPP_
 
+#include "dart/gui/Export.hpp"
 #include "dart/gui/osg/WorldNode.hpp"
 
 #include <osg/Timer>
@@ -41,7 +42,7 @@ namespace dart {
 namespace gui {
 namespace osg {
 
-class RealTimeWorldNode : public WorldNode
+class DART_GUI_API RealTimeWorldNode : public WorldNode
 {
 public:
   /// Construct a world node that will attempt to run a simulation with close

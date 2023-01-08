@@ -33,6 +33,7 @@
 #ifndef DART_GUI_GLUT_WIN3D_HPP_
 #define DART_GUI_GLUT_WIN3D_HPP_
 
+#include "dart/gui/Export.hpp"
 #include "dart/gui/Trackball.hpp"
 #include "dart/gui/glut/Window.hpp"
 
@@ -42,7 +43,7 @@ namespace dart {
 namespace gui {
 namespace glut {
 
-class Win3D : public glut::Window
+class DART_GUI_API Win3D : public glut::Window
 {
 public:
   Win3D();

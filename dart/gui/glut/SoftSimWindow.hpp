@@ -33,6 +33,7 @@
 #ifndef DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
 #define DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
 
+#include "dart/gui/Export.hpp"
 #include "dart/gui/glut/SimWindow.hpp"
 
 namespace dart {
@@ -40,7 +41,7 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class SoftSimWindow : public SimWindow
+class DART_GUI_API SoftSimWindow : public SimWindow
 {
 public:
   /// \brief

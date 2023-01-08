@@ -39,6 +39,8 @@
 #ifndef DART_GUI_OSG_IMGUIHANDLER_HPP_
 #define DART_GUI_OSG_IMGUIHANDLER_HPP_
 
+#include "dart/gui/Export.hpp"
+
 #include <osg/GraphicsContext>
 #include <osgGA/GUIActionAdapter>
 #include <osgGA/GUIEventAdapter>
@@ -54,7 +56,7 @@ namespace osg {
 
 class ImGuiWidget;
 
-class ImGuiHandler : public osgGA::GUIEventHandler
+class DART_GUI_API ImGuiHandler : public osgGA::GUIEventHandler
 {
 public:
   /// Constructor
