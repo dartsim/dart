@@ -33,13 +33,15 @@
 #ifndef DART_GUI_GLFUNCS_HPP_
 #define DART_GUI_GLFUNCS_HPP_
 
+#include "dart/gui/Export.hpp"
+
 #include <Eigen/Eigen>
 
 namespace dart {
 namespace gui {
 
 /// \brief
-void drawArrow3D(
+DART_GUI_API void drawArrow3D(
     const Eigen::Vector3d& _pt,
     const Eigen::Vector3d& _dir,
     const double _length,
@@ -47,11 +49,11 @@ void drawArrow3D(
     const double _arrowThickness = -1);
 
 /// \brief
-void drawArrow2D(
+DART_GUI_API void drawArrow2D(
     const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec, double _thickness);
 
 /// \brief
-void drawProgressBar(int _currFrame, int _totalFrame);
+DART_GUI_API void drawProgressBar(int _currFrame, int _totalFrame);
 
 } // namespace gui
 } // namespace dart
