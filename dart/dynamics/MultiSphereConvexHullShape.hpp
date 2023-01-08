@@ -42,7 +42,7 @@ namespace dynamics {
 
 /// MultiSphereConvexHullShape represents the convex hull of a collection of
 /// spheres.
-class MultiSphereConvexHullShape : public Shape
+class DART_DYNAMICS_API MultiSphereConvexHullShape : public Shape
 {
 public:
   using Sphere = std::pair<double, Eigen::Vector3d>;
@@ -81,7 +81,7 @@ public:
   /// Compute the inertia of this MultiSphereConvexHullShape.
   ///
   /// \note The return value is an approximated inertia that is the inertia of
-  /// the axis-alinged bounding box of this MultiSphereConvexHullShape.
+  /// the axis-aligned bounding box of this MultiSphereConvexHullShape.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
@@ -93,8 +93,8 @@ protected:
 
   /// Update the volume of this MultiSphereConvexHullShape.
   ///
-  /// \note The result volume is an approximated volumen that is the volume of
-  /// the axis-alinged bounding box of this MultiSphereConvexHullShape.
+  /// \note The result volume is an approximated volume that is the volume of
+  /// the axis-aligned bounding box of this MultiSphereConvexHullShape.
   void updateVolume() const override;
 
 private:

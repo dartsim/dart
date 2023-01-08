@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_CYLINDERSHAPE_HPP_
 #define DART_DYNAMICS_CYLINDERSHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class CylinderShape : public Shape
+class DART_DYNAMICS_API CylinderShape : public Shape
 {
 public:
   /// \brief Constructor.

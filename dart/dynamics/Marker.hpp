@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_MARKER_HPP_
 #define DART_DYNAMICS_MARKER_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/FixedJacobianNode.hpp"
 #include "dart/dynamics/detail/MarkerAspect.hpp"
 
@@ -43,10 +44,10 @@ namespace dynamics {
 
 class BodyNode;
 
-class Marker final : public common::EmbedPropertiesOnTopOf<
-                         Marker,
-                         detail::MarkerProperties,
-                         FixedJacobianNode>
+class DART_DYNAMICS_API Marker final : public common::EmbedPropertiesOnTopOf<
+                                           Marker,
+                                           detail::MarkerProperties,
+                                           FixedJacobianNode>
 {
 public:
   using ConstraintType = detail::MarkerProperties::ConstraintType;

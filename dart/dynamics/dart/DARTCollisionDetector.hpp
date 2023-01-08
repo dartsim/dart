@@ -42,7 +42,7 @@ namespace collision {
 
 class DARTCollisionObject;
 
-class DARTCollisionDetector : public CollisionDetector
+class DART_DYNAMICS_API DARTCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;

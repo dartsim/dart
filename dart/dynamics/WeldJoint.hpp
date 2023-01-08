@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_WELDJOINT_HPP_
 #define DART_DYNAMICS_WELDJOINT_HPP_
 
+#include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/ZeroDofJoint.hpp"
 
 #include <Eigen/Dense>
@@ -43,7 +44,7 @@ namespace dart {
 namespace dynamics {
 
 /// class WeldJoint
-class WeldJoint : public ZeroDofJoint
+class DART_DYNAMICS_API WeldJoint : public ZeroDofJoint
 {
 public:
   friend class Skeleton;

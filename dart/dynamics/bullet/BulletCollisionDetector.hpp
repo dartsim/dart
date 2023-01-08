@@ -34,6 +34,7 @@
 #define DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_
 
 #include "dart/dynamics/CollisionDetector.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/bullet/BulletCollisionGroup.hpp"
 #include "dart/dynamics/bullet/BulletCollisionShape.hpp"
 #include "dart/dynamics/bullet/BulletInclude.hpp"
@@ -45,7 +46,7 @@
 namespace dart {
 namespace collision {
 
-class BulletCollisionDetector : public CollisionDetector
+class DART_DYNAMICS_API BulletCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;

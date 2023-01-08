@@ -38,6 +38,7 @@
 #include "dart/dynamics/CollisionResult.hpp"
 #include "dart/dynamics/DistanceOption.hpp"
 #include "dart/dynamics/DistanceResult.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/RaycastOption.hpp"
 #include "dart/dynamics/RaycastResult.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
@@ -49,7 +50,7 @@
 namespace dart {
 namespace collision {
 
-class CollisionGroup
+class DART_DYNAMICS_API CollisionGroup
 {
 public:
   /// Constructor

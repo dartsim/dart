@@ -36,6 +36,7 @@
 #include "dart/common/NameManager.hpp"
 #include "dart/common/VersionCounter.hpp"
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/HierarchicalIK.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Marker.hpp"
@@ -53,10 +54,11 @@ namespace dynamics {
 
 /// class Skeleton
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Skeleton : public virtual common::VersionCounter,
-                 public MetaSkeleton,
-                 public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
-                 public detail::SkeletonAspectBase
+class DART_DYNAMICS_API Skeleton
+  : public virtual common::VersionCounter,
+    public MetaSkeleton,
+    public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
+    public detail::SkeletonAspectBase
 {
 public:
   // Some of non-virtual functions of MetaSkeleton are hidden because of the

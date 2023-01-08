@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_BOXSHAPE_HPP_
 #define DART_DYNAMICS_BOXSHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class BoxShape : public Shape
+class DART_DYNAMICS_API BoxShape : public Shape
 {
 public:
   /// \brief Constructor.

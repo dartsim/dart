@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 
+#include "dart/dynamics/Export.hpp"
+
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -50,7 +52,7 @@ struct MutexedWeakSkeletonPtr
 };
 
 //==============================================================================
-class SkeletonRefCountingBase
+class DART_DYNAMICS_API SkeletonRefCountingBase
 {
 public:
   template <class>

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_BALLJOINT_HPP_
 #define DART_DYNAMICS_BALLJOINT_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/GenericJoint.hpp"
 
 #include <Eigen/Dense>
@@ -41,7 +42,7 @@ namespace dart {
 namespace dynamics {
 
 /// class BallJoint
-class BallJoint : public GenericJoint<math::SO3Space>
+class DART_DYNAMICS_API BallJoint : public GenericJoint<math::SO3Space>
 {
 public:
   friend class Skeleton;

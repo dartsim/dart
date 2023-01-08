@@ -39,7 +39,7 @@
 namespace dart {
 namespace collision {
 
-class BulletCollisionGroup : public CollisionGroup
+class DART_DYNAMICS_API BulletCollisionGroup : public CollisionGroup
 {
 public:
   friend class BulletCollisionDetector;

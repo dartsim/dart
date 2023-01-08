@@ -44,7 +44,7 @@ class EntityNode;
 namespace detail {
 
 //==============================================================================
-struct EntityNodeProperties
+struct DART_DYNAMICS_API EntityNodeProperties
 {
   /// Name of the Entity/Node
   std::string mName;

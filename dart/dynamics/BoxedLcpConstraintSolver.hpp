@@ -34,12 +34,13 @@
 #define DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
 
 #include "dart/dynamics/ConstraintSolver.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class BoxedLcpConstraintSolver : public ConstraintSolver
+class DART_DYNAMICS_API BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
   /// Constructos with default primary and secondary LCP solvers, which are

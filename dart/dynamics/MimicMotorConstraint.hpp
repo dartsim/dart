@@ -45,7 +45,7 @@ class Joint;
 namespace dynamics {
 
 /// Servo motor constraint
-class MimicMotorConstraint : public ConstraintBase
+class DART_DYNAMICS_API MimicMotorConstraint : public ConstraintBase
 {
 public:
   /// Constructor

@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_ARROWSHAPE_HPP_
 #define DART_DYNAMICS_ARROWSHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class ArrowShape : public MeshShape
+class DART_DYNAMICS_API ArrowShape : public MeshShape
 {
 public:
   struct Properties

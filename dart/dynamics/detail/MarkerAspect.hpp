@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <Eigen/Core>
@@ -41,7 +42,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-struct MarkerProperties
+struct DART_DYNAMICS_API MarkerProperties
 {
   enum ConstraintType
   {

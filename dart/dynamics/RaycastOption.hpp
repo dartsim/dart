@@ -33,6 +33,8 @@
 #ifndef DART_COLLISION_RAYCASTOPTION_HPP_
 #define DART_COLLISION_RAYCASTOPTION_HPP_
 
+#include "dart/dynamics/Export.hpp"
+
 #include <memory>
 
 #include <cstddef>
@@ -40,7 +42,7 @@
 namespace dart {
 namespace collision {
 
-struct RaycastOption
+struct DART_DYNAMICS_API RaycastOption
 {
   /// Constructor
   RaycastOption(bool enableAllHits = false, bool sortByClosest = false);

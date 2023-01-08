@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_SOFTBODYNODE_HPP_
 #define DART_DYNAMICS_SOFTBODYNODE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/detail/SoftBodyNodeAspect.hpp"
 
 namespace dart {
@@ -42,7 +43,7 @@ namespace dynamics {
 ///
 /// This class is implementation of Sumit Jain and C. Karen Liu's paper:
 /// http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/projects/softcontacts/index.html
-class SoftBodyNode : public detail::SoftBodyNodeBase
+class DART_DYNAMICS_API SoftBodyNode : public detail::SoftBodyNodeBase
 {
 public:
   using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
@@ -331,7 +332,7 @@ private:
   void updateInertiaWithPointMass();
 };
 
-class SoftBodyNodeHelper
+class DART_DYNAMICS_API SoftBodyNodeHelper
 {
 public:
   /// Create a Properties struct for a box-shaped SoftBodyNode with 8

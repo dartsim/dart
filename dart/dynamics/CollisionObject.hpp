@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONOBJECT_HPP_
 #define DART_COLLISION_COLLISIONOBJECT_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 #include <Eigen/Dense>
@@ -40,7 +41,7 @@
 namespace dart {
 namespace collision {
 
-class CollisionObject
+class DART_DYNAMICS_API CollisionObject
 {
 public:
   friend class CollisionGroup;

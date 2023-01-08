@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_REVOLUTEJOINT_HPP_
 #define DART_DYNAMICS_REVOLUTEJOINT_HPP_
 
+#include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/detail/RevoluteJointAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class RevoluteJoint
-class RevoluteJoint : public detail::RevoluteJointBase
+class DART_DYNAMICS_API RevoluteJoint : public detail::RevoluteJointBase
 {
 public:
   friend class Skeleton;

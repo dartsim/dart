@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_FREEJOINT_HPP_
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/GenericJoint.hpp"
 
 #include <Eigen/Dense>
@@ -43,7 +44,7 @@ namespace dart {
 namespace dynamics {
 
 /// class FreeJoint
-class FreeJoint : public GenericJoint<math::SE3Space>
+class DART_DYNAMICS_API FreeJoint : public GenericJoint<math::SE3Space>
 {
 public:
   friend class Skeleton;

@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 
+#include "dart/dynamics/Export.hpp"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -108,7 +110,7 @@ enum ActuatorType
 
 const ActuatorType DefaultActuatorType = FORCE;
 
-struct JointProperties
+struct DART_DYNAMICS_API JointProperties
 {
   /// Joint name
   std::string mName;

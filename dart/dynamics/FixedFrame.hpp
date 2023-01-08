@@ -35,6 +35,7 @@
 
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/VersionCounter.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/detail/FixedFrameAspect.hpp"
 
@@ -46,7 +47,7 @@ namespace dynamics {
 /// its relative transform is set. However, classes that inherit the FixedFrame
 /// class may alter its relative transform or change what its parent Frame is.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class FixedFrame
+class DART_DYNAMICS_API FixedFrame
   : public virtual Frame,
     public virtual common::VersionCounter,
     public common::EmbedProperties<FixedFrame, detail::FixedFrameProperties>

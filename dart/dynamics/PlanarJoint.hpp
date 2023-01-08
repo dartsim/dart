@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_PLANARRJOINT_HPP_
 #define DART_DYNAMICS_PLANARRJOINT_HPP_
 
+#include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/detail/PlanarJointAspect.hpp"
 
 namespace dart {
@@ -44,7 +45,7 @@ namespace dynamics {
 /// First and second coordiantes represent translation along first and second
 /// translational axes, respectively. Third coordinate represents rotation
 /// along rotational axis.
-class PlanarJoint : public detail::PlanarJointBase
+class DART_DYNAMICS_API PlanarJoint : public detail::PlanarJointBase
 {
 public:
   friend class Skeleton;

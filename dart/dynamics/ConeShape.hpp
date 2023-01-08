@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_CONESHAPE_HPP_
 #define DART_DYNAMICS_CONESHAPE_HPP_
 
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -40,7 +41,7 @@ namespace dynamics {
 
 /// ConeShape represents a three-dimensional geometric shape that tapers
 /// smoothly from a flat circular base to a point called the apex or vertex.
-class ConeShape : public Shape
+class DART_DYNAMICS_API ConeShape : public Shape
 {
 public:
   /// Constructor.

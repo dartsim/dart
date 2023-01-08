@@ -53,7 +53,7 @@ enum class AxisOrder : int
 };
 
 //==============================================================================
-struct EulerJointUniqueProperties
+struct DART_DYNAMICS_API EulerJointUniqueProperties
 {
   /// Euler angle order
   AxisOrder mAxisOrder;
@@ -65,8 +65,9 @@ struct EulerJointUniqueProperties
 };
 
 //==============================================================================
-struct EulerJointProperties : GenericJoint<math::R3Space>::Properties,
-                              EulerJointUniqueProperties
+struct DART_DYNAMICS_API EulerJointProperties
+  : GenericJoint<math::R3Space>::Properties,
+    EulerJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(EulerJointProperties)
 

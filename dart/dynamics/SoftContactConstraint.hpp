@@ -53,7 +53,7 @@ class Skeleton;
 namespace dynamics {
 
 /// SoftContactConstraint represents a contact constraint between two bodies
-class SoftContactConstraint : public ConstraintBase
+class DART_DYNAMICS_API SoftContactConstraint : public ConstraintBase
 {
 public:
   /// Constructor

@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 #include <assimp/scene.h>
@@ -43,7 +44,7 @@
 namespace dart {
 namespace dynamics {
 
-class MeshShape : public Shape
+class DART_DYNAMICS_API MeshShape : public Shape
 {
 public:
   enum ColorMode

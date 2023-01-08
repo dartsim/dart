@@ -37,6 +37,7 @@
 #include "dart/common/AspectWithVersion.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
 #include "dart/dynamics/CompositeNode.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/FixedJacobianNode.hpp"
 #include "dart/dynamics/detail/EndEffectorAspect.hpp"
 
@@ -48,12 +49,13 @@ class Skeleton;
 class EndEffector;
 
 //==============================================================================
-class Support final : public common::AspectWithStateAndVersionedProperties<
-                          Support,
-                          detail::SupportStateData,
-                          detail::SupportPropertiesData,
-                          EndEffector,
-                          &detail::SupportUpdate>
+class DART_DYNAMICS_API Support final
+  : public common::AspectWithStateAndVersionedProperties<
+        Support,
+        detail::SupportStateData,
+        detail::SupportPropertiesData,
+        EndEffector,
+        &detail::SupportUpdate>
 {
 public:
   DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(Support)
@@ -74,10 +76,11 @@ public:
 };
 
 //==============================================================================
-class EndEffector final : public common::EmbedPropertiesOnTopOf<
-                              EndEffector,
-                              detail::EndEffectorProperties,
-                              detail::EndEffectorCompositeBase>
+class DART_DYNAMICS_API EndEffector final
+  : public common::EmbedPropertiesOnTopOf<
+        EndEffector,
+        detail::EndEffectorProperties,
+        detail::EndEffectorCompositeBase>
 {
 public:
   friend class Skeleton;

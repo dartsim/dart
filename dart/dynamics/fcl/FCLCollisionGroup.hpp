@@ -42,7 +42,7 @@ namespace collision {
 class CollisionObject;
 class FCLCollisionObjectUserData;
 
-class FCLCollisionGroup : public CollisionGroup
+class DART_DYNAMICS_API FCLCollisionGroup : public CollisionGroup
 {
 public:
   friend class FCLCollisionDetector;

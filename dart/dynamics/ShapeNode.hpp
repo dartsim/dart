@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_SHAPENODE_HPP_
 
 #include "dart/common/Signal.hpp"
+#include "dart/dynamics/Export.hpp"
 #include "dart/dynamics/detail/ShapeNode.hpp"
 
 #include <Eigen/Dense>
@@ -45,7 +46,7 @@ class VisualAspect;
 class CollisionAspect;
 class DynamicsAspect;
 
-class ShapeNode : public detail::ShapeNodeCompositeBase
+class DART_DYNAMICS_API ShapeNode : public detail::ShapeNodeCompositeBase
 {
 public:
   friend class BodyNode;
