@@ -44,7 +44,7 @@ namespace dart::common {
 template <
     typename UnitType,
     typename ClockType = std::chrono::high_resolution_clock>
-class DART_COMMON_API Stopwatch final
+class Stopwatch final
 {
 public:
   /// Constructor

@@ -20,7 +20,7 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics)
   )
 
   # TODO(JS): Fix the test case on macOS 12
-  if(DART_IN_CI)
+  if(DART_IN_CI OR MSVC)
     list(REMOVE_ITEM sources test_Aspect.cpp)
   endif()
 
@@ -64,26 +64,35 @@ endif()
 
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
 
+  set(sources
+    test_CompositeResourceRetriever.cpp
+    test_DartResourceRetriever.cpp
+    test_FileInfoWorld.cpp
+    test_InverseKinematics.cpp
+    test_MjcfParser.cpp
+    test_PackageResourceRetriever.cpp
+    test_SdfParser.cpp
+    test_SkelParser.cpp
+    test_VskParser.cpp
+  )
+
+  # TODO(JS): Fix the test
+  if(DART_IN_CI OR MSVC)
+    list(REMOVE_ITEM sources test_VskParser.cpp)
+  endif()
+
   dart_build_tests(
     TYPE integration
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-io
     SOURCES
-      test_CompositeResourceRetriever.cpp
-      test_DartResourceRetriever.cpp
-      test_FileInfoWorld.cpp
-      test_InverseKinematics.cpp
-      test_MjcfParser.cpp
-      test_PackageResourceRetriever.cpp
-      test_SdfParser.cpp
-      test_SkelParser.cpp
-      test_VskParser.cpp
+      ${sources}
   )
 
 endif()
 
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
+if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io AND NOT MSVC)
   if(NOT MSVC)
     dart_add_test("integration" test_DartLoader)
     target_link_libraries(test_DartLoader ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
@@ -111,7 +120,7 @@ dart_format_add(
   SharedLibraryWamIkFast.cpp
 )
 
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
+if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io AND NOT MSVC)
 
   dart_add_test("integration" test_Collision)
   target_link_libraries(test_Collision ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)

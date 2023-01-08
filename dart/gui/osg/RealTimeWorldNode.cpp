@@ -33,7 +33,10 @@
 #include "dart/gui/osg/RealTimeWorldNode.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/gui/osg/detail/CameraModeCallback.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <osgShadow/ShadowedScene>
 
 namespace dart {
 namespace gui {

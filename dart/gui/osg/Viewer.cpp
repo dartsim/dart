@@ -37,6 +37,7 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/DefaultEventHandler.hpp"
 #include "dart/gui/osg/DragAndDrop.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/TrackballManipulator.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/WorldNode.hpp"
@@ -45,6 +46,7 @@
 
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
+#include <osgShadow/ShadowedScene>
 
 #include <iomanip>
 

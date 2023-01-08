@@ -34,6 +34,6 @@
 
 namespace dart::collision::detail {
 
-DART_TEMPLATE_CLASS_SOURCE(COLLISION, OdeHeightmap);
+DART_TEMPLATE_CLASS_SOURCE(DYNAMICS, OdeHeightmap);
 
 } // namespace dart::collision::detail

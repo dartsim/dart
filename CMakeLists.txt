@@ -239,12 +239,18 @@ if(MSVC)
   add_compile_options(/wd4267)
   add_compile_options(/wd4305)
   add_compile_options(/wd4334)
+  add_compile_options(/wd4506)
   add_compile_options(/wd4838)
   add_compile_options(/wd4996)
+  
   add_compile_options(/bigobj)
 
   # Enable multi-threaded compilation.
   add_compile_options(/MP)
+
+  add_link_options(/OPT:NOREF /FORCE:MULTIPLE)
+
+  set(CMAKE_INSTALL_UCRT_LIBRARIES ON)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 

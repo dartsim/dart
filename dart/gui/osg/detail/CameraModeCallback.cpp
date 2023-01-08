@@ -34,7 +34,12 @@
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
+#include "dart/gui/osg/WorldNode.hpp"
+
+#include <osgShadow/ShadowedScene>
 
 namespace dart::gui::osg::detail {
 

@@ -190,6 +190,8 @@ protected:
   /// Allow your Node implementation to be cloned into a new BodyNode
   virtual Node* cloneNode(BodyNode* bn) const = 0;
 
+  Node() = default;
+
   /// Constructor
   Node(BodyNode* _bn);
 

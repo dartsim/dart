@@ -32,8 +32,14 @@
 
 #include "dart/gui/osg/ImGuiViewer.hpp"
 
+#include "dart/gui/osg/DefaultEventHandler.hpp"
 #include "dart/gui/osg/ImGuiHandler.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/detail/CameraModeCallback.hpp"
+
+#include <osgShadow/ShadowedScene>
 
 namespace dart {
 namespace gui {

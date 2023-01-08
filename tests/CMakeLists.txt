@@ -86,7 +86,7 @@ function(dart_add_test test_type target_name) # ARGN for source files
   endif()
 
   add_executable(${target_name} ${sources})
-  add_test(${target_name} ${target_name})
+  add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
   target_link_libraries(${target_name}
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-common
     ${PROJECT_NAME}${DART_MAJOR_VERSION}-math
@@ -95,6 +95,10 @@ function(dart_add_test test_type target_name) # ARGN for source files
     gtest
     gtest_main
   )
+  
+  set_target_properties(${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${DART_BINARY_DIR}/bin)
+  
+  dart_property_add(DART_${test_type}_TESTS ${target_name})
 
   dart_format_add(${sources})
 

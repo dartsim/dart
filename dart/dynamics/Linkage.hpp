@@ -56,7 +56,7 @@ class DART_DYNAMICS_API Linkage : public ReferentialSkeleton
 {
 public:
   /// The Criteria class is used to specify how a Linkage should be constructed
-  struct Criteria
+  struct DART_DYNAMICS_API Criteria
   {
     /// The ExpansionPolicy indicates how the collection of BodyNodes should
     /// expand from the starting BodyNode (mStart)
@@ -77,7 +77,7 @@ public:
 
     /// This structure defines targets for the expansion criteria and the
     /// desired behavior for those targets
-    struct Target
+    struct DART_DYNAMICS_API Target
     {
       /// Default constructor for Target
       Target(
@@ -116,7 +116,7 @@ public:
     /// in the Linkage. If mInclusive is set to false, then mTerminal will not
     /// be included in the Linkage. Note that the BodyNode of mStart may be
     /// included as an inclusive terminal, but NOT as an exclusive terminal.
-    struct Terminal
+    struct DART_DYNAMICS_API Terminal
     {
       /// Default constructor for Terminal
       Terminal(BodyNode* _terminal = nullptr, bool _inclusive = true);

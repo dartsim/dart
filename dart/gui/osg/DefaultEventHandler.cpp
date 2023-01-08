@@ -38,9 +38,12 @@
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/Viewer.hpp"
+#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/detail/CameraModeCallback.hpp"
 #include "dart/gui/osg/render/ShapeNode.hpp"
 
 #include <osgGA/GUIEventAdapter>
+#include <osgShadow/ShadowedScene>
 
 #include <iostream>
 

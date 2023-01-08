@@ -60,7 +60,7 @@ public:
     Global_NSGA2,
   };
 
-  struct UniqueProperties
+  struct DART_OPTIMIZATION_API UniqueProperties
   {
     /// Algorithm to be used by the pagmo
     Algorithm mAlgorithm;
@@ -69,7 +69,7 @@ public:
     explicit UniqueProperties(Algorithm algorithm = Algorithm::Global_NSGA2);
   };
 
-  struct Properties : MultiObjectiveSolver::Properties, UniqueProperties
+  struct DART_OPTIMIZATION_API Properties : MultiObjectiveSolver::Properties, UniqueProperties
   {
     Properties(
         const MultiObjectiveSolver::Properties& solverProperties

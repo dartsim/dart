@@ -404,6 +404,9 @@ protected:
   // (e.g., by world cloning).
 
 private:
+  CollisionGroup& operator=(const CollisionGroup&) = delete;
+  CollisionGroup(const CollisionGroup&) = delete;
+
   /// This class watches when ShapeFrames get deleted so that they can be safely
   /// removes from the CollisionGroup. We cannot have a weak_ptr to a ShapeFrame
   /// because some are managed by std::shared_ptr while others are managed by

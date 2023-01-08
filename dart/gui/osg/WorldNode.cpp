@@ -34,7 +34,9 @@
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/gui/osg/DefaultEventHandler.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/detail/CameraModeCallback.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <osg/NodeCallback>

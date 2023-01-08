@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 

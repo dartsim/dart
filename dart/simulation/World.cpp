@@ -45,8 +45,6 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/SemiImplicitEulerIntegrator.hpp"
 
-#include <iostream>
-#include <string>
 #include <vector>
 
 namespace dart {

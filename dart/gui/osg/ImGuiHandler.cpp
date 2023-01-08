@@ -41,10 +41,15 @@
 #include "dart/common/Console.hpp"
 #include "dart/external/imgui/imgui.h"
 #include "dart/external/imgui/imgui_impl_opengl2.h"
+#include "dart/gui/osg/DefaultEventHandler.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/detail/CameraModeCallback.hpp"
 
 #include <osg/Camera>
 #include <osg/RenderInfo>
+#include <osgShadow/ShadowedScene>
 
 #include <algorithm>
 

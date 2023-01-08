@@ -93,7 +93,7 @@ public:
   };
 
   /// Options to be used in parsing URDF files.
-  struct Options
+  struct DART_IO_API Options
   {
     /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
     common::ResourceRetrieverPtr mResourceRetriever;

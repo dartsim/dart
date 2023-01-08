@@ -116,6 +116,8 @@ public:
       const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
 protected:
+  TemplatedJacobianNode() = default;
+
   /// Constructor
   TemplatedJacobianNode(BodyNode* bn);
 };

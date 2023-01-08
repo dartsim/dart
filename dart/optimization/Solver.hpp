@@ -58,7 +58,7 @@ public:
   /// to all Solver types. Most (but not necessarily all) Solvers will make use
   /// of these parameters, and these parameters can be directly copied or
   /// transferred between all Solver types.
-  struct Properties
+  struct DART_OPTIMIZATION_API Properties
   {
     /// Nonlinear optimization Problem to be solved
     std::shared_ptr<Problem> mProblem;

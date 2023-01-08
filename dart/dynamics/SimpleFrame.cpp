@@ -33,6 +33,7 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/math/Geometry.hpp"
 
 namespace dart {

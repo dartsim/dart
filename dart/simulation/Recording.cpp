@@ -40,8 +40,6 @@
 
 #include "dart/dynamics/Skeleton.hpp"
 
-#include <iostream>
-
 namespace dart {
 namespace simulation {
 

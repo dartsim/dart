@@ -28,6 +28,8 @@ dart_add_component(
     assimp octomap
   TARGET_LINK_LIBRARIES_PUBLIC
     assimp octomap
+  TARGET_LINK_LIBRARIES_PRIVATE
+    ${PROJECT_NAME}${DART_MAJOR_VERSION}-external-odelcpsolver
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
   SUB_DIRECTORIES

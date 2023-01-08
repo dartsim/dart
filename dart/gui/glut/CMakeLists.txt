@@ -6,6 +6,8 @@
 #
 # This file is provided under the "BSD-style" License
 
+message("[DEBUG] GLUT_LIBRARIES: ${GLUT_LIBRARIES}")
+
 dart_add_component_sub_directory(
   DEPENDENT_PACKAGES_REQUIRED
     GLUT

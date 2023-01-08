@@ -109,6 +109,8 @@ public:
   /// \}
 
 protected:
+  FixedJacobianNode() = default;
+
   /// Constructor
   FixedJacobianNode(BodyNode* parent, const Eigen::Isometry3d& transform);
 

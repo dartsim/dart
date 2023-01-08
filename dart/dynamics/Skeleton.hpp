@@ -94,7 +94,7 @@ public:
   /// the number of degrees of freedom in the Skeleton or it must be zero. We
   /// assume that any Eigen::VectorXd member with zero entries should be
   /// ignored.
-  struct Configuration
+  struct DART_DYNAMICS_API Configuration
   {
     Configuration(
         const Eigen::VectorXd& positions = Eigen::VectorXd(),

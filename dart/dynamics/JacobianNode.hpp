@@ -273,6 +273,8 @@ public:
   void dirtyJacobianDeriv();
 
 protected:
+  JacobianNode() = default;
+
   /// Constructor
   JacobianNode(BodyNode* bn);
 

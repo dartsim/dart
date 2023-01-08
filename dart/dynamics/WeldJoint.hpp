@@ -49,7 +49,7 @@ class DART_DYNAMICS_API WeldJoint : public ZeroDofJoint
 public:
   friend class Skeleton;
 
-  struct Properties : ZeroDofJoint::Properties
+  struct DART_DYNAMICS_API Properties : ZeroDofJoint::Properties
   {
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 

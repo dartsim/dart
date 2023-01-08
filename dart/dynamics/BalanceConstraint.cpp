@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/BalanceConstraint.hpp"
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 

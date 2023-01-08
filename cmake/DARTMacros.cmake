@@ -152,6 +152,18 @@ function(dart_generate_export_header)
     "#define ${base_name}_API \\\n"
     "    DETAIL_${base_name}_API\n"
     "\n"
+    "#ifdef _MSC_VER\n"
+    "  #define ${base_name}_TEMPL_INST_DECL_API\n"
+    "#else\n"
+    "  #define ${base_name}_TEMPL_INST_DECL_API ${base_name}_API\n"
+    "#endif\n"
+    "\n"
+    "#ifdef _MSC_VER\n"
+    "  #define ${base_name}_TEMPL_INST_DEF_API ${base_name}_API\n"
+    "#else\n"
+    "  #define ${base_name}_TEMPL_INST_DEF_API\n"
+    "#endif\n"
+    "\n"
     "#include \"detail/${_ARG_EXPORT_FILE_NAME}\"\n"
   )
 
@@ -919,6 +931,8 @@ function(dart_build_tests)
       endif()
       target_link_libraries(${target_name} PRIVATE ${dart_lib})
     endforeach()
+
+    set_target_properties (${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${DART_BINARY_DIR}/bin)
 
     if(dart_build_tests_TEST_LIST)
       list(APPEND ${dart_build_tests_TEST_LIST} ${target_name})
