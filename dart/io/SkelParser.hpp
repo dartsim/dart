@@ -35,6 +35,7 @@
 
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/io/Export.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <string>
@@ -46,18 +47,18 @@ namespace io {
 namespace SkelParser {
 
 /// Read World from skel file
-simulation::WorldPtr readWorld(
+DART_IO_API simulation::WorldPtr readWorld(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
 /// Read World from an xml-formatted string
-simulation::WorldPtr readWorldXML(
+DART_IO_API simulation::WorldPtr readWorldXML(
     const std::string& xmlString,
     const common::Uri& baseUri = "",
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
 /// Read Skeleton from skel file
-dynamics::SkeletonPtr readSkeleton(
+DART_IO_API dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 

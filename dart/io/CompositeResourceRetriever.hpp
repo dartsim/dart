@@ -35,6 +35,7 @@
 
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/io/Export.hpp"
 
 #include <unordered_map>
 #include <vector>
@@ -47,7 +48,8 @@ namespace io {
 /// particular URI schema and/or (2) providing a precedence order for trying
 /// multiple retrievers.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class CompositeResourceRetriever : public virtual common::ResourceRetriever
+class DART_IO_API CompositeResourceRetriever
+  : public virtual common::ResourceRetriever
 {
 public:
   virtual ~CompositeResourceRetriever() = default;

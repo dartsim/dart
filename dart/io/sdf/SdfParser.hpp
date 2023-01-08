@@ -34,6 +34,7 @@
 #define DART_UTILS_SDFPARSER_HPP_
 
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/io/Export.hpp"
 #include "dart/simulation/World.hpp"
 
 namespace dart {
@@ -52,7 +53,7 @@ enum class RootJointType
   FIXED = 1,
 };
 
-struct Options
+struct DART_IO_API Options
 {
   /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
   common::ResourceRetrieverPtr mResourceRetriever;
@@ -67,10 +68,10 @@ struct Options
       RootJointType defaultRootJointType = RootJointType::FLOATING);
 };
 
-simulation::WorldPtr readWorld(
+DART_IO_API simulation::WorldPtr readWorld(
     const common::Uri& uri, const Options& options = Options());
 
-dynamics::SkeletonPtr readSkeleton(
+DART_IO_API dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options = Options());
 
 } // namespace SdfParser

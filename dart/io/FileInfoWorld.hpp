@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_FILEINFOWORLD_HPP_
 #define DART_UTILS_FILEINFOWORLD_HPP_
 
+#include "dart/io/Export.hpp"
+
 namespace dart {
 
 namespace simulation {
@@ -42,7 +44,7 @@ class Recording;
 namespace io {
 
 /// \brief class FileInfoWorld
-class FileInfoWorld
+class DART_IO_API FileInfoWorld
 {
 public:
   /// \brief Constructor
