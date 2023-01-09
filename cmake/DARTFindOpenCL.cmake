@@ -6,4 +6,8 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenCL QUIET)
+if(APPLE)
+  find_package(OpenCL 1.2 QUIET)
+else()
+  find_package(OpenCL QUIET)
+endif()

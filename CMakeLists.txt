@@ -231,6 +231,13 @@ endif()
 #===============================================================================
 include(DARTFindDependencies)
 
+message(STATUS "[ Configurations]")
+if(DART_HAS_OPENCL AND DART_ENABLE_GPU)
+  message(STATUS "- DART_ENABLED_GPU: ON")
+else()
+  message(STATUS "- DART_ENABLED_GPU: OFF")
+endif()
+
 #===============================================================================
 # Check for non-case-sensitive filesystems
 #===============================================================================

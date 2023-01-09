@@ -33,7 +33,7 @@
 #pragma once
 
 #include <dart/common/Castable.hpp>
-#include <dart/common/Metaprogramming.hpp>
+#include <dart/common/TemplateUtils.hpp>
 
 #include <string>
 

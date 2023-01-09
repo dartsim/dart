@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include <dart/common/Metaprogramming.hpp>
+#include <dart/common/TemplateUtils.hpp>
 
+#include <iterator>
 #include <type_traits>
 
 // Check for any member with given name, whether var, func, class, union, enum.

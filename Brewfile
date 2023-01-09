@@ -15,6 +15,7 @@ brew 'octomap'
 brew 'ode'
 brew 'opencl-headers'
 brew 'opencl-clhpp-headers'
+brew 'opencl-icd-loader'
 #brew 'open-scene-graph'  # disabled until 3.7.0 is released
 brew 'pagmo'
 brew 'spdlog'

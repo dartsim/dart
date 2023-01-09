@@ -32,24 +32,51 @@
 
 #pragma once
 
-// DETAIL_DART_CREATE_MEMBER_CHECK is a macro that can be used to check if a
-// given type has a specific member (specified by the member parameter). The
-// macro generates several structs and a constant expression that can be used to
-// check for the presence of the member.
-//
-// The struct Alias_name<T, std::true_type> is defined for any type T that has
-// a member member. The struct has a static member value of type
-// decltype(&T::member).
-//
-// The struct has_member_name<T> is defined for any type T and has a static
-// member value of type bool that is true if T has a member member and false
-// otherwise. The has_member_name<T>::value is determined by using
-// dart::common::detail::has_member with
-// Alias_name<dart::common::detail::ambiguate<T, AmbiguitySeed_name>> and
-// Alias_name<AmbiguitySeed_member>.
-//
-// A constant expression has_member_name_v<T> is also defined for any type T
-// that has the same value as has_member_name<T>::value.
-#define DART_CREATE_MEMBER_CHECK(name) DETAIL_DART_CREATE_MEMBER_CHECK(name)
+#include <dart/common/Fwd.hpp>
 
-#include <dart/common/detail/Metaprogramming-impl.hpp>
+#if DART_ENABLED_GPU
+
+  #include <dart/common/gpu/Fwd.hpp>
+  #include <dart/common/gpu/GpuUtils.hpp>
+
+namespace dart::common {
+
+/// A class that represents an OpenCL device.
+class DART_COMMON_API GpuDevice
+{
+public:
+  /// Default constructor that creates an invalid GpuDevice.
+  GpuDevice();
+
+  /// Check if the GpuDevice is valid and can be used.
+  ///
+  /// @return True if the device is valid, false otherwise.
+  [[nodiscard]] bool isValid() const;
+
+  /// Creates a GPU kernel
+  [[nodiscard]] GpuKernel createKernel();
+
+  /// Creates a GPU kernel from kernel source code string
+  [[nodiscard]] GpuKernel createKernel(const std::string& kernel_string);
+
+  /// Get the OpenCL device object.
+  ///
+  /// @return The OpenCL device object.
+  [[nodiscard]] cl::Device getOpenCLDevice() const;
+
+  /// Get the OpenCL context associated with this device.
+  ///
+  /// @return The OpenCL context object.
+  [[nodiscard]] cl::Context getOpenCLContext() const;
+
+private:
+  /// The OpenCL device object.
+  cl::Device m_device;
+
+  /// The OpenCL context object.
+  cl::Context m_context;
+};
+
+} // namespace dart::common
+
+#endif //

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/gpu/Helpers.hpp"
+#include "dart/common/gpu/GpuUtils.hpp"
 
 #if DART_ENABLED_GPU
 
@@ -65,20 +65,28 @@ std::vector<cl::Platform> GetPlatforms()
 }
 
 //==============================================================================
-std::vector<cl::Device> GetDevices(cl_device_type deviceType)
+std::vector<cl::Device> GetDevices(cl_device_type device_type)
 {
-  return GetDevices(GetPlatforms(), deviceType);
+  return GetDevices(GetPlatforms(), device_type);
 }
 
 //==============================================================================
 std::vector<cl::Device> GetDevices(
-    const std::vector<cl::Platform>& platforms, cl_device_type deviceType)
+    const cl::Platform& platform, cl_device_type device_type)
+{
+  std::vector<cl::Device> devices;
+  platform.getDevices(device_type, &devices);
+  return devices;
+}
+
+//==============================================================================
+std::vector<cl::Device> GetDevices(
+    const std::vector<cl::Platform>& platforms, cl_device_type device_type)
 {
   std::vector<cl::Device> devices;
 
   for (const auto& platform : platforms) {
-    std::vector<cl::Device> platform_devices;
-    platform.getDevices(deviceType, &platform_devices);
+    const auto platform_devices = GetDevices(platform, device_type);
     devices.insert(
         devices.end(), platform_devices.begin(), platform_devices.end());
   }
@@ -87,9 +95,9 @@ std::vector<cl::Device> GetDevices(
 }
 
 //==============================================================================
-std::string DeviceTypeToString(cl_device_type deviceType)
+std::string DeviceTypeToString(cl_device_type device_type)
 {
-  switch (deviceType) {
+  switch (device_type) {
     case CL_DEVICE_TYPE_CPU:
       return "CPU";
     case CL_DEVICE_TYPE_GPU:
@@ -106,7 +114,7 @@ std::string DeviceTypeToString(cl_device_type deviceType)
 }
 
 //==============================================================================
-cl::Device GetFirstDevice(cl_device_type deviceType)
+cl::Device GetFirstDevice(cl_device_type device_type)
 {
   std::vector<cl::Platform> platforms;
   const cl_int error = cl::Platform::get(&platforms);
@@ -118,7 +126,7 @@ cl::Device GetFirstDevice(cl_device_type deviceType)
   }
 
   std::vector<cl::Device> devices;
-  platforms[0].getDevices(deviceType, &devices);
+  platforms[0].getDevices(device_type, &devices);
   if (devices.empty()) {
     throw std::runtime_error("No OpenCL devices found");
   }

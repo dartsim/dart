@@ -30,58 +30,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/common/gpu/GpuDevice.hpp"
 
-#include <dart/common/Fwd.hpp>
+#include "dart/common/gpu/GpuKernel.hpp"
 
 #if DART_ENABLED_GPU
-
-  #define CL_HPP_TARGET_OPENCL_VERSION 300
-  #define CL_HPP_MINIMUM_OPENCL_VERSION 300
-
-  // Include OpenCL headers
-  #include <CL/opencl.hpp>
-
-#endif
 
 namespace dart::common {
 
-/// Returns whether GPU is available on the system
-///
-/// @param[in] use_cache Whether to use the cached value
-/// @return True if GPU is available on the system
-[[nodiscard]] DART_COMMON_API bool isGpuAvailable(bool use_cache = true);
+//==============================================================================
+GpuDevice::GpuDevice()
+{
+  const auto& devices = GetDevices(CL_DEVICE_TYPE_GPU);
+  if (devices.empty()) {
+    return;
+  }
+  m_device = devices[0];
 
-#if DART_ENABLED_GPU
+  m_context = cl::Context(m_device);
+}
 
-/// Returns all available OpenCL platforms
-///
-/// @return A vector of all available OpenCL platforms
-[[nodiscard]] DART_COMMON_API std::vector<cl::Platform> GetPlatforms();
+//==============================================================================
+bool dart::common::GpuDevice::isValid() const
+{
+  return m_device != cl::Device() && m_context != cl::Context();
+}
 
-/// Returns all available OpenCL devices
-///
-/// @param[in] deviceType The type of device to return
-/// @return A vector of all available OpenCL devices
-[[nodiscard]] DART_COMMON_API std::vector<cl::Device> GetDevices(
-    cl_device_type deviceType = CL_DEVICE_TYPE_ALL);
+//==============================================================================
+GpuKernel GpuDevice::createKernel()
+{
+  return GpuKernel(this);
+}
 
-/// Returns all available OpenCL devices
-///
-/// @param[in] platforms The platforms to search for devices
-/// @param[in] deviceType The type of device to return
-/// @return A vector of all available OpenCL devices
-[[nodiscard]] DART_COMMON_API std::vector<cl::Device> GetDevices(
-    const std::vector<cl::Platform>& platforms,
-    cl_device_type deviceType = CL_DEVICE_TYPE_ALL);
+//==============================================================================
+GpuKernel GpuDevice::createKernel(const std::string& kernel_string)
+{
+  return GpuKernel(this, kernel_string);
+}
 
-/// Returns a string representation of the given OpenCL device type
-///
-/// @param[in] deviceType The device type to convert to a string
-/// @return A string representation of the given OpenCL device type
-[[nodiscard]] DART_COMMON_API std::string DeviceTypeToString(
-    cl_device_type deviceType);
+//==============================================================================
+cl::Device GpuDevice::getOpenCLDevice() const
+{
+  return m_device;
+}
 
-#endif
+//==============================================================================
+cl::Context GpuDevice::getOpenCLContext() const
+{
+  return m_context;
+}
 
 } // namespace dart::common
+
+#endif // if DART_ENABLED_GPU

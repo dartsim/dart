@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/gpu/Helpers.hpp"
+#include "dart/common/gpu/GpuUtils.hpp"
 
 #include <gtest/gtest.h>
 
@@ -38,7 +38,7 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
-GTEST_TEST(GpuHelpersTest, Basics)
+GTEST_TEST(GpuUtilsTest, Basics)
 {
 #if DART_ENABLED_GPU
   std::cout << "GPU availibility: " << isGpuAvailable() << std::endl;

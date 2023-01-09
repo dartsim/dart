@@ -43,11 +43,19 @@ if(MSVC)
       set(DART_HAS_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
       # Supporting Octomap on Windows is disabled for the following issue:
       # https://github.com/OctoMap/octomap/pull/213
-      message(WARNING "Octomap ${octomap_VERSION} is found, but Octomap "
-          "is not supported on Windows until "
-          "'https://github.com/OctoMap/octomap/pull/213' "
-          "is resolved."
-      )
+      if(DART_VERBOSE)
+        message(WARNING "Octomap ${octomap_VERSION} is found, but Octomap "
+            "is not supported on Windows until "
+            "'https://github.com/OctoMap/octomap/pull/213' "
+            "is resolved."
+        )
+      else()
+        message(STATUS "Octomap ${octomap_VERSION} is found, but Octomap "
+            "is not supported on Windows until "
+            "'https://github.com/OctoMap/octomap/pull/213' "
+            "is resolved."
+        )
+      endif()
     else()
       set(DART_HAS_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
       if(DART_VERBOSE)
