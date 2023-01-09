@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/config.hpp>
+
 #include <dart/common/Export.hpp>
 #include <dart/common/Macros.hpp>
 

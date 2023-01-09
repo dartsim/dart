@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenSceneGraph 3.6.5 QUIET
+find_package(OpenSceneGraph 3.6.5 MODULE
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
@@ -35,6 +35,14 @@ else()
   message(STATUS "${warning_msg} -- we will skip the OpenSceneGraph support in dart-gui\n"
           "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
   return()
+endif()
+
+# OpenSceneGraph 3.6.5 and less are not compatible with macOS 10.15 (Catalina) and greater
+# See:
+#   - https://github.com/openscenegraph/OpenSceneGraph/issues/926
+#   - https://github.com/dartsim/dart/issues/1439
+if(APPLE AND OPENSCENEGRAPH_VERSION VERSION_LESS 3.7.0)
+  message(WARNING "Found OpenSceneGraph ${OPENSCENEGRAPH_VERSION}, but use >= 3.7.0 that is compatible with macOS 10.15 and greater")
 endif()
 
 # Define an imported target "osg::osg" if it's not defined in the provided find

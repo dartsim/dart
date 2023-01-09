@@ -173,10 +173,12 @@ build_dir=$source_dir/build
 mkdir -p $build_dir
 
 # Run CMake
+cmake_args=""
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 elif [[ $OSTYPE = darwin* ]]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_INSTALL_RPATH=/usr/local/lib/"
+  cmake_args="-DOpenCLHeaders_DIR=$(brew --prefix opencl-headers)/share/cmake/OpenCLHeaders -DOpenCLHeadersCpp_DIR=$(brew --prefix opencl-clhpp-headers)/share/cmake/OpenCLHeadersCpp"
 fi
 
 cmake \
@@ -188,7 +190,8 @@ cmake \
   -DDART_CODECOV=$CODECOV \
   -DDART_IN_CI=$IN_CI \
   -DDART_ENABLE_SIMD=$ENABLE_SIMD \
-  ${install_prefix_option}
+  ${install_prefix_option} \
+  ${cmake_args}
 
 # Check format
 if [ "$CHECK_FORMAT" = "ON" ]; then
@@ -196,21 +199,21 @@ if [ "$CHECK_FORMAT" = "ON" ]; then
 fi
 
 # DART: build, test, and install
-cmake --build $build_dir --target all tests -j$num_threads 
+cmake --build $build_dir --target all tests -j$num_threads
 ctest --output-on-failure -j$num_threads --test-dir $build_dir
 
 if [ "$BUILD_EXAMPLES" = "ON" ]; then
-  cmake --build $build_dir --target all examples -j$num_threads 
+  cmake --build $build_dir --target all examples -j$num_threads
 fi
 
 if [ "$BUILD_TUTORIALS" = "ON" ]; then
-  cmake --build $build_dir --target all tutorials -j$num_threads 
+  cmake --build $build_dir --target all tutorials -j$num_threads
 fi
 
 # dartpy: build, test, and install
 if [ "$BUILD_DARTPY" = "ON" ]; then
   export DART_DATA_LOCAL_PATH=$source_dir/data
-  cmake --build $build_dir --target dartpy -j$num_threads 
+  cmake --build $build_dir --target dartpy -j$num_threads
   cmake --build $build_dir --target pytest
   find $CODE_DIR -type d -name directory_name -exec rm -rf {} +
 fi
@@ -227,8 +230,8 @@ if [ "$CODECOV" = "ON" ]; then
   chmod +x codecov
   ./codecov --version
   ./codecov -t $CODECOV_TOKEN
-  
-  echo "Generating code coverage report..."  
+
+  echo "Generating code coverage report..."
 
   # Capture coverage info
   lcov --capture --directory . --output-file coverage.info
@@ -256,7 +259,7 @@ elif [ "$TEST_INSTALLATION" = "ON" ]; then
   echo "Info: Testing the installation..."
   cd $source_dir/examples/hello_world
   mkdir build && cd build
-  cmake ..
+  cmake .. ${cmake_args}
   make -j$num_threads
 
 fi

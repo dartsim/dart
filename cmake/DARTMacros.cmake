@@ -373,22 +373,14 @@ macro(dart_check_optional_package variable component dependency)
   if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable_upper}})
     set(DART_HAS_${variable_upper} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
-      message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
-                     " found")
+      message(STATUS "Building ${component} with ${dependency} ${${variable}_VERSION}")
     endif()
   else()
     set(DART_HAS_${variable_upper} FALSE CACHE BOOL "Check if ${variable_upper} found." FORCE)
     if(NOT ${${variable}_FOUND})
-      if(ARGV3) # version
-        message(WARNING "Looking for ${dependency} - NOT found, to use"
-                        " ${component}, please install ${dependency} (>= ${ARGV3})")
-      else()
-        message(WARNING "Looking for ${dependency} - NOT found, to use"
-                        " ${component}, please install ${dependency}")
-      endif()
+      message(WARNING "Skipping building ${component} with ${dependency} since it's not found")
     elseif(${DART_SKIP_${variable_upper}} AND DART_VERBOSE)
-      message(STATUS "Not using ${dependency} - version ${${variable}_VERSION}"
-                     " even if found because DART_SKIP_${variable_upper} is ON.")
+      message(STATUS "Skipping building ${component} with ${dependency} ${${variable}_VERSION} since DART_SKIP_${variable_upper} is ON.")
     endif()
     return()
   endif()
@@ -724,6 +716,7 @@ function(dart_add_component)
   set_property(GLOBAL PROPERTY _DART_CURRENT_DEPENDENT_PACKAGES_REQUIRED "")
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_NAME ${target_name})
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC "")
+  set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING "")
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE "")
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_DEFINITIONS_PUBLIC "")
   set_property(GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_OPTIONS_PUBLIC "")
@@ -739,13 +732,14 @@ function(dart_add_component)
   foreach(sub_directory ${sub_directories})
     add_subdirectory(${sub_directory})
   endforeach()
-  get_property(current_component_headers                 GLOBAL PROPERTY _DART_CURRENT_COMPONENT_HEADERS)
-  get_property(current_component_sources                 GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SOURCES)
-  get_property(current_component_dependency_packages     GLOBAL PROPERTY _DART_CURRENT_DEPENDENT_PACKAGES_REQUIRED)
-  get_property(current_target_link_libraries_public      GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC)
-  get_property(current_target_link_libraries_private     GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE)
-  get_property(current_target_compile_definitions_public GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_DEFINITIONS_PUBLIC)
-  get_property(current_target_compile_options_public     GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_OPTIONS_PUBLIC)
+  get_property(current_component_headers                          GLOBAL PROPERTY _DART_CURRENT_COMPONENT_HEADERS)
+  get_property(current_component_sources                          GLOBAL PROPERTY _DART_CURRENT_COMPONENT_SOURCES)
+  get_property(current_component_dependency_packages              GLOBAL PROPERTY _DART_CURRENT_DEPENDENT_PACKAGES_REQUIRED)
+  get_property(current_target_link_libraries_public               GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC)
+  get_property(current_target_link_libraries_public_skip_checking GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING)
+  get_property(current_target_link_libraries_private              GLOBAL PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE)
+  get_property(current_target_compile_definitions_public          GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_DEFINITIONS_PUBLIC)
+  get_property(current_target_compile_options_public              GLOBAL PROPERTY _DART_CURRENT_TARGET_COMPILE_OPTIONS_PUBLIC)
 
   # Add sources
   target_sources(${target_name}
@@ -771,8 +765,9 @@ function(dart_add_component)
     target_link_libraries(${target_name} PUBLIC ${dependent_component_target_name})
   endforeach()
   target_link_libraries(${target_name} PUBLIC ${link_libraries_public})
-  target_link_libraries(${target_name} PUBLIC ${link_libraries_public_skip_checking})
   target_link_libraries(${target_name} PUBLIC ${current_target_link_libraries_public})
+  target_link_libraries(${target_name} PUBLIC ${link_libraries_public_skip_checking})
+  target_link_libraries(${target_name} PUBLIC ${current_target_link_libraries_public_skip_checking})
   target_link_libraries(${target_name} PRIVATE ${link_libraries_private})
   target_link_libraries(${target_name} PRIVATE ${current_target_link_libraries_private})
 
@@ -857,6 +852,7 @@ function(dart_add_component_sub_directory)
   )
   set(multiValueArgs
     TARGET_LINK_LIBRARIES_PUBLIC
+    TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING
     TARGET_LINK_LIBRARIES_PRIVATE
     DEPENDENT_PACKAGES_REQUIRED
     TARGET_COMPILE_DEFINITIONS_PUBLIC
@@ -908,6 +904,7 @@ function(dart_add_component_sub_directory)
 
   # Set link libraries
   set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC ${link_libraries_public})
+  set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING ${_ARG_TARGET_LINK_LIBRARIES_PUBLIC_SKIP_CHECKING})
   set_property(GLOBAL APPEND PROPERTY _DART_CURRENT_TARGET_LINK_LIBRARIES_PRIVATE ${link_libraries_private})
 
   # Set compile definitions

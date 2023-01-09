@@ -86,6 +86,7 @@ dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 # alignment errors.
 dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" ON)
+dart_option(DART_ENABLE_GPU "Build DART with GPU support when OpenCL is available" ON)
 dart_option(DART_BUILD_DARTPY "Build dartpy" ON)
 dart_option(DART_CODECOV "Turn on codecov support" OFF)
 dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)

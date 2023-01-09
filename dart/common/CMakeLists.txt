@@ -99,7 +99,7 @@ if(DART_ENABLE_SIMD)
     else()  # x86
         list(APPEND compile_options_public /arch:SSE2 /arch:AVX /arch:AVX2)
     endif()
-      
+
   elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
 
     if(APPLE)
@@ -155,8 +155,10 @@ dart_add_component(
   TARGET_COMPILE_OPTIONS_PUBLIC
     ${compile_options_public}
   SUB_DIRECTORIES
-    detail allocator
+    detail allocator gpu
   GENERATE_EXPORT_HEADER
   GENERATE_META_HEADER
   FORMAT_CODE
 )
+
+return()

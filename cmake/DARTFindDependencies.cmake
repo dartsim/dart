@@ -85,6 +85,11 @@ endif()
 # Optional dependencies
 #=======================
 
+dart_find_package(OpenCL)
+if(APPLE)
+  dart_find_package(OpenCLHeaders)
+  dart_find_package(OpenCLHeadersCpp)
+endif()
 dart_find_package(spdlog)
 
 # find_package(Threads)
@@ -130,7 +135,6 @@ if(BULLET_FOUND)
 
   set(DART_HAS_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
 else()
-  message(WARNING "Looking for Bullet - NOT found, to use dart-collision-bullet, please install libbullet-dev")
   set(DART_HAS_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
 endif()
 
@@ -147,18 +151,6 @@ endif()
 
 dart_find_package(OpenGL)
 dart_find_package(GLUT)
-
-# Minimum required OSG version
-set(min_osg_version 3.2.3)
-# OpenSceneGraph 3.6.5 or less are not compatible with macOS 10.15 (Catalina) or greater
-# See:
-#   - https://github.com/openscenegraph/OpenSceneGraph/issues/926
-#   - https://github.com/dartsim/dart/issues/1439
-if(APPLE)
-  if(NOT ${CMAKE_SYSTEM_VERSION} VERSION_LESS 19)
-    set(min_osg_version 3.7.0)
-  endif()
-endif()
 dart_find_package(OpenSceneGraph)
 
 #=======================
