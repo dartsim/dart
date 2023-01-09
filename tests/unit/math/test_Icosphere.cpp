@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/Icosphere.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 
 #include <dart/test/math/GTestUtils.hpp>
 

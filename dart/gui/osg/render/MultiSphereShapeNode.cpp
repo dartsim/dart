@@ -35,7 +35,7 @@
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
-#include "dart/math/Icosphere.hpp"
+#include "dart/math/geometry/Icosphere.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

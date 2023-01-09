@@ -30,16 +30,99 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_DETAIL_TRIMESH_IMPL_HPP_
-#define DART_MATH_DETAIL_TRIMESH_IMPL_HPP_
+#pragma once
+
+#include "dart/math/Export.hpp"
+#include "dart/math/geometry/Mesh.hpp"
+
+#include <memory>
+
+namespace dart::math {
+
+/// This class represents triangle meshes.
+template <typename S_>
+class TriMesh : public Mesh<S_>
+{
+public:
+  // Type aliases
+  using S = S_;
+  using Base = Mesh<S>;
+  using Index = typename Base::Index;
+  using Vector3 = typename Base::Vector3;
+  using Triangle = Eigen::Matrix<Index, 3, 1>;
+  using Vertices = typename Base::Vertices;
+  using Normals = typename Base::Normals;
+  using Triangles = std::vector<Triangle>;
+
+  /// Default constructor.
+  TriMesh();
+
+  /// Destructor
+  ~TriMesh() override = default;
+
+  /// Sets vertices and triangles.
+  void setTriangles(const Vertices& vertices, const Triangles& triangles);
+
+  /// Computes vertex normals.
+  void computeVertexNormals();
+
+  /// Returns true if the mesh contains triangles.
+  bool hasTriangles() const;
+
+  /// Returns true if the mesh contains triangle normals.
+  bool hasTriangleNormals() const;
+
+  /// Returns the triangles of the mesh.
+  const Triangles& getTriangles() const;
+
+  /// Returns the triangle normals of the mesh.
+  const Normals& getTriangleNormals() const;
+
+  /// Clears all the data in the trimesh.
+  void clear() override;
+
+  /// Addition operator.
+  TriMesh operator+(const TriMesh& other) const;
+
+  /// Addition assignment operator.
+  TriMesh& operator+=(const TriMesh& other);
+
+  /// Generates a convex hull that encloses the trimesh.
+  ///
+  /// \param[in] optimize: (Optional) Whether to discard vertices that are not
+  /// used in the convex hull.
+  std::shared_ptr<TriMesh<S>> generateConvexHull(bool optimize = true) const;
+
+protected:
+  /// Computes triangle normals.
+  void computeTriangleNormals();
+
+  /// Normalizes triangle normals.
+  void normalizeTriangleNormals();
+
+  /// Triangle indices of the mesh.
+  Triangles mTriangles;
+
+  /// Triangle normals of the mesh.
+  Normals mTriangleNormals;
+};
+
+extern template class DART_MATH_API TriMesh<double>;
+
+using TriMeshf = TriMesh<float>;
+using TriMeshd = TriMesh<double>;
+
+} // namespace dart::math
+
+//==============================================================================
+// Implementation
+//==============================================================================
 
 #include "dart/math/Geometry.hpp"
-#include "dart/math/TriMesh.hpp"
 
 #include <Eigen/Geometry>
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 //==============================================================================
 template <typename S>
@@ -203,7 +286,4 @@ void TriMesh<S>::normalizeTriangleNormals()
   }
 }
 
-} // namespace math
-} // namespace dart
-
-#endif // DART_MATH_DETAIL_TRIMESH_IMPL_HPP_
+} // namespace dart::math

@@ -32,13 +32,79 @@
 
 #pragma once
 
-#ifndef DART_MATH_DETAIL_MESH_IMPL_HPP_
-  #define DART_MATH_DETAIL_MESH_IMPL_HPP_
+#include <Eigen/Core>
 
-  #include "dart/math/Mesh.hpp"
+#include <vector>
 
-namespace dart {
-namespace math {
+namespace dart::math {
+
+/// Base class for meshes.
+template <typename S_>
+class Mesh
+{
+public:
+  // Type aliases
+  using S = S_;
+  using Index = std::size_t;
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
+  using Vertices = std::vector<Vector3>;
+  using Normals = std::vector<Vector3>;
+  using Indices = std::vector<Index>;
+
+  /// Destructor.
+  virtual ~Mesh();
+
+  /// Returns true if the mesh contains vertices.
+  bool hasVertices() const;
+
+  /// Returns true if the mesh contains vertex normals.
+  bool hasVertexNormals() const;
+
+  /// Returns the vertices of the mesh.
+  const Vertices& getVertices() const;
+
+  /// Returns the vertex normals of the mesh.
+  const Normals& getVertexNormals() const;
+
+  /// Clears all the vertices and vertex normals.
+  virtual void clear();
+
+  /// Returns true if the mesh has no vertices.
+  bool isEmpty() const;
+
+  /// Translates the mesh vertices by adding \c translation to the vertices.
+  void translate(const Vector3& translation);
+
+  /// Addition operator.
+  Mesh operator+(const Mesh& other) const;
+
+  /// Addition assignment operator.
+  Mesh& operator+=(const Mesh& other);
+
+protected:
+  /// Default constructor.
+  Mesh();
+
+  /// Normalizes the vertex normals.
+  void normalizeVertexNormals();
+
+  /// Vertices of the mesh.
+  Vertices mVertices;
+
+  /// Vertex normals of the mesh.
+  Normals mVertexNormals;
+};
+
+using Meshf = Mesh<float>;
+using Meshd = Mesh<double>;
+
+} // namespace dart::math
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::math {
 
 //==============================================================================
 template <typename S>
@@ -152,7 +218,4 @@ void Mesh<S>::normalizeVertexNormals()
   }
 }
 
-} // namespace math
-} // namespace dart
-
-#endif // DART_MATH_DETAIL_MESH_IMPL_HPP_
+} // namespace dart::math

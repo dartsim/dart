@@ -32,7 +32,8 @@
 
 #pragma once
 
-// Note: It is important to note that DART should not be installed with profile enabled.
+// Note: It is important to note that DART should not be installed with profile
+// enabled.
 
 // DART_ENABLE_PROFILE is defined in dart/CMakeLists.txt
 #if DART_PROFILE_BACKEND_REMOTERY

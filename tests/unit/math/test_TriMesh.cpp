@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/TriMesh.hpp"
+#include "dart/math/geometry/TriMesh.hpp"
 
 #include <dart/test/math/GTestUtils.hpp>
 
