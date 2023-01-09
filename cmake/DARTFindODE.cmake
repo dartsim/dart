@@ -10,7 +10,7 @@ find_package(ODE QUIET CONFIG NAMES ODE ode)
 
 if(NOT ODE_FOUND AND NOT ode_FOUND)
 
-  find_package(ODE 0.13 QUIET MODULE)
+  find_package(ODE 0.16 QUIET MODULE)
 
   if(ODE_FOUND AND NOT TARGET ODE::ODE)
     add_library(ODE::ODE INTERFACE IMPORTED)
