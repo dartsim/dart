@@ -10,8 +10,8 @@ find_package(assimp REQUIRED MODULE)
 
 # Manually check version because the upstream version compatibility policy
 # doesn't allow different major number while DART is compatible any version
-# greater than or equal to 4.1.
-set(DART_ASSIMP_VERSION 4.1)
+# greater than or equal to 5.2.0.
+set(DART_ASSIMP_VERSION 5.2.0)
 if(ASSIMP_VERSION AND ASSIMP_VERSION VERSION_LESS ${DART_ASSIMP_VERSION})
   message(SEND_ERROR "Found Assimp ${ASSIMP_VERSION}, but Assimp >= ${DART_ASSIMP_VERSION}
     is required"

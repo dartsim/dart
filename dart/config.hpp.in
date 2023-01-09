@@ -54,10 +54,6 @@
 #define DART_DATA_LOCAL_PATH "@DART_SOURCE_DIR@/data/"
 #define DART_DATA_GLOBAL_PATH "@CMAKE_INSTALL_PREFIX@/@DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH@/data/"
 
-// See #451
-#cmakedefine01 ASSIMP_AISCENE_CTOR_DTOR_DEFINED
-#cmakedefine01 ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
-
 // Workaround for the fact that Bullet does not add the definition to
 // BULLET_DEFINITIONS or generate a #cmakedefine header.
 #cmakedefine BT_USE_DOUBLE_PRECISION
