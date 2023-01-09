@@ -48,6 +48,12 @@ else()
   list(APPEND compile_definitions_public -DDART_HAVE_SPDLOG=0)
 endif()
 
+# Profile backend settings
+if(DART_PROFILE_BACKEND_REMOTERY)
+  list(APPEND link_libraries_public dart${DART_MAJOR_VERSION}-profile)
+  list(APPEND compile_definitions_public -DDART_PROFILE_BACKEND_REMOTERY=1)
+endif()
+
 # Active log level
 if(DART_ACTIVE_LOG_LEVEL STREQUAL "TRACE")
   list(APPEND compile_definitions_public -DDART_ACTIVE_LOG_LEVEL=0)
