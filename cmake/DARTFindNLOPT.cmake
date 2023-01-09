@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(NLOPT 2.4.1 QUIET MODULE)
+find_package(NLOPT 2.7.1 QUIET MODULE)
 
 if(NLOPT_FOUND AND NOT TARGET NLOPT::nlopt)
   add_library(NLOPT::nlopt INTERFACE IMPORTED)
