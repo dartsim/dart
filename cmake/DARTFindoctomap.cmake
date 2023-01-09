@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(octomap 1.8.1 QUIET CONFIG)
+find_package(octomap 1.9.5 QUIET CONFIG)  # TODO(JS): Upgrade to 1.9.6 when VCPKG_BUILD_TAG is updated to newer version
 
 if(octomap_FOUND AND NOT TARGET octomap)
   add_library(octomap INTERFACE IMPORTED)
