@@ -103,6 +103,8 @@ option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 option(DART_DOWNLOAD_DEPENDENT_PACKAGES "Whether to download dependent package" ON)
 
+option(DART_PROFILE_BACKEND_REMOTERY "Enable Remotery profiling backend" OFF)
+
 option(DART_BUILD_COMP_common       "Build component 'common'"       ON)
 option(DART_BUILD_COMP_math         "Build component 'math'"         ON)
 option(DART_BUILD_COMP_optimization    "Build component 'optimization'"    ON)
@@ -332,6 +334,8 @@ endif(DART_VERBOSE)
 #===============================================================================
 # Add sub-directories
 #===============================================================================
+
+add_subdirectory(tools)
 
 add_subdirectory(dart)
 
