@@ -29,7 +29,7 @@ class SampleConstFunc(dart.optimization.Function):
 
 def test_gradient_descent_solver():
     prob = dart.optimization.Problem(2)
-    assert prob.getDimension() is 2
+    assert prob.getDimension() == 2
 
     prob.setLowerBounds([-1e100, 0])
     prob.setInitialGuess([1.234, 5.678])
@@ -57,7 +57,7 @@ def test_nlopt_solver():
         return
 
     prob = dart.optimization.Problem(2)
-    assert prob.getDimension() is 2
+    assert prob.getDimension() == 2
 
     prob.setLowerBounds([-1e100, 0])
     prob.setInitialGuess([1.234, 5.678])
