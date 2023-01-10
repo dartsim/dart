@@ -57,34 +57,12 @@ if(DART_DOWNLOAD_DEPENDENT_PACKAGES)
   )
 
   set(GTest_FOUND TRUE)
-
-  # Fetch GoogleBenchmark
-  dart_fetch_git_repo(
-    PROJECT_NAME benchmark
-    WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/.deps
-    GIT_URL https://github.com/google/benchmark.git
-    GIT_TAG v1.7.1
-  )
-
-  # Set options
-  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-
-  # Adds the targers: gtest, gtest_main, gmock, gmock_main
-  add_subdirectory(
-    ${benchmark_SOURCE_DIR}
-    ${benchmark_BINARY_DIR}
-    EXCLUDE_FROM_ALL
-  )
-
-  set(benchmark_FOUND TRUE)
 else()
   find_package(GTest)
   if(NOT GTest_FOUND)
     message("[WARN] Skipping [tests] due to missing [GTest] package.")
     return()
   endif()
-
-  find_package(benchmark)
 endif()
 
 #===============================================================================
@@ -195,3 +173,5 @@ add_custom_target(
 add_custom_target(tests_and_run COMMAND ${CMAKE_CTEST_COMMAND}
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
 )
+
+add_subdirectory(benchmark)
