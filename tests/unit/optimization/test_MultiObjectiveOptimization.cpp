@@ -3,6 +3,9 @@
 #include <dart/optimization/Function.hpp>
 #include <dart/optimization/GenericMultiObjectiveProblem.hpp>
 #include <dart/optimization/MultiObjectiveSolver.hpp>
+#if DART_HAVE_PAGMO
+  #include <dart/optimization/pagmo/PagmoMultiObjectiveSolver.hpp>
+#endif
 
 #include <dart/common/Console.hpp>
 #include <dart/common/Memory.hpp>

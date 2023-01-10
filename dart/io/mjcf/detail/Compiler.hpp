@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_COMPILER_HPP_
 #define DART_UTILS_MJCF_DETAIL_COMPILER_HPP_
 
+#include <dart/io/Export.hpp>
 #include <dart/io/mjcf/detail/Error.hpp>
 #include <dart/io/mjcf/detail/Types.hpp>
 
@@ -48,7 +49,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Compiler final
+class DART_IO_API Compiler final
 {
 public:
   Compiler() = default;

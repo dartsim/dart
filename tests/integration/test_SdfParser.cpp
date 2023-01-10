@@ -95,8 +95,7 @@ TEST(SdfParser, SDFJointProperties)
     EXPECT_NEAR(joint->getSpringStiffness(idx), 3, epsilon);
   };
 
-  for (auto& joint : skel->getJoints())
-  {
+  skel->eachJoint([&](const Joint* joint) {
     if (joint->getType() == PrismaticJoint::getStaticType()
         || joint->getType() == RevoluteJoint::getStaticType()
         || joint->getType() == ScrewJoint::getStaticType())
@@ -108,7 +107,7 @@ TEST(SdfParser, SDFJointProperties)
       testProperties(joint, 0);
       testProperties(joint, 1);
     }
-  }
+  });
 }
 
 //==============================================================================

@@ -48,7 +48,7 @@ namespace detail {
 
 class Body;
 
-class Joint final
+class DART_IO_API Joint final
 {
 public:
   Joint() = default;

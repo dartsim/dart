@@ -104,7 +104,7 @@ private:
 
 /// Class used to determine the properties of a contact constraint based on the
 /// two colliding bodies and information about their contact.
-class ContactSurfaceHandler
+class DART_DYNAMICS_API ContactSurfaceHandler
 {
 public:
   /// Constructor

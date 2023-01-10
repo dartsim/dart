@@ -72,7 +72,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
     robot->setPositions(Eigen::VectorXd(joints[i]));
     BodyNode* bn = robot->getBodyNode("ee");
     Vector3d actual = bn->getTransform().translation();
-    bool equality = equals(actual, expectedPos[i], 1e-3);
+    bool equality = test::equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
     if (!equality)
     {
@@ -113,7 +113,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
   {
     robot->setPositions(joints[i]);
     Vector3d actual = robot->getBodyNode("ee")->getTransform().translation();
-    bool equality = equals(actual, expectedPos[i], 1e-3);
+    bool equality = test::equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
     if (!equality)
     {

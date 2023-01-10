@@ -44,7 +44,7 @@
 namespace dart {
 namespace optimization {
 
-class MultiObjectiveProblem
+class DART_OPTIMIZATION_API MultiObjectiveProblem
 {
 public:
   /// Constructor

@@ -33,9 +33,6 @@
 // For problem
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/optimization/Function.hpp"
 #include "dart/optimization/GradientDescentSolver.hpp"
 #include "dart/optimization/Problem.hpp"

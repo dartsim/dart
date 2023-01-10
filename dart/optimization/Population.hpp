@@ -46,7 +46,7 @@ namespace optimization {
 
 class MultiObjectiveProblem;
 
-class Population
+class DART_OPTIMIZATION_API Population
 {
 public:
   /// Constructor

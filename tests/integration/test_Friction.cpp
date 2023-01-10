@@ -240,9 +240,11 @@ TEST(Friction, FrictionPerShapeNode)
 
   // Create a world and add the rigid body
   auto world = simulation::World::create();
-  EXPECT_TRUE(equals(world->getGravity(), ::Eigen::Vector3d(0, 0, -9.81)));
+  EXPECT_TRUE(
+      test::equals(world->getGravity(), ::Eigen::Vector3d(0, 0, -9.81)));
   world->setGravity(Eigen::Vector3d(0.0, -5.0, -9.81));
-  EXPECT_TRUE(equals(world->getGravity(), ::Eigen::Vector3d(0.0, -5.0, -9.81)));
+  EXPECT_TRUE(
+      test::equals(world->getGravity(), ::Eigen::Vector3d(0.0, -5.0, -9.81)));
 
   world->addSkeleton(createFloor());
   world->addSkeleton(skeleton1);

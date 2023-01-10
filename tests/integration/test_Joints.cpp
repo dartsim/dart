@@ -406,10 +406,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
 
-  auto bodyNodes = pendulum->getBodyNodes();
-
-  for (auto bodyNode : bodyNodes)
-  {
+  pendulum->eachBodyNode([&](BodyNode* bodyNode) {
     Joint* joint = bodyNode->getParentJoint();
 
     joint->setActuatorType(Joint::FORCE);
@@ -432,7 +429,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
         &Joint::setVelocity,
         &Joint::setVelocityLowerLimit,
         &Joint::setVelocityUpperLimit>(joint);
-  }
+  });
 }
 
 //==============================================================================
@@ -1375,7 +1372,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
       BodyNode* bn = bns[i];
       Eigen::Isometry3d tf = desired_tfs[i];
 
-      bool check_transform_conversion = equals(
+      bool check_transform_conversion = test::equals(
           predict_joint_transform(joint, tf).matrix(),
           get_relative_transform(bn, bn->getParentBodyNode()).matrix());
       EXPECT_TRUE(check_transform_conversion);
@@ -1391,7 +1388,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
       }
 
       bool check_full_cycle
-          = equals(desired_tfs[i].matrix(), actual_tfs[i].matrix());
+          = test::equals(desired_tfs[i].matrix(), actual_tfs[i].matrix());
       EXPECT_TRUE(check_full_cycle);
 
       if (!check_full_cycle)
@@ -1466,13 +1463,13 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     joint1->setRelativeTransform(desiredTf);
     actualTf = bodyNode1->getTransform(bodyNode1->getParentBodyNode());
-    EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
+    EXPECT_TRUE(test::equals(desiredTf.matrix(), actualTf.matrix()));
 
     for (auto relativeTo : relFrames)
     {
       joint1->setTransform(desiredTf, relativeTo);
       actualTf = bodyNode1->getTransform(relativeTo);
-      EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
+      EXPECT_TRUE(test::equals(desiredTf.matrix(), actualTf.matrix()));
     }
 
     //-- Relative spatial velocity
@@ -1481,7 +1478,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     actualVel = bodyNode1->getSpatialVelocity(
         bodyNode1->getParentBodyNode(), bodyNode1);
 
-    EXPECT_TRUE(equals(desiredVel, actualVel));
+    EXPECT_TRUE(test::equals(desiredVel, actualVel));
 
     for (auto relativeTo : relFrames)
     {
@@ -1490,7 +1487,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
         actualVel = bodyNode1->getSpatialVelocity(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(desiredVel, actualVel));
+        EXPECT_TRUE(test::equals(desiredVel, actualVel));
       }
     }
 
@@ -1509,8 +1506,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         actualAngVel
             = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(desiredLinVel, actualLinVel));
-        EXPECT_TRUE(equals(oldAngVel, actualAngVel));
+        EXPECT_TRUE(test::equals(desiredLinVel, actualLinVel));
+        EXPECT_TRUE(test::equals(oldAngVel, actualAngVel));
       }
     }
 
@@ -1529,8 +1526,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         actualAngVel
             = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(oldLinVel, actualLinVel));
-        EXPECT_TRUE(equals(desiredAngVel, actualAngVel));
+        EXPECT_TRUE(test::equals(oldLinVel, actualLinVel));
+        EXPECT_TRUE(test::equals(desiredAngVel, actualAngVel));
       }
     }
 
@@ -1540,7 +1537,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     actualAcc = bodyNode1->getSpatialAcceleration(
         bodyNode1->getParentBodyNode(), bodyNode1);
 
-    EXPECT_TRUE(equals(desiredAcc, actualAcc));
+    EXPECT_TRUE(test::equals(desiredAcc, actualAcc));
 
     for (auto relativeTo : relFrames)
     {
@@ -1550,7 +1547,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         actualAcc
             = bodyNode1->getSpatialAcceleration(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(desiredAcc, actualAcc));
+        EXPECT_TRUE(test::equals(desiredAcc, actualAcc));
       }
     }
 
@@ -1573,9 +1570,9 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         actualAcc
             = bodyNode1->getSpatialAcceleration(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
-        EXPECT_TRUE(equals(desiredVel, actualVel));
-        EXPECT_TRUE(equals(desiredAcc, actualAcc));
+        EXPECT_TRUE(test::equals(desiredTf.matrix(), actualTf.matrix()));
+        EXPECT_TRUE(test::equals(desiredVel, actualVel));
+        EXPECT_TRUE(test::equals(desiredAcc, actualAcc));
       }
     }
 
@@ -1596,8 +1593,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         actualAngAcc
             = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(desiredLinAcc, actualLinAcc));
-        EXPECT_TRUE(equals(oldAngAcc, actualAngAcc));
+        EXPECT_TRUE(test::equals(desiredLinAcc, actualLinAcc));
+        EXPECT_TRUE(test::equals(oldAngAcc, actualAngAcc));
       }
     }
 
@@ -1618,8 +1615,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         actualAngAcc
             = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(oldLinAcc, actualLinAcc));
-        EXPECT_TRUE(equals(desiredAngAcc, actualAngAcc));
+        EXPECT_TRUE(test::equals(oldLinAcc, actualLinAcc));
+        EXPECT_TRUE(test::equals(desiredAngAcc, actualAngAcc));
       }
     }
   }

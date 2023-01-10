@@ -35,19 +35,15 @@
 // should NOT be used anywhere outside of this file (testAspect.cpp).
 #define DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
-#include "dart/common/Composite.hpp"
-#include "dart/common/EmbeddedAspect.hpp"
-#include "dart/common/SpecializedForAspect.hpp"
-#include "dart/common/Subject.hpp"
-#include "dart/common/sub_ptr.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/dynamics.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 
 #include <gtest/gtest.h>
 
-using namespace dart::common;
+using namespace dart;
+using namespace common;
+using namespace dynamics;
 
 struct EmbeddedStateData
 {
@@ -359,7 +355,7 @@ TEST(Aspect, Generic)
   EXPECT_TRUE(comp.get<GenericAspect>() == nullptr);
   EXPECT_FALSE(comp.has<GenericAspect>());
 
-  sub_ptr<GenericAspect> aspect = comp.createAspect<GenericAspect>();
+  common::sub_ptr<GenericAspect> aspect = comp.createAspect<GenericAspect>();
   GenericAspect* rawAspect = aspect;
   EXPECT_FALSE(nullptr == aspect);
   EXPECT_FALSE(nullptr == rawAspect);
@@ -386,12 +382,13 @@ TEST(Aspect, Specialized)
   EXPECT_FALSE(usedSpecializedAspectAccess);
   usedSpecializedAspectAccess = false;
 
-  sub_ptr<SpecializedAspect> spec = comp.createAspect<SpecializedAspect>();
+  common::sub_ptr<SpecializedAspect> spec
+      = comp.createAspect<SpecializedAspect>();
   EXPECT_TRUE(usedSpecializedAspectAccess);
   usedSpecializedAspectAccess = false;
   SpecializedAspect* rawSpec = spec;
 
-  sub_ptr<GenericAspect> generic = comp.createAspect<GenericAspect>();
+  common::sub_ptr<GenericAspect> generic = comp.createAspect<GenericAspect>();
   EXPECT_FALSE(usedSpecializedAspectAccess);
   usedSpecializedAspectAccess = false;
   GenericAspect* rawGeneric = generic;
@@ -446,7 +443,8 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE(sender.get<GenericAspect>() == nullptr);
     EXPECT_TRUE(receiver.get<GenericAspect>() == nullptr);
 
-    sub_ptr<GenericAspect> aspect = sender.createAspect<GenericAspect>();
+    common::sub_ptr<GenericAspect> aspect
+        = sender.createAspect<GenericAspect>();
 
     EXPECT_TRUE(sender.get<GenericAspect>() == aspect);
     EXPECT_TRUE(receiver.get<GenericAspect>() == nullptr);
@@ -491,7 +489,8 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE(sender.get<SpecializedAspect>() == nullptr);
     //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
-    sub_ptr<SpecializedAspect> spec = sender.createAspect<SpecializedAspect>();
+    common::sub_ptr<SpecializedAspect> spec
+        = sender.createAspect<SpecializedAspect>();
 
     EXPECT_TRUE(sender.get<SpecializedAspect>() == spec);
     //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
@@ -524,7 +523,8 @@ TEST(Aspect, Releasing)
     // The set() methods being used in this block of code will make clones of
     // the aspects that are being passed in instead of transferring their
     // ownership like the previous blocks of code were.
-    sub_ptr<GenericAspect> aspect = sender.createAspect<GenericAspect>();
+    common::sub_ptr<GenericAspect> aspect
+        = sender.createAspect<GenericAspect>();
 
     // This should create a copy of the GenericAspect without taking the aspect
     // away from 'sender'
@@ -535,7 +535,7 @@ TEST(Aspect, Releasing)
     EXPECT_FALSE(receiver.get<GenericAspect>() == nullptr);
     EXPECT_TRUE(sender.get<GenericAspect>() == aspect);
 
-    sub_ptr<GenericAspect> rec_aspect = receiver.get<GenericAspect>();
+    common::sub_ptr<GenericAspect> rec_aspect = receiver.get<GenericAspect>();
     EXPECT_FALSE(nullptr == rec_aspect);
 
     // This should replace the first GenericAspect that was created in 'sender'
@@ -545,7 +545,7 @@ TEST(Aspect, Releasing)
     EXPECT_FALSE(nullptr == rec_aspect);
     EXPECT_FALSE(sender.get<GenericAspect>() == receiver.get<GenericAspect>());
 
-    sub_ptr<GenericAspect> aspect2 = sender.get<GenericAspect>();
+    common::sub_ptr<GenericAspect> aspect2 = sender.get<GenericAspect>();
     EXPECT_FALSE(nullptr == aspect2);
 
     sender.set<GenericAspect>(receiver.releaseAspect<GenericAspect>());

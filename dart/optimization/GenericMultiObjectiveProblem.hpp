@@ -33,6 +33,7 @@
 #ifndef DART_OPTIMIZER_GENERICMULTIOBJECTIVEPROBLEM_HPP_
 #define DART_OPTIMIZER_GENERICMULTIOBJECTIVEPROBLEM_HPP_
 
+#include <dart/optimization/Export.hpp>
 #include <dart/optimization/Function.hpp>
 #include <dart/optimization/MultiObjectiveProblem.hpp>
 
@@ -45,7 +46,8 @@
 namespace dart {
 namespace optimization {
 
-class GenericMultiObjectiveProblem : public MultiObjectiveProblem
+class DART_OPTIMIZATION_API GenericMultiObjectiveProblem
+  : public MultiObjectiveProblem
 {
 public:
   /// Constructor

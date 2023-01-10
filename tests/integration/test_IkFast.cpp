@@ -32,7 +32,7 @@
 
 #include <dart/test/io/TestHelpers.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/io/io.hpp>
 
 #include <gtest/gtest.h>
 
@@ -117,7 +117,8 @@ TEST(IkFast, LoadWamArmIk)
   io::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
       "herb_description", DART_DATA_LOCAL_PATH "/urdf/wam");
-  auto wam = urdfParser.parseSkeleton(DART_DATA_LOCAL_PATH "/urdf/wam/wam.urdf");
+  auto wam
+      = urdfParser.parseSkeleton(DART_DATA_LOCAL_PATH "/urdf/wam/wam.urdf");
   ASSERT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");
@@ -167,6 +168,6 @@ TEST(IkFast, LoadWamArmIk)
 
     wam->setPositions(dofs, solution.mConfig);
     Eigen::Isometry3d newTf = ee->getTransform();
-    EXPECT_TRUE(equals(targetFrame->getTransform(), newTf, 1e-2));
+    EXPECT_TRUE(test::equals(targetFrame->getTransform(), newTf, 1e-2));
   }
 }

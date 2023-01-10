@@ -321,8 +321,9 @@ void compareBodyNodeFkToJacobian(
   Vector6d SpatialVelJac = SpatialJac * dq;
   Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelSegEqual = equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelSegEqual
+      = test::equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
+  bool spatialVelEqual = test::equals(SpatialVelFk, SpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelSegEqual);
   EXPECT_TRUE(spatialVelEqual);
   if (!spatialVelSegEqual)
@@ -340,8 +341,9 @@ void compareBodyNodeFkToJacobian(
         SpatialVelFk,
         SpatialVelJac);
 
-  bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  bool spatialAccSegEqual
+      = test::equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
+  bool spatialAccEqual = test::equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccSegEqual);
   EXPECT_TRUE(spatialAccEqual);
   if (!spatialAccSegEqual)
@@ -376,8 +378,9 @@ void compareBodyNodeFkToJacobian(
   Vector3d LinearVelJac = LinearJac * dq;
   Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
-  bool linearVelSegEqual = equals(LinearVelFk, LinearVelJacSeg, tolerance);
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelSegEqual
+      = test::equals(LinearVelFk, LinearVelJacSeg, tolerance);
+  bool linearVelEqual = test::equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelSegEqual);
   EXPECT_TRUE(linearVelEqual);
   if (!linearVelSegEqual)
@@ -395,8 +398,9 @@ void compareBodyNodeFkToJacobian(
         LinearVelFk,
         LinearVelJac);
 
-  bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  bool linearAccSegEqual
+      = test::equals(LinearAccFk, LinearAccJacSeg, tolerance);
+  bool linearAccEqual = test::equals(LinearAccFk, LinearAccJac, tolerance);
   EXPECT_TRUE(linearAccSegEqual);
   EXPECT_TRUE(linearAccEqual);
   if (!linearAccSegEqual)
@@ -432,8 +436,9 @@ void compareBodyNodeFkToJacobian(
   Vector3d AngularVelJac = AngularJac * dq;
   Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
-  bool angularVelSegEqual = equals(AngularVelFk, AngularVelJacSeg, tolerance);
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  bool angularVelSegEqual
+      = test::equals(AngularVelFk, AngularVelJacSeg, tolerance);
+  bool angularVelEqual = test::equals(AngularVelFk, AngularVelJac, tolerance);
   EXPECT_TRUE(angularVelSegEqual);
   EXPECT_TRUE(angularVelEqual);
   if (!angularVelSegEqual)
@@ -451,8 +456,9 @@ void compareBodyNodeFkToJacobian(
         AngularVelFk,
         AngularVelJac);
 
-  bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
-  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  bool angularAccSegEqual
+      = test::equals(AngularAccFk, AngularAccJacSeg, tolerance);
+  bool angularAccEqual = test::equals(AngularAccFk, AngularAccJac, tolerance);
   EXPECT_TRUE(angularAccSegEqual);
   EXPECT_TRUE(angularAccEqual);
   if (!angularAccSegEqual)
@@ -512,8 +518,9 @@ void compareBodyNodeFkToJacobian(
   Vector6d SpatialVelJac = SpatialJac * dq;
   Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelSegEqual = equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelSegEqual
+      = test::equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
+  bool spatialVelEqual = test::equals(SpatialVelFk, SpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelSegEqual);
   EXPECT_TRUE(spatialVelEqual);
   if (!spatialVelSegEqual)
@@ -531,8 +538,9 @@ void compareBodyNodeFkToJacobian(
         SpatialVelFk,
         SpatialVelJac);
 
-  bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  bool spatialAccSegEqual
+      = test::equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
+  bool spatialAccEqual = test::equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccSegEqual);
   EXPECT_TRUE(spatialAccEqual);
   if (!spatialAccSegEqual)
@@ -571,8 +579,9 @@ void compareBodyNodeFkToJacobian(
   Vector3d LinearVelJac = LinearJac * dq;
   Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
-  bool linearVelSegEqual = equals(LinearVelFk, LinearVelJacSeg, tolerance);
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelSegEqual
+      = test::equals(LinearVelFk, LinearVelJacSeg, tolerance);
+  bool linearVelEqual = test::equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelSegEqual);
   EXPECT_TRUE(linearVelEqual);
   if (!linearVelSegEqual)
@@ -590,8 +599,9 @@ void compareBodyNodeFkToJacobian(
         LinearVelFk,
         LinearVelJac);
 
-  bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  bool linearAccSegEqual
+      = test::equals(LinearAccFk, LinearAccJacSeg, tolerance);
+  bool linearAccEqual = test::equals(LinearAccFk, LinearAccJac, tolerance);
   EXPECT_TRUE(linearAccSegEqual);
   EXPECT_TRUE(linearAccEqual);
   if (!linearAccSegEqual)
@@ -627,8 +637,9 @@ void compareBodyNodeFkToJacobian(
   Vector3d AngularVelJac = AngularJac * dq;
   Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
-  bool angularVelSegEqual = equals(AngularVelFk, AngularVelJacSeg, tolerance);
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  bool angularVelSegEqual
+      = test::equals(AngularVelFk, AngularVelJacSeg, tolerance);
+  bool angularVelEqual = test::equals(AngularVelFk, AngularVelJac, tolerance);
   EXPECT_TRUE(angularVelSegEqual);
   EXPECT_TRUE(angularVelEqual);
   if (!angularVelSegEqual)
@@ -646,8 +657,9 @@ void compareBodyNodeFkToJacobian(
         AngularVelFk,
         AngularVelJac);
 
-  bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
-  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  bool angularAccSegEqual
+      = test::equals(AngularAccFk, AngularAccJacSeg, tolerance);
+  bool angularAccEqual = test::equals(AngularAccFk, AngularAccJac, tolerance);
   EXPECT_TRUE(angularAccSegEqual);
   if (!angularAccSegEqual)
     printComparisonError(
@@ -713,7 +725,7 @@ void compareBodyNodeFkToJacobianRelative(
   Vector6d SpatialVelJac = SpatialJac * dq;
   Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelEqual = test::equals(SpatialVelFk, SpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelEqual);
   if (!spatialVelEqual)
   {
@@ -726,7 +738,7 @@ void compareBodyNodeFkToJacobianRelative(
         SpatialVelJac);
   }
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  bool spatialAccEqual = test::equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccEqual);
   if (!spatialAccEqual)
   {
@@ -747,7 +759,7 @@ void compareBodyNodeFkToJacobianRelative(
 
   Vector3d LinearVelJac = LinearJac * dq;
 
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelEqual = test::equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelEqual);
   if (!linearVelEqual)
   {
@@ -769,7 +781,7 @@ void compareBodyNodeFkToJacobianRelative(
 
   Vector3d AngularVelJac = AngularJac * dq;
 
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  bool angularVelEqual = test::equals(AngularVelFk, AngularVelJac, tolerance);
   EXPECT_TRUE(angularVelEqual);
   if (!angularVelEqual)
   {
@@ -814,7 +826,7 @@ void compareBodyNodeFkToJacobianRelative(
   Vector6d SpatialVelJac = SpatialJac * dq;
   Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelEqual = test::equals(SpatialVelFk, SpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelEqual);
   if (!spatialVelEqual)
   {
@@ -827,7 +839,7 @@ void compareBodyNodeFkToJacobianRelative(
         SpatialVelJac);
   }
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  bool spatialAccEqual = test::equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccEqual);
   if (!spatialAccEqual)
   {
@@ -849,7 +861,7 @@ void compareBodyNodeFkToJacobianRelative(
 
   Vector3d LinearVelJac = LinearJac * dq;
 
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelEqual = test::equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelEqual);
   if (!linearVelEqual)
   {
@@ -1117,17 +1129,17 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
           = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
       VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
 
-      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE))
+      EXPECT_TRUE(test::equals(dq0, dq0FD, TOLERANCE))
           << "dq0  : " << dq0.transpose() << "\ndq0FD: " << dq0FD.transpose();
 
-      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE))
+      EXPECT_TRUE(test::equals(dq1, dq1FD, TOLERANCE))
           << "dq1  : " << dq1.transpose() << "\ndq1FD: " << dq1FD.transpose();
 
-      EXPECT_TRUE(equals(ddq0, ddqFD1, 10 * TOLERANCE))
+      EXPECT_TRUE(test::equals(ddq0, ddqFD1, 10 * TOLERANCE))
           << "ddq0  : " << ddq0.transpose()
           << "\nddqFD1: " << ddqFD1.transpose();
 
-      EXPECT_TRUE(equals(ddq0, ddqFD2, 10 * TOLERANCE))
+      EXPECT_TRUE(test::equals(ddq0, ddqFD2, 10 * TOLERANCE))
           << "ddq0  : " << ddq0.transpose()
           << "\nddqFD2: " << ddqFD2.transpose() << std::endl;
     }
@@ -1211,7 +1223,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
           Vector6d V_diff = math::logMap(T1.inverse() * T2) / timeStep;
           Vector6d V_actual = body->getSpatialVelocity();
 
-          bool checkSpatialVelocity = equals(V_diff, V_actual, tol);
+          bool checkSpatialVelocity = test::equals(V_diff, V_actual, tol);
           EXPECT_TRUE(checkSpatialVelocity);
           if (!checkSpatialVelocity)
           {
@@ -1327,52 +1339,52 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
         Vector3d WorldAngAccApprox = (WorldAngVel2 - WorldAngVel1) / timeStep;
 
         // Comparing two velocities
-        EXPECT_TRUE(equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE));
+        EXPECT_TRUE(test::equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE));
 
         // Debugging code
-        if (!equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE))
+        if (!test::equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE))
         {
           cout << "BodyLinAcc1     :" << BodyLinAcc1.transpose() << endl;
           cout << "BodyLinAccApprox:" << BodyLinAccApprox.transpose() << endl;
         }
-        if (!equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE))
+        if (!test::equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE))
         {
           cout << "BodyAngAcc1     :" << BodyAngAcc1.transpose() << endl;
           cout << "BodyAngAccApprox:" << BodyAngAccApprox.transpose() << endl;
         }
-        if (!equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE))
+        if (!test::equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE))
         {
           cout << "BodyLinAcc2     :" << BodyLinAcc2.transpose() << endl;
           cout << "BodyLinAccApprox:" << BodyLinAccApprox.transpose() << endl;
         }
-        if (!equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE))
+        if (!test::equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE))
         {
           cout << "BodyAngAcc2     :" << BodyAngAcc2.transpose() << endl;
           cout << "BodyAngAccApprox:" << BodyAngAccApprox.transpose() << endl;
         }
-        if (!equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE))
+        if (!test::equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE))
         {
           cout << "WorldLinAcc1     :" << WorldLinAcc1.transpose() << endl;
           cout << "WorldLinAccApprox:" << WorldLinAccApprox.transpose() << endl;
         }
-        if (!equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE))
+        if (!test::equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE))
         {
           cout << "WorldAngAcc1     :" << WorldAngAcc1.transpose() << endl;
           cout << "WorldAngAccApprox:" << WorldAngAccApprox.transpose() << endl;
         }
-        if (!equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE))
+        if (!test::equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE))
         {
           cout << "WorldLinAcc2     :" << WorldLinAcc2.transpose() << endl;
           cout << "WorldLinAccApprox:" << WorldLinAccApprox.transpose() << endl;
         }
-        if (!equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE))
+        if (!test::equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE))
         {
           cout << "WorldAngAcc2     :" << WorldAngAcc2.transpose() << endl;
           cout << "WorldAngAccApprox:" << WorldAngAccApprox.transpose() << endl;
@@ -1466,9 +1478,10 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
         }
 
         bool checkT
-            = equals(body->getTransform().matrix(), Tmap[body].matrix());
-        bool checkV = equals(body->getSpatialVelocity(), Vmap[body]);
-        bool checkDV = equals(body->getSpatialAcceleration(), dVmap[body]);
+            = test::equals(body->getTransform().matrix(), Tmap[body].matrix());
+        bool checkV = test::equals(body->getSpatialVelocity(), Vmap[body]);
+        bool checkDV
+            = test::equals(body->getSpatialAcceleration(), dVmap[body]);
 
         EXPECT_TRUE(checkT);
         EXPECT_TRUE(checkV);
@@ -1586,14 +1599,14 @@ void DynamicsTest::testInverseDynamics(const common::Uri& uri)
       skel->setAccelerations(ddq);
       skel->computeInverseDynamics(false, true, true);
       const VectorXd f = skel->getForces();
-      EXPECT_TRUE(equals(f, f0));
+      EXPECT_TRUE(test::equals(f, f0));
 
       // Test forward dynamics to ensure the result joint accelerations are
       // identical to the accelerations used to compute the input forces
       skel->setForces(f);
       skel->computeForwardDynamics();
       const VectorXd ddq2 = skel->getAccelerations();
-      EXPECT_TRUE(equals(ddq, ddq2));
+      EXPECT_TRUE(test::equals(ddq, ddq2));
     }
   }
 }
@@ -1707,8 +1720,8 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       EXPECT_EQ(M.cols(), (int)dof);
 
       // Check mass matrix
-      EXPECT_TRUE(equals(M, M2, 1e-6));
-      if (!equals(M, M2, 1e-6))
+      EXPECT_TRUE(test::equals(M, M2, 1e-6));
+      if (!test::equals(M, M2, 1e-6))
       {
         cout << "M :" << endl << M << endl << endl;
         cout << "M2:" << endl << M2 << endl << endl;
@@ -1716,8 +1729,8 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       }
 
       // Check augmented mass matrix
-      EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
-      if (!equals(AugM, AugM2, 1e-6))
+      EXPECT_TRUE(test::equals(AugM, AugM2, 1e-6));
+      if (!test::equals(AugM, AugM2, 1e-6))
       {
         cout << "AugM :" << endl << AugM << endl << endl;
         cout << "AugM2:" << endl << AugM2 << endl << endl;
@@ -1725,28 +1738,28 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(M_InvM, I, 1e-6));
-      if (!equals(M_InvM, I, 1e-6))
+      EXPECT_TRUE(test::equals(M_InvM, I, 1e-6));
+      if (!test::equals(M_InvM, I, 1e-6))
       {
         cout << "InvM  :" << endl << InvM << endl << endl;
         failure = true;
       }
-      EXPECT_TRUE(equals(InvM_M, I, 1e-6));
-      if (!equals(InvM_M, I, 1e-6))
+      EXPECT_TRUE(test::equals(InvM_M, I, 1e-6));
+      if (!test::equals(InvM_M, I, 1e-6))
       {
         cout << "InvM_M:" << endl << InvM_M << endl << endl;
         failure = true;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
-      if (!equals(AugM_InvAugM, I, 1e-6))
+      EXPECT_TRUE(test::equals(AugM_InvAugM, I, 1e-6));
+      if (!test::equals(AugM_InvAugM, I, 1e-6))
       {
         cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
         failure = true;
       }
-      EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
-      if (!equals(InvAugM_AugM, I, 1e-6))
+      EXPECT_TRUE(test::equals(InvAugM_AugM, I, 1e-6));
+      if (!test::equals(InvAugM_AugM, I, 1e-6))
       {
         cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
       }
@@ -1780,16 +1793,16 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
       skel->computeInverseDynamics(false, false);
       VectorXd Cg2 = skel->getForces();
 
-      EXPECT_TRUE(equals(C, C2, 1e-6));
-      if (!equals(C, C2, 1e-6))
+      EXPECT_TRUE(test::equals(C, C2, 1e-6));
+      if (!test::equals(C, C2, 1e-6))
       {
         cout << "C :" << C.transpose() << endl;
         cout << "C2:" << C2.transpose() << endl;
         failure = true;
       }
 
-      EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
-      if (!equals(Cg, Cg2, 1e-6))
+      EXPECT_TRUE(test::equals(Cg, Cg2, 1e-6));
+      if (!test::equals(Cg, Cg2, 1e-6))
       {
         cout << "Cg :" << Cg.transpose() << endl;
         cout << "Cg2:" << Cg2.transpose() << endl;
@@ -1837,7 +1850,8 @@ void compareCOMJacobianToFk(
   Vector6d comSpatialVelJac = comSpatialJac * dq;
   Vector6d comSpatialAccJac = comSpatialJac * ddq + comSpatialJacDeriv * dq;
 
-  bool spatialVelEqual = equals(comSpatialVelFk, comSpatialVelJac, tolerance);
+  bool spatialVelEqual
+      = test::equals(comSpatialVelFk, comSpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelEqual);
   if (!spatialVelEqual)
     printComparisonError(
@@ -1847,7 +1861,8 @@ void compareCOMJacobianToFk(
         comSpatialVelFk,
         comSpatialVelJac);
 
-  bool spatialAccEqual = equals(comSpatialAccFk, comSpatialAccJac, tolerance);
+  bool spatialAccEqual
+      = test::equals(comSpatialAccFk, comSpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccEqual);
   if (!spatialAccEqual)
     printComparisonError(
@@ -1869,7 +1884,7 @@ void compareCOMJacobianToFk(
   Vector3d comLinearVelJac = comLinearJac * dq;
   Vector3d comLinearAccJac = comLinearJac * ddq + comLinearJacDeriv * dq;
 
-  bool linearVelEqual = equals(comLinearVelFk, comLinearVelJac);
+  bool linearVelEqual = test::equals(comLinearVelFk, comLinearVelJac);
   EXPECT_TRUE(linearVelEqual);
   if (!linearVelEqual)
     printComparisonError(
@@ -1879,7 +1894,7 @@ void compareCOMJacobianToFk(
         comLinearVelFk,
         comLinearVelJac);
 
-  bool linearAccEqual = equals(comLinearAccFk, comLinearAccJac);
+  bool linearAccEqual = test::equals(comLinearAccFk, comLinearAccJac);
   EXPECT_TRUE(linearAccEqual);
   if (!linearAccEqual)
     printComparisonError(
@@ -2022,7 +2037,7 @@ void compareCOMAccelerationToGravity(
 
     Vector3d comLinearAccFk = skel->getCOMLinearAcceleration();
 
-    bool comLinearAccFkEqual = equals(gravity, comLinearAccFk, tolerance);
+    bool comLinearAccFkEqual = test::equals(gravity, comLinearAccFk, tolerance);
     EXPECT_TRUE(comLinearAccFkEqual);
     if (!comLinearAccFkEqual)
     {
@@ -2040,7 +2055,8 @@ void compareCOMAccelerationToGravity(
     math::LinearJacobian comLinearJacDeriv = skel->getCOMLinearJacobianDeriv();
     Vector3d comLinearAccJac = comLinearJac * ddq + comLinearJacDeriv * dq;
 
-    bool comLinearAccJacEqual = equals(gravity, comLinearAccJac, tolerance);
+    bool comLinearAccJacEqual
+        = test::equals(gravity, comLinearAccJac, tolerance);
     EXPECT_TRUE(comLinearAccJacEqual);
     if (!comLinearAccJacEqual)
     {
@@ -2349,8 +2365,8 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
       MatrixXd invM = skel->getInvMassMatrix();
       VectorXd deltaVel2 = invM * impulses;
 
-      EXPECT_TRUE(equals(deltaVel1, deltaVel2, TOLERANCE));
-      if (!equals(deltaVel1, deltaVel2, TOLERANCE))
+      EXPECT_TRUE(test::equals(deltaVel1, deltaVel2, TOLERANCE));
+      if (!test::equals(deltaVel1, deltaVel2, TOLERANCE))
       {
         cout << "deltaVel1: " << deltaVel1.transpose() << endl;
         cout << "deltaVel2: " << deltaVel2.transpose() << endl;
@@ -2516,8 +2532,8 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Initialize the skeleton with the zero initial states
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  EXPECT_TRUE(equals(skel->getPositions(), q0));
-  EXPECT_TRUE(equals(skel->getVelocities(), dq0));
+  EXPECT_TRUE(test::equals(skel->getPositions(), q0));
+  EXPECT_TRUE(test::equals(skel->getVelocities(), dq0));
 
   // Make sure all the joint actuator types
   EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::FORCE);
@@ -2557,8 +2573,8 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Restore the skeleton to the initial state
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  EXPECT_TRUE(equals(skel->getPositions(), q0));
-  EXPECT_TRUE(equals(skel->getVelocities(), dq0));
+  EXPECT_TRUE(test::equals(skel->getPositions(), q0));
+  EXPECT_TRUE(test::equals(skel->getVelocities(), dq0));
 
   // Change all the actuator types to force
   skel->getJoint(0)->setActuatorType(Joint::FORCE);
@@ -2618,12 +2634,12 @@ TEST_F(DynamicsTest, OffsetCOM)
 
   {
     Vector3d comVel = box->getCOMLinearVelocity();
-    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel))
+    EXPECT_TRUE(test::equals(Vector3d(0, 0, 0), comVel))
         << "comVel: " << comVel.transpose();
   }
   {
     Vector3d linVel = box->getLinearVelocity();
-    EXPECT_TRUE(equals(Vector3d(0, 0, 0), linVel))
+    EXPECT_TRUE(test::equals(Vector3d(0, 0, 0), linVel))
         << "linVel: " << linVel.transpose();
   }
 
@@ -2631,7 +2647,7 @@ TEST_F(DynamicsTest, OffsetCOM)
   // Velocity at COM should be zero since the object is just rotating.
   {
     Vector3d comVel = box->getCOMLinearVelocity();
-    EXPECT_TRUE(equals(Vector3d(0, 0, 0), comVel, 1e-4))
+    EXPECT_TRUE(test::equals(Vector3d(0, 0, 0), comVel, 1e-4))
         << "comVel: " << comVel.transpose();
   }
   {
@@ -2640,22 +2656,22 @@ TEST_F(DynamicsTest, OffsetCOM)
     // velocity is zero.
     Vector3d expectedAngAccel = inertia.getMoment().inverse() * torque;
     Vector3d expectedAngVel = expectedAngAccel * dt;
-    EXPECT_TRUE(equals(expectedAngVel, angVel))
+    EXPECT_TRUE(test::equals(expectedAngVel, angVel))
         << "angVel: " << angVel.transpose();
     Vector3d linVel = box->getLinearVelocity();
     Vector3d expLinVel
         = angVel.cross(boxInitialPose.linear() * -box->getLocalCOM());
-    EXPECT_TRUE(equals(expLinVel, linVel))
+    EXPECT_TRUE(test::equals(expLinVel, linVel))
         << "Expected: " << expLinVel.transpose()
         << "\nActual: " << linVel.transpose();
 
     Vector3d angAccel = box->getAngularAcceleration();
-    EXPECT_TRUE(equals(expectedAngAccel, angAccel))
+    EXPECT_TRUE(test::equals(expectedAngAccel, angAccel))
         << "angAccel: " << angAccel.transpose();
     Vector3d linAccel = box->getLinearAcceleration();
     Vector3d expLinAccel
         = expectedAngAccel.cross(boxInitialPose.linear() * -box->getLocalCOM());
-    EXPECT_TRUE(equals(expLinAccel, linAccel))
+    EXPECT_TRUE(test::equals(expLinAccel, linAccel))
         << "Expected: " << expLinAccel.transpose()
         << "\nActual: " << linAccel.transpose();
   }

@@ -30,13 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.hpp"
+#include "dart/collision/collision.hpp"
+#include "dart/dynamics/dynamics.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 
 #include <gtest/gtest.h>
 
 using namespace dart;
+using namespace collision;
+using namespace dynamics;
 
 //==============================================================================
 void testBasicInterface(

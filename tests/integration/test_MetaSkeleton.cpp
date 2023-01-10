@@ -117,10 +117,8 @@ TEST(MetaSkeleton, Referential)
   {
     SkeletonPtr skeleton = skeletons[i];
 
-    const auto& skelJoints = skeleton->getJoints();
-    EXPECT_TRUE(skeleton->getNumJoints() == skelJoints.size());
-    for (auto* joint : skelJoints)
-      EXPECT_TRUE(skeleton->hasJoint(joint));
+    skeleton->eachJoint(
+        [&](const Joint* joint) { EXPECT_TRUE(skeleton->hasJoint(joint)); });
 
     for (std::size_t j = 0; j < skeleton->getNumTrees(); ++j)
     {
@@ -160,9 +158,9 @@ TEST(MetaSkeleton, Referential)
         tree->setVelocities(dq);
         tree->setAccelerations(ddq);
 
-        EXPECT_TRUE(equals(q, tree->getPositions(), 0.0));
-        EXPECT_TRUE(equals(dq, tree->getVelocities(), 0.0));
-        EXPECT_TRUE(equals(ddq, tree->getAccelerations(), 0.0));
+        EXPECT_TRUE(test::equals(q, tree->getPositions(), 0.0));
+        EXPECT_TRUE(test::equals(dq, tree->getVelocities(), 0.0));
+        EXPECT_TRUE(test::equals(ddq, tree->getAccelerations(), 0.0));
 
         const Eigen::MatrixXd& skelMassMatrix = skeleton->getMassMatrix();
         const Eigen::MatrixXd& treeMassMatrix = tree->getMassMatrix();
@@ -729,8 +727,8 @@ TEST(MetaSkeleton, GetJointsAndBodyNodes)
   EXPECT_TRUE(skelA->getNumBodyNodes() == 3u);
   EXPECT_TRUE(skelB->getNumBodyNodes() == 3u);
 
-  EXPECT_TRUE(skelA->getJoints().size() == 3u);
-  EXPECT_TRUE(skelB->getJoints().size() == 3u);
+  EXPECT_TRUE(skelA->getNumJoints() == 3u);
+  EXPECT_TRUE(skelB->getNumJoints() == 3u);
 
   bodyNodeA0->setName("bodyNode0");
   bodyNodeA1->setName("bodyNode1");

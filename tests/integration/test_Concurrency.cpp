@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/dynamics.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/math/GTestUtils.hpp>
 
 #include <gtest/gtest.h>
 

@@ -30,7 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.hpp"
 #include "dart/io/io.hpp"
 #include "dart/io/mjcf/detail/MujocoModel.hpp"
 #include "dart/io/mjcf/detail/Types.hpp"
@@ -81,7 +80,7 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
   ASSERT_EQ(worldbody.getNumRootBodies(), 1);
   const auto& rootBody0 = worldbody.getRootBody(0);
   EXPECT_EQ(rootBody0.getName(), "torso");
-  EXPECT_TRUE(equals(
+  EXPECT_TRUE(test::equals(
       rootBody0.getRelativeTransform().translation().eval(),
       Eigen::Vector3d(0, 0, 0.75)));
 

@@ -33,7 +33,7 @@
 // The tests in this file are inspired by the tests in:
 // https://github.com/osrf/gazebo/blob/01b395a5fa92eb054c72f9a2027cdcfd35f287f4/test/integration/joint_force_torque.cc
 
-#include "dart/dart.hpp"
+#include "dart/io/io.hpp"
 
 #include <dart/test/io/TestHelpers.hpp>
 

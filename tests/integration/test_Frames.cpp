@@ -35,11 +35,11 @@
 #include "dart/math/Random.hpp"
 
 #include <dart/test/math/GTestUtils.hpp>
-#include <dart/test/io/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 
 using namespace dart;
+using namespace math;
 using namespace dynamics;
 
 template <int N>
@@ -657,10 +657,10 @@ void check_offset_computations(
 
     Eigen::Isometry3d coordTf = relativeTo->getTransform(inCoordinatesOf);
 
-    Vector3d offset_T = random_vec<3>();
-    Vector3d offset_F = T->getTransform(F) * offset_T;
+    Eigen::Vector3d offset_T = random_vec<3>();
+    Eigen::Vector3d offset_F = T->getTransform(F) * offset_T;
 
-    Vector3d v_TO, w_TO, v_FO, w_FO, a_TO, alpha_TO, a_FO, alpha_FO;
+    Eigen::Vector3d v_TO, w_TO, v_FO, w_FO, a_TO, alpha_TO, a_FO, alpha_FO;
 
     // Compute velocity of the offfset in the relative frame
     compute_velocity(

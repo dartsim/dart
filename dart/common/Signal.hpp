@@ -90,7 +90,7 @@ private:
 };
 
 /// class ScopedConnection
-class ScopedConnection : public Connection
+class DART_COMMON_API ScopedConnection : public Connection
 {
 public:
   /// Default constructor

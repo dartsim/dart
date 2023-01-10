@@ -815,8 +815,9 @@ TEST(Skeleton, ZeroDofJointConstraintForces)
   skel->createJointAndBodyNodePair<WeldJoint>(bn);
 
   const auto numSkelDofs = skel->getNumDofs();
-  for (auto& bodyNode : skel->getBodyNodes())
+  skel->eachBodyNode([&](BodyNode* bodyNode) {
     bodyNode->setConstraintImpulse(Eigen::Vector6d::Random());
+  });
 
   // Make sure this does not cause seg-fault
   Eigen::VectorXd constraintForces = skel->getConstraintForces();
@@ -890,7 +891,7 @@ TEST(Skeleton, Updating)
       joint1->get<RevoluteJoint::Aspect>()->getProperties());
 
   math::Jacobian J0f = joint0->getRelativeJacobian();
-  EXPECT_FALSE(equals(J0i, J0f));
+  EXPECT_FALSE(test::equals(J0i, J0f));
 
   // PrismaticJoint
   skeleton
@@ -902,7 +903,7 @@ TEST(Skeleton, Updating)
   joint0->get<PrismaticJoint::Aspect>()->setProperties(
       joint1->get<PrismaticJoint::Aspect>()->getProperties());
   J0f = joint0->getRelativeJacobian();
-  EXPECT_FALSE(equals(J0i, J0f));
+  EXPECT_FALSE(test::equals(J0i, J0f));
 
   skeleton = Skeleton::create();
   ScrewJoint* screw = skeleton->createJointAndBodyNodePair<ScrewJoint>().first;
@@ -913,12 +914,12 @@ TEST(Skeleton, Updating)
   J0i = screw->getRelativeJacobian();
   screw->setAxis(Eigen::Vector3d::UnitY());
   J0f = screw->getRelativeJacobian();
-  EXPECT_FALSE(equals(J0i, J0f));
+  EXPECT_FALSE(test::equals(J0i, J0f));
 
   J0i = J0f;
   screw->setPitch(3);
   J0f = screw->getRelativeJacobian();
-  EXPECT_FALSE(equals(J0i, J0f));
+  EXPECT_FALSE(test::equals(J0i, J0f));
 
   // Regression test for Pull Request #731
   const double originalMass = skeleton->getMass();

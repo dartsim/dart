@@ -23,13 +23,6 @@ jobs:
         build_type: [Debug] # TODO(JS): Add Release
         build_dartpy: [ON]
         enable_native_arch: [ON]
-        exclude:
-          - os: archlinux
-            platform: linux/amd64
-            compiler: gcc
-            build_type: Release
-            build_dartpy: ON
-            enable_native_arch: ON
     env:
       # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
       DART_DEV_IMAGE: dartsim/dart-dev

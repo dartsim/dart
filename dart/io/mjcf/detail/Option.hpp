@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_OPTION_HPP_
 #define DART_UTILS_MJCF_DETAIL_OPTION_HPP_
 
+#include <dart/io/Export.hpp>
 #include <dart/io/mjcf/detail/Error.hpp>
 #include <dart/io/mjcf/detail/Types.hpp>
 
@@ -44,7 +45,7 @@ namespace io {
 namespace MjcfParser {
 namespace detail {
 
-class Option final
+class DART_IO_API Option final
 {
 public:
   Option() = default;

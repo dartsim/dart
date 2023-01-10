@@ -1,73 +1,76 @@
 # Copyright (c) 2011-2023, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
 
 # TODO(JS): Improve the way of handling the test cases
 
-dart_build_tests(
-  TYPE integration
-  TARGET_PREFIX INTEGRATION
-  LINK_LIBRARIES
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-test
-  SOURCES
-    test_Aspect.cpp
-    test_Building.cpp
-    test_Concurrency.cpp
-    test_Constraint.cpp
-    test_Frames.cpp
-    test_Friction.cpp
-    test_InverseKinematics.cpp
-    test_NameManagement.cpp
-    test_Signal.cpp
-)
+if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics)
 
-dart_add_test("integration" test_CollisionGroups)
-foreach(collision_engine
-  ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-  if(TARGET ${collision_engine})
-    target_link_libraries(test_CollisionGroups ${collision_engine})
-  endif()
-endforeach()
-dart_add_test("integration" test_ConstraintSolver)
-dart_add_test("integration" test_ContactConstraint)
-dart_add_test("integration" test_GenericJoints)
-dart_add_test("integration" test_Inertia)
-dart_add_test("integration" test_Lemke)
-dart_add_test("integration" test_LocalResourceRetriever)
-dart_add_test("integration" test_Optimizer)
-dart_add_test("integration" test_ScrewJoint)
-dart_add_test("integration" test_Subscriptions)
+  dart_build_tests(
+    TYPE integration
+    LINK_LIBRARIES
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
+    SOURCES
+      test_Aspect.cpp
+      test_Concurrency.cpp
+      test_Distance.cpp
+      test_Frames.cpp
+      test_Raycast.cpp
+      test_Signal.cpp
+  )
 
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
-  target_link_libraries(test_Optimizer ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
+endif()
+
+if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation)
+
+  dart_build_tests(
+    TYPE integration
+    LINK_LIBRARIES
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
+    SOURCES
+      test_Building.cpp
+      test_CollisionGroups.cpp
+      test_Constraint.cpp
+      test_ConstraintSolver.cpp
+      test_ContactConstraint.cpp
+      test_ForceDependentSlip.cpp
+      test_Friction.cpp
+      test_GenericJoints.cpp
+      test_Inertia.cpp
+      test_Lemke.cpp
+      test_LocalResourceRetriever.cpp
+      test_NameManagement.cpp
+      test_Optimizer.cpp
+      test_ScrewJoint.cpp
+      test_Subscriptions.cpp
+  )
+
 endif()
 
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
 
-  dart_add_test("integration" test_CompositeResourceRetriever)
-  target_link_libraries(test_CompositeResourceRetriever ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_DartResourceRetriever)
-  target_link_libraries(test_DartResourceRetriever ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  
-  dart_add_test("integration" test_FileInfoWorld)
-  target_link_libraries(test_FileInfoWorld ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_PackageResourceRetriever)
-  target_link_libraries(test_PackageResourceRetriever ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_MjcfParser)
-  target_link_libraries(test_MjcfParser ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  
-  dart_add_test("integration" test_SdfParser)
-  target_link_libraries(test_SdfParser ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  
-  dart_add_test("integration" test_SkelParser)
-  target_link_libraries(test_SkelParser ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  if(NOT MSVC) 
-    dart_add_test("integration" test_VskParser)
-    target_link_libraries(test_VskParser ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  endif()
+  dart_build_tests(
+    TYPE integration
+    LINK_LIBRARIES
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-io
+    SOURCES
+      test_CompositeResourceRetriever.cpp
+      test_DartResourceRetriever.cpp
+      test_FileInfoWorld.cpp
+      test_InverseKinematics.cpp
+      test_MjcfParser.cpp
+      test_PackageResourceRetriever.cpp
+      test_SdfParser.cpp
+      test_SkelParser.cpp
+      test_VskParser.cpp
+  )
 
 endif()
 
@@ -98,28 +101,6 @@ dart_format_add(
   SharedLibraryWamIkFast.hpp
   SharedLibraryWamIkFast.cpp
 )
-
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
-  dart_add_test("integration" test_MultiObjectiveOptimization)
-  target_link_libraries(test_MultiObjectiveOptimization ${PROJECT_NAME}${DART_MAJOR_VERSION}-optimization)
-endif()
-
-dart_add_test("integration" test_Distance)
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-  target_link_libraries(test_Distance ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-endif()
-
-dart_add_test("integration" test_Raycast)
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-  target_link_libraries(test_Raycast ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-endif()
-
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-  # This test doesn't work with FCL because it converts simple shapes to meshes, which makes
-  # it difficult to come up with correct test expectations.
-  dart_add_test("integration" test_ForceDependentSlip)
-  target_link_libraries(test_ForceDependentSlip ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-endif()
 
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
 

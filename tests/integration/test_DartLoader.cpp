@@ -618,7 +618,7 @@ TEST(DartLoader, Options)
   ASSERT_TRUE(nullptr != robot);
   auto link_0 = robot->getBodyNode("link_0");
   ASSERT_TRUE(link_0 != nullptr);
-  EXPECT_TRUE(equals(
+  EXPECT_TRUE(test::equals(
       link_0->getInertia().getSpatialTensor(),
       dynamics::Inertia().getSpatialTensor()));
 
@@ -630,7 +630,7 @@ TEST(DartLoader, Options)
   ASSERT_TRUE(nullptr != robot);
   link_0 = robot->getBodyNode("link_0");
   ASSERT_TRUE(link_0 != nullptr);
-  EXPECT_TRUE(equals(
+  EXPECT_TRUE(test::equals(
       link_0->getInertia().getSpatialTensor(),
       options.mDefaultInertia.getSpatialTensor()));
 }
