@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_MESHSHAPE_HPP_
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/Shape.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Shape.hpp>
+
+#include <dart/common/ResourceRetriever.hpp>
 
 #include <assimp/scene.h>
 

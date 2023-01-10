@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 #define DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/dynamics/SmartPointer.hpp>
 
 #include <Eigen/Dense>
 

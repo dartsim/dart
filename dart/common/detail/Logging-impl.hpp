@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_LOGGING_IMPL_HPP_
 #define DART_COMMON_DETAIL_LOGGING_IMPL_HPP_
 
-#include "dart/common/Logging.hpp"
+#include <dart/common/Logging.hpp>
 
 #if DART_HAVE_SPDLOG
   #include <spdlog/spdlog.h>

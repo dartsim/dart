@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_RAYCASTRESULT_HPP_
 #define DART_COLLISION_RAYCASTRESULT_HPP_
 
-#include "dart/dynamics/Export.hpp"
+#include <dart/dynamics/Export.hpp>
 
 #include <Eigen/Dense>
 

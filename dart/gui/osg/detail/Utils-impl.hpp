@@ -33,7 +33,7 @@
 #ifndef DART_GUI_OSG_DETAIL_UTILS_IMPL_HPP_
 #define DART_GUI_OSG_DETAIL_UTILS_IMPL_HPP_
 
-#include "dart/gui/osg/Utils.hpp"
+#include <dart/gui/osg/Utils.hpp>
 
 namespace dart::gui::osg {
 

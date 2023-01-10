@@ -33,10 +33,11 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 
-#include "dart/common/EmbeddedAspect.hpp"
-#include "dart/common/ProxyAspect.hpp"
-#include "dart/dynamics/Inertia.hpp"
-#include "dart/dynamics/Node.hpp"
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/Node.hpp>
+
+#include <dart/common/EmbeddedAspect.hpp>
+#include <dart/common/ProxyAspect.hpp>
 
 namespace dart {
 namespace dynamics {

@@ -33,11 +33,13 @@
 #ifndef DART_GUI_OSG_RENDER_HEIGHTMAPSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_HEIGHTMAPSHAPENODE_HPP_
 
-#include "dart/config.hpp"
-#include "dart/dynamics/HeightmapShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/gui/osg/render/ShapeNode.hpp"
+#include <dart/config.hpp>
+
+#include <dart/gui/osg/Utils.hpp>
+#include <dart/gui/osg/render/ShapeNode.hpp>
+
+#include <dart/dynamics/HeightmapShape.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
 
 #include <osg/CullFace>
 #include <osg/Geode>

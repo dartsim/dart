@@ -35,7 +35,7 @@
 
 #if defined(_WIN32)
   // clang-format off
-  #include "dart/common/IncludeWindows.hpp"
+  #include <dart/common/IncludeWindows.hpp>
   #include <GL/gl.h>
   #include <GL/glu.h>
   // clang-format on

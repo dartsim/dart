@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_COLLISIONRESULT_HPP_
 #define DART_COLLISION_COLLISIONRESULT_HPP_
 
-#include "dart/dynamics/Contact.hpp"
-#include "dart/dynamics/Export.hpp"
+#include <dart/dynamics/Contact.hpp>
+#include <dart/dynamics/Export.hpp>
 
 #include <unordered_set>
 #include <vector>

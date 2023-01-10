@@ -33,9 +33,10 @@
 #ifndef DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_
 
-#include "dart/dynamics/DynamicJointConstraint.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/math/MathTypes.hpp"
+#include <dart/dynamics/DynamicJointConstraint.hpp>
+#include <dart/dynamics/Export.hpp>
+
+#include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Dense>
 

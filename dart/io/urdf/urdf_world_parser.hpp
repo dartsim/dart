@@ -37,8 +37,8 @@
 
 #pragma once
 
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/common/Uri.hpp"
+#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <urdf_model/model.h>
 #include <urdf_model/pose.h>

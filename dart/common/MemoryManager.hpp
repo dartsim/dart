@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_MEMORYMANAGER_HPP_
 #define DART_COMMON_MEMORYMANAGER_HPP_
 
-#include "dart/common/Export.hpp"
-#include "dart/common/FreeListAllocator.hpp"
-#include "dart/common/PoolAllocator.hpp"
+#include <dart/common/Export.hpp>
+#include <dart/common/FreeListAllocator.hpp>
+#include <dart/common/PoolAllocator.hpp>
 
 #include <iostream>
 #ifndef NDEBUG
@@ -185,6 +185,6 @@ private:
 
 } // namespace dart::common
 
-#include "dart/common/detail/MemoryManager-impl.hpp"
+#include <dart/common/detail/MemoryManager-impl.hpp>
 
 #endif // DART_COMMON_MEMORYMANAGER_HPP_

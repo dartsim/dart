@@ -39,8 +39,8 @@
 #ifndef DART_GUI_OSG_IMGUIWIDGET_HPP_
 #define DART_GUI_OSG_IMGUIWIDGET_HPP_
 
-#include "dart/gui/Export.hpp"
-#include "dart/gui/osg/ImGuiViewer.hpp"
+#include <dart/gui/Export.hpp>
+#include <dart/gui/osg/ImGuiViewer.hpp>
 
 namespace dart {
 namespace gui {

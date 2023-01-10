@@ -33,9 +33,10 @@
 #ifndef DART_UTILS_PACKAGERESOURCERETRIEVER_HPP_
 #define DART_UTILS_PACKAGERESOURCERETRIEVER_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/io/Export.hpp"
+#include <dart/io/Export.hpp>
+
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/ResourceRetriever.hpp>
 
 #include <unordered_map>
 #include <vector>

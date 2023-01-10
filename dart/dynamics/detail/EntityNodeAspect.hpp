@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
 
-#include "dart/dynamics/Node.hpp"
+#include <dart/dynamics/Node.hpp>
 
 namespace dart {
 namespace dynamics {

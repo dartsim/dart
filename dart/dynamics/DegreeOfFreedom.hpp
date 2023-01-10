@@ -33,10 +33,11 @@
 #ifndef DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
 #define DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Subject.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
+
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Subject.hpp>
 
 #include <Eigen/Core>
 

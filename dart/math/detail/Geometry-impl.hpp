@@ -34,7 +34,8 @@
 #define DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 
 #include "dart/external/convhull_3d/convhull_3d.h"
-#include "dart/math/Geometry.hpp"
+
+#include <dart/math/Geometry.hpp>
 
 #include <unordered_map>
 

@@ -33,8 +33,9 @@
 #ifndef DART_DYNAMICS_INERTIA_HPP_
 #define DART_DYNAMICS_INERTIA_HPP_
 
-#include "dart/dynamics/Export.hpp"
-#include "dart/math/MathTypes.hpp"
+#include <dart/dynamics/Export.hpp>
+
+#include <dart/math/MathTypes.hpp>
 
 #include <array>
 

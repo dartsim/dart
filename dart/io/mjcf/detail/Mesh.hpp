@@ -33,10 +33,11 @@
 #ifndef DART_UTILS_MJCF_DETAIL_MESH_HPP_
 #define DART_UTILS_MJCF_DETAIL_MESH_HPP_
 
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/io/mjcf/detail/Compiler.hpp"
-#include "dart/io/mjcf/detail/Error.hpp"
-#include "dart/io/mjcf/detail/MeshAttributes.hpp"
+#include <dart/io/mjcf/detail/Compiler.hpp>
+#include <dart/io/mjcf/detail/Error.hpp>
+#include <dart/io/mjcf/detail/MeshAttributes.hpp>
+
+#include <dart/dynamics/MeshShape.hpp>
 
 #include <tinyxml2.h>
 

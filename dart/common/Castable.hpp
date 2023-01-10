@@ -97,6 +97,6 @@ private:
 
 } // namespace dart::common
 
-#include "dart/common/detail/Castable-impl.hpp"
+#include <dart/common/detail/Castable-impl.hpp>
 
 #endif // DART_COMMON_CASTABLE_HPP_

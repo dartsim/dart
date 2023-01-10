@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 
-#include "dart/dynamics/CollisionGroup.hpp"
-#include "dart/dynamics/fcl/BackwardCompatibility.hpp"
+#include <dart/dynamics/CollisionGroup.hpp>
+#include <dart/dynamics/fcl/BackwardCompatibility.hpp>
 
 namespace dart {
 namespace collision {

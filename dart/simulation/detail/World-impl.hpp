@@ -39,7 +39,7 @@
 #ifndef DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
 #define DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
 
-#include "dart/simulation/World.hpp"
+#include <dart/simulation/World.hpp>
 
 namespace dart {
 namespace simulation {

@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_POINTCLOUDSHAPE_HPP_
 #define DART_DYNAMICS_POINTCLOUDSHAPE_HPP_
 
-#include "dart/dynamics/Shape.hpp"
+#include <dart/dynamics/Shape.hpp>
 
 #if DART_HAVE_OCTOMAP
   #include <octomap/Pointcloud.h>

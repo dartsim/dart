@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_BRANCH_HPP_
 #define DART_DYNAMICS_BRANCH_HPP_
 
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/Linkage.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Linkage.hpp>
 
 namespace dart {
 namespace dynamics {

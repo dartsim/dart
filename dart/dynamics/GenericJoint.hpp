@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_GENERICJOINT_HPP_
 #define DART_DYNAMICS_GENERICJOINT_HPP_
 
-#include "dart/dynamics/detail/GenericJointAspect.hpp"
+#include <dart/dynamics/detail/GenericJointAspect.hpp>
 
 #include <array>
 #include <string>
@@ -820,6 +820,6 @@ private:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/GenericJoint.hpp"
+#include <dart/dynamics/detail/GenericJoint.hpp>
 
 #endif // DART_DYNAMICS_GENERICJOINT_HPP_

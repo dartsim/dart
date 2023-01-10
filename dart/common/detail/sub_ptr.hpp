@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_SUB_PTR_HPP_
 #define DART_COMMON_DETAIL_SUB_PTR_HPP_
 
-#include "dart/common/sub_ptr.hpp"
+#include <dart/common/sub_ptr.hpp>
 
 namespace dart {
 namespace common {

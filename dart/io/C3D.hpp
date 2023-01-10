@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_C3D_HPP_
 #define DART_UTILS_C3D_HPP_
 
-#include "dart/math/MathTypes.hpp"
+#include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Dense>
 

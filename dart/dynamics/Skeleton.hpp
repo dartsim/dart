@@ -33,19 +33,20 @@
 #ifndef DART_DYNAMICS_SKELETON_HPP_
 #define DART_DYNAMICS_SKELETON_HPP_
 
-#include "dart/common/NameManager.hpp"
-#include "dart/common/VersionCounter.hpp"
-#include "dart/dynamics/EndEffector.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/HierarchicalIK.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Marker.hpp"
-#include "dart/dynamics/MetaSkeleton.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
-#include "dart/dynamics/SpecializedNodeManager.hpp"
-#include "dart/dynamics/detail/BodyNodeAspect.hpp"
-#include "dart/dynamics/detail/SkeletonAspect.hpp"
+#include <dart/dynamics/EndEffector.hpp>
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/HierarchicalIK.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/Marker.hpp>
+#include <dart/dynamics/MetaSkeleton.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/SpecializedNodeManager.hpp>
+#include <dart/dynamics/detail/BodyNodeAspect.hpp>
+#include <dart/dynamics/detail/SkeletonAspect.hpp>
+
+#include <dart/common/NameManager.hpp>
+#include <dart/common/VersionCounter.hpp>
 
 #include <mutex>
 
@@ -1290,6 +1291,6 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/Skeleton.hpp"
+#include <dart/dynamics/detail/Skeleton.hpp>
 
 #endif // DART_DYNAMICS_SKELETON_HPP_

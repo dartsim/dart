@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONSHAPE_HPP_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONSHAPE_HPP_
 
-#include "dart/dynamics/bullet/BulletInclude.hpp"
+#include <dart/dynamics/bullet/BulletInclude.hpp>
 
 #include <memory>
 

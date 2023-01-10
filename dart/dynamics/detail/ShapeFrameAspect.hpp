@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 
-#include "dart/common/EmbeddedAspect.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
+
+#include <dart/common/EmbeddedAspect.hpp>
 
 #include <Eigen/Core>
 

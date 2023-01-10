@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_CONSOLE_HPP_
 #define DART_COMMON_CONSOLE_HPP_
 
-#include "dart/common/Export.hpp"
+#include <dart/common/Export.hpp>
 
 #include <ostream>
 #include <string>

@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_FACTORY_HPP_
 #define DART_COMMON_FACTORY_HPP_
 
-#include "dart/common/Singleton.hpp"
-#include "dart/common/StlHelpers.hpp"
+#include <dart/common/Singleton.hpp>
+#include <dart/common/StlHelpers.hpp>
 
 #include <functional>
 #include <memory>
@@ -141,6 +141,6 @@ public:
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/Factory-impl.hpp"
+#include <dart/common/detail/Factory-impl.hpp>
 
 #endif // DART_COMMON_FACTORY_HPP_

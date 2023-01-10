@@ -33,11 +33,12 @@
 #ifndef DART_UTILS_XMLHELPERS_HPP_
 #define DART_UTILS_XMLHELPERS_HPP_
 
-#include "dart/common/Console.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/MathTypes.hpp"
+#include <dart/math/Geometry.hpp>
+#include <dart/math/MathTypes.hpp>
+
+#include <dart/common/Console.hpp>
+#include <dart/common/Logging.hpp>
+#include <dart/common/ResourceRetriever.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -227,6 +228,6 @@ bool copyChildNodes(
 } // namespace io
 } // namespace dart
 
-#include "dart/io/detail/XmlHelpers-impl.hpp"
+#include <dart/io/detail/XmlHelpers-impl.hpp>
 
 #endif // #ifndef DART_UTILS_XMLHELPERS_HPP_

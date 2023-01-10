@@ -33,14 +33,14 @@
 #ifndef DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 #define DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 
-#include "dart/config.hpp"
+#include <dart/config.hpp>
 
 #if DART_HAVE_OCTOMAP
 
-  #include "dart/dynamics/Export.hpp"
-  #include "dart/dynamics/Frame.hpp"
-  #include "dart/dynamics/Shape.hpp"
-  #include "dart/dynamics/fcl/BackwardCompatibility.hpp"
+  #include <dart/dynamics/Export.hpp>
+  #include <dart/dynamics/Frame.hpp>
+  #include <dart/dynamics/Shape.hpp>
+  #include <dart/dynamics/fcl/BackwardCompatibility.hpp>
 
   #include <octomap/octomap.h>
 

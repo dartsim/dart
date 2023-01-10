@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
 #define DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
 
-#include "dart/dynamics/CollisionDetector.hpp"
-#include "dart/dynamics/CollisionGroup.hpp"
+#include <dart/dynamics/CollisionDetector.hpp>
+#include <dart/dynamics/CollisionGroup.hpp>
 
 namespace dart {
 namespace collision {

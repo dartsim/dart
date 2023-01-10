@@ -33,8 +33,9 @@
 #ifndef DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
 #define DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
 
-#include "dart/common/detail/TemplateJoinerDispatchMacro.hpp"
-#include "dart/dynamics/NodeManagerJoiner.hpp"
+#include <dart/dynamics/NodeManagerJoiner.hpp>
+
+#include <dart/common/detail/TemplateJoinerDispatchMacro.hpp>
 
 namespace dart {
 namespace dynamics {

@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_
 #define DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_
 
-#include "dart/dynamics/Contact.hpp"
+#include <dart/dynamics/Contact.hpp>
 
 namespace dart {
 namespace collision {

@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_
 #define DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_
 
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/detail/PlanarJointAspect.hpp"
-#include "dart/dynamics/detail/TranslationalJoint2DAspect.hpp"
+#include <dart/dynamics/Entity.hpp>
+#include <dart/dynamics/detail/PlanarJointAspect.hpp>
+#include <dart/dynamics/detail/TranslationalJoint2DAspect.hpp>
 
 namespace dart {
 namespace dynamics {

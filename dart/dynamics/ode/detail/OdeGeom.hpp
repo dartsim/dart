@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 
-#include "dart/dynamics/ode/OdeCollisionDetector.hpp"
-#include "dart/dynamics/ode/OdeCollisionObject.hpp"
+#include <dart/dynamics/ode/OdeCollisionDetector.hpp>
+#include <dart/dynamics/ode/OdeCollisionObject.hpp>
 
 #include <ode/ode.h>
 

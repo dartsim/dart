@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
 #define DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
 
-#include "dart/common/Metaprogramming.hpp"
+#include <dart/common/Metaprogramming.hpp>
 
 #include <type_traits>
 

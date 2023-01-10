@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_HIERARCHICALIK_HPP_
 #define DART_DYNAMICS_HIERARCHICALIK_HPP_
 
-#include "dart/dynamics/InverseKinematics.hpp"
+#include <dart/dynamics/InverseKinematics.hpp>
 
 #include <unordered_set>
 

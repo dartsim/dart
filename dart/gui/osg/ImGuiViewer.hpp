@@ -33,8 +33,8 @@
 #ifndef DART_GUI_OSG_IMGUIVIEWER_HPP_
 #define DART_GUI_OSG_IMGUIVIEWER_HPP_
 
-#include "dart/gui/Export.hpp"
-#include "dart/gui/osg/Viewer.hpp"
+#include <dart/gui/Export.hpp>
+#include <dart/gui/osg/Viewer.hpp>
 
 #include <memory>
 

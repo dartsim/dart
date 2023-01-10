@@ -33,10 +33,11 @@
 #ifndef DART_GUI_OSG_MOUSEEVENTHANDLER_HPP_
 #define DART_GUI_OSG_MOUSEEVENTHANDLER_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Observer.hpp"
-#include "dart/common/Subject.hpp"
-#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include <dart/gui/osg/DefaultEventHandler.hpp>
+
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Observer.hpp>
+#include <dart/common/Subject.hpp>
 
 namespace dart {
 namespace gui {

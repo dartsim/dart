@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/math/geometry/TriMesh.hpp"
+#include <dart/math/geometry/TriMesh.hpp>
 
 #include <Eigen/Core>
 
@@ -98,7 +98,7 @@ using Icosphered = Icosphere<double>;
 
 } // namespace dart::math
 
-#include "dart/math/Constants.hpp"
+#include <dart/math/Constants.hpp>
 
 #include <array>
 

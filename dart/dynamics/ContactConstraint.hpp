@@ -33,10 +33,11 @@
 #ifndef DART_CONSTRAINT_CONTACTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_CONTACTCONSTRAINT_HPP_
 
-#include "dart/dynamics/CollisionDetector.hpp"
-#include "dart/dynamics/ConstraintBase.hpp"
-#include "dart/dynamics/ContactSurface.hpp"
-#include "dart/math/MathTypes.hpp"
+#include <dart/dynamics/CollisionDetector.hpp>
+#include <dart/dynamics/ConstraintBase.hpp>
+#include <dart/dynamics/ContactSurface.hpp>
+
+#include <dart/math/MathTypes.hpp>
 
 namespace dart {
 

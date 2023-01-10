@@ -39,8 +39,8 @@
 #ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
 
-#include "dart/gui/osg/ImGuiViewer.hpp"
-#include "dart/gui/osg/ImGuiWidget.hpp"
+#include <dart/gui/osg/ImGuiViewer.hpp>
+#include <dart/gui/osg/ImGuiWidget.hpp>
 
 class AtlasSimbiconWorldNode;
 

@@ -33,11 +33,11 @@
 #ifndef DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
 
-#include "dart/config.hpp"
+#include <dart/config.hpp>
 
 #if DART_HAVE_OCTOMAP
 
-  #include "dart/gui/osg/render/ShapeNode.hpp"
+  #include <dart/gui/osg/render/ShapeNode.hpp>
 
   #include <osg/MatrixTransform>
   #include <osg/ShapeDrawable>

@@ -33,7 +33,7 @@
 #ifndef DART_GUI_GLFUNCS_HPP_
 #define DART_GUI_GLFUNCS_HPP_
 
-#include "dart/gui/Export.hpp"
+#include <dart/gui/Export.hpp>
 
 #include <Eigen/Eigen>
 

@@ -33,8 +33,9 @@
 #ifndef DART_GUI_OSG_RENDER_MULTISPHERESHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_MULTISPHERESHAPENODE_HPP_
 
-#include "dart/dynamics/Export.hpp"
-#include "dart/gui/osg/render/ShapeNode.hpp"
+#include <dart/gui/osg/render/ShapeNode.hpp>
+
+#include <dart/dynamics/Export.hpp>
 
 #include <osg/MatrixTransform>
 #include <osg/ShapeDrawable>

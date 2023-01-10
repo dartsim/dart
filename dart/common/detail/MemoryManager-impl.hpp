@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_
 #define DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_
 
-#include "dart/common/MemoryManager.hpp"
+#include <dart/common/MemoryManager.hpp>
 
 namespace dart::common {
 

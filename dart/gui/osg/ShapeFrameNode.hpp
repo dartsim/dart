@@ -33,8 +33,9 @@
 #ifndef DART_GUI_OSG_SHAPEFRAMENODE_HPP_
 #define DART_GUI_OSG_SHAPEFRAMENODE_HPP_
 
-#include "dart/config.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/config.hpp>
+
+#include <dart/dynamics/SmartPointer.hpp>
 
 #include <osg/MatrixTransform>
 

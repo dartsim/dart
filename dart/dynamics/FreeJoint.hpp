@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_FREEJOINT_HPP_
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/GenericJoint.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
 
 #include <Eigen/Dense>
 

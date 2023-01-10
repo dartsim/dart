@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_WELDJOINT_HPP_
 #define DART_DYNAMICS_WELDJOINT_HPP_
 
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/ZeroDofJoint.hpp"
+#include <dart/dynamics/Entity.hpp>
+#include <dart/dynamics/ZeroDofJoint.hpp>
 
 #include <Eigen/Dense>
 

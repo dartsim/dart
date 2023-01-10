@@ -34,10 +34,13 @@
 #define DART_GUI_OSG_DRAGANDDROP_HPP_
 
 #include "DefaultEventHandler.hpp"
-#include "dart/common/sub_ptr.hpp"
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/gui/Export.hpp"
+
+#include <dart/gui/Export.hpp>
+
+#include <dart/dynamics/Entity.hpp>
+#include <dart/dynamics/Shape.hpp>
+
+#include <dart/common/sub_ptr.hpp>
 
 #include <Eigen/Geometry>
 

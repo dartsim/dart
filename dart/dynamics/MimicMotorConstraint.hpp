@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
 #define DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
 
-#include "dart/dynamics/ConstraintBase.hpp"
+#include <dart/dynamics/ConstraintBase.hpp>
 
 namespace dart {
 

@@ -33,8 +33,9 @@
 #ifndef DART_GUI_OSG_INTERACTIVEFRAME_HPP_
 #define DART_GUI_OSG_INTERACTIVEFRAME_HPP_
 
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/Export.hpp"
+#include <dart/gui/Export.hpp>
+
+#include <dart/dynamics/SimpleFrame.hpp>
 
 namespace dart {
 

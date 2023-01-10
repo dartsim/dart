@@ -33,7 +33,7 @@
 #ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 #define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 
-#include "dart/optimization/Solver.hpp"
+#include <dart/optimization/Solver.hpp>
 
 #include <nlopt.hpp>
 

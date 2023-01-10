@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_RESOURCERETRIEVER_HPP_
 #define DART_COMMON_RESOURCERETRIEVER_HPP_
 
-#include "dart/common/Export.hpp"
-#include "dart/common/Resource.hpp"
-#include "dart/common/Uri.hpp"
+#include <dart/common/Export.hpp>
+#include <dart/common/Resource.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <memory>
 #include <string>

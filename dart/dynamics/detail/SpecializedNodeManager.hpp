@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 
-#include "dart/dynamics/SpecializedNodeManager.hpp"
+#include <dart/dynamics/SpecializedNodeManager.hpp>
 
 namespace dart {
 namespace dynamics {

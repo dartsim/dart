@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_TRANSLATIONALJOINT_HPP_
 #define DART_DYNAMICS_TRANSLATIONALJOINT_HPP_
 
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/GenericJoint.hpp"
+#include <dart/dynamics/Entity.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
 
 #include <string>
 

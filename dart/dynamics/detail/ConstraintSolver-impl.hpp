@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
 #define DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
 
-#include "dart/dynamics/ConstraintSolver.hpp"
+#include <dart/dynamics/ConstraintSolver.hpp>
 
 namespace dart::dynamics {
 

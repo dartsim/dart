@@ -33,10 +33,12 @@
 #ifndef DART_UTILS_SKELPARSER_HPP_
 #define DART_UTILS_SKELPARSER_HPP_
 
-#include "dart/common/LocalResourceRetriever.hpp"
-#include "dart/common/Uri.hpp"
-#include "dart/io/Export.hpp"
-#include "dart/simulation/World.hpp"
+#include <dart/simulation/World.hpp>
+
+#include <dart/io/Export.hpp>
+
+#include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <string>
 

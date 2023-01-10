@@ -33,16 +33,17 @@
 #ifndef DART_COLLISION_COLLISIONDETECTOR_HPP_
 #define DART_COLLISION_COLLISIONDETECTOR_HPP_
 
-#include "dart/common/Factory.hpp"
-#include "dart/dynamics/CollisionOption.hpp"
-#include "dart/dynamics/CollisionResult.hpp"
-#include "dart/dynamics/Contact.hpp"
-#include "dart/dynamics/DistanceOption.hpp"
-#include "dart/dynamics/DistanceResult.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/RaycastOption.hpp"
-#include "dart/dynamics/RaycastResult.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/dynamics/CollisionOption.hpp>
+#include <dart/dynamics/CollisionResult.hpp>
+#include <dart/dynamics/Contact.hpp>
+#include <dart/dynamics/DistanceOption.hpp>
+#include <dart/dynamics/DistanceResult.hpp>
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/RaycastOption.hpp>
+#include <dart/dynamics/RaycastResult.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
+
+#include <dart/common/Factory.hpp>
 
 #include <Eigen/Dense>
 
@@ -299,6 +300,6 @@ private:
 } // namespace collision
 } // namespace dart
 
-#include "dart/dynamics/detail/CollisionDetector.hpp"
+#include <dart/dynamics/detail/CollisionDetector.hpp>
 
 #endif // DART_COLLISION_COLLISIONDETECTOR_HPP_

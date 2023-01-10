@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_SOFTBODYNODE_HPP_
 #define DART_DYNAMICS_SOFTBODYNODE_HPP_
 
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/detail/SoftBodyNodeAspect.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/detail/SoftBodyNodeAspect.hpp>
 
 namespace dart {
 namespace dynamics {

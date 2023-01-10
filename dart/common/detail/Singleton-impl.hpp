@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_SINGLETON_HPP_
 #define DART_COMMON_DETAIL_SINGLETON_HPP_
 
-#include "dart/common/Singleton.hpp"
+#include <dart/common/Singleton.hpp>
 
 #include <utility>
 

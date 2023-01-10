@@ -33,9 +33,10 @@
 #ifndef DART_GUI_OSG_VIEWER_HPP_
 #define DART_GUI_OSG_VIEWER_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Subject.hpp"
-#include "dart/gui/Export.hpp"
+#include <dart/gui/Export.hpp>
+
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Subject.hpp>
 
 #include <Eigen/Core>
 #include <osgShadow/ShadowTechnique>

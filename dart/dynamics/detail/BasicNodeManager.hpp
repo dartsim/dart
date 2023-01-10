@@ -33,10 +33,11 @@
 #ifndef DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Empty.hpp"
-#include "dart/common/NameManager.hpp"
-#include "dart/dynamics/Node.hpp"
+#include <dart/dynamics/Node.hpp>
+
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Empty.hpp>
+#include <dart/common/NameManager.hpp>
 
 #include <map>
 #include <typeindex>

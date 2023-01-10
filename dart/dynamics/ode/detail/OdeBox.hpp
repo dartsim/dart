@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEBOX_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEBOX_HPP_
 
-#include "dart/dynamics/ode/detail/OdeGeom.hpp"
+#include <dart/dynamics/ode/detail/OdeGeom.hpp>
 
 #include <ode/ode.h>
 

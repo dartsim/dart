@@ -33,7 +33,7 @@
 #ifndef DART_SIMULATION_SMARTPOINTER_HPP_
 #define DART_SIMULATION_SMARTPOINTER_HPP_
 
-#include "dart/common/SmartPointer.hpp"
+#include <dart/common/SmartPointer.hpp>
 
 namespace dart {
 namespace simulation {

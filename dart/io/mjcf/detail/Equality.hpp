@@ -33,8 +33,8 @@
 #ifndef DART_UTILS_MJCF_DETAIL_EQUALITY_HPP_
 #define DART_UTILS_MJCF_DETAIL_EQUALITY_HPP_
 
-#include "dart/io/mjcf/detail/Error.hpp"
-#include "dart/io/mjcf/detail/Weld.hpp"
+#include <dart/io/mjcf/detail/Error.hpp>
+#include <dart/io/mjcf/detail/Weld.hpp>
 
 #include <tinyxml2.h>
 

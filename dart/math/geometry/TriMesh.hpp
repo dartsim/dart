@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "dart/math/Export.hpp"
-#include "dart/math/geometry/Mesh.hpp"
+#include <dart/math/Export.hpp>
+#include <dart/math/geometry/Mesh.hpp>
 
 #include <memory>
 
@@ -118,7 +118,7 @@ using TriMeshd = TriMesh<double>;
 // Implementation
 //==============================================================================
 
-#include "dart/math/Geometry.hpp"
+#include <dart/math/Geometry.hpp>
 
 #include <Eigen/Geometry>
 

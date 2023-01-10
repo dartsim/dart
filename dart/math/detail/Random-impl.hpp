@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/math/Random.hpp"
+#include <dart/math/Random.hpp>
 
 namespace dart {
 namespace math {

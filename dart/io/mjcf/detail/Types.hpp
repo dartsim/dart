@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_TYPES_HPP_
 #define DART_UTILS_MJCF_DETAIL_TYPES_HPP_
 
-#include "dart/common/Platform.hpp"
+#include <dart/common/Platform.hpp>
 
 namespace dart {
 namespace io {

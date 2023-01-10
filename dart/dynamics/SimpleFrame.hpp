@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_SIMPLEFRAME_HPP_
 #define DART_DYNAMICS_SIMPLEFRAME_HPP_
 
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 
 namespace dart {
 namespace dynamics {

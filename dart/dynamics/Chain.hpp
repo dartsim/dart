@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_CHAIN_HPP_
 #define DART_DYNAMICS_CHAIN_HPP_
 
-#include "dart/dynamics/Linkage.hpp"
+#include <dart/dynamics/Linkage.hpp>
 
 namespace dart {
 namespace dynamics {

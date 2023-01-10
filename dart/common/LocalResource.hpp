@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_LOCALRESOURCE_HPP_
 #define DART_COMMON_LOCALRESOURCE_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Export.hpp"
-#include "dart/common/Resource.hpp"
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Export.hpp>
+#include <dart/common/Resource.hpp>
 
 namespace dart {
 namespace common {

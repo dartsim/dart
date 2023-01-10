@@ -33,14 +33,16 @@
 #ifndef DART_DYNAMICS_SHAPE_HPP_
 #define DART_DYNAMICS_SHAPE_HPP_
 
-#include "dart/common/Castable.hpp"
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Signal.hpp"
-#include "dart/common/Subject.hpp"
-#include "dart/common/VersionCounter.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
-#include "dart/math/Geometry.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
+
+#include <dart/math/Geometry.hpp>
+
+#include <dart/common/Castable.hpp>
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Signal.hpp>
+#include <dart/common/Subject.hpp>
+#include <dart/common/VersionCounter.hpp>
 
 #include <Eigen/Dense>
 

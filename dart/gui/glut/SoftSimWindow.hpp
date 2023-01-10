@@ -33,8 +33,8 @@
 #ifndef DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
 #define DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
 
-#include "dart/gui/Export.hpp"
-#include "dart/gui/glut/SimWindow.hpp"
+#include <dart/gui/Export.hpp>
+#include <dart/gui/glut/SimWindow.hpp>
 
 namespace dart {
 namespace gui {

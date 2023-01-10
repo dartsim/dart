@@ -33,11 +33,11 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 #define DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 
-#include "dart/dynamics/CollisionDetector.hpp"
-#include "dart/dynamics/ConstrainedGroup.hpp"
-#include "dart/dynamics/ConstraintBase.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/dynamics/CollisionDetector.hpp>
+#include <dart/dynamics/ConstrainedGroup.hpp>
+#include <dart/dynamics/ConstraintBase.hpp>
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
 
 #include <Eigen/Dense>
 
@@ -274,6 +274,6 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/ConstraintSolver-impl.hpp"
+#include <dart/dynamics/detail/ConstraintSolver-impl.hpp>
 
 #endif // DART_CONSTRAINT_CONSTRAINTSOVER_HPP_

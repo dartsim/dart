@@ -33,7 +33,7 @@
 #ifndef DART_GUI_GLUT_GRAPHWINDOW_HPP_
 #define DART_GUI_GLUT_GRAPHWINDOW_HPP_
 
-#include "dart/gui/glut/Win2D.hpp"
+#include <dart/gui/glut/Win2D.hpp>
 
 #include <Eigen/Dense>
 

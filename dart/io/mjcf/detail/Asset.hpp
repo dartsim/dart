@@ -33,9 +33,9 @@
 #ifndef DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 #define DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 
-#include "dart/io/mjcf/detail/Compiler.hpp"
-#include "dart/io/mjcf/detail/Error.hpp"
-#include "dart/io/mjcf/detail/Mesh.hpp"
+#include <dart/io/mjcf/detail/Compiler.hpp>
+#include <dart/io/mjcf/detail/Error.hpp>
+#include <dart/io/mjcf/detail/Mesh.hpp>
 
 #include <tinyxml2.h>
 

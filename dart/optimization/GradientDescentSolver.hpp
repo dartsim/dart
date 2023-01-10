@@ -33,8 +33,8 @@
 #ifndef DART_OPTIMIZER_GRADIENTDESCENTSOLVER_HPP_
 #define DART_OPTIMIZER_GRADIENTDESCENTSOLVER_HPP_
 
-#include "dart/optimization/Export.hpp"
-#include "dart/optimization/Solver.hpp"
+#include <dart/optimization/Export.hpp>
+#include <dart/optimization/Solver.hpp>
 
 #include <random>
 

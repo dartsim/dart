@@ -33,9 +33,10 @@
 #ifndef DART_GUI_GLUT_SIMWINDOW_HPP_
 #define DART_GUI_GLUT_SIMWINDOW_HPP_
 
-#include "dart/gui/Export.hpp"
-#include "dart/gui/glut/Win3D.hpp"
-#include "dart/simulation/World.hpp"
+#include <dart/gui/Export.hpp>
+#include <dart/gui/glut/Win3D.hpp>
+
+#include <dart/simulation/World.hpp>
 
 #include <Eigen/Dense>
 

@@ -33,7 +33,7 @@
 #ifndef DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
 #define DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_HPP_
 
-#include "dart/math/Integrator.hpp"
+#include <dart/math/Integrator.hpp>
 
 namespace dart {
 namespace math {

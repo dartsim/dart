@@ -33,7 +33,7 @@
 #ifndef DART_OPTIMIZER_PAGMO_PAGMOMULTIOBJECTIVEPROBLEMADAPTOR_HPP_
 #define DART_OPTIMIZER_PAGMO_PAGMOMULTIOBJECTIVEPROBLEMADAPTOR_HPP_
 
-#include "dart/optimization/MultiObjectiveProblem.hpp"
+#include <dart/optimization/MultiObjectiveProblem.hpp>
 
 #include <pagmo/pagmo.hpp>
 

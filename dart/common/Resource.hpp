@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_RESOURCE_HPP_
 #define DART_COMMON_RESOURCE_HPP_
 
-#include "dart/common/Export.hpp"
+#include <dart/common/Export.hpp>
 
 #include <memory>
 #include <string>

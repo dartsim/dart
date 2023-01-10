@@ -33,13 +33,15 @@
 #ifndef DART_DYNAMICS_METASKELETON_HPP_
 #define DART_DYNAMICS_METASKELETON_HPP_
 
-#include "dart/common/LockableReference.hpp"
-#include "dart/common/Signal.hpp"
-#include "dart/common/Subject.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/Frame.hpp"
-#include "dart/dynamics/InvalidIndex.hpp"
-#include "dart/math/Geometry.hpp"
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/InvalidIndex.hpp>
+
+#include <dart/math/Geometry.hpp>
+
+#include <dart/common/LockableReference.hpp>
+#include <dart/common/Signal.hpp>
+#include <dart/common/Subject.hpp>
 
 #include <Eigen/Dense>
 
@@ -977,6 +979,6 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/MetaSkeleton-impl.hpp"
+#include <dart/dynamics/detail/MetaSkeleton-impl.hpp>
 
 #endif // DART_DYNAMICS_METASKELETON_HPP_

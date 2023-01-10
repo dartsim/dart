@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart/common/Stopwatch.hpp"
+#include <dart/common/Stopwatch.hpp>
 
 namespace dart::common {
 

@@ -33,7 +33,7 @@
 #ifndef DART_OPTIMIZER_MULTIOBJECTIVEPROBLEM_HPP_
 #define DART_OPTIMIZER_MULTIOBJECTIVEPROBLEM_HPP_
 
-#include "dart/optimization/Function.hpp"
+#include <dart/optimization/Function.hpp>
 
 #include <Eigen/Dense>
 

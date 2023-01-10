@@ -33,19 +33,22 @@
 #ifndef DART_DYNAMICS_BODYNODE_HPP_
 #define DART_DYNAMICS_BODYNODE_HPP_
 
-#include "dart/common/EmbeddedAspect.hpp"
-#include "dart/common/Signal.hpp"
-#include "dart/config.hpp"
-#include "dart/dynamics/EndEffector.hpp"
-#include "dart/dynamics/Export.hpp"
-#include "dart/dynamics/Frame.hpp"
-#include "dart/dynamics/Marker.hpp"
-#include "dart/dynamics/Node.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
-#include "dart/dynamics/SpecializedNodeManager.hpp"
-#include "dart/dynamics/TemplatedJacobianNode.hpp"
-#include "dart/dynamics/detail/BodyNodeAspect.hpp"
-#include "dart/math/Geometry.hpp"
+#include <dart/config.hpp>
+
+#include <dart/dynamics/EndEffector.hpp>
+#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Marker.hpp>
+#include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/SpecializedNodeManager.hpp>
+#include <dart/dynamics/TemplatedJacobianNode.hpp>
+#include <dart/dynamics/detail/BodyNodeAspect.hpp>
+
+#include <dart/math/Geometry.hpp>
+
+#include <dart/common/EmbeddedAspect.hpp>
+#include <dart/common/Signal.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -1180,6 +1183,6 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/BodyNode.hpp"
+#include <dart/dynamics/detail/BodyNode.hpp>
 
 #endif // DART_DYNAMICS_BODYNODE_HPP_

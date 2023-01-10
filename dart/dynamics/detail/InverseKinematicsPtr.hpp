@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
 
-#include "dart/dynamics/detail/NodePtr.hpp"
+#include <dart/dynamics/detail/NodePtr.hpp>
 
 #include <memory>
 

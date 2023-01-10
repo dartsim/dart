@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_HPP_
 #define DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_HPP_
 
-#include "dart/dynamics/InvalidIndex.hpp"
-#include "dart/dynamics/detail/BodyNodePtr.hpp"
+#include <dart/dynamics/InvalidIndex.hpp>
+#include <dart/dynamics/detail/BodyNodePtr.hpp>
 
 namespace dart {
 namespace dynamics {
