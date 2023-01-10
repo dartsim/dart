@@ -39,7 +39,8 @@
 
 namespace dart::math {
 
-/// This class represents triangle meshes.
+/// A triangular mesh.
+/// @tparam S The scalar type.
 template <typename S>
 class TriMesh : public Mesh<S>
 {
@@ -63,20 +64,62 @@ public:
   /// Sets vertices and triangles.
   void setTriangles(const Vertices& vertices, const Triangles& triangles);
 
+  /// Reserves space for vertices.
+  /// @param size The number of vertices to reserve space for.
+  void reserveVertices(std::size_t size);
+
+  /// Adds a vertex to the mesh.
+  /// @param vertex The vertex to add.
+  void addVertex(const Vector3& vertex);
+
+  /// Adds a vertex to the mesh.
+  /// @param x The X component of the vertex to add.
+  /// @param y The Y component of the vertex to add.
+  /// @param z The Z component of the vertex to add.
+  void addVertex(S x, S y, S z);
+
+  /// Reserves space for vertex normals.
+  /// @param size The number of vertex normals to reserve space for.
+  void reserveVertexNormals(std::size_t size);
+
+  /// Adds a vertex normal to the mesh.
+  /// @param normal The vertex normal to add.
+  void addVertexNormal(const Vector3& normal);
+
+  /// Adds a vertex normal to the mesh.
+  /// @param x The X component of the vertex normal to add.
+  /// @param y The Y component of the vertex normal to add.
+  /// @param z The Z component of the vertex normal to add.
+  void addVertexNormal(S x, S y, S z);
+
+  /// Reserves space for triangles.
+  /// @param size The number of triangles to reserve space for.
+  void reserveTriangles(std::size_t size);
+
+  /// Adds a triangle to the mesh.
+  /// @param triangle The triangle to add.
+  void addTriangle(const Triangle& triangle);
+
+  /// Adds a triangle to the mesh.
+  /// @param a The index of the first vertex of the triangle.
+  /// @param b The index of the second vertex of the triangle.
+  /// @param c The index of the third vertex of the triangle.
+  void addTriangle(Index a, Index b, Index c);
+
   /// Computes vertex normals.
   void computeVertexNormals();
 
   /// Returns true if the mesh contains triangles.
-  bool hasTriangles() const;
+  [[nodiscard]] bool hasTriangles() const;
 
   /// Returns true if the mesh contains triangle normals.
-  bool hasTriangleNormals() const;
+  [[nodiscard]] bool hasTriangleNormals() const;
 
   /// Returns the triangles of the mesh.
-  const Triangles& getTriangles() const;
+  [[nodiscard]] const Triangles& getTriangles() const;
 
   /// Returns the triangle normals of the mesh.
-  const Normals& getTriangleNormals() const;
+  [[nodiscard]] const Normals& getTriangleNormals() const;
 
   /// Clears all the data in the trimesh.
   void clear() override;
@@ -91,7 +134,8 @@ public:
   ///
   /// \param[in] optimize: (Optional) Whether to discard vertices that are not
   /// used in the convex hull.
-  std::shared_ptr<TriMesh<S>> generateConvexHull(bool optimize = true) const;
+  [[nodiscard]] std::shared_ptr<TriMesh<S>> generateConvexHull(
+      bool optimize = true) const;
 
 protected:
   /// Computes triangle normals.
@@ -137,6 +181,69 @@ void TriMesh<S>::setTriangles(
 
   this->mVertices = vertices;
   mTriangles = triangles;
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::reserveVertices(std::size_t size)
+{
+  this->mVertices.reserve(size);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertex(const Vector3& vertex)
+{
+  this->mVertices.push_back(vertex);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertex(S x, S y, S z)
+{
+  addVertex(Vector3(x, y, z));
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::reserveVertexNormals(std::size_t size)
+{
+  this->mVertexNormals.reserve(size);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertexNormal(const Vector3& vertex)
+{
+  this->mVertexNormals.push_back(vertex.normalized());
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertexNormal(S x, S y, S z)
+{
+  addVertexNormal(Vector3(x, y, z));
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::reserveTriangles(std::size_t size)
+{
+  this->mTriangles.reserve(size);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addTriangle(const Triangle& triangle)
+{
+  this->mTriangles.push_back(triangle);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addTriangle(Index a, Index b, Index c)
+{
+  addTriangle(Triangle(a, b, c));
 }
 
 //==============================================================================

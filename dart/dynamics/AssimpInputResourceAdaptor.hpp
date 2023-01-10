@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 #define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/common/Resource.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
@@ -43,7 +45,8 @@
 namespace dart {
 namespace dynamics {
 
-class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
+class DART_DYNAMICS_API AssimpInputResourceRetrieverAdaptor
+  : public Assimp::IOSystem
 {
 public:
   explicit AssimpInputResourceRetrieverAdaptor(
@@ -121,7 +124,7 @@ private:
   common::ResourcePtr mResource;
 };
 
-aiFileIO createFileIO(Assimp::IOSystem* adaptor);
+DART_DYNAMICS_API aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 
 } // namespace dynamics
 } // namespace dart
