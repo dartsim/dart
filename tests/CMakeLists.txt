@@ -123,12 +123,12 @@ add_subdirectory(src)
 #   fixed even after further changes are made
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
+add_subdirectory(unit)
 if(NOT MSVC)
   # Disabled due to limitied disk space in CI image
   add_subdirectory(integration)
   add_subdirectory(regression)
 endif()
-add_subdirectory(unit)
 
 # Print tests
 dart_get_tests(integration_tests "integration")

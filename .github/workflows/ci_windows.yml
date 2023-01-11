@@ -19,12 +19,14 @@ jobs:
       matrix:
         toolset: [""]
         build_type: [Release]
-        # build_shared_libs: [ON, OFF]  # TODO(JS): Enable once shared lib build is resolved
-        build_shared_libs: [OFF]
+        build_shared_libs: [OFF]  # TODO(JS): Add ON once shared lib build is resolved
+        build_dartpy: [OFF]       # Build tests and dartpy exclusively 
+                                  # and building dartpy is disabled for now due to the lack of sufficient disk space in the CI
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
       VCPKG_ROOT: "C:/dartsim/vcpkg"
       VCPKG_BUILD_TAG: v6.13-2022.07.25-0
+      BUILD_DARTPY: ${{ matrix.build_dartpy }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -35,20 +37,34 @@ jobs:
           choco install -y wget
           wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
           unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -U pytest
-      - name: Build
+      - name: Build and run tests
+        if: matrix.build_dartpy == 'OFF'
         shell: cmd
         run: |
           mkdir build
           cd build
           cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
             -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+            -DDART_BUILD_DARTPY=%BUILD_DARTPY% ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
-          cmake --build . --config %BUILD_TYPE% --target ALL_BUILD --parallel
+          cmake --build . --config %BUILD_TYPE% --target tests --parallel
           ctest --rerun-failed --output-on-failure -C %BUILD_TYPE%
+      - name: Build dartpy
+        if: matrix.build_dartpy == 'ON'
+        shell: cmd
+        run: |
+          python -m pip install --upgrade pip
+          pip install -U pytest
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
+            -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+            -DDART_BUILD_DARTPY=%BUILD_DARTPY% ^
+            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
+            -DDART_VERBOSE=ON ^
+            -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
+          cmake --build . --config %BUILD_TYPE% --target dartpy --parallel
