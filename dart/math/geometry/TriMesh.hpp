@@ -40,12 +40,12 @@
 namespace dart::math {
 
 /// This class represents triangle meshes.
-template <typename S_>
-class TriMesh : public Mesh<S_>
+template <typename S>
+class TriMesh : public Mesh<S>
 {
 public:
   // Type aliases
-  using S = S_;
+  using Scalar = S;
   using Base = Mesh<S>;
   using Index = typename Base::Index;
   using Vector3 = typename Base::Vector3;
@@ -107,10 +107,7 @@ protected:
   Normals mTriangleNormals;
 };
 
-extern template class DART_MATH_API TriMesh<double>;
-
-using TriMeshf = TriMesh<float>;
-using TriMeshd = TriMesh<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, TriMesh);
 
 } // namespace dart::math
 

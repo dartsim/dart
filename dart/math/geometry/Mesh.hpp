@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/math/Fwd.hpp>
+
 #include <Eigen/Core>
 
 #include <vector>
@@ -39,12 +41,12 @@
 namespace dart::math {
 
 /// Base class for meshes.
-template <typename S_>
+template <typename S>
 class Mesh
 {
 public:
   // Type aliases
-  using S = S_;
+  using Scalar = S;
   using Index = std::size_t;
   using Vector3 = Eigen::Matrix<S, 3, 1>;
   using Vertices = std::vector<Vector3>;
@@ -95,8 +97,7 @@ protected:
   Normals mVertexNormals;
 };
 
-using Meshf = Mesh<float>;
-using Meshd = Mesh<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Mesh);
 
 } // namespace dart::math
 

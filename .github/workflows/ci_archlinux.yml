@@ -32,6 +32,7 @@ jobs:
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ${{ matrix.build_dartpy }}
       DART_ENABLE_NATIVE_ARCH: ${{ matrix.enable_native_arch }}
+      IN_CI: ON
     steps:
       - name: Event Information
         run: |

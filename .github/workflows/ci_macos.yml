@@ -22,6 +22,7 @@ jobs:
       COMPILER: clang
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ON
+      IN_CI: ON
     steps:
       - name: Checkout
         uses: actions/checkout@v2

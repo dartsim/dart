@@ -57,11 +57,11 @@ namespace render {
 template <typename S>
 class HeightmapShapeGeode;
 
-template <typename S_>
+template <typename S>
 class HeightmapShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
-  using S = S_;
+  using Scalar = S;
 
   HeightmapShapeNode(
       std::shared_ptr<dynamics::HeightmapShape<S>> shape,
@@ -83,6 +83,7 @@ template <typename S>
 class HeightmapShapeDrawable : public ::osg::Geometry
 {
 public:
+  using Scalar = S;
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
   using osgVec3 = typename std::conditional<
@@ -124,6 +125,7 @@ template <typename S>
 class HeightmapShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
+  using Scalar = S;
   HeightmapShapeGeode(
       dynamics::HeightmapShape<S>* shape,
       ShapeFrameNode* parentShapeFrame,
@@ -141,6 +143,9 @@ protected:
 };
 
 //==============================================================================
+// Implementation
+//==============================================================================
+
 template <typename S>
 HeightmapShapeNode<S>::HeightmapShapeNode(
     std::shared_ptr<dynamics::HeightmapShape<S>> shape, ShapeFrameNode* parent)

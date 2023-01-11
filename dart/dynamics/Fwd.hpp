@@ -30,62 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
-#define DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
+#pragma once
 
 #include <dart/collision/Export.hpp>
 
-#include <dart/dynamics/CollisionObject.hpp>
-#include <dart/dynamics/ode/OdeCollisionDetector.hpp>
+#include <dart/dynamics/Export.hpp>
 
-#include <ode/ode.h>
+#include <dart/math/Fwd.hpp>
 
-namespace dart {
-namespace collision {
+namespace dart::collision {
 
-namespace detail {
-class OdeGeom;
-} // namespace detail
+} // namespace dart::collision
 
-class DART_COLLISION_API OdeCollisionObject : public CollisionObject
-{
-public:
-  friend class OdeCollisionDetector;
-  friend class OdeCollisionGroup;
+namespace dart::dynamics {
 
-  /// Destructor
-  virtual ~OdeCollisionObject();
-
-protected:
-  /// Constructor
-  OdeCollisionObject(
-      OdeCollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
-
-  /// Move assignment operator. This is used to refresh OdeCollisionObjects when
-  /// their underlying shape information needs to be updated.
-  OdeCollisionObject& operator=(OdeCollisionObject&& other);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-  /// Returns the ODE body id associated to this object
-  dBodyID getOdeBodyId() const;
-
-  /// Returns the ODE body id associated to this object
-  dGeomID getOdeGeomId() const;
-
-protected:
-  /// ODE geom
-  std::unique_ptr<detail::OdeGeom> mOdeGeom;
-
-  /// ODE body id associated with this object
-  ///
-  /// If the ODE geom type is immobile, this is nullptr.
-  dBodyID mBodyId;
-};
-
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
+} // namespace dart::dynamics

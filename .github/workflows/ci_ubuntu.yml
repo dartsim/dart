@@ -40,6 +40,7 @@ jobs:
       BUILD_DARTPY: "${{ matrix.build_dartpy }}"
       CODECOV: ${{ matrix.codecov }}
       CHECK_FORMAT: ${{ matrix.check_format }}
+      IN_CI: ON
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU

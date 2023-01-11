@@ -54,6 +54,18 @@ if(DART_PROFILE_BACKEND_REMOTERY)
   list(APPEND compile_definitions_public -DDART_PROFILE_BACKEND_REMOTERY=1)
 endif()
 
+# Explicit template instantiation options
+if(DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE)
+  list(APPEND compile_definitions_public -DDART_BUILD_TEMPLATE_CODE_FOR_DOUBLE=1)
+else()
+  list(APPEND compile_definitions_public -DDART_BUILD_TEMPLATE_CODE_FOR_DOUBLE=0)
+endif()
+if(DART_BUILD_TEMPLATE_CODE_FOR_FLOAT)
+  list(APPEND compile_definitions_public -DDART_BUILD_TEMPLATE_CODE_FOR_FLOAT=1)
+else()
+  list(APPEND compile_definitions_public -DDART_BUILD_TEMPLATE_CODE_FOR_FLOAT=0)
+endif()
+
 # Active log level
 if(DART_ACTIVE_LOG_LEVEL STREQUAL "TRACE")
   list(APPEND compile_definitions_public -DDART_ACTIVE_LOG_LEVEL=0)

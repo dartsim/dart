@@ -1013,7 +1013,7 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 
   // determine which data type (float or double) is to be used for the field
   PHY_ScalarType scalarType = PHY_FLOAT;
-  if (std::is_same<typename HeightmapShapeT::S, double>::value)
+  if constexpr (std::is_same<typename HeightmapShapeT::Scalar, double>::value)
   {
     dterr << "Bullet does not support DOUBLE as heightmap field yet.\n";
     return nullptr;

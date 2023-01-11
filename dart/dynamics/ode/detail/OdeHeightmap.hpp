@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/HeightmapShape.hpp>
 #include <dart/dynamics/ode/detail/OdeGeom.hpp>
 
@@ -57,8 +58,7 @@ private:
   dHeightfieldDataID mOdeHeightfieldId;
 };
 
-using OdeHeightmapf = OdeHeightmap<float>;
-using OdeHeightmapd = OdeHeightmap<double>;
+DART_TEMPLATE_CLASS_HEADER(COLLISION, OdeHeightmap);
 
 } // namespace detail
 } // namespace collision

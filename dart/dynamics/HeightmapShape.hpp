@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 #define DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Shape.hpp>
 
 namespace dart {
@@ -40,13 +41,13 @@ namespace dynamics {
 
 /// Shape for a height map.
 ///
-/// \tparam S_ Data type used for height map. At this point, only double and
+/// \tparam S Data type used for height map. At this point, only double and
 /// float are supported. Short and char can be added at a later point.
-template <typename S_>
+template <typename S>
 class HeightmapShape : public Shape
 {
 public:
-  using S = S_;
+  using Scalar = S;
 
   using Vector3 = Eigen::Matrix<S, 3, 1>;
   using HeightField
@@ -184,8 +185,7 @@ private:
   S mMaxHeight;
 };
 
-using HeightmapShapef = HeightmapShape<float>;
-using HeightmapShaped = HeightmapShape<double>;
+DART_TEMPLATE_CLASS_HEADER(DYNAMICS, HeightmapShape);
 
 } // namespace dynamics
 } // namespace dart

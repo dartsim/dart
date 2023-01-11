@@ -57,6 +57,11 @@ if [ -z "$TEST_INSTALLATION" ]; then
   TEST_INSTALLATION=ON
 fi
 
+if [ -z "$IN_CI" ]; then
+  echo "Info: Environment variable IN_CI is unset. Using OFF by default."
+  IN_CI=OFF
+fi
+
 if [ -f /etc/os-release ]; then
   # freedesktop.org and systemd
   . /etc/os-release
@@ -148,6 +153,7 @@ cmake .. \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_CODECOV=$CODECOV \
+  -DDART_IN_CI=$IN_CI \
   ${install_prefix_option}
 
 # Check format

@@ -430,12 +430,14 @@ void BodyNode(py::module& m)
           ::py::arg("gravityMode"))
       .def(
           "getGravityMode",
-          +[](const dart::dynamics::BodyNode* self)
-              -> bool { return self->getGravityMode(); })
+          +[](const dart::dynamics::BodyNode* self) -> bool {
+            return self->getGravityMode();
+          })
       .def(
           "isCollidable",
-          +[](const dart::dynamics::BodyNode* self)
-              -> bool { return self->isCollidable(); })
+          +[](const dart::dynamics::BodyNode* self) -> bool {
+            return self->isCollidable();
+          })
       .def(
           "setCollidable",
           +[](dart::dynamics::BodyNode* self, bool _isCollidable) {
@@ -444,13 +446,15 @@ void BodyNode(py::module& m)
           ::py::arg("isCollidable"))
       .def(
           "setMass",
-          +[](dart::dynamics::BodyNode* self,
-              double mass) { self->setMass(mass); },
+          +[](dart::dynamics::BodyNode* self, double mass) {
+            self->setMass(mass);
+          },
           ::py::arg("mass"))
       .def(
           "getMass",
-          +[](const dart::dynamics::BodyNode* self)
-              -> double { return self->getMass(); })
+          +[](const dart::dynamics::BodyNode* self) -> double {
+            return self->getMass();
+          })
       .def(
           "setMomentOfInertia",
           +[](dart::dynamics::BodyNode* self,

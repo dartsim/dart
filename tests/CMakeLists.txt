@@ -124,7 +124,7 @@ add_subdirectory(src)
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
 add_subdirectory(unit)
-if(NOT MSVC)
+if(NOT DART_IN_CI OR NOT MSVC)
   # Disabled due to limitied disk space in CI image
   add_subdirectory(integration)
   add_subdirectory(regression)

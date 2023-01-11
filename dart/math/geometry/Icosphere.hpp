@@ -43,12 +43,12 @@ namespace dart::math {
 
 /// The class Icosphere represents an icosphere where the subdivision and radius
 /// are configurable.
-template <typename S_>
-class Icosphere : public TriMesh<S_>
+template <typename S>
+class Icosphere : public TriMesh<S>
 {
 public:
   // Type aliases
-  using S = S_;
+  using Scalar = S;
   using Base = TriMesh<S>;
   using Index = typename Base::Index;
   using Vector3 = typename Base::Vector3;
@@ -93,8 +93,7 @@ private:
   std::size_t mSubdivisions;
 };
 
-using Icospheref = Icosphere<float>;
-using Icosphered = Icosphere<double>;
+DART_TEMPLATE_CLASS_HEADER(MATH, Icosphere)
 
 } // namespace dart::math
 

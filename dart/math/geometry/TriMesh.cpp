@@ -32,10 +32,8 @@
 
 #include "dart/math/geometry/TriMesh.hpp"
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-template class TriMesh<double>;
+DART_TEMPLATE_CLASS_SOURCE(MATH, TriMesh);
 
-} // namespace math
-} // namespace dart
+} // namespace dart::math
