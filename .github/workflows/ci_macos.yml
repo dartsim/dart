@@ -12,12 +12,12 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.build_type }}
-    runs-on: macos-12
+    runs-on: ${{ matrix.osx_image }}
     strategy:
       fail-fast: false
       matrix:
         build_type: [Release]
+        osx_image: [macos-13]
     env:
       COMPILER: clang
       BUILD_TYPE: ${{ matrix.build_type }}

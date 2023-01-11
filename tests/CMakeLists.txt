@@ -125,10 +125,7 @@ add_subdirectory(src)
 #   they performs correctly as expected
 if(NOT MSVC)
   # Disabled due to limitied disk space in CI image
-  if(NOT "${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
-    # TODO(JS): Fix this on macOS
-    add_subdirectory(integration)
-  endif()
+  add_subdirectory(integration)
   add_subdirectory(regression)
 endif()
 add_subdirectory(unit)

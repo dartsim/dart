@@ -1252,8 +1252,7 @@ protected:
 
   mutable DataCache mSkelCache;
 
-  using SpecializedTreeNodes
-      = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
+  using SpecializedTreeNodes = common::TypeMap<std::vector<NodeMap::iterator>*>;
 
   SpecializedTreeNodes mSpecializedTreeNodes;
 

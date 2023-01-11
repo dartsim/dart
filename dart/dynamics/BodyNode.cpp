@@ -54,7 +54,7 @@ template <
     class DataType,
     std::unique_ptr<DataType> (Node::*getData)() const,
     typename VectorType = common::CloneableVector<std::unique_ptr<DataType> >,
-    typename DataMap = std::map<std::type_index, std::unique_ptr<VectorType> > >
+    typename DataMap = common::TypeMap<std::unique_ptr<VectorType> > >
 static void extractDataFromNodeTypeMap(
     DataMap& dataMap, const BodyNode::NodeMap& nodeMap)
 {
@@ -86,7 +86,7 @@ template <
     class DataType,
     void (Node::*setData)(const DataType&),
     typename VectorType = common::CloneableVector<std::unique_ptr<DataType> >,
-    typename DataMap = std::map<std::type_index, std::unique_ptr<VectorType> > >
+    typename DataMap = common::TypeMap<std::unique_ptr<VectorType> > >
 static void setNodesFromDataTypeMap(
     BodyNode::NodeMap& nodeMap, const DataMap& dataMap)
 {

@@ -38,6 +38,7 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Empty.hpp>
 #include <dart/common/NameManager.hpp>
+#include <dart/common/TypeIndex.hpp>
 
 #include <map>
 #include <typeindex>
@@ -50,11 +51,10 @@ namespace detail {
 class BasicNodeManagerForBodyNode
 {
 public:
-  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
+  using NodeMap = common::TypeMap<std::vector<Node*> >;
   using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
-  using NodeNameMgrMap = std::map<std::type_index, common::NameManager<Node*> >;
-  using SpecializedTreeNodes
-      = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
+  using NodeNameMgrMap = common::TypeMap<common::NameManager<Node*> >;
+  using SpecializedTreeNodes = common::TypeMap<std::vector<NodeMap::iterator>*>;
 
   /// Default constructor
   BasicNodeManagerForBodyNode() = default;

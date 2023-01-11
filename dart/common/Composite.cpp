@@ -57,9 +57,8 @@ template <
     typename ObjectType,
     class DataType,
     const DataType* (ObjectType::*getData)() const,
-    typename ObjectMap
-    = std::map<std::type_index, std::unique_ptr<ObjectType> >,
-    typename DataMap = std::map<std::type_index, std::unique_ptr<DataType> > >
+    typename ObjectMap = common::TypeMap<std::unique_ptr<ObjectType> >,
+    typename DataMap = common::TypeMap<std::unique_ptr<DataType> > >
 static void extractDataFromObjectTypeMap(
     DataMap& dataMap, const ObjectMap& objectMap)
 {
@@ -121,9 +120,8 @@ template <
     typename ObjectType,
     class DataType,
     void (ObjectType::*setData)(const DataType&),
-    typename ObjectMap
-    = std::map<std::type_index, std::unique_ptr<ObjectType> >,
-    typename DataMap = std::map<std::type_index, std::unique_ptr<DataType> > >
+    typename ObjectMap = common::TypeMap<std::unique_ptr<ObjectType> >,
+    typename DataMap = common::TypeMap<std::unique_ptr<DataType> > >
 static void setObjectsFromDataTypeMap(
     ObjectMap& objectMap, const DataMap& dataMap)
 {

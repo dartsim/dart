@@ -34,6 +34,7 @@
 #define DART_COMMON_DETAIL_COMPOSITEDATA_HPP_
 
 #include <dart/common/Aspect.hpp>
+#include <dart/common/TypeIndex.hpp>
 
 #include <Eigen/Core>
 
@@ -96,10 +97,9 @@ struct GetProperties
 };
 
 //==============================================================================
-using CompositeStateMap
-    = std::map<std::type_index, std::unique_ptr<Aspect::State>>;
+using CompositeStateMap = common::TypeMap<std::unique_ptr<Aspect::State>>;
 using CompositePropertiesMap
-    = std::map<std::type_index, std::unique_ptr<Aspect::Properties>>;
+    = common::TypeMap<std::unique_ptr<Aspect::Properties>>;
 
 //==============================================================================
 template <typename MapType, template <class> class GetData>
