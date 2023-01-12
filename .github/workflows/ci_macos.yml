@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Release]
-        osx_image: [macos-13]
+        osx_image: [macos-12]
     env:
       COMPILER: clang
       BUILD_TYPE: ${{ matrix.build_type }}
