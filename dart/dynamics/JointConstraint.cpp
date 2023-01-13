@@ -357,14 +357,14 @@ void JointConstraint::update()
     if (mJoint->getActuatorType() == dynamics::Joint::SERVO)
     {
       // The desired velocity shouldn't be out of the velocity limits
-      double desired_velocity = math::clip(
+      double desired_velocity = math::clamp(
           mJoint->getCommand(static_cast<std::size_t>(i)),
           velocityLowerLimits[i],
           velocityUpperLimits[i]);
 
       // The next position shouldn't be out of the position limits
       desired_velocity
-          = math::clip(desired_velocity, vel_to_pos_lb, vel_to_pos_ub);
+          = math::clamp(desired_velocity, vel_to_pos_lb, vel_to_pos_ub);
 
       mDesiredVelocityChange[i] = desired_velocity - velocities[i];
 

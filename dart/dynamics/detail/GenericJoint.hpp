@@ -326,7 +326,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
-      this->mAspectState.mCommands[index] = math::clip(
+      this->mAspectState.mCommands[index] = math::clamp(
           command,
           Base::mAspectProperties.mForceLowerLimits[index],
           Base::mAspectProperties.mForceUpperLimits[index]);
@@ -341,7 +341,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       this->mAspectState.mCommands[index] = command;
       break;
     case Joint::SERVO:
-      this->mAspectState.mCommands[index] = math::clip(
+      this->mAspectState.mCommands[index] = math::clamp(
           command,
           Base::mAspectProperties.mVelocityLowerLimits[index],
           Base::mAspectProperties.mVelocityUpperLimits[index]);
@@ -353,19 +353,19 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
                << command << ") command for a MIMIC joint [" << this->getName()
                << "].\n";
       }
-      this->mAspectState.mCommands[index] = math::clip(
+      this->mAspectState.mCommands[index] = math::clamp(
           command,
           Base::mAspectProperties.mVelocityLowerLimits[index],
           Base::mAspectProperties.mVelocityUpperLimits[index]);
       break;
     case Joint::ACCELERATION:
-      this->mAspectState.mCommands[index] = math::clip(
+      this->mAspectState.mCommands[index] = math::clamp(
           command,
           Base::mAspectProperties.mAccelerationLowerLimits[index],
           Base::mAspectProperties.mAccelerationUpperLimits[index]);
       break;
     case Joint::VELOCITY:
-      this->mAspectState.mCommands[index] = math::clip(
+      this->mAspectState.mCommands[index] = math::clamp(
           command,
           Base::mAspectProperties.mVelocityLowerLimits[index],
           Base::mAspectProperties.mVelocityUpperLimits[index]);
@@ -412,7 +412,7 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
-      this->mAspectState.mCommands = math::clip(
+      this->mAspectState.mCommands = math::clamp(
           commands,
           Base::mAspectProperties.mForceLowerLimits,
           Base::mAspectProperties.mForceUpperLimits);
@@ -427,7 +427,7 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       this->mAspectState.mCommands = commands;
       break;
     case Joint::SERVO:
-      this->mAspectState.mCommands = math::clip(
+      this->mAspectState.mCommands = math::clamp(
           commands,
           Base::mAspectProperties.mVelocityLowerLimits,
           Base::mAspectProperties.mVelocityUpperLimits);
@@ -439,19 +439,19 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
                << commands.transpose() << ") command for a MIMIC joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands = math::clip(
+      this->mAspectState.mCommands = math::clamp(
           commands,
           Base::mAspectProperties.mVelocityLowerLimits,
           Base::mAspectProperties.mVelocityUpperLimits);
       break;
     case Joint::ACCELERATION:
-      this->mAspectState.mCommands = math::clip(
+      this->mAspectState.mCommands = math::clamp(
           commands,
           Base::mAspectProperties.mAccelerationLowerLimits,
           Base::mAspectProperties.mAccelerationUpperLimits);
       break;
     case Joint::VELOCITY:
-      this->mAspectState.mCommands = math::clip(
+      this->mAspectState.mCommands = math::clamp(
           commands,
           Base::mAspectProperties.mVelocityLowerLimits,
           Base::mAspectProperties.mVelocityUpperLimits);

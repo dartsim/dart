@@ -157,13 +157,20 @@ inline double round2(double _x)
 }
 
 template <typename T>
-inline T clip(const T& val, const T& lower, const T& upper)
+constexpr T clamp(const T& val, const T& lower, const T& upper)
 {
-  return std::max(lower, std::min(val, upper));
+  return std::clamp(val, lower, upper);
+}
+
+template <typename T, typename Compare>
+constexpr T clamp(
+    const T& val, const T& lower, const T& upper, const Compare& comp)
+{
+  return std::clamp(val, lower, upper, comp);
 }
 
 template <typename DerivedA, typename DerivedB>
-inline typename DerivedA::PlainObject clip(
+typename DerivedA::PlainObject clamp(
     const Eigen::MatrixBase<DerivedA>& val,
     const Eigen::MatrixBase<DerivedB>& lower,
     const Eigen::MatrixBase<DerivedB>& upper)

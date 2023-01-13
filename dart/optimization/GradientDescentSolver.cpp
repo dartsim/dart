@@ -475,7 +475,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 
   for (int i = 0; i < _x.size(); ++i)
   {
-    _x[i] = math::clip(
+    _x[i] = math::clamp(
         _x[i],
         mProperties.mProblem->getLowerBounds()[i],
         mProperties.mProblem->getUpperBounds()[i]);

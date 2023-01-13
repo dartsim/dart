@@ -135,7 +135,7 @@ void MimicMotorConstraint::update()
     double timeStep = mJoint->getSkeleton()->getTimeStep();
     double qError = mMimicJoint->getPosition(i) * mMultiplier + mOffset
                     - mJoint->getPosition(i);
-    double desiredVelocity = math::clip(
+    double desiredVelocity = math::clamp(
         qError / timeStep,
         mJoint->getVelocityLowerLimit(i),
         mJoint->getVelocityUpperLimit(i));
