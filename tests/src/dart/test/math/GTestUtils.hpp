@@ -39,6 +39,12 @@
 #include <gtest/gtest.h>
 
 //==============================================================================
+// S should be defined as one of float and double
+#define EXPECT_S_EQ(val1, val2)                                                \
+  EXPECT_PRED_FORMAT2(                                                         \
+      ::testing::internal::CmpHelperFloatingPointEQ<S>, val1, val2)
+
+//==============================================================================
 #define EXPECT_VECTOR_DOUBLE_EQ(vec1, vec2)                                    \
   if (!::dart::test::equals(vec1, vec2)) {                                     \
     std::stringstream ss;                                                      \

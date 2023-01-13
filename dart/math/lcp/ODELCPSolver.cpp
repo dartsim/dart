@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/ODELCPSolver.hpp"
+#include "dart/math/lcp/ODELCPSolver.hpp"
 
 #include "dart/common/Macros.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/external/odelcpsolver/misc.h"
-#include "dart/math/Lemke.hpp"
+#include "dart/math/lcp/Lcp.hpp"
 
 #include <cstdio>
 
@@ -65,8 +65,7 @@ bool ODELCPSolver::Solve(
     bool _bUseODESolver)
 {
   if (!_bUseODESolver) {
-    int err = Lemke(_A, _b, _x);
-    return (err == 0);
+    return solveLcpLemke(_A, _b, _x);
   } else {
     assert(_numDir >= 4);
     DART_UNUSED(_numDir);

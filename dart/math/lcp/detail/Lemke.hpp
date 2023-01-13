@@ -30,69 +30,86 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/Lemke.hpp"
+#pragma once
 
-#include "dart/math/Helpers.hpp"
+#include <dart/math/Fwd.hpp>
 
-#include <iostream>
-#include <vector>
+#include <Eigen/Dense>
 
-#include <cmath>
+namespace dart::math {
 
-namespace dart {
-namespace math {
+/// Solves LCP using Lemke's algorithm
+template <typename S, typename DerivedA, typename DerivedB, typename DerivedX>
+int Lemke(
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::MatrixBase<DerivedX>* x,
+    std::size_t maxiter = 1000,
+    const S zer_tol = 1e-5,
+    const S piv_tol = 1e-8);
 
-// double RandDouble(double _low, double _high) {
-//  double temp;
-
-//  /* swap low & high around if the user makes no sense */
-//  if (_low > _high) {
-//    temp = _low;
-//    _low = _high;
-//    _high = temp;
-//  }
-
-//  /* calculate the random number & return it */
-//  temp = (rand() / (static_cast<double>(RAND_MAX) + 1.0))
-//         * (_high - _low) + _low;
-//  return temp;
-// }
+} // namespace dart::math
 
 //==============================================================================
-int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
-{
-  int n = _q.size();
+// Implementation
+//==============================================================================
 
-  const double zer_tol = 1e-5;
-  const double piv_tol = 1e-8;
-  int maxiter = 1000;
+#include "dart/common/Logging.hpp"
+#include "dart/math/lcp/Utils.hpp"
+
+#include <vector>
+
+namespace dart::math {
+
+//==============================================================================
+template <typename S, typename DerivedA, typename DerivedB, typename DerivedX>
+int Lemke(
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::MatrixBase<DerivedX>* x,
+    std::size_t maxiter,
+    const S zer_tol,
+    const S piv_tol)
+{
+  static_assert(
+      std::is_same_v<S, typename DerivedA::Scalar>,
+      "S and A must have the same scalar type.");
+  static_assert(
+      std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
+      "A and b must have the same scalar type.");
+  static_assert(
+      std::is_same_v<typename DerivedB::Scalar, typename DerivedX::Scalar>,
+      "b and x must have the same scalar type.");
+
+  int n = b.size();
+
   int err = 0;
 
-  if (_q.minCoeff() >= 0) {
-    // LOG(INFO) << "Trivial solution exists.";
-    *_z = VectorXd::Zero(n);
+  if (b.minCoeff() >= 0) {
+    DART_DEBUG("Trivial solution exists.");
+    *x = math::VectorX<S>::Zero(n);
     return err;
   }
 
   // solve trivial case for n=1
-  //   if (n==1){
-  //     if (_M(0)>0){
-  //         *_z = (- _q(0)/_M(0) )*VectorXd::Ones(n);
-  //         return err;
-  //     } else {
-  //         *_z = VectorXd::Zero(n);
-  //         err = 4; // no solution
-  //         return err;
-  //     }
-  //   }
+  if (n == 1) {
+    if (A(0) > 0) {
+      (*x)[0] = -b(0) / A(0);
+      return err;
+    } else {
+      *x = math::VectorX<S>::Zero(n);
+      err = 4; // no solution
+      return err;
+    }
+  }
 
-  *_z = VectorXd::Zero(2 * n);
-  int iter = 0;
-  // double theta = 0;
-  double ratio = 0;
+  *x = math::VectorX<S>::Zero(2 * n);
+  std::size_t iter = 0;
+  // S theta = 0;
+  S ratio = 0;
   int leaving = 0;
-  VectorXd Be = VectorXd::Constant(n, 1);
-  VectorXd x = _q;
+  math::VectorX<S> Be = math::VectorX<S>::Constant(n, 1);
+  math::VectorX<S> tempX = b;
   std::vector<int> bas;
   std::vector<int> nonbas;
 
@@ -108,42 +125,42 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
     nonbas.push_back(i);
   }
 
-  MatrixXd B = -MatrixXd::Identity(n, n);
+  math::MatrixX<S> B = -math::MatrixX<S>::Identity(n, n);
 
   if (!bas.empty()) {
-    MatrixXd B_copy = B;
+    math::MatrixX<S> B_copy = B;
     for (std::size_t i = 0; i < bas.size(); ++i) {
-      B.col(i) = _M.col(bas[i]);
+      B.col(i) = A.col(bas[i]);
     }
     for (std::size_t i = 0; i < nonbas.size(); ++i) {
       B.col(bas.size() + i) = B_copy.col(nonbas[i]);
     }
     // TODO: check the condition number to return err = 3
-    math::JacobiSVD<MatrixXd> svd(B);
-    double cond = svd.singularValues()(0)
-                  / svd.singularValues()(svd.singularValues().size() - 1);
-    if (cond > 1e16) {
-      (*_z) = VectorXd::Zero(n);
+    math::JacobiSVD<math::MatrixX<S>> svd(B);
+    S cond = svd.singularValues()(0)
+             / svd.singularValues()(svd.singularValues().size() - 1);
+    if (cond > 1e+16) {
+      (*x) = math::VectorX<S>::Zero(n);
       err = 3;
       return err;
     }
-    x = -B.householderQr().solve(_q);
+    tempX = -B.householderQr().solve(b);
   }
 
   // Check if initial basis provides solution
-  if (x.minCoeff() >= 0) {
-    VectorXd __z = VectorXd::Zero(2 * n);
+  if (tempX.minCoeff() >= 0) {
+    math::VectorX<S> _x = math::VectorX<S>::Zero(2 * n);
     for (std::size_t i = 0; i < bas.size(); ++i) {
-      (__z).row(bas[i]) = x.row(i);
+      (_x).row(bas[i]) = tempX.row(i);
     }
-    (*_z) = __z.head(n);
+    (*x) = _x.head(n);
     return err;
   }
 
   // Determine initial leaving variable
-  VectorXd minuxX = -x;
+  math::VectorX<S> minuxX = -tempX;
   int lvindex;
-  double tval = minuxX.maxCoeff(&lvindex);
+  S tval = minuxX.maxCoeff(&lvindex);
   for (std::size_t i = 0; i < nonbas.size(); ++i) {
     bas.push_back(nonbas[i] + n);
   }
@@ -151,14 +168,14 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
 
   bas[lvindex] = t; // pivoting in the artificial variable
 
-  VectorXd U = VectorXd::Zero(n);
+  math::VectorX<S> U = math::VectorX<S>::Zero(n);
   for (int i = 0; i < n; ++i) {
-    if (x[i] < 0)
+    if (tempX[i] < 0)
       U[i] = 1;
   }
   Be = -(B * U);
-  x += tval * U;
-  x[lvindex] = tval;
+  tempX.noalias() += tval * U;
+  tempX[lvindex] = tval;
   B.col(lvindex) = Be;
 
   for (iter = 0; iter < maxiter; ++iter) {
@@ -166,14 +183,14 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
       break;
     } else if (leaving < n) {
       entering = n + leaving;
-      Be = VectorXd::Zero(n);
+      Be = math::VectorX<S>::Zero(n);
       Be[leaving] = -1;
     } else {
       entering = leaving - n;
-      Be = _M.col(entering);
+      Be = A.col(entering);
     }
 
-    VectorXd d = B.householderQr().solve(Be);
+    const math::VectorX<S> d = B.householderQr().solve(Be);
 
     // Find new leaving variable
     std::vector<int> j;
@@ -188,16 +205,16 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
     }
 
     std::size_t jSize = j.size();
-    VectorXd minRatio(jSize);
+    math::VectorX<S> minRatio(jSize);
     for (std::size_t i = 0; i < jSize; ++i) {
-      minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
+      minRatio[i] = (tempX[j[i]] + zer_tol) / d[j[i]];
     }
-    double theta = minRatio.minCoeff();
+    S theta = minRatio.minCoeff();
 
     std::vector<int> tmpJ;
-    std::vector<double> tmpd;
+    std::vector<S> tmpd;
     for (std::size_t i = 0; i < jSize; ++i) {
-      if (x[j[i]] / d[j[i]] <= theta) {
+      if (tempX[j[i]] / d[j[i]] <= theta) {
         tmpJ.push_back(j[i]);
         tmpd.push_back(d[j[i]]);
       }
@@ -245,7 +262,7 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
 
     leaving = bas[lvindex];
 
-    ratio = x[lvindex] / d[lvindex];
+    ratio = tempX[lvindex] / d[lvindex];
 
     //    bool bDiverged = false;
     //    for (int i = 0; i < n; ++i) {
@@ -260,8 +277,8 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
     //    }
 
     // Perform pivot
-    x = x - ratio * d;
-    x[lvindex] = ratio;
+    tempX.noalias() -= ratio * d;
+    tempX[lvindex] = ratio;
     B.col(lvindex) = Be;
     bas[lvindex] = entering;
   }
@@ -272,20 +289,20 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
 
   if (err == 0) {
     for (std::size_t i = 0; i < bas.size(); ++i) {
-      if (bas[i] < _z->size()) {
-        (*_z)[bas[i]] = x[i];
+      if (bas[i] < x->size()) {
+        (*x)[bas[i]] = tempX[i];
       }
     }
 
-    VectorXd __z = _z->head(n);
-    *_z = __z;
+    math::VectorX<S> _x = x->head(n);
+    *x = _x;
 
-    if (!validate(_M, *_z, _q)) {
-      // _z = VectorXd::Zero(n);
+    if (!validateLcp<S>(A, b, *x)) {
+      // x = VectorX<S>::Zero(n);
       err = 3;
     }
   } else {
-    *_z = VectorXd::Zero(n); // solve failed, return a 0 vector
+    *x = math::VectorX<S>::Zero(n); // solve failed, return a 0 vector
   }
 
   //  if (err == 1)
@@ -301,21 +318,4 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
   return err;
 }
 
-//==============================================================================
-bool validate(const MatrixXd& _M, const VectorXd& _z, const VectorXd& _q)
-{
-  const double threshold = 1e-4;
-  int n = _z.size();
-
-  VectorXd w = _M * _z + _q;
-  for (int i = 0; i < n; ++i) {
-    if (w(i) < -threshold || _z(i) < -threshold)
-      return false;
-    if (std::abs(w(i) * _z(i)) > threshold)
-      return false;
-  }
-  return true;
-}
-
-} // namespace math
-} // namespace dart
+} // namespace dart::math

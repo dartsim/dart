@@ -112,11 +112,11 @@ option(DART_DOWNLOAD_DEPENDENT_PACKAGES "Whether to download dependent package" 
 option(DART_PROFILE_BACKEND_REMOTERY "Enable Remotery profiling backend" OFF)
 
 option(DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE "Build instantiation of template code for double" ON)
-option(DART_BUILD_TEMPLATE_CODE_FOR_FLOAT  "Build instantiation of template code for double" OFF)
+option(DART_BUILD_TEMPLATE_CODE_FOR_FLOAT  "Build instantiation of template code for float" OFF)
 
 option(DART_BUILD_COMP_common       "Build component 'common'"       ON)
 option(DART_BUILD_COMP_math         "Build component 'math'"         ON)
-option(DART_BUILD_COMP_optimization    "Build component 'optimization'"    ON)
+option(DART_BUILD_COMP_optimization "Build component 'optimization'" ON)
 option(DART_BUILD_COMP_collision    "Build component 'collision'"    ON)
 option(DART_BUILD_COMP_dynamics     "Build component 'dynamics'"     ON)
 option(DART_BUILD_COMP_simulation   "Build component 'simulation'"   ON)

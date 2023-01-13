@@ -30,58 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/geometry/Icosphere.hpp"
+#include "dart/math/lcp/ODELCPSolver.hpp"
 
-#include <dart/test/math/GTestUtils.hpp>
-
-#include <gtest/gtest.h>
-
-using namespace dart;
-using namespace math;
-
-template <typename S>
-struct IcosphereTests : public testing::Test
-{
-  using Scalar = S;
-};
-
-using Types = testing::Types<float, double>;
-TYPED_TEST_SUITE(IcosphereTests, Types);
+namespace dart::math {
 
 //==============================================================================
-TYPED_TEST(IcosphereTests, NumOfVerticesAndTriangles)
-{
-  using S = typename TestFixture::Scalar;
 
-  const S radius = 5.0;
-
-  for (auto i = 0; i < 8; ++i) {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphere<S>(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphere<S>::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphere<S>::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices) {
-      EXPECT_S_EQ(v.norm(), radius);
-    }
-  }
-}
-
-//==============================================================================
-TYPED_TEST(IcosphereTests, Constructor)
-{
-  using S = typename TestFixture::Scalar;
-
-  auto s1 = Icosphere<S>(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_S_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphere<S>(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_S_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
-}
+} // namespace dart::math

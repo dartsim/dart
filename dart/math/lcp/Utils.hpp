@@ -30,58 +30,79 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/geometry/Icosphere.hpp"
+#pragma once
 
-#include <dart/test/math/GTestUtils.hpp>
+#include <Eigen/Dense>
 
-#include <gtest/gtest.h>
-
-using namespace dart;
-using namespace math;
+namespace dart::math {
 
 template <typename S>
-struct IcosphereTests : public testing::Test
+[[nodiscard]] S defaultLcpValidationTolerance()
 {
-  using Scalar = S;
-};
+  if constexpr (std::is_same_v<S, float>)
+    return 5e-1;
+  else if constexpr (std::is_same_v<S, double>)
+    return 5e-5;
+  else if constexpr (std::is_same_v<S, long double>)
+    return 5e-8;
+}
 
-using Types = testing::Types<float, double>;
-TYPED_TEST_SUITE(IcosphereTests, Types);
+template <typename S>
+S computeLcpError(
+    const Eigen::MatrixX<S>& A,
+    const Eigen::VectorX<S>& b,
+    const Eigen::VectorX<S>& x);
+
+template <typename S>
+bool validateLcp(
+    const Eigen::MatrixX<S>& A,
+    const Eigen::VectorX<S>& b,
+    const Eigen::VectorX<S>& x,
+    S tol = defaultLcpValidationTolerance<S>());
+
+} // namespace dart::math
+
+#include <dart/math/Constants.hpp>
 
 //==============================================================================
-TYPED_TEST(IcosphereTests, NumOfVerticesAndTriangles)
+// Implementation
+//==============================================================================
+
+namespace dart::math {
+
+template <typename S>
+S computeLcpError(
+    const Eigen::MatrixX<S>& A,
+    const Eigen::VectorX<S>& b,
+    const Eigen::VectorX<S>& x)
 {
-  using S = typename TestFixture::Scalar;
+  const auto n = x.size();
+  const Eigen::VectorX<S> y = A * x + b;
 
-  const S radius = 5.0;
+  S error = 0;
 
-  for (auto i = 0; i < 8; ++i) {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphere<S>(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphere<S>::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphere<S>::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices) {
-      EXPECT_S_EQ(v.norm(), radius);
-    }
+  for (auto i = 0; i < n; ++i) {
+    const S localError = x[i] - std::max(S(0), (x[i] - y[i]));
+    error += localError * localError;
   }
+  error = std::sqrt(error);
+
+  const S squaredNorm = b.squaredNorm();
+  if (squaredNorm > eps<S>())
+    error /= squaredNorm;
+
+  return error;
 }
 
-//==============================================================================
-TYPED_TEST(IcosphereTests, Constructor)
+template <typename S>
+bool validateLcp(
+    const Eigen::MatrixX<S>& A,
+    const Eigen::VectorX<S>& b,
+    const Eigen::VectorX<S>& x,
+    S tol)
 {
-  using S = typename TestFixture::Scalar;
-
-  auto s1 = Icosphere<S>(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_S_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
-
-  auto s2 = Icosphere<S>(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_S_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
+  const S error = computeLcpError(A, b, x);
+  return error <= tol;
 }
+
+} // namespace dart::math

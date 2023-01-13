@@ -52,7 +52,6 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation)
       test_Friction.cpp
       test_GenericJoints.cpp
       test_Inertia.cpp
-      test_Lemke.cpp
       test_LocalResourceRetriever.cpp
       test_NameManagement.cpp
       test_Optimizer.cpp

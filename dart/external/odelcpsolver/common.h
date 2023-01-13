@@ -243,28 +243,6 @@ enum {
   d_ERR_LCP			/* user assertion failed */
 };
 
-
-/* joint type numbers */
-
-typedef enum {
-  dJointTypeNone = 0,		/* or "unknown" */
-  dJointTypeBall,
-  dJointTypeHinge,
-  dJointTypeSlider,
-  dJointTypeContact,
-  dJointTypeUniversal,
-  dJointTypeHinge2,
-  dJointTypeFixed,
-  dJointTypeNull,
-  dJointTypeAMotor,
-  dJointTypeLMotor,
-  dJointTypePlane2D,
-  dJointTypePR,
-  dJointTypePU,
-  dJointTypePiston
-} dJointType;
-
-
 /* an alternative way of setting joint parameters, using joint parameter
  * structures and member constants. we don't actually do this yet.
  */

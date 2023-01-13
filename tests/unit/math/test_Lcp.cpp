@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/geometry/Icosphere.hpp"
-
-#include <dart/test/math/GTestUtils.hpp>
+#include "dart/math/lcp/Lcp.hpp"
+#include "dart/math/lcp/Utils.hpp"
+#include "dart/test/math/LcpUtils.hpp"
 
 #include <gtest/gtest.h>
 
@@ -40,48 +40,65 @@ using namespace dart;
 using namespace math;
 
 template <typename S>
-struct IcosphereTests : public testing::Test
+struct LcpTest : public testing::Test
 {
   using Scalar = S;
 };
 
 using Types = testing::Types<float, double>;
-TYPED_TEST_SUITE(IcosphereTests, Types);
+TYPED_TEST_SUITE(LcpTest, Types);
 
 //==============================================================================
-TYPED_TEST(IcosphereTests, NumOfVerticesAndTriangles)
+TYPED_TEST(LcpTest, PivotingMethods)
 {
   using S = typename TestFixture::Scalar;
 
-  const S radius = 5.0;
+#if defined(NDEBUG)
+  const auto numTests = 4;
+  for (const auto n : {1, 2, 4, 8, 16, 32, 64, 128, 256})
+#else
+  const auto numTests = 4;
+  for (const auto n : {1, 2, 4, 8, 16, 32, 64})
+#endif
+  {
+    for (auto i = 0; i < numTests; ++i) {
+      const auto [A, b] = test::generateLcpProblem<S>(n);
+      Eigen::VectorX<S> x = Eigen::VectorX<S>(n);
 
-  for (auto i = 0; i < 8; ++i) {
-    const auto subdivisions = i;
-    const auto icosphere = Icosphere<S>(radius, subdivisions);
-    const auto& vertices = icosphere.getVertices();
-    const auto& triangles = icosphere.getTriangles();
-
-    EXPECT_EQ(vertices.size(), Icosphere<S>::getNumVertices(subdivisions));
-    EXPECT_EQ(triangles.size(), Icosphere<S>::getNumTriangles(subdivisions));
-
-    for (const auto& v : vertices) {
-      EXPECT_S_EQ(v.norm(), radius);
+      EXPECT_TRUE(dart::math::solveLcpLemke(A, b, &x))
+          << "n: " << n << ", #" << i;
+      EXPECT_TRUE(dart::math::validateLcp(A, b, x))
+          << "x     : " << x.transpose() << "\n"
+          << "Ax + b: " << (A * x + b).transpose();
     }
   }
 }
 
 //==============================================================================
-TYPED_TEST(IcosphereTests, Constructor)
+TYPED_TEST(LcpTest, SweepingMethods)
 {
   using S = typename TestFixture::Scalar;
 
-  auto s1 = Icosphere<S>(1, 0);
-  EXPECT_FALSE(s1.isEmpty());
-  EXPECT_S_EQ(s1.getRadius(), 1);
-  EXPECT_EQ(s1.getNumSubdivisions(), 0);
+  LcpOption<S> option;
+  option.maxIterations = 10000;
 
-  auto s2 = Icosphere<S>(2, 3);
-  EXPECT_FALSE(s2.isEmpty());
-  EXPECT_S_EQ(s2.getRadius(), 2);
-  EXPECT_EQ(s2.getNumSubdivisions(), 3);
+#if defined(NDEBUG)
+  const auto numTests = 5;
+  for (const auto n : {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024})
+#else
+  const auto numTests = 5;
+  for (const auto n : {1, 2, 4, 8, 16, 32, 64, 128, 256})
+#endif
+  {
+    for (auto i = 0; i < numTests; ++i) {
+      const auto [A, b] = test::generateValidLcpProblem<S>(n);
+      Eigen::VectorX<S> x = Eigen::VectorX<S>(n);
+
+      EXPECT_TRUE(dart::math::solveLcpPsor(A, b, &x, option))
+          << "n: " << n << ", #" << i;
+      EXPECT_TRUE(dart::math::validateLcp(A, b, x))
+          << "x     : " << x.transpose() << "\n"
+          << "Ax + b: " << (A * x + b).transpose();
+    }
+  }
 }

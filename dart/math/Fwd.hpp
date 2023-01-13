@@ -117,14 +117,18 @@ using Matrix5 = Matrix<S, 5>;
 template <typename S>
 using Matrix6 = Matrix<S, 6>;
 
+/// Dynamic-size matrix
+template <typename S>
+using MatrixX = Matrix<S, Dynamic, Dynamic>;
+
 /// Dynamic-size matrix (int)
-using MatrixXi = Matrixi<Dynamic>;
+using MatrixXi = MatrixX<int>;
 
 /// Dynamic-size matrix (float)
-using MatrixXf = Matrixd<Dynamic>;
+using MatrixXf = MatrixX<float>;
 
 /// Dynamic-size matrix (double)
-using MatrixXd = Matrixd<Dynamic>;
+using MatrixXd = MatrixX<double>;
 
 // Fixed-size matrices for specific sizes (int)
 using Matrix1i = Matrixi<1>;
@@ -188,14 +192,18 @@ using Vector5 = Vector<S, 5>;
 template <typename S>
 using Vector6 = Vector<S, 6>;
 
+/// Dynamic-size column vector
+template <typename S>
+using VectorX = Vector<S, Dynamic>;
+
 /// Dynamic-size column vector (int)
-using VectorXi = Vectori<Dynamic>;
+using VectorXi = VectorX<int>;
 
 /// Dynamic-size column vector (float)
-using VectorXf = Vectorf<Dynamic>;
+using VectorXf = VectorX<float>;
 
 /// Dynamic-size column vector (double)
-using VectorXd = Vectord<Dynamic>;
+using VectorXd = VectorX<double>;
 
 // Fixed-size vectors for specific sizes (int)
 using Vector1i = Vectori<1>;

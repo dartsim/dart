@@ -36,7 +36,7 @@ namespace dart::math {
 
 /// Returns the maximum value of the given type
 template <typename S = double>
-constexpr S max();
+[[nodiscard]] constexpr S max();
 
 /// Returns the smallest finite value of the given type
 ///
@@ -45,13 +45,13 @@ constexpr S max();
 /// especially when compared to the behavior of min for integral types. To find
 /// the value that has no values less than it, use lowest().
 template <typename S = double>
-constexpr S min();
+[[nodiscard]] constexpr S min();
 
 /// Returns the lowest value of the given type
 ///
 /// This is the same as min() for unsigned types, and the same as -max() for
 template <typename S = double>
-constexpr S lowest();
+[[nodiscard]] constexpr S lowest();
 
 /// Returns the epsilon value of the given type
 ///
@@ -59,7 +59,7 @@ constexpr S lowest();
 /// For example, for float, the epsilon value is 1.19209e-07. For double, the
 /// epsilon value is 2.22045e-16.
 template <typename S = double>
-constexpr S eps();
+[[nodiscard]] constexpr S eps();
 
 /// Returns the NaN value of the given type
 ///
@@ -67,27 +67,27 @@ constexpr S eps();
 /// including itself. For example, for float, the NaN value is 0x7fc00000. For
 /// double, the NaN value is 0x7ff8000000000000.
 template <typename S = double>
-constexpr S nan();
+[[nodiscard]] constexpr S nan();
 
 /// Returns the infinity value of the given type
 template <typename S = double>
-constexpr S inf();
+[[nodiscard]] constexpr S inf();
 
 /// Returns the value of pi
 template <typename S = double>
-constexpr S pi();
+[[nodiscard]] constexpr S pi();
 
 /// Returns the value of pi/2
 template <typename S = double>
-constexpr S half_pi();
+[[nodiscard]] constexpr S half_pi();
 
 /// Returns the value of pi/4
 template <typename S = double>
-constexpr S two_pi();
+[[nodiscard]] constexpr S two_pi();
 
 /// Returns the value of phi, golden ratio
 template <typename S = double>
-constexpr S phi();
+[[nodiscard]] constexpr S phi();
 
 } // namespace dart::math
 
