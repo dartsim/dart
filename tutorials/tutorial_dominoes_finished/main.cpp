@@ -453,7 +453,7 @@ SkeletonPtr createFloor()
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(box);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Black());
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Black());
 
   // Put the body into position
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

@@ -545,7 +545,7 @@ SkeletonPtr createGround()
                            VisualAspect,
                            CollisionAspect,
                            DynamicsAspect>(groundShape);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue(0.2));
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue(0.2));
 
   return ground;
 }
@@ -567,7 +567,7 @@ SkeletonPtr createAtlas()
 
   auto shapeNode
       = atlas->getBodyNode(0)->createShapeNodeWith<VisualAspect>(boxShape);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Black());
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Black());
   shapeNode->setRelativeTransform(tf);
 
   return atlas;

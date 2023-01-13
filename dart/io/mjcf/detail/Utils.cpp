@@ -35,6 +35,7 @@
 #include "dart/io/CompositeResourceRetriever.hpp"
 #include "dart/io/DartResourceRetriever.hpp"
 #include "dart/io/XmlHelpers.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace io {

@@ -383,8 +383,8 @@ void SupportPolygonVisual::initialize()
   mCentroidNode = new ShapeFrameNode(mCentroid.get(), nullptr);
   addChild(mCentroidNode);
 
-  mValidColor = dart::Color::Blue(1.0);
-  mInvalidColor = dart::Color::Red(1.0);
+  mValidColor = dart::math::Colord::Blue(1.0);
+  mInvalidColor = dart::math::Colord::Red(1.0);
 
   mDisplayCOM = true;
   mCom = std::make_shared<dart::dynamics::SimpleFrame>(

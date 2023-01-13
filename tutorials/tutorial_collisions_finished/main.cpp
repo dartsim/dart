@@ -522,7 +522,7 @@ SkeletonPtr createBall()
   // Give the ball a body
   addRigidBody<FreeJoint>(ball, "rigid ball", EllipsoidShape::getStaticType());
 
-  setAllColors(ball, dart::Color::Red());
+  setAllColors(ball, dart::math::Colord::Red());
 
   return ball;
 }
@@ -539,7 +539,7 @@ SkeletonPtr createRigidChain()
   bn = addRigidBody<BallJoint>(
       chain, "rigid box 3", BoxShape::getStaticType(), bn);
 
-  setAllColors(chain, dart::Color::Orange());
+  setAllColors(chain, dart::math::Colord::Orange());
 
   return chain;
 }
@@ -562,7 +562,7 @@ SkeletonPtr createRigidRing()
   bn = addRigidBody<BallJoint>(
       ring, "rigid cyl 6", CylinderShape::getStaticType(), bn);
 
-  setAllColors(ring, dart::Color::Blue());
+  setAllColors(ring, dart::math::Colord::Blue());
 
   return ring;
 }
@@ -586,7 +586,7 @@ SkeletonPtr createSoftBody()
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
-  setAllColors(soft, dart::Color::Fuchsia());
+  setAllColors(soft, dart::math::Colord::Fuchsia());
 
   return soft;
 }
@@ -616,7 +616,7 @@ SkeletonPtr createHybridBody()
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
-  setAllColors(hybrid, dart::Color::Green());
+  setAllColors(hybrid, dart::math::Colord::Green());
 
   return hybrid;
 }

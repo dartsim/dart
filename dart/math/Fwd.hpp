@@ -38,4 +38,6 @@
 
 namespace dart::math {
 
+DART_DECLARE_CLASS_POINTERS_S(Color);
+
 } // namespace dart::math

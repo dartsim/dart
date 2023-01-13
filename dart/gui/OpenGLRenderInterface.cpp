@@ -43,6 +43,7 @@
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/LoadOpengl.hpp"
+#include "dart/math/Helpers.hpp"
 #include "dart/math/geometry/Icosphere.hpp"
 
 #include <assimp/cimport.h>

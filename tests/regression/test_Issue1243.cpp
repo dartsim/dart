@@ -89,7 +89,7 @@ dart::dynamics::SkeletonPtr create_floor()
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(box);
-  box_node->getVisualAspect()->setColor(dart::Color::Gray());
+  box_node->getVisualAspect()->setColor(dart::math::Colord::Gray());
 
   // Put the body into position
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

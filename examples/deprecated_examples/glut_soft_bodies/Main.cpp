@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 
   myWorld->eachSkeleton([](dart::dynamics::Skeleton* skel) {
     skel->eachBodyNode([](dart::dynamics::BodyNode* bodyNode) {
-      bodyNode->setColor(dart::Color::Random());
+      bodyNode->setColor(dart::math::Colord::Random());
     });
   });
 

@@ -262,7 +262,7 @@ public:
     if (mForceCountDown > 0)
     {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
-      bn->setColor(dart::Color::Red());
+      bn->setColor(dart::math::Colord::Red());
 
       if (mPositiveSign)
         bn->addExtForce(
@@ -436,7 +436,7 @@ SkeletonPtr createFloor()
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(box);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Black());
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Black());
 
   // Put the body into position
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

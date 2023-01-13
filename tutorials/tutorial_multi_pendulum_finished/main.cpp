@@ -75,7 +75,7 @@ public:
         Eigen::Vector3d(-default_height, 0.0, default_height / 2.0),
         Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
         arrow_properties,
-        dart::Color::Orange(1.0)));
+        dart::math::Colord::Orange(1.0)));
   }
 
   void changeDirection()
@@ -261,7 +261,7 @@ public:
         bn->getShapeNodeWith<VisualAspect>(2)->remove();
       }
 
-      bn->setColor(dart::Color::Blue());
+      bn->setColor(dart::math::Colord::Blue());
     }
 
     if (!mBodyForce)
@@ -276,7 +276,7 @@ public:
 
           BodyNode* bn = dof->getChildBodyNode();
           bn->getShapeNodeWith<VisualAspect>(0)->getVisualAspect()->setColor(
-              dart::Color::Red());
+              dart::math::Colord::Red());
 
           --mForceCountDown[i];
         }
@@ -301,7 +301,7 @@ public:
           }
           bn->addExtForce(force, location, true, true);
           bn->getShapeNodeWith<VisualAspect>(1)->getVisualAspect()->setColor(
-              dart::Color::Red());
+              dart::math::Colord::Red());
           bn->createShapeNodeWith<VisualAspect>(mArrow);
 
           --mForceCountDown[i];
@@ -344,7 +344,7 @@ void setGeometry(const BodyNodePtr& bn)
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           box);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue());
 
   // Set the location of the shape node
   Eigen::Isometry3d box_tf(Eigen::Isometry3d::Identity());
@@ -375,7 +375,7 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   std::shared_ptr<EllipsoidShape> ball(
       new EllipsoidShape(sqrt(2) * Eigen::Vector3d(R, R, R)));
   auto shapeNode = bn->createShapeNodeWith<VisualAspect>(ball);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue());
 
   // Set the geometry of the Body
   setGeometry(bn);
@@ -413,7 +413,7 @@ BodyNode* addBody(
       Eigen::Vector3d(dart::math::toRadian(90.0), 0, 0));
 
   auto shapeNode = bn->createShapeNodeWith<VisualAspect>(cyl);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue());
   shapeNode->setRelativeTransform(tf);
 
   // Set the geometry of the Body

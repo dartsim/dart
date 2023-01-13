@@ -48,8 +48,8 @@ const Eigen::Vector4d DefaultSimulationColor
 const Eigen::Vector4d DefaultPausedColor
     = Eigen::Vector4d(0xEE, 0xC9, 0x00, 0.0) / 255.0
       + Eigen::Vector4d(0, 0, 0, 1.0);
-const Eigen::Vector4d DefaultSelectedColor = dart::Color::Red(1.0);
-const Eigen::Vector4d DefaultForceBodyColor = dart::Color::Fuchsia(1.0);
+const Eigen::Vector4d DefaultSelectedColor = dart::math::Colord::Red(1.0);
+const Eigen::Vector4d DefaultForceBodyColor = dart::math::Colord::Fuchsia(1.0);
 const Eigen::Vector4d DefaultForceLineColor
     = Eigen::Vector4d(1.0, 0.63, 0.0, 1.0);
 

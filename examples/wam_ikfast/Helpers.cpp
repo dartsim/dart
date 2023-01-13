@@ -57,7 +57,7 @@ dart::dynamics::SkeletonPtr createGround()
                            dart::dynamics::VisualAspect,
                            dart::dynamics::CollisionAspect,
                            dart::dynamics::DynamicsAspect>(groundShape);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue(0.2));
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue(0.2));
 
   return ground;
 }

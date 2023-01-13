@@ -71,7 +71,7 @@ dynamics::SkeletonPtr createFloor()
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(box);
-  shapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
+  shapeNode->getVisualAspect()->setColor(dart::math::Colord::LightGray());
   shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(0);
   shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0);
 

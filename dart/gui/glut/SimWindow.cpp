@@ -547,11 +547,11 @@ void SimWindow::drawMarker(
 
   if (marker->getConstraintType() == dynamics::Marker::HARD)
   {
-    mRI->setPenColor(Color::Red(1.0));
+    mRI->setPenColor(math::Colord::Red(1.0));
   }
   else if (marker->getConstraintType() == dynamics::Marker::SOFT)
   {
-    mRI->setPenColor(Color::Green(1.0));
+    mRI->setPenColor(math::Colord::Green(1.0));
   }
   else
   {

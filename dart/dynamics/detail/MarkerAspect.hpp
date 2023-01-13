@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/Export.hpp>
 
-#include <dart/math/Helpers.hpp>
+#include <dart/math/Color.hpp>
 
 #include <Eigen/Core>
 
@@ -56,7 +56,7 @@ struct DART_DYNAMICS_API MarkerProperties
   ConstraintType mType;
 
   MarkerProperties(
-      const Eigen::Vector4d& color = Color::White(1.0),
+      const Eigen::Vector4d& color = math::Colord::White(1.0),
       ConstraintType type = NO);
 
   // To get byte-aligned Eigen vectors
