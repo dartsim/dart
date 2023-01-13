@@ -33,8 +33,7 @@
 #ifndef DART_DYNAMICS_NODE_HPP_
 #define DART_DYNAMICS_NODE_HPP_
 
-#include <dart/dynamics/Export.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Cloneable.hpp>
 #include <dart/common/EmbeddedAspect.hpp>

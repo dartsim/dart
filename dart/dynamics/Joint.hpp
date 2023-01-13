@@ -34,7 +34,7 @@
 #define DART_DYNAMICS_JOINT_HPP_
 
 #include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/detail/JointAspect.hpp>
 
 #include <dart/math/MathTypes.hpp>

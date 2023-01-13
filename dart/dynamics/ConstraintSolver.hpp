@@ -36,8 +36,7 @@
 #include <dart/dynamics/CollisionDetector.hpp>
 #include <dart/dynamics/ConstrainedGroup.hpp>
 #include <dart/dynamics/ConstraintBase.hpp>
-#include <dart/dynamics/Export.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <Eigen/Dense>
 

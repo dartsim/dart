@@ -35,7 +35,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <osg/MatrixTransform>
 

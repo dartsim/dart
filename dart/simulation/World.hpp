@@ -39,16 +39,15 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
-#include <dart/simulation/Export.hpp>
+#include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
-#include <dart/simulation/SmartPointer.hpp>
 
 #include <dart/dynamics/CollisionOption.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 
+#include <dart/common/Fwd.hpp>
 #include <dart/common/NameManager.hpp>
-#include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
 
 #include <Eigen/Dense>
@@ -58,26 +57,9 @@
 #include <vector>
 
 namespace dart {
-
-namespace math {
-class Integrator;
-} // namespace math
-
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
-namespace dynamics {
-class ConstraintSolver;
-} // namespace dynamics
-
-namespace collision {
-class CollisionResult;
-} // namespace collision
-
 namespace simulation {
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+DART_DECLARE_CLASS_POINTERS(World)
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN

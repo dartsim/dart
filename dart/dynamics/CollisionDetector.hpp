@@ -38,10 +38,9 @@
 #include <dart/dynamics/Contact.hpp>
 #include <dart/dynamics/DistanceOption.hpp>
 #include <dart/dynamics/DistanceResult.hpp>
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/RaycastOption.hpp>
 #include <dart/dynamics/RaycastResult.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 
 #include <dart/common/Factory.hpp>
 

@@ -34,8 +34,8 @@
 #define DART_DYNAMICS_JACOBIANNODE_HPP_
 
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Node.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 
 #include <memory>
 #include <unordered_set>

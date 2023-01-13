@@ -34,8 +34,7 @@
 #define DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
 
 #include <dart/dynamics/ConstraintSolver.hpp>
-#include <dart/dynamics/Export.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 namespace dart {
 namespace dynamics {

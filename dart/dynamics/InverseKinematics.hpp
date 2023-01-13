@@ -33,9 +33,8 @@
 #ifndef DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 #define DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/JacobianNode.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 
 #include <dart/optimization/Function.hpp>
 #include <dart/optimization/Problem.hpp>

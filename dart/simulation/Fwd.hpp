@@ -30,17 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_SMARTPOINTER_HPP_
-#define DART_SIMULATION_SMARTPOINTER_HPP_
+#pragma once
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/common/Fwd.hpp>
 
-namespace dart {
-namespace simulation {
+namespace dart::simulation {
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+DART_DECLARE_CLASS_POINTERS(World)
 
-} // namespace simulation
-} // namespace dart
-
-#endif // DART_SIMULATION_SMARTPOINTER_HPP_
+} // namespace dart::simulation

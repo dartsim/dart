@@ -35,6 +35,67 @@
 #include <dart/common/Export.hpp>
 #include <dart/common/Macros.hpp>
 
+#include <memory>
+
+#define DART_DECLARE_STRUCT_POINTERS(X)                                        \
+  struct X;                                                                    \
+  using X##Ptr = ::std::shared_ptr<X>;                                         \
+  using Const##X##Ptr = ::std::shared_ptr<const X>;                            \
+  using Weak##X##Ptr = ::std::weak_ptr<X>;                                     \
+  using WeakConst##X##Ptr = ::std::weak_ptr<const X>;                          \
+  using Unique##X##Ptr = ::std::unique_ptr<X>;                                 \
+  using UniqueConst##X##Ptr = ::std::unique_ptr<const X>;                      \
+  void _ANONYMOUS_FUNCTION_1()
+
+#define DART_DECLARE_CLASS_POINTERS(X)                                         \
+  class X;                                                                     \
+  using X##Ptr = ::std::shared_ptr<X>;                                         \
+  using Const##X##Ptr = ::std::shared_ptr<const X>;                            \
+  using Weak##X##Ptr = ::std::weak_ptr<X>;                                     \
+  using WeakConst##X##Ptr = ::std::weak_ptr<const X>;                          \
+  using Unique##X##Ptr = ::std::unique_ptr<X>;                                 \
+  using UniqueConst##X##Ptr = ::std::unique_ptr<const X>;
+
+#define DART_DECLARE_STRUCT_POINTERS_S(x)                                      \
+  template <typename S>                                                        \
+  struct x;                                                                    \
+  template <typename S>                                                        \
+  using x##Ptr = ::std::shared_ptr<x<S>>;                                      \
+  template <typename S>                                                        \
+  using Const##x##Ptr = ::std::shared_ptr<const x<S>>;                         \
+  template <typename S>                                                        \
+  using x##WeakPtr = ::std::weak_ptr<x<S>>;                                    \
+  template <typename S>                                                        \
+  using Const##x##WeakPtr = ::std::weak_ptr<const x<S>>;                       \
+  template <typename S>                                                        \
+  using x##UniquePtr = ::std::unique_ptr<x<S>>;                                \
+  template <typename S>                                                        \
+  using Const##x##UniquePtr = ::std::unique_ptr<const x<S>>;                   \
+  using x##f = x<float>;                                                       \
+  using x##d = x<double>;                                                      \
+  using x##ld = x<long double>;                                                \
+  void _ANONYMOUS_FUNCTION_3()
+
+#define DART_DECLARE_CLASS_POINTERS_S(x)                                       \
+  template <typename T>                                                        \
+  class x;                                                                     \
+  template <typename T>                                                        \
+  using x##Ptr = ::std::shared_ptr<x<T>>;                                      \
+  template <typename T>                                                        \
+  using Const##x##Ptr = ::std::shared_ptr<const x<T>>;                         \
+  template <typename T>                                                        \
+  using x##WeakPtr = ::std::weak_ptr<x<T>>;                                    \
+  template <typename T>                                                        \
+  using Const##x##WeakPtr = ::std::weak_ptr<const x<T>>;                       \
+  template <typename T>                                                        \
+  using x##UniquePtr = ::std::unique_ptr<x<T>>;                                \
+  template <typename T>                                                        \
+  using Const##x##UniquePtr = ::std::unique_ptr<const x<T>>;                   \
+  using x##f = x<float>;                                                       \
+  using x##d = x<double>;                                                      \
+  using x##ld = x<long double>;                                                \
+  void _ANONYMOUS_FUNCTION_4()
+
 #if defined(_MSC_VER)
 
   #if DART_BUILD_TEMPLATE_CODE_FOR_FLOAT

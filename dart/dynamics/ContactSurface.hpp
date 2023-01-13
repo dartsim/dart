@@ -34,8 +34,8 @@
 #define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
 #include <dart/dynamics/Contact.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 
 #include <Eigen/Core>
 
