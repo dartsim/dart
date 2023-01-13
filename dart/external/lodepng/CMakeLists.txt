@@ -17,3 +17,8 @@ dart_add_library(${target_name} STATIC ${hdrs} ${srcs})
 target_include_directories(${target_name}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
+
+if(MSVC)
+  install(TARGETS ${target_name} DESTINATION lib EXPORT ${target_name})
+  install(EXPORT ${target_name} DESTINATION ${CONFIG_INSTALL_DIR})
+endif()

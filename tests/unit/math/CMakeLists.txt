@@ -6,7 +6,9 @@
 #
 # This file is provided under the "BSD-style" License
 
-if(NOT TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-math)
+set(component_name math)
+
+if(NOT TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-${component_name})
   return()
 endif()
 
@@ -18,8 +20,8 @@ endif()
 
 set(link_libraries)
 set(link_dart_libraries
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-math
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-math
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-${component_name}
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-math
 )
 
 # Build the uint tests
@@ -29,5 +31,5 @@ dart_build_tests(
   SOURCES ${test_files}
   LINK_LIBRARIES ${link_libraries}
   LINK_DART_LIBRARIES ${link_dart_libraries}
-  TARGET_PREFIX math
+  TARGET_PREFIX ${component_name}
 )

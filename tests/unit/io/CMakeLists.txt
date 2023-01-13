@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-set(component_name optimization)
+set(component_name io)
 
 if(NOT TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-${component_name})
   return()
@@ -21,7 +21,7 @@ endif()
 set(link_libraries)
 set(link_dart_libraries
   ${PROJECT_NAME}${DART_MAJOR_VERSION}-${component_name}
-  ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-math
+  ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-io
 )
 
 # Build the uint tests

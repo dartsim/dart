@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-set(component_name optimization)
+set(component_name collision)
 
 if(NOT TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-${component_name})
   return()

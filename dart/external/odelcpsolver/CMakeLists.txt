@@ -20,3 +20,8 @@ target_include_directories(${target_name}
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
 )
 target_compile_features(${target_name} PUBLIC cxx_std_17)
+
+if(MSVC)
+  install(TARGETS ${target_name} DESTINATION lib EXPORT ${target_name})
+  install(EXPORT ${target_name} DESTINATION ${CONFIG_INSTALL_DIR})
+endif()
