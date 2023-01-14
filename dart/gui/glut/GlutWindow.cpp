@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/external/lodepng/lodepng.h"
+#include "dart/gui/glut/detail/lodepng.h"
 #include "dart/gui/glut/Window.hpp"
 
 #ifdef _WIN32

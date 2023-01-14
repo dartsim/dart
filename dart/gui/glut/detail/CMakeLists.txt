@@ -6,11 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-dart_add_component_sub_directory(
-  DEPENDENT_PACKAGES_REQUIRED
-    GLUT
-  TARGET_LINK_LIBRARIES_PUBLIC
-    GLUT::GLUT
-  SUB_DIRECTORIES
-    detail
-)
+dart_add_component_sub_directory()
