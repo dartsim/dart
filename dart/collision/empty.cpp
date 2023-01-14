@@ -34,8 +34,9 @@
 
 namespace dart::collision {
 
-void empty() {
+void empty()
+{
   // Do nothing
 }
 
-} // namespace dart
+} // namespace dart::collision

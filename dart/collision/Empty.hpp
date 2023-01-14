@@ -38,4 +38,4 @@ namespace dart::collision {
 
 DART_COLLISION_API void empty();
 
-} // namespace dart
+} // namespace dart::collision

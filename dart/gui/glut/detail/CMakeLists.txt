@@ -6,4 +6,6 @@
 #
 # This file is provided under the "BSD-style" License
 
-dart_add_component_sub_directory()
+dart_add_component_sub_directory(
+  DISABLE_FORMAT
+)

@@ -41,8 +41,8 @@
 #include "dart/gui/osg/InteractiveFrame.hpp"
 #include "dart/gui/osg/MouseEventHandler.hpp"
 #include "dart/gui/osg/Viewer.hpp"
-#include "dart/math/Helpers.hpp"
 #include "dart/gui/osg/detail/CameraModeCallback.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace gui {

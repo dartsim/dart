@@ -766,7 +766,8 @@ protected:
 //==============================================================================
 /// GradientMethod is a base class for different ways of computing the
 /// gradient of an InverseKinematics module.
-class DART_DYNAMICS_API InverseKinematics::GradientMethod : public common::Subject
+class DART_DYNAMICS_API InverseKinematics::GradientMethod
+  : public common::Subject
 {
 public:
   struct DART_DYNAMICS_API Properties
@@ -916,7 +917,8 @@ public:
     UniqueProperties(double damping = DefaultIKDLSCoefficient);
   };
 
-  struct DART_DYNAMICS_API Properties : GradientMethod::Properties, UniqueProperties
+  struct DART_DYNAMICS_API Properties : GradientMethod::Properties,
+                                        UniqueProperties
   {
     /// Default constructor
     Properties(
@@ -962,7 +964,8 @@ protected:
 /// very smooth but imprecise, requiring more iterations before converging
 /// and being less precise in general. This method is suitable for animations
 /// where smoothness is prefered over precision.
-class DART_DYNAMICS_API InverseKinematics::JacobianTranspose : public GradientMethod
+class DART_DYNAMICS_API InverseKinematics::JacobianTranspose
+  : public GradientMethod
 {
 public:
   /// Constructor
@@ -1084,7 +1087,8 @@ public:
     void resetQualityComparisonFunction();
   };
 
-  struct DART_DYNAMICS_API Properties : GradientMethod::Properties, UniqueProperties
+  struct DART_DYNAMICS_API Properties : GradientMethod::Properties,
+                                        UniqueProperties
   {
     // Default constructor
     Properties(
@@ -1314,8 +1318,9 @@ public:
 /// instantiated by a user. Call InverseKinematics::resetProblem() to set the
 /// first equality constraint of the module's Problem to an
 /// InverseKinematics::Constraint.
-class DART_DYNAMICS_API InverseKinematics::Constraint final : public Function,
-                                            public optimization::Function
+class DART_DYNAMICS_API InverseKinematics::Constraint final
+  : public Function,
+    public optimization::Function
 {
 public:
   /// Constructor

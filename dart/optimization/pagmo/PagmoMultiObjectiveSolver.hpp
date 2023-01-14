@@ -69,7 +69,8 @@ public:
     explicit UniqueProperties(Algorithm algorithm = Algorithm::Global_NSGA2);
   };
 
-  struct DART_OPTIMIZATION_API Properties : MultiObjectiveSolver::Properties, UniqueProperties
+  struct DART_OPTIMIZATION_API Properties : MultiObjectiveSolver::Properties,
+                                            UniqueProperties
   {
     Properties(
         const MultiObjectiveSolver::Properties& solverProperties

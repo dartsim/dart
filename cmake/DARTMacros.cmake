@@ -742,6 +742,7 @@ endfunction()
 function(dart_add_component_sub_directory)
   set(prefix _ARG)
   set(options
+    DISABLE_FORMAT
   )
   set(oneValueArgs
   )
@@ -817,7 +818,9 @@ function(dart_add_component_sub_directory)
   )
 
   # Format files
-  dart_format_add(${headers} ${sources})
+  if(NOT _ARG_DISABLE_FORMAT)
+    dart_format_add(${headers} ${sources})
+  endif()
 endfunction()
 
 # ==============================================================================
