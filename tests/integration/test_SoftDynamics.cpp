@@ -250,8 +250,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * constantsd::pi();
-  double ub = 1.5 * constantsd::pi();
+  double lb = -1.5 * pi();
+  double ub = 1.5 * pi();
 
   // Lower and upper bound of joint damping and stiffness
   double lbD = 0.0;

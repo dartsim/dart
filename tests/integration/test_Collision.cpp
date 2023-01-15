@@ -1541,12 +1541,12 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
   {
     const double time = world->getTime();
 
-    joint1->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint2->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint3->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint4->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint5->setCommand(0, -0.5 * constantsd::pi() * std::sin(time));
-    joint6->setCommand(0, -0.5 * constantsd::pi() * std::sin(time)); // ignored
+    joint1->setCommand(0, -0.5 * pi() * std::cos(time));
+    joint2->setCommand(0, -0.5 * pi() * std::cos(time));
+    joint3->setCommand(0, -0.5 * pi() * std::cos(time));
+    joint4->setCommand(0, -0.5 * pi() * std::cos(time));
+    joint5->setCommand(0, -0.5 * pi() * std::sin(time));
+    joint6->setCommand(0, -0.5 * pi() * std::sin(time)); // ignored
 
     world->step(false);
 

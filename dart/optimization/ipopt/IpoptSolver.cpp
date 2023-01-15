@@ -89,7 +89,7 @@ bool IpoptSolver::solve()
   else
   {
     mIpoptApp->Options()->SetIntegerValue(
-        "print_frequency_iter", std::numeric_limits<int>::max());
+        "print_frequency_iter", math::max<int>());
   }
 
   // Intialize the IpoptApplication and process the options
@@ -226,7 +226,7 @@ bool DartTNLP::get_bounds_info(
     // Ipopt interprets any number greater than nlp_upper_bound_inf as
     // infinity. The default value of nlp_upper_bound_inf and
     // nlp_lower_bound_inf is 1e+19 and can be changed through ipopt options.
-    g_l[idx] = -std::numeric_limits<double>::infinity();
+    g_l[idx] = -math::inf<double>();
     g_u[idx] = 0;
     idx++;
   }

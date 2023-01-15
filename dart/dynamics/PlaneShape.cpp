@@ -132,10 +132,8 @@ ShapePtr PlaneShape::clone() const
 //==============================================================================
 void PlaneShape::updateBoundingBox() const
 {
-  mBoundingBox.setMin(
-      Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity()));
-  mBoundingBox.setMax(
-      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()));
+  mBoundingBox.setMin(Eigen::Vector3d::Constant(-math::inf<double>()));
+  mBoundingBox.setMax(Eigen::Vector3d::Constant(math::inf<double>()));
 
   mIsBoundingBoxDirty = false;
 }

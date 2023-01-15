@@ -184,10 +184,8 @@ TEST(DartLoader, parseJointProperties)
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 
   auto joint2 = robot->getJoint(2);
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf());
   EXPECT_TRUE(joint2->isCyclic(0));
 }
 
@@ -317,10 +315,8 @@ TEST(DartLoader, mimicJoint)
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 
   auto joint2 = robot->getJoint(2);
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf());
   EXPECT_TRUE(joint2->isCyclic(0));
 
   EXPECT_TRUE(joint2->getActuatorType() == dart::dynamics::Joint::MIMIC);
@@ -407,10 +403,8 @@ TEST(DartLoader, badMimicJoint)
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 
   auto joint2 = robot->getJoint(2);
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf());
   EXPECT_TRUE(joint2->isCyclic(0));
 
   EXPECT_TRUE(joint2->getActuatorType() != dart::dynamics::Joint::MIMIC);

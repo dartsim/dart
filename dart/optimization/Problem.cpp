@@ -69,11 +69,9 @@ void Problem::setDimension(std::size_t _dim)
 
     mInitialGuess = Eigen::VectorXd::Zero(mDimension);
 
-    mLowerBounds = Eigen::VectorXd::Constant(
-        mDimension, -std::numeric_limits<double>::infinity());
+    mLowerBounds = Eigen::VectorXd::Constant(mDimension, -math::inf<double>());
 
-    mUpperBounds = Eigen::VectorXd::Constant(
-        mDimension, std::numeric_limits<double>::infinity());
+    mUpperBounds = Eigen::VectorXd::Constant(mDimension, math::inf<double>());
 
     mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
     clearAllSeeds();

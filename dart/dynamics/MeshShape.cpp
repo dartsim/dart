@@ -257,12 +257,12 @@ void MeshShape::updateBoundingBox() const
     return;
   }
 
-  double max_X = -std::numeric_limits<double>::infinity();
-  double max_Y = -std::numeric_limits<double>::infinity();
-  double max_Z = -std::numeric_limits<double>::infinity();
-  double min_X = std::numeric_limits<double>::infinity();
-  double min_Y = std::numeric_limits<double>::infinity();
-  double min_Z = std::numeric_limits<double>::infinity();
+  double max_X = -math::inf<double>();
+  double max_Y = -math::inf<double>();
+  double max_Z = -math::inf<double>();
+  double min_X = math::inf<double>();
+  double min_Y = math::inf<double>();
+  double min_Z = math::inf<double>();
 
   for (unsigned int i = 0; i < mMesh->mNumMeshes; i++)
   {

@@ -474,9 +474,7 @@ DART_MATH_API bool verifyTransform(const Eigen::Isometry3d& _T);
 /// rotations
 inline double wrapToPi(double angle)
 {
-  constexpr auto pi = constantsd::pi();
-
-  return std::fmod(angle + pi, 2 * pi) - pi;
+  return std::fmod(angle + pi(), 2 * pi()) - pi();
 }
 
 template <typename MatrixType, typename ReturnType>
@@ -486,9 +484,8 @@ void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
   // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
   if (_SVD.nonzeroSingularValues() > 0)
   {
-    double thresh = std::max(
-        _SVD.singularValues().coeff(0) * 1e-10,
-        std::numeric_limits<double>::min());
+    double thresh
+        = std::max(_SVD.singularValues().coeff(0) * 1e-10, math::min<double>());
     int i = _SVD.nonzeroSingularValues() - 1;
     while (i >= 0 && _SVD.singularValues().coeff(i) < thresh)
       --i;

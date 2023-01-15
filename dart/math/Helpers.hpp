@@ -58,14 +58,14 @@ namespace math {
 template <typename T>
 constexpr T toRadian(const T& degree)
 {
-  return degree * constants<T>::pi() / 180.0;
+  return degree * pi<T>() / 180.0;
 }
 
 //==============================================================================
 template <typename T>
 constexpr T toDegree(const T& radian)
 {
-  return radian * 180.0 / constants<T>::pi();
+  return radian * 180.0 / pi<T>();
 }
 
 /// \brief a cross b = (CR*a) dot b
@@ -287,7 +287,7 @@ namespace suffixes {
 //==============================================================================
 constexpr double operator"" _pi(long double x)
 {
-  return x * constants<double>::pi();
+  return x * pi();
 }
 
 //==============================================================================

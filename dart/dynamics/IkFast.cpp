@@ -475,7 +475,7 @@ bool wrapCyclicSolution(
   if (lb > ub)
     return false;
 
-  const auto pi2 = math::constantsd::two_pi();
+  const auto pi2 = math::two_pi();
 
   if (currentValue < lb)
   {

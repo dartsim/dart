@@ -102,8 +102,7 @@ const Eigen::Vector3d EllipsoidShape::getRadii() const
 double EllipsoidShape::computeVolume(const Eigen::Vector3d& diameters)
 {
   // 4/3* Pi* a/2* b/2* c/2
-  return math::constantsd::pi() * diameters[0] * diameters[1] * diameters[2]
-         / 6.0;
+  return math::pi() * diameters[0] * diameters[1] * diameters[2] / 6.0;
 }
 
 //==============================================================================

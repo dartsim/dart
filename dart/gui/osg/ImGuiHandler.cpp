@@ -46,6 +46,7 @@
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/WorldNode.hpp"
 #include "dart/gui/osg/detail/CameraModeCallback.hpp"
+#include "dart/math/Constants.hpp"
 
 #include <osg/Camera>
 #include <osg/RenderInfo>
@@ -437,7 +438,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 
   io.DeltaTime
       = mTime > 0.0 ? static_cast<float>(currentTime - mTime) : 1.0f / 60.0f;
-  io.DeltaTime = std::max(io.DeltaTime, std::numeric_limits<float>::min());
+  io.DeltaTime = std::max(io.DeltaTime, math::min<float>());
   mTime = currentTime;
   assert(mTime >= 0.0);
 

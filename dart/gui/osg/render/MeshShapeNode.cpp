@@ -400,7 +400,7 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
   // We sometimes use this value for meshes that do not have material
   // information, since assimp does not seem to have a built-in way to express
   // that case.
-  if (index == std::numeric_limits<unsigned int>::max())
+  if (index == math::max<unsigned int>())
     return {};
 
   if (!mTextureImageArrays.empty())

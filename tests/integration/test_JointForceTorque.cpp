@@ -328,7 +328,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   const double kp1 = 5e+4;
   const double kp2 = 1e+4;
   const double target1 = 0;
-  const double target2 = -0.25 * math::constantsd::pi();
+  const double target2 = -0.25 * math::pi();
   const auto steps = 4500u;
   for (auto i = 0u; i < steps; ++i)
   {

@@ -134,8 +134,7 @@ ShapePtr MultiSphereConvexHullShape::clone() const
 //==============================================================================
 void MultiSphereConvexHullShape::updateBoundingBox() const
 {
-  Eigen::Vector3d min
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+  Eigen::Vector3d min = Eigen::Vector3d::Constant(math::max<double>());
   Eigen::Vector3d max = -min;
 
   for (const auto& sphere : mSpheres)

@@ -95,7 +95,7 @@ void ConeShape::setHeight(double height)
 //==============================================================================
 double ConeShape::computeVolume(double radius, double height)
 {
-  return (1.0 / 3.0) * math::constantsd::pi() * std::pow(radius, 2) * height;
+  return (1.0 / 3.0) * math::pi() * std::pow(radius, 2) * height;
 }
 
 //==============================================================================

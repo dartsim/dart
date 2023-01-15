@@ -252,15 +252,15 @@ protected:
   generatePointCloudColors(const octomap::Pointcloud& pointCloud)
   {
     const auto& points = mPointCloudShape->getPoints();
-    double minZ = std::numeric_limits<double>::max();
-    double maxZ = std::numeric_limits<double>::min();
+    double minZ = math::max<double>();
+    double maxZ = math::min<double>();
     for (const auto& point : points)
     {
       minZ = std::min(minZ, point.z());
       maxZ = std::max(maxZ, point.z());
     }
     double diffZ
-        = std::max(std::abs(maxZ - minZ), std::numeric_limits<double>::min());
+        = std::max(std::abs(maxZ - minZ), math::min<double>());
 
     std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
         colors;
@@ -674,7 +674,7 @@ dynamics::SkeletonPtr createGround()
       = ground->getJoint(0)->getTransformFromParentBodyNode();
   ground_tf.pretranslate(Eigen::Vector3d(0, 0, 0.5));
   ground_tf.rotate(
-      Eigen::AngleAxisd(constantsd::pi() / 2, Eigen::Vector3d(1, 0, 0)));
+      Eigen::AngleAxisd(pi() / 2, Eigen::Vector3d(1, 0, 0)));
   ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
 
   return ground;

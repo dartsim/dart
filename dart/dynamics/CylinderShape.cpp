@@ -95,7 +95,7 @@ void CylinderShape::setHeight(double _height)
 //==============================================================================
 double CylinderShape::computeVolume(double radius, double height)
 {
-  return math::constantsd::pi() * std::pow(radius, 2) * height;
+  return math::pi() * std::pow(radius, 2) * height;
 }
 
 //==============================================================================

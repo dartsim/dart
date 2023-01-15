@@ -53,7 +53,7 @@ RealTimeWorldNode::RealTimeWorldNode(
     mTargetRealTimeLapse(1.0 / targetFrequency),
     mTargetSimTimeLapse(targetRealTimeFactor * mTargetRealTimeLapse),
     mLastRealTimeFactor(0.0),
-    mLowestRealTimeFactor(std::numeric_limits<double>::infinity()),
+    mLowestRealTimeFactor(math::inf<double>()),
     mHighestRealTimeFactor(0.0)
 {
   // Do nothing

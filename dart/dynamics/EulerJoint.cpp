@@ -212,7 +212,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
       J2 << 0.0, 0.0, 1.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (std::abs(getPositionsStatic()[1]) == math::constantsd::pi() * 0.5)
+      if (std::abs(getPositionsStatic()[1]) == math::pi() * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << Joint::mAspectProperties.mName << "]. (" << _positions[0]
                   << ", " << _positions[1] << ", " << _positions[2] << ")"
@@ -235,7 +235,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
       J2 << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (std::abs(_positions[1]) == math::constantsd::pi() * 0.5)
+      if (std::abs(_positions[1]) == math::pi() * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << Joint::mAspectProperties.mName << "]. (" << _positions[0]
                   << ", " << _positions[1] << ", " << _positions[2] << ")"

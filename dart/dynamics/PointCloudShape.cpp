@@ -268,10 +268,8 @@ void PointCloudShape::updateBoundingBox() const
     return;
   }
 
-  Eigen::Vector3d min
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-  Eigen::Vector3d max
-      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  Eigen::Vector3d min = Eigen::Vector3d::Constant(math::inf<double>());
+  Eigen::Vector3d max = Eigen::Vector3d::Constant(-math::inf<double>());
 
   for (const auto& vertex : mPoints)
   {

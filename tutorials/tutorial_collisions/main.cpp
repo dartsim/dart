@@ -52,10 +52,8 @@
 [[maybe_unused]] const double default_launch_angle
     = dart::math::toRadian(45.0); // rad
 
-[[maybe_unused]] const double maximum_start_w
-    = 6 * dart::math::constantsd::pi(); // rad/s
-[[maybe_unused]] const double default_start_w
-    = 3 * dart::math::constantsd::pi(); // rad/s
+[[maybe_unused]] const double maximum_start_w = 6 * dart::math::pi(); // rad/s
+[[maybe_unused]] const double default_start_w = 3 * dart::math::pi(); // rad/s
 
 [[maybe_unused]] const double ring_spring_stiffness = 0.5;
 [[maybe_unused]] const double ring_damping_coefficient = 0.05;

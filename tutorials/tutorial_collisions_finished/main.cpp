@@ -49,8 +49,8 @@ const double minimum_launch_angle = dart::math::toRadian(30.0); // rad
 const double maximum_launch_angle = dart::math::toRadian(70.0); // rad
 const double default_launch_angle = dart::math::toRadian(45.0); // rad
 
-const double maximum_start_w = 6 * dart::math::constantsd::pi(); // rad/s
-const double default_start_w = 3 * dart::math::constantsd::pi(); // rad/s
+const double maximum_start_w = 6 * dart::math::pi(); // rad/s
+const double default_start_w = 3 * dart::math::pi(); // rad/s
 
 const double ring_spring_stiffness = 0.5;
 const double ring_damping_coefficient = 0.05;
@@ -82,7 +82,7 @@ void setupRing(const SkeletonPtr& ring)
 
   // Compute the joint angle needed to form a ring
   std::size_t numEdges = ring->getNumBodyNodes();
-  double angle = 2 * dart::math::constantsd::pi() / numEdges;
+  double angle = 2 * dart::math::pi() / numEdges;
 
   // Set the BallJoints so that they have the correct rest position angle
   for (std::size_t i = 1; i < ring->getNumJoints(); ++i)
@@ -467,12 +467,11 @@ BodyNode* addSoftBody(
            height = 2 * default_shape_width;
 
     // Mass of center
-    double mass = default_shape_density * height * 2
-                  * dart::math::constantsd::pi() * radius
+    double mass = default_shape_density * height * 2 * dart::math::pi() * radius
                   * default_skin_thickness;
     // Mass of top and bottom
-    mass += 2 * default_shape_density * dart::math::constantsd::pi()
-            * pow(radius, 2) * default_skin_thickness;
+    mass += 2 * default_shape_density * dart::math::pi() * pow(radius, 2)
+            * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
         radius, height, 8, 3, 2, mass);
   }
@@ -480,7 +479,7 @@ BodyNode* addSoftBody(
   {
     double radius = default_shape_height / 2.0;
     Eigen::Vector3d dims = 2 * radius * Eigen::Vector3d::Ones();
-    double mass = default_shape_density * 4.0 * dart::math::constantsd::pi()
+    double mass = default_shape_density * 4.0 * dart::math::pi()
                   * pow(radius, 2) * default_skin_thickness;
     soft_properties
         = SoftBodyNodeHelper::makeEllipsoidProperties(dims, 6, 6, mass);

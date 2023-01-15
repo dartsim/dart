@@ -983,7 +983,7 @@ InverseKinematics::Analytical::Analytical(
     // We override the clamping and the weights of the error method, because
     // clamping and weighing are useful for iterative methods, but they are
     // harmful to analytical methods.
-    error->setErrorLengthClamp(std::numeric_limits<double>::infinity());
+    error->setErrorLengthClamp(math::inf<double>());
     error->setErrorWeights(Eigen::Vector6d::Constant(1.0));
   }
 }

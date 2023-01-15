@@ -68,8 +68,8 @@ Isometry3d getRandomTransform()
 {
   Isometry3d T = Isometry3d::Identity();
 
-  const Vector3d rotation = math::Random::uniform<Vector3d>(
-      -math::constantsd::pi(), math::constantsd::pi());
+  const Vector3d rotation
+      = math::Random::uniform<Vector3d>(-math::pi(), math::pi());
   const Vector3d position = Vector3d(
       math::Random::uniform(-1.0, 1.0),
       math::Random::uniform(0.5, 1.0),

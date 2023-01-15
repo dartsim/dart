@@ -185,17 +185,17 @@ void cullPoints(int n, double p[], int m, int i0, int iret[])
   iret++;
   for (j = 1; j < m; j++)
   {
-    a = double(j) * (2 * math::constantsd::pi() / m) + A[i0];
-    if (a > math::constantsd::pi())
-      a -= 2 * math::constantsd::pi();
+    a = double(j) * (2 * math::pi() / m) + A[i0];
+    if (a > math::pi())
+      a -= 2 * math::pi();
     double maxdiff = 1e9, diff;
     for (i = 0; i < n; i++)
     {
       if (avail[i])
       {
         diff = fabs(A[i] - a);
-        if (diff > math::constantsd::pi())
-          diff = 2 * math::constantsd::pi() - diff;
+        if (diff > math::pi())
+          diff = 2 * math::pi() - diff;
         if (diff < maxdiff)
         {
           maxdiff = diff;

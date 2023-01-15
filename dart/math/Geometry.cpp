@@ -97,7 +97,7 @@ Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& _R)
     else
     {
       // Not a unique solution:  x1_angle - x0_angle = atan2(-r12,r11)
-      double y = constantsd::pi();
+      double y = pi();
       double x0 = -atan2(-_R(1, 2), _R(1, 1));
       double x1 = 0.0;
       // return EA_NOT_UNIQUE_DIF;
@@ -128,7 +128,7 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R)
   if (_R(0, 2) > (1.0 - DART_EPSILON))
   {
     z = atan2(_R(1, 0), _R(1, 1));
-    y = constantsd::half_pi();
+    y = half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, y, z);
   }
@@ -136,7 +136,7 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R)
   if (_R(0, 2) < -(1.0 - DART_EPSILON))
   {
     z = atan2(_R(1, 0), _R(1, 1));
-    y = -constantsd::half_pi();
+    y = -half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, y, z);
   }
@@ -156,7 +156,7 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R)
   if (_R(2, 0) > (1.0 - DART_EPSILON))
   {
     x = atan2(_R(0, 1), _R(0, 2));
-    y = -constantsd::half_pi();
+    y = -half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, y, x);
   }
@@ -164,7 +164,7 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R)
   if (_R(2, 0) < -(1.0 - DART_EPSILON))
   {
     x = atan2(_R(0, 1), _R(0, 2));
-    y = constantsd::half_pi();
+    y = half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, y, x);
   }
@@ -184,7 +184,7 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R)
   if (_R(0, 1) > (1.0 - DART_EPSILON))
   {
     y = atan2(_R(1, 2), _R(1, 0));
-    z = -constantsd::half_pi();
+    z = -half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, z, y);
   }
@@ -192,7 +192,7 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R)
   if (_R(0, 1) < -(1.0 - DART_EPSILON))
   {
     y = atan2(_R(1, 2), _R(1, 0));
-    z = constantsd::half_pi();
+    z = half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, z, y);
   }
@@ -212,7 +212,7 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R)
   if (_R(1, 0) > (1.0 - DART_EPSILON))
   {
     x = -atan2(_R(0, 2), _R(0, 1));
-    z = constantsd::half_pi();
+    z = half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, z, x);
   }
@@ -220,7 +220,7 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R)
   if (_R(1, 0) < -(1.0 - DART_EPSILON))
   {
     x = -atan2(_R(0, 2), _R(0, 1));
-    z = -constantsd::half_pi();
+    z = -half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, z, x);
   }
@@ -240,7 +240,7 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R)
   if (_R(2, 1) > (1.0 - DART_EPSILON))
   {
     y = atan2(_R(0, 2), _R(0, 0));
-    x = constantsd::half_pi();
+    x = half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, x, y);
   }
@@ -248,7 +248,7 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R)
   if (_R(2, 1) < -(1.0 - DART_EPSILON))
   {
     y = atan2(_R(0, 2), _R(0, 0));
-    x = -constantsd::half_pi();
+    x = -half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, x, y);
   }
@@ -268,7 +268,7 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R)
   if (_R(1, 2) > (1.0 - DART_EPSILON))
   {
     z = -atan2(_R(0, 1), _R(0, 0));
-    x = -constantsd::half_pi();
+    x = -half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, x, z);
   }
@@ -276,7 +276,7 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R)
   if (_R(1, 2) < -(1.0 - DART_EPSILON))
   {
     z = -atan2(_R(0, 1), _R(0, 0));
-    x = constantsd::half_pi();
+    x = half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, x, z);
   }
@@ -576,8 +576,8 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R)
   //          std::min(0.5 * (_R(0, 0) + _R(1, 1) + _R(2, 2) - 1.0), 1.0),
   //          -1.0));
 
-  //  if (theta > constantsd::pi() - DART_EPSILON) {
-  //    double delta = 0.5 + 0.125*(constantsd::pi() - theta)*(constantsd::pi()
+  //  if (theta > pi() - DART_EPSILON) {
+  //    double delta = 0.5 + 0.125*(pi() - theta)*(pi()
   //    - theta);
 
   //    return Eigen::Vector3d(
@@ -593,7 +593,7 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R)
   //    if (theta > DART_EPSILON)
   //      alpha = 0.5*theta / sin(theta);
   //    else
-  //      alpha = 0.5 + constantsd::one_div_12()*theta*theta;
+  //      alpha = 0.5 + one_div_12()*theta*theta;
 
   //    return Eigen::Vector3d(alpha*(_R(2, 1) - _R(1, 2)),
   //                           alpha*(_R(0, 2) - _R(2, 0)),
@@ -617,13 +617,13 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T)
   double gamma;
   Eigen::Vector6d ret;
 
-  if (theta > constantsd::pi() - DART_EPSILON)
+  if (theta > pi() - DART_EPSILON)
   {
     const double c1 = 0.10132118364234; // 1 / pi^2
     const double c2 = 0.01507440267955; // 1 / 4 / pi - 2 / pi^3
     const double c3 = 0.00546765085347; // 3 / pi^4 - 1 / 4 / pi^2
 
-    double phi = constantsd::pi() - theta;
+    double phi = pi() - theta;
     double delta = 0.5 + 0.125 * phi * phi;
 
     double w[]
@@ -634,7 +634,7 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T)
            _T(1, 0) > _T(0, 1) ? theta * sqrt(1.0 + (_T(2, 2) - 1.0) * delta)
                                : -theta * sqrt(1.0 + (_T(2, 2) - 1.0) * delta)};
 
-    beta = 0.25 * theta * (constantsd::pi() - theta);
+    beta = 0.25 * theta * (pi() - theta);
     gamma = (w[0] * _T(0, 3) + w[1] * _T(1, 3) + w[2] * _T(2, 3))
             * (c1 - c2 * phi + c3 * phi * phi);
 
@@ -1697,8 +1697,8 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
 
     if (BEYOND_ENDPOINTS == result)
     {
-      double a1 = atan2((p1 - p0)[1], (p1 - p0)[0]) * 180.0 / constantsd::pi();
-      double a2 = atan2((p2 - p0)[1], (p2 - p0)[0]) * 180.0 / constantsd::pi();
+      double a1 = atan2((p1 - p0)[1], (p1 - p0)[0]) * 180.0 / pi();
+      double a2 = atan2((p2 - p0)[1], (p2 - p0)[0]) * 180.0 / pi();
       double diff = a1 - a2;
       dtwarn << "[computeCentroidOfHull] You have passed in a set of points "
              << "which is not a proper convex hull! The invalid segment "
@@ -1756,7 +1756,7 @@ SupportPolygon computeConvexHull(
 
   // We'll use "Graham scan" to compute the convex hull in the general case
   std::size_t lowestIndex = static_cast<std::size_t>(-1);
-  double lowestY = std::numeric_limits<double>::infinity();
+  double lowestY = math::inf<double>();
   for (std::size_t i = 0; i < _points.size(); ++i)
   {
     if (_points[i][1] < lowestY)
@@ -2069,7 +2069,7 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
     return computeClosestPointOnLineSegment(_p, _support[0], _support[1]);
   }
 
-  double best = std::numeric_limits<double>::infinity(), check;
+  double best = math::inf<double>(), check;
   Eigen::Vector2d test, result;
   for (std::size_t i = 0; i < _support.size(); ++i)
   {

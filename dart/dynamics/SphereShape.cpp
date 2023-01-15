@@ -82,7 +82,7 @@ double SphereShape::getRadius() const
 //==============================================================================
 double SphereShape::computeVolume(double radius)
 {
-  return math::constantsd::pi() * 4.0 / 3.0 * std::pow(radius, 3);
+  return math::pi() * 4.0 / 3.0 * std::pow(radius, 3);
 }
 
 //==============================================================================

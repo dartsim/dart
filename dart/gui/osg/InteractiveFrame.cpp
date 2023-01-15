@@ -272,7 +272,7 @@ void InteractiveFrame::removeAllShapeFrames()
 void InteractiveFrame::createStandardVisualizationShapes(
     double size, double thickness)
 {
-  const auto pi = math::constantsd::pi();
+  const auto pi = math::pi();
 
   thickness = std::min(10.0, std::max(0.0, thickness));
   std::size_t resolution = 72;

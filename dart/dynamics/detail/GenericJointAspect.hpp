@@ -146,23 +146,17 @@ struct GenericJointUniqueProperties
   /// Default constructor
   GenericJointUniqueProperties(
       const EuclideanPoint& positionLowerLimits
-      = EuclideanPoint::Constant(-math::constantsd::inf()),
+      = EuclideanPoint::Constant(-math::inf()),
       const EuclideanPoint& positionUpperLimits
-      = EuclideanPoint::Constant(math::constantsd::inf()),
+      = EuclideanPoint::Constant(math::inf()),
       const EuclideanPoint& initialPositions = EuclideanPoint::Zero(),
-      const Vector& velocityLowerLimits
-      = Vector::Constant(-math::constantsd::inf()),
-      const Vector& velocityUpperLimits
-      = Vector::Constant(math::constantsd::inf()),
+      const Vector& velocityLowerLimits = Vector::Constant(-math::inf()),
+      const Vector& velocityUpperLimits = Vector::Constant(math::inf()),
       const Vector& initialVelocities = Vector::Zero(),
-      const Vector& accelerationLowerLimits
-      = Vector::Constant(-math::constantsd::inf()),
-      const Vector& accelerationUpperLimits
-      = Vector::Constant(math::constantsd::inf()),
-      const Vector& forceLowerLimits
-      = Vector::Constant(-math::constantsd::inf()),
-      const Vector& forceUpperLimits
-      = Vector::Constant(math::constantsd::inf()),
+      const Vector& accelerationLowerLimits = Vector::Constant(-math::inf()),
+      const Vector& accelerationUpperLimits = Vector::Constant(math::inf()),
+      const Vector& forceLowerLimits = Vector::Constant(-math::inf()),
+      const Vector& forceUpperLimits = Vector::Constant(math::inf()),
       const Vector& springStiffness = Vector::Zero(),
       const EuclideanPoint& restPosition = EuclideanPoint::Zero(),
       const Vector& dampingCoefficient = Vector::Zero(),

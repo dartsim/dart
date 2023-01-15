@@ -148,7 +148,7 @@ TEST(Issue1184, Accuracy)
           const double min_time = 0.5;
           const double t_limit = 30.0 * t_strike + min_time;
 
-          double lowestHeight = std::numeric_limits<double>::infinity();
+          double lowestHeight = math::inf<double>();
           double time = 0.0;
           while (time < t_limit)
           {

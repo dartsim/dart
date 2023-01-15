@@ -208,8 +208,8 @@ TEST(ForceDependentSlip, CylinderSlipVelocity)
   auto skeleton1 = createCylinder(radius, 0.3, {0, -5, radius});
   skeleton1->setName("Skeleton1");
 
-  auto skeleton2 = createCylinder(
-      radius, 0.8, {0, 5, radius}, {math::constantsd::half_pi(), 0, 0});
+  auto skeleton2
+      = createCylinder(radius, 0.8, {0, 5, radius}, {math::half_pi(), 0, 0});
   skeleton2->setName("Skeleton2");
 
   auto body1 = skeleton1->getRootBodyNode();

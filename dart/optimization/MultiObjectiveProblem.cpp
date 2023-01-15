@@ -71,7 +71,7 @@ void MultiObjectiveProblem::setSolutionDimension(
   mDimension = dim;
   mIntegerDimension = integerDim;
 
-  const double inf = std::numeric_limits<double>::infinity();
+  const double inf = math::inf<double>();
   const auto dimension = static_cast<Eigen::VectorXd::Index>(dim);
 
   setLowerBounds(Eigen::VectorXd::Constant(dimension, -inf));

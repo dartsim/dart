@@ -90,10 +90,10 @@ void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam)
 void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 {
   Eigen::Vector3d linearBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      = Eigen::Vector3d::Constant(dart::math::inf<double>());
 
   Eigen::Vector3d angularBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      = Eigen::Vector3d::Constant(dart::math::inf<double>());
 
   Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
   tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));

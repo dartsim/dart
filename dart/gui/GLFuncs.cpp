@@ -56,7 +56,7 @@ void drawArrow3D(
     const double _thickness,
     const double _arrowThickness)
 {
-  const double pi = math::constantsd::pi();
+  const double pi = math::pi();
 
   Eigen::Vector3d normDir = _dir;
   normDir.normalize();
@@ -94,7 +94,7 @@ void drawArrow3D(
 void drawArrow2D(
     const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec, double _thickness)
 {
-  const double pi = math::constantsd::pi();
+  const double pi = math::pi();
 
   // draw the arrow body as a thick line
   glLineWidth(_thickness);

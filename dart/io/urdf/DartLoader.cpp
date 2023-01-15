@@ -512,8 +512,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       // We overwrite joint position limits to negative/positive infinities
       // for "continuous" joint. The URDF parser, by default, either reads
       // the limits, if specified for this joint, or sets them to 0.
-      singleDof.mPositionLowerLimits[0] = -math::constantsd::inf();
-      singleDof.mPositionUpperLimits[0] = math::constantsd::inf();
+      singleDof.mPositionLowerLimits[0] = -math::inf();
+      singleDof.mPositionUpperLimits[0] = math::inf();
 
       // This joint is still revolute but with no joint limits
       dynamics::RevoluteJoint::Properties properties(

@@ -199,7 +199,7 @@ public:
 
       const double linearStep = 0.01;
       const double elevationStep = 0.2 * linearStep;
-      const double rotationalStep = 2.0 * constantsd::pi() / 180.0;
+      const double rotationalStep = 2.0 * pi() / 180.0;
 
       if (mMoveComponents[MOVE_W])
         new_tf.translate(linearStep * forward);
@@ -576,32 +576,30 @@ SkeletonPtr createAtlas()
 void setupStartConfiguration(const SkeletonPtr& atlas)
 {
   // Squat with the right leg
-  atlas->getDof("r_leg_hpy")->setPosition(-45.0 * constantsd::pi() / 180.0);
-  atlas->getDof("r_leg_kny")->setPosition(90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("r_leg_aky")->setPosition(-45.0 * constantsd::pi() / 180.0);
+  atlas->getDof("r_leg_hpy")->setPosition(-45.0 * pi() / 180.0);
+  atlas->getDof("r_leg_kny")->setPosition(90.0 * pi() / 180.0);
+  atlas->getDof("r_leg_aky")->setPosition(-45.0 * pi() / 180.0);
 
   // Squat with the left left
-  atlas->getDof("l_leg_hpy")->setPosition(-45.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_kny")->setPosition(90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_aky")->setPosition(-45.0 * constantsd::pi() / 180.0);
+  atlas->getDof("l_leg_hpy")->setPosition(-45.0 * pi() / 180.0);
+  atlas->getDof("l_leg_kny")->setPosition(90.0 * pi() / 180.0);
+  atlas->getDof("l_leg_aky")->setPosition(-45.0 * pi() / 180.0);
 
   // Get the right arm into a comfortable position
-  atlas->getDof("r_arm_shx")->setPosition(65.0 * constantsd::pi() / 180.0);
-  atlas->getDof("r_arm_ely")->setPosition(90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("r_arm_elx")->setPosition(-90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("r_arm_wry")->setPosition(65.0 * constantsd::pi() / 180.0);
+  atlas->getDof("r_arm_shx")->setPosition(65.0 * pi() / 180.0);
+  atlas->getDof("r_arm_ely")->setPosition(90.0 * pi() / 180.0);
+  atlas->getDof("r_arm_elx")->setPosition(-90.0 * pi() / 180.0);
+  atlas->getDof("r_arm_wry")->setPosition(65.0 * pi() / 180.0);
 
   // Get the left arm into a comfortable position
-  atlas->getDof("l_arm_shx")->setPosition(-65.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_arm_ely")->setPosition(90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_arm_elx")->setPosition(90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_arm_wry")->setPosition(65.0 * constantsd::pi() / 180.0);
+  atlas->getDof("l_arm_shx")->setPosition(-65.0 * pi() / 180.0);
+  atlas->getDof("l_arm_ely")->setPosition(90.0 * pi() / 180.0);
+  atlas->getDof("l_arm_elx")->setPosition(90.0 * pi() / 180.0);
+  atlas->getDof("l_arm_wry")->setPosition(65.0 * pi() / 180.0);
 
   // Prevent the knees from bending backwards
-  atlas->getDof("r_leg_kny")
-      ->setPositionLowerLimit(10 * constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_kny")
-      ->setPositionLowerLimit(10 * constantsd::pi() / 180.0);
+  atlas->getDof("r_leg_kny")->setPositionLowerLimit(10 * pi() / 180.0);
+  atlas->getDof("l_leg_kny")->setPositionLowerLimit(10 * pi() / 180.0);
 }
 
 void setupEndEffectors(const SkeletonPtr& atlas)
@@ -614,11 +612,9 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Setting the bounds to be infinite allows the end effector to be implicitly
   // unconstrained
-  Eigen::Vector3d linearBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d linearBounds = Eigen::Vector3d::Constant(inf<double>());
 
-  Eigen::Vector3d angularBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d angularBounds = Eigen::Vector3d::Constant(inf<double>());
 
   // -- Set up the left hand --
 
@@ -627,8 +623,8 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // attached to
   Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
   tf_hand.translation() = Eigen::Vector3d(0.0009, 0.1254, 0.012);
-  tf_hand.rotate(Eigen::AngleAxisd(
-      90.0 * constantsd::pi() / 180.0, Eigen::Vector3d::UnitZ()));
+  tf_hand.rotate(
+      Eigen::AngleAxisd(90.0 * pi() / 180.0, Eigen::Vector3d::UnitZ()));
 
   // Create the left hand's end effector and set its relative transform
   EndEffector* l_hand
@@ -804,8 +800,8 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   weights[7] *= 0.2;
   weights[8] *= 0.2;
 
-  Eigen::VectorXd lower_posture = Eigen::VectorXd::Constant(
-      nDofs, -std::numeric_limits<double>::infinity());
+  Eigen::VectorXd lower_posture
+      = Eigen::VectorXd::Constant(nDofs, -inf<double>());
   lower_posture[0] = -0.35;
   lower_posture[1] = -0.35;
   lower_posture[5] = 0.600;
@@ -814,8 +810,8 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   lower_posture[7] = -0.1;
   lower_posture[8] = -0.1;
 
-  Eigen::VectorXd upper_posture = Eigen::VectorXd::Constant(
-      nDofs, std::numeric_limits<double>::infinity());
+  Eigen::VectorXd upper_posture
+      = Eigen::VectorXd::Constant(nDofs, inf<double>());
   upper_posture[0] = 0.35;
   upper_posture[1] = 0.35;
   upper_posture[5] = 0.885;

@@ -75,7 +75,7 @@ void Trackball::applyGLRotation()
 
 void Trackball::draw(int _winWidth, int _winHeight)
 {
-  const double pi = math::constantsd::pi();
+  const double pi = math::pi();
 
   glDisable(GL_LIGHTING);
   glDisable(GL_TEXTURE_2D);

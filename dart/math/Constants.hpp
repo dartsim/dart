@@ -30,50 +30,143 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_CONSTANTS_HPP_
-#define DART_MATH_CONSTANTS_HPP_
+#pragma once
+
+namespace dart::math {
+
+/// Returns the maximum value of the given type
+template <typename S = double>
+constexpr S max();
+
+/// Returns the smallest finite value of the given type
+///
+/// For floating-point types with denormalization, min() returns the minimum
+/// positive normalized value. Note that this behavior may be unexpected,
+/// especially when compared to the behavior of min for integral types. To find
+/// the value that has no values less than it, use lowest().
+template <typename S = double>
+constexpr S min();
+
+/// Returns the lowest value of the given type
+///
+/// This is the same as min() for unsigned types, and the same as -max() for
+template <typename S = double>
+constexpr S lowest();
+
+/// Returns the epsilon value of the given type
+///
+/// The epsilon value is the difference between 1 and the next representable.
+/// For example, for float, the epsilon value is 1.19209e-07. For double, the
+/// epsilon value is 2.22045e-16.
+template <typename S = double>
+constexpr S eps();
+
+/// Returns the NaN value of the given type
+///
+/// The NaN value is a special value that is not equal to any other value,
+/// including itself. For example, for float, the NaN value is 0x7fc00000. For
+/// double, the NaN value is 0x7ff8000000000000.
+template <typename S = double>
+constexpr S nan();
+
+/// Returns the infinity value of the given type
+template <typename S = double>
+constexpr S inf();
+
+/// Returns the value of pi
+template <typename S = double>
+constexpr S pi();
+
+/// Returns the value of pi/2
+template <typename S = double>
+constexpr S half_pi();
+
+/// Returns the value of pi/4
+template <typename S = double>
+constexpr S two_pi();
+
+/// Returns the value of phi, golden ratio
+template <typename S = double>
+constexpr S phi();
+
+} // namespace dart::math
 
 #include <limits>
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-template <typename T>
-struct constants
+//==============================================================================
+// Implementation
+//==============================================================================
+
+//=========================================================================================
+template <typename S>
+constexpr S max()
 {
-  static constexpr T pi()
-  {
-    return 3.141592653589793238462643383279502884197169399375105820974944592L;
-  }
-  static constexpr T two_pi()
-  {
-    return 2.0 * pi();
-  }
-  static constexpr T half_pi()
-  {
-    return 0.5 * pi();
-  }
-  static constexpr T pi_sqr()
-  {
-    return pi() * pi();
-  }
+  return std::numeric_limits<S>::max();
+}
 
-  /// The golden ratio
-  static constexpr T phi()
-  {
-    return 1.618033988749894848204586834365638117720309179805762862135448623L;
-  }
+//=========================================================================================
+template <typename S>
+constexpr S min()
+{
+  return std::numeric_limits<S>::min();
+}
 
-  static constexpr T inf()
-  {
-    return std::numeric_limits<T>::infinity();
-  }
-};
+//=========================================================================================
+template <typename S>
+constexpr S lowest()
+{
+  return std::numeric_limits<S>::lowest();
+}
 
-using constantsf = constants<float>;
-using constantsd = constants<double>;
+//=========================================================================================
+template <typename S>
+constexpr S eps()
+{
+  return std::numeric_limits<S>::epsilon();
+}
 
-} // namespace math
-} // namespace dart
+//=========================================================================================
+template <typename S>
+constexpr S nan()
+{
+  return std::numeric_limits<S>::quiet_NaN();
+}
 
-#endif // DART_MATH_CONSTANTS_HPP_
+//=========================================================================================
+template <typename S>
+constexpr S inf()
+{
+  return std::numeric_limits<S>::infinity();
+}
+
+//=========================================================================================
+template <typename S>
+constexpr S pi()
+{
+  return 3.141592653589793238462643383279502884197169399375105820974944592L;
+}
+
+//=========================================================================================
+template <typename S>
+constexpr S half_pi()
+{
+  return S(0.5) * pi<S>();
+}
+
+//=========================================================================================
+template <typename S>
+constexpr S two_pi()
+{
+  return S(2) * pi<S>();
+}
+
+//=========================================================================================
+template <typename S>
+constexpr S phi()
+{
+  return 1.618033988749894848204586834365638117720309179805762862135448623L;
+}
+
+} // namespace dart::math
