@@ -82,15 +82,14 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-# Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
-# dependent projects on the same machine. If this option is on, then compile
-# option `-march=native` is added to the target `dart` that enables all
-# instruction subsets supported by the local machine. If the architecture of
-# local machines are different then the projects will be built with different
-# compile options, which may cause runtime errors especially memory alignment
-# errors.
+# Note: DART_ENABLE_SIMD should only be enabled when building DART and its
+# dependent projects on the same machine. Enabling this option adds the
+# -march=native compile flag to the dart target, which enables all instruction
+# subsets supported by the local machine. Building on different machines with
+# differing architectures may lead to runtime errors, particularly memory
+# alignment errors.
 option(DART_ENABLE_SIMD
-  "Build DART with all SIMD instructions on the current local machine" OFF)
+  "Build DART with all SIMD instructions on the current local machine" ON)
 option(DART_BUILD_DARTPY "Build dartpy" ON)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
