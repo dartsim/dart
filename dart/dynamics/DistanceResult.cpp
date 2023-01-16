@@ -44,8 +44,8 @@ DistanceResult::DistanceResult()
     unclampedMinDistance(0.0),
     shapeFrame1(nullptr),
     shapeFrame2(nullptr),
-    nearestPoint1(Eigen::Vector3d::Zero()),
-    nearestPoint2(Eigen::Vector3d::Zero())
+    nearestPoint1(math::Vector3d::Zero()),
+    nearestPoint2(math::Vector3d::Zero())
 {
   // Do nothing
 }

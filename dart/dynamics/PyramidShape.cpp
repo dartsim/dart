@@ -122,7 +122,7 @@ double PyramidShape::computeVolume(
 //==============================================================================
 void PyramidShape::updateBoundingBox() const
 {
-  const Eigen::Vector3d corner(
+  const math::Vector3d corner(
       0.5 * mBaseWidth, 0.5 * mBaseDepth, 0.5 * mHeight);
 
   mBoundingBox.setMin(-corner);
@@ -139,13 +139,13 @@ void PyramidShape::updateVolume() const
 }
 
 //==============================================================================
-Eigen::Matrix3d PyramidShape::computeInertia(double /*mass*/) const
+math::Matrix3d PyramidShape::computeInertia(double /*mass*/) const
 {
   // TODO(JS): Not implemented
   dterr << "[PyramidShape] Moment of inertia computation is not implemented. "
         << "Returning identity.\n";
 
-  return Eigen::Matrix3d::Identity();
+  return math::Matrix3d::Identity();
 }
 
 //==============================================================================

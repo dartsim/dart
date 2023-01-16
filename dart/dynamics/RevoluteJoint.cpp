@@ -119,7 +119,7 @@ const std::string& RevoluteJoint::getStaticType()
 }
 
 //==============================================================================
-void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
+void RevoluteJoint::setAxis(const math::Vector3d& _axis)
 {
   if (_axis == mAspectProperties.mAxis)
     return;
@@ -131,7 +131,7 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& RevoluteJoint::getAxis() const
+const math::Vector3d& RevoluteJoint::getAxis() const
 {
   return mAspectProperties.mAxis;
 }

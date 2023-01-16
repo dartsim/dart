@@ -86,9 +86,9 @@ double SphereShape::computeVolume(double radius)
 }
 
 //==============================================================================
-Eigen::Matrix3d SphereShape::computeInertia(double radius, double mass)
+math::Matrix3d SphereShape::computeInertia(double radius, double mass)
 {
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+  math::Matrix3d inertia = math::Matrix3d::Identity();
 
   inertia(0, 0) = 2.0 / 5.0 * mass * std::pow(radius, 2);
   inertia(1, 1) = inertia(0, 0);
@@ -104,7 +104,7 @@ ShapePtr SphereShape::clone() const
 }
 
 //==============================================================================
-Eigen::Matrix3d SphereShape::computeInertia(double mass) const
+math::Matrix3d SphereShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mass);
 }
@@ -112,8 +112,8 @@ Eigen::Matrix3d SphereShape::computeInertia(double mass) const
 //==============================================================================
 void SphereShape::updateBoundingBox() const
 {
-  mBoundingBox.setMin(Eigen::Vector3d::Constant(-mRadius));
-  mBoundingBox.setMax(Eigen::Vector3d::Constant(mRadius));
+  mBoundingBox.setMin(math::Vector3d::Constant(-mRadius));
+  mBoundingBox.setMax(math::Vector3d::Constant(mRadius));
   mIsBoundingBoxDirty = false;
 }
 

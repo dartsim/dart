@@ -152,8 +152,8 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 
 //==============================================================================
 void PlanarJoint::setArbitraryPlane(
-    const Eigen::Vector3d& _transAxis1,
-    const Eigen::Vector3d& _transAxis2,
+    const math::Vector3d& _transAxis1,
+    const math::Vector3d& _transAxis2,
     bool _renameDofs)
 {
   mAspectProperties.setArbitraryPlane(_transAxis1, _transAxis2);
@@ -170,28 +170,28 @@ PlanarJoint::PlaneType PlanarJoint::getPlaneType() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& PlanarJoint::getRotationalAxis() const
+const math::Vector3d& PlanarJoint::getRotationalAxis() const
 {
   return mAspectProperties.mRotAxis;
 }
 
 //==============================================================================
-const Eigen::Vector3d& PlanarJoint::getTranslationalAxis1() const
+const math::Vector3d& PlanarJoint::getTranslationalAxis1() const
 {
   return mAspectProperties.mTransAxis1;
 }
 
 //==============================================================================
-const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
+const math::Vector3d& PlanarJoint::getTranslationalAxis2() const
 {
   return mAspectProperties.mTransAxis2;
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> PlanarJoint::getRelativeJacobianStatic(
-    const Eigen::Vector3d& _positions) const
+math::Matrix<double, 6, 3> PlanarJoint::getRelativeJacobianStatic(
+    const math::Vector3d& _positions) const
 {
-  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
+  math::Matrix<double, 6, 3> J = math::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mAspectProperties.mTransAxis1;
   J.block<3, 1>(3, 1) = mAspectProperties.mTransAxis2;
   J.block<3, 1>(0, 2) = mAspectProperties.mRotAxis;
@@ -264,10 +264,10 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void PlanarJoint::updateRelativeTransform() const
 {
-  const Eigen::Vector3d& positions = getPositionsStatic();
+  const math::Vector3d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * Eigen::Translation3d(mAspectProperties.mTransAxis1 * positions[0])
-       * Eigen::Translation3d(mAspectProperties.mTransAxis2 * positions[1])
+       * math::Translation3d(mAspectProperties.mTransAxis1 * positions[0])
+       * math::Translation3d(mAspectProperties.mTransAxis2 * positions[1])
        * math::expAngular(mAspectProperties.mRotAxis * positions[2])
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
@@ -284,13 +284,13 @@ void PlanarJoint::updateRelativeJacobian(bool) const
 //==============================================================================
 void PlanarJoint::updateRelativeJacobianTimeDeriv() const
 {
-  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
+  math::Matrix<double, 6, 3> J = math::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mAspectProperties.mTransAxis1;
   J.block<3, 1>(3, 1) = mAspectProperties.mTransAxis2;
   J.block<3, 1>(0, 2) = mAspectProperties.mRotAxis;
 
-  const Eigen::Matrix<double, 6, 3>& Jacobian = getRelativeJacobianStatic();
-  const Eigen::Vector3d& velocities = getVelocitiesStatic();
+  const math::Matrix<double, 6, 3>& Jacobian = getRelativeJacobianStatic();
+  const math::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0) = -math::ad(
       Jacobian.col(2) * velocities[2],
       math::AdT(

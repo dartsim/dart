@@ -38,9 +38,9 @@ namespace collision {
 //==============================================================================
 RayHit::RayHit()
   : mCollisionObject(nullptr),
-    mPoint(Eigen::Vector3d::Zero()),
+    mPoint(math::Vector3d::Zero()),
     mFraction(0.0),
-    mNormal(Eigen::Vector3d::Zero())
+    mNormal(math::Vector3d::Zero())
 {
   // Do nothing
 }

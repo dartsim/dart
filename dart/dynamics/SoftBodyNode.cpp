@@ -55,7 +55,7 @@ SoftBodyNodeUniqueProperties::SoftBodyNodeUniqueProperties(
     double _Ke,
     double _DampCoeff,
     const std::vector<PointMass::Properties>& _points,
-    const std::vector<Eigen::Vector3i>& _faces)
+    const std::vector<math::Vector3i>& _faces)
   : mKv(_Kv),
     mKe(_Ke),
     mDampCoeff(_DampCoeff),
@@ -96,7 +96,7 @@ bool SoftBodyNodeUniqueProperties::connectPointMasses(
 }
 
 //==============================================================================
-void SoftBodyNodeUniqueProperties::addFace(const Eigen::Vector3i& _newFace)
+void SoftBodyNodeUniqueProperties::addFace(const math::Vector3i& _newFace)
 {
   assert(_newFace[0] != _newFace[1]);
   assert(_newFace[1] != _newFace[2]);
@@ -493,14 +493,14 @@ void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
 }
 
 //==============================================================================
-void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
+void SoftBodyNode::addFace(const math::Vector3i& _face)
 {
   mAspectProperties.addFace(_face);
   configurePointMasses(mSoftShapeNode.lock());
 }
 
 //==============================================================================
-const Eigen::Vector3i& SoftBodyNode::getFace(std::size_t _idx) const
+const math::Vector3i& SoftBodyNode::getFace(std::size_t _idx) const
 {
   assert(_idx < mAspectProperties.mFaces.size());
   return mAspectProperties.mFaces[_idx];
@@ -575,7 +575,7 @@ void SoftBodyNode::updateAccelerationID()
 
 //==============================================================================
 void SoftBodyNode::updateTransmittedForceID(
-    const Eigen::Vector3d& _gravity, bool _withExternalForces)
+    const math::Vector3d& _gravity, bool _withExternalForces)
 {
   const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
@@ -694,7 +694,7 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
 
 //==============================================================================
 void SoftBodyNode::updateBiasForce(
-    const Eigen::Vector3d& _gravity, double _timeStep)
+    const math::Vector3d& _gravity, double _timeStep)
 {
   const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
@@ -839,7 +839,7 @@ void SoftBodyNode::updateMassMatrix()
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
+void SoftBodyNode::aggregateMassMatrix(math::MatrixXd& _MCol, std::size_t _col)
 {
   BodyNode::aggregateMassMatrix(_MCol, _col);
   //  //------------------------ PointMass Part
@@ -886,7 +886,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 
 //==============================================================================
 void SoftBodyNode::aggregateAugMassMatrix(
-    Eigen::MatrixXd& _MCol, std::size_t _col, double _timeStep)
+    math::MatrixXd& _MCol, std::size_t _col, double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
 
@@ -916,8 +916,8 @@ void SoftBodyNode::aggregateAugMassMatrix(
 
   std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0) {
-    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
-    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
+    math::MatrixXd K = math::MatrixXd::Zero(dof, dof);
+    math::MatrixXd D = math::MatrixXd::Zero(dof, dof);
     for (std::size_t i = 0; i < dof; ++i) {
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
@@ -1007,7 +1007,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
 
 //==============================================================================
 void SoftBodyNode::aggregateInvMassMatrix(
-    Eigen::MatrixXd& _InvMCol, std::size_t _col)
+    math::MatrixXd& _InvMCol, std::size_t _col)
 {
   if (mParentBodyNode) {
     //
@@ -1036,7 +1036,7 @@ void SoftBodyNode::aggregateInvMassMatrix(
 
 //==============================================================================
 void SoftBodyNode::aggregateInvAugMassMatrix(
-    Eigen::MatrixXd& _InvMCol, std::size_t _col, double _timeStep)
+    math::MatrixXd& _InvMCol, std::size_t _col, double _timeStep)
 {
   BodyNode::aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
 
@@ -1071,14 +1071,14 @@ void SoftBodyNode::aggregateInvAugMassMatrix(
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
+void SoftBodyNode::aggregateCoriolisForceVector(math::VectorXd& _C)
 {
   BodyNode::aggregateCoriolisForceVector(_C);
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateGravityForceVector(
-    Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity)
+    math::VectorXd& _g, const math::Vector3d& _gravity)
 {
   const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
@@ -1108,7 +1108,7 @@ void SoftBodyNode::aggregateGravityForceVector(
 
   int nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd g
+    math::VectorXd g
         = -(mParentJoint->getRelativeJacobian().transpose() * mG_F);
     int iStart = mParentJoint->getIndexInTree(0);
     _g.segment(iStart, nGenCoords) = g;
@@ -1126,7 +1126,7 @@ void SoftBodyNode::updateCombinedVector()
 
 //==============================================================================
 void SoftBodyNode::aggregateCombinedVector(
-    Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity)
+    math::VectorXd& _Cg, const math::Vector3d& _gravity)
 {
   BodyNode::aggregateCombinedVector(_Cg, _gravity);
   //  //------------------------ PointMass Part
@@ -1164,14 +1164,14 @@ void SoftBodyNode::aggregateCombinedVector(
   //  int nGenCoords = mParentJoint->getNumDofs();
   //  if (nGenCoords > 0)
   //  {
-  //    Eigen::VectorXd Cg = mParentJoint->getRelativeJacobian().transpose() *
+  //    math::VectorXd Cg = mParentJoint->getRelativeJacobian().transpose() *
   //    mCg_F; int iStart = mParentJoint->getIndexInTree(0);
   //    _Cg->segment(iStart, nGenCoords) = Cg;
   //  }
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
+void SoftBodyNode::aggregateExternalForces(math::VectorXd& _Fext)
 {
   //------------------------ PointMass Part ------------------------------------
   for (std::size_t i = 0; i < mPointMasses.size(); ++i)
@@ -1196,7 +1196,7 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 
   int nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd Fext
+    math::VectorXd Fext
         = mParentJoint->getRelativeJacobian().transpose() * mFext_F;
     int iStart = mParentJoint->getIndexInTree(0);
     _Fext.segment(iStart, nGenCoords) = Fext;
@@ -1223,9 +1223,9 @@ void SoftBodyNode::clearInternalForces()
 
 //==============================================================================
 void SoftBodyNode::_addPiToArtInertia(
-    const Eigen::Vector3d& _p, double _Pi) const
+    const math::Vector3d& _p, double _Pi) const
 {
-  Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
+  math::Matrix3d tmp = math::makeSkewSymmetric(_p);
 
   mArtInertia.topLeftCorner<3, 3>() -= _Pi * tmp * tmp;
   mArtInertia.topRightCorner<3, 3>() += _Pi * tmp;
@@ -1238,9 +1238,9 @@ void SoftBodyNode::_addPiToArtInertia(
 
 //==============================================================================
 void SoftBodyNode::_addPiToArtInertiaImplicit(
-    const Eigen::Vector3d& _p, double _ImplicitPi) const
+    const math::Vector3d& _p, double _ImplicitPi) const
 {
-  Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
+  math::Matrix3d tmp = math::makeSkewSymmetric(_p);
 
   mArtInertiaImplicit.topLeftCorner<3, 3>() -= _ImplicitPi * tmp * tmp;
   mArtInertiaImplicit.topRightCorner<3, 3>() += _ImplicitPi * tmp;
@@ -1266,8 +1266,8 @@ void SoftBodyNode::updateInertiaWithPointMass()
 
 //==============================================================================
 SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
-    const Eigen::Vector3d& _size,
-    const Eigen::Isometry3d& _localTransform,
+    const math::Vector3d& _size,
+    const math::Isometry3d& _localTransform,
     double _totalMass,
     double _vertexStiffness,
     double _edgeStiffness,
@@ -1287,16 +1287,15 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   double mass = _totalMass / nPointMasses;
 
   // Resting positions for each point mass
-  std::vector<Eigen::Vector3d> restingPos(
-      nPointMasses, Eigen::Vector3d::Zero());
-  restingPos[0] = _size.cwiseProduct(Eigen::Vector3d(-1.0, -1.0, -1.0)) * 0.5;
-  restingPos[1] = _size.cwiseProduct(Eigen::Vector3d(+1.0, -1.0, -1.0)) * 0.5;
-  restingPos[2] = _size.cwiseProduct(Eigen::Vector3d(-1.0, +1.0, -1.0)) * 0.5;
-  restingPos[3] = _size.cwiseProduct(Eigen::Vector3d(+1.0, +1.0, -1.0)) * 0.5;
-  restingPos[4] = _size.cwiseProduct(Eigen::Vector3d(-1.0, -1.0, +1.0)) * 0.5;
-  restingPos[5] = _size.cwiseProduct(Eigen::Vector3d(+1.0, -1.0, +1.0)) * 0.5;
-  restingPos[6] = _size.cwiseProduct(Eigen::Vector3d(-1.0, +1.0, +1.0)) * 0.5;
-  restingPos[7] = _size.cwiseProduct(Eigen::Vector3d(+1.0, +1.0, +1.0)) * 0.5;
+  std::vector<math::Vector3d> restingPos(nPointMasses, math::Vector3d::Zero());
+  restingPos[0] = _size.cwiseProduct(math::Vector3d(-1.0, -1.0, -1.0)) * 0.5;
+  restingPos[1] = _size.cwiseProduct(math::Vector3d(+1.0, -1.0, -1.0)) * 0.5;
+  restingPos[2] = _size.cwiseProduct(math::Vector3d(-1.0, +1.0, -1.0)) * 0.5;
+  restingPos[3] = _size.cwiseProduct(math::Vector3d(+1.0, +1.0, -1.0)) * 0.5;
+  restingPos[4] = _size.cwiseProduct(math::Vector3d(-1.0, -1.0, +1.0)) * 0.5;
+  restingPos[5] = _size.cwiseProduct(math::Vector3d(+1.0, -1.0, +1.0)) * 0.5;
+  restingPos[6] = _size.cwiseProduct(math::Vector3d(-1.0, +1.0, +1.0)) * 0.5;
+  restingPos[7] = _size.cwiseProduct(math::Vector3d(+1.0, +1.0, +1.0)) * 0.5;
 
   // Point masses
   for (std::size_t i = 0; i < nPointMasses; ++i) {
@@ -1329,28 +1328,28 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Faces
   //----------------------------------------------------------------------------
   // -- -Z
-  properties.addFace(Eigen::Vector3i(1, 0, 2)); // 0
-  properties.addFace(Eigen::Vector3i(1, 2, 3)); // 1
+  properties.addFace(math::Vector3i(1, 0, 2)); // 0
+  properties.addFace(math::Vector3i(1, 2, 3)); // 1
 
   // -- +Z
-  properties.addFace(Eigen::Vector3i(5, 6, 4)); // 2
-  properties.addFace(Eigen::Vector3i(5, 7, 6)); // 3
+  properties.addFace(math::Vector3i(5, 6, 4)); // 2
+  properties.addFace(math::Vector3i(5, 7, 6)); // 3
 
   // -- -Y
-  properties.addFace(Eigen::Vector3i(0, 5, 4)); // 4
-  properties.addFace(Eigen::Vector3i(0, 1, 5)); // 5
+  properties.addFace(math::Vector3i(0, 5, 4)); // 4
+  properties.addFace(math::Vector3i(0, 1, 5)); // 5
 
   // -- +Y
-  properties.addFace(Eigen::Vector3i(1, 3, 7)); // 6
-  properties.addFace(Eigen::Vector3i(1, 7, 5)); // 7
+  properties.addFace(math::Vector3i(1, 3, 7)); // 6
+  properties.addFace(math::Vector3i(1, 7, 5)); // 7
 
   // -- -X
-  properties.addFace(Eigen::Vector3i(3, 2, 6)); // 8
-  properties.addFace(Eigen::Vector3i(3, 6, 7)); // 9
+  properties.addFace(math::Vector3i(3, 2, 6)); // 8
+  properties.addFace(math::Vector3i(3, 6, 7)); // 9
 
   // -- +X
-  properties.addFace(Eigen::Vector3i(2, 0, 4)); // 10
-  properties.addFace(Eigen::Vector3i(2, 4, 6)); // 11
+  properties.addFace(math::Vector3i(2, 0, 4)); // 10
+  properties.addFace(math::Vector3i(2, 4, 6)); // 11
 
   return properties;
 }
@@ -1358,8 +1357,8 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 //==============================================================================
 void SoftBodyNodeHelper::setBox(
     SoftBodyNode* _softBodyNode,
-    const Eigen::Vector3d& _size,
-    const Eigen::Isometry3d& _localTransform,
+    const math::Vector3d& _size,
+    const math::Isometry3d& _localTransform,
     double _totalMass,
     double _vertexStiffness,
     double _edgeStiffness,
@@ -1377,15 +1376,15 @@ void SoftBodyNodeHelper::setBox(
 
 //==============================================================================
 SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
-    const Eigen::Vector3d& _size,
-    const Eigen::Isometry3d& _localTransform,
-    const Eigen::Vector3i& _frags,
+    const math::Vector3d& _size,
+    const math::Isometry3d& _localTransform,
+    const math::Vector3i& _frags,
     double _totalMass,
     double _vertexStiffness,
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  Eigen::Vector3i frags = _frags;
+  math::Vector3i frags = _frags;
 
   for (int i = 0; i < 3; ++i) {
     if (frags[i] <= 2) {
@@ -1422,7 +1421,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Mass per vertices
   double mass = _totalMass / nVertices;
 
-  Eigen::Vector3d segLength(
+  math::Vector3d segLength(
       _size[0] / (frags[0] - 1),
       _size[1] / (frags[1] - 1),
       _size[2] / (frags[2] - 1));
@@ -1453,25 +1452,25 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   std::vector<std::vector<PointPair> > sideZPos(
       nVerticesAtEdgeX, std::vector<PointPair>(nVerticesAtEdgeY));
 
-  Eigen::Vector3d x0y0z0
-      = _size.cwiseProduct(Eigen::Vector3d(-1.0, -1.0, -1.0)) * 0.5;
-  Eigen::Vector3d x1y0z0
-      = _size.cwiseProduct(Eigen::Vector3d(+1.0, -1.0, -1.0)) * 0.5;
-  Eigen::Vector3d x1y1z0
-      = _size.cwiseProduct(Eigen::Vector3d(+1.0, +1.0, -1.0)) * 0.5;
-  Eigen::Vector3d x0y1z0
-      = _size.cwiseProduct(Eigen::Vector3d(-1.0, +1.0, -1.0)) * 0.5;
-  Eigen::Vector3d x0y0z1
-      = _size.cwiseProduct(Eigen::Vector3d(-1.0, -1.0, +1.0)) * 0.5;
-  Eigen::Vector3d x1y0z1
-      = _size.cwiseProduct(Eigen::Vector3d(+1.0, -1.0, +1.0)) * 0.5;
-  Eigen::Vector3d x1y1z1
-      = _size.cwiseProduct(Eigen::Vector3d(+1.0, +1.0, +1.0)) * 0.5;
-  Eigen::Vector3d x0y1z1
-      = _size.cwiseProduct(Eigen::Vector3d(-1.0, +1.0, +1.0)) * 0.5;
+  math::Vector3d x0y0z0
+      = _size.cwiseProduct(math::Vector3d(-1.0, -1.0, -1.0)) * 0.5;
+  math::Vector3d x1y0z0
+      = _size.cwiseProduct(math::Vector3d(+1.0, -1.0, -1.0)) * 0.5;
+  math::Vector3d x1y1z0
+      = _size.cwiseProduct(math::Vector3d(+1.0, +1.0, -1.0)) * 0.5;
+  math::Vector3d x0y1z0
+      = _size.cwiseProduct(math::Vector3d(-1.0, +1.0, -1.0)) * 0.5;
+  math::Vector3d x0y0z1
+      = _size.cwiseProduct(math::Vector3d(-1.0, -1.0, +1.0)) * 0.5;
+  math::Vector3d x1y0z1
+      = _size.cwiseProduct(math::Vector3d(+1.0, -1.0, +1.0)) * 0.5;
+  math::Vector3d x1y1z1
+      = _size.cwiseProduct(math::Vector3d(+1.0, +1.0, +1.0)) * 0.5;
+  math::Vector3d x0y1z1
+      = _size.cwiseProduct(math::Vector3d(-1.0, +1.0, +1.0)) * 0.5;
 
-  std::vector<Eigen::Vector3d> beginPts;
-  Eigen::Vector3d restPos;
+  std::vector<math::Vector3d> beginPts;
+  math::Vector3d restPos;
 
   // Corners
   beginPts.resize(nCorners);
@@ -1669,7 +1668,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   std::size_t nFacesZ = 2 * (frags[0] - 1) * (frags[1] - 1);
   std::size_t nFaces = 2 * nFacesX + 2 * nFacesY + 2 * nFacesZ;
 
-  std::vector<Eigen::Vector3i> faces(nFaces, Eigen::Vector3i::Zero());
+  std::vector<math::Vector3i> faces(nFaces, math::Vector3i::Zero());
 
   int fIdx = 0;
 
@@ -2409,9 +2408,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 //==============================================================================
 void SoftBodyNodeHelper::setBox(
     SoftBodyNode* _softBodyNode,
-    const Eigen::Vector3d& _size,
-    const Eigen::Isometry3d& _localTransform,
-    const Eigen::Vector3i& _frags,
+    const math::Vector3d& _size,
+    const math::Isometry3d& _localTransform,
+    const math::Vector3i& _frags,
     double _totalMass,
     double _vertexStiffness,
     double _edgeStiffness,
@@ -2449,9 +2448,8 @@ SoftBodyNodeHelper::makeSinglePointMassProperties(
   double mass = _totalMass / nPointMasses;
 
   // Resting positions for each point mass
-  std::vector<Eigen::Vector3d> restingPos(
-      nPointMasses, Eigen::Vector3d::Zero());
-  restingPos[0] = Eigen::Vector3d(+0.1, +0.1, +0.1);
+  std::vector<math::Vector3d> restingPos(nPointMasses, math::Vector3d::Zero());
+  restingPos[0] = math::Vector3d(+0.1, +0.1, +0.1);
 
   // Point masses
   for (std::size_t i = 0; i < nPointMasses; ++i) {
@@ -2486,7 +2484,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeSphereProperties(
     double _dampingCoeff)
 {
   return makeEllipsoidProperties(
-      Eigen::Vector3d::Constant(_radius * 2.0),
+      math::Vector3d::Constant(_radius * 2.0),
       _nSlices,
       _nStacks,
       _totalMass,
@@ -2497,7 +2495,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeSphereProperties(
 
 //==============================================================================
 SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
-    const Eigen::Vector3d& _size,
+    const math::Vector3d& _size,
     std::size_t _nSlices,
     std::size_t _nStacks,
     double _totalMass,
@@ -2522,7 +2520,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   // Resting positions for each point mass
   // -- top
   properties.addPointMass(
-      PointMass::Properties(Eigen::Vector3d(0.0, 0.0, 0.5 * _size(2)), mass));
+      PointMass::Properties(math::Vector3d(0.0, 0.0, 0.5 * _size(2)), mass));
 
   // middle
   float drho = 1_pi / _nStacks;
@@ -2542,12 +2540,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
       float z = 0.5 * crho;
 
       properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * _size(0), y * _size(1), z * _size(2)), mass));
+          math::Vector3d(x * _size(0), y * _size(1), z * _size(2)), mass));
     }
   }
   // bottom
   properties.addPointMass(
-      PointMass::Properties(Eigen::Vector3d(0.0, 0.0, -0.5 * _size(2)), mass));
+      PointMass::Properties(math::Vector3d(0.0, 0.0, -0.5 * _size(2)), mass));
 
   //----------------------------------------------------------------------------
   // Edges
@@ -2598,11 +2596,11 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   for (std::size_t i = 0; i < _nSlices - 1; i++) {
     meshIdx2 = i + 1;
     meshIdx3 = i + 2;
-    properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+    properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
   }
   meshIdx2 = _nSlices;
   meshIdx3 = 1;
-  properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+  properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
 
   // middle
   for (std::size_t i = 0; i < _nStacks - 2; i++) {
@@ -2610,23 +2608,23 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
       meshIdx1 = i * _nSlices + j + 1;
       meshIdx2 = (i + 1) * _nSlices + j + 1;
       meshIdx3 = i * _nSlices + j + 2;
-      properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+      properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
 
       meshIdx1 = i * _nSlices + j + 2;
       meshIdx2 = (i + 1) * _nSlices + j + 1;
       meshIdx3 = (i + 1) * _nSlices + j + 2;
-      properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+      properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
     }
 
     meshIdx1 = (i + 1) * _nSlices;
     meshIdx2 = (i + 2) * _nSlices;
     meshIdx3 = i * _nSlices + 1;
-    properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+    properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
 
     meshIdx1 = i * _nSlices + 1;
     meshIdx2 = (i + 2) * _nSlices;
     meshIdx3 = (i + 2) * _nSlices + 1;
-    properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+    properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
   }
 
   // bottom
@@ -2634,11 +2632,11 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   for (std::size_t i = 0; i < _nSlices - 1; i++) {
     meshIdx2 = (_nStacks - 2) * _nSlices + i + 2;
     meshIdx3 = (_nStacks - 2) * _nSlices + i + 1;
-    properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+    properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
   }
   meshIdx2 = (_nStacks - 2) * _nSlices + 2;
   meshIdx3 = (_nStacks - 1) * _nSlices;
-  properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+  properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
 
   return properties;
 }
@@ -2646,7 +2644,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
 //==============================================================================
 void SoftBodyNodeHelper::setEllipsoid(
     SoftBodyNode* _softBodyNode,
-    const Eigen::Vector3d& _size,
+    const math::Vector3d& _size,
     std::size_t _nSlices,
     std::size_t _nStacks,
     double _totalMass,
@@ -2699,7 +2697,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 
   // -- top
   properties.addPointMass(
-      PointMass::Properties(Eigen::Vector3d(0.0, 0.0, 0.5 * _height), mass));
+      PointMass::Properties(math::Vector3d(0.0, 0.0, 0.5 * _height), mass));
 
   for (std::size_t i = 1; i < _nRings; ++i) {
     float z = 0.5;
@@ -2714,7 +2712,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       float y = ctheta;
 
       properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * radius, y * radius, z * _height), mass));
+          math::Vector3d(x * radius, y * radius, z * _height), mass));
     }
   }
 
@@ -2732,7 +2730,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       float y = ctheta;
 
       properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * _radius, y * _radius, z * _height), mass));
+          math::Vector3d(x * _radius, y * _radius, z * _height), mass));
     }
   }
 
@@ -2750,12 +2748,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       float y = ctheta;
 
       properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * radius, y * radius, z * _height), mass));
+          math::Vector3d(x * radius, y * radius, z * _height), mass));
     }
   }
 
   properties.addPointMass(
-      PointMass::Properties(Eigen::Vector3d(0.0, 0.0, -0.5 * _height), mass));
+      PointMass::Properties(math::Vector3d(0.0, 0.0, -0.5 * _height), mass));
 
   //----------------------------------------------------------------------------
   // Edges
@@ -2844,17 +2842,17 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   for (std::size_t i = 0; i < _nSlices - 1; i++) {
     meshIdx2 = i + 1;
     meshIdx3 = i + 2;
-    properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+    properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
   }
   meshIdx2 = _nSlices;
   meshIdx3 = 1;
-  properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+  properties.addFace(math::Vector3i(meshIdx1, meshIdx2, meshIdx3));
   for (std::size_t i = 0; i < _nRings - 1; ++i) {
     for (std::size_t j = 0; j < _nSlices - 1; ++j) {
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 0) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
+      properties.addFace(math::Vector3i(
           nConePointMass + meshIdx1,
           nConePointMass + meshIdx2,
           nConePointMass + meshIdx3));
@@ -2862,7 +2860,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j + 1;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 1) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
+      properties.addFace(math::Vector3i(
           nConePointMass + meshIdx1,
           nConePointMass + meshIdx2,
           nConePointMass + meshIdx3));
@@ -2871,7 +2869,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 0) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
+    properties.addFace(math::Vector3i(
         nConePointMass + meshIdx1,
         nConePointMass + meshIdx2,
         nConePointMass + meshIdx3));
@@ -2879,7 +2877,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     meshIdx1 = (i + 0) * _nSlices + 0;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
+    properties.addFace(math::Vector3i(
         nConePointMass + meshIdx1,
         nConePointMass + meshIdx2,
         nConePointMass + meshIdx3));
@@ -2891,7 +2889,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 0) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
+      properties.addFace(math::Vector3i(
           nTopPointMasses + meshIdx1,
           nTopPointMasses + meshIdx2,
           nTopPointMasses + meshIdx3));
@@ -2899,7 +2897,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j + 1;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 1) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
+      properties.addFace(math::Vector3i(
           nTopPointMasses + meshIdx1,
           nTopPointMasses + meshIdx2,
           nTopPointMasses + meshIdx3));
@@ -2908,7 +2906,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     meshIdx1 = (i + 0) * _nSlices;
     meshIdx2 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices;
-    properties.addFace(Eigen::Vector3i(
+    properties.addFace(math::Vector3i(
         nTopPointMasses + meshIdx1,
         nTopPointMasses + meshIdx2,
         nTopPointMasses + meshIdx3));
@@ -2916,7 +2914,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
+    properties.addFace(math::Vector3i(
         nTopPointMasses + meshIdx1,
         nTopPointMasses + meshIdx2,
         nTopPointMasses + meshIdx3));
@@ -2928,7 +2926,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 0) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
+      properties.addFace(math::Vector3i(
           nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
           nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
           nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
@@ -2936,7 +2934,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j + 1;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 1) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
+      properties.addFace(math::Vector3i(
           nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
           nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
           nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
@@ -2945,7 +2943,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 0) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
+    properties.addFace(math::Vector3i(
         nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
         nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
         nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
@@ -2953,7 +2951,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     meshIdx1 = (i + 0) * _nSlices + 0;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
+    properties.addFace(math::Vector3i(
         nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
         nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
         nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
@@ -2962,14 +2960,14 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   for (std::size_t i = 0; i < _nSlices - 1; i++) {
     meshIdx2 = i + 2;
     meshIdx3 = i + 3;
-    properties.addFace(Eigen::Vector3i(
+    properties.addFace(math::Vector3i(
         nTotalMasses - meshIdx1,
         nTotalMasses - meshIdx2,
         nTotalMasses - meshIdx3));
   }
   meshIdx2 = _nSlices + 1;
   meshIdx3 = 2;
-  properties.addFace(Eigen::Vector3i(
+  properties.addFace(math::Vector3i(
       nTotalMasses - meshIdx1,
       nTotalMasses - meshIdx2,
       nTotalMasses - meshIdx3));

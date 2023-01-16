@@ -75,8 +75,8 @@ public:
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;
 
-  Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(
-      const Eigen::Vector3d& _positions) const override;
+  math::Matrix<double, 6, 3> getRelativeJacobianStatic(
+      const math::Vector3d& _positions) const override;
 
 protected:
   /// Constructor called by Skeleton class

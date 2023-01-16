@@ -86,10 +86,10 @@ public:
   bool isCyclic(std::size_t _index) const override;
 
   ///
-  void setAxis(const Eigen::Vector3d& _axis);
+  void setAxis(const math::Vector3d& _axis);
 
   ///
-  const Eigen::Vector3d& getAxis() const;
+  const math::Vector3d& getAxis() const;
 
   ///
   void setPitch(double _pitch);

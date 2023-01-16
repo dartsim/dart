@@ -143,22 +143,22 @@ private:
   std::size_t mAppliedImpulseIndex;
 
   /// Life time of constraint of each DOF.
-  Eigen::Matrix<std::size_t, 6, 1> mLifeTime;
+  math::Matrix<std::size_t, 6, 1> mLifeTime;
 
   /// Whether any of the joint contraint is active of each joint.
-  Eigen::Matrix<bool, 6, 1> mActive;
+  math::Matrix<bool, 6, 1> mActive;
 
   /// The desired delta velocity to satisfy the joint limit constraint.
-  Eigen::Matrix<double, 6, 1> mDesiredVelocityChange;
+  math::Matrix<double, 6, 1> mDesiredVelocityChange;
 
   /// Constraint impulse of the previous step.
-  Eigen::Matrix<double, 6, 1> mOldX;
+  math::Matrix<double, 6, 1> mOldX;
 
   /// Upper limit of the constraint impulse.
-  Eigen::Matrix<double, 6, 1> mImpulseUpperBound;
+  math::Matrix<double, 6, 1> mImpulseUpperBound;
 
   /// Lower limit of the constraint impulse.
-  Eigen::Matrix<double, 6, 1> mImpulseLowerBound;
+  math::Matrix<double, 6, 1> mImpulseLowerBound;
 
   /// Global constraint error allowance
   static double mErrorAllowance;

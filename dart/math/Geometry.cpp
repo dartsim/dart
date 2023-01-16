@@ -1439,7 +1439,7 @@ Inertia transformInertia(const Isometry3d& _T, const Inertia& _I)
         + (_T(0, 2) * _I(3, 5) + _T(1, 2) * _I(4, 5) + _T(2, 2) * _I(5, 5))
               * _T(2, 2);
 
-  ret.triangularView<Eigen::StrictlyLower>() = ret.transpose();
+  ret.triangularView<math::StrictlyLower>() = ret.transpose();
 
   return ret;
 }

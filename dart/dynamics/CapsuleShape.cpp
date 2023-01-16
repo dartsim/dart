@@ -103,7 +103,7 @@ double CapsuleShape::computeVolume(double radius, double height)
 }
 
 //==============================================================================
-Eigen::Matrix3d CapsuleShape::computeInertia(
+math::Matrix3d CapsuleShape::computeInertia(
     double radius, double height, double mass)
 {
   // Reference:
@@ -128,7 +128,7 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
   const auto Izz
       = massCylinder * (radius2 / 2.0) + massSphere * ((2.0 / 5.0) * radius2);
 
-  return Eigen::Vector3d(Ixx, Ixx, Izz).asDiagonal();
+  return math::Vector3d(Ixx, Ixx, Izz).asDiagonal();
 }
 
 //==============================================================================
@@ -140,7 +140,7 @@ ShapePtr CapsuleShape::clone() const
 //==============================================================================
 void CapsuleShape::updateBoundingBox() const
 {
-  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5 * mHeight);
+  const math::Vector3d corner(mRadius, mRadius, mRadius + 0.5 * mHeight);
 
   mBoundingBox.setMin(-corner);
   mBoundingBox.setMax(corner);
@@ -156,7 +156,7 @@ void CapsuleShape::updateVolume() const
 }
 
 //==============================================================================
-Eigen::Matrix3d CapsuleShape::computeInertia(double mass) const
+math::Matrix3d CapsuleShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
 }

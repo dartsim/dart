@@ -116,10 +116,10 @@ struct DART_DYNAMICS_API JointProperties
   std::string mName;
 
   /// Transformation from parent BodyNode to this Joint
-  Eigen::Isometry3d mT_ParentBodyToJoint;
+  math::Isometry3d mT_ParentBodyToJoint;
 
   /// Transformation from child BodyNode to this Joint
-  Eigen::Isometry3d mT_ChildBodyToJoint;
+  math::Isometry3d mT_ChildBodyToJoint;
 
   /// True if the joint position or velocity limits should be enforced in
   /// dynamic simulation
@@ -138,10 +138,10 @@ struct DART_DYNAMICS_API JointProperties
   /// Constructor
   JointProperties(
       const std::string& _name = "Joint",
-      const Eigen::Isometry3d& _T_ParentBodyToJoint
-      = Eigen::Isometry3d::Identity(),
-      const Eigen::Isometry3d& _T_ChildBodyToJoint
-      = Eigen::Isometry3d::Identity(),
+      const math::Isometry3d& _T_ParentBodyToJoint
+      = math::Isometry3d::Identity(),
+      const math::Isometry3d& _T_ChildBodyToJoint
+      = math::Isometry3d::Identity(),
       bool _isPositionLimitEnforced = false,
       ActuatorType _actuatorType = DefaultActuatorType,
       const Joint* _mimicJoint = nullptr,

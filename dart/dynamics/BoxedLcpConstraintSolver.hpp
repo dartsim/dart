@@ -93,47 +93,46 @@ protected:
   // change in DART 7 because it's API breaking change.
 
   /// Cache data for boxed LCP formulation
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
+  math::Matrix<double, math::Dynamic, math::Dynamic, math::RowMajor> mA;
 
   /// Cache data for boxed LCP formulation
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-      mABackup;
+  math::Matrix<double, math::Dynamic, math::Dynamic, math::RowMajor> mABackup;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mX;
+  math::VectorXd mX;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mXBackup;
+  math::VectorXd mXBackup;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mB;
+  math::VectorXd mB;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mBBackup;
+  math::VectorXd mBBackup;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mW;
+  math::VectorXd mW;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mLo;
+  math::VectorXd mLo;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mLoBackup;
+  math::VectorXd mLoBackup;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mHi;
+  math::VectorXd mHi;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mHiBackup;
+  math::VectorXd mHiBackup;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXi mFIndex;
+  math::VectorXi mFIndex;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXi mFIndexBackup;
+  math::VectorXi mFIndexBackup;
 
   /// Cache data for boxed LCP formulation
-  Eigen::VectorXi mOffset;
+  math::VectorXi mOffset;
 
 #ifndef NDEBUG
 private:

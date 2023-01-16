@@ -118,7 +118,7 @@ bool PrismaticJoint::isCyclic(std::size_t /*_index*/) const
 }
 
 //==============================================================================
-void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
+void PrismaticJoint::setAxis(const math::Vector3d& _axis)
 {
   if (_axis == mAspectProperties.mAxis)
     return;
@@ -130,7 +130,7 @@ void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& PrismaticJoint::getAxis() const
+const math::Vector3d& PrismaticJoint::getAxis() const
 {
   return mAspectProperties.mAxis;
 }
@@ -178,7 +178,7 @@ void PrismaticJoint::updateDegreeOfFreedomNames()
 void PrismaticJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * Eigen::Translation3d(getAxis() * getPositionsStatic())
+       * math::Translation3d(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification

@@ -171,7 +171,7 @@ std::vector<Data> getAllMemberObjectData(const Owner* owner)
 SkeletonAspectProperties::SkeletonAspectProperties(
     const std::string& _name,
     bool _isMobile,
-    const Eigen::Vector3d& _gravity,
+    const math::Vector3d& _gravity,
     double _timeStep,
     bool _enabledSelfCollisionCheck,
     bool _enableAdjacentBodyCheck)
@@ -295,11 +295,11 @@ BodyNodePropertiesVector getAllJointProperties(const Skeleton* skel)
 
 //==============================================================================
 Skeleton::Configuration::Configuration(
-    const Eigen::VectorXd& positions,
-    const Eigen::VectorXd& velocities,
-    const Eigen::VectorXd& accelerations,
-    const Eigen::VectorXd& forces,
-    const Eigen::VectorXd& commands)
+    const math::VectorXd& positions,
+    const math::VectorXd& velocities,
+    const math::VectorXd& accelerations,
+    const math::VectorXd& forces,
+    const math::VectorXd& commands)
   : mPositions(positions),
     mVelocities(velocities),
     mAccelerations(accelerations),
@@ -323,11 +323,11 @@ Skeleton::Configuration::Configuration(
 //==============================================================================
 Skeleton::Configuration::Configuration(
     const std::vector<std::size_t>& indices,
-    const Eigen::VectorXd& positions,
-    const Eigen::VectorXd& velocities,
-    const Eigen::VectorXd& accelerations,
-    const Eigen::VectorXd& forces,
-    const Eigen::VectorXd& commands)
+    const math::VectorXd& positions,
+    const math::VectorXd& velocities,
+    const math::VectorXd& accelerations,
+    const math::VectorXd& forces,
+    const math::VectorXd& commands)
   : mIndices(indices),
     mPositions(positions),
     mVelocities(velocities),
@@ -786,7 +786,7 @@ double Skeleton::getTimeStep() const
 }
 
 //==============================================================================
-void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
+void Skeleton::setGravity(const math::Vector3d& _gravity)
 {
   mAspectProperties.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
@@ -795,7 +795,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 }
 
 //==============================================================================
-const Eigen::Vector3d& Skeleton::getGravity() const
+const math::Vector3d& Skeleton::getGravity() const
 {
   return mAspectProperties.mGravity;
 }
@@ -1447,18 +1447,18 @@ void Skeleton::integrateVelocities(double _dt)
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getPositionDifferences(
-    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
+math::VectorXd Skeleton::getPositionDifferences(
+    const math::VectorXd& _q2, const math::VectorXd& _q1) const
 {
   if (static_cast<std::size_t>(_q2.size()) != getNumDofs()
       || static_cast<std::size_t>(_q1.size()) != getNumDofs()) {
     dterr << "Skeleton::getPositionsDifference: q1's size[" << _q1.size()
           << "] or q2's size[" << _q2.size() << "is different with the dof ["
           << getNumDofs() << "]." << std::endl;
-    return Eigen::VectorXd::Zero(getNumDofs());
+    return math::VectorXd::Zero(getNumDofs());
   }
 
-  Eigen::VectorXd dq(getNumDofs());
+  math::VectorXd dq(getNumDofs());
 
   for (const auto& bodyNode : mSkelCache.mBodyNodes) {
     const Joint* joint = bodyNode->getParentJoint();
@@ -1466,8 +1466,8 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
 
     if (dof) {
       std::size_t index = joint->getDof(0)->getIndexInSkeleton();
-      const Eigen::VectorXd& q2Seg = _q2.segment(index, dof);
-      const Eigen::VectorXd& q1Seg = _q1.segment(index, dof);
+      const math::VectorXd& q2Seg = _q2.segment(index, dof);
+      const math::VectorXd& q1Seg = _q1.segment(index, dof);
       dq.segment(index, dof) = joint->getPositionDifferences(q2Seg, q1Seg);
     }
   }
@@ -1476,15 +1476,15 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getVelocityDifferences(
-    const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const
+math::VectorXd Skeleton::getVelocityDifferences(
+    const math::VectorXd& _dq2, const math::VectorXd& _dq1) const
 {
   if (static_cast<std::size_t>(_dq2.size()) != getNumDofs()
       || static_cast<std::size_t>(_dq1.size()) != getNumDofs()) {
     dterr << "Skeleton::getPositionsDifference: dq1's size[" << _dq1.size()
           << "] or dq2's size[" << _dq2.size() << "is different with the dof ["
           << getNumDofs() << "]." << std::endl;
-    return Eigen::VectorXd::Zero(getNumDofs());
+    return math::VectorXd::Zero(getNumDofs());
   }
 
   // All the tangent spaces of Joint's configuration spaces are vector spaces.
@@ -1567,7 +1567,7 @@ math::Jacobian Skeleton::getJacobian(
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobian(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const math::Vector3d& _localOffset) const
 {
   return variadicGetJacobian(this, _node, _localOffset);
 }
@@ -1575,7 +1575,7 @@ math::Jacobian Skeleton::getJacobian(
 //==============================================================================
 math::Jacobian Skeleton::getJacobian(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobian(this, _node, _localOffset, _inCoordinatesOf);
@@ -1606,7 +1606,7 @@ math::Jacobian Skeleton::getWorldJacobian(const JacobianNode* _node) const
 
 //==============================================================================
 math::Jacobian Skeleton::getWorldJacobian(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const math::Vector3d& _localOffset) const
 {
   return variadicGetWorldJacobian(this, _node, _localOffset);
 }
@@ -1638,7 +1638,7 @@ math::LinearJacobian Skeleton::getLinearJacobian(
 //==============================================================================
 math::LinearJacobian Skeleton::getLinearJacobian(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetLinearJacobian(this, _node, _localOffset, _inCoordinatesOf);
@@ -1701,7 +1701,7 @@ math::Jacobian Skeleton::getJacobianSpatialDeriv(
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianSpatialDeriv(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const math::Vector3d& _localOffset) const
 {
   return variadicGetJacobianSpatialDeriv(this, _node, _localOffset);
 }
@@ -1709,7 +1709,7 @@ math::Jacobian Skeleton::getJacobianSpatialDeriv(
 //==============================================================================
 math::Jacobian Skeleton::getJacobianSpatialDeriv(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobianSpatialDeriv(
@@ -1750,7 +1750,7 @@ math::Jacobian Skeleton::getJacobianClassicDeriv(
 //==============================================================================
 math::Jacobian Skeleton::getJacobianClassicDeriv(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobianClassicDeriv(
@@ -1785,7 +1785,7 @@ math::LinearJacobian Skeleton::getLinearJacobianDeriv(
 //==============================================================================
 math::LinearJacobian Skeleton::getLinearJacobianDeriv(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetLinearJacobianDeriv(
@@ -1825,7 +1825,7 @@ double Skeleton::getMass() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getMassMatrix(std::size_t _treeIdx) const
+const math::MatrixXd& Skeleton::getMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mMassMatrix)
     updateMassMatrix(_treeIdx);
@@ -1833,7 +1833,7 @@ const Eigen::MatrixXd& Skeleton::getMassMatrix(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getMassMatrix() const
+const math::MatrixXd& Skeleton::getMassMatrix() const
 {
   if (mSkelCache.mDirty.mMassMatrix)
     updateMassMatrix();
@@ -1841,7 +1841,7 @@ const Eigen::MatrixXd& Skeleton::getMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getAugMassMatrix(std::size_t _treeIdx) const
+const math::MatrixXd& Skeleton::getAugMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mAugMassMatrix)
     updateAugMassMatrix(_treeIdx);
@@ -1850,7 +1850,7 @@ const Eigen::MatrixXd& Skeleton::getAugMassMatrix(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getAugMassMatrix() const
+const math::MatrixXd& Skeleton::getAugMassMatrix() const
 {
   if (mSkelCache.mDirty.mAugMassMatrix)
     updateAugMassMatrix();
@@ -1859,7 +1859,7 @@ const Eigen::MatrixXd& Skeleton::getAugMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvMassMatrix(std::size_t _treeIdx) const
+const math::MatrixXd& Skeleton::getInvMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mInvMassMatrix)
     updateInvMassMatrix(_treeIdx);
@@ -1868,7 +1868,7 @@ const Eigen::MatrixXd& Skeleton::getInvMassMatrix(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvMassMatrix() const
+const math::MatrixXd& Skeleton::getInvMassMatrix() const
 {
   if (mSkelCache.mDirty.mInvMassMatrix)
     updateInvMassMatrix();
@@ -1877,7 +1877,7 @@ const Eigen::MatrixXd& Skeleton::getInvMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix(std::size_t _treeIdx) const
+const math::MatrixXd& Skeleton::getInvAugMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mInvAugMassMatrix)
     updateInvAugMassMatrix(_treeIdx);
@@ -1886,7 +1886,7 @@ const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix() const
+const math::MatrixXd& Skeleton::getInvAugMassMatrix() const
 {
   if (mSkelCache.mDirty.mInvAugMassMatrix)
     updateInvAugMassMatrix();
@@ -1895,7 +1895,7 @@ const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisForces(std::size_t _treeIdx) const
+const math::VectorXd& Skeleton::getCoriolisForces(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mCoriolisForces)
     updateCoriolisForces(_treeIdx);
@@ -1904,7 +1904,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisForces(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisForces() const
+const math::VectorXd& Skeleton::getCoriolisForces() const
 {
   if (mSkelCache.mDirty.mCoriolisForces)
     updateCoriolisForces();
@@ -1913,7 +1913,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getGravityForces(std::size_t _treeIdx) const
+const math::VectorXd& Skeleton::getGravityForces(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mGravityForces)
     updateGravityForces(_treeIdx);
@@ -1922,7 +1922,7 @@ const Eigen::VectorXd& Skeleton::getGravityForces(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getGravityForces() const
+const math::VectorXd& Skeleton::getGravityForces() const
 {
   if (mSkelCache.mDirty.mGravityForces)
     updateGravityForces();
@@ -1931,7 +1931,7 @@ const Eigen::VectorXd& Skeleton::getGravityForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces(
+const math::VectorXd& Skeleton::getCoriolisAndGravityForces(
     std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mCoriolisAndGravityForces)
@@ -1941,7 +1941,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces(
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces() const
+const math::VectorXd& Skeleton::getCoriolisAndGravityForces() const
 {
   if (mSkelCache.mDirty.mCoriolisAndGravityForces)
     updateCoriolisAndGravityForces();
@@ -1950,7 +1950,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getExternalForces(std::size_t _treeIdx) const
+const math::VectorXd& Skeleton::getExternalForces(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mExternalForces)
     updateExternalForces(_treeIdx);
@@ -1959,7 +1959,7 @@ const Eigen::VectorXd& Skeleton::getExternalForces(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getExternalForces() const
+const math::VectorXd& Skeleton::getExternalForces() const
 {
   if (mSkelCache.mDirty.mExternalForces)
     updateExternalForces();
@@ -1968,19 +1968,19 @@ const Eigen::VectorXd& Skeleton::getExternalForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getConstraintForces(std::size_t _treeIdx) const
+const math::VectorXd& Skeleton::getConstraintForces(std::size_t _treeIdx) const
 {
   return computeConstraintForces(mTreeCache[_treeIdx]);
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getConstraintForces() const
+const math::VectorXd& Skeleton::getConstraintForces() const
 {
   return computeConstraintForces(mSkelCache);
 }
 
 //==============================================================================
-// const Eigen::VectorXd& Skeleton::getDampingForceVector() {
+// const math::VectorXd& Skeleton::getDampingForceVector() {
 //  if (mIsDampingForceVectorDirty)
 //    updateDampingForceVector();
 //  return mFd;
@@ -2589,15 +2589,15 @@ void Skeleton::updateTotalMass()
 void Skeleton::updateCacheDimensions(Skeleton::DataCache& _cache)
 {
   std::size_t dof = _cache.mDofs.size();
-  _cache.mM = Eigen::MatrixXd::Zero(dof, dof);
-  _cache.mAugM = Eigen::MatrixXd::Zero(dof, dof);
-  _cache.mInvM = Eigen::MatrixXd::Zero(dof, dof);
-  _cache.mInvAugM = Eigen::MatrixXd::Zero(dof, dof);
-  _cache.mCvec = Eigen::VectorXd::Zero(dof);
-  _cache.mG = Eigen::VectorXd::Zero(dof);
-  _cache.mCg = Eigen::VectorXd::Zero(dof);
-  _cache.mFext = Eigen::VectorXd::Zero(dof);
-  _cache.mFc = Eigen::VectorXd::Zero(dof);
+  _cache.mM = math::MatrixXd::Zero(dof, dof);
+  _cache.mAugM = math::MatrixXd::Zero(dof, dof);
+  _cache.mInvM = math::MatrixXd::Zero(dof, dof);
+  _cache.mInvAugM = math::MatrixXd::Zero(dof, dof);
+  _cache.mCvec = math::VectorXd::Zero(dof);
+  _cache.mG = math::VectorXd::Zero(dof);
+  _cache.mCg = math::VectorXd::Zero(dof);
+  _cache.mFext = math::VectorXd::Zero(dof);
+  _cache.mFc = math::VectorXd::Zero(dof);
 }
 
 //==============================================================================
@@ -2651,7 +2651,7 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
   cache.mM.setZero();
 
   // Backup the original internal force
-  Eigen::VectorXd originalGenAcceleration = getAccelerations();
+  math::VectorXd originalGenAcceleration = getAccelerations();
 
   // Clear out the accelerations of the dofs in this tree so that we can set
   // them to 1.0 one at a time to build up the mass matrix
@@ -2687,7 +2687,7 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
     // Set the acceleration of this DOF back to 0.0
     cache.mDofs[j]->setAcceleration(0.0);
   }
-  cache.mM.triangularView<Eigen::StrictlyUpper>() = cache.mM.transpose();
+  cache.mM.triangularView<math::StrictlyUpper>() = cache.mM.transpose();
 
   // Restore the original generalized accelerations
   const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
@@ -2710,7 +2710,7 @@ void Skeleton::updateMassMatrix() const
   mSkelCache.mM.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::MatrixXd& treeM = getMassMatrix(tree);
+    const math::MatrixXd& treeM = getMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -2742,7 +2742,7 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
   cache.mAugM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalGenAcceleration = getAccelerations();
+  math::VectorXd originalGenAcceleration = getAccelerations();
 
   // Clear out the accelerations of the DOFs in this tree so that we can set
   // them to 1.0 one at a time to build up the augmented mass matrix
@@ -2779,7 +2779,7 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
     // Set the acceleration of this DOF back to 0.0
     cache.mDofs[j]->setAcceleration(0.0);
   }
-  cache.mAugM.triangularView<Eigen::StrictlyUpper>() = cache.mAugM.transpose();
+  cache.mAugM.triangularView<math::StrictlyUpper>() = cache.mAugM.transpose();
 
   // Restore the origianl internal force
   const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
@@ -2802,7 +2802,7 @@ void Skeleton::updateAugMassMatrix() const
   mSkelCache.mAugM.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::MatrixXd& treeAugM = getAugMassMatrix(tree);
+    const math::MatrixXd& treeAugM = getAugMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -2835,7 +2835,7 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
   // cache.mInvM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalInternalForce = getForces();
+  math::VectorXd originalInternalForce = getForces();
 
   // Clear out the forces of the dofs in this tree so that we can set them to
   // 1.0 one at a time to build up the inverse mass matrix
@@ -2871,7 +2871,7 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
     // Set the force of this DOF back to 0.0
     cache.mDofs[j]->setForce(0.0);
   }
-  cache.mInvM.triangularView<Eigen::StrictlyLower>() = cache.mInvM.transpose();
+  cache.mInvM.triangularView<math::StrictlyLower>() = cache.mInvM.transpose();
 
   // Restore the original internal force
   const_cast<Skeleton*>(this)->setForces(originalInternalForce);
@@ -2894,7 +2894,7 @@ void Skeleton::updateInvMassMatrix() const
   mSkelCache.mInvM.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::MatrixXd& treeInvM = getInvMassMatrix(tree);
+    const math::MatrixXd& treeInvM = getInvMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -2927,7 +2927,7 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
   // mInvM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalInternalForce = getForces();
+  math::VectorXd originalInternalForce = getForces();
 
   // Clear out the forces of the dofs in this tree so that we can set them to
   // 1.0 one at a time to build up the inverse augmented mass matrix
@@ -2964,7 +2964,7 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
     // Set the force of this DOF back to 0.0
     cache.mDofs[j]->setForce(0.0);
   }
-  cache.mInvAugM.triangularView<Eigen::StrictlyLower>()
+  cache.mInvAugM.triangularView<math::StrictlyLower>()
       = cache.mInvAugM.transpose();
 
   // Restore the original internal force
@@ -2988,7 +2988,7 @@ void Skeleton::updateInvAugMassMatrix() const
   mSkelCache.mInvAugM.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::MatrixXd& treeInvAugM = getInvAugMassMatrix(tree);
+    const math::MatrixXd& treeInvAugM = getInvAugMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -3046,7 +3046,7 @@ void Skeleton::updateCoriolisForces() const
   mSkelCache.mCvec.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::VectorXd& treeCvec = getCoriolisForces(tree);
+    const math::VectorXd& treeCvec = getCoriolisForces(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -3094,7 +3094,7 @@ void Skeleton::updateGravityForces() const
   mSkelCache.mG.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::VectorXd& treeG = getGravityForces(tree);
+    const math::VectorXd& treeG = getGravityForces(tree);
     std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -3148,7 +3148,7 @@ void Skeleton::updateCoriolisAndGravityForces() const
   mSkelCache.mCg.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::VectorXd& treeCg = getCoriolisAndGravityForces(tree);
+    const math::VectorXd& treeCg = getCoriolisAndGravityForces(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -3194,7 +3194,7 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
   //      int nN = pm->getNumConnectedPointMasses();
 
   //      // Vertex restoring force
-  //      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->getPositions()
+  //      math::Vector3d Fext = -(kv + nN * ke) * pm->getPositions()
   //                             - (mTimeStep * (kv + nN*ke)) *
   //                             pm->getVelocities();
 
@@ -3228,7 +3228,7 @@ void Skeleton::updateExternalForces() const
   mSkelCache.mFext.setZero();
 
   for (std::size_t tree = 0; tree < mTreeCache.size(); ++tree) {
-    const Eigen::VectorXd& treeFext = getExternalForces(tree);
+    const math::VectorXd& treeFext = getExternalForces(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
     std::size_t nTreeDofs = treeDofs.size();
     for (std::size_t i = 0; i < nTreeDofs; ++i) {
@@ -3241,7 +3241,7 @@ void Skeleton::updateExternalForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
+const math::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 {
   const std::size_t dof = cache.mDofs.size();
   assert(static_cast<std::size_t>(cache.mFc.size()) == dof);
@@ -3270,23 +3270,23 @@ static void computeSupportPolygon(
     math::SupportPolygon& polygon,
     math::SupportGeometry& geometry,
     std::vector<std::size_t>& ee_indices,
-    Eigen::Vector3d& axis1,
-    Eigen::Vector3d& axis2,
-    Eigen::Vector2d& centroid,
+    math::Vector3d& axis1,
+    math::Vector3d& axis2,
+    math::Vector2d& centroid,
     std::size_t treeIndex)
 {
   polygon.clear();
   geometry.clear();
   ee_indices.clear();
 
-  const Eigen::Vector3d& up = -skel->getGravity();
+  const math::Vector3d& up = -skel->getGravity();
   if (up.norm() == 0.0) {
     dtwarn << "[computeSupportPolygon] Requesting support polygon of a "
            << "Skeleton with no gravity. The result will only be an empty "
            << "set!\n";
     axis1.setZero();
     axis2.setZero();
-    centroid = Eigen::Vector2d::Constant(std::nan(""));
+    centroid = math::Vector2d::Constant(std::nan(""));
     return;
   }
 
@@ -3297,16 +3297,16 @@ static void computeSupportPolygon(
     if (ee->getSupport() && ee->getSupport()->isActive()
         && (INVALID_INDEX == treeIndex || ee->getTreeIndex() == treeIndex)) {
       const math::SupportGeometry& eeGeom = ee->getSupport()->getGeometry();
-      for (const Eigen::Vector3d& v : eeGeom) {
+      for (const math::Vector3d& v : eeGeom) {
         geometry.push_back(ee->getWorldTransform() * v);
         originalEE_map.push_back(ee->getIndexInSkeleton());
       }
     }
   }
 
-  axis1 = (up - Eigen::Vector3d::UnitX()).norm() > 1e-6
-              ? Eigen::Vector3d::UnitX()
-              : Eigen::Vector3d::UnitY();
+  axis1 = (up - math::Vector3d::UnitX()).norm() > 1e-6
+              ? math::Vector3d::UnitX()
+              : math::Vector3d::UnitY();
 
   axis1 = axis1 - up.dot(axis1) * up / up.dot(up);
   axis1.normalize();
@@ -3323,7 +3323,7 @@ static void computeSupportPolygon(
   if (polygon.size() > 0)
     centroid = math::computeCentroidOfHull(polygon);
   else
-    centroid = Eigen::Vector2d::Constant(std::nan(""));
+    centroid = math::Vector2d::Constant(std::nan(""));
 }
 
 //==============================================================================
@@ -3389,7 +3389,7 @@ const std::vector<std::size_t>& Skeleton::getSupportIndices(
 }
 
 //==============================================================================
-const std::pair<Eigen::Vector3d, Eigen::Vector3d>& Skeleton::getSupportAxes()
+const std::pair<math::Vector3d, math::Vector3d>& Skeleton::getSupportAxes()
     const
 {
   getSupportPolygon();
@@ -3397,7 +3397,7 @@ const std::pair<Eigen::Vector3d, Eigen::Vector3d>& Skeleton::getSupportAxes()
 }
 
 //==============================================================================
-const std::pair<Eigen::Vector3d, Eigen::Vector3d>& Skeleton::getSupportAxes(
+const std::pair<math::Vector3d, math::Vector3d>& Skeleton::getSupportAxes(
     std::size_t _treeIdx) const
 {
   getSupportPolygon(_treeIdx);
@@ -3405,14 +3405,14 @@ const std::pair<Eigen::Vector3d, Eigen::Vector3d>& Skeleton::getSupportAxes(
 }
 
 //==============================================================================
-const Eigen::Vector2d& Skeleton::getSupportCentroid() const
+const math::Vector2d& Skeleton::getSupportCentroid() const
 {
   getSupportPolygon();
   return mSkelCache.mSupportCentroid;
 }
 
 //==============================================================================
-const Eigen::Vector2d& Skeleton::getSupportCentroid(std::size_t _treeIdx) const
+const math::Vector2d& Skeleton::getSupportCentroid(std::size_t _treeIdx) const
 {
   getSupportPolygon(_treeIdx);
   return mTreeCache[_treeIdx].mSupportCentroid;
@@ -3664,7 +3664,7 @@ void Skeleton::updateBiasImpulse(
 void Skeleton::updateBiasImpulse(
     SoftBodyNode* _softBodyNode,
     PointMass* _pointMass,
-    const Eigen::Vector3d& _imp)
+    const math::Vector3d& _imp)
 {
   // Assertions
   assert(_softBodyNode != nullptr);
@@ -3683,7 +3683,7 @@ void Skeleton::updateBiasImpulse(
 #endif
 
   // Set impulse to _bodyNode
-  Eigen::Vector3d oldConstraintImpulse = _pointMass->getConstraintImpulses();
+  math::Vector3d oldConstraintImpulse = _pointMass->getConstraintImpulses();
   _pointMass->setConstraintImpulse(_imp, true);
 
   // Prepare cache data
@@ -3768,9 +3768,9 @@ double Skeleton::computePotentialEnergy() const
 }
 
 //==============================================================================
-Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
+math::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
 {
-  Eigen::Vector3d com = Eigen::Vector3d::Zero();
+  math::Vector3d com = math::Vector3d::Zero();
 
   const std::size_t numBodies = getNumBodyNodes();
   for (std::size_t i = 0; i < numBodies; ++i) {
@@ -3816,11 +3816,11 @@ math::Vector6d Skeleton::getCOMSpatialVelocity(
 }
 
 //==============================================================================
-Eigen::Vector3d Skeleton::getCOMLinearVelocity(
+math::Vector3d Skeleton::getCOMLinearVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector3d,
+      math::Vector3d,
       &BodyNode::getCOMLinearVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -3835,11 +3835,11 @@ math::Vector6d Skeleton::getCOMSpatialAcceleration(
 }
 
 //==============================================================================
-Eigen::Vector3d Skeleton::getCOMLinearAcceleration(
+math::Vector3d Skeleton::getCOMLinearAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector3d,
+      math::Vector3d,
       &BodyNode::getCOMLinearAcceleration>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -3849,7 +3849,7 @@ Eigen::Vector3d Skeleton::getCOMLinearAcceleration(
 template <
     typename JacType, // JacType is the type of Jacobian we're computing
     JacType (TemplatedJacobianNode<BodyNode>::*getJacFn)(
-        const Eigen::Vector3d&, const Frame*) const>
+        const math::Vector3d&, const Frame*) const>
 JacType getCOMJacobianTemplate(
     const Skeleton* _skel, const Frame* _inCoordinatesOf)
 {

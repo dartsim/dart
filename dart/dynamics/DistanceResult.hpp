@@ -33,9 +33,7 @@
 #ifndef DART_COLLISION_DISTANCE_RESULT_HPP_
 #define DART_COLLISION_DISTANCE_RESULT_HPP_
 
-#include <dart/dynamics/Export.hpp>
-
-#include <Eigen/Dense>
+#include <dart/dynamics/Fwd.hpp>
 
 namespace dart {
 
@@ -92,7 +90,7 @@ struct DART_DYNAMICS_API DistanceResult
   ///
   /// The distance between the two nearest points is equal to
   /// unclampedMinDistance rather than minDistance.
-  Eigen::Vector3d nearestPoint1;
+  math::Vector3d nearestPoint1;
 
   /// The nearest point on DistanceResult::shapeFrame2 expressed the world
   /// coordinates.
@@ -102,7 +100,7 @@ struct DART_DYNAMICS_API DistanceResult
   ///
   /// The distance between the two nearest points is equal to
   /// unclampedMinDistance rather than minDistance.
-  Eigen::Vector3d nearestPoint2;
+  math::Vector3d nearestPoint2;
 
   /// Constructor
   DistanceResult();

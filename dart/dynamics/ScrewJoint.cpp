@@ -119,7 +119,7 @@ bool ScrewJoint::isCyclic(std::size_t /*_index*/) const
 }
 
 //==============================================================================
-void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
+void ScrewJoint::setAxis(const math::Vector3d& _axis)
 {
   if (_axis == mAspectProperties.mAxis)
     return;
@@ -131,7 +131,7 @@ void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& ScrewJoint::getAxis() const
+const math::Vector3d& ScrewJoint::getAxis() const
 {
   return mAspectProperties.mAxis;
 }

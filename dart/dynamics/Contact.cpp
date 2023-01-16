@@ -37,9 +37,9 @@ namespace collision {
 
 //==============================================================================
 Contact::Contact()
-  : point(Eigen::Vector3d::Zero()),
-    normal(Eigen::Vector3d::Zero()),
-    force(Eigen::Vector3d::Zero()),
+  : point(math::Vector3d::Zero()),
+    normal(math::Vector3d::Zero()),
+    force(math::Vector3d::Zero()),
     collisionObject1(nullptr),
     collisionObject2(nullptr),
     penetrationDepth(0),
@@ -52,7 +52,7 @@ Contact::Contact()
 }
 
 //==============================================================================
-bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
+bool Contact::isZeroNormal(const math::Vector3d& normal)
 {
   if (normal.squaredNorm() < getNormalEpsilonSquared())
     return true;
@@ -61,7 +61,7 @@ bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
 }
 
 //==============================================================================
-bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
+bool Contact::isNonZeroNormal(const math::Vector3d& normal)
 {
   return !isZeroNormal(normal);
 }

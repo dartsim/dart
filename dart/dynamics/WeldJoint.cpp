@@ -79,7 +79,7 @@ WeldJoint::Properties WeldJoint::getWeldJointProperties() const
 }
 
 //==============================================================================
-void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
+void WeldJoint::setTransformFromParentBodyNode(const math::Isometry3d& _T)
 {
   Joint::setTransformFromParentBodyNode(_T);
 
@@ -88,7 +88,7 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+void WeldJoint::setTransformFromChildBodyNode(const math::Isometry3d& _T)
 {
   Joint::setTransformFromChildBodyNode(_T);
 

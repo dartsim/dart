@@ -64,10 +64,10 @@ public:
   static double computeVolume(double radius);
 
   /// Compute moments of inertia of a Sphere
-  static Eigen::Matrix3d computeInertia(double radius, double mass);
+  static math::Matrix3d computeInertia(double radius, double mass);
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   ShapePtr clone() const override;

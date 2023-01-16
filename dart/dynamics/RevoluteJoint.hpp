@@ -86,10 +86,10 @@ public:
   static const std::string& getStaticType();
 
   ///
-  void setAxis(const Eigen::Vector3d& _axis);
+  void setAxis(const math::Vector3d& _axis);
 
   ///
-  const Eigen::Vector3d& getAxis() const;
+  const math::Vector3d& getAxis() const;
 
   // Documentation inherited
   GenericJoint<math::R1Space>::JacobianMatrix getRelativeJacobianStatic(

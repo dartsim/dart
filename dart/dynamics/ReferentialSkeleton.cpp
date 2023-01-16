@@ -443,7 +443,7 @@ math::Jacobian ReferentialSkeleton::getJacobian(
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobian(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const math::Vector3d& _localOffset) const
 {
   return variadicGetJacobian(this, _node, _localOffset);
 }
@@ -451,7 +451,7 @@ math::Jacobian ReferentialSkeleton::getJacobian(
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobian(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobian(this, _node, _localOffset, _inCoordinatesOf);
@@ -485,7 +485,7 @@ math::Jacobian ReferentialSkeleton::getWorldJacobian(
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getWorldJacobian(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const math::Vector3d& _localOffset) const
 {
   return variadicGetWorldJacobian(this, _node, _localOffset);
 }
@@ -520,7 +520,7 @@ math::LinearJacobian ReferentialSkeleton::getLinearJacobian(
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobian(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetLinearJacobian(this, _node, _localOffset, _inCoordinatesOf);
@@ -588,7 +588,7 @@ math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
-    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const math::Vector3d& _localOffset) const
 {
   return variadicGetJacobianSpatialDeriv(this, _node, _localOffset);
 }
@@ -596,7 +596,7 @@ math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobianSpatialDeriv(
@@ -639,7 +639,7 @@ math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobianClassicDeriv(
@@ -677,7 +677,7 @@ math::LinearJacobian ReferentialSkeleton::getLinearJacobianDeriv(
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobianDeriv(
     const JacobianNode* _node,
-    const Eigen::Vector3d& _localOffset,
+    const math::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetLinearJacobianDeriv(
@@ -723,9 +723,9 @@ double ReferentialSkeleton::getMass() const
 }
 
 //==============================================================================
-template <const Eigen::MatrixXd& (Skeleton::*getMatrix)(std::size_t) const>
-const Eigen::MatrixXd& setMatrixFromSkeletonData(
-    Eigen::MatrixXd& M, const std::vector<const DegreeOfFreedom*>& dofs)
+template <const math::MatrixXd& (Skeleton::*getMatrix)(std::size_t) const>
+const math::MatrixXd& setMatrixFromSkeletonData(
+    math::MatrixXd& M, const std::vector<const DegreeOfFreedom*>& dofs)
 {
   const std::size_t nDofs = dofs.size();
 
@@ -737,7 +737,7 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
     const ConstSkeletonPtr& skel_i = dof_i->getSkeleton();
 
     const std::size_t index_i = dof_i->getIndexInTree();
-    const Eigen::MatrixXd& treeMatrix = (skel_i.get()->*getMatrix)(tree_i);
+    const math::MatrixXd& treeMatrix = (skel_i.get()->*getMatrix)(tree_i);
 
     M(i, i) = treeMatrix(index_i, index_i);
 
@@ -762,36 +762,36 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
 }
 
 //==============================================================================
-const Eigen::MatrixXd& ReferentialSkeleton::getMassMatrix() const
+const math::MatrixXd& ReferentialSkeleton::getMassMatrix() const
 {
   return setMatrixFromSkeletonData<&Skeleton::getMassMatrix>(mM, mRawConstDofs);
 }
 
 //==============================================================================
-const Eigen::MatrixXd& ReferentialSkeleton::getAugMassMatrix() const
+const math::MatrixXd& ReferentialSkeleton::getAugMassMatrix() const
 {
   return setMatrixFromSkeletonData<&Skeleton::getAugMassMatrix>(
       mAugM, mRawConstDofs);
 }
 
 //==============================================================================
-const Eigen::MatrixXd& ReferentialSkeleton::getInvMassMatrix() const
+const math::MatrixXd& ReferentialSkeleton::getInvMassMatrix() const
 {
   return setMatrixFromSkeletonData<&Skeleton::getInvMassMatrix>(
       mInvM, mRawConstDofs);
 }
 
 //==============================================================================
-const Eigen::MatrixXd& ReferentialSkeleton::getInvAugMassMatrix() const
+const math::MatrixXd& ReferentialSkeleton::getInvAugMassMatrix() const
 {
   return setMatrixFromSkeletonData<&Skeleton::getInvAugMassMatrix>(
       mInvAugM, mRawConstDofs);
 }
 
 //==============================================================================
-template <const Eigen::VectorXd& (Skeleton::*getVector)(std::size_t) const>
-const Eigen::VectorXd& setVectorFromSkeletonData(
-    Eigen::VectorXd& V, const std::vector<const DegreeOfFreedom*>& dofs)
+template <const math::VectorXd& (Skeleton::*getVector)(std::size_t) const>
+const math::VectorXd& setVectorFromSkeletonData(
+    math::VectorXd& V, const std::vector<const DegreeOfFreedom*>& dofs)
 {
   const std::size_t nDofs = dofs.size();
 
@@ -803,7 +803,7 @@ const Eigen::VectorXd& setVectorFromSkeletonData(
     const ConstSkeletonPtr& skel_i = dof_i->getSkeleton();
 
     const std::size_t index_i = dof_i->getIndexInTree();
-    const Eigen::VectorXd& treeVector = (skel_i.get()->*getVector)(tree_i);
+    const math::VectorXd& treeVector = (skel_i.get()->*getVector)(tree_i);
 
     V[i] = treeVector[index_i];
   }
@@ -812,35 +812,35 @@ const Eigen::VectorXd& setVectorFromSkeletonData(
 }
 
 //==============================================================================
-const Eigen::VectorXd& ReferentialSkeleton::getCoriolisForces() const
+const math::VectorXd& ReferentialSkeleton::getCoriolisForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getCoriolisForces>(
       mCvec, mRawConstDofs);
 }
 
 //==============================================================================
-const Eigen::VectorXd& ReferentialSkeleton::getGravityForces() const
+const math::VectorXd& ReferentialSkeleton::getGravityForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getGravityForces>(
       mG, mRawConstDofs);
 }
 
 //==============================================================================
-const Eigen::VectorXd& ReferentialSkeleton::getCoriolisAndGravityForces() const
+const math::VectorXd& ReferentialSkeleton::getCoriolisAndGravityForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getCoriolisAndGravityForces>(
       mCg, mRawConstDofs);
 }
 
 //==============================================================================
-const Eigen::VectorXd& ReferentialSkeleton::getExternalForces() const
+const math::VectorXd& ReferentialSkeleton::getExternalForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getExternalForces>(
       mFext, mRawConstDofs);
 }
 
 //==============================================================================
-const Eigen::VectorXd& ReferentialSkeleton::getConstraintForces() const
+const math::VectorXd& ReferentialSkeleton::getConstraintForces() const
 {
   return setVectorFromSkeletonData<&Skeleton::getConstraintForces>(
       mFc, mRawConstDofs);
@@ -886,9 +886,9 @@ double ReferentialSkeleton::computePotentialEnergy() const
 }
 
 //==============================================================================
-Eigen::Vector3d ReferentialSkeleton::getCOM(const Frame* _withRespectTo) const
+math::Vector3d ReferentialSkeleton::getCOM(const Frame* _withRespectTo) const
 {
-  Eigen::Vector3d com = Eigen::Vector3d::Zero();
+  math::Vector3d com = math::Vector3d::Zero();
   double totalMass = 0.0;
 
   for (const BodyNode* bn : mRawConstBodyNodes) {
@@ -933,11 +933,11 @@ math::Vector6d ReferentialSkeleton::getCOMSpatialVelocity(
 }
 
 //==============================================================================
-Eigen::Vector3d ReferentialSkeleton::getCOMLinearVelocity(
+math::Vector3d ReferentialSkeleton::getCOMLinearVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector3d,
+      math::Vector3d,
       &BodyNode::getCOMLinearVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -952,11 +952,11 @@ math::Vector6d ReferentialSkeleton::getCOMSpatialAcceleration(
 }
 
 //==============================================================================
-Eigen::Vector3d ReferentialSkeleton::getCOMLinearAcceleration(
+math::Vector3d ReferentialSkeleton::getCOMLinearAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector3d,
+      math::Vector3d,
       &BodyNode::getCOMLinearAcceleration>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -966,7 +966,7 @@ Eigen::Vector3d ReferentialSkeleton::getCOMLinearAcceleration(
 template <
     typename JacType, // JacType is the type of Jacobian we're computing
     JacType (TemplatedJacobianNode<BodyNode>::*getJacFn)(
-        const Eigen::Vector3d&, const Frame*) const>
+        const math::Vector3d&, const Frame*) const>
 JacType getCOMJacobianTemplate(
     const ReferentialSkeleton* _refSkel, const Frame* _inCoordinatesOf)
 {
@@ -1322,15 +1322,15 @@ void ReferentialSkeleton::updateCaches()
   }
 
   std::size_t nDofs = mDofs.size();
-  mM = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mAugM = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mInvM = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mInvAugM = Eigen::MatrixXd::Zero(nDofs, nDofs);
-  mCvec = Eigen::VectorXd::Zero(nDofs);
-  mG = Eigen::VectorXd::Zero(nDofs);
-  mCg = Eigen::VectorXd::Zero(nDofs);
-  mFext = Eigen::VectorXd::Zero(nDofs);
-  mFc = Eigen::VectorXd::Zero(nDofs);
+  mM = math::MatrixXd::Zero(nDofs, nDofs);
+  mAugM = math::MatrixXd::Zero(nDofs, nDofs);
+  mInvM = math::MatrixXd::Zero(nDofs, nDofs);
+  mInvAugM = math::MatrixXd::Zero(nDofs, nDofs);
+  mCvec = math::VectorXd::Zero(nDofs);
+  mG = math::VectorXd::Zero(nDofs);
+  mCg = math::VectorXd::Zero(nDofs);
+  mFext = math::VectorXd::Zero(nDofs);
+  mFc = math::VectorXd::Zero(nDofs);
 }
 
 //==============================================================================

@@ -33,9 +33,7 @@
 #ifndef DART_COLLISION_RAYCASTRESULT_HPP_
 #define DART_COLLISION_RAYCASTRESULT_HPP_
 
-#include <dart/dynamics/Export.hpp>
-
-#include <Eigen/Dense>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <vector>
 
@@ -50,13 +48,13 @@ struct DART_DYNAMICS_API RayHit
   const CollisionObject* mCollisionObject;
 
   /// The hit point in the world coordinates
-  Eigen::Vector3d mPoint;
+  math::Vector3d mPoint;
 
   /// The fraction from "from" point to "to" point
   double mFraction;
 
   /// The normal at the hit point in the world coordinates
-  Eigen::Vector3d mNormal;
+  math::Vector3d mNormal;
 
   /// Constructor
   RayHit();

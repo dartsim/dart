@@ -76,10 +76,10 @@ public:
   bool isCyclic(std::size_t _index) const override;
 
   // Documentation inherited
-  void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;
+  void setTransformFromParentBodyNode(const math::Isometry3d& _T) override;
 
   // Documentation inherited
-  void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) override;
+  void setTransformFromChildBodyNode(const math::Isometry3d& _T) override;
 
 protected:
   /// Constructor called by Skeleton class

@@ -86,7 +86,7 @@ SoftContactConstraint::SoftContactConstraint(
     mPointMass1(nullptr),
     mPointMass2(nullptr),
     mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(contact.userData)),
-    mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
+    mFirstFrictionalDirection(math::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
     mIsBounceOn(false),
@@ -178,17 +178,17 @@ SoftContactConstraint::SoftContactConstraint(
     // Intermediate variables
     int idx = 0;
 
-    Eigen::Vector3d bodyDirection1;
-    Eigen::Vector3d bodyDirection2;
+    math::Vector3d bodyDirection1;
+    math::Vector3d bodyDirection2;
 
-    Eigen::Vector3d bodyPoint1;
-    Eigen::Vector3d bodyPoint2;
+    math::Vector3d bodyPoint1;
+    math::Vector3d bodyPoint2;
 
     for (std::size_t i = 0; i < mContacts.size(); ++i) {
       collision::Contact* ct = mContacts[i];
 
       // TODO(JS): Assumed that the number of tangent basis is 2.
-      Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
+      math::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
 
       assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
       assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
@@ -267,11 +267,11 @@ SoftContactConstraint::SoftContactConstraint(
     mJacobians1.resize(mDim);
     mJacobians2.resize(mDim);
 
-    Eigen::Vector3d bodyDirection1;
-    Eigen::Vector3d bodyDirection2;
+    math::Vector3d bodyDirection1;
+    math::Vector3d bodyDirection2;
 
-    Eigen::Vector3d bodyPoint1;
-    Eigen::Vector3d bodyPoint2;
+    math::Vector3d bodyPoint1;
+    math::Vector3d bodyPoint2;
 
     for (std::size_t i = 0; i < mContacts.size(); ++i) {
       collision::Contact* ct = mContacts[i];
@@ -399,13 +399,13 @@ double SoftContactConstraint::getConstraintForceMixing()
 }
 
 //==============================================================================
-void SoftContactConstraint::setFrictionDirection(const Eigen::Vector3d& _dir)
+void SoftContactConstraint::setFrictionDirection(const math::Vector3d& _dir)
 {
   mFirstFrictionalDirection = _dir.normalized();
 }
 
 //==============================================================================
-const Eigen::Vector3d& SoftContactConstraint::getFrictionDirection1() const
+const math::Vector3d& SoftContactConstraint::getFrictionDirection1() const
 {
   return mFirstFrictionalDirection;
 }
@@ -734,7 +734,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       assert(!math::isNan(_lambda[index]));
 
       // Add contact impulse (force) toward the tangential w.r.t. world frame
-      Eigen::MatrixXd D = getTangentBasisMatrixODE(mContacts[i]->normal);
+      math::MatrixXd D = getTangentBasisMatrixODE(mContacts[i]->normal);
       mContacts[i]->force += D.col(0) * _lambda[index] / mTimeStep;
 
       // Tangential direction-1 impulsive force
@@ -933,8 +933,8 @@ void SoftContactConstraint::updateFirstFrictionalDirection()
 }
 
 //==============================================================================
-Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
-    const Eigen::Vector3d& _n)
+math::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
+    const math::Vector3d& _n)
 {
   using namespace math::suffixes;
 
@@ -942,17 +942,17 @@ Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
   // Check if the number of bases is even number.
   //  bool isEvenNumBases = mNumFrictionConeBases % 2 ? true : false;
 
-  Eigen::MatrixXd T(Eigen::MatrixXd::Zero(3, 2));
+  math::MatrixXd T(math::MatrixXd::Zero(3, 2));
 
   // Pick an arbitrary vector to take the cross product of (in this case,
   // Z-axis)
-  Eigen::Vector3d tangent = mFirstFrictionalDirection.cross(_n);
+  math::Vector3d tangent = mFirstFrictionalDirection.cross(_n);
 
   // TODO(JS): Modify following lines once _updateFirstFrictionalDirection() is
   //           implemented.
   // If they're too close, pick another tangent (use X-axis as arbitrary vector)
   if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
-    tangent = Eigen::Vector3d::UnitX().cross(_n);
+    tangent = math::Vector3d::UnitX().cross(_n);
 
   tangent.normalize();
 
@@ -961,26 +961,26 @@ Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
   // Each basis and its opposite belong in the matrix, so we iterate half as
   // many times
   T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, _n)) * tangent;
+  T.col(1) = math::Quaterniond(math::AngleAxisd(0.5_pi, _n)) * tangent;
   return T;
 }
 
 //==============================================================================
 template <typename PointMassT, typename SoftBodyNodeT>
 static PointMassT selectCollidingPointMassT(
-    SoftBodyNodeT _softBodyNode, const Eigen::Vector3d& _point, int _faceId)
+    SoftBodyNodeT _softBodyNode, const math::Vector3d& _point, int _faceId)
 {
   PointMassT pointMass = nullptr;
 
-  const Eigen::Vector3i& face = _softBodyNode->getFace(_faceId);
+  const math::Vector3i& face = _softBodyNode->getFace(_faceId);
 
   PointMassT pm0 = _softBodyNode->getPointMass(face[0]);
   PointMassT pm1 = _softBodyNode->getPointMass(face[1]);
   PointMassT pm2 = _softBodyNode->getPointMass(face[2]);
 
-  const Eigen::Vector3d& pos1 = pm0->getWorldPosition();
-  const Eigen::Vector3d& pos2 = pm1->getWorldPosition();
-  const Eigen::Vector3d& pos3 = pm2->getWorldPosition();
+  const math::Vector3d& pos1 = pm0->getWorldPosition();
+  const math::Vector3d& pos2 = pm1->getWorldPosition();
+  const math::Vector3d& pos3 = pm2->getWorldPosition();
 
   double dist0 = (pos1 - _point).dot(pos1 - _point);
   double dist1 = (pos2 - _point).dot(pos2 - _point);
@@ -1004,7 +1004,7 @@ static PointMassT selectCollidingPointMassT(
 //==============================================================================
 const dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
     const dynamics::SoftBodyNode* _softBodyNode,
-    const Eigen::Vector3d& _point,
+    const math::Vector3d& _point,
     int _faceId) const
 {
   return selectCollidingPointMassT<
@@ -1015,7 +1015,7 @@ const dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
 //==============================================================================
 dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
     dynamics::SoftBodyNode* _softBodyNode,
-    const Eigen::Vector3d& _point,
+    const math::Vector3d& _point,
     int _faceId) const
 {
   return selectCollidingPointMassT<

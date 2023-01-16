@@ -41,7 +41,7 @@ namespace detail {
 //==============================================================================
 OdePlane::OdePlane(
     const OdeCollisionObject* parent,
-    const Eigen::Vector3d& normal,
+    const math::Vector3d& normal,
     double offset)
   : OdeGeom(parent)
 {
@@ -57,16 +57,16 @@ OdePlane::~OdePlane()
 //==============================================================================
 void OdePlane::updateEngineData()
 {
-  const Eigen::Isometry3d& tf = mParentCollisionObject->getTransform();
-  const Eigen::Vector3d pos = tf.translation();
-  const Eigen::Matrix3d rot = tf.linear();
+  const math::Isometry3d& tf = mParentCollisionObject->getTransform();
+  const math::Vector3d pos = tf.translation();
+  const math::Matrix3d rot = tf.linear();
 
   auto plane = static_cast<const dynamics::PlaneShape*>(
       mParentCollisionObject->getShape().get());
-  const Eigen::Vector3d& normal = plane->getNormal();
+  const math::Vector3d& normal = plane->getNormal();
   const double offset = plane->getOffset();
 
-  const Eigen::Vector3d& normal2 = rot * normal;
+  const math::Vector3d& normal2 = rot * normal;
   const double offset2 = offset + pos.dot(normal2);
 
   dGeomPlaneSetParams(mGeomId, normal2.x(), normal2.y(), normal2.z(), offset2);

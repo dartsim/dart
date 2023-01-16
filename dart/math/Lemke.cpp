@@ -119,7 +119,7 @@ int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
       B.col(bas.size() + i) = B_copy.col(nonbas[i]);
     }
     // TODO: check the condition number to return err = 3
-    Eigen::JacobiSVD<MatrixXd> svd(B);
+    math::JacobiSVD<MatrixXd> svd(B);
     double cond = svd.singularValues()(0)
                   / svd.singularValues()(svd.singularValues().size() - 1);
     if (cond > 1e16) {

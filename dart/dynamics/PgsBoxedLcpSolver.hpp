@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 
 #include <dart/dynamics/BoxedLcpSolver.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <vector>
 
@@ -94,10 +95,10 @@ protected:
 
   mutable std::vector<int> mCacheOrder;
   mutable std::vector<double> mCacheD;
-  mutable Eigen::VectorXd mCachedNormalizedA;
-  mutable Eigen::MatrixXd mCachedNormalizedB;
-  mutable Eigen::VectorXd mCacheZ;
-  mutable Eigen::VectorXd mCacheOldX;
+  mutable math::VectorXd mCachedNormalizedA;
+  mutable math::MatrixXd mCachedNormalizedB;
+  mutable math::VectorXd mCacheZ;
+  mutable math::VectorXd mCacheOldX;
 };
 
 } // namespace dynamics

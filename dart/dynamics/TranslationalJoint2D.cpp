@@ -155,8 +155,8 @@ void TranslationalJoint2D::setZXPlane(bool renameDofs)
 
 //==============================================================================
 void TranslationalJoint2D::setArbitraryPlane(
-    const Eigen::Vector3d& transAxis1,
-    const Eigen::Vector3d& transAxis2,
+    const math::Vector3d& transAxis1,
+    const math::Vector3d& transAxis2,
     bool renameDofs)
 {
   mAspectProperties.setArbitraryPlane(transAxis1, transAxis2);
@@ -173,20 +173,20 @@ TranslationalJoint2D::PlaneType TranslationalJoint2D::getPlaneType() const
 }
 
 //==============================================================================
-Eigen::Vector3d TranslationalJoint2D::getTranslationalAxis1() const
+math::Vector3d TranslationalJoint2D::getTranslationalAxis1() const
 {
   return mAspectProperties.getTranslationalAxis1();
 }
 
 //==============================================================================
-Eigen::Vector3d TranslationalJoint2D::getTranslationalAxis2() const
+math::Vector3d TranslationalJoint2D::getTranslationalAxis2() const
 {
   return mAspectProperties.getTranslationalAxis2();
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 2> TranslationalJoint2D::getRelativeJacobianStatic(
-    const Eigen::Vector2d& /*positions*/) const
+math::Matrix<double, 6, 2> TranslationalJoint2D::getRelativeJacobianStatic(
+    const math::Vector2d& /*positions*/) const
 {
   // The Jacobian is always constant w.r.t. the generalized coordinates.
   return getRelativeJacobianStatic();
@@ -221,9 +221,9 @@ void TranslationalJoint2D::updateDegreeOfFreedomNames()
 //==============================================================================
 void TranslationalJoint2D::updateRelativeTransform() const
 {
-  const Eigen::Vector2d& positions = getPositionsStatic();
+  const math::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * Eigen::Translation3d(
+       * math::Translation3d(
            mAspectProperties.getTranslationalAxes() * positions)
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
@@ -240,7 +240,7 @@ void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
           * mAspectProperties.getTranslationalAxes();
 
     // Verification
-    assert(mJacobian.topRows<3>() == (Eigen::Matrix<double, 3, 2>::Zero()));
+    assert(mJacobian.topRows<3>() == (math::Matrix<double, 3, 2>::Zero()));
     assert(!math::isNan(mJacobian.bottomRows<3>()));
   }
 }
@@ -249,7 +249,7 @@ void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
 void TranslationalJoint2D::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of translational joint is always zero
-  assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 2>::Zero()));
+  assert(mJacobianDeriv == (math::Matrix<double, 6, 2>::Zero()));
 }
 
 } // namespace dynamics

@@ -316,7 +316,7 @@ template <class BV>
     p3.noalias() = _transform * p3;
     model->addTriangle(p1, p2, p3);
 
-    Eigen::Vector3d v(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+    math::Vector3d v(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
   }
 
   /* Body of cylinder */

@@ -47,16 +47,16 @@ struct DART_DYNAMICS_API Contact
   Contact();
 
   /// Contact point w.r.t. the world frame
-  Eigen::Vector3d point;
+  math::Vector3d point;
 
   /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
-  Eigen::Vector3d normal;
+  math::Vector3d normal;
 
   /// Contact force acting on bodyNode1 w.r.t. the world frame
   ///
   /// The contact force acting on bodyNode2 is -force, which is the opposite
   /// direction of the force.
-  Eigen::Vector3d force;
+  math::Vector3d force;
 
   /// First colliding collision object
   CollisionObject* collisionObject1;
@@ -87,10 +87,10 @@ struct DART_DYNAMICS_API Contact
   constexpr static double getNormalEpsilonSquared();
 
   /// Returns true if the length of a normal is less than the epsilon.
-  static bool isZeroNormal(const Eigen::Vector3d& normal);
+  static bool isZeroNormal(const math::Vector3d& normal);
 
   /// Returns !isZeroNormal().
-  static bool isNonZeroNormal(const Eigen::Vector3d& normal);
+  static bool isNonZeroNormal(const math::Vector3d& normal);
 };
 
 } // namespace collision

@@ -63,7 +63,7 @@ dynamics::ConstShapePtr CollisionObject::getShape() const
 }
 
 //==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
+const math::Isometry3d& CollisionObject::getTransform() const
 {
   return mShapeFrame->getWorldTransform();
 }

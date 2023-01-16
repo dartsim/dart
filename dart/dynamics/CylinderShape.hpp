@@ -67,11 +67,11 @@ public:
   static double computeVolume(double radius, double height);
 
   /// \brief Compute moments of inertia of a cylinder
-  static Eigen::Matrix3d computeInertia(
+  static math::Matrix3d computeInertia(
       double radius, double height, double mass);
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   ShapePtr clone() const override;

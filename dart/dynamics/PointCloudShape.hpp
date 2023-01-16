@@ -78,7 +78,7 @@ public:
   const std::string& getType() const override;
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   /// Returns shape type for this class
   static const std::string& getStaticType();
@@ -87,13 +87,13 @@ public:
   void reserve(std::size_t size);
 
   /// Adds a point to this point cloud.
-  void addPoint(const Eigen::Vector3d& point);
+  void addPoint(const math::Vector3d& point);
 
   /// Adds points to this point cloud.
-  void addPoint(const std::vector<Eigen::Vector3d>& points);
+  void addPoint(const std::vector<math::Vector3d>& points);
 
   /// Replaces points with \c points.
-  void setPoint(const std::vector<Eigen::Vector3d>& points);
+  void setPoint(const std::vector<math::Vector3d>& points);
 
 #if DART_HAVE_OCTOMAP
   /// Replaces points with \c pointCloud.
@@ -104,7 +104,7 @@ public:
 #endif
 
   /// Returns the list of points.
-  const std::vector<Eigen::Vector3d>& getPoints() const;
+  const std::vector<math::Vector3d>& getPoints() const;
 
   /// Returns the number of points.
   std::size_t getNumPoints() const;
@@ -127,22 +127,19 @@ public:
   /// Sets the overall color.
   ///
   /// This function resizes the colors to one.
-  void setOverallColor(const Eigen::Vector4d& color);
+  void setOverallColor(const math::Vector4d& color);
 
   /// Returns the overall color.
-  Eigen::Vector4d getOverallColor() const;
+  math::Vector4d getOverallColor() const;
 
   /// Sets the point cloud colors.
   ///
   /// The count of colors should be the same with points. It's undefined
   /// behavior, otherwise.
-  void setColors(const std::vector<
-                 Eigen::Vector4d,
-                 Eigen::aligned_allocator<Eigen::Vector4d>>& colors);
+  void setColors(const std::vector<math::Vector4d>& colors);
 
   /// Returns the point cloud colors.
-  const std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>&
-  getColors() const;
+  const std::vector<math::Vector4d>& getColors() const;
 
   /// Sets size of visual object that represents each point.
   void setVisualSize(double size);
@@ -151,7 +148,7 @@ public:
   double getVisualSize() const;
 
   // Documentation inherited.
-  void notifyColorUpdated(const Eigen::Vector4d& color) override;
+  void notifyColorUpdated(const math::Vector4d& color) override;
 
   // Documentation inherited.
   ShapePtr clone() const override;
@@ -164,7 +161,7 @@ protected:
   void updateBoundingBox() const override;
 
   /// List of points
-  std::vector<Eigen::Vector3d> mPoints;
+  std::vector<math::Vector3d> mPoints;
 
   /// The point shape type.
   PointShapeType mPointShapeType;
@@ -173,8 +170,7 @@ protected:
   ColorMode mColorMode;
 
   /// List of colors
-  std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
-      mColors;
+  std::vector<math::Vector4d> mColors;
 
   /// The size of visual object that represents each point.
   double mVisualSize;

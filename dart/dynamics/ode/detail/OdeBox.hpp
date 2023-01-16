@@ -45,7 +45,7 @@ class OdeBox : public OdeGeom
 {
 public:
   /// Constructor
-  OdeBox(const OdeCollisionObject* parent, const Eigen::Vector3d& size);
+  OdeBox(const OdeCollisionObject* parent, const math::Vector3d& size);
 
   /// Destructor
   virtual ~OdeBox();

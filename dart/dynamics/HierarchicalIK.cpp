@@ -42,7 +42,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
+bool HierarchicalIK::findSolution(math::VectorXd& positions)
 {
   if (nullptr == mSolver) {
     dtwarn << "[HierarchicalIK::findSolution] The Solver for a HierarchicalIK "
@@ -73,7 +73,7 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 
   mProblem->setInitialGuess(skel->getPositions());
 
-  Eigen::VectorXd bounds(nDofs);
+  math::VectorXd bounds(nDofs);
   for (std::size_t i = 0; i < nDofs; ++i)
     bounds[i] = skel->getDof(i)->getPositionLowerLimit();
   mProblem->setLowerBounds(bounds);
@@ -87,10 +87,10 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
   // Many GradientMethod implementations use Joint::integratePositions, so we
   // need to clear out any velocities that might be in the Skeleton and then
   // reset those velocities later. This has been opened as issue #699.
-  const Eigen::VectorXd originalVelocities = skel->getVelocities();
+  const math::VectorXd originalVelocities = skel->getVelocities();
   skel->resetVelocities();
 
-  const Eigen::VectorXd originalPositions = skel->getPositions();
+  const math::VectorXd originalPositions = skel->getPositions();
   const bool wasSolved = mSolver->solve();
 
   positions = mProblem->getOptimalSolution();
@@ -103,7 +103,7 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 //==============================================================================
 bool HierarchicalIK::solveAndApply(bool allowIncompleteResult)
 {
-  Eigen::VectorXd solution;
+  math::VectorXd solution;
   const auto wasSolved = findSolution(solution);
   if (wasSolved || allowIncompleteResult)
     setPositions(solution);
@@ -112,7 +112,7 @@ bool HierarchicalIK::solveAndApply(bool allowIncompleteResult)
 
 //==============================================================================
 bool HierarchicalIK::solveAndApply(
-    Eigen::VectorXd& positions, bool allowIncompleteResult)
+    math::VectorXd& positions, bool allowIncompleteResult)
 {
   const auto wasSolved = findSolution(positions);
   if (wasSolved || allowIncompleteResult)
@@ -224,7 +224,7 @@ const IKHierarchy& HierarchicalIK::getIKHierarchy() const
 }
 
 //==============================================================================
-const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
+const std::vector<math::MatrixXd>& HierarchicalIK::computeNullSpaces() const
 {
   bool recompute = false;
   const ConstSkeletonPtr& skel = getSkeleton();
@@ -256,10 +256,10 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
     const std::vector<std::shared_ptr<InverseKinematics> >& level
         = hierarchy[i];
 
-    Eigen::MatrixXd& NS = mNullSpaceCache[i];
+    math::MatrixXd& NS = mNullSpaceCache[i];
     if (i == 0) {
       // Start with an identity null space
-      NS = Eigen::MatrixXd::Identity(nDofs, nDofs);
+      NS = math::MatrixXd::Identity(nDofs, nDofs);
     } else if (zeroedNullSpace) {
       // If the null space has been zeroed out, just keep propogating the zeroes
       NS.setZero(nDofs, nDofs);
@@ -285,7 +285,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
         mJacCache.block<6, 1>(0, k) = J.block<6, 1>(0, d);
       }
 
-      mSVDCache.compute(mJacCache, Eigen::ComputeFullV);
+      mSVDCache.compute(mJacCache, math::ComputeFullV);
       math::extractNullSpace(mSVDCache, mPartialNullspaceCache);
 
       if (mPartialNullspaceCache.rows() > 0
@@ -304,17 +304,17 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
 }
 
 //==============================================================================
-Eigen::VectorXd HierarchicalIK::getPositions() const
+math::VectorXd HierarchicalIK::getPositions() const
 {
   const SkeletonPtr& skel = mSkeleton.lock();
   if (skel)
     return skel->getPositions();
 
-  return Eigen::VectorXd();
+  return math::VectorXd();
 }
 
 //==============================================================================
-void HierarchicalIK::setPositions(const Eigen::VectorXd& _q)
+void HierarchicalIK::setPositions(const math::VectorXd& _q)
 {
   const SkeletonPtr& skel = mSkeleton.lock();
   if (skel)
@@ -366,7 +366,7 @@ optimization::FunctionPtr HierarchicalIK::Objective::clone(
 }
 
 //==============================================================================
-double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x) const
+double HierarchicalIK::Objective::eval(const math::VectorXd& _x) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
 
@@ -390,7 +390,7 @@ double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x) const
 
 //==============================================================================
 void HierarchicalIK::Objective::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
+    const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
 
@@ -408,12 +408,12 @@ void HierarchicalIK::Objective::evalGradient(
 
   if (hik->mNullSpaceObjective) {
     mGradCache.resize(_grad.size());
-    Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
+    math::Map<math::VectorXd> gradMap(mGradCache.data(), _grad.size());
     hik->mNullSpaceObjective->evalGradient(_x, gradMap);
 
     hik->setPositions(_x);
 
-    const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
+    const std::vector<math::MatrixXd>& nullspaces = hik->computeNullSpaces();
     if (nullspaces.size() > 0) {
       // Project through the deepest null space
       mGradCache = nullspaces.back() * mGradCache;
@@ -439,7 +439,7 @@ optimization::FunctionPtr HierarchicalIK::Constraint::clone(
 }
 
 //==============================================================================
-double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x) const
+double HierarchicalIK::Constraint::eval(const math::VectorXd& _x) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
   if (nullptr == hik) {
@@ -463,7 +463,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x) const
         continue;
 
       const std::vector<std::size_t>& dofs = ik->getDofs();
-      Eigen::VectorXd q(dofs.size());
+      math::VectorXd q(dofs.size());
       for (std::size_t k = 0; k < dofs.size(); ++k)
         q[k] = _x[dofs[k]];
 
@@ -479,14 +479,14 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x) const
 
 //==============================================================================
 void HierarchicalIK::Constraint::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
+    const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
 
   const IKHierarchy& hierarchy = hik->getIKHierarchy();
   const SkeletonPtr& skel = hik->getSkeleton();
   const std::size_t nDofs = skel->getNumDofs();
-  const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
+  const std::vector<math::MatrixXd>& nullspaces = hik->computeNullSpaces();
 
   _grad.setZero();
   for (std::size_t i = 0; i < hierarchy.size(); ++i) {
@@ -502,13 +502,13 @@ void HierarchicalIK::Constraint::evalGradient(
 
       // Grab only the dependent coordinates from q
       const std::vector<std::size_t>& dofs = ik->getDofs();
-      Eigen::VectorXd q(dofs.size());
+      math::VectorXd q(dofs.size());
       for (std::size_t k = 0; k < dofs.size(); ++k)
         q[k] = _x[dofs[k]];
 
       // Compute the gradient of this specific error term
       mTempGradCache.setZero(dofs.size());
-      Eigen::Map<Eigen::VectorXd> gradMap(
+      math::Map<math::VectorXd> gradMap(
           mTempGradCache.data(), mTempGradCache.size());
 
       InverseKinematics::GradientMethod& method = ik->getGradientMethod();

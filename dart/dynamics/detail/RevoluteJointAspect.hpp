@@ -49,10 +49,10 @@ namespace detail {
 //==============================================================================
 struct DART_DYNAMICS_API RevoluteJointUniqueProperties
 {
-  Eigen::Vector3d mAxis;
+  math::Vector3d mAxis;
 
   RevoluteJointUniqueProperties(
-      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+      const math::Vector3d& _axis = math::Vector3d::UnitZ());
 
   virtual ~RevoluteJointUniqueProperties() = default;
 };

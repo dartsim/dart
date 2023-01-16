@@ -42,11 +42,11 @@ namespace dynamics {
 
 //==============================================================================
 BallJointConstraint::BallJointConstraint(
-    dynamics::BodyNode* _body, const Eigen::Vector3d& _jointPos)
+    dynamics::BodyNode* _body, const math::Vector3d& _jointPos)
   : DynamicJointConstraint(_body),
     mOffset1(_body->getTransform().inverse() * _jointPos),
     mOffset2(_jointPos),
-    mViolation(Eigen::Vector3d::Zero()),
+    mViolation(math::Vector3d::Zero()),
     mAppliedImpulseIndex(0)
 {
   mDim = 3;
@@ -55,20 +55,20 @@ BallJointConstraint::BallJointConstraint(
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
+  math::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
   mJacobian1.leftCols<3>() = ssm1;
-  mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
+  mJacobian1.rightCols<3>() = math::Matrix3d::Identity();
 }
 
 //==============================================================================
 BallJointConstraint::BallJointConstraint(
     dynamics::BodyNode* _body1,
     dynamics::BodyNode* _body2,
-    const Eigen::Vector3d& _jointPos)
+    const math::Vector3d& _jointPos)
   : DynamicJointConstraint(_body1, _body2),
     mOffset1(_body1->getTransform().inverse() * _jointPos),
     mOffset2(_body2->getTransform().inverse() * _jointPos),
-    mViolation(Eigen::Vector3d::Zero()),
+    mViolation(math::Vector3d::Zero()),
     mAppliedImpulseIndex(0)
 {
   mDim = 3;
@@ -77,12 +77,12 @@ BallJointConstraint::BallJointConstraint(
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
-  Eigen::Matrix3d ssm2 = dart::math::makeSkewSymmetric(-mOffset2);
+  math::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
+  math::Matrix3d ssm2 = dart::math::makeSkewSymmetric(-mOffset2);
   mJacobian1.leftCols<3>() = ssm1;
-  mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
+  mJacobian1.rightCols<3>() = math::Matrix3d::Identity();
   mJacobian2.leftCols<3>() = ssm2;
-  mJacobian2.rightCols<3>() = Eigen::Matrix3d::Identity();
+  mJacobian2.rightCols<3>() = math::Matrix3d::Identity();
 }
 
 //==============================================================================
@@ -109,13 +109,13 @@ void BallJointConstraint::update()
 
   // Update Jacobian for body2
   if (mBodyNode2) {
-    Eigen::Isometry3d T12
+    math::Isometry3d T12
         = mBodyNode1->getTransform().inverse() * mBodyNode2->getTransform();
-    Eigen::Vector3d p2 = T12.inverse() * mOffset1;
+    math::Vector3d p2 = T12.inverse() * mOffset1;
 
-    Eigen::Matrix<double, 3, 6> J2;
+    math::Matrix<double, 3, 6> J2;
     J2.leftCols<3>() = math::makeSkewSymmetric(-p2);
-    J2.rightCols<3>() = Eigen::Matrix3d::Identity();
+    J2.rightCols<3>() = math::Matrix3d::Identity();
 
     mJacobian2 = T12.linear() * J2;
   }
@@ -155,7 +155,7 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[1] = mOldX[1];
   _lcp->x[2] = mOldX[2];
 
-  Eigen::Vector3d negativeVel = -mJacobian1 * mBodyNode1->getSpatialVelocity();
+  math::Vector3d negativeVel = -mJacobian1 * mBodyNode1->getSpatialVelocity();
   if (mBodyNode2)
     negativeVel += mJacobian2 * mBodyNode2->getSpatialVelocity();
 
@@ -241,7 +241,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
       && mBodyNode1->isReactive()) {
-    Eigen::Vector3d v1 = mJacobian1 * mBodyNode1->getBodyVelocityChange();
+    math::Vector3d v1 = mJacobian1 * mBodyNode1->getBodyVelocityChange();
     // std::cout << "velChange " << mBodyNode1->getBodyVelocityChange() <<
     // std::endl; std::cout << "v1: " << v1 << std::endl;
     for (std::size_t i = 0; i < mDim; ++i)
@@ -250,7 +250,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 
   if (mBodyNode2 && mBodyNode2->getSkeleton()->isImpulseApplied()
       && mBodyNode2->isReactive()) {
-    Eigen::Vector3d v2 = mJacobian2 * mBodyNode2->getBodyVelocityChange();
+    math::Vector3d v2 = mJacobian2 * mBodyNode2->getBodyVelocityChange();
     // std::cout << "v2: " << v2 << std::endl;
     for (std::size_t i = 0; i < mDim; ++i)
       _vel[i] -= v2[i];
@@ -297,7 +297,7 @@ void BallJointConstraint::applyImpulse(double* _lambda)
   mOldX[1] = _lambda[1];
   mOldX[2] = _lambda[2];
 
-  Eigen::Vector3d imp(_lambda[0], _lambda[1], _lambda[2]);
+  math::Vector3d imp(_lambda[0], _lambda[1], _lambda[2]);
 
   // std::cout << "lambda: " << _lambda[0] << " " << _lambda[1] << " " <<
   // _lambda[2] << std::endl;

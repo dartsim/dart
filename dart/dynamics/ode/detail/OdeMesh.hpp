@@ -49,7 +49,7 @@ public:
   OdeMesh(
       const OdeCollisionObject* parent,
       const aiScene* scene,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+      const math::Vector3d& scale = math::Vector3d::Ones());
 
   /// Destructor
   virtual ~OdeMesh();
@@ -60,7 +60,7 @@ public:
 private:
   void fillArrays(
       const aiScene* scene,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+      const math::Vector3d& scale = math::Vector3d::Ones());
 
 private:
   /// Array of vertex values.

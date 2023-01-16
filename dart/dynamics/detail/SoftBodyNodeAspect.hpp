@@ -81,7 +81,7 @@ struct DART_DYNAMICS_API SoftBodyNodeUniqueProperties
 
   // TODO(JS): Let's remove this because this is rendering part
   /// \brief Tri-mesh indexes for rendering.
-  std::vector<Eigen::Vector3i> mFaces;
+  std::vector<math::Vector3i> mFaces;
 
   SoftBodyNodeUniqueProperties(
       double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
@@ -89,8 +89,8 @@ struct DART_DYNAMICS_API SoftBodyNodeUniqueProperties
       double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
       const std::vector<PointMass::Properties>& _points
       = std::vector<PointMass::Properties>(),
-      const std::vector<Eigen::Vector3i>& _faces
-      = std::vector<Eigen::Vector3i>());
+      const std::vector<math::Vector3i>& _faces
+      = std::vector<math::Vector3i>());
 
   virtual ~SoftBodyNodeUniqueProperties() = default;
 
@@ -101,7 +101,7 @@ struct DART_DYNAMICS_API SoftBodyNodeUniqueProperties
   bool connectPointMasses(std::size_t i1, std::size_t i2);
 
   /// Add a face to this Properties struct
-  void addFace(const Eigen::Vector3i& _newFace);
+  void addFace(const math::Vector3i& _newFace);
 };
 
 //==============================================================================

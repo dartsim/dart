@@ -41,8 +41,8 @@ namespace dynamics {
 //==============================================================================
 Inertia::Inertia(
     double _mass,
-    const Eigen::Vector3d& _com,
-    const Eigen::Matrix3d& _momentOfInertia)
+    const math::Vector3d& _com,
+    const math::Matrix3d& _momentOfInertia)
   : mMass(_mass), mCenterOfMass(_com)
 {
   setMoment(_momentOfInertia);
@@ -123,20 +123,20 @@ double Inertia::getMass() const
 }
 
 //==============================================================================
-void Inertia::setLocalCOM(const Eigen::Vector3d& _com)
+void Inertia::setLocalCOM(const math::Vector3d& _com)
 {
   mCenterOfMass = _com;
   computeSpatialTensor();
 }
 
 //==============================================================================
-const Eigen::Vector3d& Inertia::getLocalCOM() const
+const math::Vector3d& Inertia::getLocalCOM() const
 {
   return mCenterOfMass;
 }
 
 //==============================================================================
-void Inertia::setMoment(const Eigen::Matrix3d& _moment)
+void Inertia::setMoment(const math::Matrix3d& _moment)
 {
   if (!verifyMoment(_moment, true))
     dtwarn << "[Inertia::setMoment] Passing in an invalid moment of inertia "
@@ -173,9 +173,9 @@ void Inertia::setMoment(
 }
 
 //==============================================================================
-Eigen::Matrix3d Inertia::getMoment() const
+math::Matrix3d Inertia::getMoment() const
 {
-  Eigen::Matrix3d I;
+  math::Matrix3d I;
   for (int i = 0; i < 3; ++i)
     I(i, i) = mMoment[i];
 
@@ -213,7 +213,7 @@ const math::Matrix6d& Inertia::getSpatialTensor() const
 
 //==============================================================================
 bool Inertia::verifyMoment(
-    const Eigen::Matrix3d& _moment, bool _printWarnings, double _tolerance)
+    const math::Matrix3d& _moment, bool _printWarnings, double _tolerance)
 {
   bool valid = true;
   for (int i = 0; i < 3; ++i) {
@@ -382,7 +382,7 @@ bool Inertia::operator==(const Inertia& other) const
 // Note: Taken from Springer Handbook, chapter 2.2.11
 void Inertia::computeSpatialTensor()
 {
-  Eigen::Matrix3d C = math::makeSkewSymmetric(mCenterOfMass);
+  math::Matrix3d C = math::makeSkewSymmetric(mCenterOfMass);
 
   // Top left
   mSpatialTensor.block<3, 3>(0, 0) = getMoment() + mMass * C * C.transpose();
@@ -394,19 +394,19 @@ void Inertia::computeSpatialTensor()
   mSpatialTensor.block<3, 3>(0, 3) = mMass * C;
 
   // Bottom right
-  mSpatialTensor.block<3, 3>(3, 3) = mMass * Eigen::Matrix3d::Identity();
+  mSpatialTensor.block<3, 3>(3, 3) = mMass * math::Matrix3d::Identity();
 }
 
 //==============================================================================
 void Inertia::computeParameters()
 {
   mMass = mSpatialTensor(3, 3);
-  Eigen::Matrix3d C = mSpatialTensor.block<3, 3>(0, 3) / mMass;
+  math::Matrix3d C = mSpatialTensor.block<3, 3>(0, 3) / mMass;
   mCenterOfMass[0] = -C(1, 2);
   mCenterOfMass[1] = C(0, 2);
   mCenterOfMass[2] = -C(0, 1);
 
-  Eigen::Matrix3d I = mSpatialTensor.block<3, 3>(0, 0) + mMass * C * C;
+  math::Matrix3d I = mSpatialTensor.block<3, 3>(0, 0) + mMass * C * C;
   for (std::size_t i = 0; i < 3; ++i)
     mMoment[i] = I(i, i);
 

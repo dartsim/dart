@@ -47,7 +47,7 @@ public:
   /// Constructor
   OdePlane(
       const OdeCollisionObject* parent,
-      const Eigen::Vector3d& normal,
+      const math::Vector3d& normal,
       double offset);
 
   /// Destructor

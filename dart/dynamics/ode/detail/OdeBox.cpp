@@ -39,7 +39,7 @@ namespace collision {
 namespace detail {
 
 //==============================================================================
-OdeBox::OdeBox(const OdeCollisionObject* parent, const Eigen::Vector3d& size)
+OdeBox::OdeBox(const OdeCollisionObject* parent, const math::Vector3d& size)
   : OdeGeom(parent)
 {
   mGeomId = dCreateBox(0, size.x(), size.y(), size.z());

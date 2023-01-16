@@ -159,8 +159,8 @@ template <typename DerivedA, typename DerivedB, typename Enable = void>
 struct EqualsImpl
 {
   static bool run(
-      const Eigen::DenseBase<DerivedA>& expected,
-      const Eigen::DenseBase<DerivedB>& actual,
+      const math::DenseBase<DerivedA>& expected,
+      const math::DenseBase<DerivedB>& actual,
       typename DerivedA::Scalar tol)
   {
     // Get the matrix sizes and sanity check the call
@@ -199,8 +199,8 @@ struct EqualsImpl<
     std::enable_if_t<std::is_integral<typename DerivedA::Scalar>::value>>
 {
   static bool run(
-      const Eigen::DenseBase<DerivedA>& expected,
-      const Eigen::DenseBase<DerivedB>& actual,
+      const math::DenseBase<DerivedA>& expected,
+      const math::DenseBase<DerivedB>& actual,
       typename DerivedA::Scalar tol)
   {
     // Get the matrix sizes and sanity check the call
@@ -246,18 +246,16 @@ bool equals(
 
 //==============================================================================
 inline bool rotationEquals(
-    const Eigen::Matrix3d& rot1, const Eigen::Matrix3d& rot2, double tol = 1e-5)
+    const math::Matrix3d& rot1, const math::Matrix3d& rot2, double tol = 1e-5)
 {
-  const Eigen::Matrix3d rotError = rot1.transpose() * rot2;
-  const Eigen::Vector3d error = dart::math::logMap(rotError);
+  const math::Matrix3d rotError = rot1.transpose() * rot2;
+  const math::Vector3d error = dart::math::logMap(rotError);
   return (error.norm() < tol);
 }
 
 //==============================================================================
 inline bool equals(
-    const Eigen::Isometry3d& tf1,
-    const Eigen::Isometry3d& tf2,
-    double tol = 1e-5)
+    const math::Isometry3d& tf1, const math::Isometry3d& tf2, double tol = 1e-5)
 {
   auto se3 = dart::math::logMap(tf1.inverse() * tf2);
   auto norm = se3.norm();

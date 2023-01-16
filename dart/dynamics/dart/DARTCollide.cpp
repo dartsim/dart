@@ -59,14 +59,14 @@ typedef double dMatrix4[16];
 typedef double dMatrix6[48];
 typedef double dQuaternion[4];
 
-inline void convVector(const Eigen::Vector3d& p0, dVector3& p1)
+inline void convVector(const math::Vector3d& p0, dVector3& p1)
 {
   p1[0] = p0[0];
   p1[1] = p0[1];
   p1[2] = p0[2];
 }
 
-inline void convMatrix(const Eigen::Isometry3d& T0, dMatrix3& R0)
+inline void convMatrix(const math::Isometry3d& T0, dMatrix3& R0)
 {
   R0[0] = T0(0, 0);
   R0[1] = T0(0, 1);
@@ -630,8 +630,8 @@ int dBoxBox(
   // if we get to this point, the boxes interpenetrate. compute the normal
   // in global coordinates.
 
-  Eigen::Vector3d normal;
-  Eigen::Vector3d point_vec;
+  math::Vector3d normal;
+  math::Vector3d point_vec;
   double penetration;
 
   if (normalR) {
@@ -920,10 +920,10 @@ int dBoxBox(
 int collideBoxBox(
     CollisionObject* o1,
     CollisionObject* o2,
-    const Eigen::Vector3d& size0,
-    const Eigen::Isometry3d& T0,
-    const Eigen::Vector3d& size1,
-    const Eigen::Isometry3d& T1,
+    const math::Vector3d& size0,
+    const math::Isometry3d& T0,
+    const math::Vector3d& size1,
+    const math::Isometry3d& T1,
     CollisionResult& result)
 {
   dVector3 halfSize0;
@@ -949,19 +949,19 @@ int collideBoxBox(
 int collideBoxSphere(
     CollisionObject* o1,
     CollisionObject* o2,
-    const Eigen::Vector3d& size0,
-    const Eigen::Isometry3d& T0,
+    const math::Vector3d& size0,
+    const math::Isometry3d& T0,
     const double& r1,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T1,
     CollisionResult& result)
 {
-  Eigen::Vector3d halfSize = 0.5 * size0;
+  math::Vector3d halfSize = 0.5 * size0;
   bool inside_box = true;
 
   // clipping a center of the sphere to a boundary of the box
   // Vec3 c0(&T0[9]);
-  Eigen::Vector3d c0 = T1.translation();
-  Eigen::Vector3d p = T0.inverse() * c0;
+  math::Vector3d c0 = T1.translation();
+  math::Vector3d p = T0.inverse() * c0;
 
   if (p[0] < -halfSize[0]) {
     p[0] = -halfSize[0];
@@ -990,7 +990,7 @@ int collideBoxSphere(
     inside_box = false;
   }
 
-  Eigen::Vector3d normal(0.0, 0.0, 0.0);
+  math::Vector3d normal(0.0, 0.0, 0.0);
   double penetration;
 
   if (inside_box) {
@@ -1024,7 +1024,7 @@ int collideBoxSphere(
     return 1;
   }
 
-  Eigen::Vector3d contactpt = T0 * p;
+  math::Vector3d contactpt = T0 * p;
   // normal = c0 - contactpt;
   normal = contactpt - c0;
   double mag = normal.norm();
@@ -1078,17 +1078,17 @@ int collideSphereBox(
     CollisionObject* o1,
     CollisionObject* o2,
     const double& r0,
-    const Eigen::Isometry3d& T0,
-    const Eigen::Vector3d& size1,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T0,
+    const math::Vector3d& size1,
+    const math::Isometry3d& T1,
     CollisionResult& result)
 {
-  Eigen::Vector3d size = 0.5 * size1;
+  math::Vector3d size = 0.5 * size1;
   bool inside_box = true;
 
   // clipping a center of the sphere to a boundary of the box
-  Eigen::Vector3d c0 = T0.translation();
-  Eigen::Vector3d p = T1.inverse() * c0;
+  math::Vector3d c0 = T0.translation();
+  math::Vector3d p = T1.inverse() * c0;
 
   if (p[0] < -size[0]) {
     p[0] = -size[0];
@@ -1117,7 +1117,7 @@ int collideSphereBox(
     inside_box = false;
   }
 
-  Eigen::Vector3d normal(0.0, 0.0, 0.0);
+  math::Vector3d normal(0.0, 0.0, 0.0);
   double penetration;
 
   if (inside_box) {
@@ -1150,7 +1150,7 @@ int collideSphereBox(
     return 1;
   }
 
-  Eigen::Vector3d contactpt = T1 * p;
+  math::Vector3d contactpt = T1 * p;
   normal = c0 - contactpt;
   double mag = normal.norm();
   penetration = r0 - mag;
@@ -1202,15 +1202,15 @@ int collideSphereSphere(
     CollisionObject* o1,
     CollisionObject* o2,
     const double& _r0,
-    const Eigen::Isometry3d& c0,
+    const math::Isometry3d& c0,
     const double& _r1,
-    const Eigen::Isometry3d& c1,
+    const math::Isometry3d& c1,
     CollisionResult& result)
 {
   double r0 = _r0;
   double r1 = _r1;
   double rsum = r0 + r1;
-  Eigen::Vector3d normal = c0.translation() - c1.translation();
+  math::Vector3d normal = c0.translation() - c1.translation();
   double normal_sqr = normal.squaredNorm();
 
   if (normal_sqr > rsum * rsum) {
@@ -1220,7 +1220,7 @@ int collideSphereSphere(
   r0 /= rsum;
   r1 /= rsum;
 
-  Eigen::Vector3d point = r1 * c0.translation() + r0 * c1.translation();
+  math::Vector3d point = r1 * c0.translation() + r0 * c1.translation();
   double penetration;
 
   if (normal_sqr < DART_COLLISION_EPS) {
@@ -1256,12 +1256,12 @@ int collideCylinderSphere(
     CollisionObject* o2,
     const double& cyl_rad,
     const double& half_height,
-    const Eigen::Isometry3d& T0,
+    const math::Isometry3d& T0,
     const double& sphere_rad,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T1,
     CollisionResult& result)
 {
-  Eigen::Vector3d center = T0.inverse() * T1.translation();
+  math::Vector3d center = T0.inverse() * T1.translation();
 
   double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
 
@@ -1273,21 +1273,21 @@ int collideCylinderSphere(
         = 0.5 * (half_height + sphere_rad - math::sign(center[2]) * center[2]);
     contact.point
         = T0
-          * Eigen::Vector3d(
+          * math::Vector3d(
               center[0], center[1], half_height - contact.penetrationDepth);
     contact.normal
-        = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
+        = T0.linear() * math::Vector3d(0.0, 0.0, math::sign(center[2]));
     result.addContact(contact);
     return 1;
   } else {
     double penetration = 0.5 * (cyl_rad + sphere_rad - dist);
     if (penetration > 0.0) {
       if (std::abs(center[2]) > half_height) {
-        Eigen::Vector3d point
-            = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
+        math::Vector3d point
+            = (math::Vector3d(center[0], center[1], 0.0).normalized());
         point *= cyl_rad;
         point[2] = math::sign(center[2]) * half_height;
-        Eigen::Vector3d normal = point - center;
+        math::Vector3d normal = point - center;
         penetration = sphere_rad - normal.norm();
         normal = (T0.linear() * normal).normalized();
         point = T0 * point;
@@ -1304,9 +1304,9 @@ int collideCylinderSphere(
         }
       } else // if( center[2] >= -half_height && center[2] <= half_height )
       {
-        Eigen::Vector3d point
-            = (Eigen::Vector3d(center[0], center[1], 0.0)).normalized();
-        Eigen::Vector3d normal = -(T0.linear() * point);
+        math::Vector3d point
+            = (math::Vector3d(center[0], center[1], 0.0)).normalized();
+        math::Vector3d normal = -(T0.linear() * point);
         point *= (cyl_rad - penetration);
         point[2] = center[2];
         point = T0 * point;
@@ -1330,40 +1330,40 @@ int collideCylinderPlane(
     CollisionObject* o2,
     const double& cyl_rad,
     const double& half_height,
-    const Eigen::Isometry3d& T0,
-    const Eigen::Vector3d& plane_normal,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T0,
+    const math::Vector3d& plane_normal,
+    const math::Isometry3d& T1,
     CollisionResult& result)
 {
-  Eigen::Vector3d normal = T1.linear() * plane_normal;
-  Eigen::Vector3d Rx = T0.linear().rightCols(1);
-  Eigen::Vector3d Ry = normal - normal.dot(Rx) * Rx;
+  math::Vector3d normal = T1.linear() * plane_normal;
+  math::Vector3d Rx = T0.linear().rightCols(1);
+  math::Vector3d Ry = normal - normal.dot(Rx) * Rx;
   double mag = Ry.norm();
   Ry.normalize();
   if (mag < DART_COLLISION_EPS) {
     if (std::abs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
-      Ry = Eigen::Vector3d::UnitX();
+      Ry = math::Vector3d::UnitX();
     else
-      Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
+      Ry = (math::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
   }
 
-  Eigen::Vector3d Rz = Rx.cross(Ry);
-  Eigen::Isometry3d T;
+  math::Vector3d Rz = Rx.cross(Ry);
+  math::Isometry3d T;
   T.linear().col(0) = Rx;
   T.linear().col(1) = Ry;
   T.linear().col(2) = Rz;
   T.translation() = T0.translation();
 
-  Eigen::Vector3d nn = T.linear().transpose() * normal;
-  Eigen::Vector3d pn = T.inverse() * T1.translation();
+  math::Vector3d nn = T.linear().transpose() * normal;
+  math::Vector3d pn = T.inverse() * T1.translation();
 
   // four corners c0 = ( -h/2, -r ), c1 = ( +h/2, -r ), c2 = ( +h/2, +r ), c3 =
   // ( -h/2, +r )
-  Eigen::Vector3d c[4]
-      = {Eigen::Vector3d(-half_height, -cyl_rad, 0.0),
-         Eigen::Vector3d(+half_height, -cyl_rad, 0.0),
-         Eigen::Vector3d(+half_height, +cyl_rad, 0.0),
-         Eigen::Vector3d(-half_height, +cyl_rad, 0.0)};
+  math::Vector3d c[4]
+      = {math::Vector3d(-half_height, -cyl_rad, 0.0),
+         math::Vector3d(+half_height, -cyl_rad, 0.0),
+         math::Vector3d(+half_height, +cyl_rad, 0.0),
+         math::Vector3d(-half_height, +cyl_rad, 0.0)};
 
   double depth[4]
       = {(pn - c[0]).dot(nn),
@@ -1380,7 +1380,7 @@ int collideCylinderPlane(
     }
   }
 
-  Eigen::Vector3d point;
+  math::Vector3d point;
 
   if (std::abs(depth[found] - depth[(found + 1) % 4]) < DART_COLLISION_EPS)
     point = T * (0.5 * (c[found] + c[(found + 1) % 4]));
@@ -1415,8 +1415,8 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   const auto& shapeType1 = shape1->getType();
   const auto& shapeType2 = shape2->getType();
 
-  const Eigen::Isometry3d& T1 = o1->getTransform();
-  const Eigen::Isometry3d& T2 = o2->getTransform();
+  const math::Isometry3d& T1 = o1->getTransform();
+  const math::Isometry3d& T2 = o2->getTransform();
 
   if (dynamics::SphereShape::getStaticType() == shapeType1) {
     const auto* sphere0

@@ -45,7 +45,7 @@ namespace dynamics {
 class DART_DYNAMICS_API MultiSphereConvexHullShape : public Shape
 {
 public:
-  using Sphere = std::pair<double, Eigen::Vector3d>;
+  using Sphere = std::pair<double, math::Vector3d>;
   using Spheres = std::vector<Sphere>;
 
   /// Constructor.
@@ -67,7 +67,7 @@ public:
   void addSphere(const Sphere& sphere);
 
   /// Add a sphere
-  void addSphere(double radius, const Eigen::Vector3d& position);
+  void addSphere(double radius, const math::Vector3d& position);
 
   /// Remove all spheres
   void removeAllSpheres();
@@ -82,7 +82,7 @@ public:
   ///
   /// \note The return value is an approximated inertia that is the inertia of
   /// the axis-aligned bounding box of this MultiSphereConvexHullShape.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   ShapePtr clone() const override;

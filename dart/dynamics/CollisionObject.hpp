@@ -61,7 +61,7 @@ public:
   dynamics::ConstShapePtr getShape() const;
 
   /// Return the transformation of this CollisionObject in world coordinates
-  const Eigen::Isometry3d& getTransform() const;
+  const math::Isometry3d& getTransform() const;
 
 protected:
   /// Contructor

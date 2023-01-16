@@ -96,10 +96,10 @@ public:
   static double getConstraintForceMixing();
 
   /// Set first frictional direction
-  void setFrictionDirection(const Eigen::Vector3d& dir);
+  void setFrictionDirection(const math::Vector3d& dir);
 
   /// Get first frictional direction
-  const Eigen::Vector3d& getFrictionDirection1() const;
+  const math::Vector3d& getFrictionDirection1() const;
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -145,7 +145,7 @@ protected:
   bool isActive() const override;
 
 private:
-  using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
+  using TangentBasisMatrix = math::Matrix<double, 3, 2>;
 
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] relVel Change in relative velocity at contact point of the
@@ -156,7 +156,7 @@ private:
   void updateFirstFrictionalDirection();
 
   ///
-  TangentBasisMatrix getTangentBasisMatrixODE(const Eigen::Vector3d& n);
+  TangentBasisMatrix getTangentBasisMatrixODE(const math::Vector3d& n);
 
   // The following functions for getting and setting slip compliance and
   // accessing the contact object are meant to be used by ConstraintSolver to
@@ -192,7 +192,7 @@ private:
   collision::Contact& mContact;
 
   /// First frictional direction
-  Eigen::Vector3d mFirstFrictionalDirection;
+  math::Vector3d mFirstFrictionalDirection;
 
   /// Primary Coefficient of Friction
   double mPrimaryFrictionCoeff;
@@ -213,16 +213,16 @@ private:
   /// x = vel. in direction of contact normal
   /// y = vel. in first friction direction
   /// z = vel. in second friction direction
-  Eigen::Vector3d mContactSurfaceMotionVelocity;
+  math::Vector3d mContactSurfaceMotionVelocity;
 
   /// Whether this contact is self-collision.
   bool mIsSelfCollision;
 
   /// Local body jacobians for mBodyNode1
-  Eigen::Matrix<double, 6, Eigen::Dynamic> mSpatialNormalA;
+  math::Matrix<double, 6, math::Dynamic> mSpatialNormalA;
 
   /// Local body jacobians for mBodyNode2
-  Eigen::Matrix<double, 6, Eigen::Dynamic> mSpatialNormalB;
+  math::Matrix<double, 6, math::Dynamic> mSpatialNormalB;
 
   ///
   bool mIsFrictionOn;

@@ -74,7 +74,7 @@ public:
   /// result of the iterations.
   /// \return True if a solution is successfully found.
   /// \sa solveAndApply()
-  bool findSolution(Eigen::VectorXd& positions);
+  bool findSolution(math::VectorXd& positions);
 
   /// Identical to findSolution(), but this function applies the solution when
   /// the solver successfully found a solution or \c allowIncompleteResult is
@@ -102,7 +102,7 @@ public:
   /// solution.
   /// \return True if a solution is successfully found
   bool solveAndApply(
-      Eigen::VectorXd& positions, bool allowIncompleteResult = true);
+      math::VectorXd& positions, bool allowIncompleteResult = true);
 
   /// Clone this HierarchicalIK module
   virtual std::shared_ptr<HierarchicalIK> clone(
@@ -178,15 +178,15 @@ public:
   const IKHierarchy& getIKHierarchy() const;
 
   /// Compute the null spaces of each level of the hierarchy
-  const std::vector<Eigen::MatrixXd>& computeNullSpaces() const;
+  const std::vector<math::MatrixXd>& computeNullSpaces() const;
 
   /// Get the current joint positions of the Skeleton associated with this
   /// IK module.
-  Eigen::VectorXd getPositions() const;
+  math::VectorXd getPositions() const;
 
   /// Set the current joint positions of the Skeleton associated with this
   /// IK module. The vector must include all DOFs in the Skeleton.
-  void setPositions(const Eigen::VectorXd& _q);
+  void setPositions(const math::VectorXd& _q);
 
   /// Get the Skeleton that this IK module is associated with
   SkeletonPtr getSkeleton();
@@ -226,19 +226,18 @@ protected:
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd& _x) const override;
+    double eval(const math::VectorXd& _x) const override;
 
     // Documentation inherited
-    void evalGradient(
-        const Eigen::VectorXd& _x,
-        Eigen::Map<Eigen::VectorXd> _grad) const override;
+    void evalGradient(const math::VectorXd& _x, math::Map<math::VectorXd> _grad)
+        const override;
 
   protected:
     /// Pointer to this Objective's HierarchicalIK module
     std::weak_ptr<HierarchicalIK> mIK;
 
     /// Cache for the gradient computation
-    mutable Eigen::VectorXd mGradCache;
+    mutable math::VectorXd mGradCache;
   };
 
   /// The HierarchicalIK::Constraint Function is simply used to merge the
@@ -260,22 +259,21 @@ protected:
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd& _x) const override;
+    double eval(const math::VectorXd& _x) const override;
 
     // Documentation inherited
-    void evalGradient(
-        const Eigen::VectorXd& _x,
-        Eigen::Map<Eigen::VectorXd> _grad) const override;
+    void evalGradient(const math::VectorXd& _x, math::Map<math::VectorXd> _grad)
+        const override;
 
   protected:
     /// Pointer to this Constraint's HierarchicalIK module
     std::weak_ptr<HierarchicalIK> mIK;
 
     /// Cache for the gradient of a level
-    mutable Eigen::VectorXd mLevelGradCache;
+    mutable math::VectorXd mLevelGradCache;
 
     /// Cache for temporary gradients
-    mutable Eigen::VectorXd mTempGradCache;
+    mutable math::VectorXd mTempGradCache;
   };
 
   /// Constructor
@@ -310,16 +308,16 @@ protected:
   std::weak_ptr<HierarchicalIK> mPtr;
 
   /// Cache for the last positions
-  mutable Eigen::VectorXd mLastPositions;
+  mutable math::VectorXd mLastPositions;
 
   /// Cache for null space computations
-  mutable std::vector<Eigen::MatrixXd> mNullSpaceCache;
+  mutable std::vector<math::MatrixXd> mNullSpaceCache;
 
   /// Cache for a partial null space computation
-  mutable Eigen::MatrixXd mPartialNullspaceCache;
+  mutable math::MatrixXd mPartialNullspaceCache;
 
   /// Cache for the null space SVD
-  mutable Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  mutable math::JacobiSVD<math::Jacobian> mSVDCache;
 
   /// Cache for Jacobians
   mutable math::Jacobian mJacCache;

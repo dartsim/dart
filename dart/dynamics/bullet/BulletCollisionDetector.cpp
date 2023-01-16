@@ -86,7 +86,7 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ);
 
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene);
+    const math::Vector3d& scale, const aiScene* scene);
 
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
     const aiMesh* mesh);
@@ -335,8 +335,8 @@ double BulletCollisionDetector::distance(
 //==============================================================================
 bool BulletCollisionDetector::raycast(
     CollisionGroup* group,
-    const Eigen::Vector3d& from,
-    const Eigen::Vector3d& to,
+    const math::Vector3d& from,
+    const math::Vector3d& to,
     const RaycastOption& option,
     RaycastResult* result)
 {
@@ -484,7 +484,7 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   } else if (const auto box = shape->as<BoxShape>()) {
-    const Eigen::Vector3d& size = box->getSize();
+    const math::Vector3d& size = box->getSize();
 
     auto bulletCollisionShape
         = std::make_unique<btBoxShape>(convertVector3(size * 0.5));
@@ -492,7 +492,7 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   } else if (const auto ellipsoid = shape->as<EllipsoidShape>()) {
-    const Eigen::Vector3d& radii = ellipsoid->getRadii();
+    const math::Vector3d& radii = ellipsoid->getRadii();
 
     auto bulletCollisionShape = createBulletEllipsoidMesh(
         radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
@@ -531,7 +531,7 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   } else if (const auto plane = shape->as<PlaneShape>()) {
-    const Eigen::Vector3d normal = plane->getNormal();
+    const math::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
     auto bulletCollisionShape
@@ -878,7 +878,7 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
 
 //==============================================================================
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene)
+    const math::Vector3d& scale, const aiScene* scene)
 {
   auto triMesh = new btTriangleMesh();
 

@@ -68,13 +68,13 @@ struct DART_DYNAMICS_API PlanarJointUniqueProperties
   PlaneType mPlaneType;
 
   /// First translational axis
-  Eigen::Vector3d mTransAxis1;
+  math::Vector3d mTransAxis1;
 
   /// Second translational axis
-  Eigen::Vector3d mTransAxis2;
+  math::Vector3d mTransAxis2;
 
   /// Rotational axis
-  Eigen::Vector3d mRotAxis;
+  math::Vector3d mRotAxis;
 
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
   /// PlaneType::ARBITRARY is specified.
@@ -83,7 +83,7 @@ struct DART_DYNAMICS_API PlanarJointUniqueProperties
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
   PlanarJointUniqueProperties(
-      const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2);
+      const math::Vector3d& _transAxis1, const math::Vector3d& _transAxis2);
 
   /// Copy-constructor, customized for robustness
   PlanarJointUniqueProperties(const PlanarJointUniqueProperties& other);
@@ -105,7 +105,7 @@ struct DART_DYNAMICS_API PlanarJointUniqueProperties
 
   /// Set plane type as arbitrary plane with two orthogonal translational axes
   void setArbitraryPlane(
-      const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2);
+      const math::Vector3d& _transAxis1, const math::Vector3d& _transAxis2);
 };
 
 //==============================================================================

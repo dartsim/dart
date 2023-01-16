@@ -47,37 +47,37 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
 int collideBoxBox(
     CollisionObject* o1,
     CollisionObject* o2,
-    const Eigen::Vector3d& size0,
-    const Eigen::Isometry3d& T0,
-    const Eigen::Vector3d& size1,
-    const Eigen::Isometry3d& T1,
+    const math::Vector3d& size0,
+    const math::Isometry3d& T0,
+    const math::Vector3d& size1,
+    const math::Isometry3d& T1,
     CollisionResult& result);
 
 int collideBoxSphere(
     CollisionObject* o1,
     CollisionObject* o2,
-    const Eigen::Vector3d& size0,
-    const Eigen::Isometry3d& T0,
+    const math::Vector3d& size0,
+    const math::Isometry3d& T0,
     const double& r1,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T1,
     CollisionResult& result);
 
 int collideSphereBox(
     CollisionObject* o1,
     CollisionObject* o2,
     const double& r0,
-    const Eigen::Isometry3d& T0,
-    const Eigen::Vector3d& size1,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T0,
+    const math::Vector3d& size1,
+    const math::Isometry3d& T1,
     CollisionResult& result);
 
 int collideSphereSphere(
     CollisionObject* o1,
     CollisionObject* o2,
     const double& r0,
-    const Eigen::Isometry3d& c0,
+    const math::Isometry3d& c0,
     const double& r1,
-    const Eigen::Isometry3d& c1,
+    const math::Isometry3d& c1,
     CollisionResult& result);
 
 int collideCylinderSphere(
@@ -85,9 +85,9 @@ int collideCylinderSphere(
     CollisionObject* o2,
     const double& cyl_rad,
     const double& half_height,
-    const Eigen::Isometry3d& T0,
+    const math::Isometry3d& T0,
     const double& sphere_rad,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T1,
     CollisionResult& result);
 
 int collideCylinderPlane(
@@ -95,9 +95,9 @@ int collideCylinderPlane(
     CollisionObject* o2,
     const double& cyl_rad,
     const double& half_height,
-    const Eigen::Isometry3d& T0,
-    const Eigen::Vector3d& plane_normal,
-    const Eigen::Isometry3d& T1,
+    const math::Isometry3d& T0,
+    const math::Vector3d& plane_normal,
+    const math::Isometry3d& T1,
     CollisionResult& result);
 
 } // namespace collision

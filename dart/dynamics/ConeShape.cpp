@@ -99,7 +99,7 @@ double ConeShape::computeVolume(double radius, double height)
 }
 
 //==============================================================================
-Eigen::Matrix3d ConeShape::computeInertia(
+math::Matrix3d ConeShape::computeInertia(
     double radius, double height, double mass)
 {
   // Reference: https://en.wikipedia.org/wiki/List_of_moments_of_inertia
@@ -110,7 +110,7 @@ Eigen::Matrix3d ConeShape::computeInertia(
   const auto Ixx = (3.0 / 20.0) * mass * (radius2 + (2.0 / 3.0) * height2);
   const auto Izz = (3.0 / 10.0) * mass * radius2;
 
-  return Eigen::Vector3d(Ixx, Ixx, Izz).asDiagonal();
+  return math::Vector3d(Ixx, Ixx, Izz).asDiagonal();
 }
 
 //==============================================================================
@@ -122,7 +122,7 @@ ShapePtr ConeShape::clone() const
 //==============================================================================
 void ConeShape::updateBoundingBox() const
 {
-  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5 * mHeight);
+  const math::Vector3d corner(mRadius, mRadius, mRadius + 0.5 * mHeight);
 
   mBoundingBox.setMin(-corner);
   mBoundingBox.setMax(corner);
@@ -138,7 +138,7 @@ void ConeShape::updateVolume() const
 }
 
 //==============================================================================
-Eigen::Matrix3d ConeShape::computeInertia(double mass) const
+math::Matrix3d ConeShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
 }

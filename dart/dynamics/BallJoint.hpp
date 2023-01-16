@@ -80,25 +80,24 @@ public:
   /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
   /// the child BodyNode frames when applied to a BallJoint.
   template <typename RotationType>
-  static Eigen::Vector3d convertToPositions(const RotationType& _rotation)
+  static math::Vector3d convertToPositions(const RotationType& _rotation)
   {
     return math::logMap(_rotation);
   }
 
   /// Convert a BallJoint-style position vector into a transform
-  static Eigen::Isometry3d convertToTransform(
-      const Eigen::Vector3d& _positions);
+  static math::Isometry3d convertToTransform(const math::Vector3d& _positions);
 
   /// Convert a BallJoint-style position vector into a rotation matrix
-  static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
+  static math::Matrix3d convertToRotation(const math::Vector3d& _positions);
 
   // Documentation inherited
-  Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(
-      const Eigen::Vector3d& _positions) const override;
+  math::Matrix<double, 6, 3> getRelativeJacobianStatic(
+      const math::Vector3d& _positions) const override;
 
   // Documentation inherited
-  Eigen::Vector3d getPositionDifferencesStatic(
-      const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const override;
+  math::Vector3d getPositionDifferencesStatic(
+      const math::Vector3d& _q2, const math::Vector3d& _q1) const override;
 
 protected:
   /// Constructor called by Skeleton class
@@ -126,12 +125,12 @@ protected:
 
 protected:
   /// Access mR, which is an auto-updating variable
-  const Eigen::Isometry3d& getR() const;
+  const math::Isometry3d& getR() const;
 
   /// Rotation matrix dependent on the generalized coordinates
   ///
   /// Do not use directly! Use getR() to access this
-  mutable Eigen::Isometry3d mR;
+  mutable math::Isometry3d mR;
 
 public:
   // To get byte-aligned Eigen vectors

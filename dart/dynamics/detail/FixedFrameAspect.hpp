@@ -44,10 +44,10 @@ namespace detail {
 struct DART_DYNAMICS_API FixedFrameProperties
 {
   /// The relative transform of the FixedFrame
-  Eigen::Isometry3d mRelativeTf;
+  math::Isometry3d mRelativeTf;
 
   FixedFrameProperties(
-      const Eigen::Isometry3d& relativeTf = Eigen::Isometry3d::Identity());
+      const math::Isometry3d& relativeTf = math::Isometry3d::Identity());
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

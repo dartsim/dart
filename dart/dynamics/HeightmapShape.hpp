@@ -49,9 +49,9 @@ class HeightmapShape : public Shape
 public:
   using Scalar = S;
 
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
+  using Vector3 = math::Matrix<S, 3, 1>;
   using HeightField
-      = Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+      = math::Matrix<S, math::Dynamic, math::Dynamic, math::RowMajor>;
 
   /// Constructor.
   HeightmapShape();
@@ -70,7 +70,7 @@ public:
   /// This base class computes the intertia based on the bounding box.
   /// Subclasses may choose to provide a more accurate computation of the
   /// inertia.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   /// Sets scale of this heightmap.
   /// \param[in] scale Scale of the height map.
@@ -148,7 +148,7 @@ public:
   S getMaxHeight() const;
 
   /// Set the color of this arrow
-  void notifyColorUpdated(const Eigen::Vector4d& color) override;
+  void notifyColorUpdated(const math::Vector4d& color) override;
 
   // Documentation inherited.
   ShapePtr clone() const override;
@@ -167,7 +167,7 @@ protected:
   /// Computes the bounding box of the height field.
   /// \param[out] min Mininum of box
   /// \param[out] max Maxinum of box
-  void computeBoundingBox(Eigen::Vector3d& min, Eigen::Vector3d& max) const;
+  void computeBoundingBox(math::Vector3d& min, math::Vector3d& max) const;
 
 private:
   /// Scale of the heightmap

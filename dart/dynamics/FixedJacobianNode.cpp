@@ -39,7 +39,7 @@ namespace dynamics {
 
 //==============================================================================
 void FixedJacobianNode::setRelativeTransform(
-    const Eigen::Isometry3d& newRelativeTf)
+    const math::Isometry3d& newRelativeTf)
 {
   if (newRelativeTf.matrix()
       == FixedFrame::mAspectProperties.mRelativeTf.matrix())
@@ -153,7 +153,7 @@ const math::Jacobian& FixedJacobianNode::getJacobianClassicDeriv() const
 
 //==============================================================================
 FixedJacobianNode::FixedJacobianNode(
-    BodyNode* parent, const Eigen::Isometry3d& transform)
+    BodyNode* parent, const math::Isometry3d& transform)
   : FixedFrame(parent, transform),
     detail::FixedJacobianNodeCompositeBase(parent)
 {
@@ -162,7 +162,7 @@ FixedJacobianNode::FixedJacobianNode(
 
 //==============================================================================
 FixedJacobianNode::FixedJacobianNode(
-    const std::tuple<BodyNode*, Eigen::Isometry3d>& args)
+    const std::tuple<BodyNode*, math::Isometry3d>& args)
   : FixedJacobianNode(std::get<0>(args), std::get<1>(args))
 {
   // Delegating constructor
@@ -199,12 +199,12 @@ void FixedJacobianNode::updateWorldJacobianClassicDeriv() const
   const math::Jacobian& dJ_parent = mBodyNode->getJacobianClassicDeriv();
   const math::Jacobian& J_parent = mBodyNode->getWorldJacobian();
 
-  const Eigen::Vector3d& v_local = getLinearVelocity(mBodyNode, Frame::World());
+  const math::Vector3d& v_local = getLinearVelocity(mBodyNode, Frame::World());
 
-  const Eigen::Vector3d& w_parent = mBodyNode->getAngularVelocity();
-  const Eigen::Vector3d& p = (getWorldTransform().translation()
-                              - mBodyNode->getWorldTransform().translation())
-                                 .eval();
+  const math::Vector3d& w_parent = mBodyNode->getAngularVelocity();
+  const math::Vector3d& p = (getWorldTransform().translation()
+                             - mBodyNode->getWorldTransform().translation())
+                                .eval();
 
   mCache.mWorldJacobianClassicDeriv = dJ_parent;
   mCache.mWorldJacobianClassicDeriv.bottomRows<3>().noalias()

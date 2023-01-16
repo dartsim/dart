@@ -51,7 +51,7 @@ namespace dynamics {
 
 //==============================================================================
 MeshShape::MeshShape(
-    const Eigen::Vector3d& scale,
+    const math::Vector3d& scale,
     const aiScene* mesh,
     const common::Uri& path,
     common::ResourceRetrieverPtr resourceRetriever)
@@ -157,7 +157,7 @@ void MeshShape::setMesh(
 }
 
 //==============================================================================
-void MeshShape::setScale(const Eigen::Vector3d& scale)
+void MeshShape::setScale(const math::Vector3d& scale)
 {
   assert((scale.array() > 0.0).all());
 
@@ -169,7 +169,7 @@ void MeshShape::setScale(const Eigen::Vector3d& scale)
 }
 
 //==============================================================================
-const Eigen::Vector3d& MeshShape::getScale() const
+const math::Vector3d& MeshShape::getScale() const
 {
   return mScale;
 }
@@ -223,7 +223,7 @@ void MeshShape::setDisplayList(int index)
 }
 
 //==============================================================================
-Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
+math::Matrix3d MeshShape::computeInertia(double _mass) const
 {
   // Use bounding box to represent the mesh
   return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), _mass);
@@ -249,8 +249,8 @@ ShapePtr MeshShape::clone() const
 void MeshShape::updateBoundingBox() const
 {
   if (!mMesh) {
-    mBoundingBox.setMin(Eigen::Vector3d::Zero());
-    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mBoundingBox.setMin(math::Vector3d::Zero());
+    mBoundingBox.setMax(math::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
     return;
   }
@@ -279,9 +279,9 @@ void MeshShape::updateBoundingBox() const
     }
   }
   mBoundingBox.setMin(
-      Eigen::Vector3d(min_X * mScale[0], min_Y * mScale[1], min_Z * mScale[2]));
+      math::Vector3d(min_X * mScale[0], min_Y * mScale[1], min_Z * mScale[2]));
   mBoundingBox.setMax(
-      Eigen::Vector3d(max_X * mScale[0], max_Y * mScale[1], max_Z * mScale[2]));
+      math::Vector3d(max_X * mScale[0], max_Y * mScale[1], max_Z * mScale[2]));
 
   mIsBoundingBoxDirty = false;
 }
@@ -289,7 +289,7 @@ void MeshShape::updateBoundingBox() const
 //==============================================================================
 void MeshShape::updateVolume() const
 {
-  const Eigen::Vector3d bounds = getBoundingBox().computeFullExtents();
+  const math::Vector3d bounds = getBoundingBox().computeFullExtents();
   mVolume = bounds.x() * bounds.y() * bounds.z();
   mIsVolumeDirty = false;
 }

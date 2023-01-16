@@ -57,7 +57,7 @@ PlanarJointUniqueProperties::PlanarJointUniqueProperties(PlaneType _planeType)
 
 //==============================================================================
 PlanarJointUniqueProperties::PlanarJointUniqueProperties(
-    const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2)
+    const math::Vector3d& _transAxis1, const math::Vector3d& _transAxis2)
 {
   setArbitraryPlane(_transAxis1, _transAxis2);
 }
@@ -110,32 +110,32 @@ PlanarJointUniqueProperties& PlanarJointUniqueProperties::operator=(
 void PlanarJointUniqueProperties::setXYPlane()
 {
   mPlaneType = PlaneType::XY;
-  mRotAxis = Eigen::Vector3d::UnitZ();
-  mTransAxis1 = Eigen::Vector3d::UnitX();
-  mTransAxis2 = Eigen::Vector3d::UnitY();
+  mRotAxis = math::Vector3d::UnitZ();
+  mTransAxis1 = math::Vector3d::UnitX();
+  mTransAxis2 = math::Vector3d::UnitY();
 }
 
 //==============================================================================
 void PlanarJointUniqueProperties::setYZPlane()
 {
   mPlaneType = PlaneType::YZ;
-  mRotAxis = Eigen::Vector3d::UnitX();
-  mTransAxis1 = Eigen::Vector3d::UnitY();
-  mTransAxis2 = Eigen::Vector3d::UnitZ();
+  mRotAxis = math::Vector3d::UnitX();
+  mTransAxis1 = math::Vector3d::UnitY();
+  mTransAxis2 = math::Vector3d::UnitZ();
 }
 
 //==============================================================================
 void PlanarJointUniqueProperties::setZXPlane()
 {
   mPlaneType = PlaneType::ZX;
-  mRotAxis = Eigen::Vector3d::UnitY();
-  mTransAxis1 = Eigen::Vector3d::UnitZ();
-  mTransAxis2 = Eigen::Vector3d::UnitX();
+  mRotAxis = math::Vector3d::UnitY();
+  mTransAxis1 = math::Vector3d::UnitZ();
+  mTransAxis2 = math::Vector3d::UnitX();
 }
 
 //==============================================================================
 void PlanarJointUniqueProperties::setArbitraryPlane(
-    const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2)
+    const math::Vector3d& _transAxis1, const math::Vector3d& _transAxis2)
 {
   // Set plane type as arbitrary plane
   mPlaneType = PlaneType::ARBITRARY;

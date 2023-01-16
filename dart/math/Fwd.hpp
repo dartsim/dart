@@ -52,7 +52,18 @@ namespace dart::math {
 template <typename Derived>
 using MatrixBase = ::Eigen::MatrixBase<Derived>;
 
-constexpr int Dynamic = ::Eigen::Dynamic;
+template <typename Derived>
+using DenseBase = ::Eigen::DenseBase<Derived>;
+
+constexpr auto Dynamic = ::Eigen::Dynamic;
+constexpr auto ColMajor = ::Eigen::ColMajor;
+constexpr auto RowMajor = ::Eigen::RowMajor;
+constexpr auto ComputeFullV = ::Eigen::ComputeFullV;
+constexpr auto StrictlyLower = ::Eigen::StrictlyLower;
+constexpr auto StrictlyUpper = ::Eigen::StrictlyUpper;
+
+template <typename PlainObjectType>
+using Map = class ::Eigen::Map<PlainObjectType>;
 
 //------------------------------------------------------------------------------
 // Eigen matrix types
@@ -62,8 +73,14 @@ constexpr int Dynamic = ::Eigen::Dynamic;
 /// @tparam S Scalar type
 /// @tparam Rows Size of the rows
 /// @tparam Cols Size of the columns
-template <typename S, int Rows, int Cols = Rows>
-using Matrix = ::Eigen::Matrix<S, Rows, Cols>;
+template <typename S, int Rows, int Cols = Rows, int Options = 0>
+using Matrix = ::Eigen::Matrix<S, Rows, Cols, Options>;
+
+/// Fixed-size matrix (int)
+/// @tparam Rows Size of the rows
+/// @tparam Cols Size of the columns
+template <int Rows, int Cols = Rows>
+using Matrixi = Matrix<int, Rows, Cols>;
 
 /// Fixed-size matrix (float)
 /// @tparam Rows Size of the rows
@@ -90,11 +107,22 @@ using Matrix5 = Matrix<S, 5>;
 template <typename S>
 using Matrix6 = Matrix<S, 6>;
 
+/// Dynamic-size matrix (int)
+using MatrixXi = Matrixi<Dynamic>;
+
 /// Dynamic-size matrix (float)
 using MatrixXf = Matrixd<Dynamic>;
 
 /// Dynamic-size matrix (double)
 using MatrixXd = Matrixd<Dynamic>;
+
+// Fixed-size matrices for specific sizes (int)
+using Matrix1i = Matrixi<1>;
+using Matrix2i = Matrixi<2>;
+using Matrix3i = Matrixi<3>;
+using Matrix4i = Matrixi<4>;
+using Matrix5i = Matrixi<5>;
+using Matrix6i = Matrixi<6>;
 
 // Fixed-size matrices for specific sizes (float)
 using Matrix1f = Matrixf<1>;
@@ -122,6 +150,11 @@ using Matrix6d = Matrixd<6>;
 template <typename S, int Size>
 using Vector = Matrix<S, Size, 1>;
 
+/// Fixed-size column vector (int)
+/// @tparam Size Size of the vector
+template <int Size>
+using Vectori = Vector<int, Size>;
+
 /// Fixed-size column vector (float)
 /// @tparam Size Size of the vector
 template <int Size>
@@ -145,11 +178,22 @@ using Vector5 = Vector<S, 5>;
 template <typename S>
 using Vector6 = Vector<S, 6>;
 
+/// Dynamic-size column vector (int)
+using VectorXi = Vectori<Dynamic>;
+
 /// Dynamic-size column vector (float)
 using VectorXf = Vectorf<Dynamic>;
 
 /// Dynamic-size column vector (double)
 using VectorXd = Vectord<Dynamic>;
+
+// Fixed-size vectors for specific sizes (int)
+using Vector1i = Vectori<1>;
+using Vector2i = Vectori<2>;
+using Vector3i = Vectori<3>;
+using Vector4i = Vectori<4>;
+using Vector5i = Vectori<5>;
+using Vector6i = Vectori<6>;
 
 // Fixed-size vectors for specific sizes (float)
 using Vector1f = Vectorf<1>;
@@ -236,6 +280,16 @@ using Translation3f = Translation3<float>;
 
 /// Translation transform (double)
 using Translation3d = Translation3<double>;
+
+//------------------------------------------------------------------------------
+// Eigen solvers
+//------------------------------------------------------------------------------
+
+template <typename MatrixType>
+using JacobiSVD = ::Eigen::JacobiSVD<MatrixType>;
+
+template <typename MatrixType>
+using FullPivLU = ::Eigen::FullPivLU<MatrixType>;
 
 //------------------------------------------------------------------------------
 // Other DART types

@@ -52,11 +52,11 @@ struct DART_DYNAMICS_API MarkerProperties
     SOFT
   };
 
-  Eigen::Vector4d mColor;
+  math::Vector4d mColor;
   ConstraintType mType;
 
   MarkerProperties(
-      const Eigen::Vector4d& color = math::Colord::White(1.0),
+      const math::Vector4d& color = math::Colord::White(1.0),
       ConstraintType type = NO);
 
   // To get byte-aligned Eigen vectors

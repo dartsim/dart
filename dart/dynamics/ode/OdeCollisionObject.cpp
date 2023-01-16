@@ -137,14 +137,14 @@ void OdeCollisionObject::updateEngineData()
   if (!mBodyId)
     return;
 
-  const Eigen::Isometry3d& tf = getTransform();
+  const math::Isometry3d& tf = getTransform();
 
   // Set position
-  const Eigen::Vector3d pos = tf.translation();
+  const math::Vector3d pos = tf.translation();
   dBodySetPosition(mBodyId, pos.x(), pos.y(), pos.z());
 
   // Set orientation
-  const Eigen::Quaterniond rot(tf.linear());
+  const math::Quaterniond rot(tf.linear());
   dQuaternion odeQuat;
   odeQuat[0] = rot.w();
   odeQuat[1] = rot.x();
@@ -189,7 +189,7 @@ detail::OdeGeom* createOdeGeom(
 
     geom = new detail::OdeSphere(collObj, radius);
   } else if (const auto box = shape->as<BoxShape>()) {
-    const Eigen::Vector3d& size = box->getSize();
+    const math::Vector3d& size = box->getSize();
 
     geom = new detail::OdeBox(collObj, size);
   } else if (const auto capsule = shape->as<CapsuleShape>()) {
@@ -203,12 +203,12 @@ detail::OdeGeom* createOdeGeom(
 
     geom = new detail::OdeCylinder(collObj, radius, height);
   } else if (const auto plane = shape->as<PlaneShape>()) {
-    const Eigen::Vector3d normal = plane->getNormal();
+    const math::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
     geom = new detail::OdePlane(collObj, normal, offset);
   } else if (const auto shapeMesh = shape->as<MeshShape>()) {
-    const Eigen::Vector3d& scale = shapeMesh->getScale();
+    const math::Vector3d& scale = shapeMesh->getScale();
     auto aiScene = shapeMesh->getMesh();
 
     geom = new detail::OdeMesh(collObj, aiScene, scale);

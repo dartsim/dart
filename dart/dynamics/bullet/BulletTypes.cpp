@@ -38,19 +38,19 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-Eigen::Vector3d convertVector3(const btVector3& _vec)
+math::Vector3d convertVector3(const btVector3& _vec)
 {
-  return Eigen::Vector3d(_vec.x(), _vec.y(), _vec.z());
+  return math::Vector3d(_vec.x(), _vec.y(), _vec.z());
 }
 
 //==============================================================================
-btVector3 convertVector3(const Eigen::Vector3d& _vec)
+btVector3 convertVector3(const math::Vector3d& _vec)
 {
   return btVector3(_vec.x(), _vec.y(), _vec.z());
 }
 
 //==============================================================================
-btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R)
+btMatrix3x3 convertMatrix3x3(const math::Matrix3d& _R)
 {
   // clang-format off
   return btMatrix3x3(_R(0, 0), _R(0, 1), _R(0, 2),
@@ -60,7 +60,7 @@ btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R)
 }
 
 //==============================================================================
-btTransform convertTransform(const Eigen::Isometry3d& _T)
+btTransform convertTransform(const math::Isometry3d& _T)
 {
   btTransform trans;
   trans.setOrigin(convertVector3(_T.translation()));

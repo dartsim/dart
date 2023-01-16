@@ -50,13 +50,13 @@ namespace detail {
 struct DART_DYNAMICS_API ScrewJointUniqueProperties
 {
   /// Rotational axis
-  Eigen::Vector3d mAxis;
+  math::Vector3d mAxis;
 
   /// Translational pitch
   double mPitch;
 
   ScrewJointUniqueProperties(
-      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
+      const math::Vector3d& _axis = math::Vector3d::UnitZ(),
       double _pitch = 0.1);
 
   virtual ~ScrewJointUniqueProperties() = default;

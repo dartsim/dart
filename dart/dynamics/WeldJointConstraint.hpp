@@ -55,10 +55,10 @@ public:
   WeldJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2);
 
   /// Set the relative transform that this WeldJointConstraint will enforce
-  void setRelativeTransform(const Eigen::Isometry3d& _tf);
+  void setRelativeTransform(const math::Isometry3d& _tf);
 
   /// Get the relative transform that this WeldJointConstraint will enforce
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const math::Isometry3d& getRelativeTransform() const;
 
   /// Destructor
   virtual ~WeldJointConstraint();
@@ -106,7 +106,7 @@ protected:
 
 private:
   ///
-  Eigen::Isometry3d mRelativeTransform;
+  math::Isometry3d mRelativeTransform;
 
   ///
   math::Vector6d mViolation;

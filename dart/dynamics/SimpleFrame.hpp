@@ -58,8 +58,8 @@ public:
   explicit SimpleFrame(
       Frame* _refFrame = Frame::World(),
       const std::string& _name = "simple_frame",
-      const Eigen::Isometry3d& _relativeTransform
-      = Eigen::Isometry3d::Identity());
+      const math::Isometry3d& _relativeTransform
+      = math::Isometry3d::Identity());
 
   /// Copy constructor. Note that the parent frame of _otherFrame will not be
   /// copied as the reference frame for the newly created SimpleFrame.
@@ -105,45 +105,44 @@ public:
   /// store it, it will automatically be destroyed.
   std::shared_ptr<SimpleFrame> spawnChildSimpleFrame(
       const std::string& name = "SimpleFrame",
-      const Eigen::Isometry3d& relativeTransform
-      = Eigen::Isometry3d::Identity());
+      const math::Isometry3d& relativeTransform = math::Isometry3d::Identity());
 
   //--------------------------------------------------------------------------
   // Transform
   //--------------------------------------------------------------------------
 
   /// Set the relative transform of this SimpleFrame
-  void setRelativeTransform(const Eigen::Isometry3d& _newRelTransform);
+  void setRelativeTransform(const math::Isometry3d& _newRelTransform);
 
   /// Set the relative translation of this SimpleFrame
-  void setRelativeTranslation(const Eigen::Vector3d& _newTranslation);
+  void setRelativeTranslation(const math::Vector3d& _newTranslation);
 
   /// Set the relative rotation of this SimpleFrame
-  void setRelativeRotation(const Eigen::Matrix3d& _newRotation);
+  void setRelativeRotation(const math::Matrix3d& _newRotation);
 
   /// Set the transform of this SimpleFrame so that its transform with respect
   /// to Frame _withRespectTo is equal to _newTransform. Note that the parent
   /// Frame of this SimpleFrame will not be changed.
   void setTransform(
-      const Eigen::Isometry3d& _newTransform,
+      const math::Isometry3d& _newTransform,
       const Frame* _withRespectTo = Frame::World());
 
   /// Set the translation of this SimpleFrame so that its translation with
   /// respect to Frame _withRespectTo is equal to _newTranslation. Note that the
   /// parent Frame of this SimpleFrame will not be changed.
   void setTranslation(
-      const Eigen::Vector3d& _newTranslation,
+      const math::Vector3d& _newTranslation,
       const Frame* _withRespectTo = Frame::World());
 
   /// Set the rotation of this SimpleFrame so that its rotation with respect
   /// to Frame _withRespectTo is equal to _newRotation. Note that the parent
   /// Frame of this SimpleFrame will not be changed.
   void setRotation(
-      const Eigen::Matrix3d& _newRotation,
+      const math::Matrix3d& _newRotation,
       const Frame* _withRespectTo = Frame::World());
 
   // Documentation inherited
-  const Eigen::Isometry3d& getRelativeTransform() const override;
+  const math::Isometry3d& getRelativeTransform() const override;
 
   //--------------------------------------------------------------------------
   // Velocity
@@ -215,17 +214,17 @@ public:
   ///
   /// These values are equivalent to the terms in the Newton-Euler
   void setClassicDerivatives(
-      const Eigen::Vector3d& _linearVelocity = Eigen::Vector3d::Zero(),
-      const Eigen::Vector3d& _angularVelocity = Eigen::Vector3d::Zero(),
-      const Eigen::Vector3d& _linearAcceleration = Eigen::Vector3d::Zero(),
-      const Eigen::Vector3d& _angularAcceleration = Eigen::Vector3d::Zero());
+      const math::Vector3d& _linearVelocity = math::Vector3d::Zero(),
+      const math::Vector3d& _angularVelocity = math::Vector3d::Zero(),
+      const math::Vector3d& _linearAcceleration = math::Vector3d::Zero(),
+      const math::Vector3d& _angularAcceleration = math::Vector3d::Zero());
 
 protected:
   /// Name of this SimpleFrame
   std::string mName;
 
   /// Relative transform of the SimpleFrame
-  Eigen::Isometry3d mRelativeTf;
+  math::Isometry3d mRelativeTf;
 
   /// Relative spatial velocity of the SimpleFrame
   math::Vector6d mRelativeVelocity;

@@ -768,18 +768,14 @@ void Shape(py::module& m)
       .def(
           "setColors",
           +[](dart::dynamics::PointCloudShape* self,
-              const std::vector<
-                  Eigen::Vector4d,
-                  Eigen::aligned_allocator<Eigen::Vector4d>>& colors) -> void {
+              const std::vector<Eigen::Vector4d>& colors) -> void {
             return self->setColors(colors);
           },
           ::py::arg("colors"))
       .def(
           "getColors",
           +[](const dart::dynamics::PointCloudShape* self)
-              -> const std::vector<
-                  Eigen::Vector4d,
-                  Eigen::aligned_allocator<Eigen::Vector4d>>& {
+              -> const std::vector<Eigen::Vector4d>& {
             return self->getColors();
           })
       .def(

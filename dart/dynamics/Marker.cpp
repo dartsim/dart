@@ -49,7 +49,7 @@ namespace detail {
 
 //==============================================================================
 MarkerProperties::MarkerProperties(
-    const Eigen::Vector4d& color, ConstraintType type)
+    const math::Vector4d& color, ConstraintType type)
   : mColor(color), mType(type)
 {
   // Do nothing
@@ -65,21 +65,21 @@ void Marker::setAspectProperties(const AspectProperties& properties)
 }
 
 //==============================================================================
-Eigen::Vector3d Marker::getLocalPosition() const
+math::Vector3d Marker::getLocalPosition() const
 {
   return getRelativeTransform().translation();
 }
 
 //==============================================================================
-void Marker::setLocalPosition(const Eigen::Vector3d& offset)
+void Marker::setLocalPosition(const math::Vector3d& offset)
 {
-  Eigen::Isometry3d tf = getRelativeTransform();
+  math::Isometry3d tf = getRelativeTransform();
   tf.translation() = offset;
   setRelativeTransform(tf);
 }
 
 //==============================================================================
-Eigen::Vector3d Marker::getWorldPosition() const
+math::Vector3d Marker::getWorldPosition() const
 {
   return getWorldTransform().translation();
 }
@@ -107,7 +107,7 @@ Marker::ConstraintType Marker::getConstraintType() const
 }
 
 //==============================================================================
-void Marker::setColor(const Eigen::Vector4d& color)
+void Marker::setColor(const math::Vector4d& color)
 {
   if (color == mAspectProperties.mColor)
     return;
@@ -117,7 +117,7 @@ void Marker::setColor(const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-const Eigen::Vector4d& Marker::getColor() const
+const math::Vector4d& Marker::getColor() const
 {
   return mAspectProperties.mColor;
 }

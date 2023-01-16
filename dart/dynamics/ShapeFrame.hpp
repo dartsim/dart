@@ -67,10 +67,10 @@ public:
   VisualAspect(const VisualAspect&) = delete;
 
   /// Set RGBA color
-  void setRGBA(const Eigen::Vector4d& color);
+  void setRGBA(const math::Vector4d& color);
 
-  DART_COMMON_GET_ASPECT_PROPERTY(Eigen::Vector4d, RGBA)
-  // const Eigen::Vector4d& getRGBA() const;
+  DART_COMMON_GET_ASPECT_PROPERTY(math::Vector4d, RGBA)
+  // const math::Vector4d& getRGBA() const;
 
   DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Hidden)
   // void setHidden(const bool& value);
@@ -80,23 +80,23 @@ public:
   // void setShadowed(const bool& value);
   // const bool& getShadowed() const;
 
-  /// Identical to setRGB(const Eigen::Vector3d&)
-  void setColor(const Eigen::Vector3d& color);
+  /// Identical to setRGB(const math::Vector3d&)
+  void setColor(const math::Vector3d& color);
 
-  /// Identical to setRGBA(const Eigen::Vector4d&)
-  void setColor(const Eigen::Vector4d& color);
+  /// Identical to setRGBA(const math::Vector4d&)
+  void setColor(const math::Vector4d& color);
 
   /// Set RGB color components (leave alpha alone)
-  void setRGB(const Eigen::Vector3d& rgb);
+  void setRGB(const math::Vector3d& rgb);
 
   /// Set the transparency of the Shape
   void setAlpha(const double alpha);
 
   /// Get color
-  Eigen::Vector3d getColor() const;
+  math::Vector3d getColor() const;
 
   /// Get RGB color components
-  Eigen::Vector3d getRGB() const;
+  math::Vector3d getRGB() const;
 
   /// Get the transparency of the Shape
   double getAlpha() const;
@@ -184,9 +184,9 @@ public:
   /// Get the frame for the first friction direction vector.
   const Frame* getFirstFrictionDirectionFrame() const;
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(Eigen::Vector3d, FirstFrictionDirection)
-  // void setFirstFrictionDirection(const Eigen::Vector3d& value);
-  // const Eigen::Vector3d& getFirstFrictionDirection() const;
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(math::Vector3d, FirstFrictionDirection)
+  // void setFirstFrictionDirection(const math::Vector3d& value);
+  // const math::Vector3d& getFirstFrictionDirection() const;
 };
 
 //==============================================================================
@@ -205,8 +205,8 @@ public:
 
   using RelativeTransformUpdatedSignal = common::Signal<void(
       const ShapeFrame* thisShapeFrame,
-      const Eigen::Isometry3d& oldTransform,
-      const Eigen::Isometry3d& newTransform)>;
+      const math::Isometry3d& oldTransform,
+      const math::Isometry3d& newTransform)>;
 
   using UniqueProperties = AspectProperties;
   using Properties = UniqueProperties;

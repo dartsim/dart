@@ -80,12 +80,12 @@ const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
 }
 
 //==============================================================================
-Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
+math::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 {
   dtwarn << "[SoftMeshShape::computeInertia] Not implemented yet.\n";
   // TODO(JS): Not implemented.
 
-  return Eigen::Matrix3d::Zero();
+  return math::Matrix3d::Zero();
 }
 
 //==============================================================================
@@ -125,7 +125,7 @@ void SoftMeshShape::_buildMesh()
   aiVector3D itAIVector3d;
   for (int i = 0; i < nVertices; ++i) {
     PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
-    const Eigen::Vector3d& vertex = itPointMass->getRestingPosition();
+    const math::Vector3d& vertex = itPointMass->getRestingPosition();
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
     mAssimpMesh->mVertices[i] = itAIVector3d;
     mAssimpMesh->mNormals[i] = itAIVector3d;
@@ -135,7 +135,7 @@ void SoftMeshShape::_buildMesh()
   mAssimpMesh->mNumFaces = nFaces;
   mAssimpMesh->mFaces = new aiFace[nFaces];
   for (int i = 0; i < nFaces; ++i) {
-    Eigen::Vector3i itFace = mSoftBodyNode->getFace(i);
+    math::Vector3i itFace = mSoftBodyNode->getFace(i);
     aiFace* itAIFace = &mAssimpMesh->mFaces[i];
     itAIFace->mNumIndices = 3;
     itAIFace->mIndices = new unsigned int[3];
@@ -152,7 +152,7 @@ void SoftMeshShape::update()
   aiVector3D itAIVector3d;
   for (std::size_t i = 0; i < nVertices; ++i) {
     PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
-    const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
+    const math::Vector3d& vertex = itPointMass->getLocalPosition();
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
     mAssimpMesh->mVertices[i] = itAIVector3d;
   }

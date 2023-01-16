@@ -56,7 +56,7 @@ InverseKinematics::~InverseKinematics()
 }
 
 //==============================================================================
-bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
+bool InverseKinematics::findSolution(math::VectorXd& positions)
 {
   if (nullptr == mSolver) {
     dtwarn << "[InverseKinematics::findSolution] The Solver for an "
@@ -80,7 +80,7 @@ bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
 
   const SkeletonPtr& skel = getNode()->getSkeleton();
 
-  Eigen::VectorXd bounds(mDofs.size());
+  math::VectorXd bounds(mDofs.size());
   for (std::size_t i = 0; i < mDofs.size(); ++i)
     bounds[i] = skel->getDof(mDofs[i])->getPositionLowerLimit();
   mProblem->setLowerBounds(bounds);
@@ -92,10 +92,10 @@ bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
   // Many GradientMethod implementations use Joint::integratePositions, so we
   // need to clear out any velocities that might be in the Skeleton and then
   // reset those velocities later. This has been opened as issue #699.
-  const Eigen::VectorXd originalVelocities = skel->getVelocities();
+  const math::VectorXd originalVelocities = skel->getVelocities();
   skel->resetVelocities();
 
-  const Eigen::VectorXd originalPositions = getPositions();
+  const math::VectorXd originalPositions = getPositions();
   const bool wasSolved = mSolver->solve();
 
   positions = mProblem->getOptimalSolution();
@@ -108,7 +108,7 @@ bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
 //==============================================================================
 bool InverseKinematics::solveAndApply(bool allowIncompleteResult)
 {
-  Eigen::VectorXd solution;
+  math::VectorXd solution;
   const auto wasSolved = findSolution(solution);
   if (wasSolved || allowIncompleteResult)
     setPositions(solution);
@@ -117,7 +117,7 @@ bool InverseKinematics::solveAndApply(bool allowIncompleteResult)
 
 //==============================================================================
 bool InverseKinematics::solveAndApply(
-    Eigen::VectorXd& positions, bool allowIncompleteResult)
+    math::VectorXd& positions, bool allowIncompleteResult)
 {
   const auto wasSolved = findSolution(positions);
   if (wasSolved || allowIncompleteResult)
@@ -213,15 +213,15 @@ InverseKinematics::ErrorMethod::ErrorMethod(
 }
 
 //==============================================================================
-Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
-    const Eigen::Isometry3d& /*_currentTf*/, const math::Vector6d& /*_error*/)
+math::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
+    const math::Isometry3d& /*_currentTf*/, const math::Vector6d& /*_error*/)
 {
   return mIK->getTarget()->getTransform();
 }
 
 //==============================================================================
 const math::Vector6d& InverseKinematics::ErrorMethod::evalError(
-    const Eigen::VectorXd& _q)
+    const math::VectorXd& _q)
 {
   if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
     dterr << "[InverseKinematics::ErrorMethod::evalError] Mismatch between "
@@ -291,7 +291,7 @@ InverseKinematics::ErrorMethod::getBounds() const
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setAngularBounds(
-    const Eigen::Vector3d& _lower, const Eigen::Vector3d& _upper)
+    const math::Vector3d& _lower, const math::Vector3d& _upper)
 {
   mErrorP.mBounds.first.head<3>() = _lower;
   mErrorP.mBounds.second.head<3>() = _upper;
@@ -300,22 +300,22 @@ void InverseKinematics::ErrorMethod::setAngularBounds(
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setAngularBounds(
-    const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds)
+    const std::pair<math::Vector3d, math::Vector3d>& _bounds)
 {
   setAngularBounds(_bounds.first, _bounds.second);
 }
 
 //==============================================================================
-std::pair<Eigen::Vector3d, Eigen::Vector3d>
+std::pair<math::Vector3d, math::Vector3d>
 InverseKinematics::ErrorMethod::getAngularBounds() const
 {
-  return std::pair<Eigen::Vector3d, Eigen::Vector3d>(
+  return std::pair<math::Vector3d, math::Vector3d>(
       mErrorP.mBounds.first.head<3>(), mErrorP.mBounds.second.head<3>());
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setLinearBounds(
-    const Eigen::Vector3d& _lower, const Eigen::Vector3d& _upper)
+    const math::Vector3d& _lower, const math::Vector3d& _upper)
 {
   mErrorP.mBounds.first.tail<3>() = _lower;
   mErrorP.mBounds.second.tail<3>() = _upper;
@@ -324,16 +324,16 @@ void InverseKinematics::ErrorMethod::setLinearBounds(
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setLinearBounds(
-    const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds)
+    const std::pair<math::Vector3d, math::Vector3d>& _bounds)
 {
   setLinearBounds(_bounds.first, _bounds.second);
 }
 
 //==============================================================================
-std::pair<Eigen::Vector3d, Eigen::Vector3d>
+std::pair<math::Vector3d, math::Vector3d>
 InverseKinematics::ErrorMethod::getLinearBounds() const
 {
-  return std::pair<Eigen::Vector3d, Eigen::Vector3d>(
+  return std::pair<math::Vector3d, math::Vector3d>(
       mErrorP.mBounds.first.tail<3>(), mErrorP.mBounds.second.tail<3>());
 }
 
@@ -366,28 +366,28 @@ const math::Vector6d& InverseKinematics::ErrorMethod::getErrorWeights() const
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setAngularErrorWeights(
-    const Eigen::Vector3d& _weights)
+    const math::Vector3d& _weights)
 {
   mErrorP.mErrorWeights.head<3>() = _weights;
   clearCache();
 }
 
 //==============================================================================
-Eigen::Vector3d InverseKinematics::ErrorMethod::getAngularErrorWeights() const
+math::Vector3d InverseKinematics::ErrorMethod::getAngularErrorWeights() const
 {
   return mErrorP.mErrorWeights.head<3>();
 }
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setLinearErrorWeights(
-    const Eigen::Vector3d& _weights)
+    const math::Vector3d& _weights)
 {
   mErrorP.mErrorWeights.tail<3>() = _weights;
   clearCache();
 }
 
 //==============================================================================
-Eigen::Vector3d InverseKinematics::ErrorMethod::getLinearErrorWeights() const
+math::Vector3d InverseKinematics::ErrorMethod::getLinearErrorWeights() const
 {
   return mErrorP.mErrorWeights.tail<3>();
 }
@@ -443,17 +443,17 @@ InverseKinematics::TaskSpaceRegion::clone(InverseKinematics* _newIK) const
 }
 
 //==============================================================================
-Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
-    const Eigen::Isometry3d& _currentTf, const math::Vector6d& _error)
+math::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
+    const math::Isometry3d& _currentTf, const math::Vector6d& _error)
 {
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  math::Isometry3d tf(math::Isometry3d::Identity());
 
   tf.rotate(_currentTf.linear());
   for (std::size_t i = 0; i < 3; ++i) {
     const double angle = _error[i];
-    Eigen::Vector3d axis(Eigen::Vector3d::Zero());
+    math::Vector3d axis(math::Vector3d::Zero());
     axis[i] = 1.0;
-    tf.prerotate(Eigen::AngleAxisd(-angle, axis));
+    tf.prerotate(math::AngleAxisd(-angle, axis));
   }
 
   tf.pretranslate(_currentTf.translation());
@@ -487,20 +487,20 @@ math::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   assert(referenceFrame != nullptr);
 
   // Use the target's transform with respect to its reference frame
-  const Eigen::Isometry3d targetTf
+  const math::Isometry3d targetTf
       = mIK->getTarget()->getTransform(referenceFrame);
   // Use the actual transform with respect to the target's reference frame
-  const Eigen::Isometry3d actualTf
+  const math::Isometry3d actualTf
       = mIK->getNode()->getTransform(referenceFrame);
 
   // ^ This scheme makes it so that the bounds are expressed in the reference
   // frame of the target
 
-  Eigen::Vector3d p_error = actualTf.translation() - targetTf.translation();
+  math::Vector3d p_error = actualTf.translation() - targetTf.translation();
   if (mIK->hasOffset())
     p_error += actualTf.linear() * mIK->getOffset();
 
-  const Eigen::Matrix3d R_error
+  const math::Matrix3d R_error
       = actualTf.linear() * targetTf.linear().transpose();
 
   math::Vector6d displacement;
@@ -540,7 +540,7 @@ math::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
 
   if (!referenceFrame->isWorld()) {
     // Transform the error term into the world frame if it's not already
-    const Eigen::Isometry3d& R = referenceFrame->getWorldTransform();
+    const math::Isometry3d& R = referenceFrame->getWorldTransform();
     error.head<3>() = R.linear() * error.head<3>();
     error.tail<3>() = R.linear() * error.tail<3>();
   }
@@ -584,7 +584,7 @@ InverseKinematics::TaskSpaceRegion::getTaskSpaceRegionProperties() const
 
 //==============================================================================
 InverseKinematics::GradientMethod::Properties::Properties(
-    double clamp, const Eigen::VectorXd& weights)
+    double clamp, const math::VectorXd& weights)
   : mComponentWiseClamp(clamp), mComponentWeights(weights)
 {
   // Do nothing
@@ -602,7 +602,7 @@ InverseKinematics::GradientMethod::GradientMethod(
 
 //==============================================================================
 void InverseKinematics::GradientMethod::evalGradient(
-    const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad)
+    const math::VectorXd& _q, math::Map<math::VectorXd> _grad)
 {
   if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
     dterr << "[InverseKinematics::GradientMethod::evalGradient] Mismatch "
@@ -653,7 +653,7 @@ const std::string& InverseKinematics::GradientMethod::getMethodName() const
 
 //==============================================================================
 void InverseKinematics::GradientMethod::clampGradient(
-    Eigen::VectorXd& _grad) const
+    math::VectorXd& _grad) const
 {
   for (int i = 0; i < _grad.size(); ++i) {
     if (std::abs(_grad[i]) > mGradientP.mComponentWiseClamp)
@@ -676,7 +676,7 @@ double InverseKinematics::GradientMethod::getComponentWiseClamp() const
 
 //==============================================================================
 void InverseKinematics::GradientMethod::applyWeights(
-    Eigen::VectorXd& _grad) const
+    math::VectorXd& _grad) const
 {
   std::size_t numComponents
       = std::min(_grad.size(), mGradientP.mComponentWeights.size());
@@ -686,13 +686,13 @@ void InverseKinematics::GradientMethod::applyWeights(
 
 //==============================================================================
 void InverseKinematics::GradientMethod::setComponentWeights(
-    const Eigen::VectorXd& _weights)
+    const math::VectorXd& _weights)
 {
   mGradientP.mComponentWeights = _weights;
 }
 
 //==============================================================================
-const Eigen::VectorXd& InverseKinematics::GradientMethod::getComponentWeights()
+const math::VectorXd& InverseKinematics::GradientMethod::getComponentWeights()
     const
 {
   return mGradientP.mComponentWeights;
@@ -700,7 +700,7 @@ const Eigen::VectorXd& InverseKinematics::GradientMethod::getComponentWeights()
 
 //==============================================================================
 void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
-    Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs)
+    math::VectorXd& grad, const std::vector<std::size_t>& dofs)
 {
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
   mInitialPositionsCache = skel->getPositions(dofs);
@@ -785,7 +785,7 @@ InverseKinematics::JacobianDLS::clone(InverseKinematics* _newIK) const
 
 //==============================================================================
 void InverseKinematics::JacobianDLS::computeGradient(
-    const math::Vector6d& _error, Eigen::VectorXd& _grad)
+    const math::Vector6d& _error, math::VectorXd& _grad)
 {
   const math::Jacobian& J = mIK->computeJacobian();
 
@@ -793,12 +793,12 @@ void InverseKinematics::JacobianDLS::computeGradient(
   int rows = J.rows(), cols = J.cols();
   if (rows <= cols) {
     _grad = J.transpose()
-            * (pow(damping, 2) * Eigen::MatrixXd::Identity(rows, rows)
+            * (pow(damping, 2) * math::MatrixXd::Identity(rows, rows)
                + J * J.transpose())
                   .inverse()
             * _error;
   } else {
-    _grad = (pow(damping, 2) * Eigen::MatrixXd::Identity(cols, cols)
+    _grad = (pow(damping, 2) * math::MatrixXd::Identity(cols, cols)
              + J.transpose() * J)
                 .inverse()
             * J.transpose() * _error;
@@ -846,7 +846,7 @@ InverseKinematics::JacobianTranspose::clone(InverseKinematics* _newIK) const
 
 //==============================================================================
 void InverseKinematics::JacobianTranspose::computeGradient(
-    const math::Vector6d& _error, Eigen::VectorXd& _grad)
+    const math::Vector6d& _error, math::VectorXd& _grad)
 {
   const math::Jacobian& J = mIK->computeJacobian();
   _grad = J.transpose() * _error;
@@ -858,7 +858,7 @@ void InverseKinematics::JacobianTranspose::computeGradient(
 
 //==============================================================================
 InverseKinematics::Analytical::Solution::Solution(
-    const Eigen::VectorXd& _config, int _validity)
+    const math::VectorXd& _config, int _validity)
   : mConfig(_config), mValidity(_validity)
 {
   // Do nothing
@@ -891,8 +891,8 @@ void InverseKinematics::Analytical::UniqueProperties::
 {
   // This function prefers the configuration whose highest joint velocity is
   // smaller than the highest joint velocity of the other configuration.
-  mQualityComparator = [=](const Eigen::VectorXd& better,
-                           const Eigen::VectorXd& worse,
+  mQualityComparator = [=](const math::VectorXd& better,
+                           const math::VectorXd& worse,
                            const InverseKinematics* ik) {
     const std::vector<std::size_t>& dofs = ik->getAnalytical()->getDofs();
     double biggestJump = 0.0;
@@ -956,10 +956,10 @@ InverseKinematics::Analytical::Analytical(
 //==============================================================================
 const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 {
-  const Eigen::Isometry3d& currentTf = mIK->getNode()->getWorldTransform();
+  const math::Isometry3d& currentTf = mIK->getNode()->getWorldTransform();
   const math::Vector6d& error = mIK->getErrorMethod().computeError();
 
-  const Eigen::Isometry3d& _desiredTf
+  const math::Isometry3d& _desiredTf
       = mIK->getErrorMethod().computeDesiredTransform(currentTf, error);
 
   return getSolutions(_desiredTf);
@@ -967,7 +967,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 
 //==============================================================================
 const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
-    const Eigen::Isometry3d& _desiredTf)
+    const math::Isometry3d& _desiredTf)
 {
   mRestoreConfigCache = getPositions();
 
@@ -1025,7 +1025,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
 
 //==============================================================================
 void InverseKinematics::Analytical::addExtraDofGradient(
-    Eigen::VectorXd& grad,
+    math::VectorXd& grad,
     const math::Vector6d& error,
     ExtraDofUtilization /*utilization*/)
 {
@@ -1067,13 +1067,13 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
 //==============================================================================
 void InverseKinematics::Analytical::computeGradient(
-    const math::Vector6d& _error, Eigen::VectorXd& _grad)
+    const math::Vector6d& _error, math::VectorXd& _grad)
 {
   _grad.setZero();
   if (math::Vector6d::Zero() == _error)
     return;
 
-  const Eigen::Isometry3d& desiredTf
+  const math::Isometry3d& desiredTf
       = mIK->getErrorMethod().computeDesiredTransform(
           mIK->getNode()->getWorldTransform(), _error);
 
@@ -1106,7 +1106,7 @@ void InverseKinematics::Analytical::computeGradient(
   if (mSolutions[0].mValidity != VALID)
     return;
 
-  const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;
+  const math::VectorXd& bestSolution = mSolutions[0].mConfig;
   mConfigCache = getPositions();
 
   const std::vector<int>& analyticalToDependent = mDofMap;
@@ -1128,10 +1128,10 @@ void InverseKinematics::Analytical::computeGradient(
       && mExtraDofs.size() > 0) {
     setPositions(bestSolution);
 
-    const Eigen::Isometry3d& postTf = mIK->getNode()->getWorldTransform();
+    const math::Isometry3d& postTf = mIK->getNode()->getWorldTransform();
     math::Vector6d postError;
     postError.tail<3>() = postTf.translation() - desiredTf.translation();
-    Eigen::AngleAxisd aaError(postTf.linear() * desiredTf.linear().transpose());
+    math::AngleAxisd aaError(postTf.linear() * desiredTf.linear().transpose());
     postError.head<3>() = aaError.angle() * aaError.axis();
 
     double norm = postError.norm();
@@ -1143,13 +1143,13 @@ void InverseKinematics::Analytical::computeGradient(
 }
 
 //==============================================================================
-void InverseKinematics::Analytical::setPositions(const Eigen::VectorXd& _config)
+void InverseKinematics::Analytical::setPositions(const math::VectorXd& _config)
 {
   mIK->getNode()->getSkeleton()->setPositions(getDofs(), _config);
 }
 
 //==============================================================================
-Eigen::VectorXd InverseKinematics::Analytical::getPositions() const
+math::VectorXd InverseKinematics::Analytical::getPositions() const
 {
   return mIK->getNode()->getSkeleton()->getPositions(getDofs());
 }
@@ -1252,7 +1252,7 @@ void InverseKinematics::Analytical::checkSolutionJointLimits()
   const std::vector<std::size_t>& dofs = getDofs();
   for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     Solution& s = mSolutions[i];
-    const Eigen::VectorXd& q = s.mConfig;
+    const math::VectorXd& q = s.mConfig;
 
     for (std::size_t j = 0; j < dofs.size(); ++j) {
       DegreeOfFreedom* dof = mIK->getNode()->getSkeleton()->getDof(dofs[j]);
@@ -1485,9 +1485,9 @@ std::shared_ptr<const optimization::Solver> InverseKinematics::getSolver() const
 }
 
 //==============================================================================
-void InverseKinematics::setOffset(const Eigen::Vector3d& _offset)
+void InverseKinematics::setOffset(const math::Vector3d& _offset)
 {
-  if (Eigen::Vector3d::Zero() == _offset)
+  if (math::Vector3d::Zero() == _offset)
     mHasOffset = false;
   else
     mHasOffset = true;
@@ -1497,7 +1497,7 @@ void InverseKinematics::setOffset(const Eigen::Vector3d& _offset)
 }
 
 //==============================================================================
-const Eigen::Vector3d& InverseKinematics::getOffset() const
+const math::Vector3d& InverseKinematics::getOffset() const
 {
   return mOffset;
 }
@@ -1579,13 +1579,13 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
 }
 
 //==============================================================================
-Eigen::VectorXd InverseKinematics::getPositions() const
+math::VectorXd InverseKinematics::getPositions() const
 {
   return mNode->getSkeleton()->getPositions(mDofs);
 }
 
 //==============================================================================
-void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
+void InverseKinematics::setPositions(const math::VectorXd& _q)
 {
   if (_q.size() != static_cast<int>(mDofs.size())) {
     dterr << "[InverseKinematics::setPositions] Mismatch between joint "
@@ -1619,7 +1619,7 @@ optimization::FunctionPtr InverseKinematics::Objective::clone(
 }
 
 //==============================================================================
-double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x) const
+double InverseKinematics::Objective::eval(const math::VectorXd& _x) const
 {
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::eval] Attempting to use an "
@@ -1641,7 +1641,7 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x) const
 
 //==============================================================================
 void InverseKinematics::Objective::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
+    const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const
 {
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::evalGradient] Attempting to use "
@@ -1657,13 +1657,13 @@ void InverseKinematics::Objective::evalGradient(
 
   if (mIK->mNullSpaceObjective) {
     mGradCache.resize(_grad.size());
-    Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
+    math::Map<math::VectorXd> gradMap(mGradCache.data(), _grad.size());
     mIK->mNullSpaceObjective->evalGradient(_x, gradMap);
 
     mIK->setPositions(_x);
 
     const math::Jacobian& J = mIK->computeJacobian();
-    mSVDCache.compute(J, Eigen::ComputeFullV);
+    mSVDCache.compute(J, math::ComputeFullV);
     math::extractNullSpace(mSVDCache, mNullSpaceCache);
     _grad += mNullSpaceCache * mNullSpaceCache.transpose() * mGradCache;
   }
@@ -1683,7 +1683,7 @@ optimization::FunctionPtr InverseKinematics::Constraint::clone(
 }
 
 //==============================================================================
-double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x) const
+double InverseKinematics::Constraint::eval(const math::VectorXd& _x) const
 {
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::eval] Attempting to use a "
@@ -1697,7 +1697,7 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x) const
 
 //==============================================================================
 void InverseKinematics::Constraint::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
+    const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const
 {
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::evalGradient] Attempting to use "
@@ -1713,7 +1713,7 @@ void InverseKinematics::Constraint::evalGradient(
 InverseKinematics::InverseKinematics(JacobianNode* _node)
   : mActive(true),
     mHierarchyLevel(0),
-    mOffset(Eigen::Vector3d::Zero()),
+    mOffset(math::Vector3d::Zero()),
     mHasOffset(false),
     mNode(_node)
 {

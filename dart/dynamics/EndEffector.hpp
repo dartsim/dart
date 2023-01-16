@@ -129,7 +129,7 @@ public:
   /// resetRelativeTransform() is called. If _useNow is set to true, then
   /// resetRelativeTransform() will be called at the end of this function.
   void setDefaultRelativeTransform(
-      const Eigen::Isometry3d& _newDefaultTf, bool _useNow = false);
+      const math::Isometry3d& _newDefaultTf, bool _useNow = false);
 
   /// Set the current relative transform of this EndEffector to the default
   /// relative transform of this EndEffector. The default relative transform can

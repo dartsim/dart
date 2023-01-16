@@ -81,23 +81,22 @@ BallJoint::Properties BallJoint::getBallJointProperties() const
 }
 
 //==============================================================================
-Eigen::Isometry3d BallJoint::convertToTransform(
-    const Eigen::Vector3d& _positions)
+math::Isometry3d BallJoint::convertToTransform(const math::Vector3d& _positions)
 {
-  return Eigen::Isometry3d(convertToRotation(_positions));
+  return math::Isometry3d(convertToRotation(_positions));
 }
 
 //==============================================================================
-Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
+math::Matrix3d BallJoint::convertToRotation(const math::Vector3d& _positions)
 {
   return math::expMapRot(_positions);
 }
 
 //==============================================================================
 BallJoint::BallJoint(const Properties& properties)
-  : Base(properties), mR(Eigen::Isometry3d::Identity())
+  : Base(properties), mR(math::Isometry3d::Identity())
 {
-  mJacobianDeriv = Eigen::Matrix<double, 6, 3>::Zero();
+  mJacobianDeriv = math::Matrix<double, 6, 3>::Zero();
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
@@ -112,18 +111,18 @@ Joint* BallJoint::clone() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> BallJoint::getRelativeJacobianStatic(
-    const Eigen::Vector3d& /*positions*/) const
+math::Matrix<double, 6, 3> BallJoint::getRelativeJacobianStatic(
+    const math::Vector3d& /*positions*/) const
 {
   return mJacobian;
 }
 
 //==============================================================================
-Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
-    const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const
+math::Vector3d BallJoint::getPositionDifferencesStatic(
+    const math::Vector3d& _q2, const math::Vector3d& _q1) const
 {
-  const Eigen::Matrix3d R1 = convertToRotation(_q1);
-  const Eigen::Matrix3d R2 = convertToRotation(_q2);
+  const math::Matrix3d R1 = convertToRotation(_q1);
+  const math::Matrix3d R2 = convertToRotation(_q2);
 
   return convertToPositions(R1.transpose() * R2);
 }
@@ -131,7 +130,7 @@ Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
 //==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
-  Eigen::Matrix3d Rnext
+  math::Matrix3d Rnext
       = getR().linear() * convertToRotation(getVelocitiesStatic() * _dt);
 
   setPositionsStatic(convertToPositions(Rnext));
@@ -175,7 +174,7 @@ void BallJoint::updateRelativeJacobianTimeDeriv() const
 }
 
 //==============================================================================
-const Eigen::Isometry3d& BallJoint::getR() const
+const math::Isometry3d& BallJoint::getR() const
 {
   if (mNeedTransformUpdate) {
     updateRelativeTransform();

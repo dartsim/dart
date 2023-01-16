@@ -97,11 +97,11 @@ public:
   const math::BoundingBox& getBoundingBox() const;
 
   /// Computes the inertia.
-  virtual Eigen::Matrix3d computeInertia(double mass) const = 0;
+  virtual math::Matrix3d computeInertia(double mass) const = 0;
 
-  Eigen::Matrix3d computeInertiaFromDensity(double density) const;
+  math::Matrix3d computeInertiaFromDensity(double density) const;
 
-  Eigen::Matrix3d computeInertiaFromMass(double mass) const;
+  math::Matrix3d computeInertiaFromMass(double mass) const;
 
   /// Returns volume of this shape.
   ///
@@ -138,7 +138,7 @@ public:
   virtual void notifyAlphaUpdated(double alpha);
 
   /// Notify that the color (rgba) of this shape has updated
-  virtual void notifyColorUpdated(const Eigen::Vector4d& color);
+  virtual void notifyColorUpdated(const math::Vector4d& color);
 
   /// Increment the version of this Shape and notify its subscribers
   std::size_t incrementVersion() override final;

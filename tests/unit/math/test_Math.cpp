@@ -55,7 +55,7 @@ using namespace simulation;
 class EigenSE3
 {
 public:
-  explicit EigenSE3(const Eigen::Matrix4d& T) : mT(T) {}
+  explicit EigenSE3(const math::Matrix4d& T) : mT(T) {}
 
   /// \brief multiplication operator
   inline EigenSE3 operator*(const EigenSE3& T) const
@@ -72,7 +72,7 @@ public:
 
 protected:
 private:
-  Eigen::Matrix4d mT;
+  math::Matrix4d mT;
 };
 
 template <typename T>
@@ -90,7 +90,7 @@ EIGEN_DONT_INLINE void inv(const T& a, T& b)
 EIGEN_DONT_INLINE
 Isometry3d Inv2(const Isometry3d& I)
 {
-  Eigen::Isometry3d ret;
+  math::Isometry3d ret;
 
   ret(0, 0) = I(0, 0);
   ret(1, 0) = I(0, 1);
@@ -379,7 +379,7 @@ Matrix<double, 6, 6> Transform_Affine3d(
         + (T(0, 2) * AI(3, 5) + T(1, 2) * AI(4, 5) + T(2, 2) * AI(5, 5))
               * T(2, 2);
 
-  ret.triangularView<Eigen::StrictlyLower>() = ret.transpose();
+  ret.triangularView<math::StrictlyLower>() = ret.transpose();
 
   return ret;
 }
@@ -464,7 +464,7 @@ Matrix<double, 6, 6> Transform_Isometry3d(
         + (T(0, 2) * AI(3, 5) + T(1, 2) * AI(4, 5) + T(2, 2) * AI(5, 5))
               * T(2, 2);
 
-  ret.triangularView<Eigen::StrictlyLower>() = ret.transpose();
+  ret.triangularView<math::StrictlyLower>() = ret.transpose();
 
   return ret;
 }
@@ -730,7 +730,7 @@ Matrix<double, 6, 6> Transform_Matrix4d(
         + (T(0, 2) * AI(3, 5) + T(1, 2) * AI(4, 5) + T(2, 2) * AI(5, 5))
               * T(2, 2);
 
-  ret.triangularView<Eigen::StrictlyLower>() = ret.transpose();
+  ret.triangularView<math::StrictlyLower>() = ret.transpose();
 
   return ret;
 }
@@ -985,20 +985,20 @@ TEST(MATH, INVERSION)
 //    SE3 T4 = Exp(se3(random(min,max), random(min,max), random(min,max),
 //                     random(min,max), random(min,max), random(min,max)));
 
-//    Eigen::Matrix4d E1 = T1;
-//    Eigen::Matrix4d E2 = T2;
-//    Eigen::Matrix4d E3 = T3;
-//    Eigen::Matrix4d E4 = T4;
+//    math::Matrix4d E1 = T1;
+//    math::Matrix4d E2 = T2;
+//    math::Matrix4d E3 = T3;
+//    math::Matrix4d E4 = T4;
 
-//    Eigen::Affine3d A1(E1);
-//    Eigen::Affine3d A2(E2);
-//    Eigen::Affine3d A3(E3);
-//    Eigen::Affine3d A4(E4);
+//    math::Affine3d A1(E1);
+//    math::Affine3d A2(E2);
+//    math::Affine3d A3(E3);
+//    math::Affine3d A4(E4);
 
-//    Eigen::Isometry3d I1(E1);
-//    Eigen::Isometry3d I2(E2);
-//    Eigen::Isometry3d I3(E3);
-//    Eigen::Isometry3d I4(E4);
+//    math::Isometry3d I1(E1);
+//    math::Isometry3d I2(E2);
+//    math::Isometry3d I3(E3);
+//    math::Isometry3d I4(E4);
 
 //    EigenSE3 ESE3_1(E1);
 //    EigenSE3 ESE3_2(E2);
@@ -1016,7 +1016,7 @@ TEST(MATH, INVERSION)
 //    std::cout << T3 << std::endl;
 
 //    {
-//        Timer EigenTimer("Eigen::Matrix4d timer");
+//        Timer EigenTimer("math::Matrix4d timer");
 //        EigenTimer.startTimer();
 //        for (int i = 0; i < n; ++i)
 //            for (int j = 0; j < n; ++j)
@@ -1036,7 +1036,7 @@ TEST(MATH, INVERSION)
 ////    //std::cout << E3 << std::endl;
 
 //    {
-//        Timer AffineTimer("Eigen::Affine3d timer");
+//        Timer AffineTimer("math::Affine3d timer");
 //        AffineTimer.startTimer();
 //        for (int i = 0; i < n; ++i)
 //            for (int j = 0; j < n; ++j)
@@ -1046,7 +1046,7 @@ TEST(MATH, INVERSION)
 //    std::cout << A3.matrix() << std::endl;
 
 //    {
-//        Timer IsometryTimer("Eigen::Isometry3d timer");
+//        Timer IsometryTimer("math::Isometry3d timer");
 //        IsometryTimer.startTimer();
 //        for (int i = 0; i < n; ++i)
 //            for (int j = 0; j < n; ++j)
@@ -1066,7 +1066,7 @@ TEST(MATH, INVERSION)
 ////    std::cout << T4 << std::endl;
 
 ////    {
-////        Timer EigenTimer("Eigen::Matrix4d inverse timer");
+////        Timer EigenTimer("math::Matrix4d inverse timer");
 ////        EigenTimer.startTimer();
 ////        for (int i = 0; i < n; ++i)
 ////            for (int j = 0; j < n; ++j)
@@ -1154,9 +1154,9 @@ TEST(MATH, INVERSION)
 //}
 
 ///// \brief
-// Eigen::Matrix<double,6,6> Ad(const SE3& T)
+// math::Matrix<double,6,6> Ad(const SE3& T)
 //{
-//    Eigen::Matrix<double,6,6> AdT = Eigen::Matrix<double,6,6>::Zero();
+//    math::Matrix<double,6,6> AdT = math::Matrix<double,6,6>::Zero();
 
 //    // R
 //    AdT(0,0) =  T(0,0);   AdT(0,1) =  T(0,1);   AdT(0,2) =  T(0,2);
@@ -1180,7 +1180,7 @@ TEST(MATH, INVERSION)
 //}
 
 ///// \brief
-// Eigen::Matrix<double,6,6> dAd(const SE3& T)
+// math::Matrix<double,6,6> dAd(const SE3& T)
 //{
 //    return Ad(T).transpose();
 //}
@@ -1196,11 +1196,11 @@ TEST(MATH, INVERSION)
 //    math::se3 S(random(min,max), random(min,max), random(min,max),
 //                random(min,max), random(min,max), random(min,max));
 
-//    Eigen::VectorXd AdT_S = math::Ad(T, S).getEigenVector();
-//    Eigen::VectorXd AdT_S2 = Ad(T) * S.getEigenVector();
+//    math::VectorXd AdT_S = math::Ad(T, S).getEigenVector();
+//    math::VectorXd AdT_S2 = Ad(T) * S.getEigenVector();
 
-//    Eigen::MatrixXd I = Ad(T) * Ad(math::Inv(T));
-//    Eigen::MatrixXd SE3Identity = T * (math::Inv(T));
+//    math::MatrixXd I = Ad(T) * Ad(math::Inv(T));
+//    math::MatrixXd SE3Identity = T * (math::Inv(T));
 
 //    for (int i = 0; i < 6; i++)
 //        EXPECT_NEAR(AdT_S(i), AdT_S2(i), MATH_TOL);
@@ -1224,9 +1224,9 @@ TEST(MATH, INVERSION)
 //        I.setOffset(math::Vec3(0, 0, 0));
 //        Ioffset.setOffset(r);
 
-//        Eigen::MatrixXd G = I.toTensor();
-//        Eigen::MatrixXd Goffset = Ioffset.toTensor();
-//        Eigen::MatrixXd dAdinvTGAdinvT = dAd(math::Inv(Tr)) * G *
+//        math::MatrixXd G = I.toTensor();
+//        math::MatrixXd Goffset = Ioffset.toTensor();
+//        math::MatrixXd dAdinvTGAdinvT = dAd(math::Inv(Tr)) * G *
 //        Ad(math::Inv(Tr));
 
 //        for (int i = 0; i < 6; i++)
@@ -1242,23 +1242,23 @@ TEST(MATH, ROTATION)
   using namespace math;
 
   // Create Initial ExpMap
-  Eigen::Vector3d axis(2.0, 1.0, 1.0);
+  math::Vector3d axis(2.0, 1.0, 1.0);
   axis.normalize();
   double angle = 1.2;
   EXPECT_DOUBLE_EQ(axis.norm(), 1.0);
-  Eigen::Vector3d expmap = axis * angle;
+  math::Vector3d expmap = axis * angle;
 
   // Test conversion between expmap and quaternion
-  Eigen::Quaterniond q = expToQuat(expmap);
-  Eigen::Vector3d expmap2 = quatToExp(q);
+  math::Quaterniond q = expToQuat(expmap);
+  math::Vector3d expmap2 = quatToExp(q);
 
   EXPECT_NEAR((expmap - expmap2).norm(), 0.0, MATH_EPS)
       << "Orig: " << expmap << " Reconstructed: " << expmap2;
 
   // Test conversion between matrix and euler
-  Eigen::Matrix3d m = q.toRotationMatrix();
-  Eigen::Vector3d e = matrixToEulerXYZ(m);
-  Eigen::Matrix3d m2 = eulerXYZToMatrix(e);
+  math::Matrix3d m = q.toRotationMatrix();
+  math::Vector3d e = matrixToEulerXYZ(m);
+  math::Matrix3d m2 = eulerXYZToMatrix(e);
 
   EXPECT_NEAR((m - m2).norm(), 0.0, MATH_EPS)
       << "Orig: " << m << " Reconstructed: " << m2;
@@ -1276,17 +1276,17 @@ TEST(MATH, UTILS)
   EXPECT_LT(x, 2.0);
 
   // Test transform
-  Eigen::Isometry3d M = Eigen::Isometry3d::Identity();
-  M.translation() = Eigen::Vector3d(3.0, 2.0, 1.0);
-  Eigen::Vector3d pt(1.0, 0.5, 1.0);
-  Eigen::Vector3d result = M * pt;
-  Eigen::Vector3d expected(4.0, 2.5, 2.0);
+  math::Isometry3d M = math::Isometry3d::Identity();
+  M.translation() = math::Vector3d(3.0, 2.0, 1.0);
+  math::Vector3d pt(1.0, 0.5, 1.0);
+  math::Vector3d result = M * pt;
+  math::Vector3d expected(4.0, 2.5, 2.0);
   EXPECT_NEAR((result - expected).norm(), 0.0, MATH_EPS)
       << "result = " << result << " expected = " << expected;
 }
 
 //==============================================================================
-Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
+Jacobian AdTJac1(const math::Isometry3d& _T, const Jacobian& _J)
 {
   Jacobian res = Jacobian::Zero(6, _J.cols());
 
@@ -1298,7 +1298,7 @@ Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
 //==============================================================================
 template <typename Derived>
 typename Derived::PlainObject AdTJac2(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
+    const math::Isometry3d& _T, const math::MatrixBase<Derived>& _J)
 {
   //  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
   EIGEN_STATIC_ASSERT(
@@ -1316,7 +1316,7 @@ typename Derived::PlainObject AdTJac2(
 //==============================================================================
 template <typename Derived>
 typename Derived::PlainObject AdTJac3(
-    const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
+    const math::Isometry3d& _T, const math::MatrixBase<Derived>& _J)
 {
   //  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
   EIGEN_STATIC_ASSERT(

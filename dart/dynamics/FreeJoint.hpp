@@ -83,17 +83,17 @@ public:
   /// getTransformFromParentBodyNode() * _tf *
   /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
   /// the child BodyNode frames when applied to a FreeJoint.
-  static math::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
+  static math::Vector6d convertToPositions(const math::Isometry3d& _tf);
 
   /// Convert a FreeJoint-style 6D vector into a transform
-  static Eigen::Isometry3d convertToTransform(const math::Vector6d& _positions);
+  static math::Isometry3d convertToTransform(const math::Vector6d& _positions);
 
   /// If the given joint is a FreeJoint, then set the transform of the given
   /// Joint's child BodyNode so that its transform with respect to
   /// "withRespecTo" is equal to "tf".
   static void setTransformOf(
       Joint* joint,
-      const Eigen::Isometry3d& tf,
+      const math::Isometry3d& tf,
       const Frame* withRespectTo = Frame::World());
 
   /// If the parent Joint of the given BodyNode is a FreeJoint, then set the
@@ -101,7 +101,7 @@ public:
   /// "withRespecTo" is equal to "tf".
   static void setTransformOf(
       BodyNode* bodyNode,
-      const Eigen::Isometry3d& tf,
+      const math::Isometry3d& tf,
       const Frame* withRespectTo = Frame::World());
 
   /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
@@ -110,7 +110,7 @@ public:
   /// by Skeleton::getRootBodyNode().
   static void setTransformOf(
       Skeleton* skeleton,
-      const Eigen::Isometry3d& tf,
+      const math::Isometry3d& tf,
       const Frame* withRespectTo = Frame::World(),
       bool applyToAllRootBodies = true);
 
@@ -141,7 +141,7 @@ public:
   /// \param[in] accInCoordinatesOf The reference frame of
   /// "newSpatialAcceleration".
   void setSpatialMotion(
-      const Eigen::Isometry3d* newTransform,
+      const math::Isometry3d* newTransform,
       const Frame* withRespectTo,
       const math::Vector6d* newSpatialVelocity,
       const Frame* velRelativeTo,
@@ -152,13 +152,13 @@ public:
 
   /// Set the transform of the child BodyNode relative to the parent BodyNode
   /// \param[in] newTransform Desired transform of the child BodyNode.
-  void setRelativeTransform(const Eigen::Isometry3d& newTransform);
+  void setRelativeTransform(const math::Isometry3d& newTransform);
 
   /// Set the transform of the child BodyNode relative to an arbitrary Frame.
   /// \param[in] newTransform Desired transform of the child BodyNode.
   /// \param[in] withRespectTo The relative Frame of "newTransform".
   void setTransform(
-      const Eigen::Isometry3d& newTransform,
+      const math::Isometry3d& newTransform,
       const Frame* withRespectTo = Frame::World());
 
   /// Set the spatial velocity of the child BodyNode relative to the parent
@@ -197,7 +197,7 @@ public:
   /// \param[in] relativeTo The relative frame of "newLinearVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
   void setLinearVelocity(
-      const Eigen::Vector3d& newLinearVelocity,
+      const math::Vector3d& newLinearVelocity,
       const Frame* relativeTo = Frame::World(),
       const Frame* inCoordinatesOf = Frame::World());
 
@@ -211,7 +211,7 @@ public:
   /// \param[in] relativeTo The relative frame of "newAngularVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newAngularVelocity".
   void setAngularVelocity(
-      const Eigen::Vector3d& newAngularVelocity,
+      const math::Vector3d& newAngularVelocity,
       const Frame* relativeTo = Frame::World(),
       const Frame* inCoordinatesOf = Frame::World());
 
@@ -255,7 +255,7 @@ public:
   /// \param[in] relativeTo The relative frame of "newLinearAcceleration".
   /// \param[in] inCoordinatesOf The reference frame of "newLinearAcceleration".
   void setLinearAcceleration(
-      const Eigen::Vector3d& newLinearAcceleration,
+      const math::Vector3d& newLinearAcceleration,
       const Frame* relativeTo = Frame::World(),
       const Frame* inCoordinatesOf = Frame::World());
 
@@ -270,7 +270,7 @@ public:
   /// \param[in] inCoordinatesOf The reference frame of
   /// "newAngularAcceleration".
   void setAngularAcceleration(
-      const Eigen::Vector3d& newAngularAcceleration,
+      const math::Vector3d& newAngularAcceleration,
       const Frame* relativeTo = Frame::World(),
       const Frame* inCoordinatesOf = Frame::World());
 
@@ -314,12 +314,12 @@ protected:
 
 protected:
   /// Access mQ, which is an auto-updating variable
-  const Eigen::Isometry3d& getQ() const;
+  const math::Isometry3d& getQ() const;
 
   /// Transformation matrix dependent on generalized coordinates
   ///
   /// Do not use directly! Use getQ() to access this
-  mutable Eigen::Isometry3d mQ;
+  mutable math::Isometry3d mQ;
 
 public:
   // To get byte-aligned Eigen vectors

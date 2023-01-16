@@ -38,7 +38,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-FixedFrameProperties::FixedFrameProperties(const Eigen::Isometry3d& relativeTf)
+FixedFrameProperties::FixedFrameProperties(const math::Isometry3d& relativeTf)
   : mRelativeTf(relativeTf)
 {
   // Do nothing
@@ -51,7 +51,7 @@ const math::Vector6d FixedFrame::mZero = math::Vector6d::Zero();
 
 //==============================================================================
 FixedFrame::FixedFrame(
-    Frame* refFrame, const Eigen::Isometry3d& relativeTransform)
+    Frame* refFrame, const math::Isometry3d& relativeTransform)
   : Entity(refFrame, false), Frame(refFrame)
 {
   createAspect<Aspect>(AspectProperties(relativeTransform));
@@ -70,7 +70,7 @@ void FixedFrame::setAspectProperties(const AspectProperties& properties)
 }
 
 //==============================================================================
-void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
+void FixedFrame::setRelativeTransform(const math::Isometry3d& transform)
 {
   if (transform.matrix() == mAspectProperties.mRelativeTf.matrix())
     return;
@@ -81,7 +81,7 @@ void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
 }
 
 //==============================================================================
-const Eigen::Isometry3d& FixedFrame::getRelativeTransform() const
+const math::Isometry3d& FixedFrame::getRelativeTransform() const
 {
   return mAspectProperties.mRelativeTf;
 }

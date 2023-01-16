@@ -98,10 +98,10 @@ public:
   static double getConstraintForceMixing();
 
   /// Set first frictional direction
-  void setFrictionDirection(const Eigen::Vector3d& _dir);
+  void setFrictionDirection(const math::Vector3d& _dir);
 
   /// Get first frictional direction
-  const Eigen::Vector3d& getFrictionDirection1() const;
+  const math::Vector3d& getFrictionDirection1() const;
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -160,13 +160,13 @@ private:
   void updateFirstFrictionalDirection();
 
   ///
-  Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
+  math::MatrixXd getTangentBasisMatrixODE(const math::Vector3d& _n);
 
   /// Find the nearest point mass from _point in a face, of which id is _faceId
   /// in _softBodyNode.
   dynamics::PointMass* selectCollidingPointMass(
       dynamics::SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _point,
+      const math::Vector3d& _point,
       int _faceId) const;
 
   /// Find the nearest point mass from _point in a face, of which id is _faceId
@@ -174,7 +174,7 @@ private:
   /// SoftBodyNode.
   const dynamics::PointMass* selectCollidingPointMass(
       const dynamics::SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _point,
+      const math::Vector3d& _point,
       int _faceId) const;
 
 private:
@@ -207,7 +207,7 @@ private:
   collision::SoftCollisionInfo* mSoftCollInfo;
 
   /// First frictional direction
-  Eigen::Vector3d mFirstFrictionalDirection;
+  math::Vector3d mFirstFrictionalDirection;
 
   /// Coefficient of Friction
   double mFrictionCoeff;
@@ -222,10 +222,10 @@ private:
   std::vector<math::Vector6d> mJacobians2;
 
   /// Contact normal expressed in body frame of the first body node
-  Eigen::Vector3d mBodyDirection1;
+  math::Vector3d mBodyDirection1;
 
   /// Contact normal expressed in body frame of the second body node
-  Eigen::Vector3d mBodyDirection2;
+  math::Vector3d mBodyDirection2;
 
   ///
   bool mIsFrictionOn;

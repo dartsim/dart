@@ -140,10 +140,10 @@ public:
   void connectPointMasses(std::size_t _idx1, std::size_t _idx2);
 
   /// \brief
-  void addFace(const Eigen::Vector3i& _face);
+  void addFace(const math::Vector3i& _face);
 
   /// \brief
-  const Eigen::Vector3i& getFace(std::size_t _idx) const;
+  const math::Vector3i& getFace(std::size_t _idx) const;
 
   /// \brief
   std::size_t getNumFaces() const;
@@ -203,7 +203,7 @@ protected:
 
   // Documentation inherited.
   void updateBiasForce(
-      const Eigen::Vector3d& _gravity, double _timeStep) override;
+      const math::Vector3d& _gravity, double _timeStep) override;
 
   // Documentation inherited.
   void updateBiasImpulse() override;
@@ -219,7 +219,7 @@ protected:
 
   // Documentation inherited.
   void updateTransmittedForceID(
-      const Eigen::Vector3d& _gravity,
+      const math::Vector3d& _gravity,
       bool _withExternalForces = false) override;
 
   // Documentation inherited.
@@ -256,11 +256,11 @@ protected:
   void updateMassMatrix() override;
 
   // Documentation inherited.
-  void aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col) override;
+  void aggregateMassMatrix(math::MatrixXd& _MCol, std::size_t _col) override;
 
   // Documentation inherited.
   void aggregateAugMassMatrix(
-      Eigen::MatrixXd& _MCol, std::size_t _col, double _timeStep) override;
+      math::MatrixXd& _MCol, std::size_t _col, double _timeStep) override;
 
   // Documentation inherited.
   void updateInvMassMatrix() override;
@@ -270,29 +270,29 @@ protected:
 
   // Documentation inherited.
   void aggregateInvMassMatrix(
-      Eigen::MatrixXd& _InvMCol, std::size_t _col) override;
+      math::MatrixXd& _InvMCol, std::size_t _col) override;
 
   // Documentation inherited.
   void aggregateInvAugMassMatrix(
-      Eigen::MatrixXd& _InvMCol, std::size_t _col, double _timeStep) override;
+      math::MatrixXd& _InvMCol, std::size_t _col, double _timeStep) override;
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet.
-  void aggregateCoriolisForceVector(Eigen::VectorXd& _C) override;
+  void aggregateCoriolisForceVector(math::VectorXd& _C) override;
 
   // Documentation inherited.
   void aggregateGravityForceVector(
-      Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity) override;
+      math::VectorXd& _g, const math::Vector3d& _gravity) override;
 
   // Documentation inherited.
   void updateCombinedVector() override;
 
   // Documentation inherited.
   void aggregateCombinedVector(
-      Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity) override;
+      math::VectorXd& _Cg, const math::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  void aggregateExternalForces(Eigen::VectorXd& _Fext) override;
+  void aggregateExternalForces(math::VectorXd& _Fext) override;
 
   /// \}
 
@@ -322,11 +322,11 @@ protected:
 
 private:
   /// \brief
-  void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi) const;
+  void _addPiToArtInertia(const math::Vector3d& _p, double _Pi) const;
 
   /// \brief
   void _addPiToArtInertiaImplicit(
-      const Eigen::Vector3d& _p, double _ImplicitPi) const;
+      const math::Vector3d& _p, double _ImplicitPi) const;
 
   ///
   void updateInertiaWithPointMass();
@@ -338,8 +338,8 @@ public:
   /// Create a Properties struct for a box-shaped SoftBodyNode with 8
   /// PointMasses
   static SoftBodyNode::UniqueProperties makeBoxProperties(
-      const Eigen::Vector3d& _size,
-      const Eigen::Isometry3d& _localTransform,
+      const math::Vector3d& _size,
+      const math::Isometry3d& _localTransform,
       double _totalMass,
       double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
@@ -349,8 +349,8 @@ public:
   /// This should be called before SoftBodyNode::init() is called
   static void setBox(
       SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _size,
-      const Eigen::Isometry3d& _localTransform,
+      const math::Vector3d& _size,
+      const math::Isometry3d& _localTransform,
       double _totalMass,
       double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
@@ -361,9 +361,9 @@ public:
   /// equal to or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
   /// not.
   static SoftBodyNode::UniqueProperties makeBoxProperties(
-      const Eigen::Vector3d& _size,
-      const Eigen::Isometry3d& _localTransform,
-      const Eigen::Vector3i& _frags,
+      const math::Vector3d& _size,
+      const math::Isometry3d& _localTransform,
+      const math::Vector3i& _frags,
       double _totalMass,
       double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
@@ -384,9 +384,9 @@ public:
   /// \param[in] _dampingCoeff
   static void setBox(
       SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _size,
-      const Eigen::Isometry3d& _localTransform,
-      const Eigen::Vector3i& _frags,
+      const math::Vector3d& _size,
+      const math::Isometry3d& _localTransform,
+      const math::Vector3i& _frags,
       double _totalMass,
       double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
@@ -420,7 +420,7 @@ public:
 
   /// Create a Properties struct for an Ellipsoid-shaped SoftBodyNode
   static SoftBodyNode::UniqueProperties makeEllipsoidProperties(
-      const Eigen::Vector3d& _size,
+      const math::Vector3d& _size,
       std::size_t _nSlices,
       std::size_t _nStacks,
       double _totalMass,
@@ -432,7 +432,7 @@ public:
   /// This should be called before SoftBodyNode::init() is called
   static void setEllipsoid(
       SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _size,
+      const math::Vector3d& _size,
       std::size_t _nSlices,
       std::size_t _nStacks,
       double _totalMass,

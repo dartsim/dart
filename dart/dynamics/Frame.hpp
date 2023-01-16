@@ -83,18 +83,18 @@ public:
   //--------------------------------------------------------------------------
 
   /// Get the transform of this Frame with respect to its parent Frame
-  virtual const Eigen::Isometry3d& getRelativeTransform() const = 0;
+  virtual const math::Isometry3d& getRelativeTransform() const = 0;
 
   /// Get the transform of this Frame with respect to the World Frame
-  const Eigen::Isometry3d& getWorldTransform() const;
+  const math::Isometry3d& getWorldTransform() const;
 
   /// Get the transform of this Frame with respect to some other Frame
-  Eigen::Isometry3d getTransform(
+  math::Isometry3d getTransform(
       const Frame* _withRespectTo = Frame::World()) const;
 
   /// Get the transform of this Frame with respect to some other Frame. It can
   /// be expressed in the coordinates of any Frame.
-  Eigen::Isometry3d getTransform(
+  math::Isometry3d getTransform(
       const Frame* withRespectTo, const Frame* inCoordinatesOf) const;
 
   //-------------------------------------------------------------------------
@@ -116,31 +116,31 @@ public:
 
   /// Get the spatial velocity of a fixed point in this Frame. The velocity is
   /// in coordinates of this Frame and is relative to the World Frame.
-  math::Vector6d getSpatialVelocity(const Eigen::Vector3d& _offset) const;
+  math::Vector6d getSpatialVelocity(const math::Vector3d& _offset) const;
 
   /// Get the spatial velocity of a fixed point in this Frame.
   math::Vector6d getSpatialVelocity(
-      const Eigen::Vector3d& _offset,
+      const math::Vector3d& _offset,
       const Frame* _relativeTo,
       const Frame* _inCoordinatesOf) const;
 
   /// Get the linear portion of classical velocity of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
-  Eigen::Vector3d getLinearVelocity(
+  math::Vector3d getLinearVelocity(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Get the linear velocity of a point that is fixed in this Frame. You can
   /// specify a relative Frame, and it can be expressed in the coordinates of
   /// any Frame.
-  Eigen::Vector3d getLinearVelocity(
-      const Eigen::Vector3d& _offset,
+  math::Vector3d getLinearVelocity(
+      const math::Vector3d& _offset,
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Get the angular portion of classical velocity of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
-  Eigen::Vector3d getAngularVelocity(
+  math::Vector3d getAngularVelocity(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
@@ -182,28 +182,28 @@ public:
   /// Get the spatial acceleration of a fixed point in this Frame. The
   /// acceleration is in coordinates of this Frame and is relative to the World
   /// Frame.
-  math::Vector6d getSpatialAcceleration(const Eigen::Vector3d& _offset) const;
+  math::Vector6d getSpatialAcceleration(const math::Vector3d& _offset) const;
 
   /// Get the spatial acceleration of a fixed point in this Frame
   math::Vector6d getSpatialAcceleration(
-      const Eigen::Vector3d& _offset,
+      const math::Vector3d& _offset,
       const Frame* _relativeTo,
       const Frame* _inCoordinatesOf) const;
 
   /// Get the linear portion of classical acceleration of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
-  Eigen::Vector3d getLinearAcceleration(
+  math::Vector3d getLinearAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
-  Eigen::Vector3d getLinearAcceleration(
-      const Eigen::Vector3d& _offset,
+  math::Vector3d getLinearAcceleration(
+      const math::Vector3d& _offset,
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Get the angular portion of classical acceleration of this Frame relative
   /// to some other Frame. It can be expressed in the coordinates of any Frame.
-  Eigen::Vector3d getAngularAcceleration(
+  math::Vector3d getAngularAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
@@ -308,7 +308,7 @@ protected:
   /// auto-updating to happen in the const member getWorldTransform() function
   ///
   /// Do not use directly! Use getWorldTransform() to access this quantity
-  mutable Eigen::Isometry3d mWorldTransform;
+  mutable math::Isometry3d mWorldTransform;
 
   /// Total velocity of this Frame, in the coordinates of this Frame
   ///
@@ -348,7 +348,7 @@ public:
   friend class Frame;
 
   /// Always returns the Identity Transform
-  const Eigen::Isometry3d& getRelativeTransform() const override final;
+  const math::Isometry3d& getRelativeTransform() const override final;
 
   /// Always returns a zero vector
   const math::Vector6d& getRelativeSpatialVelocity() const override final;
@@ -372,7 +372,7 @@ private:
 
 private:
   /// This is set to Identity and never changes
-  const Eigen::Isometry3d mRelativeTf;
+  const math::Isometry3d mRelativeTf;
 
   /// This is set to a Zero vector and never changes
   static const math::Vector6d mZero;

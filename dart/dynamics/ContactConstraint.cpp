@@ -135,11 +135,11 @@ ContactConstraint::ContactConstraint(
     mSpatialNormalA.resize(6, 3);
     mSpatialNormalB.resize(6, 3);
 
-    Eigen::Vector3d bodyDirectionA;
-    Eigen::Vector3d bodyDirectionB;
+    math::Vector3d bodyDirectionA;
+    math::Vector3d bodyDirectionB;
 
-    Eigen::Vector3d bodyPointA;
-    Eigen::Vector3d bodyPointB;
+    math::Vector3d bodyPointA;
+    math::Vector3d bodyPointB;
 
     collision::Contact& ct = mContact;
 
@@ -200,15 +200,15 @@ ContactConstraint::ContactConstraint(
     collision::Contact& ct = mContact;
 
     // Contact normal in the local coordinates
-    const Eigen::Vector3d bodyDirectionA
+    const math::Vector3d bodyDirectionA
         = mBodyNodeA->getTransform().linear().transpose() * ct.normal;
-    const Eigen::Vector3d bodyDirectionB
+    const math::Vector3d bodyDirectionB
         = mBodyNodeB->getTransform().linear().transpose() * -ct.normal;
 
     // Contact points in the local coordinates
-    const Eigen::Vector3d bodyPointA
+    const math::Vector3d bodyPointA
         = mBodyNodeA->getTransform().inverse() * ct.point;
-    const Eigen::Vector3d bodyPointB
+    const math::Vector3d bodyPointB
         = mBodyNodeB->getTransform().inverse() * ct.point;
     mSpatialNormalA.col(0).head<3>().noalias()
         = bodyPointA.cross(bodyDirectionA);
@@ -317,13 +317,13 @@ double ContactConstraint::getConstraintForceMixing()
 }
 
 //==============================================================================
-void ContactConstraint::setFrictionDirection(const Eigen::Vector3d& dir)
+void ContactConstraint::setFrictionDirection(const math::Vector3d& dir)
 {
   mFirstFrictionalDirection = dir.normalized();
 }
 
 //==============================================================================
-const Eigen::Vector3d& ContactConstraint::getFrictionDirection1() const
+const math::Vector3d& ContactConstraint::getFrictionDirection1() const
 {
   return mFirstFrictionalDirection;
 }
@@ -520,7 +520,7 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 {
   assert(vel != nullptr && "Null pointer is not allowed.");
 
-  Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
+  math::Map<math::VectorXd> velMap(vel, static_cast<int>(mDim));
   velMap.setZero();
 
   if (mBodyNodeA->getSkeleton()->isImpulseApplied() && mBodyNodeA->isReactive())
@@ -588,7 +588,7 @@ void ContactConstraint::applyImpulse(double* lambda)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
-    const Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
+    const math::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
     mContact.force += D.col(0) * lambda[1] / mTimeStep;
 
     // Tangential direction-1 impulsive force
@@ -627,7 +627,7 @@ void ContactConstraint::getRelVelocity(double* relVel)
 {
   assert(relVel != nullptr && "Null pointer is not allowed.");
 
-  Eigen::Map<Eigen::VectorXd> relVelMap(relVel, static_cast<int>(mDim));
+  math::Map<math::VectorXd> relVelMap(relVel, static_cast<int>(mDim));
   relVelMap.setZero();
   relVelMap -= mSpatialNormalA.transpose() * mBodyNodeA->getSpatialVelocity();
   relVelMap -= mSpatialNormalB.transpose() * mBodyNodeB->getSpatialVelocity();
@@ -665,7 +665,7 @@ void ContactConstraint::updateFirstFrictionalDirection()
 
 //==============================================================================
 ContactConstraint::TangentBasisMatrix
-ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
+ContactConstraint::getTangentBasisMatrixODE(const math::Vector3d& n)
 {
   using namespace math::suffixes;
 
@@ -675,21 +675,21 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
 
   // Pick an arbitrary vector to take the cross product of (in this case,
   // Z-axis)
-  Eigen::Vector3d tangent = n.cross(mFirstFrictionalDirection);
+  math::Vector3d tangent = n.cross(mFirstFrictionalDirection);
 
   // TODO(JS): Modify following lines once _updateFirstFrictionalDirection() is
   //           implemented.
   // If they're too close (or opposing directions, or one of the vectors 0),
   // pick another tangent (use X-axis as arbitrary vector)
   if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED) {
-    tangent = n.cross(Eigen::Vector3d::UnitX());
+    tangent = n.cross(math::Vector3d::UnitX());
 
     // Make sure this is not zero length, otherwise normalization will lead to
     // NaN values.
     if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED) {
-      tangent = n.cross(Eigen::Vector3d::UnitY());
+      tangent = n.cross(math::Vector3d::UnitY());
       if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED) {
-        tangent = n.cross(Eigen::Vector3d::UnitZ());
+        tangent = n.cross(math::Vector3d::UnitZ());
 
         // Now tangent shouldn't be zero-length unless the normal is
         // zero-length, which shouldn't the case because ConstraintSolver
@@ -714,7 +714,7 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
   // many times
   // The first column is the same as mFirstFrictionalDirection unless
   // mFirstFrictionalDirection is parallel to the normal
-  T.col(0) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, n)) * tangent;
+  T.col(0) = math::Quaterniond(math::AngleAxisd(0.5_pi, n)) * tangent;
   T.col(1) = tangent;
   return T;
 }

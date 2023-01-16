@@ -118,7 +118,7 @@ bool UniversalJoint::isCyclic(std::size_t _index) const
 }
 
 //==============================================================================
-void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
+void UniversalJoint::setAxis1(const math::Vector3d& _axis)
 {
   mAspectProperties.mAxis[0] = _axis;
   Joint::notifyPositionUpdated();
@@ -126,7 +126,7 @@ void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
+void UniversalJoint::setAxis2(const math::Vector3d& _axis)
 {
   mAspectProperties.mAxis[1] = _axis;
   Joint::notifyPositionUpdated();
@@ -134,22 +134,22 @@ void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& UniversalJoint::getAxis1() const
+const math::Vector3d& UniversalJoint::getAxis1() const
 {
   return mAspectProperties.mAxis[0];
 }
 
 //==============================================================================
-const Eigen::Vector3d& UniversalJoint::getAxis2() const
+const math::Vector3d& UniversalJoint::getAxis2() const
 {
   return mAspectProperties.mAxis[1];
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 2> UniversalJoint::getRelativeJacobianStatic(
-    const Eigen::Vector2d& _positions) const
+math::Matrix<double, 6, 2> UniversalJoint::getRelativeJacobianStatic(
+    const math::Vector2d& _positions) const
 {
-  Eigen::Matrix<double, 6, 2> J;
+  math::Matrix<double, 6, 2> J;
   J.col(0) = math::AdTAngular(
       Joint::mAspectProperties.mT_ChildBodyToJoint
           * math::expAngular(-getAxis2() * _positions[1]),
@@ -189,10 +189,10 @@ void UniversalJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void UniversalJoint::updateRelativeTransform() const
 {
-  const Eigen::Vector2d& positions = getPositionsStatic();
+  const math::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * Eigen::AngleAxisd(positions[0], getAxis1())
-       * Eigen::AngleAxisd(positions[1], getAxis2())
+       * math::AngleAxisd(positions[0], getAxis1())
+       * math::AngleAxisd(positions[1], getAxis2())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
@@ -209,7 +209,7 @@ void UniversalJoint::updateRelativeJacobianTimeDeriv() const
   math::Vector6d tmpV1
       = getRelativeJacobianStatic().col(1) * getVelocitiesStatic()[1];
 
-  Eigen::Isometry3d tmpT
+  math::Isometry3d tmpT
       = math::expAngular(-getAxis2() * getPositionsStatic()[1]);
 
   math::Vector6d tmpV2 = math::AdTAngular(

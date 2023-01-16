@@ -49,11 +49,11 @@ namespace detail {
 //==============================================================================
 struct DART_DYNAMICS_API UniversalJointUniqueProperties
 {
-  std::array<Eigen::Vector3d, 2> mAxis;
+  std::array<math::Vector3d, 2> mAxis;
 
   UniversalJointUniqueProperties(
-      const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-      const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+      const math::Vector3d& _axis1 = math::Vector3d::UnitX(),
+      const math::Vector3d& _axis2 = math::Vector3d::UnitY());
 
   virtual ~UniversalJointUniqueProperties() = default;
 };

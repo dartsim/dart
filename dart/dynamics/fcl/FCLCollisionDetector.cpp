@@ -95,10 +95,10 @@ int evalContactPosition(
     const ::fcl::BVHModel<fcl::OBBRSS>& mesh2,
     const fcl::Transform3& transform1,
     const fcl::Transform3& transform2,
-    Eigen::Vector3d& contactPosition1,
-    Eigen::Vector3d& contactPosition2);
+    math::Vector3d& contactPosition1,
+    math::Vector3d& contactPosition2);
 
-Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2);
+math::Vector3d getDiff(const Contact& contact1, const Contact& contact2);
 
 fcl::Vector3 getDiff(
     const fcl::Contact& contact1, const fcl::Contact& contact2);
@@ -894,7 +894,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     assert(dynamic_cast<const BoxShape*>(shape.get()));
 
     auto box = static_cast<const BoxShape*>(shape.get());
-    const Eigen::Vector3d& size = box->getSize();
+    const math::Vector3d& size = box->getSize();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
       geom = new fcl::Box(size[0], size[1], size[2]);
@@ -904,7 +904,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
     auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-    const Eigen::Vector3d& radii = ellipsoid->getRadii();
+    const math::Vector3d& radii = ellipsoid->getRadii();
 
     if (FCLCollisionDetector::PRIMITIVE == type) {
       geom = new fcl::Ellipsoid(radii);
@@ -960,7 +960,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     if (FCLCollisionDetector::PRIMITIVE == type) {
       assert(dynamic_cast<const PlaneShape*>(shape.get()));
       auto plane = static_cast<const PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
+      const math::Vector3d normal = plane->getNormal();
       const double offset = plane->getOffset();
 
       geom = new fcl::Halfspace(normal, offset);
@@ -974,7 +974,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     assert(dynamic_cast<const MeshShape*>(shape.get()));
 
     auto shapeMesh = static_cast<const MeshShape*>(shape.get());
-    const Eigen::Vector3d& scale = shapeMesh->getScale();
+    const math::Vector3d& scale = shapeMesh->getScale();
     auto aiScene = shapeMesh->getMesh();
 
     geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
@@ -1145,7 +1145,7 @@ bool distanceCallback(
 }
 
 //==============================================================================
-Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2)
+math::Vector3d getDiff(const Contact& contact1, const Contact& contact2)
 {
   return contact1.point - contact2.point;
 }
@@ -1433,8 +1433,8 @@ int evalContactPosition(
     const ::fcl::BVHModel<fcl::OBBRSS>& mesh2,
     const fcl::Transform3& transform1,
     const fcl::Transform3& transform2,
-    Eigen::Vector3d& contactPosition1,
-    Eigen::Vector3d& contactPosition2)
+    math::Vector3d& contactPosition1,
+    math::Vector3d& contactPosition2)
 {
   const auto& id1 = fclContact.b1;
   const auto& id2 = fclContact.b2;

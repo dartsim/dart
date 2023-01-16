@@ -49,8 +49,8 @@ BalanceConstraint::BalanceConstraint(
     mBalanceMethod(_balanceMethod),
     mOptimizationTolerance(1e-8),
     mDamping(0.05),
-    mLastError(Eigen::Vector3d::Zero()),
-    mLastCOM(Eigen::Vector3d::Constant(std::nan(""))),
+    mLastError(math::Vector3d::Zero()),
+    mLastCOM(math::Vector3d::Constant(std::nan(""))),
     mLastSupportVersion(dynamics::INVALID_INDEX)
 {
   // Do nothing
@@ -64,7 +64,7 @@ optimization::FunctionPtr BalanceConstraint::clone(
 }
 
 //==============================================================================
-double BalanceConstraint::eval(const Eigen::VectorXd& _x) const
+double BalanceConstraint::eval(const math::VectorXd& _x) const
 {
   const std::shared_ptr<dynamics::HierarchicalIK>& ik = mIK.lock();
 
@@ -86,7 +86,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x) const
 
   skel->setPositions(_x);
 
-  const Eigen::Vector3d& com = skel->getCOM();
+  const math::Vector3d& com = skel->getCOM();
   if (skel->getSupportVersion() == mLastSupportVersion) {
     // Nothing has moved since the last time error was computed, so we just
     // return our last result
@@ -99,10 +99,10 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x) const
     return 0.0;
   }
 
-  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& axes
+  const std::pair<math::Vector3d, math::Vector3d>& axes
       = skel->getSupportAxes();
-  Eigen::Vector2d projected_com(com.dot(axes.first), com.dot(axes.second));
-  Eigen::Vector2d projected_error(Eigen::Vector2d::Zero());
+  math::Vector2d projected_com(com.dot(axes.first), com.dot(axes.second));
+  math::Vector2d projected_error(math::Vector2d::Zero());
 
   if (FROM_CENTROID == mErrorMethod || OPTIMIZE_BALANCE == mErrorMethod) {
     bool zeroError = false;
@@ -111,7 +111,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x) const
     }
 
     if (!zeroError) {
-      const Eigen::Vector2d& centroid = skel->getSupportCentroid();
+      const math::Vector2d& centroid = skel->getSupportCentroid();
       projected_error = projected_com - centroid;
     }
 
@@ -125,7 +125,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x) const
 
     if (!zeroError) {
       std::size_t closestIndex1, closestIndex2;
-      const Eigen::Vector2d closestPoint
+      const math::Vector2d closestPoint
           = math::computeClosestPointOnSupportPolygon(
               closestIndex1, closestIndex2, projected_com, polygon);
 
@@ -148,22 +148,22 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x) const
 //==============================================================================
 template <typename JacType>
 static void addDampedPseudoInverseToGradient(
-    Eigen::Map<Eigen::VectorXd>& grad,
+    math::Map<math::VectorXd>& grad,
     const JacType& J,
-    const Eigen::MatrixXd& nullspace,
-    const Eigen::Vector3d& error,
+    const math::MatrixXd& nullspace,
+    const math::Vector3d& error,
     double damping)
 {
   int rows = J.rows(), cols = J.cols();
   if (rows <= cols) {
     grad += nullspace * J.transpose()
-            * (pow(damping, 2) * Eigen::MatrixXd::Identity(rows, rows)
+            * (pow(damping, 2) * math::MatrixXd::Identity(rows, rows)
                + J * J.transpose())
                   .inverse()
             * error;
   } else {
     grad += nullspace
-            * (pow(damping, 2) * Eigen::MatrixXd::Identity(cols, cols)
+            * (pow(damping, 2) * math::MatrixXd::Identity(cols, cols)
                + J.transpose() * J)
                   .inverse()
             * J.transpose() * error;
@@ -172,7 +172,7 @@ static void addDampedPseudoInverseToGradient(
 
 //==============================================================================
 void BalanceConstraint::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
+    const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const
 {
   _grad.setZero();
   if (eval(_x) == 0.0)
@@ -200,7 +200,7 @@ void BalanceConstraint::evalGradient(
 
       mEEJacCache = skel->getLinearJacobian(ee);
 
-      mSVDCache.compute(mEEJacCache, Eigen::ComputeFullV);
+      mSVDCache.compute(mEEJacCache, math::ComputeFullV);
       math::extractNullSpace(mSVDCache, mPartialNullSpaceCache);
 
       if (mPartialNullSpaceCache.rows() > 0
@@ -226,7 +226,7 @@ void BalanceConstraint::evalGradient(
 
       mComJacCache = skel->getCOMLinearJacobian();
 
-      mSVDCache.compute(mComJacCache, Eigen::ComputeFullV);
+      mSVDCache.compute(mComJacCache, math::ComputeFullV);
       math::extractNullSpace(mSVDCache, mPartialNullSpaceCache);
 
       if (mPartialNullSpaceCache.rows() > 0
@@ -257,7 +257,7 @@ void BalanceConstraint::evalGradient(
 
       mComJacCache = skel->getCOMLinearJacobian();
 
-      mSVDCache.compute(mComJacCache, Eigen::ComputeFullV);
+      mSVDCache.compute(mComJacCache, math::ComputeFullV);
       math::extractNullSpace(mSVDCache, mPartialNullSpaceCache);
 
       if (mPartialNullSpaceCache.rows() > 0
@@ -361,7 +361,7 @@ double BalanceConstraint::getPseudoInverseDamping() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& BalanceConstraint::getLastError() const
+const math::Vector3d& BalanceConstraint::getLastError() const
 {
   return mLastError;
 }
@@ -370,12 +370,12 @@ const Eigen::Vector3d& BalanceConstraint::getLastError() const
 void BalanceConstraint::clearCaches()
 {
   // This will ensure that the comparison test in eval() fails
-  mLastCOM = Eigen::Vector3d::Constant(std::nan(""));
+  mLastCOM = math::Vector3d::Constant(std::nan(""));
 }
 
 //==============================================================================
 void BalanceConstraint::convertJacobianMethodOutputToGradient(
-    Eigen::Map<Eigen::VectorXd>& grad) const
+    math::Map<math::VectorXd>& grad) const
 {
   const dart::dynamics::SkeletonPtr& skel = mIK.lock()->getSkeleton();
   skel->setVelocities(grad);

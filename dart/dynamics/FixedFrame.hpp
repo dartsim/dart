@@ -57,8 +57,7 @@ public:
   /// Constructor
   explicit FixedFrame(
       Frame* refFrame,
-      const Eigen::Isometry3d& relativeTransform
-      = Eigen::Isometry3d::Identity());
+      const math::Isometry3d& relativeTransform = math::Isometry3d::Identity());
 
   /// Destructor
   virtual ~FixedFrame();
@@ -67,10 +66,10 @@ public:
   void setAspectProperties(const AspectProperties& properties);
 
   /// Set the relative transform of this FixedFrame
-  virtual void setRelativeTransform(const Eigen::Isometry3d& transform);
+  virtual void setRelativeTransform(const math::Isometry3d& transform);
 
   // Documentation inherited
-  const Eigen::Isometry3d& getRelativeTransform() const override;
+  const math::Isometry3d& getRelativeTransform() const override;
 
   /// Always returns a zero vector
   const math::Vector6d& getRelativeSpatialVelocity() const override;

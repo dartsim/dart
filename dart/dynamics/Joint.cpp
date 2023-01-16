@@ -60,8 +60,8 @@ namespace detail {
 //==============================================================================
 JointProperties::JointProperties(
     const std::string& _name,
-    const Eigen::Isometry3d& _T_ParentBodyToJoint,
-    const Eigen::Isometry3d& _T_ChildBodyToJoint,
+    const math::Isometry3d& _T_ParentBodyToJoint,
+    const math::Isometry3d& _T_ChildBodyToJoint,
     bool _isPositionLimitEnforced,
     ActuatorType _actuatorType,
     const Joint* _mimicJoint,
@@ -293,7 +293,7 @@ std::shared_ptr<const Skeleton> Joint::getSkeleton() const
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Joint::getRelativeTransform() const
+const math::Isometry3d& Joint::getRelativeTransform() const
 {
   if (mNeedTransformUpdate) {
     updateRelativeTransform();
@@ -445,7 +445,7 @@ bool Joint::checkSanity(bool _printWarnings) const
 }
 
 //==============================================================================
-void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
+void Joint::setTransformFromParentBodyNode(const math::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mAspectProperties.mT_ParentBodyToJoint = _T;
@@ -453,7 +453,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+void Joint::setTransformFromChildBodyNode(const math::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mAspectProperties.mT_ChildBodyToJoint = _T;
@@ -462,13 +462,13 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Joint::getTransformFromParentBodyNode() const
+const math::Isometry3d& Joint::getTransformFromParentBodyNode() const
 {
   return mAspectProperties.mT_ParentBodyToJoint;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Joint::getTransformFromChildBodyNode() const
+const math::Isometry3d& Joint::getTransformFromChildBodyNode() const
 {
   return mAspectProperties.mT_ChildBodyToJoint;
 }
@@ -476,7 +476,7 @@ const Eigen::Isometry3d& Joint::getTransformFromChildBodyNode() const
 //==============================================================================
 Joint::Joint()
   : mChildBodyNode(nullptr),
-    mT(Eigen::Isometry3d::Identity()),
+    mT(math::Isometry3d::Identity()),
     mSpatialVelocity(math::Vector6d::Zero()),
     mSpatialAcceleration(math::Vector6d::Zero()),
     mPrimaryAcceleration(math::Vector6d::Zero()),
@@ -503,10 +503,10 @@ void Joint::updateArticulatedInertia() const
 }
 
 //==============================================================================
-// Eigen::VectorXd Joint::getDampingForces() const
+// math::VectorXd Joint::getDampingForces() const
 //{
 //  int numDofs = getNumDofs();
-//  Eigen::VectorXd dampingForce(numDofs);
+//  math::VectorXd dampingForce(numDofs);
 
 //  for (int i = 0; i < numDofs; ++i)
 //    dampingForce(i) = -mDampingCoefficient[i] * getGenCoord(i)->getVel();
@@ -515,10 +515,10 @@ void Joint::updateArticulatedInertia() const
 //}
 
 //==============================================================================
-// Eigen::VectorXd Joint::getSpringForces(double _timeStep) const
+// math::VectorXd Joint::getSpringForces(double _timeStep) const
 //{
 //  int dof = getNumDofs();
-//  Eigen::VectorXd springForce(dof);
+//  math::VectorXd springForce(dof);
 //  for (int i = 0; i < dof; ++i)
 //  {
 //    springForce(i) =

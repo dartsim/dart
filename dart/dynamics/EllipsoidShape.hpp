@@ -43,7 +43,7 @@ class DART_DYNAMICS_API EllipsoidShape : public Shape
 {
 public:
   /// \brief Constructor.
-  explicit EllipsoidShape(const Eigen::Vector3d& diameters);
+  explicit EllipsoidShape(const math::Vector3d& diameters);
   // TODO(JS): In order to follow the commonly used convention, change the
   // constructor to take radii instead of diameters in DART 7.
 
@@ -57,30 +57,30 @@ public:
   static const std::string& getStaticType();
 
   /// \brief Set diameters of this ellipsoid.
-  void setDiameters(const Eigen::Vector3d& diameters);
+  void setDiameters(const math::Vector3d& diameters);
 
   /// \brief Get diameters of this ellipsoid.
-  const Eigen::Vector3d& getDiameters() const;
+  const math::Vector3d& getDiameters() const;
 
   /// Set radii of this ellipsoid.
-  void setRadii(const Eigen::Vector3d& radii);
+  void setRadii(const math::Vector3d& radii);
 
   /// Get radii of this ellipsoid.
-  const Eigen::Vector3d getRadii() const;
+  const math::Vector3d getRadii() const;
 
   /// \brief Compute volume from given properties
-  static double computeVolume(const Eigen::Vector3d& diameters);
+  static double computeVolume(const math::Vector3d& diameters);
   // TODO(JS): In order to follow the commonly used convention, change to take
   // radii instead of diameters in DART 7.
 
   /// \brief Compute moments of inertia of a ellipsoid
-  static Eigen::Matrix3d computeInertia(
-      const Eigen::Vector3d& diameters, double mass);
+  static math::Matrix3d computeInertia(
+      const math::Vector3d& diameters, double mass);
   // TODO(JS): In order to follow the commonly used convention, change to take
   // radii instead of diameters in DART 7.
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   ShapePtr clone() const override;
@@ -97,7 +97,7 @@ protected:
 
 private:
   /// \brief Diameters of this ellipsoid
-  Eigen::Vector3d mDiameters;
+  math::Vector3d mDiameters;
 };
 
 } // namespace dynamics

@@ -113,25 +113,25 @@ public:
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
   void setArbitraryPlane(
-      const Eigen::Vector3d& _transAxis1,
-      const Eigen::Vector3d& _transAxis2,
+      const math::Vector3d& _transAxis1,
+      const math::Vector3d& _transAxis2,
       bool _renameDofs = true);
 
   /// Return plane type
   PlaneType getPlaneType() const;
 
   /// Return rotational axis
-  const Eigen::Vector3d& getRotationalAxis() const;
+  const math::Vector3d& getRotationalAxis() const;
 
   /// Return first translational axis
-  const Eigen::Vector3d& getTranslationalAxis1() const;
+  const math::Vector3d& getTranslationalAxis1() const;
 
   /// Return second translational axis
-  const Eigen::Vector3d& getTranslationalAxis2() const;
+  const math::Vector3d& getTranslationalAxis2() const;
 
   // Documentation inherited
-  Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(
-      const Eigen::Vector3d& _positions) const override;
+  math::Matrix<double, 6, 3> getRelativeJacobianStatic(
+      const math::Vector3d& _positions) const override;
 
 protected:
   /// Constructor called by Skeleton class

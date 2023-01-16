@@ -44,7 +44,7 @@ class DART_DYNAMICS_API FixedJacobianNode
 {
 public:
   /// Set the current relative transform of this Fixed Frame
-  void setRelativeTransform(const Eigen::Isometry3d& newRelativeTf) override;
+  void setRelativeTransform(const math::Isometry3d& newRelativeTf) override;
 
   // Documentation inherited
   bool dependsOn(std::size_t _genCoordIndex) const override;
@@ -112,10 +112,10 @@ protected:
   FixedJacobianNode() = default;
 
   /// Constructor
-  FixedJacobianNode(BodyNode* parent, const Eigen::Isometry3d& transform);
+  FixedJacobianNode(BodyNode* parent, const math::Isometry3d& transform);
 
   /// Tuple constructor
-  FixedJacobianNode(const std::tuple<BodyNode*, Eigen::Isometry3d>& args);
+  FixedJacobianNode(const std::tuple<BodyNode*, math::Isometry3d>& args);
 
   /// Update the Jacobian of this Fixed Frame. getJacobian() calls this function
   /// if mIsBodyJacobianDirty is true.

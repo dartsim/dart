@@ -69,8 +69,8 @@ public:
 
   Inertia(
       double _mass = 1,
-      const Eigen::Vector3d& _com = Eigen::Vector3d::Zero(),
-      const Eigen::Matrix3d& _momentOfInertia = Eigen::Matrix3d::Identity());
+      const math::Vector3d& _com = math::Vector3d::Zero(),
+      const math::Matrix3d& _momentOfInertia = math::Matrix3d::Identity());
 
   Inertia(const math::Matrix6d& _spatialInertiaTensor);
 
@@ -99,15 +99,15 @@ public:
   double getMass() const;
 
   /// Set the center of mass with respect to the Body-fixed frame
-  void setLocalCOM(const Eigen::Vector3d& _com);
+  void setLocalCOM(const math::Vector3d& _com);
 
   /// Get the center of mass with respect to the Body-fixed frame
-  const Eigen::Vector3d& getLocalCOM() const;
+  const math::Vector3d& getLocalCOM() const;
 
   /// Set the moment of inertia (about the center of mass). Note that only the
   /// top-right corner of the matrix will be used, because a well-formed inertia
   /// matrix is always symmetric.
-  void setMoment(const Eigen::Matrix3d& _moment);
+  void setMoment(const math::Matrix3d& _moment);
 
   /// Set the moment of inertia (about the center of mass)
   void setMoment(
@@ -119,7 +119,7 @@ public:
       double _Iyz);
 
   /// Get the moment of inertia
-  Eigen::Matrix3d getMoment() const;
+  math::Matrix3d getMoment() const;
 
   /// Set the spatial tensor
   void setSpatialTensor(const math::Matrix6d& _spatial);
@@ -132,7 +132,7 @@ public:
 
   /// Returns true iff _moment is a physically valid moment of inertia
   static bool verifyMoment(
-      const Eigen::Matrix3d& _moment,
+      const math::Matrix3d& _moment,
       bool _printWarnings = true,
       double _tolerance = 1e-8);
 
@@ -159,7 +159,7 @@ protected:
   double mMass;
 
   /// Center of mass in the Body frame
-  Eigen::Vector3d mCenterOfMass;
+  math::Vector3d mCenterOfMass;
 
   /// The six parameters of the moment of inertia located at the center of mass
   std::array<double, 6> mMoment;

@@ -52,7 +52,7 @@ namespace detail {
 struct DART_DYNAMICS_API VisualAspectProperties
 {
   /// Color for the primitive shape
-  Eigen::Vector4d mRGBA;
+  math::Vector4d mRGBA;
 
   bool mUseDefaultColor;
 
@@ -64,7 +64,7 @@ struct DART_DYNAMICS_API VisualAspectProperties
 
   /// Constructor
   VisualAspectProperties(
-      const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
+      const math::Vector4d& color = math::Vector4d(0.5, 0.5, 1.0, 1.0),
       const bool hidden = false,
       const bool shadowed = true);
 
@@ -105,7 +105,7 @@ struct DART_DYNAMICS_API DynamicsAspectProperties
   double mSecondarySlipCompliance;
 
   /// First friction direction unit vector
-  Eigen::Vector3d mFirstFrictionDirection;
+  math::Vector3d mFirstFrictionDirection;
 
   /// First friction direction frame
   /// The first friction direction unit vector is expressed in this frame
@@ -137,7 +137,7 @@ struct DART_DYNAMICS_API DynamicsAspectProperties
       const double restitutionCoeff,
       const double primarySlipCompliance = -1.0,
       const double secondarySlipCompliance = -1.0,
-      const Eigen::Vector3d& firstFrictionDirection = Eigen::Vector3d::Zero(),
+      const math::Vector3d& firstFrictionDirection = math::Vector3d::Zero(),
       const Frame* firstFrictionDirectionFrame = nullptr);
 
   /// Destructor

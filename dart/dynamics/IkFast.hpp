@@ -150,11 +150,11 @@ public:
 
   // Documentation inherited.
   const std::vector<InverseKinematics::Analytical::Solution>& computeSolutions(
-      const Eigen::Isometry3d& desiredBodyTf) override;
+      const math::Isometry3d& desiredBodyTf) override;
 
   /// Computes forward kinematics given joint positions where the dimension is
   /// the same as getNumJoints2().
-  Eigen::Isometry3d computeFk(const Eigen::VectorXd& parameters);
+  math::Isometry3d computeFk(const math::VectorXd& parameters);
 
   /// Returns the indices of the DegreeOfFreedoms that are part of the joints
   /// that IkFast solves for.

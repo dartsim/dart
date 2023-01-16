@@ -44,10 +44,10 @@ class DART_DYNAMICS_API PlaneShape : public Shape
 {
 public:
   /// Constructor
-  PlaneShape(const Eigen::Vector3d& _normal, double _offset);
+  PlaneShape(const math::Vector3d& _normal, double _offset);
 
   /// Constructor
-  PlaneShape(const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point);
+  PlaneShape(const math::Vector3d& _normal, const math::Vector3d& _point);
 
   // Documentation inherited.
   const std::string& getType() const override;
@@ -56,13 +56,13 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   /// Set plane normal
-  void setNormal(const Eigen::Vector3d& _normal);
+  void setNormal(const math::Vector3d& _normal);
 
   /// Get plane normal
-  const Eigen::Vector3d& getNormal() const;
+  const math::Vector3d& getNormal() const;
 
   /// Set plane offset
   void setOffset(double _offset);
@@ -71,17 +71,17 @@ public:
   double getOffset() const;
 
   /// Set plane normal and offset
-  void setNormalAndOffset(const Eigen::Vector3d& _normal, double _offset);
+  void setNormalAndOffset(const math::Vector3d& _normal, double _offset);
 
   /// Set plane normal and point
   void setNormalAndPoint(
-      const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point);
+      const math::Vector3d& _normal, const math::Vector3d& _point);
 
   /// Compute distance between the plane and the given point
-  double computeDistance(const Eigen::Vector3d& _point) const;
+  double computeDistance(const math::Vector3d& _point) const;
 
   /// Compute signed distance between the plane and the given point
-  double computeSignedDistance(const Eigen::Vector3d& _point) const;
+  double computeSignedDistance(const math::Vector3d& _point) const;
 
   // Documentation inherited.
   ShapePtr clone() const override;
@@ -94,7 +94,7 @@ private:
   void updateVolume() const override;
 
   /// Plane normal
-  Eigen::Vector3d mNormal;
+  math::Vector3d mNormal;
 
   /// Plane offset
   double mOffset;

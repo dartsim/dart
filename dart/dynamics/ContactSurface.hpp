@@ -53,9 +53,9 @@ constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 // Slip compliance is combined through addition,
 // so set to half the global default value
 constexpr double DART_DEFAULT_SLIP_COMPLIANCE = 0.0;
-const Eigen::Vector3d DART_DEFAULT_FRICTION_DIR = Eigen::Vector3d::UnitZ();
-const Eigen::Vector3d DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY
-    = Eigen::Vector3d::Zero();
+const math::Vector3d DART_DEFAULT_FRICTION_DIR = math::Vector3d::UnitZ();
+const math::Vector3d DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY
+    = math::Vector3d::Zero();
 
 /// Computed parameters of the contact surface
 struct ContactSurfaceParams
@@ -76,13 +76,13 @@ struct ContactSurfaceParams
   double mSecondarySlipCompliance{DART_DEFAULT_SLIP_COMPLIANCE};
 
   /// First frictional direction (in world frame)
-  Eigen::Vector3d mFirstFrictionalDirection{DART_DEFAULT_FRICTION_DIR};
+  math::Vector3d mFirstFrictionalDirection{DART_DEFAULT_FRICTION_DIR};
 
   /// Velocity of the contact independent of friction
   /// x = vel. in direction of contact normal
   /// y = vel. in first friction direction
   /// z = vel. in second friction direction
-  Eigen::Vector3d mContactSurfaceMotionVelocity{
+  math::Vector3d mContactSurfaceMotionVelocity{
       DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY};
 
 private:
@@ -175,7 +175,7 @@ protected:
       const dynamics::ShapeNode* shapeNode);
   static double computeSecondarySlipCompliance(
       const dynamics::ShapeNode* shapeNode);
-  static Eigen::Vector3d computeWorldFirstFrictionDir(
+  static math::Vector3d computeWorldFirstFrictionDir(
       const dynamics::ShapeNode* shapenode);
   static double computeRestitutionCoefficient(
       const dynamics::ShapeNode* shapeNode);

@@ -62,7 +62,7 @@ struct DART_DYNAMICS_API SkeletonAspectProperties
   bool mIsMobile;
 
   /// Gravity vector.
-  Eigen::Vector3d mGravity;
+  math::Vector3d mGravity;
 
   /// Time step for implicit joint damping force.
   double mTimeStep;
@@ -80,7 +80,7 @@ struct DART_DYNAMICS_API SkeletonAspectProperties
   SkeletonAspectProperties(
       const std::string& _name = "Skeleton",
       bool _isMobile = true,
-      const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
+      const math::Vector3d& _gravity = math::Vector3d(0.0, 0.0, -9.81),
       double _timeStep = 0.001,
       bool _enabledSelfCollisionCheck = false,
       bool _enableAdjacentBodyCheck = false);

@@ -172,14 +172,14 @@ void JointConstraint::update()
 
   const int dof = static_cast<int>(mJoint->getNumDofs());
 
-  const Eigen::VectorXd positions = mJoint->getPositions();
-  const Eigen::VectorXd velocities = mJoint->getVelocities();
+  const math::VectorXd positions = mJoint->getPositions();
+  const math::VectorXd velocities = mJoint->getVelocities();
 
-  const Eigen::VectorXd positionLowerLimits = mJoint->getPositionLowerLimits();
-  const Eigen::VectorXd positionUpperLimits = mJoint->getPositionUpperLimits();
+  const math::VectorXd positionLowerLimits = mJoint->getPositionLowerLimits();
+  const math::VectorXd positionUpperLimits = mJoint->getPositionUpperLimits();
 
-  const Eigen::VectorXd velocityLowerLimits = mJoint->getVelocityLowerLimits();
-  const Eigen::VectorXd velocityUpperLimits = mJoint->getVelocityUpperLimits();
+  const math::VectorXd velocityLowerLimits = mJoint->getVelocityLowerLimits();
+  const math::VectorXd velocityUpperLimits = mJoint->getVelocityUpperLimits();
 
   const double timeStep = mJoint->getSkeleton()->getTimeStep();
   // TODO: There are multiple ways to get time step (or its inverse).

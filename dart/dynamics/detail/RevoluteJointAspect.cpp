@@ -38,7 +38,7 @@ namespace detail {
 
 //==============================================================================
 RevoluteJointUniqueProperties::RevoluteJointUniqueProperties(
-    const Eigen::Vector3d& _axis)
+    const math::Vector3d& _axis)
   : mAxis(_axis.normalized())
 {
   // Do nothing

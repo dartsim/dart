@@ -220,17 +220,17 @@ public:
   const math::Inertia& getArticulatedInertiaImplicit() const;
 
   /// Set center of mass expressed in body frame
-  void setLocalCOM(const Eigen::Vector3d& _com);
+  void setLocalCOM(const math::Vector3d& _com);
 
   /// Return center of mass expressed in body frame
-  const Eigen::Vector3d& getLocalCOM() const;
+  const math::Vector3d& getLocalCOM() const;
 
   /// Return the center of mass with respect to an arbitrary Frame
-  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
+  math::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
 
   /// Return the linear velocity of the center of mass, expressed in terms of
   /// arbitrary Frames
-  Eigen::Vector3d getCOMLinearVelocity(
+  math::Vector3d getCOMLinearVelocity(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
@@ -245,7 +245,7 @@ public:
 
   /// Return the linear acceleration of the center of mass, expressed in terms
   /// of arbitary Frames
-  Eigen::Vector3d getCOMLinearAcceleration(
+  math::Vector3d getCOMLinearAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
@@ -573,8 +573,8 @@ public:
   /// Create a Marker with the given fields
   Marker* createMarker(
       const std::string& name = "marker",
-      const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(1.0));
+      const math::Vector3d& position = math::Vector3d::Zero(),
+      const math::Vector4d& color = math::Vector4d::Constant(1.0));
 
   /// Create a Marker given its basic properties
   Marker* createMarker(const Marker::BasicProperties& properties);
@@ -615,7 +615,7 @@ public:
 
   /// Get the transform of this BodyNode with respect to its parent BodyNode,
   /// which is also its parent Frame.
-  const Eigen::Isometry3d& getRelativeTransform() const override;
+  const math::Isometry3d& getRelativeTransform() const override;
 
   // Documentation inherited
   const math::Vector6d& getRelativeSpatialVelocity() const override;
@@ -679,27 +679,27 @@ public:
   /// application and the force in local coordinates are stored in mContacts.
   /// When conversion is needed, make sure the transformations are available.
   void addExtForce(
-      const Eigen::Vector3d& _force,
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      const math::Vector3d& _force,
+      const math::Vector3d& _offset = math::Vector3d::Zero(),
       bool _isForceLocal = false,
       bool _isOffsetLocal = true);
 
   /// Set Applying linear Cartesian forces to this node.
   void setExtForce(
-      const Eigen::Vector3d& _force,
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      const math::Vector3d& _force,
+      const math::Vector3d& _offset = math::Vector3d::Zero(),
       bool _isForceLocal = false,
       bool _isOffsetLocal = true);
 
   /// Add applying Cartesian torque to the node.
   ///
   /// The torque in local coordinates is accumulated in mExtTorqueBody.
-  void addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
+  void addExtTorque(const math::Vector3d& _torque, bool _isLocal = false);
 
   /// Set applying Cartesian torque to the node.
   ///
   /// The torque in local coordinates is accumulated in mExtTorqueBody.
-  void setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
+  void setExtTorque(const math::Vector3d& _torque, bool _isLocal = false);
 
   /// Clean up structures that store external forces: mContacts, mFext,
   /// mExtForceBody and mExtTorqueBody.
@@ -746,8 +746,8 @@ public:
 
   /// Add constraint impulse
   void addConstraintImpulse(
-      const Eigen::Vector3d& _constImp,
-      const Eigen::Vector3d& _offset,
+      const math::Vector3d& _constImp,
+      const math::Vector3d& _offset,
       bool _isImpulseLocal = false,
       bool _isOffsetLocal = true);
 
@@ -763,20 +763,20 @@ public:
   //----------------------------------------------------------------------------
 
   /// Return Lagrangian of this body
-  double computeLagrangian(const Eigen::Vector3d& gravity) const;
+  double computeLagrangian(const math::Vector3d& gravity) const;
 
   /// Return kinetic energy
   double computeKineticEnergy() const;
 
   /// Return potential energy.
-  double computePotentialEnergy(const Eigen::Vector3d& gravity) const;
+  double computePotentialEnergy(const math::Vector3d& gravity) const;
 
   /// Return linear momentum.
-  Eigen::Vector3d getLinearMomentum() const;
+  math::Vector3d getLinearMomentum() const;
 
   /// Return angular momentum.
-  Eigen::Vector3d getAngularMomentum(
-      const Eigen::Vector3d& _pivot = Eigen::Vector3d::Zero());
+  math::Vector3d getAngularMomentum(
+      const math::Vector3d& _pivot = math::Vector3d::Zero());
 
   //----------------------------------------------------------------------------
   // Notifications
@@ -808,7 +808,7 @@ public:
   ///
   /// Note that the ShapeNodes that are added after calling this function
   /// don't get updated to the color that was set beforehand.
-  void setColor(const Eigen::Vector3d& color);
+  void setColor(const math::Vector3d& color);
 
   /// Sets the RGBA color of the ShapeNodes that are currently in this
   /// BodyNode.
@@ -817,7 +817,7 @@ public:
   ///
   /// Note that the ShapeNodes that are added after calling this function
   /// don't get updated to the color that was set beforehand.
-  void setColor(const Eigen::Vector4d& color);
+  void setColor(const math::Vector4d& color);
 
   /// Sets the alpha component of the ShapeNodes that are currently in this
   /// BodyNode.
@@ -892,7 +892,7 @@ protected:
   /// \param[in] _gravity Vector of gravitational acceleration
   /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
   virtual void updateBiasForce(
-      const Eigen::Vector3d& _gravity, double _timeStep);
+      const math::Vector3d& _gravity, double _timeStep);
 
   /// Update bias impulse associated with the articulated body inertia for
   /// impulse-based forward dynamics.
@@ -914,7 +914,7 @@ protected:
   /// body through the connecting joint. It is expressed in this BodyNode's
   /// frame.
   virtual void updateTransmittedForceID(
-      const Eigen::Vector3d& _gravity, bool _withExternalForces = false);
+      const math::Vector3d& _gravity, bool _withExternalForces = false);
 
   /// Update spatial body force for forward dynamics.
   ///
@@ -955,37 +955,37 @@ protected:
 
   ///
   virtual void updateMassMatrix();
-  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col);
+  virtual void aggregateMassMatrix(math::MatrixXd& _MCol, std::size_t _col);
   virtual void aggregateAugMassMatrix(
-      Eigen::MatrixXd& _MCol, std::size_t _col, double _timeStep);
+      math::MatrixXd& _MCol, std::size_t _col, double _timeStep);
 
   ///
   virtual void updateInvMassMatrix();
   virtual void updateInvAugMassMatrix();
   virtual void aggregateInvMassMatrix(
-      Eigen::MatrixXd& _InvMCol, std::size_t _col);
+      math::MatrixXd& _InvMCol, std::size_t _col);
   virtual void aggregateInvAugMassMatrix(
-      Eigen::MatrixXd& _InvMCol, std::size_t _col, double _timeStep);
+      math::MatrixXd& _InvMCol, std::size_t _col, double _timeStep);
 
   ///
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C);
+  virtual void aggregateCoriolisForceVector(math::VectorXd& _C);
 
   ///
   virtual void aggregateGravityForceVector(
-      Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity);
+      math::VectorXd& _g, const math::Vector3d& _gravity);
 
   ///
   virtual void updateCombinedVector();
   virtual void aggregateCombinedVector(
-      Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity);
+      math::VectorXd& _Cg, const math::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized coordinates
   /// recursively
-  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
+  virtual void aggregateExternalForces(math::VectorXd& _Fext);
 
   ///
   virtual void aggregateSpatialToGeneralized(
-      Eigen::VectorXd& _generalized, const math::Vector6d& _spatial);
+      math::VectorXd& _generalized, const math::Vector6d& _spatial);
 
   /// Update body Jacobian. getJacobian() calls this function if
   /// mIsBodyJacobianDirty is true.

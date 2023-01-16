@@ -43,7 +43,7 @@ namespace dynamics {
 SimpleFrame::SimpleFrame(
     Frame* _refFrame,
     const std::string& _name,
-    const Eigen::Isometry3d& _relativeTransform)
+    const math::Isometry3d& _relativeTransform)
   : Entity(ConstructFrame),
     Frame(_refFrame),
     Detachable(),
@@ -63,7 +63,7 @@ SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
     Frame(_refFrame),
     Detachable(),
     ShapeFrame(_refFrame),
-    mRelativeTf(Eigen::Isometry3d::Identity()),
+    mRelativeTf(math::Isometry3d::Identity()),
     mRelativeVelocity(math::Vector6d::Zero()),
     mRelativeAcceleration(math::Vector6d::Zero()),
     mPartialAcceleration(math::Vector6d::Zero())
@@ -122,7 +122,7 @@ void SimpleFrame::copy(
   if ((this == _otherFrame) && (_refFrame == getParentFrame()))
     return;
 
-  Eigen::Isometry3d relativeTf = _otherFrame->getTransform(_refFrame);
+  math::Isometry3d relativeTf = _otherFrame->getTransform(_refFrame);
   math::Vector6d relativeVelocity
       = _otherFrame->getSpatialVelocity(_refFrame, Frame::World());
   math::Vector6d relativeAcceleration
@@ -153,28 +153,27 @@ SimpleFrame& SimpleFrame::operator=(const SimpleFrame& _otherFrame)
 
 //==============================================================================
 std::shared_ptr<SimpleFrame> SimpleFrame::spawnChildSimpleFrame(
-    const std::string& name, const Eigen::Isometry3d& relativeTransform)
+    const std::string& name, const math::Isometry3d& relativeTransform)
 {
   return std::make_shared<SimpleFrame>(this, name, relativeTransform);
 }
 
 //==============================================================================
-void SimpleFrame::setRelativeTransform(
-    const Eigen::Isometry3d& _newRelTransform)
+void SimpleFrame::setRelativeTransform(const math::Isometry3d& _newRelTransform)
 {
   mRelativeTf = _newRelTransform;
   dirtyTransform();
 }
 
 //==============================================================================
-void SimpleFrame::setRelativeTranslation(const Eigen::Vector3d& _newTranslation)
+void SimpleFrame::setRelativeTranslation(const math::Vector3d& _newTranslation)
 {
   mRelativeTf.translation() = _newTranslation;
   dirtyTransform();
 }
 
 //==============================================================================
-void SimpleFrame::setRelativeRotation(const Eigen::Matrix3d& _newRotation)
+void SimpleFrame::setRelativeRotation(const math::Matrix3d& _newRotation)
 {
   mRelativeTf.linear() = _newRotation;
   dirtyTransform();
@@ -182,7 +181,7 @@ void SimpleFrame::setRelativeRotation(const Eigen::Matrix3d& _newRotation)
 
 //==============================================================================
 void SimpleFrame::setTransform(
-    const Eigen::Isometry3d& _newTransform, const Frame* _withRespectTo)
+    const math::Isometry3d& _newTransform, const Frame* _withRespectTo)
 {
   setRelativeTransform(
       _withRespectTo->getTransform(getParentFrame()) * _newTransform);
@@ -190,7 +189,7 @@ void SimpleFrame::setTransform(
 
 //==============================================================================
 void SimpleFrame::setTranslation(
-    const Eigen::Vector3d& _newTranslation, const Frame* _withRespectTo)
+    const math::Vector3d& _newTranslation, const Frame* _withRespectTo)
 {
   setRelativeTranslation(
       _withRespectTo->getTransform(getParentFrame()) * _newTranslation);
@@ -198,14 +197,14 @@ void SimpleFrame::setTranslation(
 
 //==============================================================================
 void SimpleFrame::setRotation(
-    const Eigen::Matrix3d& _newRotation, const Frame* _withRespectTo)
+    const math::Matrix3d& _newRotation, const Frame* _withRespectTo)
 {
   setRelativeRotation(
       _withRespectTo->getTransform(getParentFrame()).linear() * _newRotation);
 }
 
 //==============================================================================
-const Eigen::Isometry3d& SimpleFrame::getRelativeTransform() const
+const math::Isometry3d& SimpleFrame::getRelativeTransform() const
 {
   return mRelativeTf;
 }
@@ -277,10 +276,10 @@ const math::Vector6d& SimpleFrame::getPartialAcceleration() const
 
 //==============================================================================
 void SimpleFrame::setClassicDerivatives(
-    const Eigen::Vector3d& _linearVelocity,
-    const Eigen::Vector3d& _angularVelocity,
-    const Eigen::Vector3d& _linearAcceleration,
-    const Eigen::Vector3d& _angularAcceleration)
+    const math::Vector3d& _linearVelocity,
+    const math::Vector3d& _angularVelocity,
+    const math::Vector3d& _linearAcceleration,
+    const math::Vector3d& _angularAcceleration)
 {
   math::Vector6d v, a;
   v << _angularVelocity, _linearVelocity;

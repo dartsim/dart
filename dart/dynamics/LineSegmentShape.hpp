@@ -50,8 +50,8 @@ public:
 
   /// Constructor for creating a simple line segment that connects two vertices
   LineSegmentShape(
-      const Eigen::Vector3d& _v1,
-      const Eigen::Vector3d& _v2,
+      const math::Vector3d& _v1,
+      const math::Vector3d& _v2,
       float _thickness = 1.0f);
 
   // Documentation inherited.
@@ -67,10 +67,10 @@ public:
   float getThickness() const;
 
   /// Add a vertex as a child to the last vertex that was added
-  std::size_t addVertex(const Eigen::Vector3d& _v);
+  std::size_t addVertex(const math::Vector3d& _v);
 
   /// Add a vertex as a child to the specified vertex
-  std::size_t addVertex(const Eigen::Vector3d& _v, std::size_t _parent);
+  std::size_t addVertex(const math::Vector3d& _v, std::size_t _parent);
 
   /// Remove a vertex from the list of vertices. IMPORTANT: Note that this
   /// alters the indices of all vertices that follow it in the list, which also
@@ -80,14 +80,14 @@ public:
   void removeVertex(std::size_t _idx);
 
   /// Change the location of the specified vertex
-  void setVertex(std::size_t _idx, const Eigen::Vector3d& _v);
+  void setVertex(std::size_t _idx, const math::Vector3d& _v);
 
   /// Get the location of the specified vertex. Returns a zero vector if an
   /// out-of-bounds vertex is requested.
-  const Eigen::Vector3d& getVertex(std::size_t _idx) const;
+  const math::Vector3d& getVertex(std::size_t _idx) const;
 
   /// Get all the vertices
-  const std::vector<Eigen::Vector3d>& getVertices() const;
+  const std::vector<math::Vector3d>& getVertices() const;
 
   /// Create a connection between the two specified vertices
   void addConnection(std::size_t _idx1, std::size_t _idx2);
@@ -102,11 +102,11 @@ public:
   void removeConnection(std::size_t _connectionIdx);
 
   /// Get all the connections
-  const std::vector<Eigen::Vector2i>& getConnections() const;
+  const std::vector<math::Vector2i>& getConnections() const;
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   ShapePtr clone() const override;
@@ -124,14 +124,14 @@ protected:
   float mThickness;
 
   /// Vector of vertices
-  std::vector<Eigen::Vector3d> mVertices;
+  std::vector<math::Vector3d> mVertices;
 
   /// Vector of connections
-  std::vector<Eigen::Vector2i> mConnections;
+  std::vector<math::Vector2i> mConnections;
 
   /// A dummy vertex that can be returned when an out-of-bounds vertex is
   /// requested
-  static const Eigen::Vector3d mDummyVertex;
+  static const math::Vector3d mDummyVertex;
 };
 
 } // namespace dynamics

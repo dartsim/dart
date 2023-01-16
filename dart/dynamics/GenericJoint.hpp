@@ -143,10 +143,10 @@ public:
   double getCommand(std::size_t index) const override;
 
   // Documentation inherited
-  void setCommands(const Eigen::VectorXd& commands) override;
+  void setCommands(const math::VectorXd& commands) override;
 
   // Documentation inherited
-  Eigen::VectorXd getCommands() const override;
+  math::VectorXd getCommands() const override;
 
   // Documentation inherited
   void resetCommands() override;
@@ -164,10 +164,10 @@ public:
   double getPosition(std::size_t index) const override;
 
   // Documentation inherited
-  void setPositions(const Eigen::VectorXd& positions) override;
+  void setPositions(const math::VectorXd& positions) override;
 
   // Documentation inherited
-  Eigen::VectorXd getPositions() const override;
+  math::VectorXd getPositions() const override;
 
   // Documentation inherited
   void setPositionLowerLimit(std::size_t index, double position) override;
@@ -176,10 +176,10 @@ public:
   double getPositionLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setPositionLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+  void setPositionLowerLimits(const math::VectorXd& lowerLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getPositionLowerLimits() const override;
+  math::VectorXd getPositionLowerLimits() const override;
 
   // Documentation inherited
   void setPositionUpperLimit(std::size_t index, double position) override;
@@ -188,10 +188,10 @@ public:
   double getPositionUpperLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setPositionUpperLimits(const Eigen::VectorXd& upperLimits) override;
+  void setPositionUpperLimits(const math::VectorXd& upperLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getPositionUpperLimits() const override;
+  math::VectorXd getPositionUpperLimits() const override;
 
   // Documentation inherited
   bool hasPositionLimit(std::size_t index) const override;
@@ -209,10 +209,10 @@ public:
   double getInitialPosition(std::size_t index) const override;
 
   // Documentation inherited
-  void setInitialPositions(const Eigen::VectorXd& initial) override;
+  void setInitialPositions(const math::VectorXd& initial) override;
 
   // Documentation inherited
-  Eigen::VectorXd getInitialPositions() const override;
+  math::VectorXd getInitialPositions() const override;
 
   /// \}
 
@@ -257,10 +257,10 @@ public:
   double getVelocity(std::size_t index) const override;
 
   // Documentation inherited
-  void setVelocities(const Eigen::VectorXd& velocities) override;
+  void setVelocities(const math::VectorXd& velocities) override;
 
   // Documentation inherited
-  Eigen::VectorXd getVelocities() const override;
+  math::VectorXd getVelocities() const override;
 
   // Documentation inherited
   void setVelocityLowerLimit(std::size_t index, double velocity) override;
@@ -269,10 +269,10 @@ public:
   double getVelocityLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setVelocityLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+  void setVelocityLowerLimits(const math::VectorXd& lowerLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getVelocityLowerLimits() const override;
+  math::VectorXd getVelocityLowerLimits() const override;
 
   // Documentation inherited
   void setVelocityUpperLimit(std::size_t index, double velocity) override;
@@ -281,10 +281,10 @@ public:
   double getVelocityUpperLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setVelocityUpperLimits(const Eigen::VectorXd& upperLimits) override;
+  void setVelocityUpperLimits(const math::VectorXd& upperLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getVelocityUpperLimits() const override;
+  math::VectorXd getVelocityUpperLimits() const override;
 
   // Documentation inherited
   void resetVelocity(std::size_t index) override;
@@ -299,10 +299,10 @@ public:
   double getInitialVelocity(std::size_t index) const override;
 
   // Documentation inherited
-  void setInitialVelocities(const Eigen::VectorXd& initial) override;
+  void setInitialVelocities(const math::VectorXd& initial) override;
 
   // Documentation inherited
-  Eigen::VectorXd getInitialVelocities() const override;
+  math::VectorXd getInitialVelocities() const override;
 
   /// \}
 
@@ -317,10 +317,10 @@ public:
   double getAcceleration(std::size_t index) const override;
 
   // Documentation inherited
-  void setAccelerations(const Eigen::VectorXd& accelerations) override;
+  void setAccelerations(const math::VectorXd& accelerations) override;
 
   // Documentation inherited
-  Eigen::VectorXd getAccelerations() const override;
+  math::VectorXd getAccelerations() const override;
 
   // Documentation inherited
   void setAccelerationLowerLimit(size_t index, double acceleration) override;
@@ -329,10 +329,10 @@ public:
   double getAccelerationLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setAccelerationLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+  void setAccelerationLowerLimits(const math::VectorXd& lowerLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getAccelerationLowerLimits() const override;
+  math::VectorXd getAccelerationLowerLimits() const override;
 
   // Documentation inherited
   void setAccelerationUpperLimit(
@@ -342,10 +342,10 @@ public:
   double getAccelerationUpperLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setAccelerationUpperLimits(const Eigen::VectorXd& upperLimits) override;
+  void setAccelerationUpperLimits(const math::VectorXd& upperLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getAccelerationUpperLimits() const override;
+  math::VectorXd getAccelerationUpperLimits() const override;
 
   // Documentation inherited
   void resetAccelerations() override;
@@ -363,10 +363,10 @@ public:
   double getForce(std::size_t index) const override;
 
   // Documentation inherited
-  void setForces(const Eigen::VectorXd& forces) override;
+  void setForces(const math::VectorXd& forces) override;
 
   // Documentation inherited
-  Eigen::VectorXd getForces() const override;
+  math::VectorXd getForces() const override;
 
   // Documentation inherited
   void setForceLowerLimit(size_t index, double force) override;
@@ -375,10 +375,10 @@ public:
   double getForceLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setForceLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+  void setForceLowerLimits(const math::VectorXd& lowerLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getForceLowerLimits() const override;
+  math::VectorXd getForceLowerLimits() const override;
 
   // Documentation inherited
   void setForceUpperLimit(size_t index, double force) override;
@@ -387,10 +387,10 @@ public:
   double getForceUpperLimit(size_t index) const override;
 
   // Documentation inherited
-  void setForceUpperLimits(const Eigen::VectorXd& upperLimits) override;
+  void setForceUpperLimits(const math::VectorXd& upperLimits) override;
 
   // Documentation inherited
-  Eigen::VectorXd getForceUpperLimits() const override;
+  math::VectorXd getForceUpperLimits() const override;
 
   // Documentation inherited
   void resetForces() override;
@@ -438,8 +438,8 @@ public:
   void integrateVelocities(double dt) override;
 
   // Documentation inherited
-  Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& q2, const Eigen::VectorXd& q1) const override;
+  math::VectorXd getPositionDifferences(
+      const math::VectorXd& q2, const math::VectorXd& q1) const override;
 
   /// Fixed-size version of getPositionDifferences()
   virtual Vector getPositionDifferencesStatic(
@@ -502,7 +502,7 @@ public:
 
   // Documentation inherited
   math::Jacobian getRelativeJacobian(
-      const Eigen::VectorXd& _positions) const override;
+      const math::VectorXd& _positions) const override;
 
   /// Fixed-size version of getRelativeJacobian(positions)
   virtual JacobianMatrix getRelativeJacobianStatic(
@@ -653,14 +653,14 @@ protected:
 
   // Documentation inherited
   void getInvMassMatrixSegment(
-      Eigen::MatrixXd& invMassMat,
+      math::MatrixXd& invMassMat,
       const size_t col,
       const math::Matrix6d& artInertia,
       const math::Vector6d& spatialAcc) override;
 
   // Documentation inherited
   void getInvAugMassMatrixSegment(
-      Eigen::MatrixXd& invMassMat,
+      math::MatrixXd& invMassMat,
       const size_t col,
       const math::Matrix6d& artInertia,
       const math::Vector6d& spatialAcc) override;
@@ -669,7 +669,7 @@ protected:
   void addInvMassMatrixSegmentTo(math::Vector6d& acc) override;
 
   // Documentation inherited
-  Eigen::VectorXd getSpatialToGeneralized(
+  math::VectorXd getSpatialToGeneralized(
       const math::Vector6d& spatial) override;
 
   /// \}

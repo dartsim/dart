@@ -55,16 +55,16 @@ ArrowShape::Properties::Properties(
 }
 
 //==============================================================================
-ArrowShape::ArrowShape() : MeshShape(Eigen::Vector3d::Ones(), nullptr) {}
+ArrowShape::ArrowShape() : MeshShape(math::Vector3d::Ones(), nullptr) {}
 
 //==============================================================================
 ArrowShape::ArrowShape(
-    const Eigen::Vector3d& _tail,
-    const Eigen::Vector3d& _head,
+    const math::Vector3d& _tail,
+    const math::Vector3d& _head,
     const Properties& _properties,
-    const Eigen::Vector4d& _color,
+    const math::Vector4d& _color,
     std::size_t _resolution)
-  : MeshShape(Eigen::Vector3d::Ones(), nullptr),
+  : MeshShape(math::Vector3d::Ones(), nullptr),
     mTail(_tail),
     mHead(_head),
     mProperties(_properties)
@@ -77,19 +77,19 @@ ArrowShape::ArrowShape(
 
 //==============================================================================
 void ArrowShape::setPositions(
-    const Eigen::Vector3d& _tail, const Eigen::Vector3d& _head)
+    const math::Vector3d& _tail, const math::Vector3d& _head)
 {
   configureArrow(_tail, _head, mProperties);
 }
 
 //==============================================================================
-const Eigen::Vector3d& ArrowShape::getTail() const
+const math::Vector3d& ArrowShape::getTail() const
 {
   return mTail;
 }
 
 //==============================================================================
-const Eigen::Vector3d& ArrowShape::getHead() const
+const math::Vector3d& ArrowShape::getHead() const
 {
   return mHead;
 }
@@ -101,7 +101,7 @@ void ArrowShape::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
+void ArrowShape::notifyColorUpdated(const math::Vector4d& _color)
 {
   for (std::size_t i = 0; i < mMesh->mNumMeshes; ++i) {
     aiMesh* mesh = mMesh->mMeshes[i];
@@ -170,8 +170,8 @@ static void constructArrowBody(
 
 //==============================================================================
 void ArrowShape::configureArrow(
-    const Eigen::Vector3d& _tail,
-    const Eigen::Vector3d& _head,
+    const math::Vector3d& _tail,
+    const math::Vector3d& _head,
     const Properties& _properties)
 {
   mTail = _tail;
@@ -215,20 +215,19 @@ void ArrowShape::configureArrow(
   constructArrowTip(
       mMesh->mMeshes[2], length - headLength, length, mProperties);
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  math::Isometry3d tf(math::Isometry3d::Identity());
   tf.translation() = mTail;
-  Eigen::Vector3d v = mHead - mTail;
-  Eigen::Vector3d z = Eigen::Vector3d::UnitZ();
+  math::Vector3d v = mHead - mTail;
+  math::Vector3d z = math::Vector3d::UnitZ();
 
   if (v.norm() > 0) {
     v.normalize();
-    Eigen::Vector3d axis = z.cross(v);
+    math::Vector3d axis = z.cross(v);
     if (axis.norm() > 0)
       axis.normalize();
     else
-      axis
-          = Eigen::Vector3d::UnitY(); // Any vector in the X/Y plane can be used
-    tf.rotate(Eigen::AngleAxisd(acos(z.dot(v)), axis));
+      axis = math::Vector3d::UnitY(); // Any vector in the X/Y plane can be used
+    tf.rotate(math::AngleAxisd(acos(z.dot(v)), axis));
   }
 
   aiNode* node = mMesh->mRootNode;

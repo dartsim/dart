@@ -81,13 +81,13 @@ WeldJointConstraint::WeldJointConstraint(
 }
 
 //==============================================================================
-void WeldJointConstraint::setRelativeTransform(const Eigen::Isometry3d& _tf)
+void WeldJointConstraint::setRelativeTransform(const math::Isometry3d& _tf)
 {
   mRelativeTransform = _tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& WeldJointConstraint::getRelativeTransform() const
+const math::Isometry3d& WeldJointConstraint::getRelativeTransform() const
 {
   return mRelativeTransform;
 }
@@ -119,20 +119,20 @@ void WeldJointConstraint::update()
 
   // Update Jacobian for body2
   if (mBodyNode2) {
-    Eigen::Isometry3d T12
+    math::Isometry3d T12
         = mBodyNode1->getTransform().inverse() * mBodyNode2->getTransform();
     mJacobian2 = math::AdTJac(T12, mJacobian1);
   }
 
   // Update position constraint error
   if (mBodyNode2) {
-    const Eigen::Isometry3d& violationT = mRelativeTransform.inverse()
-                                          * mBodyNode2->getTransform().inverse()
-                                          * mBodyNode1->getTransform();
+    const math::Isometry3d& violationT = mRelativeTransform.inverse()
+                                         * mBodyNode2->getTransform().inverse()
+                                         * mBodyNode1->getTransform();
 
     mViolation = math::logMap(violationT);
   } else {
-    const Eigen::Isometry3d& violationT
+    const math::Isometry3d& violationT
         = mRelativeTransform.inverse() * mBodyNode1->getTransform();
 
     mViolation = math::logMap(violationT);

@@ -136,22 +136,22 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 }
 
 //==============================================================================
-Eigen::Isometry3d EulerJoint::convertToTransform(
-    const Eigen::Vector3d& _positions, AxisOrder _ordering)
+math::Isometry3d EulerJoint::convertToTransform(
+    const math::Vector3d& _positions, AxisOrder _ordering)
 {
-  return Eigen::Isometry3d(convertToRotation(_positions, _ordering));
+  return math::Isometry3d(convertToRotation(_positions, _ordering));
 }
 
 //==============================================================================
-Eigen::Isometry3d EulerJoint::convertToTransform(
-    const Eigen::Vector3d& _positions) const
+math::Isometry3d EulerJoint::convertToTransform(
+    const math::Vector3d& _positions) const
 {
   return convertToTransform(_positions, getAxisOrder());
 }
 
 //==============================================================================
-Eigen::Matrix3d EulerJoint::convertToRotation(
-    const Eigen::Vector3d& _positions, AxisOrder _ordering)
+math::Matrix3d EulerJoint::convertToRotation(
+    const math::Vector3d& _positions, AxisOrder _ordering)
 {
   switch (_ordering) {
     case AxisOrder::XYZ:
@@ -161,23 +161,23 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
     default: {
       dterr << "[EulerJoint::convertToRotation] Invalid AxisOrder specified ("
             << static_cast<int>(_ordering) << ")\n";
-      return Eigen::Matrix3d::Identity();
+      return math::Matrix3d::Identity();
     }
   }
 }
 
 //==============================================================================
-Eigen::Matrix3d EulerJoint::convertToRotation(
-    const Eigen::Vector3d& _positions) const
+math::Matrix3d EulerJoint::convertToRotation(
+    const math::Vector3d& _positions) const
 {
   return convertToRotation(_positions, getAxisOrder());
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
-    const Eigen::Vector3d& _positions) const
+math::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
+    const math::Vector3d& _positions) const
 {
-  Eigen::Matrix<double, 6, 3> J;
+  math::Matrix<double, 6, 3> J;
 
   // double q0 = _positions[0];
   const double q1 = _positions[1];
@@ -255,9 +255,9 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
   assert(!math::isNan(J));
 
 #ifndef NDEBUG
-  Eigen::MatrixXd JTJ = J.transpose() * J;
-  Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
-  //    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);
+  math::MatrixXd JTJ = J.transpose() * J;
+  math::FullPivLU<math::MatrixXd> luJTJ(JTJ);
+  //    math::FullPivLU<math::MatrixXd> luS(mS);
   double det = luJTJ.determinant();
   if (det < 1e-5) {
     std::cout << "ill-conditioned Jacobian in joint ["
@@ -339,12 +339,12 @@ void EulerJoint::updateRelativeJacobian(bool) const
 void EulerJoint::updateRelativeJacobianTimeDeriv() const
 {
   // double q0 = mPositions[0];
-  const Eigen::Vector3d& positions = getPositionsStatic();
+  const math::Vector3d& positions = getPositionsStatic();
   double q1 = positions[1];
   double q2 = positions[2];
 
   // double dq0 = mVelocities[0];
-  const Eigen::Vector3d& velocities = getVelocitiesStatic();
+  const math::Vector3d& velocities = getVelocitiesStatic();
   double dq1 = velocities[1];
   double dq2 = velocities[2];
 

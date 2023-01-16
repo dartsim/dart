@@ -41,7 +41,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-EndEffectorProperties::EndEffectorProperties(const Eigen::Isometry3d& defaultTf)
+EndEffectorProperties::EndEffectorProperties(const math::Isometry3d& defaultTf)
   : mDefaultTransform(defaultTf)
 {
   // Do nothing
@@ -124,7 +124,7 @@ EndEffector& EndEffector::operator=(const EndEffector& _otherEndEffector)
 
 //==============================================================================
 void EndEffector::setDefaultRelativeTransform(
-    const Eigen::Isometry3d& _newDefaultTf, bool _useNow)
+    const math::Isometry3d& _newDefaultTf, bool _useNow)
 {
   mAspectProperties.mDefaultTransform = _newDefaultTf;
 

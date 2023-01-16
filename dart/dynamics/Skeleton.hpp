@@ -90,45 +90,45 @@ public:
   };
 
   /// The Configuration struct represents the joint configuration of a Skeleton.
-  /// The size of each Eigen::VectorXd member in this struct must be equal to
+  /// The size of each math::VectorXd member in this struct must be equal to
   /// the number of degrees of freedom in the Skeleton or it must be zero. We
-  /// assume that any Eigen::VectorXd member with zero entries should be
+  /// assume that any math::VectorXd member with zero entries should be
   /// ignored.
   struct DART_DYNAMICS_API Configuration
   {
     Configuration(
-        const Eigen::VectorXd& positions = Eigen::VectorXd(),
-        const Eigen::VectorXd& velocities = Eigen::VectorXd(),
-        const Eigen::VectorXd& accelerations = Eigen::VectorXd(),
-        const Eigen::VectorXd& forces = Eigen::VectorXd(),
-        const Eigen::VectorXd& commands = Eigen::VectorXd());
+        const math::VectorXd& positions = math::VectorXd(),
+        const math::VectorXd& velocities = math::VectorXd(),
+        const math::VectorXd& accelerations = math::VectorXd(),
+        const math::VectorXd& forces = math::VectorXd(),
+        const math::VectorXd& commands = math::VectorXd());
 
     Configuration(
         const std::vector<std::size_t>& indices,
-        const Eigen::VectorXd& positions = Eigen::VectorXd(),
-        const Eigen::VectorXd& velocities = Eigen::VectorXd(),
-        const Eigen::VectorXd& accelerations = Eigen::VectorXd(),
-        const Eigen::VectorXd& forces = Eigen::VectorXd(),
-        const Eigen::VectorXd& commands = Eigen::VectorXd());
+        const math::VectorXd& positions = math::VectorXd(),
+        const math::VectorXd& velocities = math::VectorXd(),
+        const math::VectorXd& accelerations = math::VectorXd(),
+        const math::VectorXd& forces = math::VectorXd(),
+        const math::VectorXd& commands = math::VectorXd());
 
     /// A list of degree of freedom indices that each entry in the
-    /// Eigen::VectorXd members correspond to.
+    /// math::VectorXd members correspond to.
     std::vector<std::size_t> mIndices;
 
     /// Joint positions
-    Eigen::VectorXd mPositions;
+    math::VectorXd mPositions;
 
     /// Joint velocities
-    Eigen::VectorXd mVelocities;
+    math::VectorXd mVelocities;
 
     /// Joint accelerations
-    Eigen::VectorXd mAccelerations;
+    math::VectorXd mAccelerations;
 
     /// Joint forces
-    Eigen::VectorXd mForces;
+    math::VectorXd mForces;
 
     /// Joint commands
-    Eigen::VectorXd mCommands;
+    math::VectorXd mCommands;
 
     /// Equality comparison operator
     bool operator==(const Configuration& other) const;
@@ -290,10 +290,10 @@ public:
 
   /// Set 3-dim gravitational acceleration. The gravity is used for
   /// calculating gravity force vector of the skeleton.
-  void setGravity(const Eigen::Vector3d& _gravity);
+  void setGravity(const math::Vector3d& _gravity);
 
   /// Get 3-dim gravitational acceleration.
-  const Eigen::Vector3d& getGravity() const;
+  const math::Vector3d& getGravity() const;
 
   /// \}
 
@@ -500,14 +500,14 @@ public:
   /// the configuration space of this Skeleton. If the configuration space is
   /// Euclidean space, this function returns _q2 - _q1. Otherwise, it depends on
   /// the type of the configuration space.
-  Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const;
+  math::VectorXd getPositionDifferences(
+      const math::VectorXd& _q2, const math::VectorXd& _q1) const;
 
   /// Return the difference of two generalized velocities or accelerations which
   /// are measured in the tangent space at the identity. Since the tangent
   /// spaces are vector spaces, this function always returns _dq2 - _dq1.
-  Eigen::VectorXd getVelocityDifferences(
-      const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const;
+  math::VectorXd getVelocityDifferences(
+      const math::VectorXd& _dq2, const math::VectorXd& _dq1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Support Polygon
@@ -534,21 +534,21 @@ public:
   /// These axes are needed in order to map the points on a support polygon
   /// into 3D space. If gravity is along the z-direction, then these axes will
   /// simply be <1,0,0> and <0,1,0>.
-  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes() const;
+  const std::pair<math::Vector3d, math::Vector3d>& getSupportAxes() const;
 
   /// Same as getSupportAxes(), but it corresponds to the support polygon of the
   /// specified tree within this Skeleton
-  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes(
+  const std::pair<math::Vector3d, math::Vector3d>& getSupportAxes(
       std::size_t _treeIdx) const;
 
   /// Get the centroid of the support polygon for this Skeleton. If the support
   /// polygon is an empty set, the components of this vector will be nan.
-  const Eigen::Vector2d& getSupportCentroid() const;
+  const math::Vector2d& getSupportCentroid() const;
 
   /// Get the centroid of the support polygon for a tree in this Skeleton. If
   /// the support polygon is an empty set, the components of this vector will be
   /// nan.
-  const Eigen::Vector2d& getSupportCentroid(std::size_t _treeIdx) const;
+  const math::Vector2d& getSupportCentroid(std::size_t _treeIdx) const;
 
   /// The version number of a support polygon will be incremented each time the
   /// support polygon needs to be recomputed. This number can be used to
@@ -670,7 +670,7 @@ public:
   void updateBiasImpulse(
       SoftBodyNode* _softBodyNode,
       PointMass* _pointMass,
-      const Eigen::Vector3d& _imp);
+      const math::Vector3d& _imp);
 
   /// \brief Update velocity changes in body nodes and joints due to applied
   /// impulse
@@ -701,12 +701,12 @@ public:
   // Documentation inherited
   math::Jacobian getJacobian(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset) const override;
+      const math::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset,
+      const math::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
@@ -715,7 +715,7 @@ public:
   // Documentation inherited
   math::Jacobian getWorldJacobian(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset) const override;
+      const math::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
@@ -725,7 +725,7 @@ public:
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset,
+      const math::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
@@ -744,12 +744,12 @@ public:
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset) const override;
+      const math::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset,
+      const math::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
@@ -763,7 +763,7 @@ public:
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset,
+      const math::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
@@ -774,7 +774,7 @@ public:
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset,
+      const math::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
@@ -794,62 +794,61 @@ public:
   double getMass() const override;
 
   /// Get the mass matrix of a specific tree in the Skeleton
-  const Eigen::MatrixXd& getMassMatrix(std::size_t _treeIdx) const;
+  const math::MatrixXd& getMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::MatrixXd& getMassMatrix() const override;
+  const math::MatrixXd& getMassMatrix() const override;
 
   /// Get the augmented mass matrix of a specific tree in the Skeleton
-  const Eigen::MatrixXd& getAugMassMatrix(std::size_t _treeIdx) const;
+  const math::MatrixXd& getAugMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::MatrixXd& getAugMassMatrix() const override;
+  const math::MatrixXd& getAugMassMatrix() const override;
 
   /// Get the inverse mass matrix of a specific tree in the Skeleton
-  const Eigen::MatrixXd& getInvMassMatrix(std::size_t _treeIdx) const;
+  const math::MatrixXd& getInvMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::MatrixXd& getInvMassMatrix() const override;
+  const math::MatrixXd& getInvMassMatrix() const override;
 
   /// Get the inverse augmented mass matrix of a tree
-  const Eigen::MatrixXd& getInvAugMassMatrix(std::size_t _treeIdx) const;
+  const math::MatrixXd& getInvAugMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::MatrixXd& getInvAugMassMatrix() const override;
+  const math::MatrixXd& getInvAugMassMatrix() const override;
 
   /// Get the Coriolis force vector of a tree in this Skeleton
-  const Eigen::VectorXd& getCoriolisForces(std::size_t _treeIdx) const;
+  const math::VectorXd& getCoriolisForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::VectorXd& getCoriolisForces() const override;
+  const math::VectorXd& getCoriolisForces() const override;
 
   /// Get the gravity forces for a tree in this Skeleton
-  const Eigen::VectorXd& getGravityForces(std::size_t _treeIdx) const;
+  const math::VectorXd& getGravityForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::VectorXd& getGravityForces() const override;
+  const math::VectorXd& getGravityForces() const override;
 
   /// Get the combined vector of Coriolis force and gravity force of a tree
-  const Eigen::VectorXd& getCoriolisAndGravityForces(
-      std::size_t _treeIdx) const;
+  const math::VectorXd& getCoriolisAndGravityForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::VectorXd& getCoriolisAndGravityForces() const override;
+  const math::VectorXd& getCoriolisAndGravityForces() const override;
 
   /// Get the external force vector of a tree in the Skeleton
-  const Eigen::VectorXd& getExternalForces(std::size_t _treeIdx) const;
+  const math::VectorXd& getExternalForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  const Eigen::VectorXd& getExternalForces() const override;
+  const math::VectorXd& getExternalForces() const override;
 
   /// Get damping force of the skeleton.
-  //  const Eigen::VectorXd& getDampingForceVector();
+  //  const math::VectorXd& getDampingForceVector();
 
   /// Get constraint force vector for a tree
-  const Eigen::VectorXd& getConstraintForces(std::size_t _treeIdx) const;
+  const math::VectorXd& getConstraintForces(std::size_t _treeIdx) const;
 
   /// Get constraint force vector
-  const Eigen::VectorXd& getConstraintForces() const override;
+  const math::VectorXd& getConstraintForces() const override;
 
   // Documentation inherited
   void clearExternalForces() override;
@@ -877,7 +876,7 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get the Skeleton's COM with respect to any Frame (default is World Frame)
-  Eigen::Vector3d getCOM(
+  math::Vector3d getCOM(
       const Frame* _withRespectTo = Frame::World()) const override;
 
   /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
@@ -888,7 +887,7 @@ public:
 
   /// Get the Skeleton's COM linear velocity in terms of any Frame (default is
   /// World Frame)
-  Eigen::Vector3d getCOMLinearVelocity(
+  math::Vector3d getCOMLinearVelocity(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
@@ -900,7 +899,7 @@ public:
 
   /// Get the Skeleton's COM linear acceleration in terms of any Frame (default
   /// is World Frame)
-  Eigen::Vector3d getCOMLinearAcceleration(
+  math::Vector3d getCOMLinearAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
@@ -1100,7 +1099,7 @@ protected:
   void updateExternalForces() const;
 
   /// Compute the constraint force vector for a tree
-  const Eigen::VectorXd& computeConstraintForces(DataCache& cache) const;
+  const math::VectorXd& computeConstraintForces(DataCache& cache) const;
 
   //  /// Update damping force vector.
   //  virtual void updateDampingForceVector();
@@ -1199,32 +1198,32 @@ protected:
     std::vector<const DegreeOfFreedom*> mConstDofs;
 
     /// Mass matrix cache
-    Eigen::MatrixXd mM;
+    math::MatrixXd mM;
 
     /// Mass matrix for the skeleton.
-    Eigen::MatrixXd mAugM;
+    math::MatrixXd mAugM;
 
     /// Inverse of mass matrix for the skeleton.
-    Eigen::MatrixXd mInvM;
+    math::MatrixXd mInvM;
 
     /// Inverse of augmented mass matrix for the skeleton.
-    Eigen::MatrixXd mInvAugM;
+    math::MatrixXd mInvAugM;
 
     /// Coriolis vector for the skeleton which is C(q,dq)*dq.
-    Eigen::VectorXd mCvec;
+    math::VectorXd mCvec;
 
     /// Gravity vector for the skeleton; computed in nonrecursive
     /// dynamics only.
-    Eigen::VectorXd mG;
+    math::VectorXd mG;
 
     /// Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
-    Eigen::VectorXd mCg;
+    math::VectorXd mCg;
 
     /// External force vector for the skeleton.
-    Eigen::VectorXd mFext;
+    math::VectorXd mFext;
 
     /// Constraint force vector.
-    Eigen::VectorXd mFc;
+    math::VectorXd mFc;
 
     /// Support polygon
     math::SupportPolygon mSupportPolygon;
@@ -1235,13 +1234,13 @@ protected:
 
     /// A pair of vectors which map the 2D coordinates of the support polygon
     /// into 3D space
-    std::pair<Eigen::Vector3d, Eigen::Vector3d> mSupportAxes;
+    std::pair<math::Vector3d, math::Vector3d> mSupportAxes;
 
     /// Support geometry -- only used for temporary storage purposes
     math::SupportGeometry mSupportGeometry;
 
     /// Centroid of the support polygon
-    Eigen::Vector2d mSupportCentroid;
+    math::Vector2d mSupportCentroid;
 
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

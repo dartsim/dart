@@ -292,9 +292,7 @@ protected:
 //==============================================================================
 bool shouldUseVisualAspectColor(
     const std::vector<Eigen::Vector3d>& points,
-    const std::vector<
-        Eigen::Vector4d,
-        Eigen::aligned_allocator<Eigen::Vector4d>>& colors,
+    const std::vector<Eigen::Vector4d>& colors,
     dynamics::PointCloudShape::ColorMode colorMode)
 {
   if (colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {

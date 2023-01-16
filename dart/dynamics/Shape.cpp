@@ -66,13 +66,13 @@ const math::BoundingBox& Shape::getBoundingBox() const
 }
 
 //==============================================================================
-Eigen::Matrix3d Shape::computeInertiaFromDensity(double density) const
+math::Matrix3d Shape::computeInertiaFromDensity(double density) const
 {
   return computeInertiaFromMass(density * getVolume());
 }
 
 //==============================================================================
-Eigen::Matrix3d Shape::computeInertiaFromMass(double mass) const
+math::Matrix3d Shape::computeInertiaFromMass(double mass) const
 {
   return computeInertia(mass);
 }
@@ -138,7 +138,7 @@ void Shape::notifyAlphaUpdated(double /*alpha*/)
 }
 
 //==============================================================================
-void Shape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
+void Shape::notifyColorUpdated(const math::Vector4d& /*color*/)
 {
   // Do nothing
 }

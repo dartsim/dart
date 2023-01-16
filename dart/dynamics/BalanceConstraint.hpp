@@ -99,12 +99,11 @@ public:
       const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const override;
 
   // Documentation inherited
-  double eval(const Eigen::VectorXd& _x) const override;
+  double eval(const math::VectorXd& _x) const override;
 
   // Documentation inherited
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override;
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override;
 
   /// Set the method that this constraint function will use to compute the
   /// error. See the ErrorMethod_t docs for more information.
@@ -136,7 +135,7 @@ public:
   double getPseudoInverseDamping() const;
 
   /// Get the last error vector that was computed by this BalanceConstraint
-  const Eigen::Vector3d& getLastError() const;
+  const math::Vector3d& getLastError() const;
 
   /// Clear the caches to force the error computation to update. It should not
   /// generally be necessary to call this function.
@@ -146,7 +145,7 @@ protected:
   /// Convert the gradient that gets generated via Jacobian methods into a
   /// gradient that can be used by a GradientDescentSolver.
   void convertJacobianMethodOutputToGradient(
-      Eigen::Map<Eigen::VectorXd>& grad) const;
+      math::Map<math::VectorXd>& grad) const;
 
   /// Pointer to the hierarchical IK that owns this Function. Note that this
   /// Function does not work correctly without a HierarchicalIK.
@@ -170,10 +169,10 @@ protected:
 
   /// The error vector points away from the direction that the center of mass
   /// should move in order to reduce the balance error
-  mutable Eigen::Vector3d mLastError;
+  mutable math::Vector3d mLastError;
 
   /// The last computed location of the center of mass
-  Eigen::Vector3d mLastCOM;
+  math::Vector3d mLastCOM;
 
   /// The last version of the support polygon that was computed
   std::size_t mLastSupportVersion;
@@ -187,17 +186,17 @@ protected:
   mutable math::LinearJacobian mEEJacCache;
 
   /// Cache for the SVD
-  mutable Eigen::JacobiSVD<math::LinearJacobian> mSVDCache;
+  mutable math::JacobiSVD<math::LinearJacobian> mSVDCache;
 
   /// Cache for the full null space
-  mutable Eigen::MatrixXd mNullSpaceCache;
+  mutable math::MatrixXd mNullSpaceCache;
 
   /// Cache for an individual null space
-  mutable Eigen::MatrixXd mPartialNullSpaceCache;
+  mutable math::MatrixXd mPartialNullSpaceCache;
 
   /// Cache used by convertJacobianMethodOutputToGradient to avoid reallocating
   /// this vector on each iteration.
-  mutable Eigen::VectorXd mInitialPositionsCache;
+  mutable math::VectorXd mInitialPositionsCache;
 };
 
 } // namespace dynamics

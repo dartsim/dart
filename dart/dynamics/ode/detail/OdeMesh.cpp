@@ -42,7 +42,7 @@ namespace detail {
 OdeMesh::OdeMesh(
     const OdeCollisionObject* parent,
     const aiScene* scene,
-    const Eigen::Vector3d& scale)
+    const math::Vector3d& scale)
   : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
 {
   // Fill vertices, normals, and indices in the ODE friendly data structures.
@@ -82,7 +82,7 @@ void OdeMesh::updateEngineData()
 }
 
 //==============================================================================
-void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
+void OdeMesh::fillArrays(const aiScene* scene, const math::Vector3d& scale)
 {
   mVertices.clear();
   mNormals.clear();

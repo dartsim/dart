@@ -36,7 +36,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& diameters) : Shape()
+EllipsoidShape::EllipsoidShape(const math::Vector3d& diameters) : Shape()
 {
   setDiameters(diameters);
 }
@@ -61,7 +61,7 @@ const std::string& EllipsoidShape::getStaticType()
 }
 
 //==============================================================================
-void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
+void EllipsoidShape::setDiameters(const math::Vector3d& diameters)
 {
   assert(diameters[0] > 0.0);
   assert(diameters[1] > 0.0);
@@ -76,13 +76,13 @@ void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 }
 
 //==============================================================================
-const Eigen::Vector3d& EllipsoidShape::getDiameters() const
+const math::Vector3d& EllipsoidShape::getDiameters() const
 {
   return mDiameters;
 }
 
 //==============================================================================
-void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
+void EllipsoidShape::setRadii(const math::Vector3d& radii)
 {
   mDiameters = radii * 2.0;
 
@@ -93,23 +93,23 @@ void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
 }
 
 //==============================================================================
-const Eigen::Vector3d EllipsoidShape::getRadii() const
+const math::Vector3d EllipsoidShape::getRadii() const
 {
   return mDiameters / 2.0;
 }
 
 //==============================================================================
-double EllipsoidShape::computeVolume(const Eigen::Vector3d& diameters)
+double EllipsoidShape::computeVolume(const math::Vector3d& diameters)
 {
   // 4/3* Pi* a/2* b/2* c/2
   return math::pi() * diameters[0] * diameters[1] * diameters[2] / 6.0;
 }
 
 //==============================================================================
-Eigen::Matrix3d EllipsoidShape::computeInertia(
-    const Eigen::Vector3d& diameters, double mass)
+math::Matrix3d EllipsoidShape::computeInertia(
+    const math::Vector3d& diameters, double mass)
 {
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+  math::Matrix3d inertia = math::Matrix3d::Identity();
 
   const auto coeff = mass / 20.0;
   const auto AA = std::pow(diameters[0], 2);
@@ -130,7 +130,7 @@ ShapePtr EllipsoidShape::clone() const
 }
 
 //==============================================================================
-Eigen::Matrix3d EllipsoidShape::computeInertia(double mass) const
+math::Matrix3d EllipsoidShape::computeInertia(double mass) const
 {
   return computeInertia(mDiameters, mass);
 }

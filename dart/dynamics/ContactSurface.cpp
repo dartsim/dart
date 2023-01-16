@@ -166,7 +166,7 @@ ContactSurfaceParams DefaultContactSurfaceHandler::createParams(
     }
   }
 
-  params.mContactSurfaceMotionVelocity = Eigen::Vector3d::Zero();
+  params.mContactSurfaceMotionVelocity = math::Vector3d::Zero();
 
   return params;
 }
@@ -298,7 +298,7 @@ double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
 }
 
 //==============================================================================
-Eigen::Vector3d DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
+math::Vector3d DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
     const dynamics::ShapeNode* shapeNode)
 {
   assert(shapeNode);
@@ -314,7 +314,7 @@ Eigen::Vector3d DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
   }
 
   auto frame = dynamicAspect->getFirstFrictionDirectionFrame();
-  Eigen::Vector3d frictionDir = dynamicAspect->getFirstFrictionDirection();
+  math::Vector3d frictionDir = dynamicAspect->getFirstFrictionDirection();
 
   // rotate using custom frame if it is specified
   if (frame) {

@@ -43,32 +43,32 @@ namespace dynamics {
 namespace {
 
 //==============================================================================
-octomap::point3d toPoint3f(const Eigen::Vector3f& point)
+octomap::point3d toPoint3f(const math::Vector3f& point)
 {
   return octomap::point3d(point.x(), point.y(), point.z());
 }
 
 //==============================================================================
-octomap::point3d toPoint3d(const Eigen::Vector3d& point)
+octomap::point3d toPoint3d(const math::Vector3d& point)
 {
   return toPoint3f(point.cast<float>());
 }
 
 //==============================================================================
-octomath::Quaternion toQuaternionf(const Eigen::Matrix3f& rotation)
+octomath::Quaternion toQuaternionf(const math::Matrix3f& rotation)
 {
-  Eigen::Quaternionf quat(rotation);
+  math::Quaternionf quat(rotation);
   return octomath::Quaternion(quat.w(), quat.x(), quat.y(), quat.z());
 }
 
 //==============================================================================
-octomath::Quaternion toQuaterniond(const Eigen::Matrix3d& rotation)
+octomath::Quaternion toQuaterniond(const math::Matrix3d& rotation)
 {
   return toQuaternionf(rotation.cast<float>());
 }
 
 //==============================================================================
-octomap::pose6d toPose6d(const Eigen::Isometry3d& frame)
+octomap::pose6d toPose6d(const math::Isometry3d& frame)
 {
   return octomap::pose6d(
       toPoint3d(frame.translation()), toQuaterniond(frame.linear()));
@@ -145,8 +145,7 @@ std::shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 }
 
 //==============================================================================
-void VoxelGridShape::updateOccupancy(
-    const Eigen::Vector3d& point, bool occupied)
+void VoxelGridShape::updateOccupancy(const math::Vector3d& point, bool occupied)
 {
   mOctree->updateNode(toPoint3d(point), occupied);
 
@@ -155,7 +154,7 @@ void VoxelGridShape::updateOccupancy(
 
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
-    const Eigen::Vector3d& from, const Eigen::Vector3d& to)
+    const math::Vector3d& from, const math::Vector3d& to)
 {
   mOctree->insertRay(toPoint3d(from), toPoint3d(to));
 
@@ -165,7 +164,7 @@ void VoxelGridShape::updateOccupancy(
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
     const octomap::Pointcloud& pointCloud,
-    const Eigen::Vector3d& sensorOrigin,
+    const math::Vector3d& sensorOrigin,
     const Frame* relativeTo)
 {
   if (relativeTo == Frame::World()) {
@@ -179,8 +178,8 @@ void VoxelGridShape::updateOccupancy(
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
     const octomap::Pointcloud& pointCloud,
-    const Eigen::Vector3d& sensorOrigin,
-    const Eigen::Isometry3d& relativeTo)
+    const math::Vector3d& sensorOrigin,
+    const math::Isometry3d& relativeTo)
 {
   mOctree->insertPointCloud(
       pointCloud, toPoint3d(sensorOrigin), toPose6d(relativeTo));
@@ -189,7 +188,7 @@ void VoxelGridShape::updateOccupancy(
 }
 
 //==============================================================================
-double VoxelGridShape::getOccupancy(const Eigen::Vector3d& point) const
+double VoxelGridShape::getOccupancy(const math::Vector3d& point) const
 {
   const auto node = mOctree->search(point.x(), point.y(), point.z());
   if (node)
@@ -199,15 +198,15 @@ double VoxelGridShape::getOccupancy(const Eigen::Vector3d& point) const
 }
 
 //==============================================================================
-Eigen::Matrix3d VoxelGridShape::computeInertia(double /*mass*/) const
+math::Matrix3d VoxelGridShape::computeInertia(double /*mass*/) const
 {
   // TODO(JS): Not implemented. Do we really want to compute inertia out of
   // voxels?
-  return Eigen::Matrix3d::Identity();
+  return math::Matrix3d::Identity();
 }
 
 //==============================================================================
-void VoxelGridShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
+void VoxelGridShape::notifyColorUpdated(const math::Vector4d& /*color*/)
 {
   incrementVersion();
 }

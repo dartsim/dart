@@ -75,12 +75,12 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 }
 
 //==============================================================================
-void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
+void ShapeNode::setRelativeTransform(const math::Isometry3d& transform)
 {
   if (transform.matrix() == FixedFrame::mAspectProperties.mRelativeTf.matrix())
     return;
 
-  const Eigen::Isometry3d oldTransform = getRelativeTransform();
+  const math::Isometry3d oldTransform = getRelativeTransform();
 
   FixedFrame::setRelativeTransform(transform);
   dirtyJacobian();
@@ -91,43 +91,43 @@ void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 }
 
 //==============================================================================
-void ShapeNode::setRelativeRotation(const Eigen::Matrix3d& rotation)
+void ShapeNode::setRelativeRotation(const math::Matrix3d& rotation)
 {
-  Eigen::Isometry3d transform = getRelativeTransform();
+  math::Isometry3d transform = getRelativeTransform();
   transform.linear() = rotation;
 
   setRelativeTransform(transform);
 }
 
 //==============================================================================
-Eigen::Matrix3d ShapeNode::getRelativeRotation() const
+math::Matrix3d ShapeNode::getRelativeRotation() const
 {
   return getRelativeTransform().linear();
 }
 
 //==============================================================================
-void ShapeNode::setRelativeTranslation(const Eigen::Vector3d& translation)
+void ShapeNode::setRelativeTranslation(const math::Vector3d& translation)
 {
-  Eigen::Isometry3d transform = getRelativeTransform();
+  math::Isometry3d transform = getRelativeTransform();
   transform.translation() = translation;
 
   setRelativeTransform(transform);
 }
 
 //==============================================================================
-void ShapeNode::setOffset(const Eigen::Vector3d& offset)
+void ShapeNode::setOffset(const math::Vector3d& offset)
 {
   setRelativeTranslation(offset);
 }
 
 //==============================================================================
-Eigen::Vector3d ShapeNode::getRelativeTranslation() const
+math::Vector3d ShapeNode::getRelativeTranslation() const
 {
   return getRelativeTransform().translation();
 }
 
 //==============================================================================
-Eigen::Vector3d ShapeNode::getOffset() const
+math::Vector3d ShapeNode::getOffset() const
 {
   return getRelativeTranslation();
 }
@@ -163,7 +163,7 @@ ShapeNode::ShapeNode(
     Frame(bodyNode),
     FixedFrame(bodyNode),
     detail::ShapeNodeCompositeBase(
-        std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()),
+        std::make_tuple(bodyNode, math::Isometry3d::Identity()),
         std::make_tuple(bodyNode, ShapeFrame::Properties(shape)))
 {
   // TODO(MXG): Consider changing this to a delegating constructor instead

@@ -121,7 +121,7 @@ public:
   ///
   /// By default, the list of seeds is empty, but they can be added by calling
   /// InverseKinematics::getProblem() and then using
-  /// Problem::addSeed(Eigen::VectorXd).
+  /// Problem::addSeed(math::VectorXd).
   ///
   /// Calling this function will automatically call Position::setLowerBounds(~)
   /// and Position::setUpperBounds(~) with the lower/upper position bounds of
@@ -135,7 +135,7 @@ public:
   /// result of the iterations.
   /// \return True if a solution is successfully found.
   /// \sa solveAndApply()
-  bool findSolution(Eigen::VectorXd& positions);
+  bool findSolution(math::VectorXd& positions);
 
   /// Identical to findSolution(), but this function applies the solution when
   /// the solver successfully found a solution or \c allowIncompleteResult is
@@ -163,7 +163,7 @@ public:
   /// solution.
   /// \return True if a solution is successfully found
   bool solveAndApply(
-      Eigen::VectorXd& positions, bool allowIncompleteResult = true);
+      math::VectorXd& positions, bool allowIncompleteResult = true);
 
   /// Clone this IK module, but targeted at a new Node. Any Functions in the
   /// Problem that inherit InverseKinematics::Function will be adapted to the
@@ -335,12 +335,12 @@ public:
   /// change the point that will be used. _offset must represent the offset of
   /// the desired point from the body origin, expressed in coordinates of the
   /// body frame.
-  void setOffset(const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero());
+  void setOffset(const math::Vector3d& _offset = math::Vector3d::Zero());
 
   /// Get the offset from the origin of the body frame that will be used when
   /// performing inverse kinematics. The offset will be expressed in the
   /// coordinates of the body frame.
-  const Eigen::Vector3d& getOffset() const;
+  const math::Vector3d& getOffset() const;
 
   /// This returns false if the offset for the inverse kinematics is a zero
   /// vector. Otherwise, it returns true. Use setOffset() to set the offset and
@@ -385,12 +385,12 @@ public:
   /// Get the current joint positions of the Skeleton. This will only include
   /// the DOFs that have been assigned to this IK module, and the components of
   /// the vector will correspond to the components of getDofs().
-  Eigen::VectorXd getPositions() const;
+  math::VectorXd getPositions() const;
 
   /// Set the current joint positions of the Skeleton. This must only include
   /// the DOFs that have been assigned to this IK module, and the components of
   /// the vector must correspond to the components of getDofs().
-  void setPositions(const Eigen::VectorXd& _q);
+  void setPositions(const math::VectorXd& _q);
 
   /// Clear the caches of this IK module. It should generally not be necessary
   /// to call this function. However, if you have some non-standard external
@@ -463,7 +463,7 @@ protected:
   std::shared_ptr<optimization::Solver> mSolver;
 
   /// The offset that this IK module should use when computing IK
-  Eigen::Vector3d mOffset;
+  math::Vector3d mOffset;
 
   /// True if the offset is non-zero
   bool mHasOffset;
@@ -517,9 +517,8 @@ public:
             math::Vector6d::Constant(DefaultIKTolerance)),
         double _errorClamp = DefaultIKErrorClamp,
         const math::Vector6d& _errorWeights
-        = (math::Vector6d()
-               << Eigen::Vector3d::Constant(DefaultIKAngularWeight),
-           Eigen::Vector3d::Constant(DefaultIKLinearWeight))
+        = (math::Vector6d() << math::Vector3d::Constant(DefaultIKAngularWeight),
+           math::Vector3d::Constant(DefaultIKLinearWeight))
               .finished());
 
     /// Bounds that define the acceptable range of the Node's transform
@@ -570,12 +569,12 @@ public:
   /// given the current transform and error vector. If you want the desired
   /// transform to always be equal to the Target's transform, you can simply
   /// call ErrorMethod::computeDesiredTransform to implement this function.
-  virtual Eigen::Isometry3d computeDesiredTransform(
-      const Eigen::Isometry3d& _currentTf, const math::Vector6d& _error)
+  virtual math::Isometry3d computeDesiredTransform(
+      const math::Isometry3d& _currentTf, const math::Vector6d& _error)
       = 0;
 
   /// This function is used to handle caching the error vector.
-  const math::Vector6d& evalError(const Eigen::VectorXd& _q);
+  const math::Vector6d& evalError(const math::VectorXd& _q);
 
   /// Get the name of this ErrorMethod.
   const std::string& getMethodName() const;
@@ -595,31 +594,31 @@ public:
 
   /// Set the error bounds for orientation.
   void setAngularBounds(
-      const Eigen::Vector3d& _lower
-      = Eigen::Vector3d::Constant(-DefaultIKTolerance),
-      const Eigen::Vector3d& _upper
-      = Eigen::Vector3d::Constant(DefaultIKTolerance));
+      const math::Vector3d& _lower
+      = math::Vector3d::Constant(-DefaultIKTolerance),
+      const math::Vector3d& _upper
+      = math::Vector3d::Constant(DefaultIKTolerance));
 
   /// Set the error bounds for orientation.
   void setAngularBounds(
-      const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds);
+      const std::pair<math::Vector3d, math::Vector3d>& _bounds);
 
   /// Get the error bounds for orientation.
-  std::pair<Eigen::Vector3d, Eigen::Vector3d> getAngularBounds() const;
+  std::pair<math::Vector3d, math::Vector3d> getAngularBounds() const;
 
   /// Set the error bounds for translation.
   void setLinearBounds(
-      const Eigen::Vector3d& _lower
-      = Eigen::Vector3d::Constant(-DefaultIKTolerance),
-      const Eigen::Vector3d& _upper
-      = Eigen::Vector3d::Constant(DefaultIKTolerance));
+      const math::Vector3d& _lower
+      = math::Vector3d::Constant(-DefaultIKTolerance),
+      const math::Vector3d& _upper
+      = math::Vector3d::Constant(DefaultIKTolerance));
 
   /// Set the error bounds for translation.
   void setLinearBounds(
-      const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds);
+      const std::pair<math::Vector3d, math::Vector3d>& _bounds);
 
   /// Get the error bounds for translation.
-  std::pair<Eigen::Vector3d, Eigen::Vector3d> getLinearBounds() const;
+  std::pair<math::Vector3d, math::Vector3d> getLinearBounds() const;
 
   /// Set the clamp that will be applied to the length of the error vector
   /// each iteration.
@@ -640,22 +639,22 @@ public:
   /// Set the weights that will be applied to each angular component of the
   /// error vector.
   void setAngularErrorWeights(
-      const Eigen::Vector3d& _weights
-      = Eigen::Vector3d::Constant(DefaultIKAngularWeight));
+      const math::Vector3d& _weights
+      = math::Vector3d::Constant(DefaultIKAngularWeight));
 
   /// Get the weights that will be applied to each angular component of the
   /// error vector.
-  Eigen::Vector3d getAngularErrorWeights() const;
+  math::Vector3d getAngularErrorWeights() const;
 
   /// Set the weights that will be applied to each linear component of the
   /// error vector.
   void setLinearErrorWeights(
-      const Eigen::Vector3d& _weights
-      = Eigen::Vector3d::Constant(DefaultIKLinearWeight));
+      const math::Vector3d& _weights
+      = math::Vector3d::Constant(DefaultIKLinearWeight));
 
   /// Get the weights that will be applied to each linear component of the
   /// error vector.
-  Eigen::Vector3d getLinearErrorWeights() const;
+  math::Vector3d getLinearErrorWeights() const;
 
   /// Get the Properties of this ErrorMethod
   Properties getErrorMethodProperties() const;
@@ -672,7 +671,7 @@ protected:
   std::string mMethodName;
 
   /// The last joint positions passed into this ErrorMethod
-  Eigen::VectorXd mLastPositions;
+  math::VectorXd mLastPositions;
 
   /// The last error vector computed by this ErrorMethod
   math::Vector6d mLastError;
@@ -733,8 +732,8 @@ public:
   std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const override;
 
   // Documentation inherited
-  Eigen::Isometry3d computeDesiredTransform(
-      const Eigen::Isometry3d& _currentTf,
+  math::Isometry3d computeDesiredTransform(
+      const math::Isometry3d& _currentTf,
       const math::Vector6d& _error) override;
 
   // Documentation inherited
@@ -776,12 +775,12 @@ public:
     double mComponentWiseClamp;
 
     /// The weights for this GradientMethod
-    Eigen::VectorXd mComponentWeights;
+    math::VectorXd mComponentWeights;
 
     /// Default constructor
     Properties(
         double clamp = DefaultIKGradientComponentClamp,
-        const Eigen::VectorXd& weights = Eigen::VectorXd());
+        const math::VectorXd& weights = math::VectorXd());
   };
 
   /// Constructor
@@ -813,19 +812,18 @@ public:
   /// must use to compute the error. This function will only get called when
   /// an update is needed.
   virtual void computeGradient(
-      const math::Vector6d& _error, Eigen::VectorXd& _grad)
+      const math::Vector6d& _error, math::VectorXd& _grad)
       = 0;
 
   /// This function is used to handle caching the gradient vector and
   /// interfacing with the solver.
-  void evalGradient(
-      const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad);
+  void evalGradient(const math::VectorXd& _q, math::Map<math::VectorXd> _grad);
 
   /// Get the name of this GradientMethod.
   const std::string& getMethodName() const;
 
   /// Clamp the gradient based on the clamp settings of this GradientMethod.
-  void clampGradient(Eigen::VectorXd& _grad) const;
+  void clampGradient(math::VectorXd& _grad) const;
 
   /// Set the component-wise clamp for this GradientMethod. Each component
   /// of the gradient will be individually clamped to this size.
@@ -836,7 +834,7 @@ public:
 
   /// Apply weights to the gradient based on the weight settings of this
   /// GradientMethod.
-  void applyWeights(Eigen::VectorXd& _grad) const;
+  void applyWeights(math::VectorXd& _grad) const;
 
   /// Set the weights that will be applied to each component of the gradient.
   /// If the number of components in _weights is smaller than the number of
@@ -844,10 +842,10 @@ public:
   /// components that are out of the range of _weights. Passing in an empty
   /// vector for _weights will effectively make all the gradient components
   /// unweighted.
-  void setComponentWeights(const Eigen::VectorXd& _weights);
+  void setComponentWeights(const math::VectorXd& _weights);
 
   /// Get the weights of this GradientMethod.
-  const Eigen::VectorXd& getComponentWeights() const;
+  const math::VectorXd& getComponentWeights() const;
 
   /// Convert the gradient that gets generated by Jacobian methods into a
   /// gradient that can be used by a GradientDescentSolver.
@@ -859,7 +857,7 @@ public:
   /// through this function before returning it will make the gradient
   /// suitable for a standard solver.
   void convertJacobianMethodOutputToGradient(
-      Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs);
+      math::VectorXd& grad, const std::vector<std::size_t>& dofs);
 
   /// Get the Properties of this GradientMethod
   Properties getGradientMethodProperties() const;
@@ -882,10 +880,10 @@ protected:
   std::string mMethodName;
 
   /// The last positions that was passed to this GradientMethod
-  Eigen::VectorXd mLastPositions;
+  math::VectorXd mLastPositions;
 
   /// The last gradient that was computed by this GradientMethod
-  Eigen::VectorXd mLastGradient;
+  math::VectorXd mLastGradient;
 
   /// Properties for this GradientMethod
   Properties mGradientP;
@@ -893,7 +891,7 @@ protected:
 private:
   /// Cache used by convertJacobianMethodOutputToGradient to avoid
   /// reallocating this vector on each iteration.
-  Eigen::VectorXd mInitialPositionsCache;
+  math::VectorXd mInitialPositionsCache;
 };
 
 //==============================================================================
@@ -940,7 +938,7 @@ public:
 
   // Documentation inherited
   void computeGradient(
-      const math::Vector6d& _error, Eigen::VectorXd& _grad) override;
+      const math::Vector6d& _error, math::VectorXd& _grad) override;
 
   /// Set the damping coefficient. A higher damping coefficient will smooth
   /// out behavior around singularities but will also result in less precision
@@ -981,7 +979,7 @@ public:
 
   // Documentation inherited
   void computeGradient(
-      const math::Vector6d& _error, Eigen::VectorXd& _grad) override;
+      const math::Vector6d& _error, math::VectorXd& _grad) override;
 };
 
 //==============================================================================
@@ -1043,11 +1041,11 @@ public:
   {
     /// Default constructor
     Solution(
-        const Eigen::VectorXd& _config = Eigen::VectorXd(),
+        const math::VectorXd& _config = math::VectorXd(),
         int _validity = VALID);
 
     /// Configuration computed by the Analytical solver
-    Eigen::VectorXd mConfig;
+    math::VectorXd mConfig;
 
     /// Bitmap for whether this configuration is valid. Bitwise-compare it to
     /// the enumerations in Validity_t to whether this configuration is valid.
@@ -1056,8 +1054,8 @@ public:
 
   // std::function template for comparing the quality of configurations
   typedef std::function<bool(
-      const Eigen::VectorXd& _better,
-      const Eigen::VectorXd& _worse,
+      const math::VectorXd& _better,
+      const math::VectorXd& _worse,
       const InverseKinematics* _ik)>
       QualityComparison;
 
@@ -1120,13 +1118,12 @@ public:
   /// whether each solution is valid. This function will compute the
   /// configurations using the given desired transform instead of using the
   /// IK module's current ErrorMethod.
-  const std::vector<Solution>& getSolutions(
-      const Eigen::Isometry3d& _desiredTf);
+  const std::vector<Solution>& getSolutions(const math::Isometry3d& _desiredTf);
 
   /// You should not need to override this function. Instead, you should
   /// override computeSolutions.
   void computeGradient(
-      const math::Vector6d& _error, Eigen::VectorXd& _grad) override;
+      const math::Vector6d& _error, math::VectorXd& _grad) override;
 
   /// Use this function to fill the entries of the mSolutions variable. Be
   /// sure to clear the mSolutions vector at the start, and to also return the
@@ -1138,7 +1135,7 @@ public:
   /// the LIMIT_VIOLATED flags of any configurations that are outside of the
   /// position limits.
   virtual const std::vector<Solution>& computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf)
+      const math::Isometry3d& _desiredBodyTf)
       = 0;
 
   /// Get a list of the DOFs that will be included in the entries of the
@@ -1150,11 +1147,11 @@ public:
 
   /// Set the configuration of the DOFs. The components of _config must
   /// correspond to the DOFs provided by getDofs().
-  void setPositions(const Eigen::VectorXd& _config);
+  void setPositions(const math::VectorXd& _config);
 
   /// Get the configuration of the DOFs. The components of this vector will
   /// correspond to the DOFs provided by getDofs().
-  Eigen::VectorXd getPositions() const;
+  math::VectorXd getPositions() const;
 
   /// Set how you want extra DOFs to be utilized by the IK module
   void setExtraDofUtilization(ExtraDofUtilization _utilization);
@@ -1212,7 +1209,7 @@ protected:
   /// POST_ANALYTICAL if the function is being called after the Analytical
   /// solution is computed.
   virtual void addExtraDofGradient(
-      Eigen::VectorXd& grad,
+      math::VectorXd& grad,
       const math::Vector6d& error,
       ExtraDofUtilization utilization);
 
@@ -1252,15 +1249,15 @@ private:
   std::vector<Solution> mLimitViolationCache;
 
   /// A cache for storing the current configuration
-  Eigen::VectorXd mConfigCache;
+  math::VectorXd mConfigCache;
 
   /// A cache for storing the current configuration so that it can be restored
   /// later. This is different from mConfigCache which will not be used to
   /// restore the configuration.
-  Eigen::VectorXd mRestoreConfigCache;
+  math::VectorXd mRestoreConfigCache;
 
   /// A cache for storing the gradient for the extra DOFs
-  Eigen::VectorXd mExtraDofGradCache;
+  math::VectorXd mExtraDofGradCache;
 };
 
 //==============================================================================
@@ -1285,26 +1282,25 @@ public:
   optimization::FunctionPtr clone(InverseKinematics* _newIK) const override;
 
   // Documentation inherited
-  double eval(const Eigen::VectorXd& _x) const override;
+  double eval(const math::VectorXd& _x) const override;
 
   // Documentation inherited
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override;
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override;
 
 protected:
   /// Pointer to this Objective's IK module
   sub_ptr<InverseKinematics> mIK;
 
   /// Cache for the gradient of the Objective
-  mutable Eigen::VectorXd mGradCache;
+  mutable math::VectorXd mGradCache;
 
   /// Cache for the null space SVD
-  mutable Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  mutable math::JacobiSVD<math::Jacobian> mSVDCache;
   // TODO(JS): Need to define aligned operator new for this?
 
   /// Cache for the null space
-  mutable Eigen::MatrixXd mNullSpaceCache;
+  mutable math::MatrixXd mNullSpaceCache;
 
 public:
   // To get byte-aligned Eigen vectors
@@ -1333,12 +1329,11 @@ public:
   optimization::FunctionPtr clone(InverseKinematics* _newIK) const override;
 
   // Documentation inherited
-  double eval(const Eigen::VectorXd& _x) const override;
+  double eval(const math::VectorXd& _x) const override;
 
   // Documentation inherited
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override;
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override;
 
 protected:
   /// Pointer to this Constraint's IK module

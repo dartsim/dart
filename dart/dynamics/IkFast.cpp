@@ -44,7 +44,7 @@ namespace {
 
 //==============================================================================
 void convertTransform(
-    const Eigen::Isometry3d& tf,
+    const math::Isometry3d& tf,
     std::array<IkReal, 3>& eetrans,
     std::array<IkReal, 9>& eerot)
 {
@@ -67,7 +67,7 @@ void convertTransform(
 void convertTransform(
     const std::array<IkReal, 3>& eetrans,
     const std::array<IkReal, 9>& eerot,
-    Eigen::Isometry3d& tf)
+    math::Isometry3d& tf)
 {
   tf.setIdentity();
 
@@ -379,7 +379,7 @@ void IkFast::configure() const
 }
 
 //==============================================================================
-auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
+auto IkFast::computeSolutions(const math::Isometry3d& desiredBodyTf)
     -> const std::vector<InverseKinematics::Analytical::Solution>&
 {
   mSolutions.clear();
@@ -426,7 +426,7 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
 }
 
 //==============================================================================
-Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
+math::Isometry3d IkFast::computeFk(const math::VectorXd& parameters)
 {
   const std::size_t ikFastNumNonFreeJoints
       = getNumJoints2() - getNumFreeParameters2();
@@ -434,14 +434,14 @@ Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
     dtwarn << "[IkFast::computeFk] The dimension of given joint positions "
            << "doesn't agree with the number of joints of this IkFast solver. "
            << "Returning identity.\n";
-    return Eigen::Isometry3d::Identity();
+    return math::Isometry3d::Identity();
   }
 
   std::array<IkReal, 3> eetrans;
   std::array<IkReal, 9> eerot;
   computeFk(parameters.data(), eetrans.data(), eerot.data());
 
-  Eigen::Isometry3d tf;
+  math::Isometry3d tf;
   convertTransform(eetrans, eerot, tf);
   return tf;
 }

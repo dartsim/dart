@@ -33,23 +33,24 @@
 #ifndef DART_COLLISION_BULLET_BULLETTYPES_HPP_
 #define DART_COLLISION_BULLET_BULLETTYPES_HPP_
 
-#include <Eigen/Dense>
+#include <dart/math/Fwd.hpp>
+
 #include <btBulletCollisionCommon.h>
 
 namespace dart {
 namespace collision {
 
 /// @brief Convert Bullet vector3 type to Eigen vector3 type
-Eigen::Vector3d convertVector3(const btVector3& _vec);
+math::Vector3d convertVector3(const btVector3& _vec);
 
 /// @brief Convert Eigen vector3 type to Bullet vector3 type
-btVector3 convertVector3(const Eigen::Vector3d& _vec);
+btVector3 convertVector3(const math::Vector3d& _vec);
 
 /// @brief Convert Bullet matrix3x3 type to Eigen matrix3x3 type
-btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R);
+btMatrix3x3 convertMatrix3x3(const math::Matrix3d& _R);
 
 /// @brief Convert Bullet transformation type to Eigen transformation type
-btTransform convertTransform(const Eigen::Isometry3d& _T);
+btTransform convertTransform(const math::Isometry3d& _T);
 
 } // namespace collision
 } // namespace dart

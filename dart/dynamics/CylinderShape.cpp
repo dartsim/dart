@@ -99,10 +99,10 @@ double CylinderShape::computeVolume(double radius, double height)
 }
 
 //==============================================================================
-Eigen::Matrix3d CylinderShape::computeInertia(
+math::Matrix3d CylinderShape::computeInertia(
     double radius, double height, double mass)
 {
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+  math::Matrix3d inertia = math::Matrix3d::Zero();
 
   inertia(0, 0)
       = mass * (3.0 * std::pow(radius, 2) + std::pow(height, 2)) / 12.0;
@@ -121,8 +121,8 @@ ShapePtr CylinderShape::clone() const
 //==============================================================================
 void CylinderShape::updateBoundingBox() const
 {
-  mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
-  mBoundingBox.setMax(Eigen::Vector3d(mRadius, mRadius, mHeight * 0.5));
+  mBoundingBox.setMin(math::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
+  mBoundingBox.setMax(math::Vector3d(mRadius, mRadius, mHeight * 0.5));
   mIsBoundingBoxDirty = false;
 }
 
@@ -134,7 +134,7 @@ void CylinderShape::updateVolume() const
 }
 
 //==============================================================================
-Eigen::Matrix3d CylinderShape::computeInertia(double mass) const
+math::Matrix3d CylinderShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
 }

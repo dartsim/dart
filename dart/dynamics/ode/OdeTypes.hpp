@@ -33,7 +33,8 @@
 #ifndef DART_COLLISION_ODE_ODETYPES_HPP_
 #define DART_COLLISION_ODE_ODETYPES_HPP_
 
-#include <Eigen/Eigen>
+#include <dart/math/Fwd.hpp>
+
 #include <ode/ode.h>
 
 namespace dart {
@@ -42,7 +43,7 @@ namespace collision {
 class OdeTypes
 {
 public:
-  static Eigen::Vector3d convertVector3(const dVector3& vec);
+  static math::Vector3d convertVector3(const dVector3& vec);
 };
 
 } // namespace collision

@@ -184,16 +184,16 @@ public:
   std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Set transformation from parent body node to this joint
-  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromParentBodyNode(const math::Isometry3d& _T);
 
   /// Set transformation from child body node to this joint
-  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromChildBodyNode(const math::Isometry3d& _T);
 
   /// Get transformation from parent body node to this joint
-  const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
+  const math::Isometry3d& getTransformFromParentBodyNode() const;
 
   /// Get transformation from child body node to this joint
-  const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
+  const math::Isometry3d& getTransformFromChildBodyNode() const;
 
   /// Sets whether enforcing joint position and velocity limits.
   ///
@@ -263,10 +263,10 @@ public:
   virtual double getCommand(std::size_t _index) const = 0;
 
   /// Set all commands for this Joint
-  virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
+  virtual void setCommands(const math::VectorXd& _commands) = 0;
 
   /// Get all commands for this Joint
-  virtual Eigen::VectorXd getCommands() const = 0;
+  virtual math::VectorXd getCommands() const = 0;
 
   /// Set all the commands for this Joint to zero
   virtual void resetCommands() = 0;
@@ -284,10 +284,10 @@ public:
   virtual double getPosition(std::size_t _index) const = 0;
 
   /// Set the positions of all generalized coordinates in this Joint
-  virtual void setPositions(const Eigen::VectorXd& _positions) = 0;
+  virtual void setPositions(const math::VectorXd& _positions) = 0;
 
   /// Get the positions of all generalized coordinates in this Joint
-  virtual Eigen::VectorXd getPositions() const = 0;
+  virtual math::VectorXd getPositions() const = 0;
 
   /// Set lower limit for position
   virtual void setPositionLowerLimit(std::size_t _index, double _position) = 0;
@@ -296,10 +296,10 @@ public:
   virtual double getPositionLowerLimit(std::size_t _index) const = 0;
 
   /// Set the position lower limits of all the generalized coordinates.
-  virtual void setPositionLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+  virtual void setPositionLowerLimits(const math::VectorXd& lowerLimits) = 0;
 
   /// Get the position lower limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getPositionLowerLimits() const = 0;
+  virtual math::VectorXd getPositionLowerLimits() const = 0;
 
   /// Set upper limit for position
   virtual void setPositionUpperLimit(std::size_t _index, double _position) = 0;
@@ -308,10 +308,10 @@ public:
   virtual double getPositionUpperLimit(std::size_t _index) const = 0;
 
   /// Set the position upper limits of all the generalized coordinates.
-  virtual void setPositionUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+  virtual void setPositionUpperLimits(const math::VectorXd& upperLimits) = 0;
 
   /// Get the position upper limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getPositionUpperLimits() const = 0;
+  virtual math::VectorXd getPositionUpperLimits() const = 0;
 
   /// Get whether a generalized coordinate is cyclic. Return true if and only
   /// if this generalized coordinate has an infinite number of positions that
@@ -338,11 +338,11 @@ public:
 
   /// Change the positions that resetPositions() will give to this Joint's
   /// coordinates
-  virtual void setInitialPositions(const Eigen::VectorXd& _initial) = 0;
+  virtual void setInitialPositions(const math::VectorXd& _initial) = 0;
 
   /// Get the positions that resetPositions() will give to this Joint's
   /// coordinates
-  virtual Eigen::VectorXd getInitialPositions() const = 0;
+  virtual math::VectorXd getInitialPositions() const = 0;
 
   /// \}
 
@@ -357,10 +357,10 @@ public:
   virtual double getVelocity(std::size_t _index) const = 0;
 
   /// Set the velocities of all generalized coordinates in this Joint
-  virtual void setVelocities(const Eigen::VectorXd& _velocities) = 0;
+  virtual void setVelocities(const math::VectorXd& _velocities) = 0;
 
   /// Get the velocities of all generalized coordinates in this Joint
-  virtual Eigen::VectorXd getVelocities() const = 0;
+  virtual math::VectorXd getVelocities() const = 0;
 
   /// Set lower limit for velocity
   virtual void setVelocityLowerLimit(std::size_t _index, double _velocity) = 0;
@@ -369,10 +369,10 @@ public:
   virtual double getVelocityLowerLimit(std::size_t _index) const = 0;
 
   /// Set the velocity lower limits of all the generalized coordinates.
-  virtual void setVelocityLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+  virtual void setVelocityLowerLimits(const math::VectorXd& lowerLimits) = 0;
 
   /// Get the velocity lower limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getVelocityLowerLimits() const = 0;
+  virtual math::VectorXd getVelocityLowerLimits() const = 0;
 
   /// Set upper limit for velocity
   virtual void setVelocityUpperLimit(std::size_t _index, double _velocity) = 0;
@@ -381,10 +381,10 @@ public:
   virtual double getVelocityUpperLimit(std::size_t _index) const = 0;
 
   /// Set the velocity upper limits of all the generalized coordinates.
-  virtual void setVelocityUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+  virtual void setVelocityUpperLimits(const math::VectorXd& upperLimits) = 0;
 
   /// Get the velocity upper limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getVelocityUpperLimits() const = 0;
+  virtual math::VectorXd getVelocityUpperLimits() const = 0;
 
   /// Set the velocity of a generalized coordinate in this Joint to its initial
   /// velocity
@@ -402,11 +402,11 @@ public:
 
   /// Change the velocities that resetVelocities() will give to this Joint's
   /// coordinates
-  virtual void setInitialVelocities(const Eigen::VectorXd& _initial) = 0;
+  virtual void setInitialVelocities(const math::VectorXd& _initial) = 0;
 
   /// Get the velocities that resetVelocities() will give to this Joint's
   /// coordinates
-  virtual Eigen::VectorXd getInitialVelocities() const = 0;
+  virtual math::VectorXd getInitialVelocities() const = 0;
 
   /// \}
 
@@ -421,10 +421,10 @@ public:
   virtual double getAcceleration(std::size_t _index) const = 0;
 
   /// Set the accelerations of all generalized coordinates in this Joint
-  virtual void setAccelerations(const Eigen::VectorXd& _accelerations) = 0;
+  virtual void setAccelerations(const math::VectorXd& _accelerations) = 0;
 
   /// Get the accelerations of all generalized coordinates in this Joint
-  virtual Eigen::VectorXd getAccelerations() const = 0;
+  virtual math::VectorXd getAccelerations() const = 0;
 
   /// Set the accelerations of all generalized coordinates in this Joint to zero
   virtual void resetAccelerations() = 0;
@@ -438,11 +438,11 @@ public:
   virtual double getAccelerationLowerLimit(std::size_t _index) const = 0;
 
   /// Set the acceleration upper limits of all the generalized coordinates.
-  virtual void setAccelerationLowerLimits(const Eigen::VectorXd& lowerLimits)
+  virtual void setAccelerationLowerLimits(const math::VectorXd& lowerLimits)
       = 0;
 
   /// Get the acceleration upper limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getAccelerationLowerLimits() const = 0;
+  virtual math::VectorXd getAccelerationLowerLimits() const = 0;
 
   /// Set upper limit for acceleration
   virtual void setAccelerationUpperLimit(
@@ -453,11 +453,11 @@ public:
   virtual double getAccelerationUpperLimit(std::size_t _index) const = 0;
 
   /// Set the acceleration upper limits of all the generalized coordinates.
-  virtual void setAccelerationUpperLimits(const Eigen::VectorXd& upperLimits)
+  virtual void setAccelerationUpperLimits(const math::VectorXd& upperLimits)
       = 0;
 
   /// Get the acceleration upper limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getAccelerationUpperLimits() const = 0;
+  virtual math::VectorXd getAccelerationUpperLimits() const = 0;
 
   /// \}
 
@@ -472,10 +472,10 @@ public:
   virtual double getForce(std::size_t _index) const = 0;
 
   /// Set the forces of all generalized coordinates in this Joint
-  virtual void setForces(const Eigen::VectorXd& _forces) = 0;
+  virtual void setForces(const math::VectorXd& _forces) = 0;
 
   /// Get the forces of all generalized coordinates in this Joint
-  virtual Eigen::VectorXd getForces() const = 0;
+  virtual math::VectorXd getForces() const = 0;
 
   /// Set the forces of all generalized coordinates in this Joint to zero
   virtual void resetForces() = 0;
@@ -487,10 +487,10 @@ public:
   virtual double getForceLowerLimit(std::size_t _index) const = 0;
 
   /// Set the force upper limits of all the generalized coordinates.
-  virtual void setForceLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+  virtual void setForceLowerLimits(const math::VectorXd& lowerLimits) = 0;
 
   /// Get the force upper limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getForceLowerLimits() const = 0;
+  virtual math::VectorXd getForceLowerLimits() const = 0;
 
   /// Set upper limit for force
   virtual void setForceUpperLimit(std::size_t _index, double _force) = 0;
@@ -499,10 +499,10 @@ public:
   virtual double getForceUpperLimit(std::size_t _index) const = 0;
 
   /// Set the force upper limits of all the generalized coordinates.
-  virtual void setForceUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+  virtual void setForceUpperLimits(const math::VectorXd& upperLimits) = 0;
 
   /// Get the force upper limits of all the generalized coordinates.
-  virtual Eigen::VectorXd getForceUpperLimits() const = 0;
+  virtual math::VectorXd getForceUpperLimits() const = 0;
 
   /// \}
 
@@ -558,8 +558,8 @@ public:
 
   /// Return the difference of two generalized coordinates which are measured in
   /// the configuration space of this Skeleton.
-  virtual Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
+  virtual math::VectorXd getPositionDifferences(
+      const math::VectorXd& _q2, const math::VectorXd& _q1) const = 0;
 
   /// \}
 
@@ -615,7 +615,7 @@ public:
 
   /// Get transform of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const math::Isometry3d& getRelativeTransform() const;
 
   /// Get spatial velocity of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
@@ -635,7 +635,7 @@ public:
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
   virtual math::Jacobian getRelativeJacobian(
-      const Eigen::VectorXd& positions) const = 0;
+      const math::VectorXd& positions) const = 0;
 
   /// Get time derivative of spatial Jacobian of the child BodyNode relative to
   /// the parent BodyNode expressed in the child BodyNode frame
@@ -658,7 +658,7 @@ public:
   /// \sa BodyNode::updateArticulatedInertia(double).
   ///
   /// \param[in] _timeStep Time step used for approximating q(k+1).
-  //  Eigen::VectorXd getSpringForces(double _timeStep) const;
+  //  math::VectorXd getSpringForces(double _timeStep) const;
 
   /// Get damping force
   ///
@@ -670,7 +670,7 @@ public:
   /// -dampingCoefficient * h * ddq(k) term is rearranged at the recursive
   /// forward dynamics algorithm, and it affects on the articulated inertia.
   /// \sa BodyNode::updateArticulatedInertia(double).
-  //  Eigen::VectorXd getDampingForces() const;
+  //  math::VectorXd getDampingForces() const;
 
   /// Returns wrench exerted to the child body node to satisfy the joint
   /// constraint.
@@ -922,7 +922,7 @@ protected:
 
   ///
   virtual void getInvMassMatrixSegment(
-      Eigen::MatrixXd& _invMassMat,
+      math::MatrixXd& _invMassMat,
       const std::size_t _col,
       const math::Matrix6d& _artInertia,
       const math::Vector6d& _spatialAcc)
@@ -930,7 +930,7 @@ protected:
 
   ///
   virtual void getInvAugMassMatrixSegment(
-      Eigen::MatrixXd& _invMassMat,
+      math::MatrixXd& _invMassMat,
       const std::size_t _col,
       const math::Matrix6d& _artInertia,
       const math::Vector6d& _spatialAcc)
@@ -940,8 +940,7 @@ protected:
   virtual void addInvMassMatrixSegmentTo(math::Vector6d& _acc) = 0;
 
   ///
-  virtual Eigen::VectorXd getSpatialToGeneralized(
-      const math::Vector6d& _spatial)
+  virtual math::VectorXd getSpatialToGeneralized(const math::Vector6d& _spatial)
       = 0;
 
   /// \}
@@ -954,7 +953,7 @@ protected:
   /// BodyNode expressed in the child BodyNode frame
   ///
   /// Do not use directly! Use getRelativeTransform() to access this
-  mutable Eigen::Isometry3d mT;
+  mutable math::Isometry3d mT;
 
   /// Relative spatial velocity from parent BodyNode to child BodyNode where the
   /// velocity is expressed in child body Frame

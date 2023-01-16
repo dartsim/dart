@@ -59,12 +59,12 @@ public:
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
   explicit TranslationalJoint2DUniqueProperties(
-      const Eigen::Matrix<double, 3, 2>& transAxes);
+      const math::Matrix<double, 3, 2>& transAxes);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
   TranslationalJoint2DUniqueProperties(
-      const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
+      const math::Vector3d& transAxis1, const math::Vector3d& transAxis2);
 
   /// Copy-constructor, customized for robustness
   TranslationalJoint2DUniqueProperties(
@@ -86,20 +86,20 @@ public:
   void setZXPlane();
 
   /// Sets plane type as arbitrary plane with two orthogonal translational axes
-  void setArbitraryPlane(const Eigen::Matrix<double, 3, 2>& transAxes);
+  void setArbitraryPlane(const math::Matrix<double, 3, 2>& transAxes);
 
   /// Sets plane type as arbitrary plane with two orthogonal translational axes
   void setArbitraryPlane(
-      const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
+      const math::Vector3d& transAxis1, const math::Vector3d& transAxis2);
 
   /// Returns first and second translational axes
-  const Eigen::Matrix<double, 3, 2>& getTranslationalAxes() const;
+  const math::Matrix<double, 3, 2>& getTranslationalAxes() const;
 
   /// Returns first translational axis
-  Eigen::Vector3d getTranslationalAxis1() const;
+  math::Vector3d getTranslationalAxis1() const;
 
   /// Returns second translational axis
-  Eigen::Vector3d getTranslationalAxis2() const;
+  math::Vector3d getTranslationalAxis2() const;
 
   /// Returns plane type
   PlaneType getPlaneType() const;
@@ -109,7 +109,7 @@ private:
   PlaneType mPlaneType;
 
   /// First and second translational axes
-  Eigen::Matrix<double, 3, 2> mTransAxes;
+  math::Matrix<double, 3, 2> mTransAxes;
 };
 
 //==============================================================================

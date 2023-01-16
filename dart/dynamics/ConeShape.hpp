@@ -78,11 +78,11 @@ public:
   /// \param[in] radius Radius of the circular base.
   /// \param[in] height Lateral height of the cone.
   /// \param[in] mass The mass of the cone.
-  static Eigen::Matrix3d computeInertia(
+  static math::Matrix3d computeInertia(
       double radius, double height, double mass);
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   ShapePtr clone() const override;

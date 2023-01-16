@@ -292,8 +292,8 @@ public:
   /// \param[in] result The raycast result.
   /// \return True if the ray hit an collision object.
   bool raycast(
-      const Eigen::Vector3d& from,
-      const Eigen::Vector3d& to,
+      const math::Vector3d& from,
+      const math::Vector3d& to,
       const RaycastOption& option = RaycastOption(),
       RaycastResult* result = nullptr);
 

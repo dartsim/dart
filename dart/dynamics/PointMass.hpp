@@ -59,23 +59,23 @@ public:
   struct State
   {
     /// Position
-    Eigen::Vector3d mPositions;
+    math::Vector3d mPositions;
 
     /// Generalized velocity
-    Eigen::Vector3d mVelocities;
+    math::Vector3d mVelocities;
 
     /// Generalized acceleration
-    Eigen::Vector3d mAccelerations;
+    math::Vector3d mAccelerations;
 
     /// Generalized force
-    Eigen::Vector3d mForces;
+    math::Vector3d mForces;
 
     /// Default constructor
     State(
-        const Eigen::Vector3d& positions = Eigen::Vector3d::Zero(),
-        const Eigen::Vector3d& velocities = Eigen::Vector3d::Zero(),
-        const Eigen::Vector3d& accelerations = Eigen::Vector3d::Zero(),
-        const Eigen::Vector3d& forces = Eigen::Vector3d::Zero());
+        const math::Vector3d& positions = math::Vector3d::Zero(),
+        const math::Vector3d& velocities = math::Vector3d::Zero(),
+        const math::Vector3d& accelerations = math::Vector3d::Zero(),
+        const math::Vector3d& forces = math::Vector3d::Zero());
 
     bool operator==(const State& other) const;
 
@@ -86,7 +86,7 @@ public:
   struct Properties
   {
     /// Resting position viewed in the parent SoftBodyNode frame
-    Eigen::Vector3d mX0;
+    math::Vector3d mX0;
 
     /// Mass.
     double mMass;
@@ -95,52 +95,52 @@ public:
     std::vector<std::size_t> mConnectedPointMassIndices;
 
     /// Lower limit of position
-    Eigen::Vector3d mPositionLowerLimits; // Currently unused
+    math::Vector3d mPositionLowerLimits; // Currently unused
 
     /// Upper limit of position
-    Eigen::Vector3d mPositionUpperLimits; // Currently unused
+    math::Vector3d mPositionUpperLimits; // Currently unused
 
     /// Min value allowed.
-    Eigen::Vector3d mVelocityLowerLimits; // Currently unused
+    math::Vector3d mVelocityLowerLimits; // Currently unused
 
     /// Max value allowed.
-    Eigen::Vector3d mVelocityUpperLimits; // Currently unused
+    math::Vector3d mVelocityUpperLimits; // Currently unused
 
     /// Min value allowed.
-    Eigen::Vector3d mAccelerationLowerLimits; // Currently unused
+    math::Vector3d mAccelerationLowerLimits; // Currently unused
 
     /// upper limit of generalized acceleration
-    Eigen::Vector3d mAccelerationUpperLimits; // Currently unused
+    math::Vector3d mAccelerationUpperLimits; // Currently unused
 
     /// Min value allowed.
-    Eigen::Vector3d mForceLowerLimits; // Currently unused
+    math::Vector3d mForceLowerLimits; // Currently unused
 
     /// Max value allowed.
-    Eigen::Vector3d mForceUpperLimits; // Currently unused
+    math::Vector3d mForceUpperLimits; // Currently unused
 
     Properties(
-        const Eigen::Vector3d& _X0 = Eigen::Vector3d::Zero(),
+        const math::Vector3d& _X0 = math::Vector3d::Zero(),
         double _mass = 0.0005,
         const std::vector<std::size_t>& _connections
         = std::vector<std::size_t>(),
-        const Eigen::Vector3d& _positionLowerLimits
-        = Eigen::Vector3d::Constant(-math::inf()),
-        const Eigen::Vector3d& _positionUpperLimits
-        = Eigen::Vector3d::Constant(math::inf()),
-        const Eigen::Vector3d& _velocityLowerLimits
-        = Eigen::Vector3d::Constant(-math::inf()),
-        const Eigen::Vector3d& _velocityUpperLimits
-        = Eigen::Vector3d::Constant(math::inf()),
-        const Eigen::Vector3d& _accelerationLowerLimits
-        = Eigen::Vector3d::Constant(-math::inf()),
-        const Eigen::Vector3d& _accelerationUpperLimits
-        = Eigen::Vector3d::Constant(math::inf()),
-        const Eigen::Vector3d& _forceLowerLimits
-        = Eigen::Vector3d::Constant(-math::inf()),
-        const Eigen::Vector3d& _forceUpperLimits
-        = Eigen::Vector3d::Constant(math::inf()));
+        const math::Vector3d& _positionLowerLimits
+        = math::Vector3d::Constant(-math::inf()),
+        const math::Vector3d& _positionUpperLimits
+        = math::Vector3d::Constant(math::inf()),
+        const math::Vector3d& _velocityLowerLimits
+        = math::Vector3d::Constant(-math::inf()),
+        const math::Vector3d& _velocityUpperLimits
+        = math::Vector3d::Constant(math::inf()),
+        const math::Vector3d& _accelerationLowerLimits
+        = math::Vector3d::Constant(-math::inf()),
+        const math::Vector3d& _accelerationUpperLimits
+        = math::Vector3d::Constant(math::inf()),
+        const math::Vector3d& _forceLowerLimits
+        = math::Vector3d::Constant(-math::inf()),
+        const math::Vector3d& _forceUpperLimits
+        = math::Vector3d::Constant(math::inf()));
 
-    void setRestingPosition(const Eigen::Vector3d& _x);
+    void setRestingPosition(const math::Vector3d& _x);
 
     void setMass(double _mass);
 
@@ -229,10 +229,10 @@ public:
   double getPosition(std::size_t _index) const;
 
   // Documentation inherited
-  void setPositions(const Eigen::Vector3d& _positions);
+  void setPositions(const math::Vector3d& _positions);
 
   // Documentation inherited
-  const Eigen::Vector3d& getPositions() const;
+  const math::Vector3d& getPositions() const;
 
   // Documentation inherited
   void resetPositions();
@@ -248,10 +248,10 @@ public:
   double getVelocity(std::size_t _index) const;
 
   // Documentation inherited
-  void setVelocities(const Eigen::Vector3d& _velocities);
+  void setVelocities(const math::Vector3d& _velocities);
 
   // Documentation inherited
-  const Eigen::Vector3d& getVelocities() const;
+  const math::Vector3d& getVelocities() const;
 
   // Documentation inherited
   void resetVelocities();
@@ -267,13 +267,13 @@ public:
   double getAcceleration(std::size_t _index) const;
 
   // Documentation inherited
-  void setAccelerations(const Eigen::Vector3d& _accelerations);
+  void setAccelerations(const math::Vector3d& _accelerations);
 
   // Documentation inherited
-  const Eigen::Vector3d& getAccelerations() const;
+  const math::Vector3d& getAccelerations() const;
 
   /// Get the Eta term of this PointMass
-  const Eigen::Vector3d& getPartialAccelerations() const;
+  const math::Vector3d& getPartialAccelerations() const;
 
   // Documentation inherited
   void resetAccelerations();
@@ -289,10 +289,10 @@ public:
   double getForce(std::size_t _index);
 
   // Documentation inherited
-  void setForces(const Eigen::Vector3d& _forces);
+  void setForces(const math::Vector3d& _forces);
 
   // Documentation inherited
-  const Eigen::Vector3d& getForces() const;
+  const math::Vector3d& getForces() const;
 
   // Documentation inherited
   void resetForces();
@@ -340,7 +340,7 @@ public:
   /// \param[in] _isForceLocal True if _force's reference frame is of the parent
   ///                          soft body node. False if _force's reference frame
   ///                          is of the world.
-  void addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal = false);
+  void addExtForce(const math::Vector3d& _force, bool _isForceLocal = false);
 
   ///
   void clearExtForce();
@@ -351,37 +351,37 @@ public:
   //----------------------------------------------------------------------------
   /// Set constraint impulse
   void setConstraintImpulse(
-      const Eigen::Vector3d& _constImp, bool _isLocal = false);
+      const math::Vector3d& _constImp, bool _isLocal = false);
 
   /// Add constraint impulse
   void addConstraintImpulse(
-      const Eigen::Vector3d& _constImp, bool _isLocal = false);
+      const math::Vector3d& _constImp, bool _isLocal = false);
 
   /// Clear constraint impulse
   void clearConstraintImpulse();
 
   /// Get constraint impulse
-  Eigen::Vector3d getConstraintImpulses() const;
+  math::Vector3d getConstraintImpulses() const;
 
   //----------------------------------------------------------------------------
   ///
-  void setRestingPosition(const Eigen::Vector3d& _p);
+  void setRestingPosition(const math::Vector3d& _p);
 
   ///
-  const Eigen::Vector3d& getRestingPosition() const;
+  const math::Vector3d& getRestingPosition() const;
 
   ///
-  const Eigen::Vector3d& getLocalPosition() const;
+  const math::Vector3d& getLocalPosition() const;
 
   ///
-  const Eigen::Vector3d& getWorldPosition() const;
+  const math::Vector3d& getWorldPosition() const;
 
   /// \todo Temporary function.
-  Eigen::Matrix<double, 3, Eigen::Dynamic> getBodyJacobian();
-  Eigen::Matrix<double, 3, Eigen::Dynamic> getWorldJacobian();
+  math::Matrix<double, 3, math::Dynamic> getBodyJacobian();
+  math::Matrix<double, 3, math::Dynamic> getWorldJacobian();
 
   /// Return velocity change due to impulse
-  const Eigen::Vector3d& getBodyVelocityChange() const;
+  const math::Vector3d& getBodyVelocityChange() const;
 
   ///
   SoftBodyNode* getParentSoftBodyNode();
@@ -399,20 +399,20 @@ public:
 
   /// Get the generalized velocity at the position of this point mass
   ///        where the velocity is expressed in the parent soft body node frame.
-  const Eigen::Vector3d& getBodyVelocity() const;
+  const math::Vector3d& getBodyVelocity() const;
 
   /// Get the generalized velocity at the position of this point mass
   ///        where the velocity is expressed in the world frame.
-  Eigen::Vector3d getWorldVelocity() const;
+  math::Vector3d getWorldVelocity() const;
 
   /// Get the generalized acceleration at the position of this point mass
   ///        where the acceleration is expressed in the parent soft body node
   ///        frame.
-  const Eigen::Vector3d& getBodyAcceleration() const;
+  const math::Vector3d& getBodyAcceleration() const;
 
   /// Get the generalized acceleration at the position of this point mass
   ///        where the acceleration is expressed in the world frame.
-  Eigen::Vector3d getWorldAcceleration() const;
+  math::Vector3d getWorldAcceleration() const;
 
 protected:
   /// Constructor used by SoftBodyNode
@@ -442,7 +442,7 @@ protected:
   /// Forward dynamics routine.
   /// \param[in] _dt Required for implicit joint stiffness and damping.
   /// \param[in] _gravity Vector of gravitational acceleration
-  void updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity);
+  void updateBiasForceFD(double _dt, const math::Vector3d& _gravity);
 
   /// \brief Update bias impulse associated with the articulated body inertia.
   /// Impulse-based forward dynamics routine.
@@ -460,7 +460,7 @@ protected:
 
   /// \brief Update body force. Inverse dynamics routine.
   void updateTransmittedForceID(
-      const Eigen::Vector3d& _gravity, bool _withExternalForces = false);
+      const math::Vector3d& _gravity, bool _withExternalForces = false);
 
   /// \brief Update body force. Forward dynamics routine.
   void updateTransmittedForce();
@@ -486,11 +486,11 @@ protected:
   void updateMassMatrix();
 
   ///
-  void aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col);
+  void aggregateMassMatrix(math::MatrixXd& _MCol, int _col);
 
   ///
   void aggregateAugMassMatrix(
-      Eigen::MatrixXd& _MCol, int _col, double _timeStep);
+      math::MatrixXd& _MCol, int _col, double _timeStep);
 
   ///
   void updateInvMassMatrix();
@@ -499,55 +499,55 @@ protected:
   void updateInvAugMassMatrix();
 
   ///
-  void aggregateInvMassMatrix(Eigen::MatrixXd& _MInvCol, int _col);
+  void aggregateInvMassMatrix(math::MatrixXd& _MInvCol, int _col);
 
   ///
   void aggregateInvAugMassMatrix(
-      Eigen::MatrixXd& _MInvCol, int _col, double _timeStep);
+      math::MatrixXd& _MInvCol, int _col, double _timeStep);
 
   ///
   void aggregateGravityForceVector(
-      Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity);
+      math::VectorXd& _g, const math::Vector3d& _gravity);
 
   ///
   void updateCombinedVector();
 
   ///
   void aggregateCombinedVector(
-      Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity);
+      math::VectorXd& _Cg, const math::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized
   ///        coordinates recursively.
-  void aggregateExternalForces(Eigen::VectorXd& _Fext);
+  void aggregateExternalForces(math::VectorXd& _Fext);
 
   /// \}
 
   //-------------------- Cache Data for Mass Matrix ----------------------------
   ///
-  Eigen::Vector3d mM_dV;
+  math::Vector3d mM_dV;
 
   ///
-  Eigen::Vector3d mM_F;
+  math::Vector3d mM_F;
 
   //----------------- Cache Data for Mass Inverse Matrix -----------------------
   ///
-  Eigen::Vector3d mBiasForceForInvMeta;
+  math::Vector3d mBiasForceForInvMeta;
 
   //---------------- Cache Data for Gravity Force Vector -----------------------
   ///
-  Eigen::Vector3d mG_F;
+  math::Vector3d mG_F;
 
   //------------------- Cache Data for Combined Vector -------------------------
   ///
-  Eigen::Vector3d mCg_dV;
+  math::Vector3d mCg_dV;
 
   ///
-  Eigen::Vector3d mCg_F;
+  math::Vector3d mCg_F;
 
 protected:
   // TODO(JS): Need?
   ///
-  //  Eigen::Matrix<std::size_t, 3, 1> mIndexInSkeleton;
+  //  math::Matrix<std::size_t, 3, 1> mIndexInSkeleton;
 
   /// SoftBodyNode that this PointMass belongs to
   SoftBodyNode* mParentSoftBodyNode;
@@ -560,67 +560,67 @@ protected:
   //----------------------------------------------------------------------------
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Vector3d mPositionDeriv;
+  math::Vector3d mPositionDeriv;
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Vector3d mVelocitiesDeriv;
+  math::Vector3d mVelocitiesDeriv;
 
   //----------------------------------------------------------------------------
   // Acceleration
   //----------------------------------------------------------------------------
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Vector3d mAccelerationsDeriv;
+  math::Vector3d mAccelerationsDeriv;
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Vector3d mForcesDeriv;
+  math::Vector3d mForcesDeriv;
 
   //----------------------------------------------------------------------------
   // Impulse
   //----------------------------------------------------------------------------
 
   /// Change of generalized velocity
-  Eigen::Vector3d mVelocityChanges;
+  math::Vector3d mVelocityChanges;
 
   //  /// Generalized impulse
-  //  Eigen::Vector3d mImpulse;
+  //  math::Vector3d mImpulse;
 
   /// Generalized constraint impulse
-  Eigen::Vector3d mConstraintImpulses;
+  math::Vector3d mConstraintImpulses;
 
   //----------------------------------------------------------------------------
 
   /// Current position viewed in world frame.
-  mutable Eigen::Vector3d mW;
+  mutable math::Vector3d mW;
 
   /// Current position viewed in parent soft body node frame.
-  mutable Eigen::Vector3d mX;
+  mutable math::Vector3d mX;
 
   /// Current velocity viewed in parent soft body node frame.
-  mutable Eigen::Vector3d mV;
+  mutable math::Vector3d mV;
 
   /// Partial Acceleration of this PointMass
-  mutable Eigen::Vector3d mEta;
+  mutable math::Vector3d mEta;
 
   ///
-  Eigen::Vector3d mAlpha;
+  math::Vector3d mAlpha;
 
   ///
-  Eigen::Vector3d mBeta;
+  math::Vector3d mBeta;
 
   /// Current acceleration viewed in parent body node frame.
-  mutable Eigen::Vector3d mA;
+  mutable math::Vector3d mA;
 
   ///
-  Eigen::Vector3d mF;
+  math::Vector3d mF;
 
   ///
   mutable double mPsi;
@@ -635,10 +635,10 @@ protected:
   mutable double mImplicitPi;
 
   /// Bias force
-  Eigen::Vector3d mB;
+  math::Vector3d mB;
 
   /// External force.
-  Eigen::Vector3d mFext;
+  math::Vector3d mFext;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<std::size_t> mDependentGenCoordIndices;
@@ -648,20 +648,20 @@ protected:
 
   //------------------------- Impulse-based Dyanmics ---------------------------
   /// Velocity change due to constraint impulse
-  Eigen::Vector3d mDelV;
+  math::Vector3d mDelV;
 
   /// Impulsive bias force due to external impulsive force exerted on
   ///        bodies of the parent skeleton.
-  Eigen::Vector3d mImpB;
+  math::Vector3d mImpB;
 
   /// Cache data for mImpB
-  Eigen::Vector3d mImpAlpha;
+  math::Vector3d mImpAlpha;
 
   /// Cache data for mImpB
-  Eigen::Vector3d mImpBeta;
+  math::Vector3d mImpBeta;
 
   /// Generalized impulsive body force w.r.t. body frame.
-  Eigen::Vector3d mImpF;
+  math::Vector3d mImpF;
 
   PointMassNotifier* mNotifier;
 };

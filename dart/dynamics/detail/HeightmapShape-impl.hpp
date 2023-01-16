@@ -110,7 +110,7 @@ void HeightmapShape<S>::setHeightField(
   }
 
   // make heightmap data local copy
-  const Eigen::Map<const HeightField> data(heights.data(), depth, width);
+  const math::Map<const HeightField> data(heights.data(), depth, width);
 
   setHeightField(data);
 }
@@ -181,7 +181,7 @@ std::size_t HeightmapShape<S>::getDepth() const
 
 //==============================================================================
 template <typename S>
-void HeightmapShape<S>::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
+void HeightmapShape<S>::notifyColorUpdated(const math::Vector4d& /*color*/)
 {
   incrementVersion();
 }
@@ -199,7 +199,7 @@ ShapePtr HeightmapShape<S>::clone() const
 
 //==============================================================================
 template <typename S>
-Eigen::Matrix3d HeightmapShape<S>::computeInertia(double mass) const
+math::Matrix3d HeightmapShape<S>::computeInertia(double mass) const
 {
   if (mIsBoundingBoxDirty) {
     updateBoundingBox();
@@ -210,21 +210,21 @@ Eigen::Matrix3d HeightmapShape<S>::computeInertia(double mass) const
 //==============================================================================
 template <typename S>
 void HeightmapShape<S>::computeBoundingBox(
-    Eigen::Vector3d& min, Eigen::Vector3d& max) const
+    math::Vector3d& min, math::Vector3d& max) const
 {
   const double dimX = getWidth() * mScale.x();
   const double dimY = getDepth() * mScale.y();
   const double dimZ = (mMaxHeight - mMinHeight) * mScale.z();
-  min = Eigen::Vector3d(-dimX * 0.5, -dimY * 0.5, mMinHeight * mScale.z());
-  max = min + Eigen::Vector3d(dimX, dimY, dimZ);
+  min = math::Vector3d(-dimX * 0.5, -dimY * 0.5, mMinHeight * mScale.z());
+  max = min + math::Vector3d(dimX, dimY, dimZ);
 }
 
 //==============================================================================
 template <typename S>
 void HeightmapShape<S>::updateBoundingBox() const
 {
-  Eigen::Vector3d min;
-  Eigen::Vector3d max;
+  math::Vector3d min;
+  math::Vector3d max;
   computeBoundingBox(min, max);
   mBoundingBox.setMin(min);
   mBoundingBox.setMax(max);
@@ -236,7 +236,7 @@ template <typename S>
 void HeightmapShape<S>::updateVolume() const
 {
   updateBoundingBox();
-  const Eigen::Vector3d size = mBoundingBox.getMax() - mBoundingBox.getMin();
+  const math::Vector3d size = mBoundingBox.getMax() - mBoundingBox.getMin();
   mVolume = size.x() * size.y() * size.z();
   mIsVolumeDirty = false;
 }

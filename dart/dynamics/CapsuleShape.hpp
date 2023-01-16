@@ -76,11 +76,11 @@ public:
   /// \param[in] radius Radius of the capsule.
   /// \param[in] height Height of the cylindrical part.
   /// \param[in] mass Mass of the capsule.
-  static Eigen::Matrix3d computeInertia(
+  static math::Matrix3d computeInertia(
       double radius, double height, double mass);
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
+  math::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   ShapePtr clone() const override;
