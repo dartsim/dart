@@ -30,16 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/allocator/CAllocator.hpp>
+#include <dart/common/allocator/AllocatorRaw.hpp>
 
 #include <gtest/gtest.h>
 
 using namespace dart;
 
 //==============================================================================
-TEST(CAllocatorTest, Basics)
+TEST(AllocatorRawTest, Basics)
 {
-  auto a = common::CAllocator();
+  auto a = common::AllocatorRaw();
   a.print();
 
   //---------------------

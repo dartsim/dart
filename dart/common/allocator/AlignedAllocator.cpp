@@ -30,54 +30,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/CAllocatorAligned.hpp"
+#include "dart/common/allocator/AlignedAllocator.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/allocator/AlignedAllocatorRaw.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-CAllocatorAligned::CAllocatorAligned() noexcept
+AlignedAllocator& AlignedAllocator::GetDefault()
 {
-  // Do nothing
+  static AlignedAllocatorRaw defaultAllocator;
+  return defaultAllocator;
 }
 
 //==============================================================================
-CAllocatorAligned::~CAllocatorAligned()
-{
-  // Do nothing
-}
-
-//==============================================================================
-void* CAllocatorAligned::allocate(size_t bytes, size_t alignment) noexcept
-{
-  if (bytes == 0) {
-    return nullptr;
-  }
-
-  DART_TRACE("Allocated {} bytes.", bytes);
-  return std::aligned_alloc(alignment, bytes);
-}
-
-//==============================================================================
-void CAllocatorAligned::deallocate(void* pointer, size_t bytes)
-{
-  DART_UNUSED(bytes);
-  std::free(pointer);
-  DART_TRACE("Deallocated.");
-}
-
-//==============================================================================
-void CAllocatorAligned::print(std::ostream& os, int indent) const
+void AlignedAllocator::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
-    os << "[dart::commmon::CAllocatorAligned]\n";
+    os << "[*::print is not implemented]\n";
   }
   const std::string spaces(indent, ' ');
-  if (indent != 0) {
-    os << spaces << "type: " << getType() << "\n";
-  }
+  os << spaces << "*::print is not implemented:\n";
+}
+
+//==============================================================================
+std::ostream& operator<<(std::ostream& os, const AlignedAllocator& allocator)
+{
+  allocator.print(os);
+  return os;
 }
 
 } // namespace dart::common

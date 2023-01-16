@@ -30,35 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/MemoryAllocator.hpp"
+#include "dart/common/allocator/AllocatorRaw.hpp"
 
+#include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
-#include "dart/common/allocator/CAllocator.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-MemoryAllocator& MemoryAllocator::GetDefault()
+AllocatorRaw::AllocatorRaw() noexcept
 {
-  static CAllocator defaultAllocator;
-  return defaultAllocator;
+  // Do nothing
 }
 
 //==============================================================================
-void MemoryAllocator::print(std::ostream& os, int indent) const
+AllocatorRaw::~AllocatorRaw()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void* AllocatorRaw::allocate(size_t bytes) noexcept
+{
+  if (bytes == 0) {
+    return nullptr;
+  }
+
+  DART_TRACE("Allocated {} bytes.", bytes);
+  return std::malloc(bytes);
+}
+
+//==============================================================================
+void AllocatorRaw::deallocate(void* pointer, size_t bytes)
+{
+  DART_UNUSED(bytes);
+  std::free(pointer);
+  DART_TRACE("Deallocated.");
+}
+
+//==============================================================================
+void AllocatorRaw::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
-    os << "[*::print is not implemented]\n";
+    os << "[AllocatorRaw]\n";
   }
   const std::string spaces(indent, ' ');
-  os << spaces << "*::print is not implemented:\n";
-}
-
-//==============================================================================
-std::ostream& operator<<(std::ostream& os, const MemoryAllocator& allocator)
-{
-  allocator.print(os);
-  return os;
+  if (indent != 0) {
+    os << spaces << "type: " << getType() << "\n";
+  }
 }
 
 } // namespace dart::common

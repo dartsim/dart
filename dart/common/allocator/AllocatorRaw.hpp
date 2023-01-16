@@ -30,32 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_COMMON_CALLOCATOR_HPP_
+#define DART_COMMON_CALLOCATOR_HPP_
 
-#include <dart/common/Fwd.hpp>
-#include <dart/common/allocator/MemoryAllocatorAligned.hpp>
+#include <dart/common/Export.hpp>
+#include <dart/common/allocator/Allocator.hpp>
 
 namespace dart::common {
 
-/// CAllocatorAligned is a stateless memory allocator that uses
-/// std::aligned_alloc and std::free for memory allocation and deallocation.
-///
-/// It is designed to be used in release mode and is derived from the
-/// MemoryAllocatorAligned base class.
-class DART_COMMON_API CAllocatorAligned : public MemoryAllocatorAligned
+/// A stateless memory allocator (in release mode) that uses std::malloc and
+/// std::free for memory allocation and deallocation.
+class DART_COMMON_API AllocatorRaw : public Allocator
 {
 public:
   /// Constructor
-  CAllocatorAligned() noexcept;
+  AllocatorRaw() noexcept;
 
   /// Destructor
-  ~CAllocatorAligned() override;
+  ~AllocatorRaw() override;
 
-  DART_STRING_TYPE(CAllocatorAligned);
+  DART_STRING_TYPE(AllocatorRaw);
 
   // Documentation inherited
-  [[nodiscard]] void* allocate(
-      size_t bytes, size_t alignment) noexcept override;
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
   // Documentation inherited
   void deallocate(void* pointer, size_t bytes) override;
@@ -65,3 +62,5 @@ public:
 };
 
 } // namespace dart::common
+
+#endif // DART_COMMON_CALLOCATOR_HPP_

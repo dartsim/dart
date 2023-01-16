@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/FreeListAllocator.hpp"
+#include "dart/common/allocator/AllocatorFreeList.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
@@ -39,15 +39,15 @@
 namespace dart::common {
 
 //==============================================================================
-FreeListAllocator::FreeListAllocator(
-    MemoryAllocator& baseAllocator, size_t initialAllocation)
+AllocatorFreeList::AllocatorFreeList(
+    Allocator& baseAllocator, size_t initialAllocation)
   : mBaseAllocator(baseAllocator)
 {
   allocateMemoryBlock(initialAllocation);
 }
 
 //==============================================================================
-FreeListAllocator::~FreeListAllocator()
+AllocatorFreeList::~AllocatorFreeList()
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
@@ -100,19 +100,19 @@ FreeListAllocator::~FreeListAllocator()
 }
 
 //==============================================================================
-const MemoryAllocator& FreeListAllocator::getBaseAllocator() const
+const Allocator& AllocatorFreeList::getBaseAllocator() const
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-MemoryAllocator& FreeListAllocator::getBaseAllocator()
+Allocator& AllocatorFreeList::getBaseAllocator()
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-void* FreeListAllocator::allocate(size_t bytes) noexcept
+void* AllocatorFreeList::allocate(size_t bytes) noexcept
 {
   // Not allowed to allocate zero bytes
   if (bytes == 0) {
@@ -182,7 +182,7 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
-void FreeListAllocator::deallocate(void* pointer, size_t bytes)
+void AllocatorFreeList::deallocate(void* pointer, size_t bytes)
 {
   DART_UNUSED(bytes, pointer);
 
@@ -221,7 +221,7 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 }
 
 //==============================================================================
-bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
+bool AllocatorFreeList::allocateMemoryBlock(size_t sizeToAllocate)
 {
   // Allocate memory chunk for header and the actual requested size
   void* memory
@@ -251,13 +251,13 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 }
 
 //==============================================================================
-void FreeListAllocator::print(std::ostream& os, int indent) const
+void AllocatorFreeList::print(std::ostream& os, int indent) const
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
   if (indent == 0) {
-    os << "[FreeListAllocator]\n";
+    os << "[AllocatorFreeList]\n";
   }
   const std::string spaces(indent, ' ');
   if (indent != 0) {
@@ -282,7 +282,7 @@ void FreeListAllocator::print(std::ostream& os, int indent) const
 }
 
 //==============================================================================
-FreeListAllocator::MemoryBlockHeader::MemoryBlockHeader(
+AllocatorFreeList::MemoryBlockHeader::MemoryBlockHeader(
     size_t size,
     MemoryBlockHeader* prev,
     MemoryBlockHeader* next,
@@ -299,25 +299,25 @@ FreeListAllocator::MemoryBlockHeader::MemoryBlockHeader(
 }
 
 //==============================================================================
-size_t FreeListAllocator::MemoryBlockHeader::asSizeT() const
+size_t AllocatorFreeList::MemoryBlockHeader::asSizeT() const
 {
   return reinterpret_cast<size_t>(this);
 }
 
 //==============================================================================
-unsigned char* FreeListAllocator::MemoryBlockHeader::asCharPtr()
+unsigned char* AllocatorFreeList::MemoryBlockHeader::asCharPtr()
 {
   return reinterpret_cast<unsigned char*>(this);
 }
 
 //==============================================================================
-const unsigned char* FreeListAllocator::MemoryBlockHeader::asCharPtr() const
+const unsigned char* AllocatorFreeList::MemoryBlockHeader::asCharPtr() const
 {
   return reinterpret_cast<const unsigned char*>(this);
 }
 
 //==============================================================================
-void FreeListAllocator::MemoryBlockHeader::split(size_t sizeToSplit)
+void AllocatorFreeList::MemoryBlockHeader::split(size_t sizeToSplit)
 {
   DART_ASSERT(sizeToSplit <= mSize);
   DART_ASSERT(!mIsAllocated);
@@ -350,7 +350,7 @@ void FreeListAllocator::MemoryBlockHeader::split(size_t sizeToSplit)
 }
 
 //==============================================================================
-void FreeListAllocator::MemoryBlockHeader::merge(MemoryBlockHeader* other)
+void AllocatorFreeList::MemoryBlockHeader::merge(MemoryBlockHeader* other)
 {
   DART_ASSERT(other->mPrev == this);
   DART_ASSERT(other->mNext != this);
@@ -373,7 +373,7 @@ void FreeListAllocator::MemoryBlockHeader::merge(MemoryBlockHeader* other)
 
 //==============================================================================
 #ifndef NDEBUG
-bool FreeListAllocator::MemoryBlockHeader::isValid() const
+bool AllocatorFreeList::MemoryBlockHeader::isValid() const
 {
   if (mPrev != nullptr && mPrev->mNext != this) {
     return false;

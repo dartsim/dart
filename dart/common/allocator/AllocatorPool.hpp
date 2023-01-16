@@ -34,8 +34,8 @@
 #define DART_COMMON_POOLALLOCATOR_HPP_
 
 #include <dart/common/Export.hpp>
-#include <dart/common/allocator/MemoryAllocator.hpp>
-#include <dart/common/allocator/MemoryAllocatorDebugger.hpp>
+#include <dart/common/allocator/Allocator.hpp>
+#include <dart/common/allocator/AllocatorDebugger.hpp>
 
 #include <array>
 #include <mutex>
@@ -44,28 +44,27 @@ namespace dart::common {
 
 /// Memory allocator optimized for allocating many objects of the same or
 /// similar sizes
-class DART_COMMON_API PoolAllocator : public MemoryAllocator
+class DART_COMMON_API AllocatorPool : public Allocator
 {
 public:
-  using Debug = MemoryAllocatorDebugger<PoolAllocator>;
+  using Debug = AllocatorDebugger<AllocatorPool>;
 
   /// Constructor
   ///
   /// \param[in] baseAllocator: (optional) Base memory allocator.
   /// \param[in] initialAllocation: (optional) Bytes to initially allocate.
-  explicit PoolAllocator(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
+  explicit AllocatorPool(Allocator& baseAllocator = Allocator::GetDefault());
 
   /// Destructor
-  ~PoolAllocator() override;
+  ~AllocatorPool() override;
 
-  DART_STRING_TYPE(PoolAllocator);
-
-  /// Returns the base allocator
-  [[nodiscard]] const MemoryAllocator& getBaseAllocator() const;
+  DART_STRING_TYPE(AllocatorPool);
 
   /// Returns the base allocator
-  [[nodiscard]] MemoryAllocator& getBaseAllocator();
+  [[nodiscard]] const Allocator& getBaseAllocator() const;
+
+  /// Returns the base allocator
+  [[nodiscard]] Allocator& getBaseAllocator();
 
   /// Returns the count of allocated memory blocks
   [[nodiscard]] int getNumAllocatedMemoryBlocks() const;
@@ -105,7 +104,7 @@ private:
   inline static bool mInitialized = false;
 
   /// The base allocator to allocate memory chunk
-  MemoryAllocator& mBaseAllocator;
+  Allocator& mBaseAllocator;
 
   /// Mutex for for mNumAllocatedMemoryBlocks, mNumMemoryBlocks,
   /// mFreeMemoryUnits, and mAllocatedMemoryBlocks.

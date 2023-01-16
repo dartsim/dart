@@ -43,29 +43,29 @@
 
 namespace dart::common {
 
-/// MemoryAllocator is the base class for non-aligned memory allocators.
+/// Allocator is the base class for non-aligned memory allocators.
 ///
 /// It provides a common interface for allocating and deallocating memory and is
 /// designed to be used as a base class for other allocators. Additionally, the
 /// class is derived from Castable, which enables casting to derived types.
-class DART_COMMON_API MemoryAllocator : public Castable<MemoryAllocator>
+class DART_COMMON_API Allocator : public Castable<Allocator>
 {
 public:
   /// Returns the default memory allocator
-  static MemoryAllocator& GetDefault();
+  static Allocator& GetDefault();
 
   /// Default constructor
-  MemoryAllocator() noexcept = default;
+  Allocator() noexcept = default;
 
   /// Destructor
-  virtual ~MemoryAllocator() = default;
+  virtual ~Allocator() = default;
 
   /// Returns type string.
   [[nodiscard]] virtual const std::string& getType() const = 0;
 
   /// Allocates \c size bytes of uninitialized storage.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
@@ -112,12 +112,11 @@ public:
   virtual void print(std::ostream& os = std::cout, int indent = 0) const;
 
   /// Prints state of the memory allocator
-  friend std::ostream& operator<<(
-      std::ostream& os, const MemoryAllocator& allocator);
+  friend std::ostream& operator<<(std::ostream& os, const Allocator& allocator);
 };
 
 } // namespace dart::common
 
-#include <dart/common/allocator/detail/MemoryAllocator-impl.hpp>
+#include <dart/common/allocator/detail/Allocator-impl.hpp>
 
 #endif // DART_COMMON_MEMORYALLOCATOR_HPP_

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/LinearAllocator.hpp"
+#include "dart/common/allocator/AllocatorLinear.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
@@ -38,8 +38,8 @@
 namespace dart::common {
 
 ////==============================================================================
-// LinearAllocator::LinearAllocator(
-//     size_t max_capacity, MemoryAllocator& base_allocator)
+// AllocatorLinear::AllocatorLinear(
+//     size_t max_capacity, Allocator& base_allocator)
 //   : m_max_capacity(max_capacity),
 //     m_base_allocator(base_allocator),
 //     m_start_ptr(base_allocator.allocate(max_capacity)),
@@ -53,7 +53,7 @@ namespace dart::common {
 // }
 
 ////==============================================================================
-// LinearAllocator::~LinearAllocator()
+// AllocatorLinear::~AllocatorLinear()
 //{
 //   if (m_start_ptr) {
 //     this->m_base_allocator.deallocate(m_start_ptr, m_max_capacity);
@@ -62,7 +62,7 @@ namespace dart::common {
 // }
 
 ////==============================================================================
-// void* LinearAllocator::allocate(size_t size) noexcept
+// void* AllocatorLinear::allocate(size_t size) noexcept
 //{
 //   if (size == 0) {
 //     return nullptr;
@@ -94,7 +94,7 @@ namespace dart::common {
 //}
 
 ////==============================================================================
-// void* LinearAllocator::allocate_aligned(size_t size, size_t alignment)
+// void* AllocatorLinear::allocate_aligned(size_t size, size_t alignment)
 // noexcept
 //{
 //   if (size == 0) {
@@ -138,48 +138,48 @@ namespace dart::common {
 //}
 
 ////==============================================================================
-// void LinearAllocator::deallocate(void* pointer, size_t size)
+// void AllocatorLinear::deallocate(void* pointer, size_t size)
 //{
-//   // LinearAllocator doesn't allow to deallocate memory
+//   // AllocatorLinear doesn't allow to deallocate memory
 //   DART_UNUSED(pointer, size);
 // }
 
 ////==============================================================================
-// void LinearAllocator::deallocate_aligned(void* pointer, size_t size)
+// void AllocatorLinear::deallocate_aligned(void* pointer, size_t size)
 //{
-//   // LinearAllocator doesn't allow to deallocate memory
+//   // AllocatorLinear doesn't allow to deallocate memory
 //   DART_UNUSED(pointer, size);
 // }
 
 ////==============================================================================
-// size_t LinearAllocator::get_max_capacity() const
+// size_t AllocatorLinear::get_max_capacity() const
 //{
 //   // No need to lock the mutex as m_max_capacity isn't changed once
 //   initialized return m_max_capacity;
 // }
 
 ////==============================================================================
-// size_t LinearAllocator::get_size() const
+// size_t AllocatorLinear::get_size() const
 //{
 //   std::lock_guard<std::mutex> lock(m_mutex);
 //   return m_offset;
 // }
 
 ////==============================================================================
-// const void* LinearAllocator::get_begin_address() const
+// const void* AllocatorLinear::get_begin_address() const
 //{
 //   // No need to lock the mutex as m_head isn't changed once initialized
 //   return m_start_ptr;
 // }
 
 ////==============================================================================
-// void LinearAllocator::print(std::ostream& os, int indent) const
+// void AllocatorLinear::print(std::ostream& os, int indent) const
 //{
 //   // Lock the mutex
 //   std::lock_guard<std::mutex> lock(m_mutex);
 
 //  if (indent == 0) {
-//    os << "[LinearAllocator]\n";
+//    os << "[AllocatorLinear]\n";
 //  }
 //  const std::string spaces(indent, ' ');
 //  if (indent != 0) {

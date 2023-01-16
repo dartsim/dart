@@ -35,14 +35,14 @@
 
 #include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
-#include <dart/common/allocator/MemoryAllocatorDebugger.hpp>
+#include <dart/common/allocator/AllocatorDebugger.hpp>
 
 namespace dart::common {
 
 //==============================================================================
 template <typename T>
 template <typename... Args>
-MemoryAllocatorDebugger<T>::MemoryAllocatorDebugger(Args&&... args)
+AllocatorDebugger<T>::AllocatorDebugger(Args&&... args)
   : mInternalAllocator(std::forward<Args>(args)...)
 {
   // Do nothing
@@ -50,7 +50,7 @@ MemoryAllocatorDebugger<T>::MemoryAllocatorDebugger(Args&&... args)
 
 //==============================================================================
 template <typename T>
-MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
+AllocatorDebugger<T>::~AllocatorDebugger()
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
@@ -77,23 +77,23 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
 
 //==============================================================================
 template <typename T>
-const std::string& MemoryAllocatorDebugger<T>::getStaticType()
+const std::string& AllocatorDebugger<T>::getStaticType()
 {
   static const std::string type
-      = "dart::common::MemoryAllocatorDebugger<" + T::getStaticType() + ">";
+      = "dart::common::AllocatorDebugger<" + T::getStaticType() + ">";
   return type;
 }
 
 //==============================================================================
 template <typename T>
-const std::string& MemoryAllocatorDebugger<T>::getType() const
+const std::string& AllocatorDebugger<T>::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
 template <typename T>
-void* MemoryAllocatorDebugger<T>::allocate(size_t bytes) noexcept
+void* AllocatorDebugger<T>::allocate(size_t bytes) noexcept
 {
   void* newPtr = mInternalAllocator.allocate(bytes);
 
@@ -109,7 +109,7 @@ void* MemoryAllocatorDebugger<T>::allocate(size_t bytes) noexcept
 
 //==============================================================================
 template <typename T>
-void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
+void AllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
 {
   std::lock_guard<std::mutex> lock(mMutex);
 
@@ -139,7 +139,7 @@ void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
 
 //==============================================================================
 template <typename T>
-bool MemoryAllocatorDebugger<T>::isEmpty() const
+bool AllocatorDebugger<T>::isEmpty() const
 {
   std::lock_guard<std::mutex> lock(mMutex);
   return mMapPointerToSize.empty();
@@ -147,7 +147,7 @@ bool MemoryAllocatorDebugger<T>::isEmpty() const
 
 //==============================================================================
 template <typename T>
-bool MemoryAllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
+bool AllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
 {
   std::lock_guard<std::mutex> lock(mMutex);
 
@@ -166,21 +166,21 @@ bool MemoryAllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
 
 //==============================================================================
 template <typename T>
-const T& MemoryAllocatorDebugger<T>::getInternalAllocator() const
+const T& AllocatorDebugger<T>::getInternalAllocator() const
 {
   return mInternalAllocator;
 }
 
 //==============================================================================
 template <typename T>
-T& MemoryAllocatorDebugger<T>::getInternalAllocator()
+T& AllocatorDebugger<T>::getInternalAllocator()
 {
   return mInternalAllocator;
 }
 
 //==============================================================================
 template <typename T>
-void MemoryAllocatorDebugger<T>::print(std::ostream& os, int indent) const
+void AllocatorDebugger<T>::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
     os << "[" << getType() << "]\n";

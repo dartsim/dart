@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/allocator/PoolAllocator.hpp>
+#include <dart/common/allocator/AllocatorPool.hpp>
 
 #include <gtest/gtest.h>
 
@@ -38,17 +38,15 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
-TEST(PoolAllocatorTest, Constructors)
+TEST(AllocatorPoolTest, Constructors)
 {
-  auto a = PoolAllocator::Debug();
+  auto a = AllocatorPool::Debug();
   EXPECT_EQ(
-      &a.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+      &a.getInternalAllocator().getBaseAllocator(), &Allocator::GetDefault());
 
-  auto b = PoolAllocator::Debug(MemoryAllocator::GetDefault());
+  auto b = AllocatorPool::Debug(Allocator::GetDefault());
   EXPECT_EQ(
-      &b.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+      &b.getInternalAllocator().getBaseAllocator(), &Allocator::GetDefault());
 
   EXPECT_EQ(b.getInternalAllocator().getNumAllocatedMemoryBlocks(), 0);
 
@@ -57,9 +55,9 @@ TEST(PoolAllocatorTest, Constructors)
 }
 
 //==============================================================================
-TEST(PoolAllocatorTest, Allocate)
+TEST(AllocatorPoolTest, Allocate)
 {
-  auto a = PoolAllocator::Debug();
+  auto a = AllocatorPool::Debug();
   EXPECT_TRUE(a.isEmpty());
 
   // Cannot allocate 0 bytes

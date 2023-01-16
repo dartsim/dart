@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/allocator/FreeListAllocator.hpp>
+#include <dart/common/allocator/AllocatorFreeList.hpp>
 
 #include <gtest/gtest.h>
 
@@ -38,26 +38,24 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
-TEST(FreeListAllocatorTest, Constructors)
+TEST(AllocatorFreeListTest, Constructors)
 {
-  auto a = FreeListAllocator::Debug();
+  auto a = AllocatorFreeList::Debug();
   EXPECT_EQ(
-      &a.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+      &a.getInternalAllocator().getBaseAllocator(), &Allocator::GetDefault());
 
-  auto b = FreeListAllocator::Debug(MemoryAllocator::GetDefault());
+  auto b = AllocatorFreeList::Debug(Allocator::GetDefault());
   EXPECT_EQ(
-      &b.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+      &b.getInternalAllocator().getBaseAllocator(), &Allocator::GetDefault());
 
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
 }
 
 //==============================================================================
-TEST(FreeListAllocatorTest, Basics)
+TEST(AllocatorFreeListTest, Basics)
 {
-  auto a = FreeListAllocator::Debug();
+  auto a = AllocatorFreeList::Debug();
   EXPECT_TRUE(a.isEmpty());
 
   // Cannot allocate 0 bytes
@@ -76,9 +74,9 @@ TEST(FreeListAllocatorTest, Basics)
 }
 
 //==============================================================================
-TEST(FreeListAllocatorTest, MemoryLeak)
+TEST(AllocatorFreeListTest, MemoryLeak)
 {
-  auto a = FreeListAllocator::Debug();
+  auto a = AllocatorFreeList::Debug();
   EXPECT_TRUE(a.isEmpty());
 
   // Allocate small memory
@@ -86,6 +84,6 @@ TEST(FreeListAllocatorTest, MemoryLeak)
   EXPECT_NE(ptr1, nullptr);
 
   EXPECT_FALSE(a.isEmpty());
-  // Expect that FreeListAllocator complains that not all the memory is
+  // Expect that AllocatorFreeList complains that not all the memory is
   // deallocated
 }

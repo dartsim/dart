@@ -41,19 +41,18 @@ namespace dart::simulation {
 //==============================================================================
 MemoryManager& MemoryManager::GetDefault()
 {
-  static MemoryManager defaultMemoryManager(
-      common::MemoryAllocator::GetDefault());
+  static MemoryManager defaultMemoryManager(common::Allocator::GetDefault());
   return defaultMemoryManager;
 }
 
 //==============================================================================
-MemoryManager::MemoryManager(common::MemoryAllocator& baseAllocator)
+MemoryManager::MemoryManager(common::Allocator& baseAllocator)
   : mBaseAllocator(baseAllocator),
-    mFreeListAllocator(mBaseAllocator),
+    mAllocatorFreeList(mBaseAllocator),
 #ifdef NDEBUG
-    mPoolAllocator(mFreeListAllocator)
+    mAllocatorPool(mAllocatorFreeList)
 #else
-    mPoolAllocator(mFreeListAllocator.getInternalAllocator())
+    mAllocatorPool(mAllocatorFreeList.getInternalAllocator())
 #endif
 {
   // Do nothing
@@ -66,28 +65,28 @@ MemoryManager::~MemoryManager()
 }
 
 //==============================================================================
-common::MemoryAllocator& MemoryManager::getBaseAllocator()
+common::Allocator& MemoryManager::getBaseAllocator()
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-common::FreeListAllocator& MemoryManager::getFreeListAllocator()
+common::AllocatorFreeList& MemoryManager::getAllocatorFreeList()
 {
 #ifdef NDEBUG
-  return mFreeListAllocator;
+  return mAllocatorFreeList;
 #else
-  return mFreeListAllocator.getInternalAllocator();
+  return mAllocatorFreeList.getInternalAllocator();
 #endif
 }
 
 //==============================================================================
-common::PoolAllocator& MemoryManager::getPoolAllocator()
+common::AllocatorPool& MemoryManager::getAllocatorPool()
 {
 #ifdef NDEBUG
-  return mPoolAllocator;
+  return mAllocatorPool;
 #else
-  return mPoolAllocator.getInternalAllocator();
+  return mAllocatorPool.getInternalAllocator();
 #endif
 }
 
@@ -98,9 +97,9 @@ void* MemoryManager::allocate(Type type, size_t bytes)
     case Type::Base:
       return mBaseAllocator.allocate(bytes);
     case Type::Free:
-      return mFreeListAllocator.allocate(bytes);
+      return mAllocatorFreeList.allocate(bytes);
     case Type::Pool:
-      return mPoolAllocator.allocate(bytes);
+      return mAllocatorPool.allocate(bytes);
   }
   return nullptr;
 }
@@ -125,10 +124,10 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       mBaseAllocator.deallocate(pointer, bytes);
       break;
     case Type::Free:
-      mFreeListAllocator.deallocate(pointer, bytes);
+      mAllocatorFreeList.deallocate(pointer, bytes);
       break;
     case Type::Pool:
-      mPoolAllocator.deallocate(pointer, bytes);
+      mAllocatorPool.deallocate(pointer, bytes);
       break;
   }
 }
@@ -149,10 +148,10 @@ void MemoryManager::deallocateUsingPool(void* pointer, size_t bytes)
 //==============================================================================
 bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
 {
-  if (mFreeListAllocator.hasAllocated(pointer, size))
+  if (mAllocatorFreeList.hasAllocated(pointer, size))
     return true;
 
-  if (mPoolAllocator.hasAllocated(pointer, size))
+  if (mAllocatorPool.hasAllocated(pointer, size))
     return true;
 
   return false;
@@ -167,9 +166,9 @@ void MemoryManager::print(std::ostream& os, int indent) const
   }
   const std::string spaces(indent, ' ');
   os << spaces << "free_allocator:\n";
-  mFreeListAllocator.print(os, indent + 2);
+  mAllocatorFreeList.print(os, indent + 2);
   os << spaces << "pool_allocator:\n";
-  mPoolAllocator.print(os, indent + 2);
+  mAllocatorPool.print(os, indent + 2);
   os << spaces << "base_allocator:\n";
   mBaseAllocator.print(os, indent + 2);
 }

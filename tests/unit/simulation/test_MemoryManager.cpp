@@ -42,8 +42,8 @@ TEST(MemoryManagerTest, BaseAllocator)
 {
   auto mm = MemoryManager();
   auto& baseAllocator = mm.getBaseAllocator();
-  auto& freeListAllocator = mm.getFreeListAllocator();
-  auto& poolAllocator = mm.getPoolAllocator();
+  auto& freeListAllocator = mm.getAllocatorFreeList();
+  auto& poolAllocator = mm.getAllocatorPool();
 
   EXPECT_EQ(&freeListAllocator.getBaseAllocator(), &baseAllocator);
   EXPECT_EQ(&poolAllocator.getBaseAllocator(), &freeListAllocator);
@@ -58,7 +58,7 @@ TEST(MemoryManagerTest, Allocate)
   EXPECT_EQ(mm.allocateUsingFree(0), nullptr);
   EXPECT_EQ(mm.allocateUsingPool(0), nullptr);
 
-  // Allocate 1 byte using FreeListAllocator
+  // Allocate 1 byte using AllocatorFreeList
   auto ptr1 = mm.allocateUsingFree(1);
   EXPECT_NE(ptr1, nullptr);
 #ifndef NDEBUG
@@ -67,7 +67,7 @@ TEST(MemoryManagerTest, Allocate)
   EXPECT_FALSE(mm.hasAllocated(ptr1, 1 * 2));
 #endif
 
-  // Allocate 1 byte using PoolAllocator
+  // Allocate 1 byte using AllocatorPool
   auto ptr2 = mm.allocateUsingPool(1);
   EXPECT_NE(ptr2, nullptr);
 #ifndef NDEBUG

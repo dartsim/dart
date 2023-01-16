@@ -32,13 +32,13 @@
 
 #pragma once
 
-#include <dart/common/allocator/MemoryAllocatorAligned.hpp>
+#include <dart/common/allocator/Allocator.hpp>
 
 #include <memory>
 
 namespace dart::common {
 
-/// This class is a wrapper for a MemoryAllocator making it compatible with the
+/// This class is a wrapper for a Allocator making it compatible with the
 /// STL's std::allocator interface. By using this wrapper class, you can use
 /// your custom memory allocator with STL container classes such as std::vector
 /// and std::list.
@@ -53,9 +53,9 @@ namespace dart::common {
 ///
 /// Note that this class can be used with any custom memory allocator that
 /// implements the required interface of the std::allocator, such as the
-/// FreeListAllocator.
+/// AllocatorFreeList.
 template <typename T>
-class StlAllocatorAligned : public std::allocator<T>
+class StdAllocator : public std::allocator<T>
 {
 public:
   using Base = std::allocator<T>;
@@ -75,27 +75,26 @@ public:
   template <typename U>
   struct rebind
   {
-    using other = StlAllocatorAligned<U>;
+    using other = StdAllocator<U>;
   };
 
   /// Default constructor
-  explicit StlAllocatorAligned(
-      MemoryAllocatorAligned& baseAllocator
-      = MemoryAllocatorAligned::GetDefault()) noexcept;
+  explicit StdAllocator(
+      Allocator& baseAllocator = Allocator::GetDefault()) noexcept;
 
   /// Copy constructor
-  StlAllocatorAligned(const StlAllocatorAligned& other) throw();
+  StdAllocator(const StdAllocator& other) throw();
 
   /// Copy constructor
   template <class U>
-  StlAllocatorAligned(const StlAllocatorAligned<U>& other) throw();
+  StdAllocator(const StdAllocator<U>& other) throw();
 
   /// Destructor
-  ~StlAllocatorAligned() = default;
+  ~StdAllocator() = default;
 
   /// Allocates n * sizeof(T) bytes of uninitialized storage.
   ///
-  /// \param[in] n: The number of objects to allocate sotrage for.
+  /// \param[in] n: The number of objects to allocate storage for.
   /// \param[in] hint: Point to a nearby memory location.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
@@ -118,14 +117,14 @@ public:
   /// Prints state of the memory allocator
   template <typename U>
   friend std::ostream& operator<<(
-      std::ostream& os, const StlAllocatorAligned<U>& allocator);
+      std::ostream& os, const StdAllocator<U>& allocator);
 
 private:
   template <typename U>
-  friend class StlAllocatorAligned;
-  MemoryAllocatorAligned& mBaseAllocator;
+  friend class StdAllocator;
+  Allocator& mBaseAllocator;
 };
 
 } // namespace dart::common
 
-#include <dart/common/allocator/detail/StlAllocatorAligned-impl.hpp>
+#include <dart/common/allocator/detail/StdAllocator-impl.hpp>

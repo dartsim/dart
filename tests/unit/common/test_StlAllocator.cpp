@@ -38,9 +38,9 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
-GTEST_TEST(StlAllocatorTest, Basics)
+GTEST_TEST(StdAllocatorTest, Basics)
 {
-  auto a = StlAllocator<int>();
+  auto a = StdAllocator<int>();
   auto o1 = a.allocate(1);
   auto o2 = a.allocate(1);
   EXPECT_TRUE(o1 != nullptr);
@@ -51,13 +51,13 @@ GTEST_TEST(StlAllocatorTest, Basics)
 }
 
 //==============================================================================
-// GTEST_TEST(StlAllocatorTest, Basics2)
+// GTEST_TEST(StdAllocatorTest, Basics2)
 //{
-//  LinearAllocator base_allocator(sizeof(int) + 1);
+//  AllocatorLinear base_allocator(sizeof(int) + 1);
 //  static_assert(
 //      sizeof(int) > 1,
 //      "sizeof(int) should be greater than 1 to keep this test valid.");
-//  auto a = StlAllocator<int>(base_allocator);
+//  auto a = StdAllocator<int>(base_allocator);
 //  EXPECT_TRUE(a.allocate(1) != nullptr);
 //  try {
 //    EXPECT_TRUE(a.allocate(1) == nullptr);

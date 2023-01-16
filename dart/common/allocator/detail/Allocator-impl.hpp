@@ -30,81 +30,68 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
+#define DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
 
-#include <dart/common/Logging.hpp>
-#include <dart/common/allocator/StlAllocator.hpp>
+#include <dart/common/allocator/Allocator.hpp>
 
 namespace dart::common {
 
 //==============================================================================
 template <typename T>
-StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
-  : mBaseAllocator(baseAllocator)
+T* Allocator::allocateAs(size_t n) noexcept
 {
-  // Do nothing
+  return static_cast<T*>(allocate(n * sizeof(T)));
 }
 
 //==============================================================================
-template <typename T>
-StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+template <typename T, typename... Args>
+T* Allocator::construct(Args&&... args) noexcept
 {
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-template <class U>
-StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
-    size_type n, const void* hint)
-{
-  (void)hint;
-  pointer ptr
-      = reinterpret_cast<pointer>(mBaseAllocator.allocate(n * sizeof(T)));
-
-  // Throw std::bad_alloc to comply 23.10.9.1
-  // Reference: https://stackoverflow.com/a/50326956/3122234
-  if (!ptr) {
-    throw std::bad_alloc();
+  // Allocate new memory for a new object (without calling the constructor)
+  void* object = allocate(sizeof(T));
+  if (!object) {
+    return nullptr;
   }
 
-  return ptr;
-}
-
-//==============================================================================
-template <typename T>
-void StlAllocator<T>::deallocate(pointer pointer, size_type n)
-{
-  mBaseAllocator.deallocate(pointer, n * sizeof(T));
-}
-
-//==============================================================================
-template <typename T>
-void StlAllocator<T>::print(std::ostream& os, int indent) const
-{
-  if (indent == 0) {
-    os << "[dart::common::StlAllocator]\n";
+  // Call constructor. Return nullptr if failed.
+  try {
+    new (object) T(std::forward<Args>(args)...);
+  } catch (...) {
+    deallocate(object, sizeof(T));
+    return nullptr;
   }
-  const std::string spaces(indent, ' ');
-  os << spaces << "base_allocator:\n";
-  mBaseAllocator.print(os, indent + 2);
+
+  return reinterpret_cast<T*>(object);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* Allocator::constructAt(void* pointer, Args&&... args)
+{
+  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
+      T(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* Allocator::constructAt(T* pointer, Args&&... args)
+{
+  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
+      T(std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const StlAllocator<T>& allocator)
+void Allocator::destroy(T* object) noexcept
 {
-  allocator.print(os);
-  return os;
+  if (!object) {
+    return;
+  }
+  object->~T();
+  deallocate(object, sizeof(T));
 }
 
 } // namespace dart::common
+
+#endif // DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_

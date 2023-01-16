@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/PoolAllocator.hpp"
+#include "dart/common/allocator/AllocatorPool.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
@@ -41,7 +41,7 @@
 namespace dart::common {
 
 //==============================================================================
-PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
+AllocatorPool::AllocatorPool(Allocator& baseAllocator)
   : mBaseAllocator(baseAllocator)
 {
   static_assert(
@@ -79,7 +79,7 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
 }
 
 //==============================================================================
-PoolAllocator::~PoolAllocator()
+AllocatorPool::~AllocatorPool()
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
@@ -92,25 +92,25 @@ PoolAllocator::~PoolAllocator()
 }
 
 //==============================================================================
-const MemoryAllocator& PoolAllocator::getBaseAllocator() const
+const Allocator& AllocatorPool::getBaseAllocator() const
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-MemoryAllocator& PoolAllocator::getBaseAllocator()
+Allocator& AllocatorPool::getBaseAllocator()
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-int PoolAllocator::getNumAllocatedMemoryBlocks() const
+int AllocatorPool::getNumAllocatedMemoryBlocks() const
 {
   return mCurrentMemoryBlockIndex;
 }
 
 //==============================================================================
-void* PoolAllocator::allocate(size_t bytes) noexcept
+void* AllocatorPool::allocate(size_t bytes) noexcept
 {
   // Cannot allocate zero bytes
   if (bytes == 0) {
@@ -121,7 +121,7 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
   // MAX_UNIT_SIZE
   if (bytes > MAX_UNIT_SIZE) {
     DART_TRACE(
-        "Cannot allocate memory of size > {} using PoolAllocator.",
+        "Cannot allocate memory of size > {} using AllocatorPool.",
         MAX_UNIT_SIZE);
     return mBaseAllocator.allocate(bytes);
   }
@@ -178,7 +178,7 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
-void PoolAllocator::deallocate(void* pointer, size_t bytes)
+void AllocatorPool::deallocate(void* pointer, size_t bytes)
 {
   // Cannot deallocate nullptr or zero bytes
   if (pointer == nullptr || bytes == 0) {
@@ -200,13 +200,13 @@ void PoolAllocator::deallocate(void* pointer, size_t bytes)
 }
 
 //==============================================================================
-void PoolAllocator::print(std::ostream& os, int indent) const
+void AllocatorPool::print(std::ostream& os, int indent) const
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
   if (indent == 0) {
-    os << "[PoolAllocator]\n";
+    os << "[AllocatorPool]\n";
   }
   const std::string spaces(indent, ' ');
   if (indent != 0) {

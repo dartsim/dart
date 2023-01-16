@@ -34,14 +34,14 @@
 #define DART_COMMON_FREELISTALLOCATOR_HPP_
 
 #include <dart/common/Export.hpp>
-#include <dart/common/allocator/MemoryAllocator.hpp>
-#include <dart/common/allocator/MemoryAllocatorDebugger.hpp>
+#include <dart/common/allocator/Allocator.hpp>
+#include <dart/common/allocator/AllocatorDebugger.hpp>
 
 #include <mutex>
 
 namespace dart::common {
 
-/// FreeListAllocator is a memory allocator designed for allocating memory of
+/// AllocatorFreeList is a memory allocator designed for allocating memory of
 /// various sizes.
 ///
 /// It preallocates a large chunk of contiguous memory during construction,
@@ -54,29 +54,29 @@ namespace dart::common {
 /// the preallocated memory are currently in use. If the preallocated memory
 /// runs out, the class will allocate additional memory chunks using the base
 /// allocator.
-class DART_COMMON_API FreeListAllocator : public MemoryAllocator
+class DART_COMMON_API AllocatorFreeList : public Allocator
 {
 public:
-  using Debug = MemoryAllocatorDebugger<FreeListAllocator>;
+  using Debug = AllocatorDebugger<AllocatorFreeList>;
 
   /// Constructor
   ///
   /// \param[in] baseAllocator: (optional) Base memory allocator.
   /// \param[in] initialAllocation: (optional) Bytes to initially allocate.
-  explicit FreeListAllocator(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
+  explicit AllocatorFreeList(
+      Allocator& baseAllocator = Allocator::GetDefault(),
       size_t initialAllocation = 1048576 /* 1 MB */);
 
   /// Destructor
-  ~FreeListAllocator() override;
+  ~AllocatorFreeList() override;
 
-  DART_STRING_TYPE(FreeListAllocator);
-
-  /// Returns the base allocator
-  [[nodiscard]] const MemoryAllocator& getBaseAllocator() const;
+  DART_STRING_TYPE(AllocatorFreeList);
 
   /// Returns the base allocator
-  [[nodiscard]] MemoryAllocator& getBaseAllocator();
+  [[nodiscard]] const Allocator& getBaseAllocator() const;
+
+  /// Returns the base allocator
+  [[nodiscard]] Allocator& getBaseAllocator();
 
   // Documentation inherited
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;
@@ -140,7 +140,7 @@ private:
   bool allocateMemoryBlock(size_t sizeToAllocate);
 
   /// The base allocator
-  MemoryAllocator& mBaseAllocator;
+  Allocator& mBaseAllocator;
 
   /// Mutex for private variables except the base allocator
   mutable std::mutex mMutex;

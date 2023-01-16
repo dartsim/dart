@@ -32,20 +32,20 @@
 
 #pragma once
 
-#include <dart/common/allocator/MemoryAllocatorAligned.hpp>
+#include <dart/common/allocator/AlignedAllocator.hpp>
 
 namespace dart::common {
 
 //==============================================================================
 template <typename T>
-T* MemoryAllocatorAligned::allocateAs(size_t n) noexcept
+T* AlignedAllocator::allocateAs(size_t n) noexcept
 {
   return static_cast<T*>(allocate(n * sizeof(T), alignof(T)));
 }
 
 //==============================================================================
 template <typename T, typename... Args>
-T* MemoryAllocatorAligned::construct(Args&&... args) noexcept
+T* AlignedAllocator::construct(Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
   void* object = allocate(sizeof(T), alignof(T));
@@ -66,7 +66,7 @@ T* MemoryAllocatorAligned::construct(Args&&... args) noexcept
 
 //==============================================================================
 template <typename T, typename... Args>
-T* MemoryAllocatorAligned::constructAt(void* pointer, Args&&... args)
+T* AlignedAllocator::constructAt(void* pointer, Args&&... args)
 {
   return ::new (
       const_cast<void*>(static_cast<const volatile void*>(pointer)), alignof(T))
@@ -75,7 +75,7 @@ T* MemoryAllocatorAligned::constructAt(void* pointer, Args&&... args)
 
 //==============================================================================
 template <typename T, typename... Args>
-T* MemoryAllocatorAligned::constructAt(T* pointer, Args&&... args)
+T* AlignedAllocator::constructAt(T* pointer, Args&&... args)
 {
   return ::new (
       const_cast<void*>(static_cast<const volatile void*>(pointer)), alignof(T))
@@ -84,7 +84,7 @@ T* MemoryAllocatorAligned::constructAt(T* pointer, Args&&... args)
 
 //==============================================================================
 template <typename T>
-void MemoryAllocatorAligned::destroy(T* object) noexcept
+void AlignedAllocator::destroy(T* object) noexcept
 {
   if (!object) {
     return;

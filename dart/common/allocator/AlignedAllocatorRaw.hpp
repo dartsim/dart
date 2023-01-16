@@ -30,55 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/CAllocator.hpp"
+#pragma once
 
-#include "dart/common/Console.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include <dart/common/Fwd.hpp>
+#include <dart/common/allocator/AlignedAllocator.hpp>
 
 namespace dart::common {
 
-//==============================================================================
-CAllocator::CAllocator() noexcept
+/// AlignedAllocatorRaw is a stateless memory allocator that uses
+/// std::aligned_alloc and std::free for memory allocation and deallocation.
+///
+/// It is designed to be used in release mode and is derived from the
+/// AlignedAllocator base class.
+class DART_COMMON_API AlignedAllocatorRaw : public AlignedAllocator
 {
-  // Do nothing
-}
+public:
+  /// Constructor
+  AlignedAllocatorRaw() noexcept;
 
-//==============================================================================
-CAllocator::~CAllocator()
-{
-  // Do nothing
-}
+  /// Destructor
+  ~AlignedAllocatorRaw() override;
 
-//==============================================================================
-void* CAllocator::allocate(size_t bytes) noexcept
-{
-  if (bytes == 0) {
-    return nullptr;
-  }
+  DART_STRING_TYPE(AlignedAllocatorRaw);
 
-  DART_TRACE("Allocated {} bytes.", bytes);
-  return std::malloc(bytes);
-}
+  // Documentation inherited
+  [[nodiscard]] void* allocate(
+      size_t bytes, size_t alignment) noexcept override;
 
-//==============================================================================
-void CAllocator::deallocate(void* pointer, size_t bytes)
-{
-  DART_UNUSED(bytes);
-  std::free(pointer);
-  DART_TRACE("Deallocated.");
-}
+  // Documentation inherited
+  void deallocate(void* pointer, size_t bytes) override;
 
-//==============================================================================
-void CAllocator::print(std::ostream& os, int indent) const
-{
-  if (indent == 0) {
-    os << "[CAllocator]\n";
-  }
-  const std::string spaces(indent, ' ');
-  if (indent != 0) {
-    os << spaces << "type: " << getType() << "\n";
-  }
-}
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
+};
 
 } // namespace dart::common

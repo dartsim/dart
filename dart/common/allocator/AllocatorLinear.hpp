@@ -33,8 +33,8 @@
 #pragma once
 
 #include <dart/common/Export.hpp>
-#include <dart/common/allocator/MemoryAllocator.hpp>
-#include <dart/common/allocator/MemoryAllocatorDebugger.hpp>
+#include <dart/common/allocator/Allocator.hpp>
+#include <dart/common/allocator/AllocatorDebugger.hpp>
 
 #include <mutex>
 
@@ -43,29 +43,29 @@ namespace dart::common {
 ///// A memory allocator that keeps track of the first memory address of a
 /// memory
 ///// chunk and moves it every time an allocation is done.
-// class DART_COMMON_API LinearAllocator : public MemoryAllocator
+// class DART_COMMON_API AllocatorLinear : public Allocator
 //{
 // public:
-//   using Debug = MemoryAllocatorDebugger<LinearAllocator>;
+//   using Debug = AllocatorDebugger<AllocatorLinear>;
 
 //  /// Constructor
 //  ///
 //  /// @param[in] max_capacity: Maximum count of object to allocate.
-//  explicit LinearAllocator(
+//  explicit AllocatorLinear(
 //      size_t max_capacity,
-//      MemoryAllocator& base_allocator = MemoryAllocator::GetDefault());
+//      Allocator& base_allocator = Allocator::GetDefault());
 
 //  /// Destructor
-//  ~LinearAllocator() override;
+//  ~AllocatorLinear() override;
 
-//  DART_STRING_TYPE(LinearAllocator);
+//  DART_STRING_TYPE(AllocatorLinear);
 
-//  /// @copydoc MemoryAllocator::allocate
+//  /// @copydoc Allocator::allocate
 //  ///
 //  /// Complexity is O(1).
 //  [[nodiscard]] void* allocate(size_t size) noexcept override;
 
-//  /// @copydoc MemoryAllocator::allocate
+//  /// @copydoc Allocator::allocate
 //  ///
 //  /// Complexity is O(1).
 //  [[nodiscard]] void* allocateAligned(
@@ -102,7 +102,7 @@ namespace dart::common {
 //   const size_t m_max_capacity;
 
 //  /// The base allocator to allocate memory chunk
-//  MemoryAllocator& m_base_allocator;
+//  Allocator& m_base_allocator;
 
 //  /// The memory address of this allocator uses
 //  void* m_start_ptr = nullptr;

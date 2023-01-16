@@ -30,69 +30,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
-#define DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
+#include "dart/common/allocator/AlignedAllocatorRaw.hpp"
 
-#include <dart/common/allocator/MemoryAllocator.hpp>
-
-#include <iostream>
-#include <mutex>
-#include <unordered_map>
+#include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart::common {
 
-template <typename T>
-class MemoryAllocatorDebugger : public MemoryAllocator
+//==============================================================================
+AlignedAllocatorRaw::AlignedAllocatorRaw() noexcept
 {
-public:
-  /// Constructor
-  template <typename... Args>
-  MemoryAllocatorDebugger(Args&&... args);
+  // Do nothing
+}
 
-  /// Destructor
-  ~MemoryAllocatorDebugger();
+//==============================================================================
+AlignedAllocatorRaw::~AlignedAllocatorRaw()
+{
+  // Do nothing
+}
 
-  /// Returns type string.
-  [[nodiscard]] static const std::string& getStaticType();
+//==============================================================================
+void* AlignedAllocatorRaw::allocate(size_t bytes, size_t alignment) noexcept
+{
+  if (bytes == 0) {
+    return nullptr;
+  }
 
-  // Documentation inherited
-  [[nodiscard]] const std::string& getType() const override;
+  DART_TRACE("Allocated {} bytes.", bytes);
+  return std::aligned_alloc(alignment, bytes);
+}
 
-  // Documentation inherited
-  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
+//==============================================================================
+void AlignedAllocatorRaw::deallocate(void* pointer, size_t bytes)
+{
+  DART_UNUSED(bytes);
+  std::free(pointer);
+  DART_TRACE("Deallocated.");
+}
 
-  // Documentation inherited
-  void deallocate(void* pointer, size_t bytes) override;
-
-  /// Returns true if there is no memory allocated by the internal allocator.
-  [[nodiscard]] bool isEmpty() const;
-
-  /// Returns true if a pointer is allocated by the internal allocator.
-  [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const;
-
-  /// Returns the internal allocator
-  [[nodiscard]] const T& getInternalAllocator() const;
-
-  /// Returns the internal allocator
-  [[nodiscard]] T& getInternalAllocator();
-
-  // Documentation inherited
-  void print(std::ostream& os = std::cout, int indent = 0) const override;
-
-private:
-  T mInternalAllocator;
-
-  size_t mSize = 0;
-
-  size_t mPeak = 0;
-
-  std::unordered_map<void*, size_t> mMapPointerToSize;
-
-  mutable std::mutex mMutex;
-};
+//==============================================================================
+void AlignedAllocatorRaw::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[dart::commmon::AlignedAllocatorRaw]\n";
+  }
+  const std::string spaces(indent, ' ');
+  if (indent != 0) {
+    os << spaces << "type: " << getType() << "\n";
+  }
+}
 
 } // namespace dart::common
-
-#include <dart/common/allocator/detail/MemoryAllocatorDebugger-impl.hpp>
-
-#endif // DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_

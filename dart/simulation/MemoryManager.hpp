@@ -34,8 +34,8 @@
 
 #include <dart/simulation/Fwd.hpp>
 
-#include <dart/common/allocator/FreeListAllocator.hpp>
-#include <dart/common/allocator/PoolAllocator.hpp>
+#include <dart/common/allocator/AllocatorFreeList.hpp>
+#include <dart/common/allocator/AllocatorPool.hpp>
 
 #include <iostream>
 #ifndef NDEBUG
@@ -65,41 +65,40 @@ public:
   /// \param[in] baseAllocator: (optional) The most low level allocator to be
   /// used by all the underlying memory allocators.
   explicit MemoryManager(
-      common::MemoryAllocator& baseAllocator
-      = common::MemoryAllocator::GetDefault());
+      common::Allocator& baseAllocator = common::Allocator::GetDefault());
 
   /// Destructor
   ~MemoryManager();
 
   /// Returns the base allocator
-  [[nodiscard]] common::MemoryAllocator& getBaseAllocator();
+  [[nodiscard]] common::Allocator& getBaseAllocator();
 
   /// Returns the free list allocator
-  [[nodiscard]] common::FreeListAllocator& getFreeListAllocator();
+  [[nodiscard]] common::AllocatorFreeList& getAllocatorFreeList();
 
   /// Returns the pool allocator
-  [[nodiscard]] common::PoolAllocator& getPoolAllocator();
+  [[nodiscard]] common::AllocatorPool& getAllocatorPool();
 
   /// Allocates \c size bytes of uninitialized storage.
   ///
   /// \param[in] type: The memory allocator type.
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
   [[nodiscard]] void* allocate(Type type, size_t bytes);
 
-  /// Allocates \c size bytes of uninitialized storage using FreeListAllocator.
+  /// Allocates \c size bytes of uninitialized storage using AllocatorFreeList.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
   [[nodiscard]] void* allocateUsingFree(size_t bytes);
 
-  /// Allocates \c size bytes of uninitialized storage using PoolAllocator.
+  /// Allocates \c size bytes of uninitialized storage using AllocatorPool.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
@@ -129,12 +128,12 @@ public:
   template <typename T, typename... Args>
   [[nodiscard]] T* construct(Type type, Args&&... args) noexcept;
 
-  /// Allocates uninitialized storage using FreeListAllocator and constructs an
+  /// Allocates uninitialized storage using AllocatorFreeList and constructs an
   /// object of type T to the allocated storage.
   template <typename T, typename... Args>
   [[nodiscard]] T* constructUsingFree(Args&&... args) noexcept;
 
-  /// Allocates uninitialized storage using PoolAllocator and constructs an
+  /// Allocates uninitialized storage using AllocatorPool and constructs an
   /// object of type T to the allocated storage.
   template <typename T, typename... Args>
   [[nodiscard]] T* constructUsingPool(Args&&... args) noexcept;
@@ -144,12 +143,12 @@ public:
   void destroy(Type type, T* object) noexcept;
 
   /// Calls the destructor of the object and deallocate the storage using
-  /// FreeListAllocator.
+  /// AllocatorFreeList.
   template <typename T>
   void destroyUsingFree(T* pointer) noexcept;
 
   /// Calls the destructor of the object and deallocate the storage using
-  /// PoolAllocator.
+  /// AllocatorPool.
   template <typename T>
   void destroyUsingPool(T* pointer) noexcept;
 
@@ -167,20 +166,20 @@ public:
 
 private:
   /// The base allocator to allocate memory chunk.
-  common::MemoryAllocator& mBaseAllocator;
+  common::Allocator& mBaseAllocator;
 
 #ifdef NDEBUG
   /// The free list allocator.
-  common::FreeListAllocator mFreeListAllocator;
+  common::AllocatorFreeList mAllocatorFreeList;
 
   /// The pool allocator.
-  common::PoolAllocator mPoolAllocator;
+  common::AllocatorPool mAllocatorPool;
 #else
   /// The free list allocator.
-  common::FreeListAllocator::Debug mFreeListAllocator;
+  common::AllocatorFreeList::Debug mAllocatorFreeList;
 
   /// The pool allocator.
-  common::PoolAllocator::Debug mPoolAllocator;
+  common::AllocatorPool::Debug mAllocatorPool;
 #endif
 };
 

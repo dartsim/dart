@@ -30,21 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/MemoryAllocatorAligned.hpp"
+#include "dart/common/allocator/Allocator.hpp"
 
-#include "dart/common/allocator/CAllocatorAligned.hpp"
+#include "dart/common/Logging.hpp"
+#include "dart/common/allocator/AllocatorRaw.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-MemoryAllocatorAligned& MemoryAllocatorAligned::GetDefault()
+Allocator& Allocator::GetDefault()
 {
-  static CAllocatorAligned defaultAllocator;
+  static AllocatorRaw defaultAllocator;
   return defaultAllocator;
 }
 
 //==============================================================================
-void MemoryAllocatorAligned::print(std::ostream& os, int indent) const
+void Allocator::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
     os << "[*::print is not implemented]\n";
@@ -54,8 +55,7 @@ void MemoryAllocatorAligned::print(std::ostream& os, int indent) const
 }
 
 //==============================================================================
-std::ostream& operator<<(
-    std::ostream& os, const MemoryAllocatorAligned& allocator)
+std::ostream& operator<<(std::ostream& os, const Allocator& allocator)
 {
   allocator.print(os);
   return os;

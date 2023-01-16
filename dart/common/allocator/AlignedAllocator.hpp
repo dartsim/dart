@@ -43,25 +43,25 @@
 namespace dart::common {
 
 /// Base class for std::allocator compatible allocators.
-class DART_COMMON_API MemoryAllocatorAligned
-  : public Castable<MemoryAllocatorAligned>
+class DART_COMMON_API AlignedAllocator : public Castable<AlignedAllocator>
 {
 public:
   /// Returns the default memory allocator
-  static MemoryAllocatorAligned& GetDefault();
+  static AlignedAllocator& GetDefault();
 
   /// Default constructor
-  MemoryAllocatorAligned() noexcept = default;
+  AlignedAllocator() noexcept = default;
 
   /// Destructor
-  virtual ~MemoryAllocatorAligned() = default;
+  virtual ~AlignedAllocator() = default;
 
   /// Returns type string.
   [[nodiscard]] virtual const std::string& getType() const = 0;
 
   /// Allocates \c size bytes of uninitialized storage.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
+  /// \param[in] alignment: The alignment of the allocated memory.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
@@ -110,9 +110,9 @@ public:
 
   /// Prints state of the memory allocator
   friend std::ostream& operator<<(
-      std::ostream& os, const MemoryAllocatorAligned& allocator);
+      std::ostream& os, const AlignedAllocator& allocator);
 };
 
 } // namespace dart::common
 
-#include <dart/common/allocator/detail/MemoryAllocatorAligned-impl.hpp>
+#include <dart/common/allocator/detail/AlignedAllocator-impl.hpp>

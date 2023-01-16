@@ -30,68 +30,85 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
-#define DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
+#pragma once
 
-#include <dart/common/allocator/MemoryAllocator.hpp>
+#include <dart/common/Logging.hpp>
+#include <dart/common/allocator/StdAlignedAllocator.hpp>
 
 namespace dart::common {
 
 //==============================================================================
 template <typename T>
-T* MemoryAllocator::allocateAs(size_t n) noexcept
+StdAlignedAllocator<T>::StdAlignedAllocator(
+    AlignedAllocator& baseAllocator) noexcept
+  : mBaseAllocator(baseAllocator)
 {
-  return static_cast<T*>(allocate(n * sizeof(T)));
-}
-
-//==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::construct(Args&&... args) noexcept
-{
-  // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(sizeof(T));
-  if (!object) {
-    return nullptr;
-  }
-
-  // Call constructor. Return nullptr if failed.
-  try {
-    new (object) T(std::forward<Args>(args)...);
-  } catch (...) {
-    deallocate(object, sizeof(T));
-    return nullptr;
-  }
-
-  return reinterpret_cast<T*>(object);
-}
-
-//==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::constructAt(void* pointer, Args&&... args)
-{
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
-}
-
-//==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::constructAt(T* pointer, Args&&... args)
-{
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
+  // Do nothing
 }
 
 //==============================================================================
 template <typename T>
-void MemoryAllocator::destroy(T* object) noexcept
+StdAlignedAllocator<T>::StdAlignedAllocator(
+    const StdAlignedAllocator& other) throw()
+  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
 {
-  if (!object) {
-    return;
+  // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+template <class U>
+StdAlignedAllocator<T>::StdAlignedAllocator(
+    const StdAlignedAllocator<U>& other) throw()
+  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+typename StdAlignedAllocator<T>::pointer StdAlignedAllocator<T>::allocate(
+    size_type n, const void* hint)
+{
+  (void)hint;
+  pointer ptr = reinterpret_cast<pointer>(
+      mBaseAllocator.allocate(n * sizeof(T), alignof(T)));
+
+  // Throw std::bad_alloc to comply 23.10.9.1
+  // Reference: https://stackoverflow.com/a/50326956/3122234
+  if (!ptr) {
+    throw std::bad_alloc();
   }
-  object->~T();
-  deallocate(object, sizeof(T));
+
+  return ptr;
+}
+
+//==============================================================================
+template <typename T>
+void StdAlignedAllocator<T>::deallocate(pointer pointer, size_type n)
+{
+  mBaseAllocator.deallocate(pointer, n * sizeof(T));
+}
+
+//==============================================================================
+template <typename T>
+void StdAlignedAllocator<T>::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[dart::common::StdAlignedAllocator]\n";
+  }
+  const std::string spaces(indent, ' ');
+  os << spaces << "base_allocator:\n";
+  mBaseAllocator.print(os, indent + 2);
+}
+
+//==============================================================================
+template <typename T>
+std::ostream& operator<<(
+    std::ostream& os, const StdAlignedAllocator<T>& allocator)
+{
+  allocator.print(os);
+  return os;
 }
 
 } // namespace dart::common
-
-#endif // DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
