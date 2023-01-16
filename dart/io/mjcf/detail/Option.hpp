@@ -33,11 +33,10 @@
 #ifndef DART_UTILS_MJCF_DETAIL_OPTION_HPP_
 #define DART_UTILS_MJCF_DETAIL_OPTION_HPP_
 
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 #include <dart/io/mjcf/detail/Error.hpp>
 #include <dart/io/mjcf/detail/Types.hpp>
 
-#include <Eigen/Core>
 #include <tinyxml2.h>
 
 namespace dart {
@@ -53,9 +52,9 @@ public:
   double getTimestep() const;
   double getApiRate() const;
   double getImpRatio() const;
-  const Eigen::Vector3d& getGravity() const;
-  const Eigen::Vector3d& getWind() const;
-  const Eigen::Vector3d& getMagnetic() const;
+  const math::Vector3d& getGravity() const;
+  const math::Vector3d& getWind() const;
+  const math::Vector3d& getMagnetic() const;
   double getDensity() const;
   double getViscosity() const;
   Integrator getIntegrator() const;
@@ -79,9 +78,9 @@ private:
   double mTimestep{0.002};
   double mApiRate{100};
   double mImpRatio{1};
-  Eigen::Vector3d mGravity{Eigen::Vector3d(0, 0, -9.81)};
-  Eigen::Vector3d mWind{Eigen::Vector3d::Zero()};
-  Eigen::Vector3d mMagnetic{Eigen::Vector3d(0, -0.5, 0)};
+  math::Vector3d mGravity{math::Vector3d(0, 0, -9.81)};
+  math::Vector3d mWind{math::Vector3d::Zero()};
+  math::Vector3d mMagnetic{math::Vector3d(0, -0.5, 0)};
   double mDensity{0};
   double mViscosity{0};
   Integrator mIntegrator{Integrator::EULER};

@@ -68,7 +68,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
 
   // quat
   if (hasAttribute(element, "quat")) {
-    const Eigen::Vector4d vec4d = getAttributeVector4d(element, "quat");
+    const math::Vector4d vec4d = getAttributeVector4d(element, "quat");
     mData.mQuat.w() = vec4d[0];
     mData.mQuat.x() = vec4d[1];
     mData.mQuat.y() = vec4d[2];
@@ -185,49 +185,49 @@ double Inertial::getMass() const
 }
 
 //==============================================================================
-void Inertial::setDiagInertia(const Eigen::Vector3d& inertia)
+void Inertial::setDiagInertia(const math::Vector3d& inertia)
 {
   mDiagonalInertia = inertia;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Inertial::getDiagInertia() const
+const math::Vector3d& Inertial::getDiagInertia() const
 {
   return mDiagonalInertia;
 }
 
 //==============================================================================
-void Inertial::setOffDiagInertia(const Eigen::Vector3d& inertia)
+void Inertial::setOffDiagInertia(const math::Vector3d& inertia)
 {
   mOffDiagonalInertia = inertia;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Inertial::getOffDiagInertia() const
+const math::Vector3d& Inertial::getOffDiagInertia() const
 {
   return mOffDiagonalInertia;
 }
 
 //==============================================================================
-void Inertial::setRelativeTransform(const Eigen::Isometry3d& tf)
+void Inertial::setRelativeTransform(const math::Isometry3d& tf)
 {
   mRelativeTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Inertial::getRelativeTransform() const
+const math::Isometry3d& Inertial::getRelativeTransform() const
 {
   return mRelativeTransform;
 }
 
 //==============================================================================
-void Inertial::setWorldTransform(const Eigen::Isometry3d& tf)
+void Inertial::setWorldTransform(const math::Isometry3d& tf)
 {
   mWorldTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Inertial::getWorldTransform() const
+const math::Isometry3d& Inertial::getWorldTransform() const
 {
   return mWorldTransform;
 }

@@ -116,7 +116,7 @@ Errors appendGeomAttributes(
 
   // size
   if (hasAttribute(element, "size")) {
-    const Eigen::VectorXd size = getAttributeVectorXd(element, "size");
+    const math::VectorXd size = getAttributeVectorXd(element, "size");
     if (size.size() == 0 || size.size() > 3) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID, "Invalid attribute for 'size'");
@@ -132,7 +132,7 @@ Errors appendGeomAttributes(
 
   // friction
   if (hasAttribute(element, "friction")) {
-    const Eigen::VectorXd friction = getAttributeVectorXd(element, "friction");
+    const math::VectorXd friction = getAttributeVectorXd(element, "friction");
     if (friction.size() == 0 || friction.size() > 3) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID, "Invalid attribute for 'size'");
@@ -183,7 +183,7 @@ Errors appendGeomAttributes(
 
   // quat
   if (hasAttribute(element, "quat")) {
-    const Eigen::Vector4d vec4d = getAttributeVector4d(element, "quat");
+    const math::Vector4d vec4d = getAttributeVector4d(element, "quat");
     attributes.mQuat.w() = vec4d[0];
     attributes.mQuat.x() = vec4d[1];
     attributes.mQuat.y() = vec4d[2];

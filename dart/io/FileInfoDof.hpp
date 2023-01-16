@@ -33,9 +33,7 @@
 #ifndef DART_UTILS_FILEINFODOF_HPP_
 #define DART_UTILS_FILEINFODOF_HPP_
 
-#include <dart/io/Export.hpp>
-
-#include <Eigen/Dense>
+#include <dart/io/Fwd.hpp>
 
 #include <vector>
 
@@ -69,13 +67,13 @@ public:
       double _sampleRate = 1.0);
 
   /// \brief Add Dof
-  void addDof(const Eigen::VectorXd& _dofs);
+  void addDof(const math::VectorXd& _dofs);
 
   /// \brief Get Dof
   double getDofAt(std::size_t _frame, std::size_t _id) const;
 
   /// \brief Get pose at frame
-  Eigen::VectorXd getPoseAtFrame(int _frame) const;
+  math::VectorXd getPoseAtFrame(int _frame) const;
 
   /// \brief Set frames per second
   void setFPS(double _fps);
@@ -103,7 +101,7 @@ protected:
   char mFileName[256];
 
   /// \brief Dof data [frame][dofIndex]
-  std::vector<Eigen::VectorXd> mDofs;
+  std::vector<math::VectorXd> mDofs;
 };
 
 } // namespace io

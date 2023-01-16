@@ -78,7 +78,7 @@ Errors appendBodyAttributes(
 
   // quat
   if (hasAttribute(element, "quat")) {
-    const Eigen::Vector4d vec4d = getAttributeVector4d(element, "quat");
+    const math::Vector4d vec4d = getAttributeVector4d(element, "quat");
     attributes.mQuat.w() = vec4d[0];
     attributes.mQuat.x() = vec4d[1];
     attributes.mQuat.y() = vec4d[2];
@@ -114,7 +114,7 @@ Errors appendBodyAttributes(
       return errors;
     }
 
-    const Eigen::VectorXd user = getAttributeVectorXd(element, "user");
+    const math::VectorXd user = getAttributeVectorXd(element, "user");
 
     if (user.size() != size->getNUserBody()) {
       errors.emplace_back(

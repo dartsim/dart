@@ -33,17 +33,14 @@
 #ifndef DART_UTILS_XMLHELPERS_HPP_
 #define DART_UTILS_XMLHELPERS_HPP_
 
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 
-#include <dart/math/Fwd.hpp>
 #include <dart/math/Geometry.hpp>
 
 #include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
 #include <tinyxml2.h>
 
 #include <string>
@@ -58,11 +55,10 @@ DART_IO_API std::string toString(float v);
 DART_IO_API std::string toString(double v);
 DART_IO_API std::string toString(char v);
 template <typename S, int N>
-std::string toString(const Eigen::Matrix<S, N, 1>& v);
+std::string toString(const math::Matrix<S, N, 1>& v);
 template <typename S>
 std::string toString(
-    const Eigen::Transform<S, 3, Eigen::Isometry>& v,
-    const std::string& rotationType = "intrinsic");
+    const math::Isometry3<S>& v, const std::string& rotationType = "intrinsic");
 
 DART_IO_API bool toBool(const std::string& str);
 DART_IO_API int toInt(const std::string& str);
@@ -70,18 +66,18 @@ DART_IO_API unsigned int toUInt(const std::string& str);
 DART_IO_API float toFloat(const std::string& str);
 DART_IO_API double toDouble(const std::string& str);
 DART_IO_API char toChar(const std::string& str);
-DART_IO_API Eigen::Vector2d toVector2d(const std::string& str);
-DART_IO_API Eigen::Vector2i toVector2i(const std::string& str);
-DART_IO_API Eigen::Vector3d toVector3d(const std::string& str);
-DART_IO_API Eigen::Vector3i toVector3i(const std::string& str);
-DART_IO_API Eigen::Vector4d toVector4d(const std::string& str);
+DART_IO_API math::Vector2d toVector2d(const std::string& str);
+DART_IO_API math::Vector2i toVector2i(const std::string& str);
+DART_IO_API math::Vector3d toVector3d(const std::string& str);
+DART_IO_API math::Vector3i toVector3i(const std::string& str);
+DART_IO_API math::Vector4d toVector4d(const std::string& str);
 DART_IO_API math::Vector6d toVector6d(const std::string& str);
-DART_IO_API Eigen::VectorXd toVectorXd(const std::string& str);
+DART_IO_API math::VectorXd toVectorXd(const std::string& str);
 template <std::size_t N>
-Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str);
+math::Matrix<double, N, 1> toVectorNd(const std::string& str);
 // TODO: The definition of str is not clear for transform (see: #250)
-DART_IO_API Eigen::Isometry3d toIsometry3d(const std::string& str);
-DART_IO_API Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(
+DART_IO_API math::Isometry3d toIsometry3d(const std::string& str);
+DART_IO_API math::Isometry3d toIsometry3dWithExtrinsicRotation(
     const std::string& str);
 
 DART_IO_API std::string getValueString(
@@ -98,19 +94,19 @@ DART_IO_API double getValueDouble(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
 DART_IO_API char getValueChar(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_IO_API Eigen::Vector2d getValueVector2d(
+DART_IO_API math::Vector2d getValueVector2d(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_IO_API Eigen::Vector3d getValueVector3d(
+DART_IO_API math::Vector3d getValueVector3d(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_IO_API Eigen::Vector3i getValueVector3i(
+DART_IO_API math::Vector3i getValueVector3i(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
 DART_IO_API math::Vector6d getValueVector6d(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_IO_API Eigen::VectorXd getValueVectorXd(
+DART_IO_API math::VectorXd getValueVectorXd(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_IO_API Eigen::Isometry3d getValueIsometry3d(
+DART_IO_API math::Isometry3d getValueIsometry3d(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_IO_API Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
+DART_IO_API math::Isometry3d getValueIsometry3dWithExtrinsicRotation(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
 
 // TODO(JS): Deprecate
@@ -150,20 +146,20 @@ DART_IO_API double getAttributeDouble(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 DART_IO_API char getAttributeChar(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_IO_API Eigen::Vector2i getAttributeVector2i(
+DART_IO_API math::Vector2i getAttributeVector2i(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_IO_API Eigen::Vector2d getAttributeVector2d(
+DART_IO_API math::Vector2d getAttributeVector2d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_IO_API Eigen::Vector3d getAttributeVector3d(
+DART_IO_API math::Vector3d getAttributeVector3d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_IO_API Eigen::Vector4d getAttributeVector4d(
+DART_IO_API math::Vector4d getAttributeVector4d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 DART_IO_API math::Vector6d getAttributeVector6d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_IO_API Eigen::VectorXd getAttributeVectorXd(
+DART_IO_API math::VectorXd getAttributeVectorXd(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 template <std::size_t N>
-Eigen::Matrix<double, N, 1> getAttributeVectorNd(
+math::Matrix<double, N, 1> getAttributeVectorNd(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 
 /// TemplatedElementEnumerator is a convenience class to help visiting all the

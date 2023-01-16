@@ -141,8 +141,8 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
         const double radius = mAttributes.mSize[0];
         mSize[0] = radius;
 
-        const Eigen::Vector3d from = (*mAttributes.mFromTo).head<3>();
-        const Eigen::Vector3d to = (*mAttributes.mFromTo).tail<3>();
+        const math::Vector3d from = (*mAttributes.mFromTo).head<3>();
+        const math::Vector3d to = (*mAttributes.mFromTo).tail<3>();
         const double halfLength = 0.5 * (from - to).norm();
         mSize[1] = halfLength;
       } else {
@@ -159,8 +159,8 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
         const double halfLengthY = mAttributes.mSize[1];
         mSize[1] = halfLengthY;
 
-        const Eigen::Vector3d from = (*mAttributes.mFromTo).head<3>();
-        const Eigen::Vector3d to = (*mAttributes.mFromTo).tail<3>();
+        const math::Vector3d from = (*mAttributes.mFromTo).head<3>();
+        const math::Vector3d to = (*mAttributes.mFromTo).tail<3>();
         const double halfLengthZ = 0.5 * (from - to).norm();
         mSize[2] = halfLengthZ;
       } else {
@@ -187,16 +187,16 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     mInertia = computeInertia();
   }
 
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  math::Isometry3d tf = math::Isometry3d::Identity();
   if (canUseFromTo(mType, mAttributes.mFromTo)) {
     assert(mAttributes.mFromTo);
     const math::Vector6d& fromto = *mAttributes.mFromTo;
-    const Eigen::Vector3d from = fromto.head<3>();
-    const Eigen::Vector3d to = fromto.tail<3>();
-    const Eigen::Vector3d dir = (to - from).normalized();
+    const math::Vector3d from = fromto.head<3>();
+    const math::Vector3d to = fromto.tail<3>();
+    const math::Vector3d dir = (to - from).normalized();
     tf.translation() = (from + to) / 2.0;
     tf.linear()
-        = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), dir)
+        = math::Quaterniond::FromTwoVectors(math::Vector3d::UnitZ(), dir)
               .toRotationMatrix();
   } else {
     tf.translation() = mAttributes.mPos;
@@ -342,13 +342,13 @@ int Geom::getPriority() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getSize() const
+const math::Vector3d& Geom::getSize() const
 {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector2d Geom::getPlaneHalfSize() const
+math::Vector2d Geom::getPlaneHalfSize() const
 {
   return mSize.head<2>();
 }
@@ -378,13 +378,13 @@ double Geom::getCapsuleLength() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getEllipsoidRadii() const
+const math::Vector3d& Geom::getEllipsoidRadii() const
 {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector3d Geom::getEllipsoidDiameters() const
+math::Vector3d Geom::getEllipsoidDiameters() const
 {
   return 2.0 * mSize;
 }
@@ -408,25 +408,25 @@ double Geom::getCylinderLength() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getBoxHalfSize() const
+const math::Vector3d& Geom::getBoxHalfSize() const
 {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector3d Geom::getBoxSize() const
+math::Vector3d Geom::getBoxSize() const
 {
   return 2.0 * mSize;
 }
 
 //==============================================================================
-const Eigen::Vector4d& Geom::getRGBA() const
+const math::Vector4d& Geom::getRGBA() const
 {
   return mRGBA;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Geom::getFriction() const
+const math::Vector3d& Geom::getFriction() const
 {
   return mFriction;
 }
@@ -450,7 +450,7 @@ double Geom::getVolume() const
 }
 
 //==============================================================================
-const Eigen::Matrix3d& Geom::getInertia() const
+const math::Matrix3d& Geom::getInertia() const
 {
   return mInertia;
 }
@@ -486,25 +486,25 @@ const std::string& Geom::getMesh() const
 }
 
 //==============================================================================
-void Geom::setRelativeTransform(const Eigen::Isometry3d& tf)
+void Geom::setRelativeTransform(const math::Isometry3d& tf)
 {
   mRelativeTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Geom::getRelativeTransform() const
+const math::Isometry3d& Geom::getRelativeTransform() const
 {
   return mRelativeTransform;
 }
 
 //==============================================================================
-void Geom::setWorldTransform(const Eigen::Isometry3d& tf)
+void Geom::setWorldTransform(const math::Isometry3d& tf)
 {
   mWorldTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Geom::getWorldTransform() const
+const math::Isometry3d& Geom::getWorldTransform() const
 {
   return mWorldTransform;
 }
@@ -534,7 +534,7 @@ double Geom::computeVolume() const
 }
 
 //==============================================================================
-Eigen::Matrix3d Geom::computeInertia() const
+math::Matrix3d Geom::computeInertia() const
 {
   switch (mType) {
     case GeomType::SPHERE:
@@ -555,7 +555,7 @@ Eigen::Matrix3d Geom::computeInertia() const
       break;
   }
 
-  return Eigen::Matrix3d::Identity();
+  return math::Matrix3d::Identity();
 }
 
 } // namespace detail

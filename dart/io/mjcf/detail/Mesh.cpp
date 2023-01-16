@@ -138,7 +138,7 @@ const std::string& Mesh::getFile() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Mesh::getScale() const
+const math::Vector3d& Mesh::getScale() const
 {
   return mScale;
 }

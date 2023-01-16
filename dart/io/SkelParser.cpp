@@ -97,7 +97,7 @@ using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
 struct SkelBodyNode
 {
   BodyPropPtr properties;
-  Eigen::Isometry3d initTransform;
+  math::Isometry3d initTransform;
   std::vector<dynamics::Marker::BasicProperties> markers;
   std::string type;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -106,10 +106,10 @@ struct SkelBodyNode
 struct SkelJoint
 {
   JointPropPtr properties;
-  Eigen::VectorXd position;
-  Eigen::VectorXd velocity;
-  Eigen::VectorXd acceleration;
-  Eigen::VectorXd force;
+  math::VectorXd position;
+  math::VectorXd velocity;
+  math::VectorXd acceleration;
+  math::VectorXd force;
   std::string parentName;
   std::string childName;
   std::string type;
@@ -139,13 +139,13 @@ dart::dynamics::SkeletonPtr readSkeleton(
 
 SkelBodyNode readBodyNode(
     tinyxml2::XMLElement* _bodyElement,
-    const Eigen::Isometry3d& _skeletonFrame,
+    const math::Isometry3d& _skeletonFrame,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever);
 
 SkelBodyNode readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
-    const Eigen::Isometry3d& _skeletonFrame,
+    const math::Isometry3d& _skeletonFrame,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever);
 
@@ -285,13 +285,13 @@ dynamics::SkeletonPtr readSkeleton(
 
 SkelBodyNode readBodyNode(
     tinyxml2::XMLElement* _bodyNodeElement,
-    const Eigen::Isometry3d& _skeletonFrame,
+    const math::Isometry3d& _skeletonFrame,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever);
 
 SkelBodyNode readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
-    const Eigen::Isometry3d& _skeletonFrame,
+    const math::Isometry3d& _skeletonFrame,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever);
 
@@ -516,7 +516,7 @@ dynamics::ShapeNode* readShapeNode(
 
   // Transformation
   if (hasElement(shapeNodeEle, "transformation")) {
-    Eigen::Isometry3d W = getValueIsometry3d(shapeNodeEle, "transformation");
+    math::Isometry3d W = getValueIsometry3d(shapeNodeEle, "transformation");
     shapeNode->setRelativeTransform(W);
   }
 
@@ -541,12 +541,12 @@ void readVisualizationShapeNode(
 
   // color
   if (hasElement(vizShapeNodeEle, "color")) {
-    Eigen::VectorXd color = getValueVectorXd(vizShapeNodeEle, "color");
+    math::VectorXd color = getValueVectorXd(vizShapeNodeEle, "color");
 
     if (color.size() == 3) {
-      visualAspect->setColor(static_cast<Eigen::Vector3d>(color));
+      visualAspect->setColor(static_cast<math::Vector3d>(color));
     } else if (color.size() == 4) {
-      visualAspect->setColor(static_cast<Eigen::Vector4d>(color));
+      visualAspect->setColor(static_cast<math::Vector4d>(color));
     } else {
       dtwarn << "[readVisualizationShapeNode] Invalid format for <color> "
              << "element; " << color.size() << "d vector is given. It should "
@@ -615,7 +615,7 @@ void readAspects(
                 return true;
 
               auto mass = bodyNode->getMass();
-              const Eigen::Matrix3d Ic
+              const math::Matrix3d Ic
                   = shapeNode->getShape()->computeInertia(mass);
               auto inertia = bodyNode->getInertia();
               inertia.setMoment(Ic);
@@ -700,7 +700,7 @@ simulation::WorldPtr readWorld(
     gravityElement = physicsElement->FirstChildElement("gravity");
     if (gravityElement != nullptr) {
       std::string strGravity = gravityElement->GetText();
-      Eigen::Vector3d gravity = toVector3d(strGravity);
+      math::Vector3d gravity = toVector3d(strGravity);
       newWorld->setGravity(gravity);
     }
 
@@ -931,7 +931,7 @@ dynamics::SkeletonPtr readSkeleton(
   assert(_skeletonElement != nullptr);
 
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
-  Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
+  math::Isometry3d skeletonFrame = math::Isometry3d::Identity();
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -941,8 +941,7 @@ dynamics::SkeletonPtr readSkeleton(
   //--------------------------------------------------------------------------
   // transformation
   if (hasElement(_skeletonElement, "transformation")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3d(_skeletonElement, "transformation");
+    math::Isometry3d W = getValueIsometry3d(_skeletonElement, "transformation");
     skeletonFrame = W;
   }
 
@@ -1040,14 +1039,14 @@ dynamics::SkeletonPtr readSkeleton(
 //==============================================================================
 SkelBodyNode readBodyNode(
     tinyxml2::XMLElement* _bodyNodeElement,
-    const Eigen::Isometry3d& _skeletonFrame,
+    const math::Isometry3d& _skeletonFrame,
     const common::Uri& /*_baseUri*/,
     const common::ResourceRetrieverPtr& /*_retriever*/)
 {
   assert(_bodyNodeElement != nullptr);
 
   BodyPropPtr newBodyNode(new dynamics::BodyNode::Properties);
-  Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
+  math::Isometry3d initTransform = math::Isometry3d::Identity();
 
   // Name attribute
   newBodyNode->mName = getAttributeString(_bodyNodeElement, "name");
@@ -1068,8 +1067,7 @@ SkelBodyNode readBodyNode(
   //--------------------------------------------------------------------------
   // transformation
   if (hasElement(_bodyNodeElement, "transformation")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3d(_bodyNodeElement, "transformation");
+    math::Isometry3d W = getValueIsometry3d(_bodyNodeElement, "transformation");
     initTransform = _skeletonFrame * W;
   } else {
     initTransform = _skeletonFrame;
@@ -1103,7 +1101,7 @@ SkelBodyNode readBodyNode(
 
     // offset
     if (hasElement(inertiaElement, "offset")) {
-      Eigen::Vector3d offset = getValueVector3d(inertiaElement, "offset");
+      math::Vector3d offset = getValueVector3d(inertiaElement, "offset");
       newBodyNode->mInertia.setLocalCOM(offset);
     }
   }
@@ -1125,7 +1123,7 @@ SkelBodyNode readBodyNode(
 //==============================================================================
 SkelBodyNode readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
-    const Eigen::Isometry3d& _skeletonFrame,
+    const math::Isometry3d& _skeletonFrame,
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
@@ -1155,7 +1153,7 @@ SkelBodyNode readSoftBodyNode(
     double totalMass = getValueDouble(softShapeEle, "total_mass");
 
     // transformation
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    math::Isometry3d T = math::Isometry3d::Identity();
     if (hasElement(softShapeEle, "transformation"))
       T = getValueIsometry3d(softShapeEle, "transformation");
 
@@ -1170,13 +1168,13 @@ SkelBodyNode readSoftBodyNode(
           radius, nSlices, nStacks, totalMass);
     } else if (hasElement(geometryEle, "box")) {
       tinyxml2::XMLElement* boxEle = getElement(geometryEle, "box");
-      Eigen::Vector3d size = getValueVector3d(boxEle, "size");
-      Eigen::Vector3i frags = getValueVector3i(boxEle, "frags");
+      math::Vector3d size = getValueVector3d(boxEle, "size");
+      math::Vector3i frags = getValueVector3i(boxEle, "frags");
       newSoftBodyNode = dynamics::SoftBodyNodeHelper::makeBoxProperties(
           size, T, frags, totalMass);
     } else if (hasElement(geometryEle, "ellipsoid")) {
       tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
-      Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
+      math::Vector3d size = getValueVector3d(ellipsoidEle, "size");
       const auto nSlices = getValueUInt(ellipsoidEle, "num_slices");
       const auto nStacks = getValueUInt(ellipsoidEle, "num_stacks");
       newSoftBodyNode = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
@@ -1241,11 +1239,11 @@ dynamics::ShapePtr readShape(
     newShape = dynamics::ShapePtr(new dynamics::SphereShape(radius));
   } else if (hasElement(geometryEle, "box")) {
     tinyxml2::XMLElement* boxEle = getElement(geometryEle, "box");
-    Eigen::Vector3d size = getValueVector3d(boxEle, "size");
+    math::Vector3d size = getValueVector3d(boxEle, "size");
     newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
   } else if (hasElement(geometryEle, "ellipsoid")) {
     tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
-    Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
+    math::Vector3d size = getValueVector3d(ellipsoidEle, "size");
     newShape = dynamics::ShapePtr(new dynamics::EllipsoidShape(size));
   } else if (hasElement(geometryEle, "cylinder")) {
     tinyxml2::XMLElement* cylinderEle = getElement(geometryEle, "cylinder");
@@ -1271,7 +1269,7 @@ dynamics::ShapePtr readShape(
         new dynamics::PyramidShape(base_width, base_depth, height));
   } else if (hasElement(geometryEle, "plane")) {
     tinyxml2::XMLElement* planeEle = getElement(geometryEle, "plane");
-    Eigen::Vector3d normal = getValueVector3d(planeEle, "normal");
+    math::Vector3d normal = getValueVector3d(planeEle, "normal");
     if (hasElement(planeEle, "offset")) {
       double offset = getValueDouble(planeEle, "offset");
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, offset));
@@ -1279,7 +1277,7 @@ dynamics::ShapePtr readShape(
       dtwarn << "[readShape] <point> element of <plane> is "
              << "deprecated as of DART 4.3. Please use <offset> element "
              << "instead." << std::endl;
-      Eigen::Vector3d point = getValueVector3d(planeEle, "point");
+      math::Vector3d point = getValueVector3d(planeEle, "point");
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, point));
     } else {
       dtwarn << "[readShape] <offset> element is not specified for "
@@ -1294,7 +1292,7 @@ dynamics::ShapePtr readShape(
     dynamics::MultiSphereConvexHullShape::Spheres spheres;
     while (xmlSpheres.next()) {
       const double radius = getValueDouble(xmlSpheres.get(), "radius");
-      const Eigen::Vector3d position
+      const math::Vector3d position
           = getValueVector3d(xmlSpheres.get(), "position");
 
       spheres.emplace_back(radius, position);
@@ -1305,7 +1303,7 @@ dynamics::ShapePtr readShape(
   } else if (hasElement(geometryEle, "mesh")) {
     tinyxml2::XMLElement* meshEle = getElement(geometryEle, "mesh");
     std::string filename = getValueString(meshEle, "file_name");
-    Eigen::Vector3d scale = getValueVector3d(meshEle, "scale");
+    math::Vector3d scale = getValueVector3d(meshEle, "scale");
 
     const common::Uri meshUri
         = common::Uri::createFromRelativeUri(baseUri, filename);
@@ -1334,7 +1332,7 @@ dynamics::Marker::BasicProperties readMarker(
   std::string name = getAttributeString(_markerElement, "name");
 
   // offset
-  Eigen::Vector3d offset = Eigen::Vector3d::Zero();
+  math::Vector3d offset = math::Vector3d::Zero();
   if (hasElement(_markerElement, "offset"))
     offset = getValueVector3d(_markerElement, "offset");
 
@@ -1465,9 +1463,9 @@ void readJoint(
 
   //--------------------------------------------------------------------------
   // transformation
-  Eigen::Isometry3d parentWorld = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childWorld = child->second.initTransform;
+  math::Isometry3d parentWorld = math::Isometry3d::Identity();
+  math::Isometry3d childToJoint = math::Isometry3d::Identity();
+  math::Isometry3d childWorld = child->second.initTransform;
 
   if (parent != _bodyNodes.end())
     parentWorld = parent->second.initTransform;
@@ -1475,7 +1473,7 @@ void readJoint(
   if (hasElement(_jointElement, "transformation"))
     childToJoint = getValueIsometry3d(_jointElement, "transformation");
 
-  Eigen::Isometry3d parentToJoint
+  math::Isometry3d parentToJoint
       = parentWorld.inverse() * childWorld * childToJoint;
 
   joint.properties->mT_ParentBodyToJoint = parentToJoint;
@@ -1879,7 +1877,7 @@ JointPropPtr readRevoluteJoint(
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
-    Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
+    math::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     properties.mAxis = xyz;
   } else {
     dterr << "[readRevoluteJoint] Revolute Joint named [" << _name
@@ -1894,7 +1892,7 @@ JointPropPtr readRevoluteJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     double init_pos = getValueDouble(_jointElement, "init_pos");
-    Eigen::VectorXd ipos = Eigen::VectorXd(1);
+    math::VectorXd ipos = math::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
     properties.mInitialPositions[0] = ipos[0];
@@ -1904,7 +1902,7 @@ JointPropPtr readRevoluteJoint(
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     double init_vel = getValueDouble(_jointElement, "init_vel");
-    Eigen::VectorXd ivel = Eigen::VectorXd(1);
+    math::VectorXd ivel = math::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
     properties.mInitialVelocities[0] = ivel[0];
@@ -1932,7 +1930,7 @@ JointPropPtr readPrismaticJoint(
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
-    Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
+    math::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     properties.mAxis = xyz;
   } else {
     dterr << "[readPrismaticJoint] Prismatic Joint named [" << _name
@@ -1947,7 +1945,7 @@ JointPropPtr readPrismaticJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     double init_pos = getValueDouble(_jointElement, "init_pos");
-    Eigen::VectorXd ipos = Eigen::VectorXd(1);
+    math::VectorXd ipos = math::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
     properties.mInitialPositions[0] = ipos[0];
@@ -1957,7 +1955,7 @@ JointPropPtr readPrismaticJoint(
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     double init_vel = getValueDouble(_jointElement, "init_vel");
-    Eigen::VectorXd ivel = Eigen::VectorXd(1);
+    math::VectorXd ivel = math::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
     properties.mInitialVelocities[0] = ivel[0];
@@ -1985,7 +1983,7 @@ JointPropPtr readScrewJoint(
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
-    Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
+    math::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     properties.mAxis = xyz;
 
     // pitch
@@ -2006,7 +2004,7 @@ JointPropPtr readScrewJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     double init_pos = getValueDouble(_jointElement, "init_pos");
-    Eigen::VectorXd ipos = Eigen::VectorXd(1);
+    math::VectorXd ipos = math::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
     properties.mInitialPositions[0] = ipos[0];
@@ -2016,7 +2014,7 @@ JointPropPtr readScrewJoint(
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     double init_vel = getValueDouble(_jointElement, "init_vel");
-    Eigen::VectorXd ivel = Eigen::VectorXd(1);
+    math::VectorXd ivel = math::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
     properties.mInitialVelocities[0] = ivel[0];
@@ -2044,7 +2042,7 @@ JointPropPtr readUniversalJoint(
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
-    Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
+    math::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     properties.mAxis[0] = xyz;
   } else {
     dterr << "[readUniversalJoint] Universal Joint named [" << _name
@@ -2058,7 +2056,7 @@ JointPropPtr readUniversalJoint(
     tinyxml2::XMLElement* axis2Element = getElement(_jointElement, "axis2");
 
     // xyz
-    Eigen::Vector3d xyz = getValueVector3d(axis2Element, "xyz");
+    math::Vector3d xyz = getValueVector3d(axis2Element, "xyz");
     properties.mAxis[1] = xyz;
   } else {
     dterr << "[readUniversalJoint] Universal Joint named [" << _name
@@ -2071,7 +2069,7 @@ JointPropPtr readUniversalJoint(
   //--------------------------------------------------------------------------
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
-    Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
+    math::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
     _joint.position = init_pos;
     properties.mInitialPositions = init_pos;
   }
@@ -2079,7 +2077,7 @@ JointPropPtr readUniversalJoint(
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
-    Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
+    math::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
     properties.mInitialVelocities = init_vel;
   }
@@ -2102,7 +2100,7 @@ JointPropPtr readBallJoint(
   //--------------------------------------------------------------------------
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
-    Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
+    math::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
     properties.mInitialPositions = init_pos;
   }
@@ -2110,7 +2108,7 @@ JointPropPtr readBallJoint(
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
-    Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
+    math::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
     properties.mInitialVelocities = init_vel;
   }
@@ -2150,7 +2148,7 @@ JointPropPtr readEulerJoint(
   //--------------------------------------------------------------------------
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
-    Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
+    math::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
     properties.mInitialPositions = init_pos;
   }
@@ -2158,7 +2156,7 @@ JointPropPtr readEulerJoint(
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
-    Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
+    math::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
     properties.mInitialVelocities = init_vel;
   }
@@ -2185,7 +2183,7 @@ JointPropPtr readTranslationalJoint(
   //--------------------------------------------------------------------------
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
-    Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
+    math::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
     properties.mInitialPositions = init_pos;
   }
@@ -2193,7 +2191,7 @@ JointPropPtr readTranslationalJoint(
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
-    Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
+    math::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
     properties.mInitialVelocities = init_vel;
   }
@@ -2257,7 +2255,7 @@ JointPropPtr readTranslationalJoint2D(
   //--------------------------------------------------------------------------
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
-    Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
+    math::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
     _joint.position = init_pos;
     properties.mInitialPositions = init_pos;
   }
@@ -2265,7 +2263,7 @@ JointPropPtr readTranslationalJoint2D(
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
-    Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
+    math::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
     properties.mInitialVelocities = init_vel;
   }
@@ -2329,7 +2327,7 @@ JointPropPtr readPlanarJoint(
   //--------------------------------------------------------------------------
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
-    Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
+    math::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
     properties.mInitialPositions = init_pos;
   }
@@ -2337,7 +2335,7 @@ JointPropPtr readPlanarJoint(
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
-    Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
+    math::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
     properties.mInitialVelocities = init_vel;
   }

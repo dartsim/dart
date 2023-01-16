@@ -34,7 +34,7 @@
 
 #include <dart/simulation/Export.hpp>
 
-#include <dart/common/Fwd.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 namespace dart::simulation {
 

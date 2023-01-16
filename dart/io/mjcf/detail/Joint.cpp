@@ -135,13 +135,13 @@ JointType Joint::getType() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Joint::getPos() const
+const math::Vector3d& Joint::getPos() const
 {
   return mPos;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Joint::getAxis() const
+const math::Vector3d& Joint::getAxis() const
 {
   return mAxis;
 }
@@ -153,7 +153,7 @@ bool Joint::isLimited() const
 }
 
 //==============================================================================
-const Eigen::Vector2d& Joint::getRange() const
+const math::Vector2d& Joint::getRange() const
 {
   return mRange;
 }

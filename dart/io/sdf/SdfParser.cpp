@@ -78,7 +78,7 @@ using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
 struct SDFBodyNode
 {
   BodyPropPtr properties;
-  Eigen::Isometry3d initTransform;
+  math::Isometry3d initTransform;
   std::string type;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -135,7 +135,7 @@ NextResult getNextJointAndNodePair(
     const JointMap& sdfJoints);
 
 dynamics::SkeletonPtr makeSkeleton(
-    tinyxml2::XMLElement* skeletonElement, Eigen::Isometry3d& skeletonFrame);
+    tinyxml2::XMLElement* skeletonElement, math::Isometry3d& skeletonFrame);
 
 template <class NodeType>
 std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
@@ -148,11 +148,11 @@ BodyMap readAllBodyNodes(
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever,
-    const Eigen::Isometry3d& skeletonFrame);
+    const math::Isometry3d& skeletonFrame);
 
 SDFBodyNode readBodyNode(
     tinyxml2::XMLElement* bodyNodeElement,
-    const Eigen::Isometry3d& skeletonFrame,
+    const math::Isometry3d& skeletonFrame,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
@@ -194,42 +194,42 @@ void readAspects(
 
 JointMap readAllJoints(
     tinyxml2::XMLElement* skeletonElement,
-    const Eigen::Isometry3d& skeletonFrame,
+    const math::Isometry3d& skeletonFrame,
     const BodyMap& sdfBodyNodes);
 
 SDFJoint readJoint(
     tinyxml2::XMLElement* jointElement,
     const BodyMap& bodies,
-    const Eigen::Isometry3d& skeletonFrame);
+    const math::Isometry3d& skeletonFrame);
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
     tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
+    const math::Isometry3d& parentModelFrame,
     const std::string& name);
 
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
     tinyxml2::XMLElement* revoluteJointElement,
-    const Eigen::Isometry3d& parentModelFrame,
+    const math::Isometry3d& parentModelFrame,
     const std::string& name);
 
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
     tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
+    const math::Isometry3d& parentModelFrame,
     const std::string& name);
 
 dynamics::ScrewJoint::Properties readScrewJoint(
     tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
+    const math::Isometry3d& parentModelFrame,
     const std::string& name);
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
     tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
+    const math::Isometry3d& parentModelFrame,
     const std::string& name);
 
 dynamics::BallJoint::Properties readBallJoint(
     tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
+    const math::Isometry3d& parentModelFrame,
     const std::string& name);
 
 common::ResourceRetrieverPtr getRetriever(
@@ -404,7 +404,7 @@ void readPhysics(
 
   // Gravity
   if (hasElement(physicsElement, "gravity")) {
-    Eigen::Vector3d gravity = getValueVector3d(physicsElement, "gravity");
+    math::Vector3d gravity = getValueVector3d(physicsElement, "gravity");
     world->setGravity(gravity);
   }
 }
@@ -417,7 +417,7 @@ dynamics::SkeletonPtr readSkeleton(
 {
   assert(skeletonElement != nullptr);
 
-  Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
+  math::Isometry3d skeletonFrame = math::Isometry3d::Identity();
   dynamics::SkeletonPtr newSkeleton
       = makeSkeleton(skeletonElement, skeletonFrame);
 
@@ -560,7 +560,7 @@ NextResult getNextJointAndNodePair(
 }
 
 dynamics::SkeletonPtr makeSkeleton(
-    tinyxml2::XMLElement* _skeletonElement, Eigen::Isometry3d& skeletonFrame)
+    tinyxml2::XMLElement* _skeletonElement, math::Isometry3d& skeletonFrame)
 {
   assert(_skeletonElement != nullptr);
 
@@ -581,7 +581,7 @@ dynamics::SkeletonPtr makeSkeleton(
   //--------------------------------------------------------------------------
   // transformation
   if (hasElement(_skeletonElement, "pose")) {
-    Eigen::Isometry3d W
+    math::Isometry3d W
         = getValueIsometry3dWithExtrinsicRotation(_skeletonElement, "pose");
     skeletonFrame = W;
   }
@@ -649,7 +649,7 @@ BodyMap readAllBodyNodes(
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever,
-    const Eigen::Isometry3d& skeletonFrame)
+    const math::Isometry3d& skeletonFrame)
 {
   ElementEnumerator bodies(skeletonElement, "link");
   BodyMap sdfBodyNodes;
@@ -674,14 +674,14 @@ BodyMap readAllBodyNodes(
 //===============================================================================
 SDFBodyNode readBodyNode(
     tinyxml2::XMLElement* bodyNodeElement,
-    const Eigen::Isometry3d& skeletonFrame,
+    const math::Isometry3d& skeletonFrame,
     const common::Uri& /*baseUri*/,
     const common::ResourceRetrieverPtr& /*retriever*/)
 {
   assert(bodyNodeElement != nullptr);
 
   dynamics::BodyNode::Properties properties;
-  Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
+  math::Isometry3d initTransform = math::Isometry3d::Identity();
 
   // Name attribute
   std::string name = getAttributeString(bodyNodeElement, "name");
@@ -704,7 +704,7 @@ SDFBodyNode readBodyNode(
   //--------------------------------------------------------------------------
   // transformation
   if (hasElement(bodyNodeElement, "pose")) {
-    Eigen::Isometry3d W
+    math::Isometry3d W
         = getValueIsometry3dWithExtrinsicRotation(bodyNodeElement, "pose");
     initTransform = skeletonFrame * W;
   } else {
@@ -725,7 +725,7 @@ SDFBodyNode readBodyNode(
 
     // offset
     if (hasElement(inertiaElement, "pose")) {
-      Eigen::Isometry3d T
+      math::Isometry3d T
           = getValueIsometry3dWithExtrinsicRotation(inertiaElement, "pose");
       properties.mInertia.setLocalCOM(T.translation());
     }
@@ -786,7 +786,7 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     double totalMass = getValueDouble(softShapeEle, "total_mass");
 
     // pose
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    math::Isometry3d T = math::Isometry3d::Identity();
     if (hasElement(softShapeEle, "pose"))
       T = getValueIsometry3dWithExtrinsicRotation(softShapeEle, "pose");
 
@@ -801,13 +801,13 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
           radius, nSlices, nStacks, totalMass);
     } else if (hasElement(geometryEle, "box")) {
       tinyxml2::XMLElement* boxEle = getElement(geometryEle, "box");
-      Eigen::Vector3d size = getValueVector3d(boxEle, "size");
-      Eigen::Vector3i frags = getValueVector3i(boxEle, "frags");
+      math::Vector3d size = getValueVector3d(boxEle, "size");
+      math::Vector3i frags = getValueVector3i(boxEle, "frags");
       softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
           size, T, frags, totalMass);
     } else if (hasElement(geometryEle, "ellipsoid")) {
       tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
-      Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
+      math::Vector3d size = getValueVector3d(ellipsoidEle, "size");
       const auto nSlices = getValueUInt(ellipsoidEle, "num_slices");
       const auto nStacks = getValueUInt(ellipsoidEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
@@ -865,7 +865,7 @@ dynamics::ShapePtr readShape(
   } else if (hasElement(geometryElement, "box")) {
     tinyxml2::XMLElement* boxElement = getElement(geometryElement, "box");
 
-    Eigen::Vector3d size = getValueVector3d(boxElement, "size");
+    math::Vector3d size = getValueVector3d(boxElement, "size");
 
     newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
   } else if (hasElement(geometryElement, "cylinder")) {
@@ -880,11 +880,11 @@ dynamics::ShapePtr readShape(
     // TODO: Don't support plane shape yet.
     tinyxml2::XMLElement* planeElement = getElement(geometryElement, "plane");
 
-    Eigen::Vector2d visSize = getValueVector2d(planeElement, "size");
+    math::Vector2d visSize = getValueVector2d(planeElement, "size");
     // TODO: Need to use normal for correct orientation of the plane
-    // Eigen::Vector3d normal = getValueVector3d(planeElement, "normal");
+    // math::Vector3d normal = getValueVector3d(planeElement, "normal");
 
-    Eigen::Vector3d size(visSize(0), visSize(1), 0.001);
+    math::Vector3d size(visSize(0), visSize(1), 0.001);
 
     newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
   } else if (hasElement(geometryElement, "mesh")) {
@@ -898,9 +898,9 @@ dynamics::ShapePtr readShape(
     }
     std::string uri = getValueString(meshEle, "uri");
 
-    Eigen::Vector3d scale = hasElement(meshEle, "scale")
-                                ? getValueVector3d(meshEle, "scale")
-                                : Eigen::Vector3d::Ones();
+    math::Vector3d scale = hasElement(meshEle, "scale")
+                               ? getValueVector3d(meshEle, "scale")
+                               : math::Vector3d::Ones();
 
     const std::string meshUri = common::Uri::getRelativeUri(baseUri, uri);
     const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
@@ -936,7 +936,7 @@ dynamics::ShapeNode* readShapeNode(
 
   // Transformation
   if (hasElement(shapeNodeEle, "pose")) {
-    const Eigen::Isometry3d W
+    const math::Isometry3d W
         = getValueIsometry3dWithExtrinsicRotation(shapeNodeEle, "pose");
     shapeNode->setRelativeTransform(W);
   }
@@ -950,12 +950,12 @@ void readMaterial(
 {
   auto visualAspect = shapeNode->getVisualAspect();
   if (hasElement(materialEle, "diffuse")) {
-    Eigen::VectorXd color = getValueVectorXd(materialEle, "diffuse");
+    math::VectorXd color = getValueVectorXd(materialEle, "diffuse");
     if (color.size() == 3) {
-      Eigen::Vector3d color3d = color;
+      math::Vector3d color3d = color;
       visualAspect->setColor(color3d);
     } else if (color.size() == 4) {
-      Eigen::Vector4d color4d = color;
+      math::Vector4d color4d = color;
       visualAspect->setColor(color4d);
     } else {
       dterr << "[SdfParse::readMaterial] Unsupported color vector size: "
@@ -1050,7 +1050,7 @@ void readAspects(
 //==============================================================================
 JointMap readAllJoints(
     tinyxml2::XMLElement* _skeletonElement,
-    const Eigen::Isometry3d& skeletonFrame,
+    const math::Isometry3d& skeletonFrame,
     const BodyMap& sdfBodyNodes)
 {
   JointMap sdfJoints;
@@ -1085,7 +1085,7 @@ JointMap readAllJoints(
 SDFJoint readJoint(
     tinyxml2::XMLElement* _jointElement,
     const BodyMap& _sdfBodyNodes,
-    const Eigen::Isometry3d& _skeletonFrame)
+    const math::Isometry3d& _skeletonFrame)
 {
   assert(_jointElement != nullptr);
 
@@ -1148,9 +1148,9 @@ SDFJoint readJoint(
 
   //--------------------------------------------------------------------------
   // transformation
-  Eigen::Isometry3d parentWorld = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childWorld = Eigen::Isometry3d::Identity();
+  math::Isometry3d parentWorld = math::Isometry3d::Identity();
+  math::Isometry3d childToJoint = math::Isometry3d::Identity();
+  math::Isometry3d childWorld = math::Isometry3d::Identity();
 
   if (parent_it != _sdfBodyNodes.end())
     parentWorld = parent_it->second.initTransform;
@@ -1160,11 +1160,11 @@ SDFJoint readJoint(
     childToJoint
         = getValueIsometry3dWithExtrinsicRotation(_jointElement, "pose");
 
-  Eigen::Isometry3d parentToJoint
+  math::Isometry3d parentToJoint
       = parentWorld.inverse() * childWorld * childToJoint;
 
   // TODO: Workaround!!
-  Eigen::Isometry3d parentModelFrame
+  math::Isometry3d parentModelFrame
       = (childWorld * childToJoint).inverse() * _skeletonFrame;
 
   if (type == std::string("fixed")) {
@@ -1216,8 +1216,8 @@ static void reportMissingElement(
 
 static void readAxisElement(
     tinyxml2::XMLElement* axisElement,
-    const Eigen::Isometry3d& _parentModelFrame,
-    Eigen::Vector3d& axis,
+    const math::Isometry3d& _parentModelFrame,
+    math::Vector3d& axis,
     double& lower,
     double& upper,
     double& initial,
@@ -1232,7 +1232,7 @@ static void readAxisElement(
     useParentModelFrame = getValueBool(axisElement, "use_parent_model_frame");
 
   // xyz
-  Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
+  math::Vector3d xyz = getValueVector3d(axisElement, "xyz");
   if (useParentModelFrame) {
     xyz = _parentModelFrame.rotation() * xyz;
   }
@@ -1297,7 +1297,7 @@ static void readAxisElement(
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
     tinyxml2::XMLElement* /*_jointElement*/,
-    const Eigen::Isometry3d&,
+    const math::Isometry3d&,
     const std::string&)
 {
   return dynamics::WeldJoint::Properties();
@@ -1305,7 +1305,7 @@ dart::dynamics::WeldJoint::Properties readWeldJoint(
 
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
     tinyxml2::XMLElement* _revoluteJointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
+    const math::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
   assert(_revoluteJointElement != nullptr);
@@ -1338,7 +1338,7 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
 
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
     tinyxml2::XMLElement* _jointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
+    const math::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
   assert(_jointElement != nullptr);
@@ -1370,7 +1370,7 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
 
 dynamics::ScrewJoint::Properties readScrewJoint(
     tinyxml2::XMLElement* _jointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
+    const math::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
   assert(_jointElement != nullptr);
@@ -1408,7 +1408,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
     tinyxml2::XMLElement* _jointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
+    const math::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
   assert(_jointElement != nullptr);
@@ -1460,7 +1460,7 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 
 dynamics::BallJoint::Properties readBallJoint(
     tinyxml2::XMLElement* /*_jointElement*/,
-    const Eigen::Isometry3d&,
+    const math::Isometry3d&,
     const std::string&)
 {
   return dynamics::BallJoint::Properties();

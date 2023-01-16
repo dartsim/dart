@@ -55,10 +55,10 @@ public:
 
   const std::string& getName() const;
   JointType getType() const;
-  const Eigen::Vector3d& getPos() const;
-  const Eigen::Vector3d& getAxis() const;
+  const math::Vector3d& getPos() const;
+  const math::Vector3d& getAxis() const;
   bool isLimited() const;
-  const Eigen::Vector2d& getRange() const;
+  const math::Vector2d& getRange() const;
   double getDamping() const;
   double getSpringRef() const;
 
@@ -92,14 +92,14 @@ private:
   /// Position of the joint, specified in local or global coordinates as
   /// determined by the coordinate attribute of compiler. For free joints this
   /// attribute is ignored.
-  Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};
+  math::Vector3d mPos{math::Vector3d::Zero()};
 
   /// This attribute specifies the axis of rotation for hinge joints and the
   /// direction of translation for slide joints. It is ignored for free and ball
   /// joints.
-  Eigen::Vector3d mAxis{Eigen::Vector3d::UnitZ()};
+  math::Vector3d mAxis{math::Vector3d::UnitZ()};
 
-  Eigen::Vector2d mSpringDamper{Eigen::Vector2d::Zero()};
+  math::Vector2d mSpringDamper{math::Vector2d::Zero()};
 
   /// This attribute specifies if the joint has limits.
   bool mLimited{false};
@@ -107,7 +107,7 @@ private:
   double mStiffness{0};
 
   /// The joint limits.
-  Eigen::Vector2d mRange{Eigen::Vector2d::Zero()};
+  math::Vector2d mRange{math::Vector2d::Zero()};
 
   double mMargin{0};
 
@@ -121,7 +121,7 @@ private:
 
   double mFrictionLoss{0};
 
-  Eigen::VectorXd mUser;
+  math::VectorXd mUser;
 };
 
 } // namespace detail

@@ -63,7 +63,7 @@ public:
   GeomType getType() const;
   int getGroup() const;
 
-  const Eigen::Vector3d& getSize() const;
+  const math::Vector3d& getSize() const;
 
   double getSphereRadius() const;
 
@@ -71,24 +71,24 @@ public:
   double getCapsuleHalfLength() const;
   double getCapsuleLength() const;
 
-  const Eigen::Vector3d& getEllipsoidRadii() const;
-  Eigen::Vector3d getEllipsoidDiameters() const;
+  const math::Vector3d& getEllipsoidRadii() const;
+  math::Vector3d getEllipsoidDiameters() const;
 
   double getCylinderRadius() const;
   double getCylinderHalfLength() const;
   double getCylinderLength() const;
 
-  const Eigen::Vector3d& getBoxHalfSize() const;
-  Eigen::Vector3d getBoxSize() const;
+  const math::Vector3d& getBoxHalfSize() const;
+  math::Vector3d getBoxSize() const;
 
-  const Eigen::Vector4d& getRGBA() const;
-  const Eigen::Vector3d& getFriction() const;
+  const math::Vector4d& getRGBA() const;
+  const math::Vector3d& getFriction() const;
 
-  void setRelativeTransform(const Eigen::Isometry3d& tf);
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  void setRelativeTransform(const math::Isometry3d& tf);
+  const math::Isometry3d& getRelativeTransform() const;
 
-  void setWorldTransform(const Eigen::Isometry3d& tf);
-  const Eigen::Isometry3d& getWorldTransform() const;
+  void setWorldTransform(const math::Isometry3d& tf);
+  const math::Isometry3d& getWorldTransform() const;
 
   /// \}
 
@@ -110,7 +110,7 @@ private:
 
 private:
   double computeVolume() const;
-  Eigen::Matrix3d computeInertia() const;
+  math::Matrix3d computeInertia() const;
 
   /// Intermediate raw data read from the XML file. For the details, see
   /// http://www.mujoco.org/book/XMLreference.html#Site
@@ -125,9 +125,9 @@ private:
     int mGroup{0};
 
     /// Site size parameters
-    Eigen::Vector3d mSize{Eigen::Vector3d::Zero()};
+    math::Vector3d mSize{math::Vector3d::Zero()};
 
-    Eigen::Vector4d mRGBA{Eigen::Vector4d(0.5, 0.5, 0.5, 1)};
+    math::Vector4d mRGBA{math::Vector4d(0.5, 0.5, 0.5, 1)};
 
     /// This attribute can only be used with capsule, cylinder, ellipsoid and
     /// box Sites. It provides an alternative specification of the Site length
@@ -136,18 +136,18 @@ private:
 
     /// Position of the Site frame, in local or global coordinates as determined
     /// by the coordinate attribute of compiler.
-    Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};
+    math::Vector3d mPos{math::Vector3d::Zero()};
 
     /// Quaternion
-    Eigen::Quaterniond mQuat{Eigen::Quaterniond::Identity()};
+    math::Quaterniond mQuat{math::Quaterniond::Identity()};
 
     /// These are the quantities (x, y, z, a) mentioned above. The last number
     /// is the angle of rotation, in degrees or radians as specified by the
     /// angle attribute of compiler.
-    std::optional<Eigen::Vector4d> mAxisAngle;
+    std::optional<math::Vector4d> mAxisAngle;
 
     /// Rotation angles around three coordinate axes.
-    std::optional<Eigen::Vector3d> mEuler;
+    std::optional<math::Vector3d> mEuler;
 
     /// The first 3 numbers are the X axis of the frame. The next 3 numbers are
     /// the Y axis of the frame, which is automatically made orthogonal to the X
@@ -156,7 +156,7 @@ private:
     std::optional<math::Vector6d> mXYAxes;
 
     /// The Z axis of the frame
-    std::optional<Eigen::Vector3d> mZAxis;
+    std::optional<math::Vector3d> mZAxis;
   };
 
   Data mData;
@@ -170,15 +170,15 @@ private:
   int mGroup{0};
 
   /// Site size parameters
-  Eigen::Vector3d mSize{Eigen::Vector3d::Constant(0.005)};
+  math::Vector3d mSize{math::Vector3d::Constant(0.005)};
 
-  Eigen::Vector4d mRGBA{Eigen::Vector4d(0.5, 0.5, 0.5, 1)};
+  math::Vector4d mRGBA{math::Vector4d(0.5, 0.5, 0.5, 1)};
 
   double mMass;
 
-  Eigen::Isometry3d mRelativeTransform{Eigen::Isometry3d::Identity()};
+  math::Isometry3d mRelativeTransform{math::Isometry3d::Identity()};
 
-  Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
+  math::Isometry3d mWorldTransform{math::Isometry3d::Identity()};
 };
 
 } // namespace detail

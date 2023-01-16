@@ -54,12 +54,12 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element);
 
 /// Extracts rotation matrix from "pre-parsed" orientation elements and the
 /// compiler settings
-Eigen::Matrix3d compileRotation(
-    const Eigen::Quaterniond& quat,
-    const std::optional<Eigen::Vector4d>& axisAngle,
-    const std::optional<Eigen::Vector3d>& euler,
+math::Matrix3d compileRotation(
+    const math::Quaterniond& quat,
+    const std::optional<math::Vector4d>& axisAngle,
+    const std::optional<math::Vector3d>& euler,
     const std::optional<math::Vector6d>& xyAxes,
-    const std::optional<Eigen::Vector3d>& zAxis,
+    const std::optional<math::Vector3d>& zAxis,
     const Compiler& compiler);
 
 /// Includes other MJCF model file into \c element

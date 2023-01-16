@@ -67,7 +67,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
   double doubleVal;
   std::vector<int> numDofsForSkels;
   std::vector<double> tempState;
-  Eigen::VectorXd state;
+  math::VectorXd state;
 
   inFile >> buffer;
   inFile >> numFrames;

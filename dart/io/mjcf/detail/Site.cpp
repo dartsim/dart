@@ -90,7 +90,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
 
   // size
   if (hasAttribute(element, "size")) {
-    const Eigen::VectorXd size = getAttributeVectorXd(element, "size");
+    const math::VectorXd size = getAttributeVectorXd(element, "size");
     if (size.size() == 0 || size.size() > 3) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID, "Invalid attribute for 'size'");
@@ -121,7 +121,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
 
   // quat
   if (hasAttribute(element, "quat")) {
-    const Eigen::Vector4d vec4d = getAttributeVector4d(element, "quat");
+    const math::Vector4d vec4d = getAttributeVector4d(element, "quat");
     mData.mQuat.w() = vec4d[0];
     mData.mQuat.x() = vec4d[1];
     mData.mQuat.y() = vec4d[2];
@@ -198,8 +198,8 @@ Errors Site::preprocess(const Compiler& compiler)
         const double radius = mData.mSize[0];
         mSize[0] = radius;
 
-        const Eigen::Vector3d from = (*mData.mFromTo).head<3>();
-        const Eigen::Vector3d to = (*mData.mFromTo).tail<3>();
+        const math::Vector3d from = (*mData.mFromTo).head<3>();
+        const math::Vector3d to = (*mData.mFromTo).tail<3>();
         const double halfLength = 0.5 * (from - to).norm();
         mSize[1] = halfLength;
       } else {
@@ -216,8 +216,8 @@ Errors Site::preprocess(const Compiler& compiler)
         const double halfLengthY = mData.mSize[1];
         mSize[1] = halfLengthY;
 
-        const Eigen::Vector3d from = (*mData.mFromTo).head<3>();
-        const Eigen::Vector3d to = (*mData.mFromTo).tail<3>();
+        const math::Vector3d from = (*mData.mFromTo).head<3>();
+        const math::Vector3d to = (*mData.mFromTo).tail<3>();
         const double halfLengthZ = 0.5 * (from - to).norm();
         mSize[2] = halfLengthZ;
       } else {
@@ -230,16 +230,16 @@ Errors Site::preprocess(const Compiler& compiler)
     }
   }
 
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  math::Isometry3d tf = math::Isometry3d::Identity();
   if (canUseFromTo(mData.mType, mData.mFromTo)) {
     assert(mData.mFromTo);
     const math::Vector6d& fromto = *mData.mFromTo;
-    const Eigen::Vector3d from = fromto.head<3>();
-    const Eigen::Vector3d to = fromto.tail<3>();
-    const Eigen::Vector3d dir = (to - from).normalized();
+    const math::Vector3d from = fromto.head<3>();
+    const math::Vector3d to = fromto.tail<3>();
+    const math::Vector3d dir = (to - from).normalized();
     tf.translation() = (from + to) / 2.0;
     tf.linear()
-        = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), dir)
+        = math::Quaterniond::FromTwoVectors(math::Vector3d::UnitZ(), dir)
               .toRotationMatrix();
   } else {
     tf.translation() = mData.mPos;
@@ -310,7 +310,7 @@ int Site::getGroup() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Site::getSize() const
+const math::Vector3d& Site::getSize() const
 {
   return mSize;
 }
@@ -340,13 +340,13 @@ double Site::getCapsuleLength() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Site::getEllipsoidRadii() const
+const math::Vector3d& Site::getEllipsoidRadii() const
 {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector3d Site::getEllipsoidDiameters() const
+math::Vector3d Site::getEllipsoidDiameters() const
 {
   return 2.0 * mSize;
 }
@@ -370,43 +370,43 @@ double Site::getCylinderLength() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Site::getBoxHalfSize() const
+const math::Vector3d& Site::getBoxHalfSize() const
 {
   return mSize;
 }
 
 //==============================================================================
-Eigen::Vector3d Site::getBoxSize() const
+math::Vector3d Site::getBoxSize() const
 {
   return 2.0 * mSize;
 }
 
 //==============================================================================
-const Eigen::Vector4d& Site::getRGBA() const
+const math::Vector4d& Site::getRGBA() const
 {
   return mRGBA;
 }
 
 //==============================================================================
-void Site::setRelativeTransform(const Eigen::Isometry3d& tf)
+void Site::setRelativeTransform(const math::Isometry3d& tf)
 {
   mRelativeTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Site::getRelativeTransform() const
+const math::Isometry3d& Site::getRelativeTransform() const
 {
   return mRelativeTransform;
 }
 
 //==============================================================================
-void Site::setWorldTransform(const Eigen::Isometry3d& tf)
+void Site::setWorldTransform(const math::Isometry3d& tf)
 {
   mWorldTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Site::getWorldTransform() const
+const math::Isometry3d& Site::getWorldTransform() const
 {
   return mWorldTransform;
 }
@@ -419,10 +419,10 @@ double Site::computeVolume() const
 }
 
 //==============================================================================
-Eigen::Matrix3d Site::computeInertia() const
+math::Matrix3d Site::computeInertia() const
 {
   // TODO(JS): Not implemented
-  return Eigen::Matrix3d::Identity();
+  return math::Matrix3d::Identity();
 }
 
 } // namespace detail

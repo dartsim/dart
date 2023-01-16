@@ -48,7 +48,7 @@ namespace kinematics {
         FileInfoSkel();
         virtual ~FileInfoSkel();
 	
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const; ///< Note: _color is not used when _useDefaultColor=false
+        void draw(renderer::RenderInterface* _ri = NULL, const math::Vector4d& _color=math::Vector4d::Ones(), bool _useDefaultColor = true) const; ///< Note: _color is not used when _useDefaultColor=false
         bool loadFile(const char* _filename);
         bool loadFile(const char* _filename, SkeletonFileType _type);
         bool saveFile(const char* _filename) const;
@@ -73,7 +73,7 @@ namespace kinematics {
     }
 
     template <class SkeletonType>
-    void FileInfoSkel<SkeletonType>::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color, bool _useDefaultColor) const {
+    void FileInfoSkel<SkeletonType>::draw(renderer::RenderInterface* _ri, const math::Vector4d& _color, bool _useDefaultColor) const {
         mSkel->draw(_ri, _color, _useDefaultColor);
     }
 
@@ -160,7 +160,7 @@ namespace kinematics {
                 ss<<"marker"<<i;
                 hname = ss.str();
             }
-            Eigen::Vector3d lc = mSkel->getMarker(i)->getLocalCoords();
+            math::Vector3d lc = mSkel->getMarker(i)->getLocalCoords();
             output<<hname<<" { "<<"<"<<lc[0]<<", "<<lc[1]<<", "<<lc[2]<<">, "<<i<<", "<<mSkel->getMarker(i)->getNode()->getName()<<" } "<<endl;
 
         }
@@ -221,8 +221,8 @@ namespace kinematics {
         _outfile<<"}\n";	// chain
 
         // primitive
-        Eigen::Vector3d pdim = _b->getShape(0)->getDim(); // Default to VizShape in graphics context
-        Eigen::Vector3d off = _b->getLocalCOM();
+        math::Vector3d pdim = _b->getShape(0)->getDim(); // Default to VizShape in graphics context
+        math::Vector3d off = _b->getLocalCOM();
         _outfile<<"primitive { <"<<pdim[0]<<", "<<pdim[1]<<", "<<pdim[2]<<">, <"<<off[0]<<", "<<off[1]<<", "<<off[2]<<">, "<<unitlength;
         // different types
 

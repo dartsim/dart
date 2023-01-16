@@ -69,20 +69,20 @@ struct BodyAttributes final
 
   /// The 3D position of the body frame, in local or global coordinates as
   /// determined by the coordinate attribute of compiler.
-  std::optional<Eigen::Vector3d> mPos;
+  std::optional<math::Vector3d> mPos;
 
   /// Quaternion
-  Eigen::Quaterniond mQuat{Eigen::Quaterniond::Identity()};
+  math::Quaterniond mQuat{math::Quaterniond::Identity()};
 
   /// These are the quantities (x, y, z, a) mentioned above. The last number
   /// is the angle of rotation, in degrees or radians as specified by the
   /// angle attribute of compiler.
-  std::optional<Eigen::Vector4d> mAxisAngle;
+  std::optional<math::Vector4d> mAxisAngle;
 
   /// Rotation angles around three coordinate axes. The sequence of axes
   /// around which these rotations are applied is determined by the eulerseq
   /// attribute of compiler and is the same for the entire model.
-  std::optional<Eigen::Vector3d> mEuler;
+  std::optional<math::Vector3d> mEuler;
 
   /// The first 3 numbers are the X axis of the frame. The next 3 numbers are
   /// the Y axis of the frame, which is automatically made orthogonal to the X
@@ -91,9 +91,9 @@ struct BodyAttributes final
   std::optional<math::Vector6d> mXYAxes;
 
   /// The Z axis of the frame
-  std::optional<Eigen::Vector3d> mZAxis;
+  std::optional<math::Vector3d> mZAxis;
 
-  Eigen::VectorXd mUser;
+  math::VectorXd mUser;
 
   std::optional<Inertial> mInertial;
 };

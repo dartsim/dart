@@ -64,9 +64,9 @@ public:
   int getGroup() const;
   int getPriority() const;
 
-  const Eigen::Vector3d& getSize() const;
+  const math::Vector3d& getSize() const;
 
-  Eigen::Vector2d getPlaneHalfSize() const;
+  math::Vector2d getPlaneHalfSize() const;
 
   double getSphereRadius() const;
 
@@ -74,33 +74,33 @@ public:
   double getCapsuleHalfLength() const;
   double getCapsuleLength() const;
 
-  const Eigen::Vector3d& getEllipsoidRadii() const;
-  Eigen::Vector3d getEllipsoidDiameters() const;
+  const math::Vector3d& getEllipsoidRadii() const;
+  math::Vector3d getEllipsoidDiameters() const;
 
   double getCylinderRadius() const;
   double getCylinderHalfLength() const;
   double getCylinderLength() const;
 
-  const Eigen::Vector3d& getBoxHalfSize() const;
-  Eigen::Vector3d getBoxSize() const;
+  const math::Vector3d& getBoxHalfSize() const;
+  math::Vector3d getBoxSize() const;
 
-  const Eigen::Vector4d& getRGBA() const;
-  const Eigen::Vector3d& getFriction() const;
+  const math::Vector4d& getRGBA() const;
+  const math::Vector3d& getFriction() const;
 
   double getMass() const;
   double getDensity() const;
   double getVolume() const;
-  const Eigen::Matrix3d& getInertia() const;
+  const math::Matrix3d& getInertia() const;
 
   double getSolMix() const;
   double getMargine() const;
   double getGap() const;
 
-  void setRelativeTransform(const Eigen::Isometry3d& tf);
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  void setRelativeTransform(const math::Isometry3d& tf);
+  const math::Isometry3d& getRelativeTransform() const;
 
-  void setWorldTransform(const Eigen::Isometry3d& tf);
-  const Eigen::Isometry3d& getWorldTransform() const;
+  void setWorldTransform(const math::Isometry3d& tf);
+  const math::Isometry3d& getWorldTransform() const;
 
   const std::string& getHField() const;
   const std::string& getMesh() const;
@@ -128,7 +128,7 @@ private:
 
 private:
   double computeVolume() const;
-  Eigen::Matrix3d computeInertia() const;
+  math::Matrix3d computeInertia() const;
 
   GeomAttributes mAttributes;
 
@@ -149,11 +149,11 @@ private:
   int mPriority{0};
 
   /// Geom size parameters
-  Eigen::Vector3d mSize{Eigen::Vector3d::Zero()};
+  math::Vector3d mSize{math::Vector3d::Zero()};
 
-  Eigen::Vector4d mRGBA{Eigen::Vector4d(0.5, 0.5, 0.5, 1)};
+  math::Vector4d mRGBA{math::Vector4d(0.5, 0.5, 0.5, 1)};
 
-  Eigen::Vector3d mFriction{Eigen::Vector3d(1, 0.005, 0.0001)};
+  math::Vector3d mFriction{math::Vector3d(1, 0.005, 0.0001)};
 
   double mMass;
 
@@ -162,7 +162,7 @@ private:
 
   double mVolume{0};
 
-  Eigen::Matrix3d mInertia{Eigen::Matrix3d::Identity()};
+  math::Matrix3d mInertia{math::Matrix3d::Identity()};
 
   /// Weight used for averaging of contact parameters, and interacts with the
   /// priority attribute.
@@ -177,9 +177,9 @@ private:
   /// in mjData.contact for the purpose of custom computations.
   double mGap{0};
 
-  Eigen::Isometry3d mRelativeTransform{Eigen::Isometry3d::Identity()};
+  math::Isometry3d mRelativeTransform{math::Isometry3d::Identity()};
 
-  Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
+  math::Isometry3d mWorldTransform{math::Isometry3d::Identity()};
 
   std::string mHField;
   std::string mMesh;

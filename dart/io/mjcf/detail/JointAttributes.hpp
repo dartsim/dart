@@ -33,10 +33,10 @@
 #ifndef DART_UTILS_MJCF_DETAIL_JOINTATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_JOINTATTRIBUTES_HPP_
 
+#include <dart/io/Fwd.hpp>
 #include <dart/io/mjcf/detail/Error.hpp>
 #include <dart/io/mjcf/detail/Types.hpp>
 
-#include <Eigen/Core>
 #include <tinyxml2.h>
 
 #include <optional>
@@ -57,14 +57,14 @@ struct JointAttributes final
   /// Position of the joint, specified in local or global coordinates as
   /// determined by the coordinate attribute of compiler. For free joints this
   /// attribute is ignored.
-  Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};
+  math::Vector3d mPos{math::Vector3d::Zero()};
 
   /// This attribute specifies the axis of rotation for hinge joints and the
   /// direction of translation for slide joints. It is ignored for free and ball
   /// joints.
-  Eigen::Vector3d mAxis{Eigen::Vector3d::UnitZ()};
+  math::Vector3d mAxis{math::Vector3d::UnitZ()};
 
-  Eigen::Vector2d mSpringDamper{Eigen::Vector2d::Zero()};
+  math::Vector2d mSpringDamper{math::Vector2d::Zero()};
 
   /// This attribute specifies if the joint has limits.
   bool mLimited{false};
@@ -72,7 +72,7 @@ struct JointAttributes final
   double mStiffness{0};
 
   /// The joint limits.
-  Eigen::Vector2d mRange{Eigen::Vector2d::Zero()};
+  math::Vector2d mRange{math::Vector2d::Zero()};
 
   double mMargin{0};
 
@@ -86,7 +86,7 @@ struct JointAttributes final
 
   double mFrictionLoss{0};
 
-  Eigen::VectorXd mUser;
+  math::VectorXd mUser;
 };
 
 Errors appendJointAttributes(

@@ -69,11 +69,11 @@ struct GeomAttributes final
   int mPriority{0};
 
   /// Geom size parameters
-  Eigen::Vector3d mSize{Eigen::Vector3d::Zero()};
+  math::Vector3d mSize{math::Vector3d::Zero()};
 
-  Eigen::Vector4d mRGBA{Eigen::Vector4d(0.5, 0.5, 0.5, 1)};
+  math::Vector4d mRGBA{math::Vector4d(0.5, 0.5, 0.5, 1)};
 
-  Eigen::Vector3d mFriction{Eigen::Vector3d(1, 0.005, 0.0001)};
+  math::Vector3d mFriction{math::Vector3d(1, 0.005, 0.0001)};
 
   /// Mass
   std::optional<double> mMass;
@@ -101,18 +101,18 @@ struct GeomAttributes final
 
   /// Position of the geom frame, in local or global coordinates as determined
   /// by the coordinate attribute of compiler.
-  Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};
+  math::Vector3d mPos{math::Vector3d::Zero()};
 
   /// Quaternion
-  Eigen::Quaterniond mQuat{Eigen::Quaterniond::Identity()};
+  math::Quaterniond mQuat{math::Quaterniond::Identity()};
 
   /// These are the quantities (x, y, z, a) mentioned above. The last number
   /// is the angle of rotation, in degrees or radians as specified by the
   /// angle attribute of compiler.
-  std::optional<Eigen::Vector4d> mAxisAngle;
+  std::optional<math::Vector4d> mAxisAngle;
 
   /// Rotation angles around three coordinate axes.
-  std::optional<Eigen::Vector3d> mEuler;
+  std::optional<math::Vector3d> mEuler;
 
   /// The first 3 numbers are the X axis of the frame. The next 3 numbers are
   /// the Y axis of the frame, which is automatically made orthogonal to the X
@@ -121,7 +121,7 @@ struct GeomAttributes final
   std::optional<math::Vector6d> mXYAxes;
 
   /// The Z axis of the frame
-  std::optional<Eigen::Vector3d> mZAxis;
+  std::optional<math::Vector3d> mZAxis;
 
   std::optional<std::string> mHField;
 

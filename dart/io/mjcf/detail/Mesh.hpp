@@ -56,7 +56,7 @@ public:
 
   const std::string& getName() const;
   const std::string& getFile() const;
-  const Eigen::Vector3d& getScale() const;
+  const math::Vector3d& getScale() const;
 
   dynamics::MeshShapePtr getMeshShape() const;
 
@@ -88,7 +88,7 @@ private:
 
   std::string mFile{""};
 
-  Eigen::Vector3d mScale{Eigen::Vector3d::Ones()};
+  math::Vector3d mScale{math::Vector3d::Ones()};
 
   common::Uri mMeshUri;
   common::ResourceRetrieverPtr mRetriever;

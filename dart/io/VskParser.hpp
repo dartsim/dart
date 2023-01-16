@@ -59,7 +59,7 @@ struct DART_IO_API Options
   /// each body node are determined by the relative transformation from a body
   /// node and its child body node. defaultEllipsoidSize is used for body
   /// nodes that don't have child body node.
-  Eigen::Vector3d defaultEllipsoidSize;
+  math::Vector3d defaultEllipsoidSize;
 
   /// Ratio of shorter radii of each ellipsoid to the longest radius where
   /// the longest radius is the distance between a body and its child body
@@ -87,8 +87,8 @@ struct DART_IO_API Options
   /// Constructor
   Options(
       const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
-      const Eigen::Vector3d& defaultEllipsoidSize
-      = Eigen::Vector3d::Constant(0.05),
+      const math::Vector3d& defaultEllipsoidSize
+      = math::Vector3d::Constant(0.05),
       double thicknessRatio = 0.35,
       double density = 1e+3,
       double jointPositionLowerLimit = -math::pi(),

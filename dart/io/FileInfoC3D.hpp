@@ -63,11 +63,11 @@ public:
     return mFPS;
   }
 
-  inline Eigen::Vector3d getDataAt(int _frame, int _idx) const
+  inline math::Vector3d getDataAt(int _frame, int _idx) const
   {
     return mData.at(_frame).at(_idx);
   } ///< Note: not checking index range
-  inline void addData(const std::vector<Eigen::Vector3d>& _data)
+  inline void addData(const std::vector<math::Vector3d>& _data)
   {
     mData.push_back(_data);
   }
@@ -82,7 +82,7 @@ public:
 protected:
   int mNumMarkers;
   int mNumFrames;
-  std::vector<std::vector<Eigen::Vector3d>> mData;
+  std::vector<std::vector<math::Vector3d>> mData;
   double mFPS;
   char mFileName[256]; // change to string?
 };

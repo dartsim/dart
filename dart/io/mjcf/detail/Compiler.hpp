@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_COMPILER_HPP_
 #define DART_UTILS_MJCF_DETAIL_COMPILER_HPP_
 
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 #include <dart/io/mjcf/detail/Error.hpp>
 #include <dart/io/mjcf/detail/Types.hpp>
 
@@ -41,7 +41,6 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <Eigen/Core>
 #include <tinyxml2.h>
 
 namespace dart {
@@ -75,7 +74,7 @@ public:
   bool getUserThread() const;
   bool getFuseStatic() const;
   InertiaFromGeom getInertiaFromGeom() const;
-  const Eigen::Vector2i& getInertiaGroupRange() const;
+  const math::Vector2i& getInertiaGroupRange() const;
 
 private:
   // Private memebers used by MujocoModel class
@@ -106,7 +105,7 @@ private:
 #else
   InertiaFromGeom mInertiaFromGeom{InertiaFromGeom::AUTO};
 #endif
-  Eigen::Vector2i mInertiaGroupRange{Eigen::Vector2i(0, 5)};
+  math::Vector2i mInertiaGroupRange{math::Vector2i(0, 5)};
 };
 
 } // namespace detail

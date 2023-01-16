@@ -30,40 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_MJCF_DETAIL_WELDATTRIBUTES_HPP_
-#define DART_UTILS_MJCF_DETAIL_WELDATTRIBUTES_HPP_
+#pragma once
 
-#include <dart/io/Fwd.hpp>
-#include <dart/io/mjcf/detail/Error.hpp>
+#include <dart/simulation/Fwd.hpp>
 
-#include <tinyxml2.h>
+#include <dart/io/Export.hpp>
 
-#include <optional>
+namespace dart::io {
 
-namespace dart {
-namespace io {
-namespace MjcfParser {
-namespace detail {
-
-struct WeldAttributes final
-{
-  std::optional<std::string> mName;
-  bool mActive{true};
-  math::Vector2d mSolRef;
-  math::Matrix<double, 5, 1> mSolImp;
-  std::string mBody1;
-  std::optional<std::string> mBody2;
-  math::Matrix<double, 7, 1> mRelPose;
-
-  WeldAttributes();
-};
-
-Errors appendWeldAttributes(
-    WeldAttributes& attributes, tinyxml2::XMLElement* element);
-
-} // namespace detail
-} // namespace MjcfParser
-} // namespace io
-} // namespace dart
-
-#endif // #ifndef DART_UTILS_MJCF_DETAIL_WELDATTRIBUTES_HPP_
+} // namespace dart::io

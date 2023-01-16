@@ -51,11 +51,11 @@ public:
 
   const std::string& getName() const;
   bool getActive() const;
-  const Eigen::Vector2d& getSolRef() const;
-  const Eigen::Matrix<double, 5, 1>& getSolImp() const;
+  const math::Vector2d& getSolRef() const;
+  const math::Matrix<double, 5, 1>& getSolImp() const;
   const std::string& getBody1() const;
   const std::string& getBody2() const;
-  const std::optional<Eigen::Isometry3d>& getRelativeTransform() const;
+  const std::optional<math::Isometry3d>& getRelativeTransform() const;
 
 private:
   // Private memebers used by MujocoModel class
@@ -67,13 +67,13 @@ private:
 
   std::string mName;
   bool mActive{true};
-  Eigen::Vector2d mSolRef;
-  Eigen::Matrix<double, 5, 1> mSolImp;
+  math::Vector2d mSolRef;
+  math::Matrix<double, 5, 1> mSolImp;
   std::string mBody1;
   std::string mBody2;
   bool mUsePredefinedRelativeTransform{true};
   // Relative transform from body1 to body2
-  std::optional<Eigen::Isometry3d> mRelativeTransfrom;
+  std::optional<math::Isometry3d> mRelativeTransfrom;
 };
 
 } // namespace detail

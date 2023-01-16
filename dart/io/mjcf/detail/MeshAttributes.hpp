@@ -33,9 +33,9 @@
 #ifndef DART_UTILS_MJCF_DETAIL_MESHATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_MESHATTRIBUTES_HPP_
 
+#include <dart/io/Fwd.hpp>
 #include <dart/io/mjcf/detail/Error.hpp>
 
-#include <Eigen/Core>
 #include <tinyxml2.h>
 
 #include <optional>
@@ -54,7 +54,7 @@ struct MeshAttributes final
 
   std::optional<std::string> mFile;
 
-  Eigen::Vector3d mScale{Eigen::Vector3d::Ones()};
+  math::Vector3d mScale{math::Vector3d::Ones()};
 };
 
 Errors appendMeshAttributes(

@@ -52,13 +52,13 @@ bool Weld::getActive() const
 }
 
 //==============================================================================
-const Eigen::Vector2d& Weld::getSolRef() const
+const math::Vector2d& Weld::getSolRef() const
 {
   return mSolRef;
 }
 
 //==============================================================================
-const Eigen::Matrix<double, 5, 1>& Weld::getSolImp() const
+const math::Matrix<double, 5, 1>& Weld::getSolImp() const
 {
   return mSolImp;
 }
@@ -76,7 +76,7 @@ const std::string& Weld::getBody2() const
 }
 
 //==============================================================================
-const std::optional<Eigen::Isometry3d>& Weld::getRelativeTransform() const
+const std::optional<math::Isometry3d>& Weld::getRelativeTransform() const
 {
   return mRelativeTransfrom;
 }
@@ -127,9 +127,9 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   if (mAttributes.mBody2) {
     mBody2 = *mAttributes.mBody2;
   }
-  if (!mAttributes.mRelPose.tail<4>().isApprox(Eigen::Vector4d::Zero())) {
-    mRelativeTransfrom = Eigen::Isometry3d::Identity();
-    Eigen::Quaterniond quat;
+  if (!mAttributes.mRelPose.tail<4>().isApprox(math::Vector4d::Zero())) {
+    mRelativeTransfrom = math::Isometry3d::Identity();
+    math::Quaterniond quat;
     quat.w() = mAttributes.mRelPose[3];
     quat.x() = mAttributes.mRelPose[4];
     quat.y() = mAttributes.mRelPose[5];

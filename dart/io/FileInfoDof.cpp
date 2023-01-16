@@ -158,7 +158,7 @@ bool FileInfoDof::saveFile(
 }
 
 //==============================================================================
-void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
+void FileInfoDof::addDof(const math::VectorXd& _dofs)
 {
   mDofs.push_back(_dofs);
   mNumFrames++;
@@ -172,7 +172,7 @@ double FileInfoDof::getDofAt(std::size_t _frame, std::size_t _id) const
 }
 
 //==============================================================================
-Eigen::VectorXd FileInfoDof::getPoseAtFrame(int _frame) const
+math::VectorXd FileInfoDof::getPoseAtFrame(int _frame) const
 {
   return mDofs.at(_frame);
 }

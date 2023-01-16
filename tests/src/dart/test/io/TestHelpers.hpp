@@ -84,8 +84,8 @@ inline void addEndEffector(
   BodyNode::Properties node(BodyNode::AspectProperties("ee"));
   std::shared_ptr<Shape> shape(new BoxShape(Vector3d(0.2, 0.2, 0.2)));
 
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
+  math::Isometry3d T = math::Isometry3d::Identity();
+  T.translate(math::Vector3d(0.0, 0.0, dim(2)));
   Joint::Properties joint("eeJoint", T);
 
   auto pair
@@ -187,8 +187,8 @@ inline SkeletonPtr createThreeLinkRobot(
     std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
         robot, parent_node, node, "joint2", 0.0, -pi(), pi(), type2);
     Joint* joint = pair2.first;
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
+    math::Isometry3d T = math::Isometry3d::Identity();
+    T.translate(math::Vector3d(0.0, 0.0, dim1(2)));
     joint->setTransformFromParentBodyNode(T);
 
     auto current_node = pair2.second;
@@ -211,8 +211,8 @@ inline SkeletonPtr createThreeLinkRobot(
         robot, parent_node, node, "joint3", 0.0, -pi(), pi(), type3);
 
     Joint* joint = pair3.first;
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, dim2(2)));
+    math::Isometry3d T = math::Isometry3d::Identity();
+    T.translate(math::Vector3d(0.0, 0.0, dim2(2)));
     joint->setTransformFromParentBodyNode(T);
 
     auto current_node = pair3.second;
@@ -247,7 +247,7 @@ inline SkeletonPtr createTwoLinkRobot(
       type1,
       dim2,
       type2,
-      Eigen::Vector3d::Zero(),
+      math::Vector3d::Zero(),
       DOF_X,
       finished,
       true,
@@ -298,8 +298,8 @@ inline SkeletonPtr createNLinkRobot(
         robot, parent_node, node, ssJoint.str(), 0.0, -pi(), pi(), type);
 
     Joint* joint = newPair.first;
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
+    math::Isometry3d T = math::Isometry3d::Identity();
+    T.translate(math::Vector3d(0.0, 0.0, dim(2)));
     joint->setTransformFromParentBodyNode(T);
     joint->setDampingCoefficient(0, 0.01);
 
@@ -343,7 +343,7 @@ inline SkeletonPtr createNLinkPendulum(
       = add1DofJoint(robot, nullptr, node, "joint1", 0.0, -pi(), pi(), type);
 
   Joint* joint = pair1.first;
-  Eigen::Isometry3d T = joint->getTransformFromChildBodyNode();
+  math::Isometry3d T = joint->getTransformFromChildBodyNode();
   T.translation() = offset;
   joint->setTransformFromChildBodyNode(T);
   joint->setDampingCoefficient(0, 0.01);
@@ -370,7 +370,7 @@ inline SkeletonPtr createNLinkPendulum(
         robot, parent_node, node, ssJoint.str(), 0.0, -pi(), pi(), type);
 
     Joint* joint = newPair.first;
-    Eigen::Isometry3d T = joint->getTransformFromChildBodyNode();
+    math::Isometry3d T = joint->getTransformFromChildBodyNode();
     T.translation() = offset;
     joint->setTransformFromChildBodyNode(T);
     joint->setDampingCoefficient(0, 0.01);
@@ -392,13 +392,13 @@ inline SkeletonPtr createNLinkPendulum(
 
 //==============================================================================
 inline SkeletonPtr createGround(
-    const Eigen::Vector3d& _size,
-    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+    const math::Vector3d& _size,
+    const math::Vector3d& _position = math::Vector3d::Zero(),
+    const math::Vector3d& _orientation = math::Vector3d::Zero())
 {
   double mass = 1.0;
 
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  math::Isometry3d T = math::Isometry3d::Identity();
   T.translation() = _position;
   T.linear() = eulerXYZToMatrix(_orientation);
   Joint::Properties joint("joint1", T);
@@ -420,8 +420,8 @@ inline SkeletonPtr createGround(
 
 //==============================================================================
 inline SkeletonPtr createObject(
-    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+    const math::Vector3d& _position = math::Vector3d::Zero(),
+    const math::Vector3d& _orientation = math::Vector3d::Zero())
 {
   double mass = 1.0;
 
@@ -433,7 +433,7 @@ inline SkeletonPtr createObject(
   SkeletonPtr skeleton = Skeleton::create();
   skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr, joint, node);
 
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  math::Isometry3d T = math::Isometry3d::Identity();
   T.translation() = _position;
   T.linear() = eulerXYZToMatrix(_orientation);
   skeleton->getJoint(0)->setPositions(FreeJoint::convertToPositions(T));
@@ -444,7 +444,7 @@ inline SkeletonPtr createObject(
 //==============================================================================
 inline SkeletonPtr createSphere(
     const double _radius,
-    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero())
+    const math::Vector3d& _position = math::Vector3d::Zero())
 {
   SkeletonPtr sphere = createObject(_position);
 
@@ -459,9 +459,9 @@ inline SkeletonPtr createSphere(
 
 //==============================================================================
 inline SkeletonPtr createBox(
-    const Eigen::Vector3d& _size,
-    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+    const math::Vector3d& _size,
+    const math::Vector3d& _position = math::Vector3d::Zero(),
+    const math::Vector3d& _orientation = math::Vector3d::Zero())
 {
   SkeletonPtr box = createObject(_position, _orientation);
 

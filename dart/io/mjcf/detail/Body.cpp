@@ -261,7 +261,7 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
         mRelativeTransform = mWorldTransform;
         assert(math::verifyTransform(mRelativeTransform));
       }
-      mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
+      mInertial.setRelativeTransform(math::Isometry3d::Identity());
     }
   }
 
@@ -355,27 +355,27 @@ const Site& Body::getSite(std::size_t index) const
 }
 
 //==============================================================================
-void Body::setRelativeTransform(const Eigen::Isometry3d& tf)
+void Body::setRelativeTransform(const math::Isometry3d& tf)
 {
   assert(math::verifyTransform(tf));
   mRelativeTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Body::getRelativeTransform() const
+const math::Isometry3d& Body::getRelativeTransform() const
 {
   return mRelativeTransform;
 }
 
 //==============================================================================
-void Body::setWorldTransform(const Eigen::Isometry3d& tf)
+void Body::setWorldTransform(const math::Isometry3d& tf)
 {
   assert(math::verifyTransform(tf));
   mWorldTransform = tf;
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Body::getWorldTransform() const
+const math::Isometry3d& Body::getWorldTransform() const
 {
   return mWorldTransform;
 }
@@ -408,10 +408,10 @@ Inertial Body::computeInertialFromGeoms(
 
   inertial.setMass(geoms[0].getMass());
 
-  const Eigen::Matrix3d& moi = geoms[0].getInertia();
+  const math::Matrix3d& moi = geoms[0].getInertia();
 
-  const Eigen::Vector3d diag = moi.diagonal();
-  Eigen::Vector3d offDiag;
+  const math::Vector3d diag = moi.diagonal();
+  math::Vector3d offDiag;
   offDiag[0] = moi(0, 1);
   offDiag[1] = moi(0, 2);
   offDiag[2] = moi(1, 2);

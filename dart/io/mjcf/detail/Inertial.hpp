@@ -59,17 +59,17 @@ public:
   void setMass(double mass);
   double getMass() const;
 
-  void setDiagInertia(const Eigen::Vector3d& inertia);
-  const Eigen::Vector3d& getDiagInertia() const;
+  void setDiagInertia(const math::Vector3d& inertia);
+  const math::Vector3d& getDiagInertia() const;
 
-  void setOffDiagInertia(const Eigen::Vector3d& inertia);
-  const Eigen::Vector3d& getOffDiagInertia() const;
+  void setOffDiagInertia(const math::Vector3d& inertia);
+  const math::Vector3d& getOffDiagInertia() const;
 
-  void setRelativeTransform(const Eigen::Isometry3d& tf);
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  void setRelativeTransform(const math::Isometry3d& tf);
+  const math::Isometry3d& getRelativeTransform() const;
 
-  void setWorldTransform(const Eigen::Isometry3d& tf);
-  const Eigen::Isometry3d& getWorldTransform() const;
+  void setWorldTransform(const math::Isometry3d& tf);
+  const math::Isometry3d& getWorldTransform() const;
 
 private:
   // Private members used by Body class
@@ -80,18 +80,18 @@ private:
   struct Data
   {
     /// Position of the inertial frame.
-    Eigen::Vector3d mPos;
+    math::Vector3d mPos;
 
     /// Quaternion
-    Eigen::Quaterniond mQuat{Eigen::Quaterniond::Identity()};
+    math::Quaterniond mQuat{math::Quaterniond::Identity()};
 
     /// These are the quantities (x, y, z, a) mentioned above. The last number
     /// is the angle of rotation, in degrees or radians as specified by the
     /// angle attribute of compiler.
-    std::optional<Eigen::Vector4d> mAxisAngle;
+    std::optional<math::Vector4d> mAxisAngle;
 
     /// Rotation angles around three coordinate axes.
-    std::optional<Eigen::Vector3d> mEuler;
+    std::optional<math::Vector3d> mEuler;
 
     /// The first 3 numbers are the X axis of the frame. The next 3 numbers are
     /// the Y axis of the frame, which is automatically made orthogonal to the X
@@ -100,17 +100,17 @@ private:
     std::optional<math::Vector6d> mXYAxes;
 
     /// The Z axis of the frame
-    std::optional<Eigen::Vector3d> mZAxis;
+    std::optional<math::Vector3d> mZAxis;
 
-    Eigen::Isometry3d mRelativeTransform{Eigen::Isometry3d::Identity()};
-    Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
+    math::Isometry3d mRelativeTransform{math::Isometry3d::Identity()};
+    math::Isometry3d mWorldTransform{math::Isometry3d::Identity()};
 
     /// Mass of the body.
     double mMass;
 
     /// Diagonal inertia matrix, expressing the body inertia relative to the
     /// inertial frame.
-    std::optional<Eigen::Vector3d> mDiagInertia;
+    std::optional<math::Vector3d> mDiagInertia;
 
     /// Full inertia matrix M.
     std::optional<math::Vector6d> mFullInertia;
@@ -119,16 +119,16 @@ private:
   Data mData;
 
   /// Position of the inertial frame.
-  Eigen::Vector3d mPos;
+  math::Vector3d mPos;
 
-  Eigen::Isometry3d mRelativeTransform{Eigen::Isometry3d::Identity()};
-  Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
+  math::Isometry3d mRelativeTransform{math::Isometry3d::Identity()};
+  math::Isometry3d mWorldTransform{math::Isometry3d::Identity()};
 
   /// Mass of the body.
   double mMass;
 
-  Eigen::Vector3d mDiagonalInertia;
-  Eigen::Vector3d mOffDiagonalInertia;
+  math::Vector3d mDiagonalInertia;
+  math::Vector3d mOffDiagonalInertia;
 };
 
 } // namespace detail

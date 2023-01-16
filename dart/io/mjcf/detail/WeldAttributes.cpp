@@ -73,7 +73,7 @@ Errors appendWeldAttributes(
 
   // solimp
   if (hasAttribute(element, "solimp")) {
-    const Eigen::VectorXd solimp = getAttributeVectorXd(element, "solimp");
+    const math::VectorXd solimp = getAttributeVectorXd(element, "solimp");
     if (solimp.size() == 0 || solimp.size() > 5) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,

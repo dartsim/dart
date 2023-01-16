@@ -134,9 +134,9 @@ char toChar(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector2d toVector2d(const std::string& str)
+math::Vector2d toVector2d(const std::string& str)
 {
-  Eigen::Vector2d ret;
+  math::Vector2d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 2);
@@ -147,7 +147,7 @@ Eigen::Vector2d toVector2d(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::Vector2d[" << i
+                  << "] is not a valid double for math::Vector2d[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -157,9 +157,9 @@ Eigen::Vector2d toVector2d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector2i toVector2i(const std::string& str)
+math::Vector2i toVector2i(const std::string& str)
 {
-  Eigen::Vector2i ret;
+  math::Vector2i ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 2);
@@ -170,7 +170,7 @@ Eigen::Vector2i toVector2i(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::Vector2i[" << i
+                  << "] is not a valid double for math::Vector2i[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -180,9 +180,9 @@ Eigen::Vector2i toVector2i(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector3d toVector3d(const std::string& str)
+math::Vector3d toVector3d(const std::string& str)
 {
-  Eigen::Vector3d ret;
+  math::Vector3d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 3);
@@ -193,7 +193,7 @@ Eigen::Vector3d toVector3d(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::Vector3d[" << i
+                  << "] is not a valid double for math::Vector3d[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -203,9 +203,9 @@ Eigen::Vector3d toVector3d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector3i toVector3i(const std::string& str)
+math::Vector3i toVector3i(const std::string& str)
 {
-  Eigen::Vector3i ret;
+  math::Vector3i ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 3);
@@ -216,7 +216,7 @@ Eigen::Vector3i toVector3i(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid int for Eigen::Vector3i[" << i
+                  << "] is not a valid int for math::Vector3i[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -226,9 +226,9 @@ Eigen::Vector3i toVector3i(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector4d toVector4d(const std::string& str)
+math::Vector4d toVector4d(const std::string& str)
 {
-  Eigen::Vector4d ret;
+  math::Vector4d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 4);
@@ -239,7 +239,7 @@ Eigen::Vector4d toVector4d(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::Vector4d[" << i
+                  << "] is not a valid double for math::Vector4d[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -272,12 +272,12 @@ math::Vector6d toVector6d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::VectorXd toVectorXd(const std::string& str)
+math::VectorXd toVectorXd(const std::string& str)
 {
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() > 0);
 
-  Eigen::VectorXd ret(pieces.size());
+  math::VectorXd ret(pieces.size());
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -285,7 +285,7 @@ Eigen::VectorXd toVectorXd(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::VectorXd[" << i
+                  << "] is not a valid double for math::VectorXd[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -295,9 +295,9 @@ Eigen::VectorXd toVectorXd(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Isometry3d toIsometry3d(const std::string& str)
+math::Isometry3d toIsometry3d(const std::string& str)
 {
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  math::Isometry3d T = math::Isometry3d::Identity();
   math::Vector6d elements = math::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
@@ -320,9 +320,9 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
+math::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 {
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  math::Isometry3d T = math::Isometry3d::Identity();
   math::Vector6d elements = math::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
@@ -339,7 +339,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
     }
   }
 
-  Eigen::Vector3d reverseEulerAngles(
+  math::Vector3d reverseEulerAngles(
       elements.tail<3>()[2], elements.tail<3>()[1], elements.tail<3>()[0]);
 
   T.linear() = math::eulerZYXToMatrix(reverseEulerAngles);
@@ -441,7 +441,7 @@ char getValueChar(
 }
 
 //==============================================================================
-Eigen::Vector2d getValueVector2d(
+math::Vector2d getValueVector2d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -453,7 +453,7 @@ Eigen::Vector2d getValueVector2d(
 }
 
 //==============================================================================
-Eigen::Vector3d getValueVector3d(
+math::Vector3d getValueVector3d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -465,7 +465,7 @@ Eigen::Vector3d getValueVector3d(
 }
 
 //==============================================================================
-Eigen::Vector3i getValueVector3i(
+math::Vector3i getValueVector3i(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -489,7 +489,7 @@ math::Vector6d getValueVector6d(
 }
 
 //==============================================================================
-Eigen::VectorXd getValueVectorXd(
+math::VectorXd getValueVectorXd(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -501,7 +501,7 @@ Eigen::VectorXd getValueVectorXd(
 }
 
 //==============================================================================
-Eigen::Vector3d getValueVec3(
+math::Vector3d getValueVec3(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -513,7 +513,7 @@ Eigen::Vector3d getValueVec3(
 }
 
 //==============================================================================
-Eigen::Isometry3d getValueIsometry3d(
+math::Isometry3d getValueIsometry3d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -525,7 +525,7 @@ Eigen::Isometry3d getValueIsometry3d(
 }
 
 //==============================================================================
-Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
+math::Isometry3d getValueIsometry3dWithExtrinsicRotation(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -775,7 +775,7 @@ char getAttributeChar(
 }
 
 //==============================================================================
-Eigen::Vector2i getAttributeVector2i(
+math::Vector2i getAttributeVector2i(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
@@ -784,7 +784,7 @@ Eigen::Vector2i getAttributeVector2i(
 }
 
 //==============================================================================
-Eigen::Vector2d getAttributeVector2d(
+math::Vector2d getAttributeVector2d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
@@ -793,7 +793,7 @@ Eigen::Vector2d getAttributeVector2d(
 }
 
 //==============================================================================
-Eigen::Vector3d getAttributeVector3d(
+math::Vector3d getAttributeVector3d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
@@ -802,7 +802,7 @@ Eigen::Vector3d getAttributeVector3d(
 }
 
 //==============================================================================
-Eigen::Vector4d getAttributeVector4d(
+math::Vector4d getAttributeVector4d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
@@ -820,7 +820,7 @@ math::Vector6d getAttributeVector6d(
 }
 
 //==============================================================================
-Eigen::VectorXd getAttributeVectorXd(
+math::VectorXd getAttributeVectorXd(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);

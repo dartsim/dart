@@ -60,14 +60,18 @@ using MatrixBase = ::Eigen::MatrixBase<Derived>;
 template <typename Derived>
 using DenseBase = ::Eigen::DenseBase<Derived>;
 
+// Eigen constants
 constexpr auto Dynamic = ::Eigen::Dynamic;
-constexpr auto ColMajor = ::Eigen::ColMajor;
-constexpr auto RowMajor = ::Eigen::RowMajor;
-constexpr auto ComputeFullV = ::Eigen::ComputeFullV;
-constexpr auto StrictlyLower = ::Eigen::StrictlyLower;
-constexpr auto StrictlyUpper = ::Eigen::StrictlyUpper;
-constexpr auto NoChange = ::Eigen::NoChange;
+constexpr auto ColMajor = ::Eigen::StorageOptions::ColMajor;
+constexpr auto RowMajor = ::Eigen::StorageOptions::RowMajor;
+constexpr auto ComputeFullV = ::Eigen::DecompositionOptions::ComputeFullV;
+constexpr auto StrictlyLower = ::Eigen::UpLoType::StrictlyLower;
+constexpr auto StrictlyUpper = ::Eigen::UpLoType::StrictlyUpper;
+constexpr auto NoChange = ::Eigen::NoChange_t::NoChange;
 
+/// @brief Eigen map type for a plain object type (e.g., MatrixXd)
+/// @tparam PlainObjectType The plain object type
+/// @tparam MapOptions The map options
 template <typename PlainObjectType, int MapOptions = 0>
 using Map = class ::Eigen::Map<PlainObjectType, MapOptions>;
 

@@ -90,13 +90,13 @@ void convertFloatToDec(float _f, char* _bytes);
 
 bool loadC3DFile(
     const char* _fileName,
-    std::vector<std::vector<Eigen::Vector3d>>& _pointData,
+    std::vector<std::vector<math::Vector3d>>& _pointData,
     int* _nFrame,
     int* _nMarker,
     double* _freq);
 bool saveC3DFile(
     const char* _fileName,
-    std::vector<std::vector<Eigen::Vector3d>>& _pointData,
+    std::vector<std::vector<math::Vector3d>>& _pointData,
     int _nFrame,
     int _nMarker,
     double _freq);

@@ -41,7 +41,7 @@ namespace dart::io {
 
 //==============================================================================
 template <typename S, int N>
-std::string toString(const Eigen::Matrix<S, N, 1>& v)
+std::string toString(const math::Matrix<S, N, 1>& v)
 {
   std::stringstream ss;
   ss << v.transpose();
@@ -51,10 +51,9 @@ std::string toString(const Eigen::Matrix<S, N, 1>& v)
 //==============================================================================
 template <typename S>
 std::string toString(
-    const Eigen::Transform<S, 3, Eigen::Isometry>& v,
-    const std::string& rotationType)
+    const math::Isometry3<S>& v, const std::string& rotationType)
 {
-  Eigen::Matrix<S, 3, 1> angles;
+  math::Matrix<S, 3, 1> angles;
   if (rotationType == "intrinsic") {
     angles = math::matrixToEulerXYZ(v.rotation());
   } else if (rotationType == "extrinsic") {
@@ -75,7 +74,7 @@ std::string toString(
 
 //==============================================================================
 template <std::size_t N>
-Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
+math::Matrix<double, N, 1> toVectorNd(const std::string& str)
 {
   const std::vector<std::string> pieces = common::split(common::trim(str));
   const std::size_t sizeToRead = std::min(N, pieces.size());
@@ -87,7 +86,7 @@ Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
           << "' is greater than the expectation '" << N << "'.\n";
   }
 
-  Eigen::Matrix<double, N, 1> ret = Eigen::Matrix<double, N, 1>::Zero();
+  math::Matrix<double, N, 1> ret = math::Matrix<double, N, 1>::Zero();
 
   for (std::size_t i = 0; i < sizeToRead; ++i) {
     if (pieces[i] != "") {
@@ -95,7 +94,7 @@ Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         dterr << "value [" << pieces[i]
-              << "] is not a valid double for Eigen::Vector" << N << "d[" << i
+              << "] is not a valid double for math::Vector" << N << "d[" << i
               << "]: " << e.what() << "\n";
       }
     }
@@ -106,7 +105,7 @@ Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
 
 //==============================================================================
 template <std::size_t N>
-Eigen::Matrix<double, N, 1> getAttributeVectorNd(
+math::Matrix<double, N, 1> getAttributeVectorNd(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);

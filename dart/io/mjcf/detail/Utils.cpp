@@ -94,26 +94,26 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
 }
 
 //==============================================================================
-Eigen::Matrix3d compileRotation(
-    const Eigen::Quaterniond& quat,
-    const std::optional<Eigen::Vector4d>& axisAngle,
-    const std::optional<Eigen::Vector3d>& euler,
+math::Matrix3d compileRotation(
+    const math::Quaterniond& quat,
+    const std::optional<math::Vector4d>& axisAngle,
+    const std::optional<math::Vector3d>& euler,
     const std::optional<math::Vector6d>& xyAxes,
-    const std::optional<Eigen::Vector3d>& zAxis,
+    const std::optional<math::Vector3d>& zAxis,
     const Compiler& compiler)
 {
-  Eigen::Matrix3d rot = Eigen::Matrix3d::Identity();
+  math::Matrix3d rot = math::Matrix3d::Identity();
 
   if (axisAngle) {
-    const Eigen::Vector3d axis = axisAngle->head<3>().normalized();
+    const math::Vector3d axis = axisAngle->head<3>().normalized();
     double angle = (*axisAngle)[3];
     if (compiler.getAngle() == Angle::DEGREE) {
       angle = math::toRadian(angle);
     }
-    rot = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
+    rot = math::AngleAxisd(angle, axis).toRotationMatrix();
     assert(math::verifyRotation(rot));
   } else if (euler) {
-    Eigen::Vector3d angles = *euler;
+    math::Vector3d angles = *euler;
     if (compiler.getAngle() == Angle::DEGREE) {
       angles[0] = math::toRadian(angles[0]);
       angles[1] = math::toRadian(angles[1]);
@@ -138,8 +138,8 @@ Eigen::Matrix3d compileRotation(
     rot.col(2).noalias() = rot.col(0).cross(rot.col(1)).normalized(); // Z axis
     assert(math::verifyRotation(rot));
   } else if (zAxis) {
-    rot = Eigen::Quaterniond::FromTwoVectors(
-              Eigen::Vector3d::UnitZ(), zAxis->normalized())
+    rot = math::Quaterniond::FromTwoVectors(
+              math::Vector3d::UnitZ(), zAxis->normalized())
               .toRotationMatrix();
     assert(math::verifyRotation(rot));
   } else {

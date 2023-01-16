@@ -310,7 +310,7 @@ InertiaFromGeom Compiler::getInertiaFromGeom() const
 }
 
 //==============================================================================
-const Eigen::Vector2i& Compiler::getInertiaGroupRange() const
+const math::Vector2i& Compiler::getInertiaGroupRange() const
 {
   return mInertiaGroupRange;
 }

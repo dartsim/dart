@@ -225,19 +225,19 @@ double Option::getImpRatio() const
 }
 
 //==============================================================================
-const Eigen::Vector3d& Option::getGravity() const
+const math::Vector3d& Option::getGravity() const
 {
   return mGravity;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Option::getWind() const
+const math::Vector3d& Option::getWind() const
 {
   return mWind;
 }
 
 //==============================================================================
-const Eigen::Vector3d& Option::getMagnetic() const
+const math::Vector3d& Option::getMagnetic() const
 {
   return mMagnetic;
 }

@@ -65,16 +65,16 @@ public:
   bool getMocap() const;
 
   /// Sets the transform relative to the parent <body> or <worldbody>.
-  void setRelativeTransform(const Eigen::Isometry3d& tf);
+  void setRelativeTransform(const math::Isometry3d& tf);
 
   /// Returns the transform relative to the parent <body> or <worldbody>.
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const math::Isometry3d& getRelativeTransform() const;
 
   /// Sets the world transform of this <body>.
-  void setWorldTransform(const Eigen::Isometry3d& tf);
+  void setWorldTransform(const math::Isometry3d& tf);
 
   /// Returns the world transform of this <body>.
-  const Eigen::Isometry3d& getWorldTransform() const;
+  const math::Isometry3d& getWorldTransform() const;
 
   /// \}
 
@@ -144,11 +144,11 @@ private:
   /// If this attribute is "true", the body is labeled as a mocap body.
   bool mMocap{false};
 
-  Eigen::Isometry3d mRelativeTransform{Eigen::Isometry3d::Identity()};
+  math::Isometry3d mRelativeTransform{math::Isometry3d::Identity()};
 
-  Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
+  math::Isometry3d mWorldTransform{math::Isometry3d::Identity()};
 
-  Eigen::VectorXd mUser;
+  math::VectorXd mUser;
 
   Inertial mInertial;
 

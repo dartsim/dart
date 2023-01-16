@@ -111,7 +111,7 @@ dynamics::WeldJoint::Properties createWeldJointProperties(
   }
 
   // Set transform from parent body frame to joint frame
-  const Eigen::Isometry3d& parentBodyToChildBody
+  const math::Isometry3d& parentBodyToChildBody
       = mjcfBody.getRelativeTransform();
   props.mT_ChildBodyToJoint.setIdentity();
   props.mT_ParentBodyToJoint
@@ -133,7 +133,7 @@ dynamics::FreeJoint::Properties createFreeJointProperties(
   createJointCommonProperties(props, parentBodyNode, mjcfBody, mjcfJoint);
 
   // Set transform from parent body frame to joint frame
-  const Eigen::Isometry3d& parentBodyToChildBody
+  const math::Isometry3d& parentBodyToChildBody
       = mjcfBody.getRelativeTransform();
   props.mT_ChildBodyToJoint.setIdentity();
   props.mT_ParentBodyToJoint
@@ -155,9 +155,9 @@ dynamics::BallJoint::Properties createBallJointProperties(
   createJointCommonProperties(props, parentBodyNode, mjcfBody, mjcfJoint);
 
   // Set transform from parent body frame to joint frame
-  const Eigen::Isometry3d& parentBodyToChildBody
+  const math::Isometry3d& parentBodyToChildBody
       = mjcfBody.getRelativeTransform();
-  Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+  math::Isometry3d childBodyToJoint = math::Isometry3d::Identity();
   childBodyToJoint.translation() = mjcfJoint.getPos();
   props.mT_ChildBodyToJoint = childBodyToJoint;
   props.mT_ParentBodyToJoint
@@ -182,15 +182,15 @@ dynamics::PrismaticJoint::Properties createPrismaticJointProperties(
   createJointCommonProperties(props, parentBodyNode, mjcfBody, mjcfJoint);
 
   // Axis
-  props.mAxis = Eigen::Vector3d::UnitZ();
+  props.mAxis = math::Vector3d::UnitZ();
 
   // Set transform from parent body frame to joint frame
-  const Eigen::Isometry3d& parentBodyToChildBody
+  const math::Isometry3d& parentBodyToChildBody
       = mjcfBody.getRelativeTransform();
-  Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+  math::Isometry3d childBodyToJoint = math::Isometry3d::Identity();
   childBodyToJoint.translation() = mjcfJoint.getPos();
-  childBodyToJoint.linear() = Eigen::Quaterniond::FromTwoVectors(
-                                  Eigen::Vector3d::UnitZ(), mjcfJoint.getAxis())
+  childBodyToJoint.linear() = math::Quaterniond::FromTwoVectors(
+                                  math::Vector3d::UnitZ(), mjcfJoint.getAxis())
                                   .toRotationMatrix();
   props.mT_ChildBodyToJoint = childBodyToJoint;
   props.mT_ParentBodyToJoint
@@ -223,15 +223,15 @@ dynamics::RevoluteJoint::Properties createRevoluteJointProperties(
   createJointCommonProperties(props, parentBodyNode, mjcfBody, mjcfJoint);
 
   // Axis
-  props.mAxis = Eigen::Vector3d::UnitZ();
+  props.mAxis = math::Vector3d::UnitZ();
 
   // Set transform from parent body frame to joint frame
-  const Eigen::Isometry3d& parentBodyToChildBody
+  const math::Isometry3d& parentBodyToChildBody
       = mjcfBody.getRelativeTransform();
-  Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+  math::Isometry3d childBodyToJoint = math::Isometry3d::Identity();
   childBodyToJoint.translation() = mjcfJoint.getPos();
-  childBodyToJoint.linear() = Eigen::Quaterniond::FromTwoVectors(
-                                  Eigen::Vector3d::UnitZ(), mjcfJoint.getAxis())
+  childBodyToJoint.linear() = math::Quaterniond::FromTwoVectors(
+                                  math::Vector3d::UnitZ(), mjcfJoint.getAxis())
                                   .toRotationMatrix();
   props.mT_ChildBodyToJoint = childBodyToJoint;
   props.mT_ParentBodyToJoint
@@ -283,9 +283,9 @@ createJointAndBodyNodePairForMultipleJoints(
 
       // Set transform from parent body frame to joint frame with the first MJCF
       // joint assuming there is no offset in between joints, which is a hack.
-      const Eigen::Isometry3d& parentBodyToChildBody
+      const math::Isometry3d& parentBodyToChildBody
           = mjcfBody.getRelativeTransform();
-      Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+      math::Isometry3d childBodyToJoint = math::Isometry3d::Identity();
       childBodyToJoint.translation() = mjcfJoint0.getPos();
       props.mT_ChildBodyToJoint = childBodyToJoint;
       props.mT_ParentBodyToJoint
@@ -339,9 +339,9 @@ createJointAndBodyNodePairForMultipleJoints(
 
       // Set transform from parent body frame to joint frame with the first MJCF
       // joint assuming there is no offset in between joints, which is a hack.
-      const Eigen::Isometry3d& parentBodyToChildBody
+      const math::Isometry3d& parentBodyToChildBody
           = mjcfBody.getRelativeTransform();
-      Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+      math::Isometry3d childBodyToJoint = math::Isometry3d::Identity();
       childBodyToJoint.translation() = mjcfJoint0.getPos();
       props.mT_ChildBodyToJoint = childBodyToJoint;
       props.mT_ParentBodyToJoint
@@ -435,7 +435,7 @@ dynamics::ShapePtr createShape(
   switch (geom.getType()) {
     case detail::GeomType::PLANE: {
       // TODO(JS): Needs to properly parse PLANE.
-      Eigen::Vector3d size;
+      math::Vector3d size;
       size.head<2>() = 2.0 * geom.getPlaneHalfSize();
       size[2] = 0.01; // depth
       shape = std::make_shared<dynamics::BoxShape>(size);
