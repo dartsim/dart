@@ -30,33 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
-#define DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
+#pragma once
 
-#include <dart/optimization/MultiObjectiveSolver.hpp>
+#include <dart/optimization/Export.hpp>
 
-#include <pagmo/pagmo.hpp>
+#include <dart/math/Fwd.hpp>
 
-namespace dart {
-namespace optimization {
+namespace dart::optimization {
 
-class PagmoTypes
-{
-public:
-  static std::vector<double> convertVector(const math::VectorXd& v);
-
-  static math::Map<const math::VectorXd> convertVector(
-      const std::vector<double>& v);
-
-  static Population convertPopulation(
-      const ::pagmo::population& pagmoPop,
-      std::shared_ptr<MultiObjectiveProblem> problem);
-
-  static ::pagmo::population convertPopulation(
-      const Population& pop, const ::pagmo::problem& pagmoProb);
-};
-
-} // namespace optimization
-} // namespace dart
-
-#endif // DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
+} // namespace dart::optimization

@@ -130,22 +130,21 @@ public:
   /// \{ \name Evaluations
 
   /// Evaluates objectives
-  Eigen::VectorXd evaluateObjectives(const Eigen::VectorXd& x) const override;
+  math::VectorXd evaluateObjectives(const math::VectorXd& x) const override;
 
   /// Evaluates equality constraints
-  Eigen::VectorXd evaluateEqConstraints(
-      const Eigen::VectorXd& x) const override;
+  math::VectorXd evaluateEqConstraints(const math::VectorXd& x) const override;
 
   /// Evaluates inequality constraints
-  Eigen::VectorXd evaluateIneqConstraints(
-      const Eigen::VectorXd& x) const override;
+  math::VectorXd evaluateIneqConstraints(
+      const math::VectorXd& x) const override;
 
   /// Return dimension of fitness
   std::size_t getFitnessDimension() const;
 
   /// Evaluates fitness, which is [objectives, equality constraints, inequality
   /// constraints].
-  Eigen::VectorXd evaluateFitness(const Eigen::VectorXd& x) const;
+  math::VectorXd evaluateFitness(const math::VectorXd& x) const;
 
   /// \}
 

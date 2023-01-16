@@ -33,7 +33,7 @@
 #ifndef DART_OPTIMIZER_GRADIENTDESCENTSOLVER_HPP_
 #define DART_OPTIMIZER_GRADIENTDESCENTSOLVER_HPP_
 
-#include <dart/optimization/Export.hpp>
+#include <dart/optimization/Fwd.hpp>
 #include <dart/optimization/Solver.hpp>
 
 #include <random>
@@ -92,13 +92,13 @@ public:
     /// If there are fewer components in this vector than there are equality
     /// constraints in the Problem, then the remaining equality constraints will
     /// be assigned a weight of mDefaultConstraintWeight.
-    Eigen::VectorXd mEqConstraintWeights;
+    math::VectorXd mEqConstraintWeights;
 
     /// Vector of weights that should be applied to the inequality constraints.
     /// If there are fewer components in this vector than there are inequality
     /// constraints in the Problem, then the remaining inequality constraints
     /// will be assigned a weight of mDefaultConstraintWeight.
-    Eigen::VectorXd mIneqConstraintWeights;
+    math::VectorXd mIneqConstraintWeights;
 
     UniqueProperties(
         double _stepMultiplier = 0.1,
@@ -107,8 +107,8 @@ public:
         double _maxPerturbationFactor = 1.0,
         double _maxRandomizationStep = 1e10,
         double _defaultConstraintWeight = 1.0,
-        Eigen::VectorXd _eqConstraintWeights = Eigen::VectorXd(),
-        Eigen::VectorXd _ineqConstraintWeights = Eigen::VectorXd());
+        math::VectorXd _eqConstraintWeights = math::VectorXd(),
+        math::VectorXd _ineqConstraintWeights = math::VectorXd());
   };
 
   struct Properties : Solver::Properties, UniqueProperties
@@ -131,7 +131,7 @@ public:
   bool solve() override;
 
   /// Get the last configuration that was used by the Solver
-  Eigen::VectorXd getLastConfiguration() const;
+  math::VectorXd getLastConfiguration() const;
 
   // Documentation inherited
   std::string getType() const override;
@@ -189,22 +189,22 @@ public:
   double getDefaultConstraintWeight() const;
 
   /// Set UniqueProperties::mEqConstraintWeights
-  Eigen::VectorXd& getEqConstraintWeights();
+  math::VectorXd& getEqConstraintWeights();
 
   /// Get UniqueProperties::mEqConstraintWeights
-  const Eigen::VectorXd& getEqConstraintWeights() const;
+  const math::VectorXd& getEqConstraintWeights() const;
 
   /// Set UniqueProperties::mIneqConstraintWeights
-  Eigen::VectorXd& getIneqConstraintWeights();
+  math::VectorXd& getIneqConstraintWeights();
 
   /// Get UniqueProperties::mIneqConstraintWeights
-  const Eigen::VectorXd& getIneqConstraintWeights() const;
+  const math::VectorXd& getIneqConstraintWeights() const;
 
   /// Randomize the configuration based on this Solver's settings
-  void randomizeConfiguration(Eigen::VectorXd& _x);
+  void randomizeConfiguration(math::VectorXd& _x);
 
   /// Clamp the configuration to the limits of the Problem
-  void clampToBoundary(Eigen::VectorXd& _x);
+  void clampToBoundary(math::VectorXd& _x);
 
   /// Get the number of iterations used in the last attempt to solve the problem
   std::size_t getLastNumIterations() const;
@@ -226,13 +226,13 @@ protected:
   std::uniform_real_distribution<double> mDistribution;
 
   /// Cache to track the costs of equality constraints
-  Eigen::VectorXd mEqConstraintCostCache;
+  math::VectorXd mEqConstraintCostCache;
 
   /// Cache to track the costs of inequality constraints
-  Eigen::VectorXd mIneqConstraintCostCache;
+  math::VectorXd mIneqConstraintCostCache;
 
   /// The last config reached by this Solver
-  Eigen::VectorXd mLastConfig;
+  math::VectorXd mLastConfig;
 };
 
 } // namespace optimization

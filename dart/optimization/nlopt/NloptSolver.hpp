@@ -33,6 +33,7 @@
 #ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 #define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 
+#include <dart/optimization/Fwd.hpp>
 #include <dart/optimization/Solver.hpp>
 
 #include <nlopt.hpp>
@@ -122,7 +123,7 @@ public:
   bool solve() override;
 
   // Documentation inherited
-  Eigen::VectorXd getLastConfiguration() const;
+  math::VectorXd getLastConfiguration() const;
 
   // Documentation inherited
   std::string getType() const override;

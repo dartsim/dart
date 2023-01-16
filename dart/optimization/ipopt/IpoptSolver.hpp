@@ -33,6 +33,7 @@
 #ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
+#include <dart/optimization/Fwd.hpp>
 #include <dart/optimization/ipopt/BackwardCompatibility.hpp>
 
 #include <memory>
@@ -211,10 +212,10 @@ private:
   Ipopt::Number mObjValue;
 
   /// \brief Objective gradient
-  Eigen::VectorXd mObjGradient;
+  math::VectorXd mObjGradient;
 
   /// \brief Objective Hessian
-  Eigen::MatrixXd mObjHessian;
+  math::MatrixXd mObjHessian;
 };
 
 } // namespace optimization

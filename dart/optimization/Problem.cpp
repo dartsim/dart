@@ -66,13 +66,13 @@ void Problem::setDimension(std::size_t _dim)
   if (_dim != mDimension) {
     mDimension = _dim;
 
-    mInitialGuess = Eigen::VectorXd::Zero(mDimension);
+    mInitialGuess = math::VectorXd::Zero(mDimension);
 
-    mLowerBounds = Eigen::VectorXd::Constant(mDimension, -math::inf<double>());
+    mLowerBounds = math::VectorXd::Constant(mDimension, -math::inf<double>());
 
-    mUpperBounds = Eigen::VectorXd::Constant(mDimension, math::inf<double>());
+    mUpperBounds = math::VectorXd::Constant(mDimension, math::inf<double>());
 
-    mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
+    mOptimalSolution = math::VectorXd::Zero(mDimension);
     clearAllSeeds();
   }
 }
@@ -84,7 +84,7 @@ std::size_t Problem::getDimension() const
 }
 
 //==============================================================================
-void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
+void Problem::setInitialGuess(const math::VectorXd& _initGuess)
 {
   assert(
       static_cast<std::size_t>(_initGuess.size()) == mDimension
@@ -102,13 +102,13 @@ void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 }
 
 //==============================================================================
-const Eigen::VectorXd& Problem::getInitialGuess() const
+const math::VectorXd& Problem::getInitialGuess() const
 {
   return mInitialGuess;
 }
 
 //==============================================================================
-void Problem::addSeed(const Eigen::VectorXd& _seed)
+void Problem::addSeed(const math::VectorXd& _seed)
 {
   if (_seed.size() == static_cast<int>(mDimension)) {
     mSeeds.push_back(_seed);
@@ -120,7 +120,7 @@ void Problem::addSeed(const Eigen::VectorXd& _seed)
 }
 
 //==============================================================================
-Eigen::VectorXd& Problem::getSeed(std::size_t _index)
+math::VectorXd& Problem::getSeed(std::size_t _index)
 {
   if (_index < mSeeds.size())
     return mSeeds[_index];
@@ -138,19 +138,19 @@ Eigen::VectorXd& Problem::getSeed(std::size_t _index)
 }
 
 //==============================================================================
-const Eigen::VectorXd& Problem::getSeed(std::size_t _index) const
+const math::VectorXd& Problem::getSeed(std::size_t _index) const
 {
   return const_cast<Problem*>(this)->getSeed(_index);
 }
 
 //==============================================================================
-std::vector<Eigen::VectorXd>& Problem::getSeeds()
+std::vector<math::VectorXd>& Problem::getSeeds()
 {
   return mSeeds;
 }
 
 //==============================================================================
-const std::vector<Eigen::VectorXd>& Problem::getSeeds() const
+const std::vector<math::VectorXd>& Problem::getSeeds() const
 {
   return mSeeds;
 }
@@ -162,27 +162,27 @@ void Problem::clearAllSeeds()
 }
 
 //==============================================================================
-void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
+void Problem::setLowerBounds(const math::VectorXd& _lb)
 {
   assert(static_cast<std::size_t>(_lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = _lb;
 }
 
 //==============================================================================
-const Eigen::VectorXd& Problem::getLowerBounds() const
+const math::VectorXd& Problem::getLowerBounds() const
 {
   return mLowerBounds;
 }
 
 //==============================================================================
-void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
+void Problem::setUpperBounds(const math::VectorXd& _ub)
 {
   assert(static_cast<std::size_t>(_ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = _ub;
 }
 
 //==============================================================================
-const Eigen::VectorXd& Problem::getUpperBounds() const
+const math::VectorXd& Problem::getUpperBounds() const
 {
   return mUpperBounds;
 }
@@ -285,7 +285,7 @@ double Problem::getOptimumValue() const
 }
 
 //==============================================================================
-void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
+void Problem::setOptimalSolution(const math::VectorXd& _optParam)
 {
   assert(
       static_cast<std::size_t>(_optParam.size()) == mDimension
@@ -294,7 +294,7 @@ void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 }
 
 //==============================================================================
-const Eigen::VectorXd& Problem::getOptimalSolution()
+const math::VectorXd& Problem::getOptimalSolution()
 {
   return mOptimalSolution;
 }

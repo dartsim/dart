@@ -275,7 +275,7 @@ bool DartTNLP::eval_f(
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
-  Eigen::Map<const Eigen::VectorXd> x(_x, _n);
+  math::Map<const math::VectorXd> x(_x, _n);
   mObjValue = problem->getObjective()->eval(x);
 
   _obj_value = mObjValue;
@@ -292,8 +292,8 @@ bool DartTNLP::eval_grad_f(
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
-  Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-  Eigen::Map<Eigen::VectorXd> grad(_grad_f, _n);
+  math::Map<const math::VectorXd> x(_x, _n);
+  math::Map<math::VectorXd> grad(_grad_f, _n);
   problem->getObjective()->evalGradient(x, grad);
 
   return true;
@@ -318,20 +318,20 @@ bool DartTNLP::eval_g(
   if (_new_x) {
   }
 
-  Eigen::Map<const Eigen::VectorXd> x(_x, _n);
+  math::Map<const math::VectorXd> x(_x, _n);
   std::size_t idx = 0;
 
   // Evaluate function values for equality constraints
   for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
     _g[idx] = problem->getEqConstraint(i)->eval(
-        static_cast<const Eigen::VectorXd&>(x));
+        static_cast<const math::VectorXd&>(x));
     idx++;
   }
 
   // Evaluate function values for inequality constraints
   for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
     _g[idx] = problem->getIneqConstraint(i)->eval(
-        static_cast<const Eigen::VectorXd&>(x));
+        static_cast<const math::VectorXd&>(x));
     idx++;
   }
 
@@ -371,19 +371,19 @@ bool DartTNLP::eval_jac_g(
   } else {
     // return the values of the Jacobian of the constraints
     std::size_t idx = 0;
-    Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-    Eigen::Map<Eigen::VectorXd> grad(nullptr, 0);
+    math::Map<const math::VectorXd> x(_x, _n);
+    math::Map<math::VectorXd> grad(nullptr, 0);
 
     // Evaluate function values for equality constraints
     for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
-      new (&grad) Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
+      new (&grad) math::Map<math::VectorXd>(_values + idx, _n);
       problem->getEqConstraint(i)->evalGradient(x, grad);
       idx += _n;
     }
 
     // Evaluate function values for inequality constraints
     for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
-      new (&grad) Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
+      new (&grad) math::Map<math::VectorXd>(_values + idx, _n);
       problem->getIneqConstraint(i)->evalGradient(x, grad);
       idx += _n;
     }
@@ -441,7 +441,7 @@ void DartTNLP::finalize_solution(
 
   // Store optimal and optimum values
   problem->setOptimumValue(_obj_value);
-  Eigen::VectorXd x = Eigen::VectorXd::Zero(_n);
+  math::VectorXd x = math::VectorXd::Zero(_n);
   for (int i = 0; i < _n; ++i)
     x[i] = _x[i];
   problem->setOptimalSolution(x);

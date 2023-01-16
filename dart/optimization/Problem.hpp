@@ -64,44 +64,44 @@ public:
   std::size_t getDimension() const;
 
   /// \brief Set initial guess for opimization parameters
-  void setInitialGuess(const Eigen::VectorXd& _initGuess);
+  void setInitialGuess(const math::VectorXd& _initGuess);
 
   /// \brief Set initial guess for opimization parameters
-  const Eigen::VectorXd& getInitialGuess() const;
+  const math::VectorXd& getInitialGuess() const;
 
   /// \brief Add a seed for the Solver to use as a hint for the neighborhood of
   /// the solution.
-  void addSeed(const Eigen::VectorXd& _seed);
+  void addSeed(const math::VectorXd& _seed);
 
   /// \brief Get a mutable reference of the seed for the specified index. If an
   /// out-of-bounds index is provided a warning will print, and a reference to
   /// the initial guess will be returned instead.
-  Eigen::VectorXd& getSeed(std::size_t _index);
+  math::VectorXd& getSeed(std::size_t _index);
 
   /// \brief An immutable version of getSeed(std::size_t)
-  const Eigen::VectorXd& getSeed(std::size_t _index) const;
+  const math::VectorXd& getSeed(std::size_t _index) const;
 
   /// \brief Get a mutable reference to the full vector of seeds that this
   /// Problem currently contains
-  std::vector<Eigen::VectorXd>& getSeeds();
+  std::vector<math::VectorXd>& getSeeds();
 
   /// \brief An immutable version of getSeeds()
-  const std::vector<Eigen::VectorXd>& getSeeds() const;
+  const std::vector<math::VectorXd>& getSeeds() const;
 
   /// \brief Clear the seeds that this Problem currently contains
   void clearAllSeeds();
 
   /// \brief Set lower bounds for optimization parameters
-  void setLowerBounds(const Eigen::VectorXd& _lb);
+  void setLowerBounds(const math::VectorXd& _lb);
 
   /// \brief Get lower bounds for optimization parameters
-  const Eigen::VectorXd& getLowerBounds() const;
+  const math::VectorXd& getLowerBounds() const;
 
   /// \brief Set upper bounds for optimization parameters
-  void setUpperBounds(const Eigen::VectorXd& _ub);
+  void setUpperBounds(const math::VectorXd& _ub);
 
   /// \brief Get upper bounds for optimization parameters
-  const Eigen::VectorXd& getUpperBounds() const;
+  const math::VectorXd& getUpperBounds() const;
 
   /// \brief Set minimum objective function
   void setObjective(FunctionPtr _obj);
@@ -149,26 +149,26 @@ public:
   double getOptimumValue() const;
 
   /// \brief Set optimal solution. This function called by Solver.
-  void setOptimalSolution(const Eigen::VectorXd& _optParam);
+  void setOptimalSolution(const math::VectorXd& _optParam);
 
   /// \brief Get optimal solution
-  const Eigen::VectorXd& getOptimalSolution();
+  const math::VectorXd& getOptimalSolution();
 
 protected:
   /// \brief Dimension of this problem
   std::size_t mDimension;
 
   /// \brief Initial guess for optimization parameters
-  Eigen::VectorXd mInitialGuess;
+  math::VectorXd mInitialGuess;
 
   /// \brief Additional guess hints for the Solver.
-  std::vector<Eigen::VectorXd> mSeeds;
+  std::vector<math::VectorXd> mSeeds;
 
   /// \brief Lower bounds for optimization parameters
-  Eigen::VectorXd mLowerBounds;
+  math::VectorXd mLowerBounds;
 
   /// \brief Upper bounds for optimization parameters
-  Eigen::VectorXd mUpperBounds;
+  math::VectorXd mUpperBounds;
 
   /// \brief Objective function
   FunctionPtr mObjective;
@@ -183,7 +183,7 @@ protected:
   double mOptimumValue;
 
   /// \brief Optimal solution
-  Eigen::VectorXd mOptimalSolution;
+  math::VectorXd mOptimalSolution;
 };
 
 } // namespace optimization

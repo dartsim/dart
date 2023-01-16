@@ -64,28 +64,27 @@ public:
 
   /// Adds the decision vector at the back of the population. The corresponding
   /// fitness vector will be evaulated and set.
-  void pushBack(const Eigen::VectorXd& x);
+  void pushBack(const math::VectorXd& x);
 
   /// Adds the decision vector and the fitness vector at the back of the
   /// population.
-  void pushBack(const Eigen::VectorXd& x, const Eigen::VectorXd& f);
+  void pushBack(const math::VectorXd& x, const math::VectorXd& f);
 
   /// Sets the decision vector. The corresponding fitness vector will be
   /// evaulated and set.
-  void set(std::size_t index, const Eigen::VectorXd& x);
+  void set(std::size_t index, const math::VectorXd& x);
 
   /// Sets the decision vector and fitness vector at \c index in the population
-  void set(
-      std::size_t index, const Eigen::VectorXd& x, const Eigen::VectorXd& f);
+  void set(std::size_t index, const math::VectorXd& x, const math::VectorXd& f);
 
   /// Returns the size of this population
   std::size_t getSize() const;
 
   /// Returns a decision vectors at \c index.
-  Eigen::VectorXd getDecisionVector(std::size_t index) const;
+  math::VectorXd getDecisionVector(std::size_t index) const;
 
   /// Returns a fitness vectors at \c index.
-  Eigen::VectorXd getFitnessVector(std::size_t index) const;
+  math::VectorXd getFitnessVector(std::size_t index) const;
 
   /// Prints information of this class to a stream.
   std::ostream& print(std::ostream& os) const;
@@ -96,10 +95,10 @@ protected:
   std::shared_ptr<MultiObjectiveProblem> mProblem;
 
   /// Decision vectors. A column represents a decision vector.
-  Eigen::MatrixXd mPopulation;
+  math::MatrixXd mPopulation;
 
   /// Fitness vectors. A column represents a fitness vector.
-  Eigen::MatrixXd mFitness;
+  math::MatrixXd mFitness;
 };
 
 } // namespace optimization

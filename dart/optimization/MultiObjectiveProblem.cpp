@@ -72,10 +72,10 @@ void MultiObjectiveProblem::setSolutionDimension(
   mIntegerDimension = integerDim;
 
   const double inf = math::inf<double>();
-  const auto dimension = static_cast<Eigen::VectorXd::Index>(dim);
+  const auto dimension = static_cast<math::VectorXd::Index>(dim);
 
-  setLowerBounds(Eigen::VectorXd::Constant(dimension, -inf));
-  setUpperBounds(Eigen::VectorXd::Constant(dimension, inf));
+  setLowerBounds(math::VectorXd::Constant(dimension, -inf));
+  setUpperBounds(math::VectorXd::Constant(dimension, inf));
 }
 
 //==============================================================================
@@ -103,27 +103,27 @@ std::size_t MultiObjectiveProblem::getIntegerDimension() const
 }
 
 //==============================================================================
-void MultiObjectiveProblem::setLowerBounds(const Eigen::VectorXd& lb)
+void MultiObjectiveProblem::setLowerBounds(const math::VectorXd& lb)
 {
   assert(static_cast<std::size_t>(lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = lb;
 }
 
 //==============================================================================
-const Eigen::VectorXd& MultiObjectiveProblem::getLowerBounds() const
+const math::VectorXd& MultiObjectiveProblem::getLowerBounds() const
 {
   return mLowerBounds;
 }
 
 //==============================================================================
-void MultiObjectiveProblem::setUpperBounds(const Eigen::VectorXd& ub)
+void MultiObjectiveProblem::setUpperBounds(const math::VectorXd& ub)
 {
   assert(static_cast<std::size_t>(ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = ub;
 }
 
 //==============================================================================
-const Eigen::VectorXd& MultiObjectiveProblem::getUpperBounds() const
+const math::VectorXd& MultiObjectiveProblem::getUpperBounds() const
 {
   return mUpperBounds;
 }
@@ -141,17 +141,17 @@ std::size_t MultiObjectiveProblem::getIneqConstraintDimension() const
 }
 
 //==============================================================================
-Eigen::VectorXd MultiObjectiveProblem::evaluateEqConstraints(
-    const Eigen::VectorXd& /*x*/) const
+math::VectorXd MultiObjectiveProblem::evaluateEqConstraints(
+    const math::VectorXd& /*x*/) const
 {
-  return Eigen::VectorXd::Zero(0);
+  return math::VectorXd::Zero(0);
 }
 
 //==============================================================================
-Eigen::VectorXd MultiObjectiveProblem::evaluateIneqConstraints(
-    const Eigen::VectorXd& /*x*/) const
+math::VectorXd MultiObjectiveProblem::evaluateIneqConstraints(
+    const math::VectorXd& /*x*/) const
 {
-  return Eigen::VectorXd::Zero(0);
+  return math::VectorXd::Zero(0);
 }
 
 //==============================================================================
@@ -165,15 +165,15 @@ std::size_t MultiObjectiveProblem::getFitnessDimension() const
 }
 
 //==============================================================================
-Eigen::VectorXd MultiObjectiveProblem::evaluateFitness(
-    const Eigen::VectorXd& x) const
+math::VectorXd MultiObjectiveProblem::evaluateFitness(
+    const math::VectorXd& x) const
 {
   const int objDim = static_cast<int>(getObjectiveDimension());
   const int eqDim = static_cast<int>(getEqConstraintDimension());
   const int ineqDim = static_cast<int>(getIneqConstraintDimension());
   const int totalDim = objDim + eqDim + ineqDim;
 
-  Eigen::VectorXd f(totalDim);
+  math::VectorXd f(totalDim);
 
   f.head(objDim) = evaluateObjectives(x);
   f.segment(objDim, eqDim) = evaluateEqConstraints(x);

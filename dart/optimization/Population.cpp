@@ -41,7 +41,7 @@ namespace optimization {
 namespace {
 
 //==============================================================================
-bool isValidX(const MultiObjectiveProblem& problem, const Eigen::VectorXd& x)
+bool isValidX(const MultiObjectiveProblem& problem, const math::VectorXd& x)
 {
   if (problem.getSolutionDimension() != static_cast<std::size_t>(x.size())) {
     dtwarn << "[Population] Attempting to add an incompatible decision vector. "
@@ -54,7 +54,7 @@ bool isValidX(const MultiObjectiveProblem& problem, const Eigen::VectorXd& x)
 }
 
 //==============================================================================
-bool isValidF(const MultiObjectiveProblem& problem, const Eigen::VectorXd& f)
+bool isValidF(const MultiObjectiveProblem& problem, const math::VectorXd& f)
 {
   if (problem.getFitnessDimension() != static_cast<std::size_t>(f.size())) {
     dtwarn << "[Population] Attempting to add an incompatible decision vector. "
@@ -85,8 +85,8 @@ Population::Population(
   mPopulation.resize(xSize, static_cast<int>(populationSize));
   mFitness.resize(fSize, static_cast<int>(populationSize));
 
-  const Eigen::VectorXd& lb = mProblem->getLowerBounds();
-  const Eigen::VectorXd& ub = mProblem->getUpperBounds();
+  const math::VectorXd& lb = mProblem->getLowerBounds();
+  const math::VectorXd& ub = mProblem->getUpperBounds();
 
   for (std::size_t i = 0u; i < populationSize; ++i)
     set(i, math::Random::uniform(lb, ub));
@@ -105,17 +105,17 @@ const MultiObjectiveProblem* Population::getProblem() const
 }
 
 //==============================================================================
-void Population::pushBack(const Eigen::VectorXd& x)
+void Population::pushBack(const math::VectorXd& x)
 {
   if (!isValidX(*mProblem, x))
     return;
 
-  const Eigen::VectorXd f = mProblem->evaluateFitness(x);
+  const math::VectorXd f = mProblem->evaluateFitness(x);
   pushBack(x, f);
 }
 
 //==============================================================================
-void Population::pushBack(const Eigen::VectorXd& x, const Eigen::VectorXd& f)
+void Population::pushBack(const math::VectorXd& x, const math::VectorXd& f)
 {
   if (!isValidX(*mProblem, x))
     return;
@@ -123,15 +123,15 @@ void Population::pushBack(const Eigen::VectorXd& x, const Eigen::VectorXd& f)
   if (!isValidF(*mProblem, f))
     return;
 
-  mPopulation.conservativeResize(Eigen::NoChange, mPopulation.cols() + 1);
+  mPopulation.conservativeResize(math::NoChange, mPopulation.cols() + 1);
   mPopulation.rightCols(1) = x;
 
-  mFitness.conservativeResize(Eigen::NoChange, mFitness.cols() + 1);
+  mFitness.conservativeResize(math::NoChange, mFitness.cols() + 1);
   mFitness.rightCols(1) = f;
 }
 
 //==============================================================================
-void Population::set(std::size_t index, const Eigen::VectorXd& x)
+void Population::set(std::size_t index, const math::VectorXd& x)
 {
   isValidX(*mProblem, x);
 
@@ -140,7 +140,7 @@ void Population::set(std::size_t index, const Eigen::VectorXd& x)
 
 //==============================================================================
 void Population::set(
-    std::size_t index, const Eigen::VectorXd& x, const Eigen::VectorXd& f)
+    std::size_t index, const math::VectorXd& x, const math::VectorXd& f)
 {
   if (!isValidX(*mProblem, x))
     return;
@@ -160,13 +160,13 @@ std::size_t Population::getSize() const
 }
 
 //==============================================================================
-Eigen::VectorXd Population::getDecisionVector(std::size_t index) const
+math::VectorXd Population::getDecisionVector(std::size_t index) const
 {
   return mPopulation.col(static_cast<int>(index));
 }
 
 //==============================================================================
-Eigen::VectorXd Population::getFitnessVector(std::size_t index) const
+math::VectorXd Population::getFitnessVector(std::size_t index) const
 {
   return mFitness.col(static_cast<int>(index));
 }

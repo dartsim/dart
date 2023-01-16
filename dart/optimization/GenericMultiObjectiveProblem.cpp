@@ -217,12 +217,12 @@ void GenericMultiObjectiveProblem::removeAllIneqConstraintFunctions()
 }
 
 //==============================================================================
-static Eigen::VectorXd computeFunctions(
+static math::VectorXd computeFunctions(
     const std::vector<FunctionPtr>& functions,
     std::size_t dimension,
-    const Eigen::VectorXd& x)
+    const math::VectorXd& x)
 {
-  Eigen::VectorXd val(dimension);
+  math::VectorXd val(dimension);
 
   std::size_t index = 0u;
   for (const FunctionPtr& function : functions) {
@@ -237,23 +237,23 @@ static Eigen::VectorXd computeFunctions(
 }
 
 //==============================================================================
-Eigen::VectorXd GenericMultiObjectiveProblem::evaluateObjectives(
-    const Eigen::VectorXd& x) const
+math::VectorXd GenericMultiObjectiveProblem::evaluateObjectives(
+    const math::VectorXd& x) const
 {
   return computeFunctions(mObjectiveFunctions, getObjectiveDimension(), x);
 }
 
 //==============================================================================
-Eigen::VectorXd GenericMultiObjectiveProblem::evaluateEqConstraints(
-    const Eigen::VectorXd& x) const
+math::VectorXd GenericMultiObjectiveProblem::evaluateEqConstraints(
+    const math::VectorXd& x) const
 {
   return computeFunctions(
       mEqConstraintFunctions, getEqConstraintDimension(), x);
 }
 
 //==============================================================================
-Eigen::VectorXd GenericMultiObjectiveProblem::evaluateIneqConstraints(
-    const Eigen::VectorXd& x) const
+math::VectorXd GenericMultiObjectiveProblem::evaluateIneqConstraints(
+    const math::VectorXd& x) const
 {
   return computeFunctions(
       mIneqConstraintFunctions, getIneqConstraintDimension(), x);
@@ -270,15 +270,15 @@ std::size_t GenericMultiObjectiveProblem::getFitnessDimension() const
 }
 
 //==============================================================================
-Eigen::VectorXd GenericMultiObjectiveProblem::evaluateFitness(
-    const Eigen::VectorXd& x) const
+math::VectorXd GenericMultiObjectiveProblem::evaluateFitness(
+    const math::VectorXd& x) const
 {
   const int objDim = static_cast<int>(getObjectiveDimension());
   const int eqDim = static_cast<int>(getEqConstraintDimension());
   const int ineqDim = static_cast<int>(getIneqConstraintDimension());
   const int totalDim = objDim + eqDim + ineqDim;
 
-  Eigen::VectorXd f(totalDim);
+  math::VectorXd f(totalDim);
 
   f.head(objDim) = evaluateObjectives(x);
   f.segment(objDim, eqDim) = evaluateEqConstraints(x);

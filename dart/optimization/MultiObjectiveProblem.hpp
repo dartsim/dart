@@ -88,16 +88,16 @@ public:
   virtual std::size_t getIntegerDimension() const;
 
   /// Sets lower bounds for optimization parameters
-  void setLowerBounds(const Eigen::VectorXd& lb);
+  void setLowerBounds(const math::VectorXd& lb);
 
   /// Returns lower bounds for optimization parameters
-  const Eigen::VectorXd& getLowerBounds() const;
+  const math::VectorXd& getLowerBounds() const;
 
   /// Sets upper bounds for optimization parameters
-  void setUpperBounds(const Eigen::VectorXd& ub);
+  void setUpperBounds(const math::VectorXd& ub);
 
   /// Returns upper bounds for optimization parameters
-  const Eigen::VectorXd& getUpperBounds() const;
+  const math::VectorXd& getUpperBounds() const;
 
   /// \}
 
@@ -125,22 +125,20 @@ public:
   /// \{ \name Evaluations
 
   /// Evaluates objectives
-  virtual Eigen::VectorXd evaluateObjectives(
-      const Eigen::VectorXd& x) const = 0;
+  virtual math::VectorXd evaluateObjectives(const math::VectorXd& x) const = 0;
 
   /// Evaluates equality constraints
-  virtual Eigen::VectorXd evaluateEqConstraints(const Eigen::VectorXd& x) const;
+  virtual math::VectorXd evaluateEqConstraints(const math::VectorXd& x) const;
 
   /// Evaluates inequality constraints
-  virtual Eigen::VectorXd evaluateIneqConstraints(
-      const Eigen::VectorXd& x) const;
+  virtual math::VectorXd evaluateIneqConstraints(const math::VectorXd& x) const;
 
   /// Return dimension of fitness
   std::size_t getFitnessDimension() const;
 
   /// Evaluates fitness, which is [objectives, equality constraints, inequality
   /// constraints].
-  Eigen::VectorXd evaluateFitness(const Eigen::VectorXd& x) const;
+  math::VectorXd evaluateFitness(const math::VectorXd& x) const;
 
   /// \}
 
@@ -156,10 +154,10 @@ protected:
   std::size_t mIntegerDimension;
 
   /// Lower bounds for optimization parameters
-  Eigen::VectorXd mLowerBounds;
+  math::VectorXd mLowerBounds;
 
   /// Upper bounds for optimization parameters
-  Eigen::VectorXd mUpperBounds;
+  math::VectorXd mUpperBounds;
 };
 
 } // namespace optimization

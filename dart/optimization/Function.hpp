@@ -33,9 +33,7 @@
 #ifndef DART_OPTIMIZER_FUNCTION_HPP_
 #define DART_OPTIMIZER_FUNCTION_HPP_
 
-#include <dart/optimization/Export.hpp>
-
-#include <Eigen/Dense>
+#include <dart/optimization/Fwd.hpp>
 
 #include <functional>
 #include <memory>
@@ -60,23 +58,23 @@ public:
   const std::string& getName() const;
 
   /// Evaluates and returns the objective function at the point x
-  virtual double eval(const Eigen::VectorXd& x) const = 0;
+  virtual double eval(const math::VectorXd& x) const = 0;
 
   /// Evaluates and returns the objective function at the point x
   virtual void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const;
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const;
 
   /// Evaluates and return the objective function at the point x.
   ///
   /// If you have a raw array that the gradient will be passed in, then use
-  /// evalGradient(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)
+  /// evalGradient(const math::VectorXd&, math::Map<math::VectorXd>)
   /// for better performance.
-  void evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad) const;
+  void evalGradient(const math::VectorXd& _x, math::VectorXd& _grad) const;
 
   /// Evaluates and return the objective function at the point x
   virtual void evalHessian(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const;
+      const math::VectorXd& _x,
+      math::Map<math::VectorXd, math::RowMajor> _Hess) const;
 
 protected:
   /// Name of this function
@@ -86,13 +84,13 @@ protected:
 typedef std::shared_ptr<Function> FunctionPtr;
 typedef std::unique_ptr<Function> UniqueFunctionPtr;
 
-typedef std::function<double(const Eigen::VectorXd&)> CostFunction;
+typedef std::function<double(const math::VectorXd&)> CostFunction;
 
-typedef std::function<void(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)>
+typedef std::function<void(const math::VectorXd&, math::Map<math::VectorXd>)>
     GradientFunction;
 
 typedef std::function<void(
-    const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd, Eigen::RowMajor>)>
+    const math::VectorXd&, math::Map<math::VectorXd, math::RowMajor>)>
     HessianFunction;
 
 /// ModularFunction uses C++11 std::function to allow you to easily swap
@@ -109,19 +107,18 @@ public:
 
   /// eval() will now call whatever CostFunction you set using
   /// setCostFunction()
-  double eval(const Eigen::VectorXd& _x) const override;
+  double eval(const math::VectorXd& _x) const override;
 
   /// evalGradient() will now call whatever GradientFunction you set
   /// using setGradientFunction()
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override;
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override;
 
   /// evalHessian() will now call whatever HessianFunction you set using
   /// setHessianFunction()
   void evalHessian(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const override;
+      const math::VectorXd& _x,
+      math::Map<math::VectorXd, math::RowMajor> _Hess) const override;
 
   /// Set the function that gets called by eval()
   void setCostFunction(CostFunction _cost);
@@ -168,19 +165,18 @@ public:
   ~NullFunction() override;
 
   /// eval() will always return exactly zero
-  double eval(const Eigen::VectorXd&) const override;
+  double eval(const math::VectorXd&) const override;
 
   /// evalGradient will always set _grad to a zero vector that
   /// matches the dimensionality of _x
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override;
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override;
 
   /// evalHessian() will always set _Hess to a zero matrix that matches
   /// the dimensionality of _x
   void evalHessian(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) const override;
+      const math::VectorXd& _x,
+      math::Map<math::VectorXd, math::RowMajor> _Hess) const override;
 };
 
 /// class MultiFunction
@@ -195,9 +191,9 @@ public:
 
   /// Operator ()
   virtual void operator()(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd>& _f,
-      Eigen::Map<Eigen::MatrixXd>& _grad) const = 0;
+      const math::VectorXd& _x,
+      math::Map<math::VectorXd>& _f,
+      math::Map<math::MatrixXd>& _grad) const = 0;
 };
 
 } // namespace optimization

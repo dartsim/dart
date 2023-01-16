@@ -70,17 +70,17 @@ NloptSolver::~NloptSolver()
 }
 
 //==============================================================================
-static std::vector<double> convertToStd(const Eigen::VectorXd& v)
+static std::vector<double> convertToStd(const math::VectorXd& v)
 {
   return std::vector<double>(v.data(), v.data() + v.size());
 }
 
 //==============================================================================
-static Eigen::VectorXd convertToEigen(const std::vector<double>& v)
+static math::VectorXd convertToEigen(const std::vector<double>& v)
 {
-  Eigen::VectorXd result(v.size());
+  math::VectorXd result(v.size());
   for (std::size_t i = 0; i < v.size(); ++i)
-    result[static_cast<Eigen::Index>(i)] = v[i];
+    result[static_cast<math::Index>(i)] = v[i];
 
   return result;
 }
@@ -163,7 +163,7 @@ bool NloptSolver::solve()
 }
 
 //==============================================================================
-Eigen::VectorXd NloptSolver::getLastConfiguration() const
+math::VectorXd NloptSolver::getLastConfiguration() const
 {
   return convertToEigen(mX);
 }
@@ -331,10 +331,10 @@ double NloptSolver::_nlopt_func(
 {
   Function* fn = static_cast<Function*>(func_data);
 
-  Eigen::Map<const Eigen::VectorXd> mapX(x, n);
+  math::Map<const math::VectorXd> mapX(x, n);
 
   if (gradient) {
-    Eigen::Map<Eigen::VectorXd> grad(gradient, n);
+    math::Map<math::VectorXd> grad(gradient, n);
     fn->evalGradient(mapX, grad);
   }
 
@@ -350,11 +350,11 @@ void NloptSolver::_nlopt_mfunc(
     double* gradient,
     void* func_data)
 {
-  Eigen::Map<const Eigen::VectorXd> mapX(x, n);
-  Eigen::Map<Eigen::VectorXd> f(result, m);
-  Eigen::Map<Eigen::MatrixXd> grad(gradient, 0, 0);
+  math::Map<const math::VectorXd> mapX(x, n);
+  math::Map<math::VectorXd> f(result, m);
+  math::Map<math::MatrixXd> grad(gradient, 0, 0);
   if (gradient)
-    new (&grad) Eigen::Map<Eigen::MatrixXd, Eigen::RowMajor>(gradient, m, n);
+    new (&grad) math::Map<math::MatrixXd, math::RowMajor>(gradient, m, n);
 
   return (*static_cast<MultiFunction*>(func_data))(mapX, f, grad);
 }

@@ -74,8 +74,8 @@ public:
     std::vector<double> *mConstr;
     VVD mdConstrdCoef;
 
-    Eigen::VectorXd mConstrScale;
-    Eigen::VectorXd mCoefScale;
+    math::VectorXd mConstrScale;
+    math::VectorXd mCoefScale;
 
     VVB mCoefMap;
     double mReturnedObj;

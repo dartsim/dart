@@ -49,7 +49,7 @@ PagmoMultiObjectiveProblemAdaptor::PagmoMultiObjectiveProblemAdaptor(
 pagmo::vector_double PagmoMultiObjectiveProblemAdaptor::fitness(
     const pagmo::vector_double& x) const
 {
-  const Eigen::VectorXd val = PagmoTypes::convertVector(x);
+  const math::VectorXd val = PagmoTypes::convertVector(x);
 
   assert(mProb.get());
   return PagmoTypes::convertVector(mProb->evaluateFitness(val));

@@ -22,8 +22,8 @@ using dart::optimization::UniqueFunctionPtr;
 
 //==============================================================================
 static int dimension = 10;
-static Eigen::VectorXd lowerLimits = Eigen::VectorXd::Zero(dimension);
-static Eigen::VectorXd upperLimits = Eigen::VectorXd::Constant(dimension, 1.0);
+static math::VectorXd lowerLimits = math::VectorXd::Zero(dimension);
+static math::VectorXd upperLimits = math::VectorXd::Constant(dimension, 1.0);
 
 class ZDT1 : public MultiObjectiveProblem
 {
@@ -38,9 +38,9 @@ public:
     return 2u;
   }
 
-  Eigen::VectorXd evaluateObjectives(const Eigen::VectorXd& x) const override
+  math::VectorXd evaluateObjectives(const math::VectorXd& x) const override
   {
-    Eigen::VectorXd ret(getObjectiveDimension());
+    math::VectorXd ret(getObjectiveDimension());
 
     ret[0] = x[0];
 
@@ -59,7 +59,7 @@ class Func1 : public Function
 public:
   Func1() = default;
 
-  double eval(const Eigen::VectorXd& x) const override
+  double eval(const math::VectorXd& x) const override
   {
     return x[0];
   }
@@ -81,7 +81,7 @@ class Func2 : public Function
 public:
   Func2() = default;
 
-  double eval(const Eigen::VectorXd& x) const override
+  double eval(const math::VectorXd& x) const override
   {
     double g = 1.0 + 9 * (x.sum() - x[0]) / double(dimension - 1);
     return g * (1.0 - std::sqrt(x[0] / g));

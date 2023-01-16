@@ -52,8 +52,8 @@ GradientDescentSolver::UniqueProperties::UniqueProperties(
     double _maxPerturbationFactor,
     double _maxRandomizationStep,
     double _defaultConstraintWeight,
-    Eigen::VectorXd _eqConstraintWeights,
-    Eigen::VectorXd _ineqConstraintWeights)
+    math::VectorXd _eqConstraintWeights,
+    math::VectorXd _ineqConstraintWeights)
   : mStepSize(_stepMultiplier),
     mMaxAttempts(_maxAttempts),
     mPerturbationStep(_perturbationStep),
@@ -122,17 +122,17 @@ bool GradientDescentSolver::solve()
   std::size_t dim = problem->getDimension();
 
   if (dim == 0) {
-    problem->setOptimalSolution(Eigen::VectorXd());
+    problem->setOptimalSolution(math::VectorXd());
     problem->setOptimumValue(0.0);
     return true;
   }
 
-  Eigen::VectorXd x = problem->getInitialGuess();
+  math::VectorXd x = problem->getInitialGuess();
   assert(x.size() == static_cast<int>(dim));
 
-  Eigen::VectorXd lastx = x;
-  Eigen::VectorXd dx(x.size());
-  Eigen::VectorXd grad(x.size());
+  math::VectorXd lastx = x;
+  math::VectorXd dx(x.size());
+  math::VectorXd grad(x.size());
 
   mEqConstraintCostCache.resize(problem->getNumEqConstraints());
   mIneqConstraintCostCache.resize(problem->getNumIneqConstraints());
@@ -174,8 +174,8 @@ bool GradientDescentSolver::solve()
       }
 
       dx.setZero();
-      Eigen::Map<Eigen::VectorXd> dxMap(dx.data(), dim);
-      Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), dim);
+      math::Map<math::VectorXd> dxMap(dx.data(), dim);
+      math::Map<math::VectorXd> gradMap(grad.data(), dim);
       // Compute the gradient of the objective, combined with the weighted
       // gradients of the softened constraints
       const FunctionPtr& objective = problem->getObjective();
@@ -274,7 +274,7 @@ bool GradientDescentSolver::solve()
 }
 
 //==============================================================================
-Eigen::VectorXd GradientDescentSolver::getLastConfiguration() const
+math::VectorXd GradientDescentSolver::getLastConfiguration() const
 {
   return mLastConfig;
 }
@@ -395,37 +395,37 @@ double GradientDescentSolver::getDefaultConstraintWeight() const
 }
 
 //==============================================================================
-Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights()
+math::VectorXd& GradientDescentSolver::getEqConstraintWeights()
 {
   return mGradientP.mEqConstraintWeights;
 }
 
 //==============================================================================
-const Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights() const
+const math::VectorXd& GradientDescentSolver::getEqConstraintWeights() const
 {
   return mGradientP.mEqConstraintWeights;
 }
 
 //==============================================================================
-Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights()
+math::VectorXd& GradientDescentSolver::getIneqConstraintWeights()
 {
   return mGradientP.mIneqConstraintWeights;
 }
 
 //==============================================================================
-const Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights() const
+const math::VectorXd& GradientDescentSolver::getIneqConstraintWeights() const
 {
   return mGradientP.mIneqConstraintWeights;
 }
 
 //==============================================================================
-void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
+void GradientDescentSolver::randomizeConfiguration(math::VectorXd& _x)
 {
   if (nullptr == mProperties.mProblem)
     return;
 
   if (_x.size() < static_cast<int>(mProperties.mProblem->getDimension()))
-    _x = Eigen::VectorXd::Zero(mProperties.mProblem->getDimension());
+    _x = math::VectorXd::Zero(mProperties.mProblem->getDimension());
 
   for (int i = 0; i < _x.size(); ++i) {
     double lower = mProperties.mProblem->getLowerBounds()[i];
@@ -441,7 +441,7 @@ void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
 }
 
 //==============================================================================
-void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
+void GradientDescentSolver::clampToBoundary(math::VectorXd& _x)
 {
   if (nullptr == mProperties.mProblem)
     return;

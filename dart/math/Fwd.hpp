@@ -47,11 +47,16 @@ namespace dart::math {
 // Base classes and constants
 //------------------------------------------------------------------------------
 
+/// Index type
+using Index = ::Eigen::Index;
+
 /// MatrixBase is a base class for all Eigen matrix types.
 /// @tparam Derived The derived type.
 template <typename Derived>
 using MatrixBase = ::Eigen::MatrixBase<Derived>;
 
+/// DenseBase is a base class for all Eigen dense matrix types.
+/// @tparam Derived The derived type.
 template <typename Derived>
 using DenseBase = ::Eigen::DenseBase<Derived>;
 
@@ -61,9 +66,10 @@ constexpr auto RowMajor = ::Eigen::RowMajor;
 constexpr auto ComputeFullV = ::Eigen::ComputeFullV;
 constexpr auto StrictlyLower = ::Eigen::StrictlyLower;
 constexpr auto StrictlyUpper = ::Eigen::StrictlyUpper;
+constexpr auto NoChange = ::Eigen::NoChange;
 
-template <typename PlainObjectType>
-using Map = class ::Eigen::Map<PlainObjectType>;
+template <typename PlainObjectType, int MapOptions = 0>
+using Map = class ::Eigen::Map<PlainObjectType, MapOptions>;
 
 //------------------------------------------------------------------------------
 // Eigen matrix types

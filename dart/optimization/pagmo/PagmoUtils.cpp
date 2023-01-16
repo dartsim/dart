@@ -36,17 +36,16 @@ namespace dart {
 namespace optimization {
 
 //==============================================================================
-std::vector<double> PagmoTypes::convertVector(const Eigen::VectorXd& v)
+std::vector<double> PagmoTypes::convertVector(const math::VectorXd& v)
 {
   return std::vector<double>(v.data(), v.data() + v.size());
 }
 
 //==============================================================================
-Eigen::Map<const Eigen::VectorXd> PagmoTypes::convertVector(
+math::Map<const math::VectorXd> PagmoTypes::convertVector(
     const std::vector<double>& v)
 {
-  return Eigen::Map<const Eigen::VectorXd>(
-      v.data(), static_cast<int>(v.size()));
+  return math::Map<const math::VectorXd>(v.data(), static_cast<int>(v.size()));
 }
 
 //==============================================================================
@@ -60,8 +59,8 @@ Population PagmoTypes::convertPopulation(
   const auto& pagmoF = pagmoPop.get_f();
 
   for (std::size_t i = 0u; i < pagmoPop.size(); ++i) {
-    const Eigen::VectorXd x = convertVector(pagmoX[i]);
-    const Eigen::VectorXd f = convertVector(pagmoF[i]);
+    const math::VectorXd x = convertVector(pagmoX[i]);
+    const math::VectorXd f = convertVector(pagmoF[i]);
     pop.set(i, x, f);
   }
 
