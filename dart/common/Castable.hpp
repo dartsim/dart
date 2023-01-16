@@ -30,24 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CASTABLE_HPP_
-#define DART_COMMON_CASTABLE_HPP_
+#pragma once
 
-#include <string>
+/// This macro is used to define required functions for Castable class.
+///
+/// Example code:
+/// @code
+/// class Shape : public Castable<Shape>
+/// {
+/// public:
+///   DART_STRING_TYPE(Shape);
+///   ...
+/// };
+/// @endcode
+#define DART_STRING_TYPE(type_name) DETAIL_DART_STRING_TYPE(type_name)
 
-#define DART_STRING_TYPE(type_name)                                            \
-  /** Returns type string. */                                                  \
-  [[nodiscard]] static const std::string& getStaticType()                      \
-  {                                                                            \
-    static const std::string type = #type_name;                                \
-    return type;                                                               \
-  }                                                                            \
-                                                                               \
-  [[nodiscard]] const std::string& getType() const override                    \
-  {                                                                            \
-    return getStaticType();                                                    \
-  }                                                                            \
-  void _ANONYMOUS_FUNCTION_1()
+/// This macro is used to define required functions for Castable class when the
+/// class is templated.
+///
+/// Example code:
+/// @code
+/// template <typename S>
+/// class Shape : public Castable<Shape>
+/// {
+/// public:
+///   DART_STRING_TYPE_TEMPLATE(Shape, S);
+///   ...
+/// };
+/// @endcode
+#define DART_STRING_TYPE_TEMPLATE_1(type_name, templ_arg1)                     \
+  DETAIL_DART_STRING_TYPE_TEMPLATE_1(type_name, templ_arg1)
 
 namespace dart::common {
 
@@ -98,5 +110,3 @@ private:
 } // namespace dart::common
 
 #include <dart/common/detail/Castable-impl.hpp>
-
-#endif // DART_COMMON_CASTABLE_HPP_

@@ -77,10 +77,10 @@ AllocatorDebugger<T>::~AllocatorDebugger()
 
 //==============================================================================
 template <typename T>
-const std::string& AllocatorDebugger<T>::getStaticType()
+const std::string& AllocatorDebugger<T>::GetType()
 {
   static const std::string type
-      = "dart::common::AllocatorDebugger<" + T::getStaticType() + ">";
+      = "dart::common::AllocatorDebugger<" + T::GetType() + ">";
   return type;
 }
 
@@ -88,7 +88,7 @@ const std::string& AllocatorDebugger<T>::getStaticType()
 template <typename T>
 const std::string& AllocatorDebugger<T>::getType() const
 {
-  return getStaticType();
+  return GetType();
 }
 
 //==============================================================================

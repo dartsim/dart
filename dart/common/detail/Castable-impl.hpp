@@ -30,17 +30,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_CASTABLE_HPP_
-#define DART_COMMON_DETAIL_CASTABLE_HPP_
+#pragma once
 
 #include <dart/common/Castable.hpp>
 #include <dart/common/Metaprogramming.hpp>
+
+#include <string>
+
+#define DETAIL_DART_STRING_TYPE(type_name)                                     \
+  /** Returns static type string. */                                           \
+  [[nodiscard]] static const std::string& GetType()                            \
+  {                                                                            \
+    static const std::string type = #type_name;                                \
+    return type;                                                               \
+  }                                                                            \
+                                                                               \
+  /** Returns type string */                                                   \
+  [[nodiscard]] const std::string& getType() const override                    \
+  {                                                                            \
+    return GetType();                                                          \
+  }                                                                            \
+  void _ANONYMOUS_FUNCTION_1()
+
+#define DETAIL_DART_STRING_TYPE_TEMPLATE_1(type_name, templ_arg1)              \
+  /** Returns static type string. */                                           \
+  [[nodiscard]] static const std::string& GetType()                            \
+  {                                                                            \
+    static const std::string type = std::string(#type_name) + std::string("<") \
+                                    + std::string(typeid(templ_arg1).name())   \
+                                    + std::string(">");                        \
+    return type;                                                               \
+  }                                                                            \
+                                                                               \
+  /** Returns type string */                                                   \
+  [[nodiscard]] const std::string& getType() const override                    \
+  {                                                                            \
+    return GetType();                                                          \
+  }                                                                            \
+  void _ANONYMOUS_FUNCTION_2()
 
 namespace dart::common {
 
 //==============================================================================
 DART_CREATE_MEMBER_CHECK(getType);
 DART_CREATE_MEMBER_CHECK(getStaticType);
+DART_CREATE_MEMBER_CHECK(GetType);
 
 //==============================================================================
 template <typename Base>
@@ -51,6 +85,9 @@ bool Castable<Base>::is() const
       has_member_getType<Base>::value
       && has_member_getStaticType<Derived>::value) {
     return (base().getType() == Derived::getStaticType());
+  } else if constexpr (
+      has_member_getType<Base>::value && has_member_GetType<Derived>::value) {
+    return (base().getType() == Derived::GetType());
   } else {
     return (dynamic_cast<const Derived*>(&base()) != nullptr);
   }
@@ -105,5 +142,3 @@ Base& Castable<Base>::base()
 }
 
 } // namespace dart::common
-
-#endif // DART_COMMON_DETAIL_CASTABLE_HPP_

@@ -53,7 +53,7 @@ public:
   ~AllocatorDebugger();
 
   /// Returns type string.
-  [[nodiscard]] static const std::string& getStaticType();
+  [[nodiscard]] static const std::string& GetType();
 
   // Documentation inherited
   [[nodiscard]] const std::string& getType() const override;
