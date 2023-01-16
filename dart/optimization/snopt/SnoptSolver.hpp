@@ -11,8 +11,8 @@
 
 #include <vector>
 
-#include "dart/optimization/snopt/SnoptInterface.h"
-#include "dart/optimization/Solver.h"
+#include <dart/optimization/snopt/SnoptInterface.h>
+#include <dart/optimization/Solver.h>
 
 namespace dart {
 namespace optimization {

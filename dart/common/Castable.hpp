@@ -43,6 +43,12 @@
 ///   ...
 /// };
 /// @endcode
+///
+/// @note This macro is not compatible with templated classes. If you want to
+/// define Castable class for templated classes, use DART_STRING_TYPE_TEMPLATE_1
+/// macro instead.
+///
+/// @param type_name The name of the class.
 #define DART_STRING_TYPE(type_name) DETAIL_DART_STRING_TYPE(type_name)
 
 /// This macro is used to define required functions for Castable class when the
@@ -54,10 +60,13 @@
 /// class Shape : public Castable<Shape>
 /// {
 /// public:
-///   DART_STRING_TYPE_TEMPLATE(Shape, S);
+///   DART_STRING_TYPE_TEMPLATE_1(Shape, S);
 ///   ...
 /// };
 /// @endcode
+///
+/// @param type_name The name of the class.
+/// @param templ_arg1 The name of the template argument.
 #define DART_STRING_TYPE_TEMPLATE_1(type_name, templ_arg1)                     \
   DETAIL_DART_STRING_TYPE_TEMPLATE_1(type_name, templ_arg1)
 
@@ -71,7 +80,7 @@ class Castable
 public:
   /// Returns true if the types of this \c Base and the template parameter (a
   /// base class) are identical. This function is a syntactic sugar, which
-  /// is identical to: (getType() == ShapeType::getStaticType()).
+  /// is identical to: (getType() == ShapeType::GetType()).
   ///
   /// Example code:
   /// \code

@@ -184,7 +184,7 @@ std::pair<math::MatrixX<S>, math::VectorX<S>> generateValidLcpProblem(
   math::VectorX<S> b;
   A = math::MatrixX<S>::Random(n, n);
   A = 0.5 * (A * A.transpose());
-  A += n * math::MatrixX<S>::Identity(n, n); 
+  A += n * math::MatrixX<S>::Identity(n, n);
 
   const math::VectorX<int> vec = math::Uniform<math::VectorXi>(n, 0, 1);
 

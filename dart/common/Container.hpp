@@ -30,13 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/Empty.hpp"
+#pragma once
 
-namespace dart::collision {
+#include <dart/common/allocator/StdAlignedAllocator.hpp>
+#include <dart/common/allocator/StdAllocator.hpp>
 
-void empty()
-{
-  // Do nothing
-}
+#include <vector>
 
-} // namespace dart::collision
+namespace dart::common {
+
+template <typename T, typename AllocatorT = StdAllocator<T>>
+using Vector = std::vector<T, AllocatorT>;
+
+template <typename T, typename AlignedAllocatorT = StdAlignedAllocator<T>>
+using AlignedVector = std::vector<T, AlignedAllocatorT>;
+
+} // namespace dart::common

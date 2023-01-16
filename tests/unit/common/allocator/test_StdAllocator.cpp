@@ -87,7 +87,7 @@ GTEST_TEST(StlAllocatorTest, StdVector)
   {
     AllocatorLinear base_allocator(0);
     try {
-      std::vector<int, StdAllocator<int>> vec(
+      common::Vector<int> vec(
           base_allocator); // equivalent to std::vector<int, StlAllocator<int>>
       EXPECT_EQ(vec.size(), 0);
       vec.resize(1);
