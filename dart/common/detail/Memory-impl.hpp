@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 #define DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 
+#include <dart/common/Macros.hpp>
+
 #include <Eigen/Core>
 
 #include <memory>
@@ -48,6 +50,58 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 
   return std::allocate_shared<_Tp>(
       Eigen::aligned_allocator<_Tp_nc>(), std::forward<_Args>(__args)...);
+}
+
+//==============================================================================
+constexpr std::size_t GetPadding(
+    const std::size_t base_address, const std::size_t alignment)
+{
+  if (alignment == 0) {
+    return 0;
+  }
+
+  //
+  // 0       (alignment)  (2*alignment)          (multiplier*alignment)
+  // +------------+-------------+-----...----+-------------+--------------
+  //                                            ^          ^
+  //                                            |          |
+  //                                       base_address   aligned_address
+  //                                            |--------->|
+  //                                               padding
+  //
+
+  const std::size_t multiplier = (base_address / alignment) + 1;
+  const std::size_t aligned_address = multiplier * alignment;
+  DART_ASSERT(aligned_address >= base_address);
+  const std::size_t padding = aligned_address - base_address;
+
+  return padding;
+}
+
+//==============================================================================
+template <size_t Alignment>
+constexpr std::size_t GetPadding(const std::size_t base_address)
+{
+  if constexpr (Alignment == 0) {
+    return 0;
+  }
+
+  //
+  // 0       (alignment)  (2*alignment)          (multiplier*alignment)
+  // +------------+-------------+-----...----+-------------+--------------
+  //                                            ^          ^
+  //                                            |          |
+  //                                       base_address   aligned_address
+  //                                            |--------->|
+  //                                               padding
+  //
+
+  const std::size_t multiplier = (base_address / Alignment) + 1;
+  const std::size_t aligned_address = multiplier * Alignment;
+  DART_ASSERT(aligned_address >= base_address);
+  const std::size_t padding = aligned_address - base_address;
+
+  return padding;
 }
 
 } // namespace common

@@ -35,18 +35,56 @@
 
 #include <dart/config.hpp>
 
+#include <dart/common/Fwd.hpp>
+
 #include <map>
 #include <memory>
 #include <vector>
 
-namespace dart {
-namespace common {
+namespace dart::common {
 
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
-} // namespace common
-} // namespace dart
+/// Returns the padding needed to align the given base address to the specified
+/// alignment.
+///
+/// @param baseAddress The base address that needs to be aligned.
+/// @param alignment The alignment value that the base address needs to be
+/// aligned to.
+/// @return The padding needed to align the base address to the specified
+/// alignment.
+/// @note If the alignment is 0, this function will return 0.
+[[nodiscard]] constexpr std::size_t GetPadding(
+    const std::size_t baseAddress, const std::size_t alignment);
+
+/// Allocates memory on a specified alignment boundary.
+///
+/// @param[in] alignment: The alignment value, which must be a power of 2.
+/// @param[in] size: Size of the requested memory allocation.
+/// @returns A pointer to the memory block that was allocated, or nullptr if the
+/// allocation failed. The pointer is aligned to the specified alignment.
+[[nodiscard]] DART_COMMON_API void* AlignedAlloc(
+    std::size_t alignment, std::size_t size);
+
+/// Releases a block of memory that was allocated with AlignedAlloc().
+///
+/// @param[in] ptr: A pointer to the memory block that was returned by
+/// AlignedAlloc().
+DART_COMMON_API void AlignedFree(void* ptr);
+
+/// Checks if the given pointer is aligned to the specified alignment.
+///
+/// @param[in] ptr: The pointer to check.
+/// @param[in] alignment: The alignment value that the pointer should be aligned
+/// to.
+/// @return True if the given pointer is aligned to the specified alignment,
+/// false otherwise. Note: If the alignment is 0, this function will return
+/// true.
+[[nodiscard]] DART_COMMON_API bool IsAligned(
+    void* ptr, std::size_t alignment) noexcept;
+
+} // namespace dart::common
 
 #define DART_RAW_PTR_CREATOR_NAME create
 #define DART_SHARED_PTR_CREATOR_NAME createShared

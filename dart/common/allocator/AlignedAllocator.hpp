@@ -111,6 +111,10 @@ public:
   /// Prints state of the memory allocator
   friend std::ostream& operator<<(
       std::ostream& os, const AlignedAllocator& allocator);
+
+protected:
+  /// Returns true if @c alignment is valid for @c size.
+  [[nodiscard]] bool validateAlignment(size_t size, size_t alignment) const;
 };
 
 } // namespace dart::common

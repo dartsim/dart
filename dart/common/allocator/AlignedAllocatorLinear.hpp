@@ -33,7 +33,7 @@
 #pragma once
 
 #include <dart/common/Export.hpp>
-#include <dart/common/allocator/Allocator.hpp>
+#include <dart/common/allocator/AlignedAllocator.hpp>
 #include <dart/common/allocator/AllocatorDebugger.hpp>
 
 #include <mutex>
@@ -42,26 +42,26 @@ namespace dart::common {
 
 /// A memory allocator that keeps track of the first memory address of a memory
 /// chunk and moves it every time an allocation is done.
-class DART_COMMON_API AllocatorLinear : public Allocator
+class DART_COMMON_API AlignedAllocatorLinear : public AlignedAllocator
 {
 public:
-  using Debug = AllocatorDebugger<AllocatorLinear>;
+  // using Debug = AllocatorDebugger<AlignedAllocatorLinear>;
 
   /// Constructor
   ///
   /// @param[in] max_capacity: Maximum count of object to allocate.
-  explicit AllocatorLinear(
+  explicit AlignedAllocatorLinear(
       size_t max_capacity, Allocator& base_allocator = Allocator::GetDefault());
 
   /// Destructor
-  ~AllocatorLinear() override;
+  ~AlignedAllocatorLinear() override;
 
-  DART_STRING_TYPE(AllocatorLinear);
+  DART_STRING_TYPE(AlignedAllocatorLinear);
 
   /// @copydoc Allocator::allocate
   ///
   /// Complexity is O(1).
-  [[nodiscard]] void* allocate(size_t size) noexcept override;
+  [[nodiscard]] void* allocate(size_t size, size_t alignment) noexcept override;
 
   /// This function does nothing. The allocated memory is released when this
   /// allocator is destructed.

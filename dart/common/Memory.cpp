@@ -30,41 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/common.hpp"
+#include "dart/common/Memory.hpp"
 
-#include <gtest/gtest.h>
-
-using namespace dart;
-using namespace common;
+namespace dart::common {
 
 //==============================================================================
-GTEST_TEST(StdAllocatorTest, Basics)
+void* AlignedAlloc(std::size_t alignment, std::size_t size)
 {
-  auto a = StdAllocator<int>();
-  auto o1 = a.allocate(1);
-  auto o2 = a.allocate(1);
-  EXPECT_TRUE(o1 != nullptr);
-  EXPECT_TRUE(o2 != nullptr);
-  a.deallocate(o1, 1);
-  a.deallocate(o2, 1);
-  a.print();
+#if defined(_MSC_VER)
+  return _aligned_malloc(size, alignment);
+#else
+  return std::aligned_alloc(alignment, size);
+#endif
 }
 
 //==============================================================================
-// GTEST_TEST(StdAllocatorTest, Basics2)
-//{
-//  AllocatorLinear base_allocator(sizeof(int) + 1);
-//  static_assert(
-//      sizeof(int) > 1,
-//      "sizeof(int) should be greater than 1 to keep this test valid.");
-//  auto a = StdAllocator<int>(base_allocator);
-//  EXPECT_TRUE(a.allocate(1) != nullptr);
-//  try {
-//    EXPECT_TRUE(a.allocate(1) == nullptr);
-//  } catch (std::bad_alloc& /*e*/) {
-//    EXPECT_TRUE(true);
-//  } catch (...) {
-//    EXPECT_TRUE(false);
-//  }
-//  a.print();
-//}
+void AlignedFree(void* ptr)
+{
+#if defined(_MSC_VER)
+  return _aligned_free(ptr);
+#else
+  return std::free(ptr);
+#endif
+}
+
+//==============================================================================
+bool IsAligned(void* ptr, std::size_t alignment) noexcept
+{
+  if (alignment == 0) {
+    return true;
+  }
+
+  auto address = reinterpret_cast<std::uintptr_t>(ptr);
+  return (address % alignment == 0u);
+}
+
+} // namespace dart::common

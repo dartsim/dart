@@ -30,15 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/AllocatorLinear.hpp"
+#include "dart/common/allocator/AlignedAllocatorLinear.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Memory.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-AllocatorLinear::AllocatorLinear(size_t max_capacity, Allocator& base_allocator)
+AlignedAllocatorLinear::AlignedAllocatorLinear(
+    size_t max_capacity, Allocator& base_allocator)
   : m_max_capacity(max_capacity),
     m_base_allocator(base_allocator),
     m_start_ptr(base_allocator.allocate(max_capacity)),
@@ -51,7 +53,7 @@ AllocatorLinear::AllocatorLinear(size_t max_capacity, Allocator& base_allocator)
 }
 
 //==============================================================================
-AllocatorLinear::~AllocatorLinear()
+AlignedAllocatorLinear::~AlignedAllocatorLinear()
 {
   if (m_start_ptr) {
     this->m_base_allocator.deallocate(m_start_ptr, m_max_capacity);
@@ -60,7 +62,7 @@ AllocatorLinear::~AllocatorLinear()
 }
 
 //==============================================================================
-void* AllocatorLinear::allocate(size_t size) noexcept
+void* AlignedAllocatorLinear::allocate(size_t size, size_t alignment) noexcept
 {
   if (size == 0) {
     return nullptr;
@@ -70,36 +72,47 @@ void* AllocatorLinear::allocate(size_t size) noexcept
     return nullptr;
   }
 
+  if (!this->validateAlignment(size, alignment)) {
+    return nullptr;
+  }
+
   // Lock the mutex
   std::lock_guard<std::mutex> lock(m_mutex);
 
   const size_t current_ptr = reinterpret_cast<size_t>(m_start_ptr) + m_offset;
 
+  // Compute padding
+  size_t padding = 0;
+  if (alignment > 0 && m_offset % alignment != 0) {
+    padding = GetPadding(current_ptr, alignment);
+  }
+
   // Check max capacity
-  if (m_offset + size > m_max_capacity) {
+  if (m_offset + padding + size > m_max_capacity) {
     DART_DEBUG(
-        "Allocating {} exceeds the max capacity {}. Returning "
-        "nullptr.",
+        "Allocating {} bytes with padding {} exceeds the max capacity {}. "
+        "Returning nullptr.",
         size,
+        padding,
         m_max_capacity);
     return nullptr;
   }
 
   // Update offset
-  m_offset += size;
+  m_offset += padding + size;
 
-  return reinterpret_cast<void*>(current_ptr);
+  return reinterpret_cast<void*>(current_ptr + padding);
 }
 
 //==============================================================================
-void AllocatorLinear::deallocate(void* pointer, size_t size)
+void AlignedAllocatorLinear::deallocate(void* pointer, size_t size)
 {
-  // AllocatorLinear doesn't allow to deallocate memory
+  // AlignedAllocatorLinear doesn't allow to deallocate memory
   DART_UNUSED(pointer, size);
 }
 
 //==============================================================================
-size_t AllocatorLinear::get_max_capacity() const
+size_t AlignedAllocatorLinear::get_max_capacity() const
 {
   // No need to lock the mutex as m_max_capacity isn't changed once
   // initialized
@@ -107,27 +120,27 @@ size_t AllocatorLinear::get_max_capacity() const
 }
 
 //==============================================================================
-size_t AllocatorLinear::get_size() const
+size_t AlignedAllocatorLinear::get_size() const
 {
   std::lock_guard<std::mutex> lock(m_mutex);
   return m_offset;
 }
 
 //==============================================================================
-const void* AllocatorLinear::get_begin_address() const
+const void* AlignedAllocatorLinear::get_begin_address() const
 {
   // No need to lock the mutex as m_head isn't changed once initialized
   return m_start_ptr;
 }
 
 //==============================================================================
-void AllocatorLinear::print(std::ostream& os, int indent) const
+void AlignedAllocatorLinear::print(std::ostream& os, int indent) const
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(m_mutex);
 
   if (indent == 0) {
-    os << "[AllocatorLinear]\n";
+    os << "[AlignedAllocatorLinear]\n";
   }
   const std::string spaces(indent, ' ');
   if (indent != 0) {

@@ -34,6 +34,9 @@
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Memory.hpp"
+
+#include <cstdlib>
 
 namespace dart::common {
 
@@ -57,14 +60,14 @@ void* AlignedAllocatorRaw::allocate(size_t bytes, size_t alignment) noexcept
   }
 
   DART_TRACE("Allocated {} bytes.", bytes);
-  return std::aligned_alloc(alignment, bytes);
+  return AlignedAlloc(alignment, bytes);
 }
 
 //==============================================================================
 void AlignedAllocatorRaw::deallocate(void* pointer, size_t bytes)
 {
   DART_UNUSED(bytes);
-  std::free(pointer);
+  AlignedFree(pointer);
   DART_TRACE("Deallocated.");
 }
 

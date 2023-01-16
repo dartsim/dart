@@ -79,8 +79,13 @@ public:
   };
 
   /// Default constructor
-  explicit StdAllocator(
-      Allocator& baseAllocator = Allocator::GetDefault()) noexcept;
+  ///
+  /// Note that this constructor is intentionally not explicit to allow for
+  /// implicit conversions from the base allocator type to the derived allocator
+  /// type.
+  ///
+  /// @param[in] baseAllocator: The allocator to use for memory allocation.
+  StdAllocator(Allocator& baseAllocator = Allocator::GetDefault()) noexcept;
 
   /// Copy constructor
   StdAllocator(const StdAllocator& other) throw();

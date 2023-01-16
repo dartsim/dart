@@ -36,6 +36,16 @@
 
 namespace dart::common {
 
+namespace {
+
+template <typename T>
+constexpr bool ispow2(T x) noexcept
+{
+  return (x & (x - 1)) == 0;
+}
+
+} // namespace
+
 //==============================================================================
 AlignedAllocator& AlignedAllocator::GetDefault()
 {
@@ -51,6 +61,32 @@ void AlignedAllocator::print(std::ostream& os, int indent) const
   }
   const std::string spaces(indent, ' ');
   os << spaces << "*::print is not implemented:\n";
+}
+
+//==============================================================================
+bool AlignedAllocator::validateAlignment(size_t size, size_t alignment) const
+{
+  if (alignment == 0) {
+    return true;
+  }
+
+  if (alignment < sizeof(void*)) {
+    DART_DEBUG("Alignment '{}' must be greater than sizeof(void*).", alignment);
+    return false;
+  }
+
+  if (!ispow2(alignment)) {
+    DART_DEBUG("Alignment '{}' must be a power of 2.", alignment);
+    return false;
+  }
+
+  if (size % alignment != 0) {
+    DART_DEBUG(
+        "Size '{}' must be a multiple of alignment '{}'.", size, alignment);
+    return false;
+  }
+
+  return true;
 }
 
 //==============================================================================
