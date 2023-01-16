@@ -271,8 +271,7 @@ void setVertices(
   int axis1 = 0;
   int axis2 = 1;
 
-  switch (planeType)
-  {
+  switch (planeType) {
     case GridVisual::PlaneType::XY: {
       axis1 = 0;
       axis2 = 1;
@@ -340,15 +339,13 @@ void setVertices(
   // Major and minor line vertices
   //-------------------------------
 
-  for (auto i = 1u; i < numCells + 1; ++i)
-  {
+  for (auto i = 1u; i < numCells + 1; ++i) {
     const float posInAxis2 = stepSize * i;
 
     const auto axis2Negative = -posInAxis2;
     const auto axis2Positive = +posInAxis2;
 
-    if (numMinorLinesPerMajorLine > 0 && i % numMinorLinesPerMajorLine == 0)
-    {
+    if (numMinorLinesPerMajorLine > 0 && i % numMinorLinesPerMajorLine == 0) {
       vec3[axis1] = axis1Negative;
       vec3[axis2] = axis2Positive;
       majorLineVertices->push_back(vec3 + osgOffset);
@@ -380,9 +377,7 @@ void setVertices(
       vec3[axis2] = axis1Positive;
       vec3[axis1] = axis2Negative;
       majorLineVertices->push_back(vec3 + osgOffset);
-    }
-    else
-    {
+    } else {
       vec3[axis1] = axis1Negative;
       vec3[axis2] = axis2Positive;
       minorLineVertices->push_back(vec3 + osgOffset);
@@ -424,8 +419,7 @@ void GridVisual::refresh()
   if (!mNeedUpdate)
     return;
 
-  if (mDisplayGrid)
-  {
+  if (mDisplayGrid) {
     setVertices(
         mAxisLineVertices,
         mMajorLineVertices,
@@ -450,8 +444,7 @@ void GridVisual::refresh()
     mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
         mMinorLineWidth);
     mMinorLineGeom->setPrimitiveSet(0, mMinorLineFaces);
-    if (mMinorLineColor->at(0).a() < 1 - getAlphaThreshold<float>())
-    {
+    if (mMinorLineColor->at(0).a() < 1 - getAlphaThreshold<float>()) {
       mMinorLineGeom->getOrCreateStateSet()->setMode(
           GL_BLEND, ::osg::StateAttribute::ON);
       mMinorLineGeom->getOrCreateStateSet()->setRenderingHint(
@@ -460,9 +453,7 @@ void GridVisual::refresh()
       depth->setWriteMask(false);
       mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
           depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       mMinorLineGeom->getOrCreateStateSet()->setMode(
           GL_BLEND, ::osg::StateAttribute::OFF);
       mMinorLineGeom->getOrCreateStateSet()->setRenderingHint(
@@ -477,8 +468,7 @@ void GridVisual::refresh()
     mMajorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
         mMajorLineWidth);
     mMajorLineGeom->setPrimitiveSet(0, mMajorLineFaces);
-    if (mMajorLineColor->at(0).a() < 1 - getAlphaThreshold<float>())
-    {
+    if (mMajorLineColor->at(0).a() < 1 - getAlphaThreshold<float>()) {
       mMajorLineGeom->getOrCreateStateSet()->setMode(
           GL_BLEND, ::osg::StateAttribute::ON);
       mMajorLineGeom->getOrCreateStateSet()->setRenderingHint(
@@ -487,9 +477,7 @@ void GridVisual::refresh()
       depth->setWriteMask(false);
       mMajorLineGeom->getOrCreateStateSet()->setAttributeAndModes(
           depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       mMajorLineGeom->getOrCreateStateSet()->setMode(
           GL_BLEND, ::osg::StateAttribute::OFF);
       mMajorLineGeom->getOrCreateStateSet()->setRenderingHint(
@@ -504,8 +492,7 @@ void GridVisual::refresh()
     static const ::osg::Vec4 yAxisLineColor(0.1f, 0.9f, 0.1f, 1.0f);
     static const ::osg::Vec4 zAxisLineColor(0.1f, 0.1f, 0.9f, 1.0f);
 
-    switch (mPlaneType)
-    {
+    switch (mPlaneType) {
       case GridVisual::PlaneType::XY: {
         mAxisLineColor->at(0) = xAxisLineColor;
         mAxisLineColor->at(2) = yAxisLineColor;

@@ -227,8 +227,7 @@ std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
   usedSpecializedNodeAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
-  if (treeIndex >= mTreeNodeMaps.size())
-  {
+  if (treeIndex >= mTreeNodeMaps.size()) {
     dterr << "[Skeleton::getNumNodes<" << typeid(SpecNode).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
@@ -258,8 +257,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
   usedSpecializedNodeAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
-  if (treeIndex >= mTreeNodeMaps.size())
-  {
+  if (treeIndex >= mTreeNodeMaps.size()) {
     dterr << "[Skeleton::getNode<" << typeid(SpecNode).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
@@ -269,8 +267,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
 
   NodeMap::iterator& it = mTreeSpecNodeIterators[treeIndex];
 
-  if (nodeIndex >= it->second.size())
-  {
+  if (nodeIndex >= it->second.size()) {
     dterr << "[Skeleton::getNode<" << typeid(SpecNode).name() << ">] "
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
           << "), but there are only (" << it->second.size() << ") Nodes of the "

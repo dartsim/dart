@@ -70,14 +70,12 @@ void GraphWindow::draw()
 
   double upperBound = +1.0;
   double lowerBound = -1.0;
-  if (nPoints > 0)
-  {
+  if (nPoints > 0) {
     upperBound = mData.maxCoeff();
     lowerBound = mData.minCoeff();
   }
 
-  for (int i = 0; i < nPoints; i++)
-  {
+  for (int i = 0; i < nPoints; i++) {
     glPushMatrix();
     glLoadIdentity();
     glBegin(GL_POINTS);
@@ -91,8 +89,7 @@ void GraphWindow::draw()
   glMatrixMode(GL_PROJECTION);
 
   double xPos = 0.1;
-  while (xPos < 1.0)
-  {
+  while (xPos < 1.0) {
     char buff[64];
     int v = xPos * nPoints;
 #ifdef _WIN32
@@ -107,8 +104,7 @@ void GraphWindow::draw()
   }
 
   double yPos = 0.1;
-  while (yPos < 1.0)
-  {
+  while (yPos < 1.0) {
     char buff[64];
     double v = yPos * (upperBound - lowerBound) + lowerBound;
 #ifdef _WIN32

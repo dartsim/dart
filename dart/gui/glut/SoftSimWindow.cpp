@@ -53,8 +53,7 @@ SoftSimWindow::~SoftSimWindow() {}
 
 void SoftSimWindow::keyboard(unsigned char key, int x, int y)
 {
-  switch (key)
-  {
+  switch (key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)

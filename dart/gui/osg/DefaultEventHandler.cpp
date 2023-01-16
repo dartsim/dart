@@ -110,8 +110,7 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
   getNearAndFarPointUnderCursor(nearPt, farPt);
   Eigen::Vector3d v1 = farPt - nearPt;
 
-  if (LINE_CONSTRAINT == _constraint)
-  {
+  if (LINE_CONSTRAINT == _constraint) {
     const Eigen::Vector3d& b1 = nearPt;
     const Eigen::Vector3d& v2 = _constraintVector;
     const Eigen::Vector3d& b2 = _fromPosition;
@@ -130,15 +129,11 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
           / denominator;
 
     return v2 * s;
-  }
-  else if (PLANE_CONSTRAINT == _constraint)
-  {
+  } else if (PLANE_CONSTRAINT == _constraint) {
     const Eigen::Vector3d& n = _constraintVector;
     double s = n.dot(_fromPosition - nearPt) / n.dot(v1);
     return nearPt - _fromPosition + s * v1;
-  }
-  else
-  {
+  } else {
     Eigen::Vector3d n = osgToEigVec3(center - eye);
     double s = n.dot(_fromPosition - nearPt) / n.dot(v1);
     return nearPt - _fromPosition + s * v1;
@@ -220,17 +215,14 @@ void DefaultEventHandler::pick(
   ::osgUtil::LineSegmentIntersector::Intersections hlist;
 
   infoVector.clear();
-  if (mViewer->computeIntersections(ea, hlist))
-  {
+  if (mViewer->computeIntersections(ea, hlist)) {
     infoVector.reserve(hlist.size());
     for (const ::osgUtil::LineSegmentIntersector::Intersection& intersect :
-         hlist)
-    {
+         hlist) {
       ::osg::Drawable* drawable = intersect.drawable;
       render::ShapeNode* shape
           = dynamic_cast<render::ShapeNode*>(drawable->getParent(0));
-      if (shape)
-      {
+      if (shape) {
         PickInfo info;
         info.shape = shape->getShape();
         info.frame = shape->getParentShapeFrameNode()->getShapeFrame();
@@ -278,8 +270,7 @@ static void assignEventToButtons(
   else if (ea.getEventType() == ::osgGA::GUIEventAdapter::RELEASE)
     event = BUTTON_RELEASE;
 
-  if (BUTTON_RELEASE == event)
-  {
+  if (BUTTON_RELEASE == event) {
     if ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) == 0
         && wasActive(mLastButtonEvent[LEFT_MOUSE]))
       mLastButtonEvent[LEFT_MOUSE] = event;
@@ -292,9 +283,7 @@ static void assignEventToButtons(
             == 0
         && wasActive(mLastButtonEvent[MIDDLE_MOUSE]))
       mLastButtonEvent[MIDDLE_MOUSE] = event;
-  }
-  else
-  {
+  } else {
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
       mLastButtonEvent[LEFT_MOUSE] = event;
 
@@ -312,8 +301,7 @@ bool DefaultEventHandler::handle(
 {
   mLastModKeyMask = ea.getModKeyMask();
 
-  switch (ea.getEventType())
-  {
+  switch (ea.getEventType()) {
     case ::osgGA::GUIEventAdapter::PUSH:
     case ::osgGA::GUIEventAdapter::DRAG:
     case ::osgGA::GUIEventAdapter::RELEASE:
@@ -327,11 +315,9 @@ bool DefaultEventHandler::handle(
       break;
   }
 
-  switch (ea.getEventType())
-  {
+  switch (ea.getEventType()) {
     case ::osgGA::GUIEventAdapter::KEYDOWN: {
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 8: // ctrl+h
         {
           mViewer->switchHeadlights(!mViewer->checkHeadlights());
@@ -339,8 +325,7 @@ bool DefaultEventHandler::handle(
         }
 
         case ' ': {
-          if (mViewer->isAllowingSimulation())
-          {
+          if (mViewer->isAllowingSimulation()) {
             mViewer->simulate(!mViewer->isSimulating());
             return true;
           }
@@ -380,8 +365,7 @@ bool DefaultEventHandler::handle(
 //==============================================================================
 void DefaultEventHandler::triggerMouseEventHandlers()
 {
-  for (MouseEventHandler* h : mMouseEventHandlers)
-  {
+  for (MouseEventHandler* h : mMouseEventHandlers) {
     h->update();
   }
 }
@@ -390,8 +374,7 @@ void DefaultEventHandler::triggerMouseEventHandlers()
 void DefaultEventHandler::eventPick(const ::osgGA::GUIEventAdapter& ea)
 {
   MouseButtonEvent mbe;
-  switch (ea.getEventType())
-  {
+  switch (ea.getEventType()) {
     case ::osgGA::GUIEventAdapter::PUSH:
       mbe = BUTTON_PUSH;
       break;
@@ -410,8 +393,7 @@ void DefaultEventHandler::eventPick(const ::osgGA::GUIEventAdapter& ea)
       || ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
           && !mSuppressButtonPicks[RIGHT_MOUSE][mbe])
       || ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
-          && !mSuppressButtonPicks[MIDDLE_MOUSE][mbe]))
-  {
+          && !mSuppressButtonPicks[MIDDLE_MOUSE][mbe])) {
     pick(mTempPicks, ea);
 
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)

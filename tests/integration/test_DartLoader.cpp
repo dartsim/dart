@@ -516,8 +516,7 @@ TEST(DartLoader, KR5MeshColor)
     bodyNode->eachShapeNodeWith<dynamics::VisualAspect>(
         [&](dynamics::ShapeNode* shapeNode) {
           auto shape = shapeNode->getShape();
-          if (auto mesh = shape->as<dynamics::MeshShape>())
-          {
+          if (auto mesh = shape->as<dynamics::MeshShape>()) {
             EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
           }
         });

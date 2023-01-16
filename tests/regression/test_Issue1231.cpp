@@ -48,8 +48,7 @@ TEST(Issue1231, NoContacts)
   dart::simulation::WorldPtr world = dart::simulation::World::create();
 
   double x = -0.25;
-  for (const auto& name : {"1", "2"})
-  {
+  for (const auto& name : {"1", "2"}) {
     const auto skeleton = dart::dynamics::Skeleton::create(name);
     skeleton->setMobile(false);
     auto pair

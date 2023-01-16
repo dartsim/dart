@@ -63,8 +63,7 @@ Problem::Problem(std::size_t _dim) : mDimension(0), mOptimumValue(0.0)
 //==============================================================================
 void Problem::setDimension(std::size_t _dim)
 {
-  if (_dim != mDimension)
-  {
+  if (_dim != mDimension) {
     mDimension = _dim;
 
     mInitialGuess = Eigen::VectorXd::Zero(mDimension);
@@ -91,8 +90,7 @@ void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
       static_cast<std::size_t>(_initGuess.size()) == mDimension
       && "Invalid size.");
 
-  if (_initGuess.size() != static_cast<int>(mDimension))
-  {
+  if (_initGuess.size() != static_cast<int>(mDimension)) {
     dterr << "[Problem::setInitialGuess] Attempting to set the initial guess "
           << "of a Problem of dimension [" << mDimension << "] to a vector of "
           << "dimension [" << _initGuess.size() << "]. This initial guess "
@@ -112,12 +110,9 @@ const Eigen::VectorXd& Problem::getInitialGuess() const
 //==============================================================================
 void Problem::addSeed(const Eigen::VectorXd& _seed)
 {
-  if (_seed.size() == static_cast<int>(mDimension))
-  {
+  if (_seed.size() == static_cast<int>(mDimension)) {
     mSeeds.push_back(_seed);
-  }
-  else
-  {
+  } else {
     dtwarn << "[Problem::addSeed] Attempting to add a seed of dimension ["
            << _seed.size() << "] a Problem of dimension [" << mDimension
            << "]. The seed will not be added.\n";

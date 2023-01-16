@@ -85,8 +85,7 @@ void OdeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 void OdeCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
-  for (auto collObj : collObjects)
-  {
+  for (auto collObj : collObjects) {
     auto casted = static_cast<OdeCollisionObject*>(collObj);
     auto geomId = casted->getOdeGeomId();
     dSpaceAdd(mSpaceId, geomId);

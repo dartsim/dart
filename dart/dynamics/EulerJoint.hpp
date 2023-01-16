@@ -106,8 +106,7 @@ public:
   static Eigen::Vector3d convertToPositions(
       const RotationType& _rotation, AxisOrder _ordering)
   {
-    switch (_ordering)
-    {
+    switch (_ordering) {
       case AxisOrder::XYZ:
         return math::matrixToEulerXYZ(_rotation);
       case AxisOrder::ZYX:

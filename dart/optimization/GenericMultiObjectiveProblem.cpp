@@ -225,8 +225,7 @@ static Eigen::VectorXd computeFunctions(
   Eigen::VectorXd val(dimension);
 
   std::size_t index = 0u;
-  for (const FunctionPtr& function : functions)
-  {
+  for (const FunctionPtr& function : functions) {
     const std::size_t size = 1u; // TODO(JS): Update this once Function can
                                  // return vector
     // objectives.segment(index, size) = objective->evaluate(x);

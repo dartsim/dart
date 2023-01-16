@@ -54,8 +54,7 @@ void MyWindow::timeStepping()
 
   // for perturbation test
   mImpulseDuration--;
-  if (mImpulseDuration <= 0)
-  {
+  if (mImpulseDuration <= 0) {
     mImpulseDuration = 0;
     mForce.setZero();
   }
@@ -67,8 +66,7 @@ void MyWindow::drawSkeletons() const
     drawSkeleton(mWorld->getSkeleton(i).get());
 
   // draw arrow
-  if (mImpulseDuration > 0)
-  {
+  if (mImpulseDuration > 0) {
     Eigen::Vector3d poa
         = mWorld->getSkeleton(1)->getBodyNode("h_spine")->getTransform()
           * Eigen::Vector3d(0.0, 0.0, 0.0);
@@ -80,8 +78,7 @@ void MyWindow::drawSkeletons() const
 
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
-  switch (key)
-  {
+  switch (key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
@@ -93,8 +90,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mSimulating = false;
       break;
     case '[': // step backward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame--;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
@@ -102,8 +98,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       }
       break;
     case ']': // step forwardward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame++;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
@@ -136,14 +131,11 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
     case 'h':
       mHarnessOn = !mHarnessOn;
-      if (mHarnessOn)
-      {
+      if (mHarnessOn) {
         BodyNode* bd = mWorld->getSkeleton(1)->getBodyNode("h_pelvis");
         mWeldJoint = std::make_shared<WeldJointConstraint>(bd);
         mWorld->getConstraintSolver()->addConstraint(mWeldJoint);
-      }
-      else
-      {
+      } else {
         mWorld->getConstraintSolver()->removeConstraint(mWeldJoint);
       }
       break;

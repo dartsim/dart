@@ -45,8 +45,7 @@ using namespace dynamics;
 void testBasicInterface(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {
-  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
-  {
+  if (cd->getType() != collision::FCLCollisionDetector::getStaticType()) {
     dtwarn << "Aborting test: distance check is not supported by "
            << cd->getType() << ".\n";
     return;
@@ -148,8 +147,7 @@ TEST(Distance, testBasicInterface)
 void testOptions(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {
-  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
-  {
+  if (cd->getType() != collision::FCLCollisionDetector::getStaticType()) {
     dtwarn << "Aborting test: distance check is not supported by "
            << cd->getType() << ".\n";
     return;
@@ -252,8 +250,7 @@ TEST(Distance, Options)
 void testSphereSphere(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {
-  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
-  {
+  if (cd->getType() != collision::FCLCollisionDetector::getStaticType()) {
     dtwarn << "Aborting test: distance check is not supported by "
            << cd->getType() << ".\n";
     return;

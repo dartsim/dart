@@ -44,8 +44,7 @@ void print_duration_if_non_zero(
     const duration_t& duration,
     const std::string& unit_postfix)
 {
-  if (duration == duration_t::zero())
-  {
+  if (duration == duration_t::zero()) {
     return;
   }
 
@@ -85,8 +84,7 @@ bool Stopwatch<UnitType, ClockType>::isStarted() const
 template <typename UnitType, typename ClockType>
 void Stopwatch<UnitType, ClockType>::start()
 {
-  if (!mPaused)
-  {
+  if (!mPaused) {
     return;
   }
 
@@ -98,8 +96,7 @@ void Stopwatch<UnitType, ClockType>::start()
 template <typename UnitType, typename ClockType>
 void Stopwatch<UnitType, ClockType>::stop()
 {
-  if (mPaused)
-  {
+  if (mPaused) {
     return;
   }
 
@@ -119,20 +116,13 @@ void Stopwatch<UnitType, ClockType>::reset()
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedS() const
 {
-  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>)
-  {
+  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
     return duration().count() * 1e-9;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
     return duration().count() * 1e-6;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
     return duration().count() * 1e-3;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
     return duration().count();
   }
 }
@@ -141,20 +131,13 @@ double Stopwatch<UnitType, ClockType>::elapsedS() const
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedMS() const
 {
-  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>)
-  {
+  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
     return duration().count() * 1e-6;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
     return duration().count() * 1e-3;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
     return duration().count();
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
     return duration().count() * 1e+3;
     ;
   }
@@ -164,20 +147,13 @@ double Stopwatch<UnitType, ClockType>::elapsedMS() const
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedUS() const
 {
-  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>)
-  {
+  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
     return duration().count() * 1e-3;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
     return duration().count();
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
     return duration().count() * 1e+3;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
     return duration().count() * 1e+6;
     ;
   }
@@ -187,20 +163,13 @@ double Stopwatch<UnitType, ClockType>::elapsedUS() const
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedNS() const
 {
-  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>)
-  {
+  if constexpr (std::is_same_v<UnitType, std::chrono::nanoseconds>) {
     return duration().count();
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::microseconds>) {
     return duration().count() * 1e+3;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::milliseconds>) {
     return duration().count() * 1e+6;
-  }
-  else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>)
-  {
+  } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
     return duration().count() * 1e+9;
   }
 }
@@ -209,8 +178,7 @@ double Stopwatch<UnitType, ClockType>::elapsedNS() const
 template <typename UnitType, typename ClockType>
 UnitType Stopwatch<UnitType, ClockType>::duration() const
 {
-  if (mPaused)
-  {
+  if (mPaused) {
     return mElapsed;
   }
 
@@ -237,39 +205,29 @@ void Stopwatch<UnitType, ClockType>::print(std::ostream& os) const
   print_duration_if_non_zero(os, s, "s ");
   t -= s;
 
-  if constexpr (!std::is_same_v<UnitType, std::chrono::seconds>)
-  {
+  if constexpr (!std::is_same_v<UnitType, std::chrono::seconds>) {
     const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t);
     print_duration_if_non_zero(os, ms, "ms ");
     t -= ms;
 
-    if constexpr (!std::is_same_v<UnitType, std::chrono::milliseconds>)
-    {
+    if constexpr (!std::is_same_v<UnitType, std::chrono::milliseconds>) {
       const auto us = std::chrono::duration_cast<std::chrono::microseconds>(t);
       print_duration_if_non_zero(os, us, "us ");
       t -= us;
 
-      if constexpr (!std::is_same_v<UnitType, std::chrono::microseconds>)
-      {
+      if constexpr (!std::is_same_v<UnitType, std::chrono::microseconds>) {
         const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t);
         print_duration_if_non_zero(os, ns, "ns ");
-        if (us == std::chrono::nanoseconds::zero())
-        {
+        if (us == std::chrono::nanoseconds::zero()) {
           os << "0 ns\n";
         }
-      }
-      else if (us == std::chrono::microseconds::zero())
-      {
+      } else if (us == std::chrono::microseconds::zero()) {
         os << "0 us\n";
       }
-    }
-    else if (ms == std::chrono::milliseconds::zero())
-    {
+    } else if (ms == std::chrono::milliseconds::zero()) {
       os << "0 ms\n";
     }
-  }
-  else if (s == std::chrono::seconds::zero())
-  {
+  } else if (s == std::chrono::seconds::zero()) {
     os << "0 s\n";
   }
 }

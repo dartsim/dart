@@ -63,24 +63,20 @@ void TinkertoyWidget::render()
           "Tinkertoy Control",
           nullptr,
           ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar
-              | ImGuiWindowFlags_HorizontalScrollbar))
-  {
+              | ImGuiWindowFlags_HorizontalScrollbar)) {
     // Early out if the window is collapsed, as an optimization.
     ImGui::End();
     return;
   }
 
   // Menu
-  if (ImGui::BeginMenuBar())
-  {
-    if (ImGui::BeginMenu("Menu"))
-    {
+  if (ImGui::BeginMenuBar()) {
+    if (ImGui::BeginMenu("Menu")) {
       if (ImGui::MenuItem("Exit"))
         mViewer->setDone(true);
       ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Help"))
-    {
+    if (ImGui::BeginMenu("Help")) {
       if (ImGui::MenuItem("About DART"))
         mViewer->showAbout();
       ImGui::EndMenu();
@@ -91,8 +87,7 @@ void TinkertoyWidget::render()
   ImGui::Text("<TODO: Short description about this example>");
   ImGui::Spacing();
 
-  if (ImGui::CollapsingHeader("Help"))
-  {
+  if (ImGui::CollapsingHeader("Help")) {
     ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
     ImGui::Text("User Guid:\n");
     ImGui::Text("%s", mViewer->getInstructions().c_str());
@@ -135,11 +130,9 @@ void TinkertoyWidget::render()
     ImGui::PopTextWrapPos();
   }
 
-  if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
-  {
+  if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
     int e = mViewer->isSimulating() ? 0 : 1;
-    if (mViewer->isAllowingSimulation())
-    {
+    if (mViewer->isAllowingSimulation()) {
       if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
         mViewer->simulate(true);
       ImGui::SameLine();
@@ -148,8 +141,8 @@ void TinkertoyWidget::render()
     }
   }
 
-  if (ImGui::CollapsingHeader("World Options", ImGuiTreeNodeFlags_DefaultOpen))
-  {
+  if (ImGui::CollapsingHeader(
+          "World Options", ImGuiTreeNodeFlags_DefaultOpen)) {
     // Gravity
     ImGui::Checkbox("Gravity On/Off", &mGuiGravity);
     setGravity(mGuiGravity);
@@ -163,8 +156,7 @@ void TinkertoyWidget::render()
   }
 
   if (ImGui::CollapsingHeader(
-          "Tinkertoy Options", ImGuiTreeNodeFlags_DefaultOpen))
-  {
+          "Tinkertoy Options", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::SliderFloat(
         "Force Coeff",
         &mNode->mForceCoeff,

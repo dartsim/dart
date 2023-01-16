@@ -235,8 +235,7 @@ struct signal_maximum
 
     T max_value = *first++;
 
-    while (first != last)
-    {
+    while (first != last) {
       if (max_value < *first)
         max_value = *first;
       ++first;
@@ -263,8 +262,7 @@ struct signal_sum
     T sum = *first;
     first++;
 
-    while (first != last)
-    {
+    while (first != last) {
       sum += *first;
       ++first;
     }

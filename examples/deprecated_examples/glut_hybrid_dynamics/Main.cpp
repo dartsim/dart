@@ -64,8 +64,7 @@ int main(int argc, char* argv[])
 
   dart::dynamics::Joint* joint0 = skel->getJoint(0);
   joint0->setActuatorType(dart::dynamics::Joint::PASSIVE);
-  for (std::size_t i = 1; i < skel->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 1; i < skel->getNumBodyNodes(); ++i) {
     dart::dynamics::Joint* joint = skel->getJoint(i);
     joint->setActuatorType(dart::dynamics::Joint::VELOCITY);
   }

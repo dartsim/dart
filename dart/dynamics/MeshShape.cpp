@@ -137,8 +137,7 @@ void MeshShape::setMesh(
 {
   mMesh = mesh;
 
-  if (!mMesh)
-  {
+  if (!mMesh) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
@@ -249,8 +248,7 @@ ShapePtr MeshShape::clone() const
 //==============================================================================
 void MeshShape::updateBoundingBox() const
 {
-  if (!mMesh)
-  {
+  if (!mMesh) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -264,10 +262,8 @@ void MeshShape::updateBoundingBox() const
   double min_Y = math::inf<double>();
   double min_Z = math::inf<double>();
 
-  for (unsigned int i = 0; i < mMesh->mNumMeshes; i++)
-  {
-    for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++)
-    {
+  for (unsigned int i = 0; i < mMesh->mNumMeshes; i++) {
+    for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++) {
       if (mMesh->mMeshes[i]->mVertices[j].x > max_X)
         max_X = mMesh->mMeshes[i]->mVertices[j].x;
       if (mMesh->mMeshes[i]->mVertices[j].x < min_X)
@@ -318,8 +314,7 @@ aiScene* MeshShape::cloneMesh() const
 
   // Copy materials
   new_scene->mMaterials = new aiMaterial*[new_scene->mNumMaterials];
-  for (unsigned int i = 0; i < new_scene->mNumMaterials; i++)
-  {
+  for (unsigned int i = 0; i < new_scene->mNumMaterials; i++) {
     new_scene->mMaterials[i] = new aiMaterial();
     new_scene->mMaterials[i]->mNumAllocated
         = mMesh->mMaterials[i]->mNumAllocated;
@@ -329,8 +324,8 @@ aiScene* MeshShape::cloneMesh() const
     new_scene->mMaterials[i]->mProperties
         = new aiMaterialProperty*[new_scene->mMaterials[i]->mNumProperties];
 
-    for (unsigned int j = 0; j < new_scene->mMaterials[i]->mNumProperties; j++)
-    {
+    for (unsigned int j = 0; j < new_scene->mMaterials[i]->mNumProperties;
+         j++) {
       new_scene->mMaterials[i]->mProperties[j] = new aiMaterialProperty();
       auto& prop = new_scene->mMaterials[i]->mProperties[j];
       auto& other = mMesh->mMaterials[i]->mProperties[j];
@@ -347,8 +342,7 @@ aiScene* MeshShape::cloneMesh() const
 
   // Copy textures
   new_scene->mTextures = new aiTexture*[new_scene->mNumTextures];
-  for (unsigned int i = 0; i < new_scene->mNumTextures; i++)
-  {
+  for (unsigned int i = 0; i < new_scene->mNumTextures; i++) {
     new_scene->mTextures[i] = new aiTexture();
     strcpy(
         new_scene->mTextures[i]->achFormatHint,
@@ -368,8 +362,7 @@ aiScene* MeshShape::cloneMesh() const
 
   // Copy meshes
   new_scene->mMeshes = new aiMesh*[new_scene->mNumMeshes];
-  for (unsigned int i = 0; i < new_scene->mNumMeshes; i++)
-  {
+  for (unsigned int i = 0; i < new_scene->mNumMeshes; i++) {
     new_scene->mMeshes[i] = new aiMesh();
     auto& mesh = new_scene->mMeshes[i];
     auto& other = mMesh->mMeshes[i];
@@ -389,8 +382,7 @@ aiScene* MeshShape::cloneMesh() const
     mesh->mNumVertices = other->mNumVertices;
     mesh->mPrimitiveTypes = other->mPrimitiveTypes;
 
-    if (mesh->mNumVertices > 0)
-    {
+    if (mesh->mNumVertices > 0) {
       // Copy verticies
       mesh->mVertices = new aiVector3D[mesh->mNumVertices];
       memcpy(
@@ -407,8 +399,7 @@ aiScene* MeshShape::cloneMesh() const
 
       // Copy faces
       mesh->mFaces = new aiFace[mesh->mNumFaces];
-      for (unsigned int a = 0; a < mesh->mNumFaces; a++)
-      {
+      for (unsigned int a = 0; a < mesh->mNumFaces; a++) {
         mesh->mFaces[a].mNumIndices = other->mFaces[a].mNumIndices;
         mesh->mFaces[a].mIndices
             = new unsigned int[mesh->mFaces[a].mNumIndices];
@@ -419,8 +410,7 @@ aiScene* MeshShape::cloneMesh() const
       }
 
       // Copy tangents
-      if (other->mTangents)
-      {
+      if (other->mTangents) {
         mesh->mTangents = new aiVector3D[mesh->mNumVertices];
         memcpy(
             mesh->mTangents,
@@ -428,8 +418,7 @@ aiScene* MeshShape::cloneMesh() const
             mesh->mNumVertices * sizeof(aiVector3D));
       }
       // Copy bi-tangents
-      if (other->mBitangents)
-      {
+      if (other->mBitangents) {
         mesh->mBitangents = new aiVector3D[mesh->mNumVertices];
         memcpy(
             mesh->mBitangents,
@@ -438,10 +427,8 @@ aiScene* MeshShape::cloneMesh() const
       }
 
       // Copy color sets
-      for (unsigned int a = 0; a < AI_MAX_NUMBER_OF_COLOR_SETS; a++)
-      {
-        if (other->mColors[a])
-        {
+      for (unsigned int a = 0; a < AI_MAX_NUMBER_OF_COLOR_SETS; a++) {
+        if (other->mColors[a]) {
           mesh->mColors[a] = new aiColor4D[mesh->mNumVertices];
           memcpy(
               mesh->mColors[a],
@@ -451,10 +438,8 @@ aiScene* MeshShape::cloneMesh() const
       }
 
       // Copy texture coordinates
-      for (unsigned int a = 0; a < AI_MAX_NUMBER_OF_TEXTURECOORDS; a++)
-      {
-        if (other->mTextureCoords[a])
-        {
+      for (unsigned int a = 0; a < AI_MAX_NUMBER_OF_TEXTURECOORDS; a++) {
+        if (other->mTextureCoords[a]) {
           mesh->mTextureCoords[a] = new aiVector3D[mesh->mNumVertices];
           memcpy(
               mesh->mTextureCoords[a],
@@ -481,15 +466,13 @@ aiScene* MeshShape::cloneMesh() const
               dest->mNumMeshes * sizeof(unsigned int));
 
           dest->mChildren = new aiNode*[dest->mNumChildren];
-          for (unsigned int i = 0; i < dest->mNumChildren; i++)
-          {
+          for (unsigned int i = 0; i < dest->mNumChildren; i++) {
             dest->mChildren[i] = new aiNode();
             aiNodeCopyRecursive(dest->mChildren[i], src->mChildren[i], dest);
           }
         };
 
-  if (mMesh->mRootNode)
-  {
+  if (mMesh->mRootNode) {
     new_scene->mRootNode = new aiNode();
     aiNodeCopyRecursive(new_scene->mRootNode, mMesh->mRootNode, nullptr);
   }
@@ -525,8 +508,7 @@ const aiScene* MeshShape::loadMesh(
 
   // If succeeded, store the importer in the scene to keep it alive. This is
   // necessary because the importer owns the memory that it allocates.
-  if (!scene)
-  {
+  if (!scene) {
     dtwarn << "[MeshShape::loadMesh] Failed loading mesh '" << _uri << "'.\n";
     aiReleasePropertyStore(propertyStore);
     return nullptr;

@@ -49,20 +49,15 @@ static bool checkIndexArrayValidity(
     const std::string& _fname)
 {
   std::size_t dofs = skel->getNumDofs();
-  for (std::size_t i = 0; i < _indices.size(); ++i)
-  {
-    if (_indices[i] >= dofs)
-    {
-      if (dofs > 0)
-      {
+  for (std::size_t i = 0; i < _indices.size(); ++i) {
+    if (_indices[i] >= dofs) {
+      if (dofs > 0) {
         dterr << "[Skeleton::" << _fname << "] Invalid entry (" << i << ") in "
               << "_indices array: " << _indices[i]
               << ". Value must be less than " << dofs
               << " for the Skeleton named [" << skel->getName() << "] (" << skel
               << ")\n";
-      }
-      else
-      {
+      } else {
         dterr << "[Skeleton::" << _fname << "] The Skeleton named ["
               << skel->getName() << "] (" << skel << ") is empty, but _indices "
               << "has entries in it. Nothing will be set!\n";
@@ -82,8 +77,7 @@ static bool checkIndexArrayAgreement(
     const std::string& _fname,
     const std::string& _vname)
 {
-  if (static_cast<int>(_indices.size()) != _values.size())
-  {
+  if (static_cast<int>(_indices.size()) != _values.size()) {
     dterr << "[Skeleton::" << _fname << "] Mismatch between _indices size ("
           << _indices.size() << ") and " << _vname << " size ("
           << _values.size() << ") for Skeleton named [" << skel->getName()
@@ -107,15 +101,11 @@ static void setValuesFromVector(
   if (!checkIndexArrayAgreement(skel, _indices, _values, _fname, _vname))
     return;
 
-  for (std::size_t i = 0; i < _indices.size(); ++i)
-  {
+  for (std::size_t i = 0; i < _indices.size(); ++i) {
     DegreeOfFreedom* dof = skel->getDof(_indices[i]);
-    if (dof)
-    {
+    if (dof) {
       (dof->*setValue)(_values[i]);
-    }
-    else
-    {
+    } else {
       dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #"
             << _indices[i] << " (entry #" << i << " in " << _vname << ") has "
             << "expired! ReferentialSkeletons should call update() after "
@@ -135,8 +125,7 @@ static void setAllValuesFromVector(
     const std::string& _vname)
 {
   std::size_t nDofs = skel->getNumDofs();
-  if (_values.size() != static_cast<int>(skel->getNumDofs()))
-  {
+  if (_values.size() != static_cast<int>(skel->getNumDofs())) {
     dterr << "[MetaSkeleton::" << _fname << "] Invalid number of entries ("
           << _values.size() << ") in " << _vname << " for MetaSkeleton named ["
           << skel->getName() << "] (" << skel << "). Must be equal to ("
@@ -145,15 +134,11 @@ static void setAllValuesFromVector(
     return;
   }
 
-  for (std::size_t i = 0; i < nDofs; ++i)
-  {
+  for (std::size_t i = 0; i < nDofs; ++i) {
     DegreeOfFreedom* dof = skel->getDof(i);
-    if (dof)
-    {
+    if (dof) {
       (dof->*setValue)(_values[i]);
-    }
-    else
-    {
+    } else {
       dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << i
             << " in the MetaSkeleton named [" << skel->getName() << "] ("
             << skel << ") has expired! ReferentialSkeletons should call "
@@ -174,27 +159,20 @@ static Eigen::VectorXd getValuesFromVector(
 {
   Eigen::VectorXd values(_indices.size());
 
-  for (std::size_t i = 0; i < _indices.size(); ++i)
-  {
+  for (std::size_t i = 0; i < _indices.size(); ++i) {
     const std::size_t index = _indices[i];
-    if (const DegreeOfFreedom* dof = skel->getDof(index))
-    {
+    if (const DegreeOfFreedom* dof = skel->getDof(index)) {
       values[i] = (dof->*getValue)();
-    }
-    else
-    {
+    } else {
       values[i] = 0.0;
-      if (index < skel->getNumDofs())
-      {
+      if (index < skel->getNumDofs()) {
         dterr << "[MetaSkeleton::" << _fname << "] Requesting value for "
               << "DegreeOfFreedom #" << index << " ("
               << "entry #" << i << " in _indices), but this index has expired! "
               << "ReferentialSkeletons should call update() after structural "
               << "changes have been made to the BodyNodes they refer to. The "
               << "return value for this entry will be zero.\n";
-      }
-      else
-      {
+      } else {
         dterr << "[MetaSkeleton::" << _fname << "] Requesting out of bounds "
               << "DegreeOfFreedom #" << index << " (entry #" << i
               << " in _indices) for MetaSkeleton named [" << skel->getName()
@@ -216,15 +194,11 @@ static Eigen::VectorXd getValuesFromAllDofs(
   std::size_t nDofs = skel->getNumDofs();
   Eigen::VectorXd values(nDofs);
 
-  for (std::size_t i = 0; i < nDofs; ++i)
-  {
+  for (std::size_t i = 0; i < nDofs; ++i) {
     const DegreeOfFreedom* dof = skel->getDof(i);
-    if (dof)
-    {
+    if (dof) {
       values[i] = (skel->getDof(i)->*getValue)();
-    }
-    else
-    {
+    } else {
       dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << i
             << " has expired! ReferentialSkeletons should call update() after "
             << "structural changes have been made to the BodyNodes they refer "
@@ -242,8 +216,7 @@ template <void (DegreeOfFreedom::*apply)()>
 static void applyToAllDofs(MetaSkeleton* skel)
 {
   std::size_t nDofs = skel->getNumDofs();
-  for (std::size_t i = 0; i < nDofs; ++i)
-  {
+  for (std::size_t i = 0; i < nDofs; ++i) {
     DegreeOfFreedom* dof = skel->getDof(i);
     if (dof)
       (dof->*apply)();
@@ -258,8 +231,7 @@ static void setValueFromIndex(
     double _value,
     const std::string& _fname)
 {
-  if (_index >= skel->getNumDofs())
-  {
+  if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
       dterr << "[MetaSkeleton::" << _fname << "] Out of bounds index ("
             << _index << ") for MetaSkeleton named [" << skel->getName()
@@ -274,12 +246,9 @@ static void setValueFromIndex(
   }
 
   DegreeOfFreedom* dof = skel->getDof(_index);
-  if (dof)
-  {
+  if (dof) {
     (dof->*setValue)(_value);
-  }
-  else
-  {
+  } else {
     dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << _index
           << " in the MetaSkeleton named [" << skel->getName() << "] (" << skel
           << ") has expired! ReferentialSkeletons should call update() after "
@@ -294,8 +263,7 @@ template <double (DegreeOfFreedom::*getValue)() const>
 static double getValueFromIndex(
     const MetaSkeleton* skel, std::size_t _index, const std::string& _fname)
 {
-  if (_index >= skel->getNumDofs())
-  {
+  if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
       dterr << "[MetaSkeleton::" << _fname << "] Out of bounds index ("
             << _index << ") for MetaSkeleton named [" << skel->getName()
@@ -312,8 +280,7 @@ static double getValueFromIndex(
   }
 
   const DegreeOfFreedom* dof = skel->getDof(_index);
-  if (dof)
-  {
+  if (dof) {
     return (skel->getDof(_index)->*getValue)();
   }
 

@@ -123,8 +123,7 @@ void SoftMeshShape::_buildMesh()
   mAssimpMesh->mVertices = new aiVector3D[nVertices];
   mAssimpMesh->mNormals = new aiVector3D[nVertices];
   aiVector3D itAIVector3d;
-  for (int i = 0; i < nVertices; ++i)
-  {
+  for (int i = 0; i < nVertices; ++i) {
     PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
     const Eigen::Vector3d& vertex = itPointMass->getRestingPosition();
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
@@ -135,8 +134,7 @@ void SoftMeshShape::_buildMesh()
   // Set faces
   mAssimpMesh->mNumFaces = nFaces;
   mAssimpMesh->mFaces = new aiFace[nFaces];
-  for (int i = 0; i < nFaces; ++i)
-  {
+  for (int i = 0; i < nFaces; ++i) {
     Eigen::Vector3i itFace = mSoftBodyNode->getFace(i);
     aiFace* itAIFace = &mAssimpMesh->mFaces[i];
     itAIFace->mNumIndices = 3;
@@ -152,8 +150,7 @@ void SoftMeshShape::update()
   std::size_t nVertices = mSoftBodyNode->getNumPointMasses();
 
   aiVector3D itAIVector3d;
-  for (std::size_t i = 0; i < nVertices; ++i)
-  {
+  for (std::size_t i = 0; i < nVertices; ++i) {
     PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
     const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);

@@ -53,8 +53,7 @@ Errors appendWeldAttributes(
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "weld")
-  {
+  if (std::string(element->Name()) != "weld") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <weld> from the provided element");
@@ -62,24 +61,20 @@ Errors appendWeldAttributes(
   }
 
   // (optional) name
-  if (hasAttribute(element, "name"))
-  {
+  if (hasAttribute(element, "name")) {
     const std::string name = getAttributeString(element, "name");
     attributes.mName = name;
   }
 
   // active
-  if (hasAttribute(element, "active"))
-  {
+  if (hasAttribute(element, "active")) {
     attributes.mActive = getAttributeBool(element, "active");
   }
 
   // solimp
-  if (hasAttribute(element, "solimp"))
-  {
+  if (hasAttribute(element, "solimp")) {
     const Eigen::VectorXd solimp = getAttributeVectorXd(element, "solimp");
-    if (solimp.size() == 0 || solimp.size() > 5)
-    {
+    if (solimp.size() == 0 || solimp.size() > 5) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid dimension for 'solimp' attribute");
@@ -89,32 +84,26 @@ Errors appendWeldAttributes(
   }
 
   // solref
-  if (hasAttribute(element, "solref"))
-  {
+  if (hasAttribute(element, "solref")) {
     attributes.mSolRef = getAttributeVector2d(element, "solref");
   }
 
   // body1
-  if (hasAttribute(element, "body1"))
-  {
+  if (hasAttribute(element, "body1")) {
     attributes.mBody1 = getAttributeString(element, "body1");
-  }
-  else
-  {
+  } else {
     errors.push_back(Error(
         ErrorCode::ATTRIBUTE_MISSING,
         "Failed to find required attribute 'body1' in <weld>."));
   }
 
   // body2
-  if (hasAttribute(element, "body2"))
-  {
+  if (hasAttribute(element, "body2")) {
     attributes.mBody2 = getAttributeString(element, "body2");
   }
 
   // relpose
-  if (hasAttribute(element, "relpose"))
-  {
+  if (hasAttribute(element, "relpose")) {
     attributes.mRelPose = getAttributeVectorNd<7>(element, "relpose");
   }
 

@@ -84,48 +84,31 @@ public:
   virtual bool handle(
       const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
   {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == 'q')
-      {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == 'q') {
         std::cout << "Lowercase q pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == 'Q')
-      {
+      } else if (ea.getKey() == 'Q') {
         std::cout << "Capital Q pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
         std::cout << "Left arrow key pressed" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
         std::cout << "Right arrow key pressed" << std::endl;
         return true;
       }
-    }
-    else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP)
-    {
-      if (ea.getKey() == 'q')
-      {
+    } else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP) {
+      if (ea.getKey() == 'q') {
         std::cout << "Lowercase q released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == 'Q')
-      {
+      } else if (ea.getKey() == 'Q') {
         std::cout << "Capital Q released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
         std::cout << "Left arrow key released" << std::endl;
         return true;
-      }
-      else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-      {
+      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
         std::cout << "Right arrow key released" << std::endl;
         return true;
       }
@@ -165,24 +148,20 @@ public:
             "Tinkertoy Control",
             nullptr,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar
-                | ImGuiWindowFlags_HorizontalScrollbar))
-    {
+                | ImGuiWindowFlags_HorizontalScrollbar)) {
       // Early out if the window is collapsed, as an optimization.
       ImGui::End();
       return;
     }
 
     // Menu
-    if (ImGui::BeginMenuBar())
-    {
-      if (ImGui::BeginMenu("Menu"))
-      {
+    if (ImGui::BeginMenuBar()) {
+      if (ImGui::BeginMenu("Menu")) {
         if (ImGui::MenuItem("Exit"))
           mViewer->setDone(true);
         ImGui::EndMenu();
       }
-      if (ImGui::BeginMenu("Help"))
-      {
+      if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About DART"))
           mViewer->showAbout();
         ImGui::EndMenu();
@@ -193,11 +172,9 @@ public:
     ImGui::Text("An empty OSG example with ImGui");
     ImGui::Spacing();
 
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation())
-      {
+      if (mViewer->isAllowingSimulation()) {
         if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
           mViewer->simulate(true);
         ImGui::SameLine();
@@ -209,8 +186,7 @@ public:
     }
 
     if (ImGui::CollapsingHeader(
-            "World Options", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+            "World Options", ImGuiTreeNodeFlags_DefaultOpen)) {
       // Gravity
       ImGui::Checkbox("Gravity On/Off", &mGuiGravity);
       setGravity(mGuiGravity);
@@ -223,8 +199,7 @@ public:
       mViewer->switchHeadlights(mGuiHeadlights);
     }
 
-    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
       osg::Vec3d eye;
       osg::Vec3d center;
       osg::Vec3d up;
@@ -236,8 +211,7 @@ public:
       ImGui::Text("Up    : (%.2f, %.2f, %.2f)", up.x(), up.y(), up.z());
     }
 
-    if (ImGui::CollapsingHeader("Help"))
-    {
+    if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
       ImGui::Text("User Guide:\n");
       ImGui::Text("%s", mViewer->getInstructions().c_str());

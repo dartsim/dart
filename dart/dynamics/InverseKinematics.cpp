@@ -58,8 +58,7 @@ InverseKinematics::~InverseKinematics()
 //==============================================================================
 bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
 {
-  if (nullptr == mSolver)
-  {
+  if (nullptr == mSolver) {
     dtwarn << "[InverseKinematics::findSolution] The Solver for an "
            << "InverseKinematics module associated with [" << mNode->getName()
            << "] is a nullptr. You must reset the module's Solver before you "
@@ -67,8 +66,7 @@ bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
     return false;
   }
 
-  if (nullptr == mProblem)
-  {
+  if (nullptr == mProblem) {
     dtwarn << "[InverseKinematics::findSolution] The Problem for an "
            << "InverseKinematics module associated with [" << mNode->getName()
            << "] is a nullptr. You must reset the module's Problem before you "
@@ -225,8 +223,7 @@ Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
 const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     const Eigen::VectorXd& _q)
 {
-  if (_q.size() != static_cast<int>(mIK->getDofs().size()))
-  {
+  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
     dterr << "[InverseKinematics::ErrorMethod::evalError] Mismatch between "
           << "joint positions size [" << _q.size() << "] and the available "
           << "degrees of freedom [" << mIK->getDofs().size() << "]."
@@ -237,19 +234,15 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     return mLastError;
   }
 
-  if (_q.size() == 0)
-  {
+  if (_q.size() == 0) {
     mLastError.setZero();
     return mLastError;
   }
 
-  if (_q.size() == mLastPositions.size())
-  {
+  if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i)
-    {
-      if (_q[i] != mLastPositions[i])
-      {
+    for (int i = 0; i < mLastPositions.size(); ++i) {
+      if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
       }
@@ -456,8 +449,7 @@ Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
   tf.rotate(_currentTf.linear());
-  for (std::size_t i = 0; i < 3; ++i)
-  {
+  for (std::size_t i = 0; i < 3; ++i) {
     const double angle = _error[i];
     Eigen::Vector3d axis(Eigen::Vector3d::Zero());
     axis[i] = 1.0;
@@ -518,37 +510,26 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   const Eigen::Vector6d& min = mErrorP.mBounds.first;
   const Eigen::Vector6d& max = mErrorP.mBounds.second;
   double tolerance = mIK->getSolver()->getTolerance();
-  for (int i = 0; i < 6; ++i)
-  {
-    if (displacement[i] < min[i])
-    {
-      if (mTaskSpaceP.mComputeErrorFromCenter)
-      {
+  for (int i = 0; i < 6; ++i) {
+    if (displacement[i] < min[i]) {
+      if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(max[i]))
           error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
         else
           error[i] = displacement[i] - (min[i] + tolerance);
-      }
-      else
-      {
+      } else {
         error[i] = displacement[i] - min[i];
       }
-    }
-    else if (max[i] < displacement[i])
-    {
-      if (mTaskSpaceP.mComputeErrorFromCenter)
-      {
+    } else if (max[i] < displacement[i]) {
+      if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(min[i]))
           error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
         else
           error[i] = displacement[i] - (max[i] - tolerance);
-      }
-      else
-      {
+      } else {
         error[i] = displacement[i] - max[i];
       }
-    }
-    else
+    } else
       error[i] = 0.0;
   }
 
@@ -557,8 +538,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   if (error.norm() > mErrorP.mErrorLengthClamp)
     error = error.normalized() * mErrorP.mErrorLengthClamp;
 
-  if (!referenceFrame->isWorld())
-  {
+  if (!referenceFrame->isWorld()) {
     // Transform the error term into the world frame if it's not already
     const Eigen::Isometry3d& R = referenceFrame->getWorldTransform();
     error.head<3>() = R.linear() * error.head<3>();
@@ -624,8 +604,7 @@ InverseKinematics::GradientMethod::GradientMethod(
 void InverseKinematics::GradientMethod::evalGradient(
     const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad)
 {
-  if (_q.size() != static_cast<int>(mIK->getDofs().size()))
-  {
+  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
     dterr << "[InverseKinematics::GradientMethod::evalGradient] Mismatch "
           << "between joint positions size [" << _q.size() << "] and the "
           << "available degrees of freedom [" << mIK->getDofs().size() << "]."
@@ -639,26 +618,21 @@ void InverseKinematics::GradientMethod::evalGradient(
     return;
   }
 
-  if (_q.size() == 0)
-  {
+  if (_q.size() == 0) {
     _grad.setZero();
     return;
   }
 
-  if (_q.size() == mLastPositions.size())
-  {
+  if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i)
-    {
-      if (_q[i] != mLastPositions[i])
-      {
+    for (int i = 0; i < mLastPositions.size(); ++i) {
+      if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
       }
     }
 
-    if (repeat)
-    {
+    if (repeat) {
       _grad = mLastGradient;
       return;
     }
@@ -681,8 +655,7 @@ const std::string& InverseKinematics::GradientMethod::getMethodName() const
 void InverseKinematics::GradientMethod::clampGradient(
     Eigen::VectorXd& _grad) const
 {
-  for (int i = 0; i < _grad.size(); ++i)
-  {
+  for (int i = 0; i < _grad.size(); ++i) {
     if (std::abs(_grad[i]) > mGradientP.mComponentWiseClamp)
       _grad[i] = _grad[i] > 0 ? mGradientP.mComponentWiseClamp
                               : -mGradientP.mComponentWiseClamp;
@@ -736,8 +709,7 @@ void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
     skel->getDof(dofs[i])->setVelocity(grad[i]);
   // Velocities of unused DOFs should already be set to zero.
 
-  for (std::size_t i = 0; i < dofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
     Joint* joint = skel->getDof(dofs[i])->getJoint();
     joint->integratePositions(1.0);
 
@@ -819,16 +791,13 @@ void InverseKinematics::JacobianDLS::computeGradient(
 
   const double& damping = mDLSProperties.mDamping;
   int rows = J.rows(), cols = J.cols();
-  if (rows <= cols)
-  {
+  if (rows <= cols) {
     _grad = J.transpose()
             * (pow(damping, 2) * Eigen::MatrixXd::Identity(rows, rows)
                + J * J.transpose())
                   .inverse()
             * _error;
-  }
-  else
-  {
+  } else {
     _grad = (pow(damping, 2) * Eigen::MatrixXd::Identity(cols, cols)
              + J.transpose() * J)
                 .inverse()
@@ -928,19 +897,16 @@ void InverseKinematics::Analytical::UniqueProperties::
     const std::vector<std::size_t>& dofs = ik->getAnalytical()->getDofs();
     double biggestJump = 0.0;
     bool isBetter = true;
-    for (std::size_t i = 0; i < dofs.size(); ++i)
-    {
+    for (std::size_t i = 0; i < dofs.size(); ++i) {
       double q = ik->getNode()->getSkeleton()->getPosition(dofs[i]);
       const double& testBetter = std::abs(q - better[i]);
-      if (testBetter > biggestJump)
-      {
+      if (testBetter > biggestJump) {
         biggestJump = testBetter;
         isBetter = false;
       }
 
       const double& testWorse = std::abs(q - worse[i]);
-      if (testWorse > biggestJump)
-      {
+      if (testWorse > biggestJump) {
         biggestJump = testWorse;
         isBetter = true;
       }
@@ -978,8 +944,7 @@ InverseKinematics::Analytical::Analytical(
   // During the cloning process, the GradientMethod gets created before the
   // ErrorMethod, so we need to check that an ErrorMethod exists before
   // attempting to use it.
-  if (InverseKinematics::ErrorMethod* error = mIK->mErrorMethod.get())
-  {
+  if (InverseKinematics::ErrorMethod* error = mIK->mErrorMethod.get()) {
     // We override the clamping and the weights of the error method, because
     // clamping and weighing are useful for iterative methods, but they are
     // harmful to analytical methods.
@@ -1017,8 +982,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
   mLimitViolationCache.clear();
   mLimitViolationCache.reserve(mSolutions.size());
 
-  for (std::size_t i = 0; i < mSolutions.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     const Solution& s = mSolutions[i];
     if (s.mValidity == VALID)
       mValidSolutionsCache.push_back(s);
@@ -1069,8 +1033,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
   const math::Jacobian& J = mIK->computeJacobian();
   const std::vector<int>& gradMap = mIK->getDofMap();
 
-  for (std::size_t i = 0; i < mExtraDofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
     if (gradIndex == -1)
@@ -1081,8 +1044,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
   convertJacobianMethodOutputToGradient(mExtraDofGradCache, mExtraDofs);
 
-  for (std::size_t i = 0; i < mExtraDofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
     if (gradIndex == -1)
@@ -1094,8 +1056,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
     double dq = weight * mExtraDofGradCache[i];
 
-    if (std::abs(dq) > mGradientP.mComponentWiseClamp)
-    {
+    if (std::abs(dq) > mGradientP.mComponentWiseClamp) {
       dq = dq < 0 ? -mGradientP.mComponentWiseClamp
                   : mGradientP.mComponentWiseClamp;
     }
@@ -1118,8 +1079,7 @@ void InverseKinematics::Analytical::computeGradient(
 
   if ((PRE_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
        || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
-      && mExtraDofs.size() > 0)
-  {
+      && mExtraDofs.size() > 0) {
     const double norm = _error.norm();
     const Eigen::Vector6d& error
         = norm > mAnalyticalP.mExtraErrorLengthClamp
@@ -1129,8 +1089,7 @@ void InverseKinematics::Analytical::computeGradient(
     addExtraDofGradient(_grad, error, PRE_ANALYTICAL);
 
     const std::vector<int>& gradMap = mIK->getDofMap();
-    for (std::size_t i = 0; i < mExtraDofs.size(); ++i)
-    {
+    for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
       const std::size_t depIndex = mExtraDofs[i];
       DegreeOfFreedom* dof = mIK->getNode()->getDependentDof(depIndex);
 
@@ -1153,8 +1112,7 @@ void InverseKinematics::Analytical::computeGradient(
   const std::vector<int>& analyticalToDependent = mDofMap;
   const std::vector<int>& dependentToGradient = mIK->getDofMap();
 
-  for (std::size_t i = 0; i < analyticalToDependent.size(); ++i)
-  {
+  for (std::size_t i = 0; i < analyticalToDependent.size(); ++i) {
     if (analyticalToDependent[i] == -1)
       continue;
 
@@ -1167,8 +1125,7 @@ void InverseKinematics::Analytical::computeGradient(
 
   if ((POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
        || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
-      && mExtraDofs.size() > 0)
-  {
+      && mExtraDofs.size() > 0) {
     setPositions(bestSolution);
 
     const Eigen::Isometry3d& postTf = mIK->getNode()->getWorldTransform();
@@ -1256,20 +1213,16 @@ void InverseKinematics::Analytical::constructDofMap()
   std::vector<bool> isExtraDof;
   isExtraDof.resize(nodeDofs.size(), true);
 
-  for (std::size_t i = 0; i < analyticalDofs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < analyticalDofs.size(); ++i) {
     mDofMap[i] = -1;
-    for (std::size_t j = 0; j < nodeDofs.size(); ++j)
-    {
-      if (analyticalDofs[i] == nodeDofs[j])
-      {
+    for (std::size_t j = 0; j < nodeDofs.size(); ++j) {
+      if (analyticalDofs[i] == nodeDofs[j]) {
         mDofMap[i] = j;
         isExtraDof[j] = false;
       }
     }
 
-    if (mDofMap[i] == -1)
-    {
+    if (mDofMap[i] == -1) {
       DegreeOfFreedom* dof
           = mIK->getNode()->getSkeleton()->getDof(analyticalDofs[i]);
       std::string name
@@ -1287,8 +1240,7 @@ void InverseKinematics::Analytical::constructDofMap()
   mExtraDofs.reserve(isExtraDof.size());
 
   const std::vector<int>& gradDofMap = mIK->getDofMap();
-  for (std::size_t i = 0; i < isExtraDof.size(); ++i)
-  {
+  for (std::size_t i = 0; i < isExtraDof.size(); ++i) {
     if (isExtraDof[i] && (gradDofMap[i] > -1))
       mExtraDofs.push_back(i);
   }
@@ -1298,17 +1250,14 @@ void InverseKinematics::Analytical::constructDofMap()
 void InverseKinematics::Analytical::checkSolutionJointLimits()
 {
   const std::vector<std::size_t>& dofs = getDofs();
-  for (std::size_t i = 0; i < mSolutions.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     Solution& s = mSolutions[i];
     const Eigen::VectorXd& q = s.mConfig;
 
-    for (std::size_t j = 0; j < dofs.size(); ++j)
-    {
+    for (std::size_t j = 0; j < dofs.size(); ++j) {
       DegreeOfFreedom* dof = mIK->getNode()->getSkeleton()->getDof(dofs[j]);
       if (q[j] < dof->getPositionLowerLimit()
-          || dof->getPositionUpperLimit() < q[j])
-      {
+          || dof->getPositionUpperLimit() < q[j]) {
         s.mValidity |= LIMIT_VIOLATED;
         break;
       }
@@ -1351,8 +1300,7 @@ void InverseKinematics::useChain()
 {
   mDofs.clear();
 
-  if (mNode->getNumDependentGenCoords() == 0)
-  {
+  if (mNode->getNumDependentGenCoords() == 0) {
     setDofs(mDofs);
     return;
   }
@@ -1374,13 +1322,10 @@ void InverseKinematics::setDofs(const std::vector<std::size_t>& _dofs)
       = mNode->getDependentGenCoordIndices();
 
   mDofMap.resize(entityDependencies.size());
-  for (std::size_t i = 0; i < mDofMap.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mDofMap.size(); ++i) {
     mDofMap[i] = -1;
-    for (std::size_t j = 0; j < mDofs.size(); ++j)
-    {
-      if (mDofs[j] == entityDependencies[i])
-      {
+    for (std::size_t j = 0; j < mDofs.size(); ++j) {
+      if (mDofs[j] == entityDependencies[i]) {
         mDofMap[i] = j;
       }
     }
@@ -1566,8 +1511,7 @@ bool InverseKinematics::hasOffset() const
 //==============================================================================
 void InverseKinematics::setTarget(std::shared_ptr<SimpleFrame> _newTarget)
 {
-  if (nullptr == _newTarget)
-  {
+  if (nullptr == _newTarget) {
     _newTarget = SimpleFramePtr(new SimpleFrame(
         Frame::World(),
         mNode->getName() + "_target",
@@ -1625,8 +1569,7 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
 
   mJacobian.setZero(6, getDofs().size());
 
-  for (int i = 0; i < static_cast<int>(getDofMap().size()); ++i)
-  {
+  for (int i = 0; i < static_cast<int>(getDofMap().size()); ++i) {
     int j = getDofMap()[i];
     if (j >= 0)
       mJacobian.block<6, 1>(0, j) = fullJacobian.block<6, 1>(0, i);
@@ -1644,8 +1587,7 @@ Eigen::VectorXd InverseKinematics::getPositions() const
 //==============================================================================
 void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
 {
-  if (_q.size() != static_cast<int>(mDofs.size()))
-  {
+  if (_q.size() != static_cast<int>(mDofs.size())) {
     dterr << "[InverseKinematics::setPositions] Mismatch between joint "
           << "positions size [" << _q.size() << "] and number of available "
           << "degrees of freedom [" << mDofs.size() << "]\n";
@@ -1679,8 +1621,7 @@ optimization::FunctionPtr InverseKinematics::Objective::clone(
 //==============================================================================
 double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x) const
 {
-  if (nullptr == mIK)
-  {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::eval] Attempting to use an "
           << "Objective function of an expired InverseKinematics module!\n";
     assert(false);
@@ -1702,8 +1643,7 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x) const
 void InverseKinematics::Objective::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
-  if (nullptr == mIK)
-  {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::evalGradient] Attempting to use "
           << "an Objective function of an expired InverseKinematics module!\n";
     assert(false);
@@ -1715,8 +1655,7 @@ void InverseKinematics::Objective::evalGradient(
   else
     _grad.setZero();
 
-  if (mIK->mNullSpaceObjective)
-  {
+  if (mIK->mNullSpaceObjective) {
     mGradCache.resize(_grad.size());
     Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
     mIK->mNullSpaceObjective->evalGradient(_x, gradMap);
@@ -1746,8 +1685,7 @@ optimization::FunctionPtr InverseKinematics::Constraint::clone(
 //==============================================================================
 double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x) const
 {
-  if (nullptr == mIK)
-  {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::eval] Attempting to use a "
           << "Constraint function of an expired InverseKinematics module!\n";
     assert(false);
@@ -1761,8 +1699,7 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x) const
 void InverseKinematics::Constraint::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
-  if (nullptr == mIK)
-  {
+  if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::evalGradient] Attempting to use "
           << "a Constraint function of an expired InverseKinematics module!\n";
     assert(false);

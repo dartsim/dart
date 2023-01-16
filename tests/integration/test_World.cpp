@@ -216,8 +216,7 @@ TEST(World, Cloning)
   for (std::size_t i = 0; i < fileList.size(); ++i)
     worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
-  for (std::size_t i = 0; i < worlds.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
@@ -230,10 +229,8 @@ TEST(World, Cloning)
     std::size_t numIterations = 500;
 #endif
 
-    for (std::size_t j = 0; j < numIterations; ++j)
-    {
-      for (std::size_t k = 0; k < original->getNumSkeletons(); ++k)
-      {
+    for (std::size_t j = 0; j < numIterations; ++j) {
+      for (std::size_t k = 0; k < original->getNumSkeletons(); ++k) {
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
 
         // Generate a random command vector
@@ -242,8 +239,7 @@ TEST(World, Cloning)
           commands[q] = Random::uniform(-0.1, 0.1);
 
         // Assign the command vector to each clone of the kth skeleton
-        for (std::size_t c = 0; c < clones.size(); ++c)
-        {
+        for (std::size_t c = 0; c < clones.size(); ++c) {
           dart::dynamics::SkeletonPtr skelClone = clones[c]->getSkeleton(k);
           skelClone->setCommands(commands);
         }
@@ -254,10 +250,8 @@ TEST(World, Cloning)
         clones[c]->step(false);
     }
 
-    for (std::size_t c = 0; c < clones.size(); ++c)
-    {
-      for (std::size_t k = 0; k < original->getNumSkeletons(); ++k)
-      {
+    for (std::size_t c = 0; c < clones.size(); ++c) {
+      for (std::size_t k = 0; k < original->getNumSkeletons(); ++k) {
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
         dart::dynamics::SkeletonPtr clone = clones[c]->getSkeleton(k);
 
@@ -305,8 +299,7 @@ TEST(World, ValidatingClones)
   fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
-  for (std::size_t i = 0; i < fileList.size(); ++i)
-  {
+  for (std::size_t i = 0; i < fileList.size(); ++i) {
     worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
     // Set non default collision detector
@@ -319,13 +312,11 @@ TEST(World, ValidatingClones)
 #endif
   }
 
-  for (std::size_t i = 0; i < worlds.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
-    for (std::size_t j = 1; j < 5; ++j)
-    {
+    for (std::size_t j = 1; j < 5; ++j) {
       clones.push_back(clones[j - 1]->clone());
 
       auto originalCD = original->getConstraintSolver()->getCollisionDetector();

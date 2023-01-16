@@ -60,31 +60,22 @@ namespace {
 bool parsePose(urdf::Pose& pose, tinyxml2::XMLElement* xml)
 {
   pose.clear();
-  if (xml)
-  {
+  if (xml) {
     const char* xyz_str = xml->Attribute("xyz");
-    if (xyz_str)
-    {
-      try
-      {
+    if (xyz_str) {
+      try {
         pose.position.init(xyz_str);
-      }
-      catch (urdf::ParseError& e)
-      {
+      } catch (urdf::ParseError& e) {
         dterr << e.what() << "\n";
         return false;
       }
     }
 
     const char* rpy_str = xml->Attribute("rpy");
-    if (rpy_str)
-    {
-      try
-      {
+    if (rpy_str) {
+      try {
         pose.rotation.init(rpy_str);
-      }
-      catch (urdf::ParseError& e)
-      {
+      } catch (urdf::ParseError& e) {
         dterr << e.what() << "\n";
         return false;
       }
@@ -111,8 +102,7 @@ std::shared_ptr<World> parseWorldURDF(
 {
   tinyxml2::XMLDocument xml_doc;
   const auto result = xml_doc.Parse(&_xml_string.front());
-  if (result != tinyxml2::XML_SUCCESS)
-  {
+  if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[parseWorldURDF] Failed parsing XML: TinyXML2 returned error"
               " code "
            << result << ".\n";
@@ -120,8 +110,7 @@ std::shared_ptr<World> parseWorldURDF(
   }
 
   auto* world_xml = xml_doc.FirstChildElement("world");
-  if (!world_xml)
-  {
+  if (!world_xml) {
     dtwarn << "[parseWorldURDF] ERROR: Could not find a <world> element in "
               "XML, exiting and not loading! \n";
     return nullptr;
@@ -129,8 +118,7 @@ std::shared_ptr<World> parseWorldURDF(
 
   // Get world name
   const char* name = world_xml->Attribute("name");
-  if (!name)
-  {
+  if (!name) {
     dtwarn << "[parseWorldURDF] ERROR: World does not have a name tag "
               "specified. Exiting and not loading! \n";
     return nullptr;
@@ -147,8 +135,7 @@ std::shared_ptr<World> parseWorldURDF(
 
   for (auto* include_xml = world_xml->FirstChildElement("include");
        include_xml != nullptr;
-       include_xml = include_xml->NextSiblingElement("include"))
-  {
+       include_xml = include_xml->NextSiblingElement("include")) {
     ++count;
     const char* filename = include_xml->Attribute("filename");
     const char* model_name = include_xml->Attribute("model_name");
@@ -166,31 +153,25 @@ std::shared_ptr<World> parseWorldURDF(
   count = 0;
   for (auto* entity_xml = world_xml->FirstChildElement("entity");
        entity_xml != nullptr;
-       entity_xml = entity_xml->NextSiblingElement("entity"))
-  {
+       entity_xml = entity_xml->NextSiblingElement("entity")) {
     count++;
     dart::io::urdf_parsing::Entity entity;
-    try
-    {
+    try {
       const char* entity_model = entity_xml->Attribute("model");
       std::string string_entity_model(entity_model);
 
       // Find the model
-      if (includedFiles.find(string_entity_model) == includedFiles.end())
-      {
+      if (includedFiles.find(string_entity_model) == includedFiles.end()) {
         dtwarn << "[parseWorldURDF] Cannot find the model ["
                << string_entity_model << "], did you provide the correct name? "
                << "We will return a nullptr.\n"
                << std::endl;
         return nullptr;
-      }
-      else
-      {
+      } else {
         std::string fileName = includedFiles.find(string_entity_model)->second;
 
         dart::common::Uri absoluteUri;
-        if (!absoluteUri.fromRelativeUri(_baseUri, fileName))
-        {
+        if (!absoluteUri.fromRelativeUri(_baseUri, fileName)) {
           dtwarn << "[parseWorldURDF] Failed resolving mesh URI '" << fileName
                  << "' relative to '" << _baseUri.toString()
                  << "'. We will return a nullptr.\n";
@@ -203,21 +184,16 @@ std::shared_ptr<World> parseWorldURDF(
         const auto xml_model_string = retriever->readAll(absoluteUri);
         entity.model = urdf::parseURDF(xml_model_string);
 
-        if (!entity.model)
-        {
+        if (!entity.model) {
           dtwarn << "[parseWorldURDF] Could not find a model named ["
                  << xml_model_string << "] from [" << absoluteUri.toString()
                  << "]. We will return a nullptr.\n";
           return nullptr;
-        }
-        else
-        {
+        } else {
           // Parse location
           auto* origin = entity_xml->FirstChildElement("origin");
-          if (origin)
-          {
-            if (!parsePose(entity.origin, origin))
-            {
+          if (origin) {
+            if (!parsePose(entity.origin, origin)) {
               dtwarn << "[ERROR] Missing origin tag for '"
                      << entity.model->getName() << "'\n";
               return world;
@@ -226,8 +202,7 @@ std::shared_ptr<World> parseWorldURDF(
 
           // If name is defined
           const char* entity_name = entity_xml->Attribute("name");
-          if (entity_name)
-          {
+          if (entity_name) {
             std::string string_entity_name(entity_name);
             entity.model->name_ = string_entity_name;
           }
@@ -236,9 +211,7 @@ std::shared_ptr<World> parseWorldURDF(
           world->models.push_back(entity);
         }
       } // end of include read
-    }
-    catch (urdf::ParseError& /*e*/)
-    {
+    } catch (urdf::ParseError& /*e*/) {
       if (debug)
         std::cout << "Entity xml not initialized correctly \n";
       // entity->reset();

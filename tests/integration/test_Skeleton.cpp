@@ -90,8 +90,7 @@ std::vector<SkeletonPtr> getSkeletons()
     worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
   std::vector<SkeletonPtr> skeletons;
-  for (std::size_t i = 0; i < worlds.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     WorldPtr world = worlds[i];
     for (std::size_t j = 0; j < world->getNumSkeletons(); ++j)
       skeletons.push_back(world->getSkeleton(j));
@@ -121,8 +120,7 @@ TEST(Skeleton, Restructuring)
     EXPECT_TRUE(skeleton->checkIndexingConsistency());
 
   // Test moves within the current Skeleton
-  for (std::size_t i = 0; i < numIterations; ++i)
-  {
+  for (std::size_t i = 0; i < numIterations; ++i) {
     std::size_t index
         = math::Random::uniform<std::size_t>(0, skeletons.size() - 1);
     index = std::min(index, skeletons.size() - 1);
@@ -137,8 +135,7 @@ TEST(Skeleton, Restructuring)
     BodyNode* bn2
         = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
 
-    if (bn1 == bn2)
-    {
+    if (bn1 == bn2) {
       --i;
       continue;
     }
@@ -153,24 +150,20 @@ TEST(Skeleton, Restructuring)
     EXPECT_NE(child->getVersion(), childVer);
 
     EXPECT_TRUE(skeleton->getNumBodyNodes() == original->getNumBodyNodes());
-    if (skeleton->getNumBodyNodes() == original->getNumBodyNodes())
-    {
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j)
-      {
+    if (skeleton->getNumBodyNodes() == original->getNumBodyNodes()) {
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
         // Make sure no BodyNodes have been lost or gained in translation
         std::string name = original->getBodyNode(j)->getName();
         BodyNode* bn = skeleton->getBodyNode(name);
         EXPECT_FALSE(bn == nullptr);
-        if (bn)
-        {
+        if (bn) {
           EXPECT_TRUE(bn->getName() == name);
         }
 
         name = skeleton->getBodyNode(j)->getName();
         bn = original->getBodyNode(name);
         EXPECT_FALSE(bn == nullptr);
-        if (bn)
-        {
+        if (bn) {
           EXPECT_TRUE(bn->getName() == name);
         }
 
@@ -178,52 +171,45 @@ TEST(Skeleton, Restructuring)
         name = original->getJoint(j)->getName();
         Joint* joint = skeleton->getJoint(name);
         EXPECT_FALSE(joint == nullptr);
-        if (joint)
-        {
+        if (joint) {
           EXPECT_TRUE(joint->getName() == name);
         }
 
         name = skeleton->getJoint(j)->getName();
         joint = original->getJoint(name);
         EXPECT_FALSE(joint == nullptr);
-        if (joint)
-        {
+        if (joint) {
           EXPECT_TRUE(joint->getName() == name);
         }
       }
     }
 
     EXPECT_TRUE(skeleton->getNumDofs() == original->getNumDofs());
-    for (std::size_t j = 0; j < skeleton->getNumDofs(); ++j)
-    {
+    for (std::size_t j = 0; j < skeleton->getNumDofs(); ++j) {
       std::string name = original->getDof(j)->getName();
       DegreeOfFreedom* dof = skeleton->getDof(name);
       EXPECT_FALSE(dof == nullptr);
-      if (dof)
-      {
+      if (dof) {
         EXPECT_TRUE(dof->getName() == name);
       }
 
       name = skeleton->getDof(j)->getName();
       dof = original->getDof(name);
       EXPECT_FALSE(dof == nullptr);
-      if (dof)
-      {
+      if (dof) {
         EXPECT_TRUE(dof->getName() == name);
       }
     }
   }
 
   // Test moves between Skeletons
-  for (std::size_t i = 0; i < numIterations; ++i)
-  {
+  for (std::size_t i = 0; i < numIterations; ++i) {
     std::size_t fromIndex
         = math::Random::uniform<std::size_t>(0, skeletons.size() - 1);
     fromIndex = std::min(fromIndex, skeletons.size() - 1);
     SkeletonPtr fromSkel = skeletons[fromIndex];
 
-    if (fromSkel->getNumBodyNodes() == 0)
-    {
+    if (fromSkel->getNumBodyNodes() == 0) {
       --i;
       continue;
     }
@@ -233,8 +219,7 @@ TEST(Skeleton, Restructuring)
     toIndex = std::min(toIndex, skeletons.size() - 1);
     SkeletonPtr toSkel = skeletons[toIndex];
 
-    if (toSkel->getNumBodyNodes() == 0)
-    {
+    if (toSkel->getNumBodyNodes() == 0) {
       --i;
       continue;
     }
@@ -244,16 +229,13 @@ TEST(Skeleton, Restructuring)
     BodyNode* parentBn = toSkel->getBodyNode(
         math::Random::uniform<std::size_t>(0, toSkel->getNumBodyNodes() - 1));
 
-    if (fromSkel == toSkel)
-    {
-      if (childBn == parentBn)
-      {
+    if (fromSkel == toSkel) {
+      if (childBn == parentBn) {
         --i;
         continue;
       }
 
-      if (parentBn->descendsFrom(childBn))
-      {
+      if (parentBn->descendsFrom(childBn)) {
         BodyNode* tempBn = childBn;
         childBn = parentBn;
         parentBn = tempBn;
@@ -280,8 +262,7 @@ TEST(Skeleton, Restructuring)
     EXPECT_TRUE(parentBn->getSkeleton()->checkIndexingConsistency());
 
     // Make sure all the objects have moved
-    for (std::size_t j = 0; j < subtree.size(); ++j)
-    {
+    for (std::size_t j = 0; j < subtree.size(); ++j) {
       BodyNode* bn = subtree[j];
       EXPECT_TRUE(bn->getSkeleton() == toSkel);
     }
@@ -297,8 +278,7 @@ TEST(Skeleton, Restructuring)
     EXPECT_TRUE(childBn->getParentBodyNode() == nullptr);
 
     // The subtree should still be in the same Skeleton
-    for (std::size_t j = 0; j < subtree.size(); ++j)
-    {
+    for (std::size_t j = 0; j < subtree.size(); ++j) {
       BodyNode* bn = subtree[j];
       EXPECT_TRUE(bn->getSkeleton() == toSkel);
     }
@@ -325,8 +305,7 @@ TEST(Skeleton, Restructuring)
     childBn->changeParentJointType<FreeJoint>();
 
     // Test the non-recursive copying
-    if (toSkel->getNumBodyNodes() > 1)
-    {
+    if (toSkel->getNumBodyNodes() > 1) {
       SkeletonPtr singleBodyNode
           = toSkel->getBodyNode(0)->copyAs("single", false);
       EXPECT_TRUE(singleBodyNode->getNumBodyNodes() == 1);
@@ -767,8 +746,7 @@ TEST(Skeleton, CloneNodeOrdering)
 
   // Add Nodes in the reverse order, so that their indexing is different from
   // the BodyNodes they are attached to
-  for (int i = skel->getNumBodyNodes() - 1; i > 0; --i)
-  {
+  for (int i = skel->getNumBodyNodes() - 1; i > 0; --i) {
     skel->getBodyNode(i)->createEndEffector("manip_" + std::to_string(i));
   }
 
@@ -778,8 +756,7 @@ TEST(Skeleton, CloneNodeOrdering)
 
   SkeletonPtr clone = skel->cloneSkeleton();
 
-  for (std::size_t i = 0; i < skel->getNumEndEffectors(); ++i)
-  {
+  for (std::size_t i = 0; i < skel->getNumEndEffectors(); ++i) {
     EXPECT_EQ(
         skel->getEndEffector(i)->getName(),
         clone->getEndEffector(i)->getName());

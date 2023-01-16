@@ -120,8 +120,7 @@ void EllipsoidShapeNode::extractData(bool firstTime)
 {
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
       || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
     const Eigen::Vector3d& s
         = mEllipsoidShape->getDiameters()
@@ -133,8 +132,7 @@ void EllipsoidShapeNode::extractData(bool firstTime)
     setMatrix(eigToOsgMatrix(S));
   }
 
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new EllipsoidShapeGeode(
         mEllipsoidShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -176,8 +174,7 @@ void EllipsoidShapeGeode::refresh()
 //==============================================================================
 void EllipsoidShapeGeode::extractData()
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable
         = new EllipsoidShapeDrawable(mEllipsoidShape, mVisualAspect, this);
     addDrawable(mDrawable);
@@ -213,8 +210,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
 
   if (mEllipsoidShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
     osg_shape = new ::osg::Sphere(
         ::osg::Vec3(0, 0, 0), smallestComponent(mEllipsoidShape->getRadii()));
@@ -224,24 +220,20 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   }
 
   if (mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     setColor(color);
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color.a()) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;

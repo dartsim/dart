@@ -179,8 +179,7 @@ TEST(UriHelpers, fromStringOrPath_UriNotPathNorFileUri_ReturnsUriNotFileUri)
 
   Uri uri;
 
-  for (const std::string& testUri : testUris)
-  {
+  for (const std::string& testUri : testUris) {
     uri.fromStringOrPath(testUri);
 
     EXPECT_NE("file", *uri.mScheme);
@@ -231,8 +230,7 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
   std::vector<std::string> testPaths = {"/foo", "/foo/", "/foo/bar"};
 #endif
 
-  for (const std::string& testPath : testPaths)
-  {
+  for (const std::string& testPath : testPaths) {
 #ifdef _WIN32
     // On Windows, an absolute path does not begin with forward slash but a
     // file URI needs it to represent an empty authority,
@@ -297,8 +295,7 @@ TEST(UriHelpers, getRelativeUri)
   Uri baseUri, relativeUri, mergedUri;
   ASSERT_TRUE(baseUri.fromString("http://a/b/c/d;p?q"));
 
-  for (const auto& it : testPairs)
-  {
+  for (const auto& it : testPairs) {
     const std::string& expectedUri = it.second;
 
     ASSERT_TRUE(relativeUri.fromString(it.first));

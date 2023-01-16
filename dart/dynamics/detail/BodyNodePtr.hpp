@@ -194,14 +194,12 @@ public:
     if (mPtr == _ptr)
       return;
 
-    if (nullptr != mPtr)
-    {
+    if (nullptr != mPtr) {
       static_cast<const SkeletonRefCountingBase*>(mPtr)
           ->decrementReferenceCount();
     }
 
-    if (nullptr != _ptr)
-    {
+    if (nullptr != _ptr) {
       static_cast<const SkeletonRefCountingBase*>(_ptr)
           ->incrementReferenceCount();
     }
@@ -301,8 +299,7 @@ public:
   template <class OtherBodyNodeT>
   void set(const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
   {
-    if (nullptr == _weakPtr.mLocker)
-    {
+    if (nullptr == _weakPtr.mLocker) {
       set(nullptr);
       return;
     }
@@ -310,8 +307,7 @@ public:
     std::lock_guard<std::mutex> lock(_weakPtr.mLocker->mMutex);
     std::shared_ptr<const Skeleton> skeleton
         = _weakPtr.mLocker->mSkeleton.lock();
-    if (nullptr == skeleton)
-    {
+    if (nullptr == skeleton) {
       set(nullptr);
       return;
     }

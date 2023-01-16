@@ -89,14 +89,12 @@ std::vector<std::string> split(
   std::vector<std::string> tokens;
   std::size_t start = str.find_first_not_of(delimiters), end = 0;
 
-  while ((end = str.find_first_of(delimiters, start)) != std::string::npos)
-  {
+  while ((end = str.find_first_of(delimiters, start)) != std::string::npos) {
     tokens.push_back(str.substr(start, end - start));
     start = str.find_first_not_of(delimiters, end);
   }
 
-  if (start != std::string::npos)
-  {
+  if (start != std::string::npos) {
     tokens.push_back(str.substr(start));
   }
 

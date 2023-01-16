@@ -104,8 +104,7 @@ DART_IO_API inline std::unique_ptr<const aiScene> loadAssimpScene(
 
   // If succeeded, store the importer in the scene to keep it alive. This is
   // necessary because the importer owns the memory that it allocates.
-  if (!scene)
-  {
+  if (!scene) {
     DART_WARN("[MeshShape::loadMesh] Failed loading mesh '{}'.", uri);
     aiReleasePropertyStore(propertyStore);
     return nullptr;
@@ -166,8 +165,7 @@ std::unique_ptr<typename AssimpMeshLoader<S>::Mesh> AssimpMeshLoader<S>::load(
 
   // Parse faces
   mesh->reserveTriangles(assimpMesh->mNumFaces);
-  for (auto i = 0u; i < assimpMesh->mNumFaces; ++i)
-  {
+  for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
     const aiFace& face = assimpMesh->mFaces[i];
     // TODO(JS): Support more than triangles.
     if (face.mNumIndices != 3)
@@ -177,24 +175,19 @@ std::unique_ptr<typename AssimpMeshLoader<S>::Mesh> AssimpMeshLoader<S>::load(
 
   // Parse vertices
   mesh->reserveVertices(assimpMesh->mNumVertices);
-  for (auto i = 0u; i < assimpMesh->mNumVertices; ++i)
-  {
+  for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
     const aiVector3D& assimpVertex = assimpMesh->mVertices[i];
     mesh->addVertex(assimpVertex.x, assimpVertex.y, assimpVertex.z);
   }
 
   // Parse vertex normals
-  if (assimpMesh->mNormals)
-  {
+  if (assimpMesh->mNormals) {
     mesh->reserveVertexNormals(assimpMesh->mNumVertices);
-    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i)
-    {
+    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
       const aiVector3D& assimpNormal = assimpMesh->mNormals[i];
       mesh->addVertexNormal(assimpNormal.x, assimpNormal.y, assimpNormal.z);
     }
-  }
-  else
-  {
+  } else {
     // Note: Faces should be set in prior.
     mesh->computeVertexNormals();
   }

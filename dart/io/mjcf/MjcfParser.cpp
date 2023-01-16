@@ -60,19 +60,15 @@ dynamics::BodyNode::Properties createBodyProperties(
   dynamics::BodyNode::Properties bodyProps;
 
   // Name
-  if (!mjcfBody.getName().empty())
-  {
+  if (!mjcfBody.getName().empty()) {
     bodyProps.mName = mjcfBody.getName();
-  }
-  else
-  {
+  } else {
     bodyProps.mName
         = "Nonamed (" + std::to_string(skel->getNumBodyNodes()) + ")";
   }
 
   // Inertial
-  if (mjcfBody.getNumGeoms() > 0)
-  {
+  if (mjcfBody.getNumGeoms() > 0) {
     const detail::Inertial& mjcfInertial = mjcfBody.getInertial();
 
     bodyProps.mInertia.setMass(mjcfInertial.getMass());
@@ -91,12 +87,9 @@ void createJointCommonProperties(
     const detail::Joint& mjcfJoint)
 {
   // Name
-  if (!mjcfJoint.getName().empty())
-  {
+  if (!mjcfJoint.getName().empty()) {
     props.mName = mjcfJoint.getName();
-  }
-  else
-  {
+  } else {
     props.mName = parentBodyNode->getName() + "_Joint";
   }
 }
@@ -110,13 +103,10 @@ dynamics::WeldJoint::Properties createWeldJointProperties(
   dynamics::WeldJoint::Properties props;
 
   // Name
-  if (parentBodyNode != nullptr)
-  {
+  if (parentBodyNode != nullptr) {
     props.mName = "WeldJoint_from_" + parentBodyNode->getName() + "_to_"
                   + bodyNodeProps.mName;
-  }
-  else
-  {
+  } else {
     props.mName = "WeldJoint_from_World_to_" + bodyNodeProps.mName;
   }
 
@@ -273,15 +263,13 @@ createJointAndBodyNodePairForMultipleJoints(
   // DART. As an workaround, we only allow to create predefined multi dofs
   // joints for some supported combination of MJCF joint types.
 
-  if (mjcfBody.getNumJoints() == 2u)
-  {
+  if (mjcfBody.getNumJoints() == 2u) {
     //----------------------------------------
     // Try to create predefined 2 DOFs joints
     //----------------------------------------
 
     if (mjcfBody.getJoint(0).getType() == detail::JointType::SLIDE
-        && mjcfBody.getJoint(1).getType() == detail::JointType::SLIDE)
-    {
+        && mjcfBody.getJoint(1).getType() == detail::JointType::SLIDE) {
       const detail::Joint& mjcfJoint0 = mjcfBody.getJoint(0);
       const detail::Joint& mjcfJoint1 = mjcfBody.getJoint(1);
 
@@ -328,17 +316,14 @@ createJointAndBodyNodePairForMultipleJoints(
       return skel->createJointAndBodyNodePair<dynamics::TranslationalJoint2D>(
           parentBodyNode, props, bodyProps);
     }
-  }
-  else if (mjcfBody.getNumJoints() == 3u)
-  {
+  } else if (mjcfBody.getNumJoints() == 3u) {
     //----------------------------------------
     // Try to create predefined 3 DOFs joints
     //----------------------------------------
 
     if (mjcfBody.getJoint(0).getType() == detail::JointType::SLIDE
         && mjcfBody.getJoint(1).getType() == detail::JointType::SLIDE
-        && mjcfBody.getJoint(2).getType() == detail::JointType::SLIDE)
-    {
+        && mjcfBody.getJoint(2).getType() == detail::JointType::SLIDE) {
       const detail::Joint& mjcfJoint0 = mjcfBody.getJoint(0);
       const detail::Joint& mjcfJoint1 = mjcfBody.getJoint(1);
       const detail::Joint& mjcfJoint2 = mjcfBody.getJoint(2);
@@ -406,8 +391,7 @@ dynamics::ShapePtr createShape(const GeomOrSite& geomOrSite)
 {
   dynamics::ShapePtr shape = nullptr;
 
-  switch (geomOrSite.getType())
-  {
+  switch (geomOrSite.getType()) {
     case detail::GeomType::SPHERE: {
       shape = std::make_shared<dynamics::SphereShape>(
           geomOrSite.getSphereRadius());
@@ -448,8 +432,7 @@ dynamics::ShapePtr createShape(
 {
   dynamics::ShapePtr shape = nullptr;
 
-  switch (geom.getType())
-  {
+  switch (geom.getType()) {
     case detail::GeomType::PLANE: {
       // TODO(JS): Needs to properly parse PLANE.
       Eigen::Vector3d size;
@@ -484,13 +467,11 @@ bool createShapeNodes(
     const detail::Asset& mjcfAsset)
 {
   // Create ShapeNodes for <geom>s
-  for (std::size_t i = 0u; i < mjcfBody.getNumGeoms(); ++i)
-  {
+  for (std::size_t i = 0u; i < mjcfBody.getNumGeoms(); ++i) {
     const detail::Geom& geom = mjcfBody.getGeom(i);
 
     const dynamics::ShapePtr shape = createShape(geom, mjcfAsset);
-    if (shape == nullptr)
-    {
+    if (shape == nullptr) {
       dterr << "[MjcfParser] Failed to create ShapeNode given <geom> in the "
             << "MJCF file.\n";
       return false;
@@ -498,14 +479,11 @@ bool createShapeNodes(
 
     // Create ShapeNode with the shape created above
     dynamics::ShapeNode* shapeNode = nullptr;
-    if (mjcfBody.getMocap())
-    {
+    if (mjcfBody.getMocap()) {
       // Disable collision and dynamics for mocap bodies
       shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(
           shape, geom.getName());
-    }
-    else
-    {
+    } else {
       shapeNode = bodyNode->createShapeNodeWith<
           dynamics::VisualAspect,
           dynamics::CollisionAspect,
@@ -523,13 +501,11 @@ bool createShapeNodes(
   }
 
   // Create ShapeNodes for <site>s
-  for (std::size_t i = 0u; i < mjcfBody.getNumSites(); ++i)
-  {
+  for (std::size_t i = 0u; i < mjcfBody.getNumSites(); ++i) {
     const detail::Site& site = mjcfBody.getSite(i);
 
     const dynamics::ShapePtr shape = createShape(site);
-    if (shape == nullptr)
-    {
+    if (shape == nullptr) {
       dterr << "[MjcfParser] Failed to create ShapeNode given <geom> in the "
             << "MJCF file.\n";
       return false;
@@ -569,58 +545,45 @@ bool populateSkeletonRecurse(
 
   // Create BodyNode and Joint based on the joint type
   const auto numJoints = mjcfBody.getNumJoints();
-  if (numJoints == 0u)
-  {
+  if (numJoints == 0u) {
     const auto jointProps
         = createWeldJointProperties(parentBodyNode, bodyProps, mjcfBody);
     std::tie(joint, bodyNode)
         = skel->createJointAndBodyNodePair<dynamics::WeldJoint>(
             parentBodyNode, jointProps, bodyProps);
-  }
-  else if (numJoints == 1u)
-  {
+  } else if (numJoints == 1u) {
     const auto& mjcfJoint = mjcfBody.getJoint(0);
-    if (mjcfJoint.getType() == detail::JointType::FREE)
-    {
+    if (mjcfJoint.getType() == detail::JointType::FREE) {
       const auto jointProps = createFreeJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
               parentBodyNode, jointProps, bodyProps);
-    }
-    else if (mjcfJoint.getType() == detail::JointType::BALL)
-    {
+    } else if (mjcfJoint.getType() == detail::JointType::BALL) {
       const auto jointProps = createBallJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::BallJoint>(
               parentBodyNode, jointProps, bodyProps);
-    }
-    else if (mjcfJoint.getType() == detail::JointType::SLIDE)
-    {
+    } else if (mjcfJoint.getType() == detail::JointType::SLIDE) {
       const auto jointProps = createPrismaticJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
               parentBodyNode, jointProps, bodyProps);
-    }
-    else if (mjcfJoint.getType() == detail::JointType::HINGE)
-    {
+    } else if (mjcfJoint.getType() == detail::JointType::HINGE) {
       const auto jointProps = createRevoluteJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
               parentBodyNode, jointProps, bodyProps);
     }
-  }
-  else
-  {
+  } else {
     std::tie(joint, bodyNode) = createJointAndBodyNodePairForMultipleJoints(
         skel, parentBodyNode, bodyProps, mjcfBody);
   }
 
-  if (bodyNode == nullptr || joint == nullptr)
-  {
+  if (bodyNode == nullptr || joint == nullptr) {
     return false;
   }
 
@@ -631,11 +594,9 @@ bool populateSkeletonRecurse(
   if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
     return false;
 
-  for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i)
-  {
+  for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i) {
     if (!populateSkeletonRecurse(
-            skel, bodyNode, mjcfBody.getChildBody(i), mjcfAsset))
-    {
+            skel, bodyNode, mjcfBody.getChildBody(i), mjcfAsset)) {
       return false;
     }
   }
@@ -651,8 +612,7 @@ dynamics::SkeletonPtr createSkeleton(
 
   const bool success
       = populateSkeletonRecurse(skel, nullptr, mjcfBody, mjcfAsset);
-  if (!success)
-  {
+  if (!success) {
     const std::string bodyName
         = mjcfBody.getName().empty() ? "(noname)" : mjcfBody.getName();
     dterr << "[MjcfParser] Failed to create Skeleton from Body '" << bodyName
@@ -674,13 +634,11 @@ simulation::WorldPtr createWorld(
   const detail::Worldbody& mjcfWorldbody = mujoco.getWorldbody();
 
   // Parse root <body> elements
-  for (std::size_t i = 0; i < mjcfWorldbody.getNumRootBodies(); ++i)
-  {
+  for (std::size_t i = 0; i < mjcfWorldbody.getNumRootBodies(); ++i) {
     const detail::Body& mjcfRootBody = mjcfWorldbody.getRootBody(i);
     const dynamics::SkeletonPtr& skel = createSkeleton(mjcfRootBody, mjcfAsset);
 
-    if (skel == nullptr)
-    {
+    if (skel == nullptr) {
       dterr << "[MjcfParser] Failed to parse a Skeleton. Stop parsing the "
             << "rest of elements.\n";
       return nullptr;
@@ -693,8 +651,7 @@ simulation::WorldPtr createWorld(
     skel->setName(skel->getRootBodyNode()->getName());
 
     // Skeleton name should be unique in the World.
-    if (world->hasSkeleton(skel->getName()))
-    {
+    if (world->hasSkeleton(skel->getName())) {
       dtwarn << "[MjcfParser] World '" << world->getName() << "' already "
              << "contains skeleton has the same name '" << skel->getName()
              << "', which is an error. Please report this error.\n";
@@ -704,8 +661,7 @@ simulation::WorldPtr createWorld(
   }
 
   // Parse root <geom> elements
-  for (std::size_t i = 0; i < mjcfWorldbody.getNumGeoms(); ++i)
-  {
+  for (std::size_t i = 0; i < mjcfWorldbody.getNumGeoms(); ++i) {
     const detail::Geom& mjcfGeom = mjcfWorldbody.getGeom(i);
 
     dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
@@ -715,12 +671,9 @@ simulation::WorldPtr createWorld(
     std::tie(joint, body)
         = skel->createJointAndBodyNodePair<dynamics::WeldJoint>();
 
-    if (!mjcfGeom.getName().empty())
-    {
+    if (!mjcfGeom.getName().empty()) {
       skel->setName(options.mGeomSkeletonNamePrefix + mjcfGeom.getName());
-    }
-    else
-    {
+    } else {
       skel->setName(options.mGeomSkeletonNamePrefix);
     }
 
@@ -742,8 +695,7 @@ simulation::WorldPtr createWorld(
   }
 
   // Parse root <site> elements
-  for (std::size_t i = 0; i < mjcfWorldbody.getNumSites(); ++i)
-  {
+  for (std::size_t i = 0; i < mjcfWorldbody.getNumSites(); ++i) {
     const detail::Site& mjcfSite = mjcfWorldbody.getSite(i);
 
     dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
@@ -753,12 +705,9 @@ simulation::WorldPtr createWorld(
     std::tie(joint, body)
         = skel->createJointAndBodyNodePair<dynamics::WeldJoint>();
 
-    if (!mjcfSite.getName().empty())
-    {
+    if (!mjcfSite.getName().empty()) {
       skel->setName(options.mSiteSkeletonNamePrefix + mjcfSite.getName());
-    }
-    else
-    {
+    } else {
       skel->setName(options.mSiteSkeletonNamePrefix);
     }
 
@@ -798,12 +747,9 @@ dynamics::BodyNode* getUniqueBodyOrNull(
 {
   const auto& bodyNodes = detail::getBodyNodes(world, name);
 
-  if (bodyNodes.empty())
-  {
+  if (bodyNodes.empty()) {
     return nullptr;
-  }
-  else if (bodyNodes.size() != 1u)
-  {
+  } else if (bodyNodes.size() != 1u) {
     dterr << "[MjcfParser] Found multiple BodyNodes have the same name. "
           << "Please report this bug.\n";
     return nullptr;
@@ -817,8 +763,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 {
   auto mujoco = detail::MujocoModel();
   const detail::Errors errors = mujoco.read(uri, options.mRetriever);
-  if (!errors.empty())
-  {
+  if (!errors.empty()) {
     dterr << "[MjcfParser] Failed to parse MJCF file for the following "
              "reason(s):\n";
     for (const auto& error : errors)
@@ -831,14 +776,12 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 
   // Parse <equality> element
   const detail::Equality& equality = mujoco.getEquality();
-  for (std::size_t i = 0; i < equality.getNumWelds(); ++i)
-  {
+  for (std::size_t i = 0; i < equality.getNumWelds(); ++i) {
     const detail::Weld& weld = equality.getWeld(i);
 
     // Body1
     dynamics::BodyNode* body1 = getUniqueBodyOrNull(*world, weld.getBody1());
-    if (body1 == nullptr)
-    {
+    if (body1 == nullptr) {
       dterr << "[MjcfParser] Failed to find BodyNode by name '"
             << weld.getBody1() << "' Not adding weld joint constraint.\n";
       continue;
@@ -847,18 +790,15 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
     // Body2
     dynamics::BodyNode* body2 = nullptr;
     const std::string& bodyName2 = weld.getBody2();
-    if (!bodyName2.empty())
-    {
+    if (!bodyName2.empty()) {
       body2 = getUniqueBodyOrNull(*world, bodyName2);
-      if (body2 == nullptr)
-      {
+      if (body2 == nullptr) {
         dterr << "[MjcfParser] Failed to find BodyNode by name '" << bodyName2
               << "' Not adding weld joint constraint.\n";
         continue;
       }
 
-      if (body1 == body2)
-      {
+      if (body1 == body2) {
         dterr << "[MjcfParser] Not allowed to set <weld> with same bodies.\n";
         continue;
       }
@@ -866,8 +806,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 
     auto weldJointConstraint
         = std::make_shared<dynamics::WeldJointConstraint>(body1, body2);
-    if (weld.getRelativeTransform())
-    {
+    if (weld.getRelativeTransform()) {
       weldJointConstraint->setRelativeTransform(
           (*weld.getRelativeTransform()).inverse());
     }

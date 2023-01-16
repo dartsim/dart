@@ -90,10 +90,8 @@ BodyContactCondition::~BodyContactCondition() {}
 bool BodyContactCondition::isSatisfied()
 {
   SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNode);
-  if (soft)
-  {
-    for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i)
-    {
+  if (soft) {
+    for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i) {
       PointMass* pm = soft->getPointMass(i);
       if (pm->isColliding())
         return true;
@@ -102,14 +100,11 @@ bool BodyContactCondition::isSatisfied()
 
   // TODO(JS): Need more elegant condition check method
   const CollisionResult& result = mConstraintSolver->getLastCollisionResult();
-  if (result.inCollision(mBodyNode))
-  {
+  if (result.inCollision(mBodyNode)) {
     //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."
     //          << std::endl;
     return true;
-  }
-  else
-  {
+  } else {
     //    dtmsg << "Waiting for BodyNode [" << mBodyNode->getName()
     //          << "] is in contact."
     //          << std::endl;

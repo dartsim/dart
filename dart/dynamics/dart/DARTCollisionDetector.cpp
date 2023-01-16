@@ -108,8 +108,7 @@ std::unique_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup()
 //==============================================================================
 static bool checkGroupValidity(DARTCollisionDetector* cd, CollisionGroup* group)
 {
-  if (cd != group->getCollisionDetector().get())
-  {
+  if (cd != group->getCollisionDetector().get()) {
     dterr << "[DARTCollisionDetector::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
@@ -144,12 +143,10 @@ bool DARTCollisionDetector::collide(
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (auto i = 0u; i < objects.size() - 1; ++i)
-  {
+  for (auto i = 0u; i < objects.size() - 1; ++i) {
     auto* collObj1 = objects[i];
 
-    for (auto j = i + 1u; j < objects.size(); ++j)
-    {
+    for (auto j = i + 1u; j < objects.size(); ++j) {
       auto* collObj2 = objects[j];
 
       if (filter && filter->ignoresCollision(collObj1, collObj2))
@@ -157,13 +154,10 @@ bool DARTCollisionDetector::collide(
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (result)
-      {
+      if (result) {
         if (result->getNumContacts() >= option.maxNumContacts)
           return true;
-      }
-      else
-      {
+      } else {
         // If no result is passed, stop checking when the first contact is found
         if (collisionFound)
           return true;
@@ -206,12 +200,10 @@ bool DARTCollisionDetector::collide(
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (auto i = 0u; i < objects1.size(); ++i)
-  {
+  for (auto i = 0u; i < objects1.size(); ++i) {
     auto* collObj1 = objects1[i];
 
-    for (auto j = 0u; j < objects2.size(); ++j)
-    {
+    for (auto j = 0u; j < objects2.size(); ++j) {
       auto* collObj2 = objects2[j];
 
       if (filter && filter->ignoresCollision(collObj1, collObj2))
@@ -219,13 +211,10 @@ bool DARTCollisionDetector::collide(
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (result)
-      {
+      if (result) {
         if (result->getNumContacts() >= option.maxNumContacts)
           return true;
-      }
-      else
-      {
+      } else {
         // If no result is passed, stop checking when the first contact is found
         if (collisionFound)
           return true;
@@ -283,8 +272,7 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
   if (shapeType == dynamics::BoxShape::getStaticType())
     return;
 
-  if (shapeType == dynamics::EllipsoidShape::getStaticType())
-  {
+  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
     const auto& ellipsoid
         = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
 
@@ -360,14 +348,11 @@ void postProcess(
   // Don't add repeated points
   const auto tol = 3.0e-12;
 
-  for (auto pairContact : pairResult.getContacts())
-  {
+  for (auto pairContact : pairResult.getContacts()) {
     auto foundClose = false;
 
-    for (auto totalContact : totalResult.getContacts())
-    {
-      if (isClose(pairContact.point, totalContact.point, tol))
-      {
+    for (auto totalContact : totalResult.getContacts()) {
+      if (isClose(pairContact.point, totalContact.point, tol)) {
         foundClose = true;
         break;
       }

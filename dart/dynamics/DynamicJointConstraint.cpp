@@ -75,8 +75,7 @@ DynamicJointConstraint::~DynamicJointConstraint()
 void DynamicJointConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range
-  if (allowance < 0.0)
-  {
+  if (allowance < 0.0) {
     dtwarn << "Error reduction parameter[" << allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -96,14 +95,12 @@ double DynamicJointConstraint::getErrorAllowance()
 void DynamicJointConstraint::setErrorReductionParameter(double erp)
 {
   // Clamp error reduction parameter if it is out of the range [0, 1]
-  if (erp < 0.0)
-  {
+  if (erp < 0.0) {
     dtwarn << "Error reduction parameter [" << erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mErrorReductionParameter = 0.0;
   }
-  if (erp > 1.0)
-  {
+  if (erp > 1.0) {
     dtwarn << "Error reduction parameter [" << erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
     mErrorReductionParameter = 1.0;
@@ -122,8 +119,7 @@ double DynamicJointConstraint::getErrorReductionParameter()
 void DynamicJointConstraint::setMaxErrorReductionVelocity(double erv)
 {
   // Clamp maximum error reduction velocity if it is out of the range
-  if (erv < 0.0)
-  {
+  if (erv < 0.0) {
     dtwarn << "Maximum error reduction velocity [" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -143,8 +139,7 @@ double DynamicJointConstraint::getMaxErrorReductionVelocity()
 void DynamicJointConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9)
-  {
+  if (cfm < 1e-9) {
     dtwarn << "Constraint force mixing parameter [" << cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;

@@ -153,8 +153,7 @@ Eigen::Isometry3d EulerJoint::convertToTransform(
 Eigen::Matrix3d EulerJoint::convertToRotation(
     const Eigen::Vector3d& _positions, AxisOrder _ordering)
 {
-  switch (_ordering)
-  {
+  switch (_ordering) {
     case AxisOrder::XYZ:
       return math::eulerXYZToMatrix(_positions);
     case AxisOrder::ZYX:
@@ -196,8 +195,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
   Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
 
-  switch (getAxisOrder())
-  {
+  switch (getAxisOrder()) {
     case AxisOrder::XYZ: {
       //------------------------------------------------------------------------
       // S = [    c1*c2, s2,  0
@@ -261,8 +259,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
   Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
   //    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);
   double det = luJTJ.determinant();
-  if (det < 1e-5)
-  {
+  if (det < 1e-5) {
     std::cout << "ill-conditioned Jacobian in joint ["
               << Joint::mAspectProperties.mName << "]."
               << " The determinant of the Jacobian is (" << det << ")."
@@ -297,8 +294,7 @@ Joint* EulerJoint::clone() const
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch (getAxisOrder())
-  {
+  switch (getAxisOrder()) {
     case AxisOrder::ZYX:
       affixes.push_back("_z");
       affixes.push_back("_y");
@@ -315,10 +311,8 @@ void EulerJoint::updateDegreeOfFreedomNames()
             << static_cast<int>(getAxisOrder()) << ")\n";
   }
 
-  if (affixes.size() == 3)
-  {
-    for (std::size_t i = 0; i < 3; ++i)
-    {
+  if (affixes.size() == 3) {
+    for (std::size_t i = 0; i < 3; ++i) {
       if (!mDofs[i]->isNamePreserved())
         mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);
     }
@@ -366,8 +360,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
   Eigen::Vector6d dJ1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d dJ2 = Eigen::Vector6d::Zero();
 
-  switch (getAxisOrder())
-  {
+  switch (getAxisOrder()) {
     case AxisOrder::XYZ: {
       //------------------------------------------------------------------------
       // dS = [  -(dq1*c2*s1) - dq2*c1*s2,    dq2*c2,  0

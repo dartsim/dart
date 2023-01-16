@@ -61,14 +61,12 @@ public:
     mKp = Eigen::MatrixXd::Identity(nDofs, nDofs);
     mKd = Eigen::MatrixXd::Identity(nDofs, nDofs);
 
-    for (std::size_t i = 0; i < 6; ++i)
-    {
+    for (std::size_t i = 0; i < 6; ++i) {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
 
-    for (std::size_t i = 6; i < biped->getNumDofs(); ++i)
-    {
+    for (std::size_t i = 6; i < biped->getNumDofs(); ++i) {
       mKp(i, i) = 1000;
       mKd(i, i) = 50;
     }
@@ -155,8 +153,7 @@ public:
   /// Handle keyboard input
   void keyboard(unsigned char key, int x, int y) override
   {
-    switch (key)
-    {
+    switch (key) {
       case ',':
         mForceCountDown = default_countdown;
         mPositiveSign = false;
@@ -190,8 +187,7 @@ public:
     mController->setWheelCommands();
 
     // Apply body forces based on user input, and color the body shape red
-    if (mForceCountDown > 0)
-    {
+    if (mForceCountDown > 0) {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
       bn->setColor(dart::math::Colord::Red());
 
@@ -306,8 +302,7 @@ int main(int argc, char* argv[])
   WorldPtr world = std::make_shared<World>();
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet"))
-  {
+  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
     world->getConstraintSolver()->setCollisionDetector(
         dart::collision::CollisionDetector::getFactory()->create("bullet"));
   }

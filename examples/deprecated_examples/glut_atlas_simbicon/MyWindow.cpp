@@ -64,8 +64,7 @@ void MyWindow::timeStepping()
 
   // for perturbation test
   mImpulseDuration--;
-  if (mImpulseDuration <= 0)
-  {
+  if (mImpulseDuration <= 0) {
     mImpulseDuration = 0;
     mForce.setZero();
   }
@@ -81,8 +80,7 @@ void MyWindow::drawSkeletons() const
     drawSkeleton(mWorld->getSkeleton(i).get());
 
   // draw arrow
-  if (mImpulseDuration > 0)
-  {
+  if (mImpulseDuration > 0) {
     Eigen::Vector3d poa = mWorld->getSkeleton("drc_skeleton")
                               ->getBodyNode("pelvis")
                               ->getTransform()
@@ -96,8 +94,7 @@ void MyWindow::drawSkeletons() const
 //==============================================================================
 void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
-  switch (_key)
-  {
+  switch (_key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
@@ -109,8 +106,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
         mSimulating = false;
       break;
     case '[': // step backward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame--;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
@@ -118,8 +114,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       }
       break;
     case ']': // step forwardward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame++;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;

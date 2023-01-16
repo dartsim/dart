@@ -207,13 +207,10 @@ void Icosphere<S>::build()
 
   // Create a temporary array of faces that is used for subdivision
   std::vector<Triangle> tmpFaces;
-  if (mSubdivisions % 2)
-  {
+  if (mSubdivisions % 2) {
     this->mTriangles.reserve(getNumTriangles(mSubdivisions - 1));
     tmpFaces.reserve(getNumTriangles(mSubdivisions));
-  }
-  else
-  {
+  } else {
     this->mTriangles.reserve(getNumTriangles(mSubdivisions));
     tmpFaces.reserve(getNumTriangles(mSubdivisions - 1));
   }
@@ -225,8 +222,7 @@ void Icosphere<S>::build()
 
   // Subdivide icosahedron/icosphere iteratively. The key is to not duplicate
   // the newly created vertices and faces during each subdivision.
-  for (std::size_t i = 0; i < mSubdivisions; ++i)
-  {
+  for (std::size_t i = 0; i < mSubdivisions; ++i) {
     // Clear the array of faces that will store the faces of the subdivided
     // isosphere in this iteration. This is because the faces of the previous
     // isosphere are not reused.
@@ -235,13 +231,11 @@ void Icosphere<S>::build()
 
     // Iterate each face of the previous icosphere and divide the face into
     // four new faces.
-    for (std::size_t j = 0; j < (*currFaces).size(); ++j)
-    {
+    for (std::size_t j = 0; j < (*currFaces).size(); ++j) {
       const auto& outter = (*currFaces)[j];
 
       // Create vertices on the middle of edges if not already created.
-      for (std::size_t k = 0; k < 3; ++k)
-      {
+      for (std::size_t k = 0; k < 3; ++k) {
         auto indexA = outter[k];
         auto indexB = outter[(k + 1) % 3];
 
@@ -254,8 +248,7 @@ void Icosphere<S>::build()
         const auto result = midVertexIndices.insert(
             {{indexA, indexB}, this->mVertices.size()});
         const auto& inserted = result.second;
-        if (inserted)
-        {
+        if (inserted) {
           // Create a vertex on the middle of the edge where the length of the
           // vertex is equal to the radius of the icosphere.
           const auto& v1 = this->mVertices[indexA];

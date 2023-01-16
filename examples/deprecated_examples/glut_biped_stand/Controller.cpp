@@ -55,8 +55,7 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
   mDesiredDofs = mSkel->getPositions();
 
   // using SPD results in simple Kp coefficients
-  for (int i = 0; i < 6; i++)
-  {
+  for (int i = 0; i < 6; i++) {
     mKp(i, i) = 0.0;
     mKd(i, i) = 0.0;
   }
@@ -106,8 +105,7 @@ void Controller::computeTorques()
   Eigen::Vector3d cop = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
 
   double offset = com[0] - cop[0];
-  if (offset < 0.1 && offset > 0.0)
-  {
+  if (offset < 0.1 && offset > 0.0) {
     double k1 = 200.0;
     double k2 = 100.0;
     double kd = 10.0;
@@ -116,9 +114,7 @@ void Controller::computeTorques()
     mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
     mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
     mPreOffset = offset;
-  }
-  else if (offset > -0.2 && offset < -0.05)
-  {
+  } else if (offset > -0.2 && offset < -0.05) {
     double k1 = 2000.0;
     double k2 = 100.0;
     double kd = 100.0;
@@ -130,8 +126,7 @@ void Controller::computeTorques()
   }
 
   // Just to make sure no illegal torque is used
-  for (int i = 0; i < 6; i++)
-  {
+  for (int i = 0; i < 6; i++) {
     mTorques[i] = 0.0;
   }
   mFrame++;

@@ -57,8 +57,7 @@ TEST(Issue1596, ServoJointWithPositionLimits)
   auto* joint1 = skel->getJoint("joint_01");
   std::vector<dart::dynamics::Joint*> joints = {joint0, joint1};
 
-  for (auto joint : joints)
-  {
+  for (auto joint : joints) {
     ASSERT_NE(joint, nullptr);
     ASSERT_EQ(
         joint->getType(), dart::dynamics::UniversalJoint::getStaticType());
@@ -73,12 +72,10 @@ TEST(Issue1596, ServoJointWithPositionLimits)
     EXPECT_DOUBLE_EQ(0, joint->getAcceleration(1));
   }
 
-  for (std::size_t i = 0; i < num_steps; ++i)
-  {
+  for (std::size_t i = 0; i < num_steps; ++i) {
     world->step();
 
-    for (const auto joint : joints)
-    {
+    for (const auto joint : joints) {
       const double pos0 = joint->getPosition(0);
       const double pos1 = joint->getPosition(1);
 

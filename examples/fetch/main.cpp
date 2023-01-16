@@ -86,24 +86,20 @@ public:
     if (!ImGui::Begin(
             "Fetch robot example",
             nullptr,
-            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar))
-    {
+            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar)) {
       // Early out if the window is collapsed, as an optimization.
       ImGui::End();
       return;
     }
 
     // Menu
-    if (ImGui::BeginMenuBar())
-    {
-      if (ImGui::BeginMenu("Menu"))
-      {
+    if (ImGui::BeginMenuBar()) {
+      if (ImGui::BeginMenu("Menu")) {
         if (ImGui::MenuItem("Exit"))
           mViewer->setDone(true);
         ImGui::EndMenu();
       }
-      if (ImGui::BeginMenu("Help"))
-      {
+      if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About DART"))
           mViewer->showAbout();
         ImGui::EndMenu();
@@ -119,19 +115,16 @@ public:
         "invisible dummy object where the position is indicated at the cross "
         "of the two tranparent green bars.");
 
-    if (ImGui::CollapsingHeader("Help"))
-    {
+    if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
       ImGui::Text("User Guid:\n");
       ImGui::Text("%s", mViewer->getInstructions().c_str());
       ImGui::PopTextWrapPos();
     }
 
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation())
-      {
+      if (mViewer->isAllowingSimulation()) {
         if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
           mViewer->simulate(true);
         ImGui::SameLine();

@@ -93,8 +93,7 @@ PoolAllocator& MemoryManager::getPoolAllocator()
 //==============================================================================
 void* MemoryManager::allocate(Type type, size_t bytes)
 {
-  switch (type)
-  {
+  switch (type) {
     case Type::Base:
       return mBaseAllocator.allocate(bytes);
     case Type::Free:
@@ -120,8 +119,7 @@ void* MemoryManager::allocateUsingPool(size_t bytes)
 //==============================================================================
 void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
 {
-  switch (type)
-  {
+  switch (type) {
     case Type::Base:
       mBaseAllocator.deallocate(pointer, bytes);
       break;
@@ -163,8 +161,7 @@ bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
 //==============================================================================
 void MemoryManager::print(std::ostream& os, int indent) const
 {
-  if (indent == 0)
-  {
+  if (indent == 0) {
     os << "[MemoryManager]\n";
   }
   const std::string spaces(indent, ' ');

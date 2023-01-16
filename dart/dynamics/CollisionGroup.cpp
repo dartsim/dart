@@ -109,8 +109,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   // no longer remain subscribed to any sources that were providing this
   // ShapeFrame. Otherwise, this ShapeFrame would just reappear instantly the
   // next time an update is performed.
-  for (const void* source : (*search)->mSources)
-  {
+  for (const void* source : (*search)->mSources) {
     if (nullptr == source)
       continue;
 
@@ -276,8 +275,7 @@ void CollisionGroup::update()
 //==============================================================================
 void CollisionGroup::removeDeletedShapeFrames()
 {
-  for (auto shapeFrame : mObserver.mDeletedFrames)
-  {
+  for (auto shapeFrame : mObserver.mDeletedFrames) {
     const auto search = std::find_if(
         mObjectInfoList.begin(),
         mObjectInfoList.end(),
@@ -289,15 +287,13 @@ void CollisionGroup::removeDeletedShapeFrames()
       continue;
 
     // Clear out the ShapeFrame from any subscriber that it might have
-    for (const void* source : (*search)->mSources)
-    {
+    for (const void* source : (*search)->mSources) {
       if (nullptr == source)
         continue;
 
       auto skelSearch = mSkeletonSources.find(
           static_cast<const dynamics::MetaSkeleton*>(source));
-      if (skelSearch != mSkeletonSources.end())
-      {
+      if (skelSearch != mSkeletonSources.end()) {
         skelSearch->second.mObjects.erase(shapeFrame);
         for (auto& child : skelSearch->second.mChildren)
           child.second.mFrames.erase(shapeFrame);
@@ -370,8 +366,7 @@ auto CollisionGroup::addShapeFrameImpl(
         return info->mFrame == shapeFrame;
       });
 
-  if (it == mObjectInfoList.end())
-  {
+  if (it == mObjectInfoList.end()) {
     auto collObj = mCollisionDetector->claimCollisionObject(shapeFrame);
 
     addCollisionObjectToEngine(collObj.get());
@@ -419,8 +414,7 @@ void CollisionGroup::removeShapeFrameInternal(
   std::unordered_set<const void*>& objectSources = (*search)->mSources;
   objectSources.erase(source);
 
-  if (objectSources.empty())
-  {
+  if (objectSources.empty()) {
     removeCollisionObjectFromEngine((*search)->mObject.get());
     mObjectInfoList.erase(search);
     mObserver.removeShapeFrame(shapeFrame);
@@ -433,8 +427,7 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
   SkeletonSource& source = entry.second;
 
   const dynamics::ConstMetaSkeletonPtr& meta = source.mSource.lock();
-  if (!meta)
-  {
+  if (!meta) {
     // This skeleton no longer exists, so we should remove all its contents from
     // the CollisionGroup.
     for (const auto& object : source.mObjects)
@@ -462,8 +455,7 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
   // Check each child to see if its version number has changed. If it has, then
   // check to see if any of its ShapeFrames need to be updated, added, or
   // removed from the CollisionGroup.
-  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
     const dynamics::BodyNode* bn = skeleton->getBodyNode(i);
     const std::size_t currentVersion = bn->getVersion();
 
@@ -475,8 +467,7 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
 
     const auto child = insertion.first;
 
-    if (insertion.second)
-    {
+    if (insertion.second) {
       // This child was newly introduced, so we need to add it to the
       // CollisionGroup.
       updateNeeded = true;
@@ -511,25 +502,21 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
               = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
 
           const auto& it = frameInsertion.first;
-          if (frameInsertion.second)
-          {
+          if (frameInsertion.second) {
             // If the insertion occurred, then this is a new ShapeFrame, and we
             // need to create a collision object for it.
             updateNeeded = true;
 
             it->second = addShapeFrameImpl(shapeNode, meta.get());
             child->second.mFrames.insert(shapeNode);
-          }
-          else
-          {
+          } else {
             // If the insertion did not occur, then this is an old ShapeFrame,
             // and we should check if it needs an update.
             updateNeeded |= updateShapeFrame(it->second);
           }
         });
 
-    for (const dynamics::ShapeFrame* unused : unusedFrames)
-    {
+    for (const dynamics::ShapeFrame* unused : unusedFrames) {
       updateNeeded = true;
       removeShapeFrameInternal(unused, meta.get());
       child->second.mFrames.erase(unused);
@@ -537,10 +524,8 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
   }
 
   // Remove from this group any BodyNodes that no longer belong to the skeleton
-  for (const auto& unusedChild : unusedChildren)
-  {
-    for (const dynamics::ShapeFrame* unusedFrame : unusedChild.second.mFrames)
-    {
+  for (const auto& unusedChild : unusedChildren) {
+    for (const dynamics::ShapeFrame* unusedFrame : unusedChild.second.mFrames) {
       updateNeeded = true;
       removeShapeFrameInternal(unusedFrame, meta.get());
       source.mObjects.erase(unusedFrame);
@@ -558,8 +543,7 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
   BodyNodeSource& source = entry.second;
 
   const dynamics::ConstBodyNodePtr bn = source.mSource.lock();
-  if (!bn)
-  {
+  if (!bn) {
     // This BodyNode no longer exists, so we should remove all i ts contents
     // from the CollisionGroup.
     for (const auto& object : source.mObjects)
@@ -588,15 +572,12 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
             = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
 
         const auto& it = frameInsertion.first;
-        if (frameInsertion.second)
-        {
+        if (frameInsertion.second) {
           updateNeeded = true;
           // If the insertion occurred, then this is a new ShapeFrame, and we
           // need to create a collision object for it.
           it->second = addShapeFrameImpl(shapeNode, bn.get());
-        }
-        else
-        {
+        } else {
           // If the insertion did not occur, then this is an old ShapeFrame, and
           // we should check if it needs an update.
           updateNeeded |= updateShapeFrame(it->second);
@@ -605,8 +586,7 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
 
   // Remove from this group and ShapeFrames that no longer belong to the
   // BodyNode
-  for (const auto& unusedFrame : unusedFrames)
-  {
+  for (const auto& unusedFrame : unusedFrames) {
     updateNeeded = true;
     removeShapeFrameInternal(unusedFrame.first, bn.get());
     source.mObjects.erase(unusedFrame.first);
@@ -623,8 +603,7 @@ bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
   const std::size_t currentVersion = shape ? shape->getVersion() : 0;
 
   if (currentID != object->mLastKnownShapeID
-      || currentVersion != object->mLastKnownVersion)
-  {
+      || currentVersion != object->mLastKnownVersion) {
     removeCollisionObjectFromEngine(object->mObject.get());
     mCollisionDetector->refreshCollisionObject(object->mObject.get());
     addCollisionObjectToEngine(object->mObject.get());

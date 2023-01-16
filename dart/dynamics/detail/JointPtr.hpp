@@ -122,8 +122,7 @@ public:
   /// Set the Joint for this JointPtr
   void set(JointT* _ptr)
   {
-    if (nullptr == _ptr)
-    {
+    if (nullptr == _ptr) {
       mBodyNodePtr = nullptr;
       return;
     }
@@ -268,8 +267,7 @@ public:
   /// Set the Joint for this WeakJointPtr
   void set(JointT* _ptr)
   {
-    if (nullptr == _ptr)
-    {
+    if (nullptr == _ptr) {
       mWeakBodyNode = nullptr;
       return;
     }

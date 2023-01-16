@@ -71,8 +71,7 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
   mCoronalCv = Eigen::VectorXd::Zero(dof);
   mTorque = Eigen::VectorXd::Zero(dof);
 
-  for (int i = 0; i < dof; ++i)
-  {
+  for (int i = 0; i < dof; ++i) {
     mKp[i] = ATLAS_DEFAULT_KP;
     mKd[i] = ATLAS_DEFAULT_KD;
   }
@@ -175,8 +174,7 @@ void State::computeControlForce(double _timestep)
   // Compute torques for all the joints except for hip (standing and swing)
   // joints. The first 6 dof is for base body force so it is set to zero.
   mTorque.head<6>() = Vector6d::Zero();
-  for (int i = 6; i < dof; ++i)
-  {
+  for (int i = 6; i < dof; ++i) {
     mTorque[i]
         = -mKp[i] * (q[i] - mDesiredJointPositionsBalance[i]) - mKd[i] * dq[i];
   }
@@ -441,8 +439,7 @@ double State::_getAngleBetweenTwoVectors(
 void State::_updateTorqueForStanceLeg()
 {
   // Stance leg is left leg
-  if (mStanceFoot == mLeftFoot)
-  {
+  if (mStanceFoot == mLeftFoot) {
     //    std::cout << "Sagital Pelvis Angle: " << DART_DEGREE *
     //    getSagitalPelvisAngle() << std::endl;
 
@@ -473,8 +470,7 @@ void State::_updateTorqueForStanceLeg()
     //    cout << "Stance foot: Left foot" << endl;
   }
   // Stance leg is right leg
-  else if (mStanceFoot == mRightFoot)
-  {
+  else if (mStanceFoot == mRightFoot) {
     //    cout << "Stance foot: Right foot" << endl;
 
     // Torso control on sagital plane
@@ -500,9 +496,7 @@ void State::_updateTorqueForStanceLeg()
     //    << endl; cout << "Torque[mCoronalRightHip]     : " <<
     //    mTorque[mCoronalRightHip] << endl; cout << "tauTorsoCoronal: " <<
     //    tauTorsoCoronal << endl; cout << endl;
-  }
-  else
-  {
+  } else {
     // No foot is toching the ground
   }
 }

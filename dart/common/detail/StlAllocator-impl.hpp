@@ -73,8 +73,7 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 
   // Throw std::bad_alloc to comply 23.10.9.1
   // Reference: https://stackoverflow.com/a/50326956/3122234
-  if (!ptr)
-  {
+  if (!ptr) {
     throw std::bad_alloc();
   }
 
@@ -92,8 +91,7 @@ void StlAllocator<T>::deallocate(pointer pointer, size_type n)
 template <typename T>
 void StlAllocator<T>::print(std::ostream& os, int indent) const
 {
-  if (indent == 0)
-  {
+  if (indent == 0) {
     os << "[StlAllocator]\n";
   }
   const std::string spaces(indent, ' ');

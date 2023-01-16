@@ -165,10 +165,8 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    if (!mHasEverRun)
-    {
-      switch (key)
-      {
+    if (!mHasEverRun) {
+      switch (key) {
         case 'q':
           attemptToCreateDomino(default_angle);
           break;
@@ -185,11 +183,8 @@ public:
           mHasEverRun = true;
           break;
       }
-    }
-    else
-    {
-      switch (key)
-      {
+    } else {
+      switch (key) {
         case 'f':
           mForceCountDown = default_force_duration;
           break;
@@ -207,20 +202,16 @@ public:
   {
     // If the user has pressed the 'f' key, apply a force to the first domino in
     // order to push it over
-    if (mForceCountDown > 0)
-    {
+    if (mForceCountDown > 0) {
       // Lesson 1d
       --mForceCountDown;
     }
 
     // Run the controller for the manipulator
-    if (mPushCountDown > 0)
-    {
+    if (mPushCountDown > 0) {
       mController->setOperationalSpaceForces();
       --mPushCountDown;
-    }
-    else
-    {
+    } else {
       mController->setPDForces();
     }
 

@@ -63,8 +63,7 @@ TEST(Issue1193, AngularVelAdd)
   EXPECT_EQ(Vector3d::Zero(), linearVelBefore);
 
   int maxSteps = 500;
-  for (int i = 0; i < maxSteps; i++)
-  {
+  for (int i = 0; i < maxSteps; i++) {
     world->step();
   }
 
@@ -110,8 +109,7 @@ TEST(Issue1193, SingleBody)
   rootBn->getParentJoint()->setVelocities(vels);
 
   rootBn->addExtTorque({0, 50, 0});
-  for (int i = 0; i < g_iters; ++i)
-  {
+  for (int i = 0; i < g_iters; ++i) {
     world->step();
   }
   Eigen::Vector3d positionDiff
@@ -141,8 +139,7 @@ TEST(Issue1193, SingleBodyWithOffDiagonalMoi)
 
   rootBn->addExtTorque({0, 50, 0});
   //
-  for (int i = 0; i < g_iters; ++i)
-  {
+  for (int i = 0; i < g_iters; ++i) {
     world->step();
   }
   Eigen::Vector3d positionDiff
@@ -175,8 +172,7 @@ TEST(Issue1193, SingleBodyWithJointOffset)
   freeJoint->setTransformFromParentBodyNode(jointPoseInParent);
 
   rootBn->addExtTorque({0, 50, 0});
-  for (int i = 0; i < g_iters; ++i)
-  {
+  for (int i = 0; i < g_iters; ++i) {
     world->step();
   }
 
@@ -243,8 +239,7 @@ TEST(Issue1193, WithFixedJoint)
   rootBn->setExtTorque({0, 2500, 0});
   rootBn->setExtForce({0, 0, -1000});
 
-  for (int i = 0; i < g_iters; ++i)
-  {
+  for (int i = 0; i < g_iters; ++i) {
     world->step();
   }
   Eigen::Vector3d positionDiff
@@ -273,8 +268,7 @@ TEST(Issue1193, WithRevoluteJoint)
   auto* joint = skel->getJoint("revJoint");
   ASSERT_NE(nullptr, joint);
 
-  for (int i = 0; i < g_iters; ++i)
-  {
+  for (int i = 0; i < g_iters; ++i) {
     joint->setCommand(0, 0.1);
     world->step();
   }
@@ -306,8 +300,7 @@ TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
   world->step();
   Eigen::Vector3d maxAngMomentumChange = Eigen::Vector3d::Zero();
   Eigen::Vector3d h0 = computeWorldAngularMomentum(skel);
-  for (int i = 1; i < g_iters; ++i)
-  {
+  for (int i = 1; i < g_iters; ++i) {
     joint->setCommand(0, 0.1);
     world->step();
 

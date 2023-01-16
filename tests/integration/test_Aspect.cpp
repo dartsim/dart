@@ -560,12 +560,10 @@ template <class AspectT>
 void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
   std::size_t counter = 0;
-  while (aspect->mState.val == differentFrom->mState.val)
-  {
+  while (aspect->mState.val == differentFrom->mState.val) {
     aspect->randomize();
     ++counter;
-    if (counter > 10)
-    {
+    if (counter > 10) {
       dtwarn
           << "[testAspect::makeStatesDifferent] Randomization failed to make "
           << "the states different after " << counter << " attempts!\n";
@@ -578,12 +576,10 @@ template <class AspectT>
 void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
   std::size_t counter = 0;
-  while (aspect->mProperties.val == differentFrom->mProperties.val)
-  {
+  while (aspect->mProperties.val == differentFrom->mProperties.val) {
     aspect->randomize();
     ++counter;
-    if (counter > 10)
-    {
+    if (counter > 10) {
       dtwarn << "[testAspect::makePropertiesDifferent] Randomization failed to "
              << "make the states different after " << counter << " attempts!\n";
       break;

@@ -83,16 +83,13 @@ public:
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color[3]) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color[3]) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
@@ -163,8 +160,7 @@ void VoxelGridShapeNode::refresh()
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
   if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
-      && mVoxelGridVersion == mVoxelGridShape->getVersion())
-  {
+      && mVoxelGridVersion == mVoxelGridShape->getVersion()) {
     return;
   }
 
@@ -196,21 +192,18 @@ void VoxelGridShapeNode::extractData(bool /*firstTime*/)
 
   // Update position of cache boxes.
   std::size_t boxIndex = 0u;
-  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end; ++it)
-  {
+  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end;
+       ++it) {
     auto threashold = tree->getOccupancyThres();
 
     if (it->getOccupancy() < threashold)
       continue;
 
-    if (boxIndex < mVoxelNodes.size())
-    {
+    if (boxIndex < mVoxelNodes.size()) {
       mVoxelNodes[boxIndex]->updateCenter(toVector3d(it.getCoordinate()));
       mVoxelNodes[boxIndex]->updateSize(visualSize);
       mVoxelNodes[boxIndex]->updateColor(color);
-    }
-    else
-    {
+    } else {
       ::osg::ref_ptr<VoxelNode> voxelNode
           = new VoxelNode(toVector3d(it.getCoordinate()), visualSize, color);
       mVoxelNodes.emplace_back(voxelNode);
@@ -222,8 +215,7 @@ void VoxelGridShapeNode::extractData(bool /*firstTime*/)
 
   // Fit the size of cache box list to the new points. No effect new boxes are
   // added to the list.
-  if (mVoxelNodes.size() > boxIndex)
-  {
+  if (mVoxelNodes.size() > boxIndex) {
     removeChildren(
         static_cast<unsigned int>(boxIndex),
         static_cast<unsigned int>(mVoxelNodes.size() - boxIndex));

@@ -525,12 +525,9 @@ void PointMass::integrateVelocities(double _dt)
 //==============================================================================
 void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
 {
-  if (_isForceLocal)
-  {
+  if (_isForceLocal) {
     mFext += _force;
-  }
-  else
-  {
+  } else {
     mFext += mParentSoftBodyNode->getWorldTransform().linear().transpose()
              * _force;
   }
@@ -546,12 +543,9 @@ void PointMass::clearExtForce()
 void PointMass::setConstraintImpulse(
     const Eigen::Vector3d& _constImp, bool _isLocal)
 {
-  if (_isLocal)
-  {
+  if (_isLocal) {
     mConstraintImpulses = _constImp;
-  }
-  else
-  {
+  } else {
     const Matrix3d Rt
         = mParentSoftBodyNode->getWorldTransform().linear().transpose();
     mConstraintImpulses = Rt * _constImp;
@@ -562,12 +556,9 @@ void PointMass::setConstraintImpulse(
 void PointMass::addConstraintImpulse(
     const Eigen::Vector3d& _constImp, bool _isLocal)
 {
-  if (_isLocal)
-  {
+  if (_isLocal) {
     mConstraintImpulses += _constImp;
-  }
-  else
-  {
+  } else {
     const Matrix3d Rt
         = mParentSoftBodyNode->getWorldTransform().linear().transpose();
     mConstraintImpulses.noalias() += Rt * _constImp;
@@ -773,8 +764,7 @@ void PointMass::updateTransmittedForceID(
   mF += mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(
             getMass() * getBodyVelocity())
         - mFext;
-  if (mParentSoftBodyNode->getGravityMode() == true)
-  {
+  if (mParentSoftBodyNode->getGravityMode() == true) {
     mF -= getMass()
           * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
              * _gravity);
@@ -827,8 +817,7 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
            getMass() * getBodyVelocity())
        - mFext;
   // - fgravity
-  if (mParentSoftBodyNode->getGravityMode() == true)
-  {
+  if (mParentSoftBodyNode->getGravityMode() == true) {
     mB -= getMass()
           * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
              * _gravity);
@@ -845,8 +834,7 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
   mAlpha = state.mForces - (kv + nN * ke) * getPositions()
            - (_dt * (kv + nN * ke) + kd) * getVelocities()
            - getMass() * getPartialAccelerations() - mB;
-  for (std::size_t i = 0; i < getNumConnectedPointMasses(); ++i)
-  {
+  for (std::size_t i = 0; i < getNumConnectedPointMasses(); ++i) {
     const State& i_state = getConnectedPointMass(i)->getState();
     mAlpha += ke * (i_state.mPositions + _dt * i_state.mVelocities);
   }

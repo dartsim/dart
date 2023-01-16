@@ -114,10 +114,8 @@ TEST(Issue1243, State)
 
   dart::dynamics::Skeleton::State bookmark_state;
   Eigen::Isometry3d bookmark_tf;
-  for (size_t i = 0; i < 20; i++)
-  {
-    if (i == 10)
-    {
+  for (size_t i = 0; i < 20; i++) {
+    if (i == 10) {
       bookmark_state = box_skel->getState();
       bookmark_tf = box_skel->getRootBodyNode()->getTransform();
     }

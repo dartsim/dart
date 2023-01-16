@@ -45,8 +45,7 @@ Errors appendMeshAttributes(
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "mesh")
-  {
+  if (std::string(element->Name()) != "mesh") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <mesh> from the provided element");
@@ -58,20 +57,17 @@ Errors appendMeshAttributes(
   //-----------------
 
   // name
-  if (hasAttribute(element, "name"))
-  {
+  if (hasAttribute(element, "name")) {
     attributes.mName = getAttributeString(element, "name");
   }
 
   // file
-  if (hasAttribute(element, "file"))
-  {
+  if (hasAttribute(element, "file")) {
     attributes.mFile = getAttributeString(element, "file");
   }
 
   // scale
-  if (hasAttribute(element, "scale"))
-  {
+  if (hasAttribute(element, "scale")) {
     attributes.mScale = getAttributeVector3d(element, "scale");
   }
 

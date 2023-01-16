@@ -253,13 +253,11 @@ TEST(Friction, FrictionPerShapeNode)
   world->addSkeleton(skeleton4);
 
   const auto numSteps = 500;
-  for (auto i = 0u; i < numSteps; ++i)
-  {
+  for (auto i = 0u; i < numSteps; ++i) {
     world->step();
 
     // Wait until the first box settle-in on the ground
-    if (i > 300)
-    {
+    if (i > 300) {
       const auto x1 = body1->getTransform().translation()[0];
       const auto y1 = body1->getTransform().translation()[1];
       EXPECT_NEAR(x1, -0.5, 0.00001);

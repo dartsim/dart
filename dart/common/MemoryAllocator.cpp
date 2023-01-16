@@ -47,8 +47,7 @@ MemoryAllocator& MemoryAllocator::GetDefault()
 //==============================================================================
 void MemoryAllocator::print(std::ostream& os, int indent) const
 {
-  if (indent == 0)
-  {
+  if (indent == 0) {
     os << "[*::print is not implemented]\n";
   }
   const std::string spaces(indent, ' ');

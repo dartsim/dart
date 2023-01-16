@@ -52,15 +52,13 @@ bool CompositeResourceRetriever::addSchemaRetriever(
     const std::string& _schema,
     const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  if (!_resourceRetriever)
-  {
+  if (!_resourceRetriever) {
     dterr << "[CompositeResourceRetriever::addSchemaRetriever] Receieved"
              " nullptr ResourceRetriever; skipping this entry.\n";
     return false;
   }
 
-  if (_schema.find("://") != std::string::npos)
-  {
+  if (_schema.find("://") != std::string::npos) {
     dterr << "[CompositeResourceRetriever::addSchemaRetriever] Schema '"
           << _schema
           << "' contains '://'. Did you mistakenly include the"
@@ -76,8 +74,7 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 bool CompositeResourceRetriever::exists(const common::Uri& _uri)
 {
   for (const common::ResourceRetrieverPtr& resourceRetriever :
-       getRetrievers(_uri))
-  {
+       getRetrievers(_uri)) {
     if (resourceRetriever->exists(_uri))
       return true;
   }
@@ -90,8 +87,7 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
 {
   const std::vector<common::ResourceRetrieverPtr>& retrievers
       = getRetrievers(_uri);
-  for (const common::ResourceRetrieverPtr& resourceRetriever : retrievers)
-  {
+  for (const common::ResourceRetrieverPtr& resourceRetriever : retrievers) {
     if (common::ResourcePtr resource = resourceRetriever->retrieve(_uri))
       return resource;
   }
@@ -106,8 +102,7 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
 //==============================================================================
 std::string CompositeResourceRetriever::getFilePath(const common::Uri& uri)
 {
-  for (const auto& resourceRetriever : getRetrievers(uri))
-  {
+  for (const auto& resourceRetriever : getRetrievers(uri)) {
     const auto path = resourceRetriever->getFilePath(uri);
     if (!path.empty())
       return path;
@@ -134,8 +129,7 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
       std::begin(mDefaultResourceRetrievers),
       std::end(mDefaultResourceRetrievers));
 
-  if (retrievers.empty())
-  {
+  if (retrievers.empty()) {
     dtwarn << "[CompositeResourceRetriever::retrieve] There are no resource"
               " retrievers registered for the schema '"
            << schema

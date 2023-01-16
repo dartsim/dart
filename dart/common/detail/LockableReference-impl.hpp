@@ -115,8 +115,7 @@ bool MultiLockableReference<Lockable>::try_lock() noexcept
   if (mLockableHolder.expired())
     return false;
 
-  for (auto lockable : mLockables)
-  {
+  for (auto lockable : mLockables) {
     if (!lockable->try_lock())
       return false;
   }

@@ -201,12 +201,9 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
 
   // Load VSK file and create document
   tinyxml2::XMLDocument vskDocument;
-  try
-  {
+  try {
     openXMLFile(vskDocument, fileUri, options.retrieverOrNullptr);
-  }
-  catch (std::exception const& e)
-  {
+  } catch (std::exception const& e) {
     dtwarn << "[VskParser::readSkeleton] Failed to load file '"
            << fileUri.toString() << "': " << e.what() << std::endl;
     return nullptr;
@@ -215,8 +212,7 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
   // Check if <KinematicModel> is included in the document
   tinyxml2::XMLElement* kinematicModelEle
       = vskDocument.FirstChildElement("KinematicModel");
-  if (!kinematicModelEle)
-  {
+  if (!kinematicModelEle) {
     dtwarn << "[VskParser::readSkeleton] This file '" << fileUri.toString()
            << "' doesn't include 'KinematicModel' tag. "
            << "Returning null pointer instead.\n";
@@ -236,19 +232,15 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
   dynamics::SkeletonPtr newSkeleton = nullptr;
   tinyxml2::XMLElement* skelEle
       = kinematicModelEle->FirstChildElement("Skeleton");
-  if (skelEle)
-  {
+  if (skelEle) {
     const bool result = readSkeletonElement(skelEle, newSkeleton, vskData);
 
-    if (!result)
-    {
+    if (!result) {
       dtwarn << "[VskParser::readSkeleton] Failed to parse a <Segment> element "
              << "from file '" << fileUri.getPath() << "'. "
              << "Returning null pointer.\n";
     }
-  }
-  else
-  {
+  } else {
     dtwarn << "[VskParser::readSkeleton] Failed to find <Skeleton> element "
            << "under <KinematicModel> element "
            << "from file '" << fileUri.getPath() << "'. "
@@ -258,12 +250,10 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
 
   // Read <MarkerSet> elements and add all the markers to newSkeleton
   ElementEnumerator markerSet(kinematicModelEle, "MarkerSet");
-  while (markerSet.next())
-  {
+  while (markerSet.next()) {
     const bool result = readMarkerSet(markerSet.get(), newSkeleton, vskData);
 
-    if (!result)
-    {
+    if (!result) {
       dtwarn << "[VskParser::readSkeleton] Failed to parse a marker from "
              << "file '" << fileUri.toString() << "'. Ignoring the marker.\n";
     }
@@ -288,8 +278,7 @@ bool readParameters(tinyxml2::XMLElement* parametersEle, ParameterMap& paramMap)
     return false;
 
   ElementEnumerator param(parametersEle, "Parameter");
-  while (param.next())
-  {
+  while (param.next()) {
     const std::string pname = getAttributeString(param.get(), "NAME");
     const double val = getAttributeDouble(param.get(), "VALUE");
 
@@ -307,16 +296,14 @@ bool readSkeletonElement(
 {
   skel = dynamics::Skeleton::create();
 
-  if (hasAttribute(skeletonEle, "DENSITY"))
-  {
+  if (hasAttribute(skeletonEle, "DENSITY")) {
     double density = getAttributeDouble(skeletonEle, "DENSITY");
     vskData.options.density = density;
   }
 
   // Read all segments
   ConstElementEnumerator segment(skeletonEle, "Segment");
-  while (segment.next())
-  {
+  while (segment.next()) {
     if (!readSegment(segment.get(), nullptr, skel, vskData))
       return false;
   }
@@ -333,8 +320,7 @@ double getParameter(
   int sign = 1;
   std::string paramNameOrValueWithoutSign = paramNameOrValue;
 
-  if (paramNameOrValueWithoutSign[0] == '-')
-  {
+  if (paramNameOrValueWithoutSign[0] == '-') {
     sign = -1;
     paramNameOrValueWithoutSign.erase(paramNameOrValueWithoutSign.begin());
   }
@@ -393,8 +379,7 @@ bool readSegment(
   // The position of the segment's joint attaching it to its parent in the
   // reference coordinate system of the parent segment.
   Eigen::Vector3d position = Eigen::Vector3d::Zero();
-  if (hasAttribute(segment, "POSITION"))
-  {
+  if (hasAttribute(segment, "POSITION")) {
     position
         = readAttributeVector<3>(segment, "POSITION", vskData.parameterMap);
     position *= vsk_scale;
@@ -402,8 +387,7 @@ bool readSegment(
 
   // Attribute: ORIENTATION
   Eigen::Vector3d orientation = Eigen::Vector3d::Zero();
-  if (hasAttribute(segment, "ORIENTATION"))
-  {
+  if (hasAttribute(segment, "ORIENTATION")) {
     orientation
         = readAttributeVector<3>(segment, "ORIENTATION", vskData.parameterMap);
   }
@@ -429,17 +413,14 @@ bool readSegment(
   JointPropPtr jointProperties;
   std::string foundJointType;
 
-  for (const auto& jointType : vskJointTypes)
-  {
+  for (const auto& jointType : vskJointTypes) {
     jointEle = segment->FirstChildElement(jointType.c_str());
-    if (jointEle)
-    {
+    if (jointEle) {
       foundJointType = jointType;
       const bool res = readJoint(
           jointType, jointEle, jointProperties, tfFromParent, vskData);
 
-      if (!res)
-      {
+      if (!res) {
         dtwarn << "[ParserVsk::readSegment] Failed to parse joint type.\n";
         return false;
       }
@@ -462,14 +443,11 @@ bool readSegment(
   bodyNode = pair.second;
   assert(bodyNode != nullptr);
 
-  if (hasAttribute(segment, "MASS"))
-  {
+  if (hasAttribute(segment, "MASS")) {
     // Assign the given mass
     double mass = getAttributeDouble(segment, "MASS");
     bodyNode->setMass(mass);
-  }
-  else
-  {
+  } else {
     // Assign zero mass. The empty mass will be updated in generateShapes().
     bodyNode->setMass(0.0);
   }
@@ -478,16 +456,14 @@ bool readSegment(
 
   // Read the shape, if there's any
   ConstElementEnumerator childShape(segment, "Shape");
-  while (childShape.next())
-  {
+  while (childShape.next()) {
     if (!readShape(childShape->ToElement(), bodyNode, vskData))
       return false;
   }
 
   // Read the subtree segments
   ConstElementEnumerator childSegment(segment, "Segment");
-  while (childSegment.next())
-  {
+  while (childSegment.next()) {
     if (!readSegment(childSegment->ToElement(), bodyNode, skel, vskData))
       return false;
   }
@@ -505,12 +481,9 @@ bool readShape(
     type = getAttributeString(shapeEle, "TYPE");
 
   Eigen::Vector3d size;
-  if (hasAttribute(shapeEle, "SIZE"))
-  {
+  if (hasAttribute(shapeEle, "SIZE")) {
     size = readAttributeVector<3>(shapeEle, "SIZE", vskData.parameterMap);
-  }
-  else
-  {
+  } else {
     dynamics::Joint* joint = bodyNode->getParentJoint();
     Eigen::Isometry3d tf = joint->getTransformFromParentBodyNode();
     size[0] = tf.translation().norm();
@@ -528,16 +501,11 @@ bool readShape(
   localTransform.translation() = 0.5 * tf.translation();
 
   dynamics::ShapePtr shape;
-  if (type == "Box")
-  {
+  if (type == "Box") {
     shape.reset(new dynamics::BoxShape(size));
-  }
-  else if (type == "Ellipsoid")
-  {
+  } else if (type == "Ellipsoid") {
     shape.reset(new dynamics::EllipsoidShape(size));
-  }
-  else
-  {
+  } else {
     dtwarn << "[VskParser::readShape] Attempting to add a shape with type '"
            << type << "', which is unsupported type.\n";
     return false;
@@ -565,29 +533,18 @@ bool readJoint(
     const Eigen::Isometry3d& tfFromParent,
     const VskData& vskData)
 {
-  if (jointType == "JointFree")
-  {
+  if (jointType == "JointFree") {
     return readJointFree(jointEle, jointProperties, tfFromParent, vskData);
-  }
-  else if (jointType == "JointBall")
-  {
+  } else if (jointType == "JointBall") {
     return readJointBall(jointEle, jointProperties, tfFromParent, vskData);
-  }
-  else if (jointType == "JointHardySpicer")
-  {
+  } else if (jointType == "JointHardySpicer") {
     return readJointHardySpicer(
         jointEle, jointProperties, tfFromParent, vskData);
-  }
-  else if (jointType == "JointHinge")
-  {
+  } else if (jointType == "JointHinge") {
     return readJointHinge(jointEle, jointProperties, tfFromParent, vskData);
-  }
-  else if (jointType == "JointDummy")
-  {
+  } else if (jointType == "JointDummy") {
     return readJointDummy(jointEle, jointProperties, tfFromParent, vskData);
-  }
-  else
-  {
+  } else {
     dtwarn << "[ParserVsk::readSegment] Failed to parse joint type.\n";
     return false;
   }
@@ -648,8 +605,7 @@ bool readJointHardySpicer(
   // Attribute: AXIS-PAIR
   Eigen::Vector3d axis1 = Eigen::Vector3d::UnitX();
   Eigen::Vector3d axis2 = Eigen::Vector3d::UnitY();
-  if (hasAttribute(jointEle, "AXIS-PAIR"))
-  {
+  if (hasAttribute(jointEle, "AXIS-PAIR")) {
     Eigen::Vector6d axisPair
         = readAttributeVector<6>(jointEle, "AXIS-PAIR", vskData.parameterMap);
     axis1 = axisPair.head<3>();
@@ -743,26 +699,21 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
     const dynamics::Joint::Properties* jointProperties,
     const dynamics::BodyNode::Properties& bodyNodeProperties)
 {
-  if (jointType == "JointFree")
-  {
+  if (jointType == "JointFree") {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::FreeJoint, dynamics::BodyNode>(
             parentBodyNode,
             *static_cast<const dynamics::FreeJoint::Properties*>(
                 jointProperties),
             bodyNodeProperties);
-  }
-  else if (jointType == "JointBall")
-  {
+  } else if (jointType == "JointBall") {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::BallJoint, dynamics::BodyNode>(
             parentBodyNode,
             *static_cast<const dynamics::BallJoint::Properties*>(
                 jointProperties),
             bodyNodeProperties);
-  }
-  else if (jointType == "JointHardySpicer")
-  {
+  } else if (jointType == "JointHardySpicer") {
     return skeleton->createJointAndBodyNodePair<
         dynamics::UniversalJoint,
         dynamics::BodyNode>(
@@ -770,9 +721,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
         *static_cast<const dynamics::UniversalJoint::Properties*>(
             jointProperties),
         bodyNodeProperties);
-  }
-  else if (jointType == "JointHinge")
-  {
+  } else if (jointType == "JointHinge") {
     return skeleton->createJointAndBodyNodePair<
         dynamics::RevoluteJoint,
         dynamics::BodyNode>(
@@ -780,18 +729,14 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
         *static_cast<const dynamics::RevoluteJoint::Properties*>(
             jointProperties),
         bodyNodeProperties);
-  }
-  else if (jointType == "JointDummy")
-  {
+  } else if (jointType == "JointDummy") {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::WeldJoint, dynamics::BodyNode>(
             parentBodyNode,
             *static_cast<const dynamics::WeldJoint::Properties*>(
                 jointProperties),
             bodyNodeProperties);
-  }
-  else
-  {
+  } else {
     dtwarn << "[ParserVsk::readSegment] Attempting to parse unsupported joint "
            << "type.\n";
 
@@ -812,8 +757,7 @@ bool readMarkerSet(
   const tinyxml2::XMLElement* markersEle
       = markerSetEle->FirstChildElement("Markers");
   ConstElementEnumerator marker(markersEle, "Marker");
-  while (marker.next())
-  {
+  while (marker.next()) {
     if (!readMarker(marker.get(), skel, vskData))
       return false;
   }
@@ -822,8 +766,7 @@ bool readMarkerSet(
   const tinyxml2::XMLElement* sticksEle
       = markerSetEle->FirstChildElement("Sticks");
   ConstElementEnumerator stick(sticksEle, "Stick");
-  while (stick.next())
-  {
+  while (stick.next()) {
     if (!readStick(stick.get(), skel, vskData))
       return false;
   }
@@ -842,8 +785,7 @@ bool readMarker(
 
   // Attribute: POSITION
   Eigen::Vector3d position = Eigen::Vector3d::Zero();
-  if (hasAttribute(markerEle, "POSITION"))
-  {
+  if (hasAttribute(markerEle, "POSITION")) {
     position
         = readAttributeVector<3>(markerEle, "POSITION", vskData.parameterMap);
     position *= vsk_scale;
@@ -867,8 +809,7 @@ bool readMarker(
   //   radius = getAttributeDouble(markerEle, "RADIUS");
 
   dynamics::BodyNode* bodyNode = skel->getBodyNode(segment);
-  if (!bodyNode)
-  {
+  if (!bodyNode) {
     dtwarn << "[VskParser::readMarker] Failed to create a Marker [" << name
            << ": couldn't find a BodyNode [" << segment << "] in a"
            << "Skeleton [" << skel->getName() << "].\n";
@@ -900,8 +841,7 @@ bool readStick(
 void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 {
   // Generate shapes for bodies that have their parents
-  for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
     dynamics::Joint* joint = skel->getJoint(i);
     Eigen::Isometry3d tf = joint->getTransformFromParentBodyNode();
@@ -943,16 +883,13 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
   }
 
   // Remove redundant leaf body nodes with no shape
-  if (vskData.options.removeEndBodyNodes)
-  {
+  if (vskData.options.removeEndBodyNodes) {
     std::vector<dynamics::BodyNode*> emptynodes;
-    for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
-    {
+    for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
       dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
       if (bodyNode->getNumShapeNodes() == 0
-          && bodyNode->getNumChildBodyNodes() == 0)
-      {
+          && bodyNode->getNumChildBodyNodes() == 0) {
         emptynodes.push_back(bodyNode);
       }
     }
@@ -963,16 +900,14 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 
   // Update mass and moments of inertia of the bodies based on the their shapes
   const double& density = vskData.options.density;
-  for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
     double totalMass = 0.0;
     Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
     auto numShapeNodes = bodyNode->getNumNodes<dynamics::ShapeNode>();
 
-    for (auto j = 0u; j < numShapeNodes; ++j)
-    {
+    for (auto j = 0u; j < numShapeNodes; ++j) {
       auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(j);
       auto shape = shapeNode->getShape();
       const double mass = density * shape->getVolume();
@@ -985,16 +920,14 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
       // but Inertia class doens't support it for now. See #234.
     }
 
-    if (bodyNode->getMass() > 1e-5)
-    {
+    if (bodyNode->getMass() > 1e-5) {
       const double givenMass = bodyNode->getMass();
       const double ratio = givenMass / totalMass;
       totalMass = givenMass;
       totalMoi *= ratio;
     }
 
-    if (totalMass <= 0.0 || totalMoi.diagonal().norm() <= 0.0)
-    {
+    if (totalMass <= 0.0 || totalMoi.diagonal().norm() <= 0.0) {
       dtwarn << "[VskParser::generateShapes] A BodyNode '"
              << bodyNode->getName() << "' of Skelelton '"
              << bodyNode->getSkeleton()->getName()
@@ -1025,8 +958,7 @@ void tokenize(
   // Find first "non-delimiter".
   std::string::size_type pos = str.find_first_of(delimiters, lastPos);
 
-  while (std::string::npos != pos || std::string::npos != lastPos)
-  {
+  while (std::string::npos != pos || std::string::npos != lastPos) {
     // Found a token, add it to the vector.
     tokens.push_back(str.substr(lastPos, pos - lastPos));
 
@@ -1042,12 +974,9 @@ void tokenize(
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& retriever)
 {
-  if (retriever)
-  {
+  if (retriever) {
     return retriever;
-  }
-  else
-  {
+  } else {
     auto newRetriever = std::make_shared<io::CompositeResourceRetriever>();
     newRetriever->addSchemaRetriever(
         "file", std::make_shared<common::LocalResourceRetriever>());

@@ -65,8 +65,7 @@ void randomize_transform(
 
 void randomize_transforms(std::vector<Eigen::Isometry3d>& tfs)
 {
-  for (std::size_t i = 0; i < tfs.size(); ++i)
-  {
+  for (std::size_t i = 0; i < tfs.size(); ++i) {
     randomize_transform(tfs[i]);
   }
 }
@@ -155,18 +154,15 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   randomize_transforms(tfs);
 
-  for (std::size_t i = 0; i < frames.size(); ++i)
-  {
+  for (std::size_t i = 0; i < frames.size(); ++i) {
     SimpleFrame* F = frames[i];
     F->setRelativeTransform(tfs[i]);
   }
 
-  for (std::size_t i = 0; i < frames.size(); ++i)
-  {
+  for (std::size_t i = 0; i < frames.size(); ++i) {
     Frame* F = frames[i];
     Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
-    for (std::size_t j = 0; j <= i; ++j)
-    {
+    for (std::size_t j = 0; j <= i; ++j) {
       expectation = expectation * tfs[j];
     }
 
@@ -175,8 +171,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
   }
 
   randomize_transforms(tfs);
-  for (std::size_t i = 0; i < frames.size(); ++i)
-  {
+  for (std::size_t i = 0; i < frames.size(); ++i) {
     SimpleFrame* F = frames[i];
     F->setRelativeTransform(tfs[i]);
   }
@@ -194,8 +189,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     std::vector<Eigen::Vector6d> v_rels(frames.size());
     std::vector<Eigen::Vector6d> v_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<6>();
 
       SimpleFrame* F = frames[i];
@@ -212,8 +206,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             v_total[i]);
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
 
       Eigen::Vector6d v_actual = F->getSpatialVelocity();
@@ -230,8 +223,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     std::vector<Eigen::Vector3d> v_total(frames.size());
     std::vector<Eigen::Vector3d> w_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<3>();
       w_rels[i] = random_vec<3>();
 
@@ -265,8 +257,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             w_total[i]);
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
       Eigen::Vector3d v_actual = F->getLinearVelocity();
       Eigen::Vector3d w_actual = F->getAngularVelocity();
@@ -286,8 +277,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     std::vector<Eigen::Vector6d> v_total(frames.size());
     std::vector<Eigen::Vector6d> a_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<6>();
       a_rels[i] = random_vec<6>();
 
@@ -296,14 +286,11 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       F->setRelativeSpatialAcceleration(a_rels[i]);
       Eigen::Isometry3d tf = F->getRelativeTransform();
 
-      if (i > 0)
-      {
+      if (i > 0) {
         compute_spatial_velocity(v_total[i - 1], v_rels[i], tf, v_total[i]);
         compute_spatial_acceleration(
             a_total[i - 1], a_rels[i], v_total[i], v_rels[i], tf, a_total[i]);
-      }
-      else
-      {
+      } else {
         compute_spatial_velocity(
             Eigen::Vector6d::Zero(), v_rels[i], tf, v_total[i]);
         compute_spatial_acceleration(
@@ -316,8 +303,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       }
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
 
       Eigen::Vector6d a_actual = F->getSpatialAcceleration();
@@ -326,8 +312,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     }
 
     // Test relative computations
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       Frame* F = frames[i];
       Frame* P = F->getParentFrame();
 
@@ -339,8 +324,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     }
 
     // Test offset computations
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       Eigen::Vector3d offset = random_vec<3>();
       Frame* F = frames[i];
 
@@ -393,8 +377,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     std::vector<Eigen::Vector3d> a_total(frames.size());
     std::vector<Eigen::Vector3d> alpha_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<3>();
       w_rels[i] = random_vec<3>();
       a_rels[i] = random_vec<3>();
@@ -411,8 +394,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       Eigen::Isometry3d tf = i > 0 ? frames[i - 1]->getTransform()
                                    : Eigen::Isometry3d::Identity();
 
-      if (i > 0)
-      {
+      if (i > 0) {
         compute_velocity(
             v_total[i - 1],
             w_total[i - 1],
@@ -434,9 +416,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             tf,
             a_total[i],
             alpha_total[i]);
-      }
-      else
-      {
+      } else {
         compute_velocity(
             Eigen::Vector3d::Zero(),
             Eigen::Vector3d::Zero(),
@@ -461,8 +441,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       }
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
       Eigen::Vector3d v_actual = F->getLinearVelocity();
       Eigen::Vector3d w_actual = F->getAngularVelocity();
@@ -476,8 +455,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     }
 
     // Test relative computations
-    for (std::size_t i = 0; i < frames.size(); ++i)
-    {
+    for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
       Frame* P = F->getParentFrame();
       Eigen::Vector3d v_rel = F->getLinearVelocity(P, P);
@@ -496,21 +474,17 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 void randomize_target_values(
     const std::vector<SimpleFrame*>& targets, bool spatial)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i)
-  {
+  for (std::size_t i = 0; i < targets.size(); ++i) {
     SimpleFrame* T = targets[i];
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     randomize_transform(tf, 1, 2 * dart::math::pi());
 
-    if (spatial)
-    {
+    if (spatial) {
       T->setRelativeTransform(tf);
       T->setRelativeSpatialVelocity(random_vec<6>(1));
       T->setRelativeSpatialAcceleration(random_vec<6>(1));
-    }
-    else
-    {
+    } else {
       T->setRelativeTransform(tf);
       T->setClassicDerivatives(
           random_vec<3>(1),
@@ -526,20 +500,16 @@ void set_relative_values(
     const std::vector<SimpleFrame*>& followers,
     bool spatial)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i)
-  {
+  for (std::size_t i = 0; i < targets.size(); ++i) {
     Frame* T = targets[i];
     SimpleFrame* F = followers[i];
     Frame* P = F->getParentFrame();
 
     F->setRelativeTransform(T->getTransform(P));
-    if (spatial)
-    {
+    if (spatial) {
       F->setRelativeSpatialVelocity(T->getSpatialVelocity(P, F));
       F->setRelativeSpatialAcceleration(T->getSpatialAcceleration(P, F));
-    }
-    else
-    {
+    } else {
       F->setClassicDerivatives(
           T->getLinearVelocity(P, P),
           T->getAngularVelocity(P, P),
@@ -554,8 +524,7 @@ void check_world_values(
     const std::vector<SimpleFrame*>& followers,
     double tolerance)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i)
-  {
+  for (std::size_t i = 0; i < targets.size(); ++i) {
     Frame* T = targets[i];
     Frame* F = followers[i];
 
@@ -597,8 +566,7 @@ void check_values(
     const Frame* inCoordinatesOf,
     double tolerance)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i)
-  {
+  for (std::size_t i = 0; i < targets.size(); ++i) {
     Frame* T = targets[i];
     Frame* F = followers[i];
 
@@ -650,8 +618,7 @@ void check_offset_computations(
     const Frame* inCoordinatesOf,
     double tolerance)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i)
-  {
+  for (std::size_t i = 0; i < targets.size(); ++i) {
     Frame* T = targets[i];
     Frame* F = followers[i];
 
@@ -782,11 +749,9 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
   check_world_values(targets, followers, tolerance);
 
   // Check every combination of relative values
-  for (std::size_t i = 0; i < targets.size(); ++i)
-  {
+  for (std::size_t i = 0; i < targets.size(); ++i) {
     Frame* T = targets[i];
-    for (std::size_t j = 0; j < followers.size(); ++j)
-    {
+    for (std::size_t j = 0; j < followers.size(); ++j) {
       Frame* F = followers[j];
 
       check_values(targets, followers, T, F, tolerance);
@@ -796,17 +761,14 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
   }
 
   // Test SimpleFrame::setTransform()
-  for (std::size_t i = 0; i < followers.size(); ++i)
-  {
-    for (std::size_t j = 0; j < followers.size(); ++j)
-    {
+  for (std::size_t i = 0; i < followers.size(); ++i) {
+    for (std::size_t j = 0; j < followers.size(); ++j) {
       SimpleFrame* F = followers[i];
       SimpleFrame* T = followers[j];
       Eigen::Isometry3d tf;
       randomize_transform(tf, 1, 2 * dart::math::pi());
       T->setTransform(tf, F);
-      if (i != j)
-      {
+      if (i != j) {
         EXPECT_TRANSFORM_NEAR(T->getTransform(F), tf, 1e-10);
       }
     }

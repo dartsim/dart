@@ -44,8 +44,7 @@ TEST(IcosphereTests, NumOfVerticesAndTriangles)
 {
   const double radius = 5.0;
 
-  for (auto i = 0; i < 8; ++i)
-  {
+  for (auto i = 0; i < 8; ++i) {
     const auto subdivisions = i;
     const auto icosphere = Icosphered(radius, subdivisions);
     const auto& vertices = icosphere.getVertices();
@@ -54,8 +53,7 @@ TEST(IcosphereTests, NumOfVerticesAndTriangles)
     EXPECT_EQ(vertices.size(), Icosphered::getNumVertices(subdivisions));
     EXPECT_EQ(triangles.size(), Icosphered::getNumTriangles(subdivisions));
 
-    for (const auto& v : vertices)
-    {
+    for (const auto& v : vertices) {
       EXPECT_DOUBLE_EQ(v.norm(), radius);
     }
   }

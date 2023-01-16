@@ -45,8 +45,7 @@ const Eigen::Vector3d LineSegmentShape::mDummyVertex = Eigen::Vector3d::Zero();
 LineSegmentShape::LineSegmentShape(float _thickness)
   : Shape(), mThickness(_thickness)
 {
-  if (_thickness <= 0.0f)
-  {
+  if (_thickness <= 0.0f) {
     dtwarn << "[LineSegmentShape::LineSegmentShape] Attempting to set "
            << "non-positive thickness. We set the thickness to 1.0f instead."
            << std::endl;
@@ -61,8 +60,7 @@ LineSegmentShape::LineSegmentShape(
     const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2, float _thickness)
   : Shape(), mThickness(_thickness)
 {
-  if (_thickness <= 0.0f)
-  {
+  if (_thickness <= 0.0f) {
     dtwarn << "[LineSegmentShape::LineSegmentShape] Attempting to set "
            << "non-positive thickness. We set the thickness to 1.0f instead."
            << std::endl;
@@ -90,8 +88,7 @@ const std::string& LineSegmentShape::getStaticType()
 //==============================================================================
 void LineSegmentShape::setThickness(float _thickness)
 {
-  if (_thickness <= 0.0f)
-  {
+  if (_thickness <= 0.0f) {
     dtwarn << "[LineSegmentShape::setThickness] Attempting to set non-positive "
            << "thickness. We set the thickness to 1.0f instead." << std::endl;
     mThickness = 1.0f;
@@ -125,8 +122,7 @@ std::size_t LineSegmentShape::addVertex(
   std::size_t index = mVertices.size();
   mVertices.push_back(_v);
 
-  if (_parent > mVertices.size())
-  {
+  if (_parent > mVertices.size()) {
     if (mVertices.size() == 0)
       dtwarn << "[LineSegmentShape::addVertex(const Eigen::Vector3d&, "
                 "std::size_t)] "
@@ -141,9 +137,7 @@ std::size_t LineSegmentShape::addVertex(
              << mVertices.size() - 1
              << ". No connection will be created for the "
              << "new vertex yet.\n";
-  }
-  else
-  {
+  } else {
     mConnections.push_back(Eigen::Vector2i(_parent, index));
   }
 
@@ -153,8 +147,7 @@ std::size_t LineSegmentShape::addVertex(
 //==============================================================================
 void LineSegmentShape::removeVertex(std::size_t _idx)
 {
-  if (_idx >= mVertices.size())
-  {
+  if (_idx >= mVertices.size()) {
     if (mVertices.size() == 0)
       dtwarn << "[LineSegmentShape::removeVertex] Attempting to remove vertex #"
              << _idx << ", but "
@@ -175,8 +168,7 @@ void LineSegmentShape::removeVertex(std::size_t _idx)
 //==============================================================================
 void LineSegmentShape::setVertex(std::size_t _idx, const Eigen::Vector3d& _v)
 {
-  if (_idx >= mVertices.size())
-  {
+  if (_idx >= mVertices.size()) {
     if (mVertices.size() == 0)
       dtwarn << "[LineSegmentShape::setVertex] Attempting to set vertex #"
              << _idx << ", but "
@@ -198,13 +190,10 @@ const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
   if (_idx < mVertices.size())
     return mVertices[_idx];
 
-  if (mVertices.empty())
-  {
+  if (mVertices.empty()) {
     dtwarn << "[LineSegmentShape::getVertex] Requested vertex #" << _idx
            << ", but no vertices currently exist in this LineSegmentShape\n";
-  }
-  else
-  {
+  } else {
     dtwarn << "[LineSegmentShape::getVertex] Requested vertex #" << _idx
            << ", but vertex indices currently only go up to "
            << mVertices.size() - 1 << "\n";
@@ -222,8 +211,7 @@ const std::vector<Eigen::Vector3d>& LineSegmentShape::getVertices() const
 //==============================================================================
 void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
 {
-  if (_idx1 >= mVertices.size() || _idx2 >= mVertices.size())
-  {
+  if (_idx1 >= mVertices.size() || _idx2 >= mVertices.size()) {
     if (mVertices.size() == 0)
       dtwarn << "[LineSegmentShape::createConnection] Attempted to create a "
              << "connection between vertex #" << _idx1 << " and vertex #"
@@ -249,17 +237,14 @@ void LineSegmentShape::removeConnection(
 {
   // Search through all connections to remove any that match the request
   std::vector<Eigen::Vector2i>::iterator it = mConnections.begin();
-  while (it != mConnections.end())
-  {
+  while (it != mConnections.end()) {
     const Eigen::Vector2i c = (*it);
     if ((c[0] == (int)_vertexIdx1 && c[1] == (int)_vertexIdx2)
-        || (c[0] == (int)_vertexIdx2 && c[1] == (int)_vertexIdx1))
-    {
+        || (c[0] == (int)_vertexIdx2 && c[1] == (int)_vertexIdx1)) {
       // Erase this iterator, but not before stepping it forward to the next
       // iterator in the sequence.
       mConnections.erase(it++);
-    }
-    else
+    } else
       ++it;
   }
 }
@@ -267,8 +252,7 @@ void LineSegmentShape::removeConnection(
 //==============================================================================
 void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 {
-  if (_connectionIdx >= mConnections.size())
-  {
+  if (_connectionIdx >= mConnections.size()) {
     if (mConnections.size() == 0)
       dtwarn
           << "[LineSegmentShape::removeConnection(std::size_t)] Attempting to "
@@ -301,16 +285,14 @@ Eigen::Matrix3d LineSegmentShape::computeInertia(double _mass) const
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
 
   double totalLength = 0;
-  for (const Eigen::Vector2i& c : mConnections)
-  {
+  for (const Eigen::Vector2i& c : mConnections) {
     const Eigen::Vector3d& v0 = mVertices[c[0]];
     const Eigen::Vector3d& v1 = mVertices[c[1]];
 
     totalLength += (v1 - v0).norm();
   }
 
-  for (const Eigen::Vector2i& c : mConnections)
-  {
+  for (const Eigen::Vector2i& c : mConnections) {
     const Eigen::Vector3d& v0 = mVertices[c[0]];
     const Eigen::Vector3d& v1 = mVertices[c[1]];
 
@@ -328,22 +310,16 @@ Eigen::Matrix3d LineSegmentShape::computeInertia(double _mass) const
     Eigen::Vector3d v = v1 - v0;
     Eigen::Vector3d axis;
     double angle;
-    if (v.norm() == 0)
-    {
+    if (v.norm() == 0) {
       angle = 0;
       axis = Eigen::Vector3d::UnitX();
-    }
-    else
-    {
+    } else {
       v.normalize();
       Eigen::Vector3d axis = Eigen::Vector3d::UnitZ().cross(v);
-      if (axis.norm() == 0)
-      {
+      if (axis.norm() == 0) {
         angle = 0;
         axis = Eigen::Vector3d::UnitX();
-      }
-      else
-      {
+      } else {
         axis.normalize();
         angle = acos(Eigen::Vector3d::UnitZ().dot(v));
       }
@@ -372,8 +348,7 @@ ShapePtr LineSegmentShape::clone() const
 //==============================================================================
 void LineSegmentShape::updateBoundingBox() const
 {
-  if (mVertices.empty())
-  {
+  if (mVertices.empty()) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -383,8 +358,7 @@ void LineSegmentShape::updateBoundingBox() const
   Eigen::Vector3d min = Eigen::Vector3d::Constant(math::inf<double>());
   Eigen::Vector3d max = Eigen::Vector3d::Constant(-math::inf<double>());
 
-  for (const auto& vertex : mVertices)
-  {
+  for (const auto& vertex : mVertices) {
     min = min.cwiseMin(vertex);
     max = max.cwiseMax(vertex);
   }

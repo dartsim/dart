@@ -79,8 +79,7 @@ Controller::~Controller()
 {
   for (vector<StateMachine*>::iterator it = mStateMachines.begin();
        it != mStateMachines.end();
-       ++it)
-  {
+       ++it) {
     delete *it;
   }
 }
@@ -111,8 +110,7 @@ void Controller::changeStateMachine(
       _containStateMachine(_stateMachine)
       && "_stateMachine should be in mStateMachines");
 
-  if (mCurrentStateMachine == _stateMachine)
-  {
+  if (mCurrentStateMachine == _stateMachine) {
     return;
   }
 
@@ -153,8 +151,7 @@ void Controller::changeStateMachine(std::size_t _idx, double _currentTime)
 void Controller::keyboard(
     unsigned char _key, int /*_x*/, int /*_y*/, double _currentTime)
 {
-  switch (_key)
-  {
+  switch (_key) {
     case 'h': // Harness pelvis toggle
       if (mPelvisHarnessOn)
         unharnessPelvis();
@@ -205,16 +202,14 @@ void Controller::printDebugInfo() const
             << " NUM DOF   : " << mAtlasRobot->getNumDofs() << std::endl
             << " NUM JOINTS: " << mAtlasRobot->getNumBodyNodes() << std::endl;
 
-  for (std::size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i) {
     Joint* joint = mAtlasRobot->getJoint(i);
     BodyNode* body = mAtlasRobot->getBodyNode(i);
     BodyNode* parentBody = mAtlasRobot->getBodyNode(i)->getParentBodyNode();
 
     std::cout << "  Joint [" << i << "]: " << joint->getName() << " ("
               << joint->getNumDofs() << ")" << std::endl;
-    if (parentBody != nullptr)
-    {
+    if (parentBody != nullptr) {
       std::cout << "    Parent body: " << parentBody->getName() << std::endl;
     }
 
@@ -912,11 +907,9 @@ StateMachine* Controller::_createRunningStateMachine()
 //==============================================================================
 void Controller::_setJointDamping()
 {
-  for (std::size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i) {
     Joint* joint = mAtlasRobot->getJoint(i);
-    if (joint->getNumDofs() > 0)
-    {
+    if (joint->getNumDofs() > 0) {
       for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
         joint->setDampingCoefficient(j, 80.0);
     }
@@ -940,8 +933,7 @@ bool Controller::_containStateMachine(const StateMachine* _stateMachine) const
 {
   for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end();
-       ++it)
-  {
+       ++it) {
     if (*it == _stateMachine)
       return true;
   }
@@ -962,10 +954,8 @@ StateMachine* Controller::_findStateMachine(const string& _name) const
 
   for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end();
-       ++it)
-  {
-    if ((*it)->getName() == _name)
-    {
+       ++it) {
+    if ((*it)->getName() == _name) {
       stateMachine = *it;
       break;
     }

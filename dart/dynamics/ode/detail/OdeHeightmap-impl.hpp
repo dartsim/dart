@@ -56,8 +56,7 @@ void setOdeHeightfieldDetails(
 {
   assert(width >= 2);
   assert(height >= 2);
-  if ((width < 2) || (height < 2))
-  {
+  if ((width < 2) || (height < 2)) {
     dtwarn << "Cannot create height field of dimensions " << width << "x"
            << height << ", needs to be at least 2" << std::endl;
     return;
@@ -89,8 +88,7 @@ void setOdeHeightfieldDetails(
 {
   assert(width >= 2);
   assert(height >= 2);
-  if ((width < 2) || (height < 2))
-  {
+  if ((width < 2) || (height < 2)) {
     dtwarn << "Cannot create height field of dimensions " << width << "x"
            << height << ", needs to be at least 2" << std::endl;
     return;

@@ -96,8 +96,7 @@ void runIssue1234Test(
       100.0 * Eigen::Vector3d::Ones(), aiscene, meshUri);
 
   const auto bb = mesh->getBoundingBox();
-  for (int i = 0; i < 3; ++i)
-  {
+  for (int i = 0; i < 3; ++i) {
     EXPECT_NEAR(bb.getMin()[i], -2.0, 1e-3);
     EXPECT_NEAR(bb.getMax()[i], 2.0, 1e-3);
   }
@@ -112,36 +111,28 @@ void runIssue1234Test(
   std::size_t numPasses = 0;
 
   for (const dart::dynamics::ShapePtr& shape :
-       {dart::dynamics::ShapePtr{box}, dart::dynamics::ShapePtr{mesh}})
-  {
-    for (const double offset : {-0.1, 0.0, 0.1})
-    {
+       {dart::dynamics::ShapePtr{box}, dart::dynamics::ShapePtr{mesh}}) {
+    for (const double offset : {-0.1, 0.0, 0.1}) {
       for (const auto& normal :
            {Eigen::Vector3d(0.0, 0.0, 1.0),
             Eigen::Vector3d(0.0, 0.0, -1.0),
             Eigen::Vector3d(0.0, 1.0, 0.0),
             Eigen::Vector3d(0.0, -1.0, 0.0),
             Eigen::Vector3d(1.0, 0.0, 0.0),
-            Eigen::Vector3d(-1.0, 0.0, 0.0)})
-      {
-        if (offset < 0.0)
-        {
-          for (const auto& angle : {0.0, dart::math::toRadian(10.0)})
-          {
+            Eigen::Vector3d(-1.0, 0.0, 0.0)}) {
+        if (offset < 0.0) {
+          for (const auto& angle : {0.0, dart::math::toRadian(10.0)}) {
             const Eigen::Vector3d axis = std::abs(normal[1]) > 1e-3
                                              ? Eigen::Vector3d::UnitY()
                                              : Eigen::Vector3d::UnitX();
 
             ++numTests;
             if (runIssue1234Subtest(
-                    detectorFactory(), shape, normal, offset, angle, axis))
-            {
+                    detectorFactory(), shape, normal, offset, angle, axis)) {
               ++numPasses;
             }
           }
-        }
-        else
-        {
+        } else {
           ++numTests;
           if (runIssue1234Subtest(
                   detectorFactory(),
@@ -149,8 +140,7 @@ void runIssue1234Test(
                   normal,
                   offset,
                   0.0,
-                  Eigen::Vector3d::UnitZ()))
-          {
+                  Eigen::Vector3d::UnitZ())) {
             ++numPasses;
           }
         }

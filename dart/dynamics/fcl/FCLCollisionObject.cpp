@@ -73,8 +73,7 @@ void FCLCollisionObject::updateEngineData()
   auto shape = mShapeFrame->getShape().get();
 
   // Update soft-body's vertices
-  if (shape->getType() == dynamics::SoftMeshShape::getStaticType())
-  {
+  if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
     assert(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
@@ -90,11 +89,9 @@ void FCLCollisionObject::updateEngineData()
         = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
 
     bvhModel->beginUpdateModel();
-    for (auto i = 0u; i < mesh->mNumFaces; ++i)
-    {
+    for (auto i = 0u; i < mesh->mNumFaces; ++i) {
       dart::collision::fcl::Vector3 vertices[3];
-      for (auto j = 0u; j < 3; ++j)
-      {
+      for (auto j = 0u; j < 3; ++j) {
         const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
         vertices[j]
             = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);

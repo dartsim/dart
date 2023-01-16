@@ -73,8 +73,7 @@ using namespace dart::simulation;
 void setupRing(const SkeletonPtr& ring)
 {
   // Set the spring and damping coefficients for the degrees of freedom
-  for (std::size_t i = 6; i < ring->getNumDofs(); ++i)
-  {
+  for (std::size_t i = 6; i < ring->getNumDofs(); ++i) {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setSpringStiffness(ring_spring_stiffness);
     dof->setDampingCoefficient(ring_damping_coefficient);
@@ -85,8 +84,7 @@ void setupRing(const SkeletonPtr& ring)
   double angle = 2 * dart::math::pi() / numEdges;
 
   // Set the BallJoints so that they have the correct rest position angle
-  for (std::size_t i = 1; i < ring->getNumJoints(); ++i)
-  {
+  for (std::size_t i = 1; i < ring->getNumJoints(); ++i) {
     Joint* joint = ring->getJoint(i);
     Eigen::AngleAxisd rotation(angle, Eigen::Vector3d(0, 1, 0));
     Eigen::Vector3d restPos
@@ -97,8 +95,7 @@ void setupRing(const SkeletonPtr& ring)
   }
 
   // Set the Joints to be in their rest positions
-  for (std::size_t i = 6; i < ring->getNumDofs(); ++i)
-  {
+  for (std::size_t i = 6; i < ring->getNumDofs(); ++i) {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setPosition(dof->getRestPosition());
   }
@@ -130,8 +127,7 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    switch (key)
-    {
+    switch (key) {
       case '1':
         addObject(mOriginalBall->cloneSkeleton());
         break;
@@ -184,8 +180,7 @@ public:
     // We remove playback and baking, because we want to be able to add and
     // remove objects during runtime
     int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
-    if (mSimulating)
-    {
+    if (mSimulating) {
       for (int i = 0; i < numIter; i++)
         timeStepping();
     }
@@ -222,12 +217,9 @@ protected:
     bool collision = collisionGroup->collide(newGroup.get(), option, &result);
 
     // If the new object is not in collision
-    if (!collision)
-    {
+    if (!collision) {
       mWorld->addSkeleton(object);
-    }
-    else
-    {
+    } else {
       // or refuse to add the object if it is in collision
       std::cout << "The new object spawned in a collision. "
                 << "It will not be added to the world." << std::endl;
@@ -244,8 +236,7 @@ protected:
     double angle = default_launch_angle;
     double speed = default_start_v;
     double angular_speed = default_start_w;
-    if (mRandomize)
-    {
+    if (mRandomize) {
       angle = (mDistribution(mMT) + 1.0) / 2.0
                   * (maximum_launch_angle - minimum_launch_angle)
               + minimum_launch_angle;
@@ -297,14 +288,12 @@ protected:
   /// it, if one existed
   void removeSkeleton(const SkeletonPtr& skel)
   {
-    for (std::size_t i = 0; i < mJointConstraints.size(); ++i)
-    {
+    for (std::size_t i = 0; i < mJointConstraints.size(); ++i) {
       const dart::dynamics::DynamicJointConstraintPtr& constraint
           = mJointConstraints[i];
 
       if (constraint->getBodyNode1()->getSkeleton() == skel
-          || constraint->getBodyNode2()->getSkeleton() == skel)
-      {
+          || constraint->getBodyNode2()->getSkeleton() == skel) {
         mWorld->getConstraintSolver()->removeConstraint(constraint);
         mJointConstraints.erase(mJointConstraints.begin() + i);
         break; // There should only be one constraint per skeleton
@@ -357,8 +346,7 @@ BodyNode* addRigidBody(
   // Set the Joint properties
   typename JointType::Properties properties;
   properties.mName = name + "_joint";
-  if (parent)
-  {
+  if (parent) {
     // If the body has a parent, we should position the joint to be in the
     // middle of the centers of the two bodies
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -375,18 +363,13 @@ BodyNode* addRigidBody(
 
   // Make the shape based on the requested Shape type
   ShapePtr shape;
-  if (BoxShape::getStaticType() == type)
-  {
+  if (BoxShape::getStaticType() == type) {
     shape = std::make_shared<BoxShape>(Eigen::Vector3d(
         default_shape_width, default_shape_width, default_shape_height));
-  }
-  else if (CylinderShape::getStaticType() == type)
-  {
+  } else if (CylinderShape::getStaticType() == type) {
     shape = std::make_shared<CylinderShape>(
         default_shape_width / 2.0, default_shape_height);
-  }
-  else if (EllipsoidShape::getStaticType() == type)
-  {
+  } else if (EllipsoidShape::getStaticType() == type) {
     shape = std::make_shared<EllipsoidShape>(
         default_shape_height * Eigen::Vector3d::Ones());
   }
@@ -406,8 +389,7 @@ BodyNode* addRigidBody(
   shapeNode->getDynamicsAspect()->setRestitutionCoeff(default_restitution);
 
   // Set damping to make the simulation more stable
-  if (parent)
-  {
+  if (parent) {
     Joint* joint = bn->getParentJoint();
     for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
       joint->getDof(i)->setDampingCoefficient(default_damping_coefficient);
@@ -434,8 +416,7 @@ BodyNode* addSoftBody(
   // Set the Joint properties
   typename JointType::Properties joint_properties;
   joint_properties.mName = name + "_joint";
-  if (parent)
-  {
+  if (parent) {
     // If the body has a parent, we should position the joint to be in the
     // middle of the centers of the two bodies
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -448,8 +429,7 @@ BodyNode* addSoftBody(
   SoftBodyNode::UniqueProperties soft_properties;
   // Use the SoftBodyNodeHelper class to create the geometries for the
   // SoftBodyNode
-  if (SOFT_BOX == type)
-  {
+  if (SOFT_BOX == type) {
     // Make a wide and short box
     double width = default_shape_height, height = 2 * default_shape_width;
     Eigen::Vector3d dims(width, width, height);
@@ -459,9 +439,7 @@ BodyNode* addSoftBody(
     mass *= default_shape_density * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeBoxProperties(
         dims, Eigen::Isometry3d::Identity(), Eigen::Vector3i(4, 4, 4), mass);
-  }
-  else if (SOFT_CYLINDER == type)
-  {
+  } else if (SOFT_CYLINDER == type) {
     // Make a wide and short cylinder
     double radius = default_shape_height / 2.0,
            height = 2 * default_shape_width;
@@ -474,9 +452,7 @@ BodyNode* addSoftBody(
             * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
         radius, height, 8, 3, 2, mass);
-  }
-  else if (SOFT_ELLIPSOID == type)
-  {
+  } else if (SOFT_ELLIPSOID == type) {
     double radius = default_shape_height / 2.0;
     Eigen::Vector3d dims = 2 * radius * Eigen::Vector3d::Ones();
     double mass = default_shape_density * 4.0 * dart::math::pi()

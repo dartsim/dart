@@ -159,8 +159,7 @@ TEST(IkFast, LoadWamArmIk)
 
   const auto dofs = ikfast->getDofs();
 
-  for (const auto& solution : solutions)
-  {
+  for (const auto& solution : solutions) {
     ASSERT_EQ(solution.mConfig.size(), 6);
 
     if (solution.mValidity != InverseKinematics::Analytical::VALID)

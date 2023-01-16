@@ -118,8 +118,7 @@ const std::vector<SimpleFrame*>& JOINTS::getFrames() const
 //==============================================================================
 void JOINTS::randomizeRefFrames()
 {
-  for (std::size_t i = 0; i < frames.size(); ++i)
-  {
+  for (std::size_t i = 0; i < frames.size(); ++i) {
     SimpleFrame* F = frames[i];
 
     Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
@@ -159,12 +158,10 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
   VectorXd q = VectorXd::Zero(dof);
   VectorXd dq = VectorXd::Zero(dof);
 
-  for (int idxTest = 0; idxTest < numTests; ++idxTest)
-  {
+  for (int idxTest = 0; idxTest < numTests; ++idxTest) {
     double q_delta = 0.000001;
 
-    for (int i = 0; i < dof; ++i)
-    {
+    for (int i = 0; i < dof; ++i) {
       q(i) = Random::uniform(-pi() * 1.0, pi() * 1.0);
       dq(i) = Random::uniform(-pi() * 1.0, pi() * 1.0);
     }
@@ -189,8 +186,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     // J == numericalJ
     //--------------------------------------------------------------------------
     Jacobian numericJ = Jacobian::Zero(6, dof);
-    for (int i = 0; i < dof; ++i)
-    {
+    for (int i = 0; i < dof; ++i) {
       // a
       Eigen::VectorXd q_a = q;
       joint->setPositions(q_a);
@@ -224,8 +220,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       numericJ.col(i) = Ji;
     }
 
-    for (int i = 0; i < dof; ++i)
-    {
+    for (int i = 0; i < dof; ++i) {
       for (int j = 0; j < 6; ++j)
         EXPECT_NEAR(J.col(i)(j), numericJ.col(i)(j), JOINT_TOL);
     }
@@ -235,8 +230,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     // dJ == numerical_dJ
     //--------------------------------------------------------------------------
     Jacobian numeric_dJ = Jacobian::Zero(6, dof);
-    for (int i = 0; i < dof; ++i)
-    {
+    for (int i = 0; i < dof; ++i) {
       // a
       Eigen::VectorXd q_a = q;
       joint->setPositions(q_a);
@@ -255,8 +249,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       numeric_dJ += dJ_dq * dq(i);
     }
 
-    for (int i = 0; i < dof; ++i)
-    {
+    for (int i = 0; i < dof; ++i) {
       for (int j = 0; j < 6; ++j)
         EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
     }
@@ -266,8 +259,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
   double posMin = -1e+64;
   double posMax = +1e+64;
 
-  for (int idxTest = 0; idxTest < numTests; ++idxTest)
-  {
+  for (int idxTest = 0; idxTest < numTests; ++idxTest) {
     for (int i = 0; i < dof; ++i)
       q(i) = Random::uniform(posMin, posMax);
 
@@ -374,8 +366,7 @@ void testCommandLimits(dynamics::Joint* joint)
   const double lessThanLower = -10.0;
   const double greaterThanUpper = +10.0;
 
-  for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
-  {
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
     (joint->*setXLowerLimit)(i, lower);
     (joint->*setXUpperLimit)(i, upper);
 
@@ -472,8 +463,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
   int nSteps = simTime / timeStep;
 
   // Two seconds with positive control forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, 0.1);
     joint1->setForce(0, 0.1);
     myWorld->step();
@@ -489,8 +479,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
   }
 
   // Two more seconds with negative control forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, -0.1);
     joint1->setForce(0, -0.1);
     myWorld->step();
@@ -554,8 +543,7 @@ TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
   int nSteps = simTime / timeStep;
 
   // Two seconds with positive control forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     // Apply sufficient force to hit the limits
     joint0->setForce(0, 1.0);
     joint1->setForce(0, 1.0);
@@ -579,8 +567,7 @@ TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
   }
 
   // Two more seconds with negative control forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     // Apply sufficient force to hit the limits
     joint0->setForce(0, -1.0);
     joint1->setForce(0, -1.0);
@@ -715,8 +702,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   int nSteps = simTime / timeStep;
 
   // Two seconds with lower control forces than the friction
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, +4.9);
     joint1->setForce(0, +4.9);
     myWorld->step();
@@ -729,8 +715,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   }
 
   // Another two seconds with lower control forces than the friction forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, -4.9);
     joint1->setForce(0, -4.9);
     myWorld->step();
@@ -743,8 +728,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   }
 
   // Another two seconds with higher control forces than the friction forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, 10.0);
     joint1->setForce(0, 10.0);
     myWorld->step();
@@ -757,8 +741,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   }
 
   // Spend 20 sec waiting the joints to stop
-  for (int i = 0; i < nSteps * 10; i++)
-  {
+  for (int i = 0; i < nSteps * 10; i++) {
     myWorld->step();
   }
   double jointVel0 = joint0->getVelocity(0);
@@ -769,8 +752,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   // Another two seconds with lower control forces than the friction forces
   // and expect the joints to stop
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, 4.9);
     joint1->setForce(0, 4.9);
     myWorld->step();
@@ -808,8 +790,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
 
   pendulum->disableSelfCollisionCheck();
 
-  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
     auto bodyNode = pendulum->getBodyNode(i);
     bodyNode->removeAllShapeNodesWith<CollisionAspect>();
   }
@@ -858,8 +839,7 @@ TEST_F(JOINTS, SpringRestPosition)
   // Joint starts from 0 and rotates towards its spring rest position (i.e.,
   // -pi), but it also should stay within the joint limits
   // (i.e., [-0.5pi, 0.5pi]).
-  for (auto i = 0u; i < 1000; ++i)
-  {
+  for (auto i = 0u; i < 1000; ++i) {
     world->step();
     const auto pos = joint->getPosition(0);
     EXPECT_GE(pos, joint->getPositionLowerLimit(0) - tol);
@@ -867,8 +847,7 @@ TEST_F(JOINTS, SpringRestPosition)
   }
 
   // After a while, the joint should come to rest at its lower position limit.
-  for (auto i = 0u; i < 500; ++i)
-  {
+  for (auto i = 0u; i < 500; ++i) {
     world->step();
     const auto pos = joint->getPosition(0);
     EXPECT_GE(pos, joint->getPositionLowerLimit(0) - tol);
@@ -935,8 +914,7 @@ void testServoMotor()
 
   std::vector<SkeletonPtr> pendulums(numPendulums);
   std::vector<JointPtr> joints(numPendulums);
-  for (std::size_t i = 0; i < numPendulums; ++i)
-  {
+  for (std::size_t i = 0; i < numPendulums; ++i) {
     pendulums[i] = createPendulum(Joint::SERVO);
     joints[i] = pendulums[i]->getJoint(0);
   }
@@ -980,8 +958,7 @@ void testServoMotor()
   int nSteps = simTime / timeStep;
 
   // Two seconds with lower control forces than the friction
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     const double expected_vel = std::sin(world->getTime());
 
     joints[0]->setCommand(0, 0.0);
@@ -1062,16 +1039,14 @@ void testMimicJoint()
 
   pendulum->disableSelfCollisionCheck();
 
-  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
     auto bodyNode = pendulum->getBodyNode(i);
     bodyNode->removeAllShapeNodesWith<CollisionAspect>();
   }
 
   std::vector<JointPtr> joints(2);
 
-  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
     dynamics::Joint* joint = pendulum->getJoint(i);
     EXPECT_NE(joint, nullptr);
 
@@ -1106,8 +1081,7 @@ void testMimicJoint()
   int nSteps = simTime / timeStep;
 
   // Two seconds with lower control forces than the friction
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     const double expected_vel = std::sin(world->getTime());
 
     joints[0]->setCommand(0, expected_vel);
@@ -1163,8 +1137,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   const double ul = +pi() / 12.0; // +15 degree
 
   std::size_t dof0 = joint0->getNumDofs();
-  for (std::size_t i = 0; i < dof0; ++i)
-  {
+  for (std::size_t i = 0; i < dof0; ++i) {
     joint0->setPosition(i, 0.0);
     joint0->setPosition(i, 0.0);
     joint0->setPositionLowerLimit(i, ll);
@@ -1172,8 +1145,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   }
 
   std::size_t dof1 = joint1->getNumDofs();
-  for (std::size_t i = 0; i < dof1; ++i)
-  {
+  for (std::size_t i = 0; i < dof1; ++i) {
     joint1->setPosition(i, 0.0);
     joint1->setPosition(i, 0.0);
     joint1->setPositionLowerLimit(i, ll);
@@ -1195,8 +1167,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   // First two seconds rotating in positive direction with higher control forces
   // than the friction forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, 100.0);
     joint1->setForce(0, 100.0);
     myWorld->step();
@@ -1219,8 +1190,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   // Another two seconds rotating in negative direction with higher control
   // forces than the friction forces
-  for (int i = 0; i < nSteps; i++)
-  {
+  for (int i = 0; i < nSteps; i++) {
     joint0->setForce(0, -100.0);
     joint1->setForce(0, -100.0);
     myWorld->step();
@@ -1322,8 +1292,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   balljoint->setTransformFromChildBodyNode(random_transform());
 
   // Test a hundred times
-  for (std::size_t n = 0; n < 100; ++n)
-  {
+  for (std::size_t n = 0; n < 100; ++n) {
     // -- convert transforms to positions and then positions back to transforms
     Eigen::Isometry3d desired_freejoint_tf = random_transform();
     freejoint->setPositions(
@@ -1366,8 +1335,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     desired_tfs.push_back(desired_balljoint_tf);
     actual_tfs.push_back(actual_balljoint_tf);
 
-    for (std::size_t i = 0; i < joints.size(); ++i)
-    {
+    for (std::size_t i = 0; i < joints.size(); ++i) {
       Joint* joint = joints[i];
       BodyNode* bn = bns[i];
       Eigen::Isometry3d tf = desired_tfs[i];
@@ -1377,8 +1345,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
           get_relative_transform(bn, bn->getParentBodyNode()).matrix());
       EXPECT_TRUE(check_transform_conversion);
 
-      if (!check_transform_conversion)
-      {
+      if (!check_transform_conversion) {
         std::cout << "[" << joint->getName() << " Failed]\n";
         std::cout
             << "Predicted:\n"
@@ -1391,8 +1358,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
           = test::equals(desired_tfs[i].matrix(), actual_tfs[i].matrix());
       EXPECT_TRUE(check_full_cycle);
 
-      if (!check_full_cycle)
-      {
+      if (!check_full_cycle) {
         std::cout << "[" << joint->getName() << " Failed]\n";
         std::cout << "Desired:\n"
                   << desired_tfs[i].matrix() << "\n\nActual:\n"
@@ -1449,8 +1415,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
   Eigen::Vector3d oldAngAcc;
 
   //-- Test
-  for (std::size_t i = 0; i < numTests; ++i)
-  {
+  for (std::size_t i = 0; i < numTests; ++i) {
     const Eigen::Isometry3d desiredTf = random_transform();
     const Eigen::Vector6d desiredVel = random_vec<6>();
     const Eigen::Vector6d desiredAcc = random_vec<6>();
@@ -1465,8 +1430,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     actualTf = bodyNode1->getTransform(bodyNode1->getParentBodyNode());
     EXPECT_TRUE(test::equals(desiredTf.matrix(), actualTf.matrix()));
 
-    for (auto relativeTo : relFrames)
-    {
+    for (auto relativeTo : relFrames) {
       joint1->setTransform(desiredTf, relativeTo);
       actualTf = bodyNode1->getTransform(relativeTo);
       EXPECT_TRUE(test::equals(desiredTf.matrix(), actualTf.matrix()));
@@ -1480,10 +1444,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     EXPECT_TRUE(test::equals(desiredVel, actualVel));
 
-    for (auto relativeTo : relFrames)
-    {
-      for (auto inCoordinatesOf : refFrames)
-      {
+    for (auto relativeTo : relFrames) {
+      for (auto inCoordinatesOf : refFrames) {
         joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
         actualVel = bodyNode1->getSpatialVelocity(relativeTo, inCoordinatesOf);
 
@@ -1493,10 +1455,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     //-- Relative classic linear velocity
 
-    for (auto relativeTo : relFrames)
-    {
-      for (auto inCoordinatesOf : refFrames)
-      {
+    for (auto relativeTo : relFrames) {
+      for (auto inCoordinatesOf : refFrames) {
         joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
         oldAngVel = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
         joint1->setLinearVelocity(desiredLinVel, relativeTo, inCoordinatesOf);
@@ -1513,10 +1473,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     //-- Relative classic angular velocity
 
-    for (auto relativeTo : relFrames)
-    {
-      for (auto inCoordinatesOf : refFrames)
-      {
+    for (auto relativeTo : relFrames) {
+      for (auto inCoordinatesOf : refFrames) {
         joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
         oldLinVel = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
         joint1->setAngularVelocity(desiredAngVel, relativeTo, inCoordinatesOf);
@@ -1539,10 +1497,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     EXPECT_TRUE(test::equals(desiredAcc, actualAcc));
 
-    for (auto relativeTo : relFrames)
-    {
-      for (auto inCoordinatesOf : refFrames)
-      {
+    for (auto relativeTo : relFrames) {
+      for (auto inCoordinatesOf : refFrames) {
         joint1->setSpatialAcceleration(desiredAcc, relativeTo, inCoordinatesOf);
         actualAcc
             = bodyNode1->getSpatialAcceleration(relativeTo, inCoordinatesOf);
@@ -1552,10 +1508,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     }
 
     //-- Relative transform, spatial velocity, and spatial acceleration
-    for (auto relativeTo : relFrames)
-    {
-      for (auto inCoordinatesOf : refFrames)
-      {
+    for (auto relativeTo : relFrames) {
+      for (auto inCoordinatesOf : refFrames) {
         joint1->setSpatialMotion(
             &desiredTf,
             relativeTo,
@@ -1578,10 +1532,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     //-- Relative classic linear acceleration
 
-    for (auto relativeTo : relFrames)
-    {
-      for (auto inCoordinatesOf : refFrames)
-      {
+    for (auto relativeTo : relFrames) {
+      for (auto inCoordinatesOf : refFrames) {
         joint1->setSpatialAcceleration(desiredAcc, relativeTo, inCoordinatesOf);
         oldAngAcc
             = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
@@ -1600,10 +1552,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     //-- Relative classic angular acceleration
 
-    for (auto relativeTo : relFrames)
-    {
-      for (auto inCoordinatesOf : refFrames)
-      {
+    for (auto relativeTo : relFrames) {
+      for (auto inCoordinatesOf : refFrames) {
         joint1->setSpatialAcceleration(desiredAcc, relativeTo, inCoordinatesOf);
         oldLinAcc
             = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);

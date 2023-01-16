@@ -49,14 +49,12 @@ class CollisionGroupsTest : public testing::Test,
 
 TEST_P(CollisionGroupsTest, SkeletonSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
-  {
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
-  }
-  else
-  {
+  } else {
     std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
               << std::endl;
   }
@@ -151,14 +149,12 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
 
 TEST_P(CollisionGroupsTest, BodyNodeSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
-  {
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
-  }
-  else
-  {
+  } else {
     std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
               << std::endl;
   }
@@ -266,14 +262,12 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
 
 TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
-  {
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
-  }
-  else
-  {
+  } else {
     std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
               << std::endl;
   }

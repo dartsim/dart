@@ -228,8 +228,7 @@ void OpenGLRenderInterface::drawMultiSphereConvexHull(
 {
   // Create meshes of sphere and combine them into a single mesh
   auto mesh = math::TriMeshf();
-  for (const auto& sphere : spheres)
-  {
+  for (const auto& sphere : spheres) {
     const double& radius = sphere.first;
     const Eigen::Vector3d& center = sphere.second;
 
@@ -249,10 +248,8 @@ void OpenGLRenderInterface::drawMultiSphereConvexHull(
 
   // Draw the triangles of the convex hull
   glBegin(GL_TRIANGLES);
-  for (const auto& triangle : meshTriangles)
-  {
-    for (auto i = 0u; i < 3; ++i)
-    {
+  for (const auto& triangle : meshTriangles) {
+    for (auto i = 0u; i < 3; ++i) {
       const auto& normal = meshNormals[triangle[i]];
       const auto& vertex = meshVertices[triangle[i]];
       glNormal3fv(normal.data());
@@ -299,8 +296,7 @@ void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size)
   v[0][2] = v[3][2] = v[4][2] = v[7][2] = -size / 2;
   v[1][2] = v[2][2] = v[5][2] = v[6][2] = size / 2;
 
-  for (i = 5; i >= 0; i--)
-  {
+  for (i = 5; i >= 0; i--) {
     glBegin(GL_QUADS);
     glNormal3fv(&n[i][0]);
     glVertex3fv(&v[faces[i][0]][0]);
@@ -375,8 +371,7 @@ static void drawOpenDome(double radius, int slices, int stacks)
   glBegin(GL_TRIANGLE_FAN);
   glNormal3d(0.0, 0.0, radius);
   glVertex3d(0.0, 0.0, radius);
-  for (int j = 0; j <= slices; ++j)
-  {
+  for (int j = 0; j <= slices; ++j) {
     const auto theta = (j == slices) ? 0.0 : j * dtheta;
     const auto stheta = -std::sin(theta);
     const auto ctheta = std::cos(theta);
@@ -390,8 +385,7 @@ static void drawOpenDome(double radius, int slices, int stacks)
   }
   glEnd();
 
-  for (int i = 1; i < stacks; ++i)
-  {
+  for (int i = 1; i < stacks; ++i) {
     const auto rho = i * drho;
     const auto srho = std::sin(rho);
     const auto crho = std::cos(rho);
@@ -403,8 +397,7 @@ static void drawOpenDome(double radius, int slices, int stacks)
     // artifacts at the poles on some OpenGL implementations
     glBegin(GL_TRIANGLE_STRIP);
 
-    for (int j = 0; j <= slices; ++j)
-    {
+    for (int j = 0; j <= slices; ++j) {
       const auto theta = (j == slices) ? 0.0 : j * dtheta;
       const auto stheta = -std::sin(theta);
       const auto ctheta = std::cos(theta);
@@ -521,8 +514,7 @@ void OpenGLRenderInterface::drawPyramid(
   faces[5] << 1, 4, 3;
 
   glBegin(GL_TRIANGLES);
-  for (const auto& face : faces)
-  {
+  for (const auto& face : faces) {
     const auto& p1 = points[static_cast<size_t>(face[0])];
     const auto& p2 = points[static_cast<size_t>(face[1])];
     const auto& p3 = points[static_cast<size_t>(face[2])];
@@ -593,8 +585,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
 
   max = 1;
   ret1 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shininess, &max);
-  if (ret1 == AI_SUCCESS)
-  {
+  if (ret1 == AI_SUCCESS) {
     max = 1;
     const int ret2 = aiGetMaterialFloatArray(
         mtl, AI_MATKEY_SHININESS_STRENGTH, &strength, &max);
@@ -602,9 +593,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial* mtl)
       glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess * strength);
     else
       glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-  }
-  else
-  {
+  } else {
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
     set_float4(c, 0.0f, 0.0f, 0.0f, 0.0f);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
@@ -642,8 +631,7 @@ void OpenGLRenderInterface::recursiveRender(
   glMultMatrixf((float*)&m);
 
   // draw all meshes assigned to this node
-  for (; n < nd->mNumMeshes; ++n)
-  {
+  for (; n < nd->mNumMeshes; ++n) {
     const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 
     glPushAttrib(GL_POLYGON_BIT | GL_LIGHTING_BIT); // for applyMaterial()
@@ -651,22 +639,17 @@ void OpenGLRenderInterface::recursiveRender(
         != (unsigned int)(-1)) // -1 is being used by us to indicate no material
       applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
 
-    if (mesh->mNormals == nullptr)
-    {
+    if (mesh->mNormals == nullptr) {
       glDisable(GL_LIGHTING);
-    }
-    else
-    {
+    } else {
       glEnable(GL_LIGHTING);
     }
 
-    for (t = 0; t < mesh->mNumFaces; ++t)
-    {
+    for (t = 0; t < mesh->mNumFaces; ++t) {
       const struct aiFace* face = &mesh->mFaces[t];
       GLenum face_mode;
 
-      switch (face->mNumIndices)
-      {
+      switch (face->mNumIndices) {
         case 1:
           face_mode = GL_POINTS;
           break;
@@ -683,8 +666,7 @@ void OpenGLRenderInterface::recursiveRender(
 
       glBegin(face_mode);
 
-      for (i = 0; i < face->mNumIndices; i++)
-      {
+      for (i = 0; i < face->mNumIndices; i++) {
         int index = face->mIndices[i];
         if (mesh->mColors[0] != nullptr)
           glColor4fv((GLfloat*)&mesh->mColors[0][index]);
@@ -700,8 +682,7 @@ void OpenGLRenderInterface::recursiveRender(
   }
 
   // draw all children
-  for (n = 0; n < nd->mNumChildren; ++n)
-  {
+  for (n = 0; n < nd->mNumChildren; ++n) {
     recursiveRender(sc, nd->mChildren[n]);
   }
 
@@ -730,15 +711,13 @@ void OpenGLRenderInterface::drawSoftMesh(const aiMesh* mesh)
   glEnable(GL_AUTO_NORMAL);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  for (auto i = 0u; i < mesh->mNumFaces; ++i)
-  {
+  for (auto i = 0u; i < mesh->mNumFaces; ++i) {
     glBegin(GL_TRIANGLES);
 
     const auto& face = &mesh->mFaces[i];
     assert(3u == face->mNumIndices);
 
-    for (auto j = 0u; j < 3; ++j)
-    {
+    for (auto j = 0u; j < 3; ++j) {
       auto index = face->mIndices[j];
       glNormal3fv(&mesh->mVertices[index].x);
       glVertex3fv(&mesh->mVertices[index].x);
@@ -758,8 +737,7 @@ void OpenGLRenderInterface::drawLineSegments(
     const std::vector<Eigen::Vector2i>& _connections)
 {
   glBegin(GL_LINES);
-  for (const Eigen::Vector2i& c : _connections)
-  {
+  for (const Eigen::Vector2i& c : _connections) {
     const Eigen::Vector3d& v1 = _vertices[c[0]];
     const Eigen::Vector3d& v2 = _vertices[c[1]];
     glVertex3f(v1[0], v1[1], v1[2]);
@@ -774,8 +752,7 @@ void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel)
   if (_skel == 0)
     return;
 
-  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); i++)
-  {
+  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
     compileList(_skel->getBodyNode(i));
   }
 }
@@ -786,15 +763,13 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
   if (node == 0)
     return;
 
-  for (auto childFrame : node->getChildFrames())
-  {
+  for (auto childFrame : node->getChildFrames()) {
     auto shapeFrame = dynamic_cast<dynamics::ShapeFrame*>(childFrame);
     if (shapeFrame)
       compileList(shapeFrame->getShape().get());
   }
 
-  for (auto i = 0u; i < node->getNumNodes<dynamics::ShapeNode>(); ++i)
-  {
+  for (auto i = 0u; i < node->getNumNodes<dynamics::ShapeNode>(); ++i) {
     auto shapeNode = node->getNode<dynamics::ShapeNode>(i);
     compileList(shapeNode->getShape().get());
   }
@@ -806,15 +781,12 @@ void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
   if (!shape)
     return;
 
-  if (shape->getType() == dynamics::MeshShape::getStaticType())
-  {
+  if (shape->getType() == dynamics::MeshShape::getStaticType()) {
     assert(dynamic_cast<dynamics::MeshShape*>(shape));
 
     auto* mesh = static_cast<dynamics::MeshShape*>(shape);
     mesh->setDisplayList(compileList(mesh->getScale(), mesh->getMesh()));
-  }
-  else
-  {
+  } else {
     dtwarn << "[OpenGLRenderInterface::compileList] Attempting to compile "
            << "OpenGL list for an unsupported shape type [" << shape->getType()
            << "].\n";

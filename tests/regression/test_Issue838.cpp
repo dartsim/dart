@@ -53,8 +53,7 @@ TEST(Issue838, MaterialParsing)
 
   EXPECT_EQ(colors.size(), skeleton->getNumBodyNodes());
 
-  for (size_t i = 0; i < skeleton->getNumBodyNodes(); ++i)
-  {
+  for (size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
     const Eigen::Vector4d& c = colors[i];
     skeleton->getBodyNode(i)->eachShapeNodeWith<dart::dynamics::VisualAspect>(
         [&](const dart::dynamics::ShapeNode* shapeNode) {

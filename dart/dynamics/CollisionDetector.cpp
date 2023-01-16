@@ -164,8 +164,7 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
   const auto search = mCollisionObjectMap.find(shapeFrame);
 
   const auto found = mCollisionObjectMap.end() != search;
-  if (found)
-  {
+  if (found) {
     const auto& collObj = search->second;
     assert(collObj.lock());
     // Ensure all the collision objects in the map are valid pointers

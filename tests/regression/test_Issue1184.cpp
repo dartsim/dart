@@ -95,14 +95,10 @@ TEST(Issue1184, Accuracy)
   const double tolerance = 1e-3;
 #endif
 
-  for (const auto& groundInfoFunction : groundInfoFunctions)
-  {
-    for (const auto& objectShapeFunction : objectShapeFunctions)
-    {
-      for (const double halfsize : halfsizes)
-      {
-        for (const bool falling : fallingModes)
-        {
+  for (const auto& groundInfoFunction : groundInfoFunctions) {
+    for (const auto& objectShapeFunction : objectShapeFunctions) {
+      for (const double halfsize : halfsizes) {
+        for (const bool falling : fallingModes) {
           auto world = dart::simulation::World::create("test");
           world->getConstraintSolver()->setCollisionDetector(
               dart::collision::BulletCollisionDetector::create());
@@ -150,8 +146,7 @@ TEST(Issue1184, Accuracy)
 
           double lowestHeight = math::inf<double>();
           double time = 0.0;
-          while (time < t_limit)
-          {
+          while (time < t_limit) {
             world->step();
             const double currentHeight
                 = object->getBodyNode(0)->getTransform().translation()[2];

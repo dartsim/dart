@@ -102,8 +102,7 @@ bool Entity::descendsFrom(const Frame* _someFrame) const
     return true;
 
   const Frame* descentCheck = getParentFrame();
-  while (descentCheck)
-  {
+  while (descentCheck) {
     if (descentCheck->isWorld())
       break;
 
@@ -219,13 +218,11 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 
   const Frame* oldParentFrame = mParentFrame;
 
-  if (!mAmQuiet && nullptr != mParentFrame && !mParentFrame->isWorld())
-  {
+  if (!mAmQuiet && nullptr != mParentFrame && !mParentFrame->isWorld()) {
     // If this entity has a parent Frame, tell that parent that it is losing
     // this child
     EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
-    if (it != mParentFrame->mChildEntities.end())
-    {
+    if (it != mParentFrame->mChildEntities.end()) {
       mParentFrame->mChildEntities.erase(it);
       mParentFrame->processRemovedEntity(this);
     }
@@ -233,10 +230,8 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 
   mParentFrame = _newParentFrame;
 
-  if (!mAmQuiet && nullptr != mParentFrame)
-  {
-    if (!mParentFrame->isWorld())
-    {
+  if (!mAmQuiet && nullptr != mParentFrame) {
+    if (!mParentFrame->isWorld()) {
       // The WorldFrame should not keep track of its children, or else we get
       // concurrency issues (race conditions).
       mParentFrame->mChildEntities.insert(this);

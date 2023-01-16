@@ -75,14 +75,12 @@ TEST(Issue892, LCPSolverShouldNotRetrunNanValues)
   world->addSkeleton(box1);
   world->addSkeleton(box2);
 
-  for (auto i = 0u; i < numSteps; ++i)
-  {
+  for (auto i = 0u; i < numSteps; ++i) {
     world->step();
     EXPECT_FALSE(box1->getRootJoint()->getPositions().hasNaN());
     EXPECT_FALSE(box2->getRootJoint()->getPositions().hasNaN());
 
-    if (i > 1100)
-    {
+    if (i > 1100) {
       auto angle1 = box1->getRootJoint()->getPosition(0);
       auto angle2 = box2->getRootJoint()->getPosition(0);
 

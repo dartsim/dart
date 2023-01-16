@@ -55,39 +55,30 @@ void CameraModeCallback::operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
 {
   ::osg::ref_ptr<::osg::Group> group = dynamic_cast<::osg::Group*>(node);
 
-  if (group)
-  {
+  if (group) {
     std::lock_guard<std::mutex> lock(mMutex);
 
-    if (mSceneToChange)
-    {
+    if (mSceneToChange) {
       mScene = mSceneToChange;
-      if (mDepthRrtCam)
-      {
+      if (mDepthRrtCam) {
         mDepthRrtCam->removeChildren(0, mDepthHudCam->getNumChildren());
         mDepthRrtCam->addChild(mScene);
       }
       mSceneToChange = nullptr;
     }
 
-    if (mCameraModeChanged)
-    {
-      if (mCameraMode == CameraMode::RGBA)
-      {
-        if (mDepthRrtCam)
-        {
+    if (mCameraModeChanged) {
+      if (mCameraMode == CameraMode::RGBA) {
+        if (mDepthRrtCam) {
           group->removeChild(mDepthRrtCam);
           mDepthRrtCam.release();
         }
 
-        if (mDepthHudCam)
-        {
+        if (mDepthHudCam) {
           group->removeChild(mDepthHudCam);
           mDepthHudCam.release();
         }
-      }
-      else if (mCameraMode == CameraMode::DEPTH)
-      {
+      } else if (mCameraMode == CameraMode::DEPTH) {
         // Allocate an empty texture by specifying its size for RTT operation
         ::osg::ref_ptr<::osg::Texture2D> tex2d = new ::osg::Texture2D;
         tex2d->setTextureSize(1024, 1024);
@@ -110,16 +101,13 @@ void CameraModeCallback::operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
             ::osg::CullSettings::COMPUTE_NEAR_FAR_USING_PRIMITIVES);
         // TODO(JS): Make these configurable
 
-        if (mScene)
-        {
+        if (mScene) {
           mDepthRrtCam->addChild(mScene);
         }
 
         group->addChild(mDepthRrtCam);
         group->addChild(mDepthHudCam);
-      }
-      else
-      {
+      } else {
         DART_ASSERT(false);
       }
 
@@ -133,8 +121,7 @@ void CameraModeCallback::operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
 //==============================================================================
 void CameraModeCallback::setCameraMode(CameraMode mode)
 {
-  if (mode != CameraMode::RGBA && mode != CameraMode::DEPTH)
-  {
+  if (mode != CameraMode::RGBA && mode != CameraMode::DEPTH) {
     DART_WARN(
         "Unsupported camera mode '{}'. Use RGBA or DEPTH.",
         static_cast<int>(mode));
@@ -142,8 +129,7 @@ void CameraModeCallback::setCameraMode(CameraMode mode)
   }
 
   std::lock_guard<std::mutex> lock(mMutex);
-  if (mode == mCameraMode)
-  {
+  if (mode == mCameraMode) {
     return;
   }
 
@@ -162,8 +148,7 @@ CameraMode CameraModeCallback::getCameraMode() const
 void CameraModeCallback::setSceneData(::osg::Node* scene)
 {
   std::lock_guard<std::mutex> lock(mMutex);
-  if (scene == mScene)
-  {
+  if (scene == mScene) {
     return;
   }
   mSceneToChange = scene;

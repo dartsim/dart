@@ -88,8 +88,7 @@ VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 VoxelGridShape::VoxelGridShape(std::shared_ptr<octomap::OcTree> octree)
   : Shape()
 {
-  if (!octree)
-  {
+  if (!octree) {
     dtwarn << "[VoxelGridShape] Attempting to assign null octree. Creating an "
            << "empty octree with resolution 0.01 instead.\n";
     setOctree(std::make_shared<octomap::OcTree>(0.01));
@@ -115,8 +114,7 @@ const std::string& VoxelGridShape::getStaticType()
 //==============================================================================
 void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
 {
-  if (!octree)
-  {
+  if (!octree) {
     dtwarn
         << "[VoxelGridShape] Attempting to assign null octree. Ignoring this "
         << "query.\n";
@@ -170,13 +168,10 @@ void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& sensorOrigin,
     const Frame* relativeTo)
 {
-  if (relativeTo == Frame::World())
-  {
+  if (relativeTo == Frame::World()) {
     mOctree->insertPointCloud(pointCloud, toPoint3d(sensorOrigin));
     incrementVersion();
-  }
-  else
-  {
+  } else {
     updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
   }
 }

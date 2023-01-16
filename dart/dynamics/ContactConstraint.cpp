@@ -100,8 +100,7 @@ ContactConstraint::ContactConstraint(
   mPrimaryFrictionCoeff = contactSurfaceParams.mPrimaryFrictionCoeff;
   mSecondaryFrictionCoeff = contactSurfaceParams.mSecondaryFrictionCoeff;
   if (mPrimaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD
-      || mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
-  {
+      || mSecondaryFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD) {
     mIsFrictionOn = true;
 
     // Combine slip compliances through addition
@@ -112,9 +111,7 @@ ContactConstraint::ContactConstraint(
 
     // Update frictional direction
     updateFirstFrictionalDirection();
-  }
-  else
-  {
+  } else {
     mIsFrictionOn = false;
   }
 
@@ -126,8 +123,7 @@ ContactConstraint::ContactConstraint(
   mIsSelfCollision = (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton());
 
   // Compute local contact Jacobians expressed in body frame
-  if (mIsFrictionOn)
-  {
+  if (mIsFrictionOn) {
     // Set the dimension of this constraint. 1 is for Normal direction
     // constraint.
     // TODO(JS): Assumed that the number of contact is not static.
@@ -194,9 +190,7 @@ ContactConstraint::ContactConstraint(
 
     assert(!dart::math::isNan(mSpatialNormalA));
     assert(!dart::math::isNan(mSpatialNormalB));
-  }
-  else
-  {
+  } else {
     // Set the dimension of this constraint.
     mDim = 1;
 
@@ -242,8 +236,7 @@ const std::string& ContactConstraint::getStaticType()
 void ContactConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range
-  if (allowance < 0.0)
-  {
+  if (allowance < 0.0) {
     dtwarn << "Error reduction parameter[" << allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -263,14 +256,12 @@ double ContactConstraint::getErrorAllowance()
 void ContactConstraint::setErrorReductionParameter(double erp)
 {
   // Clamp error reduction parameter if it is out of the range [0, 1]
-  if (erp < 0.0)
-  {
+  if (erp < 0.0) {
     dtwarn << "Error reduction parameter[" << erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mErrorReductionParameter = 0.0;
   }
-  if (erp > 1.0)
-  {
+  if (erp > 1.0) {
     dtwarn << "Error reduction parameter[" << erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
     mErrorReductionParameter = 1.0;
@@ -289,8 +280,7 @@ double ContactConstraint::getErrorReductionParameter()
 void ContactConstraint::setMaxErrorReductionVelocity(double erv)
 {
   // Clamp maximum error reduction velocity if it is out of the range
-  if (erv < 0.0)
-  {
+  if (erv < 0.0) {
     dtwarn << "Maximum error reduction velocity[" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -310,8 +300,7 @@ double ContactConstraint::getMaxErrorReductionVelocity()
 void ContactConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9)
-  {
+  if (cfm < 1e-9) {
     dtwarn << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
@@ -357,8 +346,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   //----------------------------------------------------------------------------
   // Friction case
   //----------------------------------------------------------------------------
-  if (mIsFrictionOn)
-  {
+  if (mIsFrictionOn) {
     // Bias term, w, should be zero
     assert(info->w[0] == 0.0);
     assert(info->w[1] == 0.0);
@@ -384,31 +372,24 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     //------------------------------------------------------------------------
     // A. Penetration correction
     double bouncingVelocity = mContact.penetrationDepth - mErrorAllowance;
-    if (bouncingVelocity < 0.0)
-    {
+    if (bouncingVelocity < 0.0) {
       bouncingVelocity = 0.0;
-    }
-    else
-    {
+    } else {
       bouncingVelocity *= mErrorReductionParameter * info->invTimeStep;
       if (bouncingVelocity > mMaxErrorReductionVelocity)
         bouncingVelocity = mMaxErrorReductionVelocity;
     }
 
     // B. Restitution
-    if (mIsBounceOn)
-    {
+    if (mIsBounceOn) {
       double& negativeRelativeVel = info->b[0];
       double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
-      {
-        if (restitutionVel > bouncingVelocity)
-        {
+      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
+        if (restitutionVel > bouncingVelocity) {
           bouncingVelocity = restitutionVel;
 
-          if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
-          {
+          if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY) {
             bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
           }
         }
@@ -429,8 +410,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   //----------------------------------------------------------------------------
   // Frictionless case
   //----------------------------------------------------------------------------
-  else
-  {
+  else {
     // Bias term, w, should be zero
     info->w[0] = 0.0;
 
@@ -444,27 +424,21 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     //------------------------------------------------------------------------
     // A. Penetration correction
     double bouncingVelocity = mContact.penetrationDepth - DART_ERROR_ALLOWANCE;
-    if (bouncingVelocity < 0.0)
-    {
+    if (bouncingVelocity < 0.0) {
       bouncingVelocity = 0.0;
-    }
-    else
-    {
+    } else {
       bouncingVelocity *= mErrorReductionParameter * info->invTimeStep;
       if (bouncingVelocity > mMaxErrorReductionVelocity)
         bouncingVelocity = mMaxErrorReductionVelocity;
     }
 
     // B. Restitution
-    if (mIsBounceOn)
-    {
+    if (mIsBounceOn) {
       double& negativeRelativeVel = info->b[0];
       double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
-      {
-        if (restitutionVel > bouncingVelocity)
-        {
+      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
+        if (restitutionVel > bouncingVelocity) {
           bouncingVelocity = restitutionVel;
 
           if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
@@ -493,15 +467,12 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
   dynamics::Skeleton* skelB = mBodyNodeB->getSkeleton().get();
 
   // Self collision case
-  if (mIsSelfCollision)
-  {
+  if (mIsSelfCollision) {
     skelA->clearConstraintImpulses();
 
-    if (mBodyNodeA->isReactive())
-    {
+    if (mBodyNodeA->isReactive()) {
       // Both bodies are reactive
-      if (mBodyNodeB->isReactive())
-      {
+      if (mBodyNodeB->isReactive()) {
         skelA->updateBiasImpulse(
             mBodyNodeA,
             mSpatialNormalA.col(index),
@@ -509,21 +480,16 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
             mSpatialNormalB.col(index));
       }
       // Only body1 is reactive
-      else
-      {
+      else {
         skelA->updateBiasImpulse(mBodyNodeA, mSpatialNormalA.col(index));
       }
-    }
-    else
-    {
+    } else {
       // Only body2 is reactive
-      if (mBodyNodeB->isReactive())
-      {
+      if (mBodyNodeB->isReactive()) {
         skelB->updateBiasImpulse(mBodyNodeB, mSpatialNormalB.col(index));
       }
       // Both bodies are not reactive
-      else
-      {
+      else {
         // This case should not be happened
         assert(0);
       }
@@ -532,17 +498,14 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
     skelA->updateVelocityChange();
   }
   // Colliding two distinct skeletons
-  else
-  {
-    if (mBodyNodeA->isReactive())
-    {
+  else {
+    if (mBodyNodeA->isReactive()) {
       skelA->clearConstraintImpulses();
       skelA->updateBiasImpulse(mBodyNodeA, mSpatialNormalA.col(index));
       skelA->updateVelocityChange();
     }
 
-    if (mBodyNodeB->isReactive())
-    {
+    if (mBodyNodeB->isReactive()) {
       skelB->clearConstraintImpulses();
       skelB->updateBiasImpulse(mBodyNodeB, mSpatialNormalB.col(index));
       skelB->updateVelocityChange();
@@ -568,12 +531,10 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 
   // Add small values to the diagnal to keep it away from singular, similar to
   // cfm variable in ODE
-  if (withCfm)
-  {
+  if (withCfm) {
     vel[mAppliedImpulseIndex]
         += vel[mAppliedImpulseIndex] * mConstraintForceMixing;
-    switch (mAppliedImpulseIndex)
-    {
+    switch (mAppliedImpulseIndex) {
       case 1:
         vel[1] += (mPrimarySlipCompliance / mTimeStep);
         break;
@@ -612,8 +573,7 @@ void ContactConstraint::applyImpulse(double* lambda)
   //----------------------------------------------------------------------------
   // Friction case
   //----------------------------------------------------------------------------
-  if (mIsFrictionOn)
-  {
+  if (mIsFrictionOn) {
     assert(!math::isNan(lambda[0]));
     assert(!math::isNan(lambda[1]));
     assert(!math::isNan(lambda[2]));
@@ -649,8 +609,7 @@ void ContactConstraint::applyImpulse(double* lambda)
   //----------------------------------------------------------------------------
   // Frictionless case
   //----------------------------------------------------------------------------
-  else
-  {
+  else {
     // Normal impulsive force
     if (mBodyNodeA->isReactive())
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA * lambda[0]);
@@ -722,17 +681,14 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
   //           implemented.
   // If they're too close (or opposing directions, or one of the vectors 0),
   // pick another tangent (use X-axis as arbitrary vector)
-  if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
-  {
+  if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED) {
     tangent = n.cross(Eigen::Vector3d::UnitX());
 
     // Make sure this is not zero length, otherwise normalization will lead to
     // NaN values.
-    if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
-    {
+    if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED) {
       tangent = n.cross(Eigen::Vector3d::UnitY());
-      if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
-      {
+      if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED) {
         tangent = n.cross(Eigen::Vector3d::UnitZ());
 
         // Now tangent shouldn't be zero-length unless the normal is
@@ -780,14 +736,11 @@ void ContactConstraint::uniteSkeletons()
   if (unionIdA == unionIdB)
     return;
 
-  if (unionIdA->mUnionSize < unionIdB->mUnionSize)
-  {
+  if (unionIdA->mUnionSize < unionIdB->mUnionSize) {
     // Merge root1 --> root2
     unionIdA->mUnionRootSkeleton = unionIdB;
     unionIdB->mUnionSize += unionIdA->mUnionSize;
-  }
-  else
-  {
+  } else {
     // Merge root2 --> root1
     unionIdB->mUnionRootSkeleton = unionIdA;
     unionIdA->mUnionSize += unionIdB->mUnionSize;

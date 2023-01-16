@@ -136,8 +136,7 @@ HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
   const auto it = mCreatorMap.find(key);
 
   const auto found = (it != mCreatorMap.end());
-  if (!found)
-  {
+  if (!found) {
     dtwarn << "[Factory] Failed to create an object of '"
            << typeid(BaseT).name() << "' class with the key (type: '"
            << typeid(KeyT).name() << "'). Returning nullptr instead.\n";

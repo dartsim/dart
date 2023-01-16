@@ -71,8 +71,7 @@ void CompositeCollisionFilter::removeAllCollisionFilters()
 bool CompositeCollisionFilter::ignoresCollision(
     const CollisionObject* object1, const CollisionObject* object2) const
 {
-  for (const auto* filter : mFilters)
-  {
+  for (const auto* filter : mFilters) {
     if (filter->ignoresCollision(object1, object2))
       return true;
   }
@@ -134,13 +133,11 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (!skel1->isMobile() && !skel2->isMobile())
     return true;
 
-  if (skel1 == skel2)
-  {
+  if (skel1 == skel2) {
     if (!skel1->isEnabledSelfCollisionCheck())
       return true;
 
-    if (!skel1->isEnabledAdjacentBodyCheck())
-    {
+    if (!skel1->isEnabledAdjacentBodyCheck()) {
       if (areAdjacentBodies(bodyNode1, bodyNode2))
         return true;
     }
@@ -158,8 +155,7 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
     const dynamics::BodyNode* bodyNode2) const
 {
   if ((bodyNode1->getParentBodyNode() == bodyNode2)
-      || (bodyNode2->getParentBodyNode() == bodyNode1))
-  {
+      || (bodyNode2->getParentBodyNode() == bodyNode1)) {
     assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
     return true;
   }

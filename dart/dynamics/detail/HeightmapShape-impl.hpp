@@ -99,14 +99,12 @@ void HeightmapShape<S>::setHeightField(
     const std::vector<S>& heights)
 {
   assert(heights.size() == width * depth);
-  if ((width * depth) != heights.size())
-  {
+  if ((width * depth) != heights.size()) {
     dterr << "[HeightmapShape] Size of height field needs to be width*depth="
           << width * depth << "\n";
     return;
   }
-  if (heights.empty())
-  {
+  if (heights.empty()) {
     dtwarn << "Empty height field makes no sense.\n";
     return;
   }
@@ -203,8 +201,7 @@ ShapePtr HeightmapShape<S>::clone() const
 template <typename S>
 Eigen::Matrix3d HeightmapShape<S>::computeInertia(double mass) const
 {
-  if (mIsBoundingBoxDirty)
-  {
+  if (mIsBoundingBoxDirty) {
     updateBoundingBox();
   }
   return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), mass);

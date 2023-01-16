@@ -48,8 +48,7 @@ Errors Mesh::read(tinyxml2::XMLElement* element)
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "mesh")
-  {
+  if (std::string(element->Name()) != "mesh") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Mesh> from the provided element");
@@ -61,8 +60,7 @@ Errors Mesh::read(tinyxml2::XMLElement* element)
   //-----------------
 
   // class
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     const std::string defaultClass = getAttributeString(element, "class");
   }
 
@@ -80,13 +78,11 @@ Errors Mesh::preprocess(const Compiler& /*compiler*/)
 {
   Errors errors;
 
-  if (mAttributes.mName)
-  {
+  if (mAttributes.mName) {
     mName = *mAttributes.mName;
   }
 
-  if (mAttributes.mFile)
-  {
+  if (mAttributes.mFile) {
     mFile = *mAttributes.mFile;
   }
 
@@ -119,8 +115,7 @@ Errors Mesh::postprocess(const Compiler& /*compiler*/)
 dynamics::MeshShapePtr Mesh::createMeshShape() const
 {
   const aiScene* model = dynamics::MeshShape::loadMesh(mMeshUri, mRetriever);
-  if (model == nullptr)
-  {
+  if (model == nullptr) {
     return nullptr;
   }
 
@@ -151,8 +146,7 @@ const Eigen::Vector3d& Mesh::getScale() const
 //==============================================================================
 dynamics::MeshShapePtr Mesh::getMeshShape() const
 {
-  if (!mMeshShape && !mTriedToParse)
-  {
+  if (!mMeshShape && !mTriedToParse) {
     mMeshShape = createMeshShape();
     mTriedToParse = true;
   }

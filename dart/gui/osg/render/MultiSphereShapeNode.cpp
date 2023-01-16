@@ -117,8 +117,7 @@ void MultiSphereShapeNode::refresh()
 //==============================================================================
 void MultiSphereShapeNode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new MultiSphereShapeGeode(
         mMultiSphereShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -160,8 +159,7 @@ void MultiSphereShapeGeode::refresh()
 //==============================================================================
 void MultiSphereShapeGeode::extractData()
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable
         = new MultiSphereShapeDrawable(mMultiSphereShape, mVisualAspect, this);
     addDrawable(mDrawable);
@@ -202,8 +200,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
 
   if (mMultiSphereShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     const auto subdivisions = 3; // TODO(JS): Make this configurable
     const auto& spheres = mMultiSphereShape->getSpheres();
     auto numVertices
@@ -212,8 +209,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
 
     // Create meshes of sphere and combine them into a single mesh
     auto mesh = math::TriMeshd();
-    for (const auto& sphere : spheres)
-    {
+    for (const auto& sphere : spheres) {
       const double& radius = sphere.first;
       const Eigen::Vector3d& center = sphere.second;
 
@@ -234,8 +230,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     // Convert the convex hull to OSG data types
     mVertices->resize(meshVertices.size());
     mNormals->resize(meshVertices.size());
-    for (auto i = 0u; i < meshVertices.size(); ++i)
-    {
+    for (auto i = 0u; i < meshVertices.size(); ++i) {
       const auto& v = meshVertices[i];
       const auto& n = meshNormals[i];
       (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
@@ -247,8 +242,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     ::osg::ref_ptr<::osg::DrawElementsUInt> drawElements
         = new ::osg::DrawElementsUInt(GL_TRIANGLES);
     drawElements->resize(3 * meshTriangles.size());
-    for (auto i = 0u; i < meshTriangles.size(); ++i)
-    {
+    for (auto i = 0u; i < meshTriangles.size(); ++i) {
       const auto& triangle = meshTriangles[i];
       (*drawElements)[3 * i] = triangle[0];
       (*drawElements)[3 * i + 1] = triangle[1];
@@ -260,8 +254,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
   }
 
   if (mMultiSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     (*mColors).resize(1);
@@ -271,16 +264,13 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color.a()) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;

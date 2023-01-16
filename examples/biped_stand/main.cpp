@@ -65,8 +65,7 @@ public:
     mDesiredDofs = mBiped->getPositions();
 
     // using SPD results in simple Kp coefficients
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
@@ -100,8 +99,7 @@ public:
     // Perturbation
     mBiped->getBodyNode("h_spine")->addExtForce(mForce);
     mImpulseDuration--;
-    if (mImpulseDuration <= 0)
-    {
+    if (mImpulseDuration <= 0) {
       mImpulseDuration = 0;
       mForce.setZero();
     }
@@ -128,8 +126,7 @@ public:
         = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
 
     double offset = com[0] - cop[0];
-    if (offset < 0.1 && offset > 0.0)
-    {
+    if (offset < 0.1 && offset > 0.0) {
       double k1 = 200.0;
       double k2 = 100.0;
       double kd = 10.0;
@@ -138,9 +135,7 @@ public:
       mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
       mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
       mPreOffset = offset;
-    }
-    else if (offset > -0.2 && offset < -0.05)
-    {
+    } else if (offset > -0.2 && offset < -0.05) {
       double k1 = 2000.0;
       double k2 = 100.0;
       double kd = 100.0;
@@ -152,8 +147,7 @@ public:
     }
 
     // Just to make sure no illegal torque is used
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
       mTorques[i] = 0.0;
     }
 
@@ -205,25 +199,17 @@ public:
   bool handle(
       const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
   {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == '1')
-      {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == '1') {
         mWorldNode->perturbBiped(Eigen::Vector3d(50, 0, 0), 100);
         return true;
-      }
-      else if (ea.getKey() == '2')
-      {
+      } else if (ea.getKey() == '2') {
         mWorldNode->perturbBiped(Eigen::Vector3d(-50, 0, 0), 100);
         return true;
-      }
-      else if (ea.getKey() == '3')
-      {
+      } else if (ea.getKey() == '3') {
         mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, 50), 100);
         return true;
-      }
-      else if (ea.getKey() == '4')
-      {
+      } else if (ea.getKey() == '4') {
         mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, -50), 100);
         return true;
       }

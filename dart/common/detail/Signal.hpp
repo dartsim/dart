@@ -111,8 +111,7 @@ _Res Signal<_Res(_ArgTypes...), Combiner>::raise(ArgTypes&&... args)
   std::vector<ResultType> res(mConnectionBodies.size());
   auto resIt = res.begin();
 
-  for (const auto& connectionBody : mConnectionBodies)
-  {
+  for (const auto& connectionBody : mConnectionBodies) {
     *(resIt++) = connectionBody->getSlot()(std::forward<ArgTypes>(args)...);
   }
 
@@ -196,8 +195,7 @@ template <typename... _ArgTypes>
 template <typename... Args>
 void Signal<void(_ArgTypes...)>::raise(Args&&... args)
 {
-  for (const auto& connectionBody : mConnectionBodies)
-  {
+  for (const auto& connectionBody : mConnectionBodies) {
     connectionBody->getSlot()(std::forward<Args>(args)...);
   }
 }

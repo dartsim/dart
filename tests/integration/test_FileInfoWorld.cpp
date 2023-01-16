@@ -68,8 +68,7 @@ TEST(FileInfoWorld, Basic)
   Recording* recording2 = nullptr;
 
   // Do some simulation with recording
-  for (std::size_t i = 0; i < numFrames; ++i)
-  {
+  for (std::size_t i = 0; i < numFrames; ++i) {
     world->step();
     world->bake();
   }
@@ -100,15 +99,12 @@ TEST(FileInfoWorld, Basic)
     EXPECT_EQ(recording1->getNumDofs(i), recording2->getNumDofs(i));
 
   // Check generalized positions and contact info
-  for (std::size_t i = 0; i < numFrames; ++i)
-  {
+  for (std::size_t i = 0; i < numFrames; ++i) {
     // Check generalized positions
-    for (std::size_t j = 0; j < numSkeletons; ++j)
-    {
+    for (std::size_t j = 0; j < numSkeletons; ++j) {
       std::size_t dofs = recording1->getNumDofs(j);
 
-      for (std::size_t k = 0; k < dofs; ++k)
-      {
+      for (std::size_t k = 0; k < dofs; ++k) {
         EXPECT_NEAR(
             recording1->getGenCoord(i, j, k),
             recording2->getGenCoord(i, j, k),
@@ -121,10 +117,8 @@ TEST(FileInfoWorld, Basic)
     std::size_t numContacts = recording1->getNumContacts(i);
     EXPECT_EQ(recording1->getNumContacts(i), recording2->getNumContacts(i));
 
-    for (std::size_t j = 0; j < numContacts; ++j)
-    {
-      for (std::size_t k = 0; k < 3; ++k)
-      {
+    for (std::size_t j = 0; j < numContacts; ++j) {
+      for (std::size_t k = 0; k < 3; ++k) {
         EXPECT_NEAR(
             recording1->getContactForce(i, j)[k],
             recording2->getContactForce(i, j)[k],

@@ -255,8 +255,7 @@ void TriMesh<S>::computeVertexNormals()
   this->mVertexNormals.clear();
   this->mVertexNormals.resize(this->mVertices.size(), Vector3::Zero());
 
-  for (auto i = 0u; i < mTriangles.size(); ++i)
-  {
+  for (auto i = 0u; i < mTriangles.size(); ++i) {
     auto& triangle = mTriangles[i];
     this->mVertexNormals[triangle[0]] += mTriangleNormals[i];
     this->mVertexNormals[triangle[1]] += mTriangleNormals[i];
@@ -324,22 +323,18 @@ TriMesh<S>& TriMesh<S>::operator+=(const TriMesh& other)
 
   // Insert triangle normals if both meshes have normals. Otherwise, clean the
   // triangle normals.
-  if ((!hasTriangles() || hasTriangleNormals()) && other.hasTriangleNormals())
-  {
+  if ((!hasTriangles() || hasTriangleNormals()) && other.hasTriangleNormals()) {
     mTriangleNormals.insert(
         mTriangleNormals.end(),
         other.mTriangleNormals.begin(),
         other.mTriangleNormals.end());
-  }
-  else
-  {
+  } else {
     mTriangleNormals.clear();
   }
 
   const Triangle offset = Triangle::Constant(oldNumVertices);
   mTriangles.resize(mTriangles.size() + other.mTriangles.size());
-  for (auto i = 0u; i < other.mTriangles.size(); ++i)
-  {
+  for (auto i = 0u; i < other.mTriangles.size(); ++i) {
     mTriangles[i + oldNumTriangles] = other.mTriangles[i] + offset;
   }
 
@@ -367,8 +362,7 @@ void TriMesh<S>::computeTriangleNormals()
 {
   mTriangleNormals.resize(mTriangles.size());
 
-  for (auto i = 0u; i < mTriangles.size(); ++i)
-  {
+  for (auto i = 0u; i < mTriangles.size(); ++i) {
     auto& triangle = mTriangles[i];
     const Vector3 v01
         = this->mVertices[triangle[1]] - this->mVertices[triangle[0]];
@@ -384,8 +378,7 @@ void TriMesh<S>::computeTriangleNormals()
 template <typename S>
 void TriMesh<S>::normalizeTriangleNormals()
 {
-  for (auto& normal : mTriangleNormals)
-  {
+  for (auto& normal : mTriangleNormals) {
     normal.normalize();
   }
 }

@@ -56,13 +56,10 @@ template <class BV>
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
 
-  for (unsigned int i = 0; i < _mesh->mNumMeshes; i++)
-  {
-    for (unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
-    {
+  for (unsigned int i = 0; i < _mesh->mNumMeshes; i++) {
+    for (unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
       dart::collision::fcl::Vector3 vertices[3];
-      for (unsigned int k = 0; k < 3; k++)
-      {
+      for (unsigned int k = 0; k < 3; k++) {
         const aiVector3D& vertex
             = _mesh->mMeshes[i]
                   ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
@@ -174,8 +171,7 @@ template <class BV>
   dart::collision::fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
-  for (int i = 0; i < 112; i++)
-  {
+  for (int i = 0; i < 112; i++) {
     p1 = dart::collision::fcl::Vector3(
         v[f[i][0]][0] * _sizeX, v[f[i][0]][1] * _sizeY, v[f[i][0]][2] * _sizeZ);
     p2 = dart::collision::fcl::Vector3(
@@ -227,8 +223,7 @@ template <class BV>
   dart::collision::fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
-  for (int i = 0; i < 6; i++)
-  {
+  for (int i = 0; i < 6; i++) {
     p1 = dart::collision::fcl::Vector3(
         v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
     p2 = dart::collision::fcl::Vector3(
@@ -279,8 +274,7 @@ template <class BV>
     _slices = CACHE_SIZE - 1;
 
   if (_slices < 2 || _stacks < 1 || _baseRadius < 0.0 || _topRadius < 0.0
-      || _height < 0.0)
-  {
+      || _height < 0.0) {
     return nullptr;
   }
 
@@ -291,8 +285,7 @@ template <class BV>
   deltaRadius = _baseRadius - _topRadius;
 
   /* Cache is the vertex locations cache */
-  for (i = 0; i < _slices; i++)
-  {
+  for (i = 0; i < _slices; i++) {
     angle = 2 * math::pi() * i / _slices;
     sinCache[i] = sin(angle);
     cosCache[i] = cos(angle);
@@ -314,8 +307,7 @@ template <class BV>
   p1 = dart::collision::fcl::Vector3(
       radiusLow * sintemp, radiusLow * costemp, zLow);
   p1.noalias() = _transform * p1;
-  for (i = 1; i < _slices; i++)
-  {
+  for (i = 1; i < _slices; i++) {
     p2 = dart::collision::fcl::Vector3(
         radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
     p3 = dart::collision::fcl::Vector3(
@@ -328,10 +320,8 @@ template <class BV>
   }
 
   /* Body of cylinder */
-  for (i = 0; i < _slices; i++)
-  {
-    for (j = 0; j < _stacks; j++)
-    {
+  for (i = 0; i < _slices; i++) {
+    for (j = 0; j < _stacks; j++) {
       zLow = j * _height / _stacks + zBase;
       zHigh = (j + 1) * _height / _stacks + zBase;
       radiusLow = _baseRadius - deltaRadius * (static_cast<float>(j) / _stacks);
@@ -364,8 +354,7 @@ template <class BV>
   p1 = dart::collision::fcl::Vector3(
       radiusLow * sintemp, radiusLow * costemp, zLow);
   p1.noalias() = _transform * p1;
-  for (i = 1; i < _slices; i++)
-  {
+  for (i = 1; i < _slices; i++) {
     p2 = dart::collision::fcl::Vector3(
         radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
     p3 = dart::collision::fcl::Vector3(

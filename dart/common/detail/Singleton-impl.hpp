@@ -52,8 +52,7 @@ T& Singleton<T>::getSingleton(Args... _args)
   // http://stackoverflow.com/questions/1008019/c-singleton-design-pattern
 
   // Guaranteed to be destroyed and instantiated on first use.
-  if (mInstance == nullptr)
-  {
+  if (mInstance == nullptr) {
     static T instance(std::forward<Args>(_args)...);
     mInstance = &instance;
   }

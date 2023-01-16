@@ -97,8 +97,7 @@ int convertFromOSGKey(int key)
 {
   using KeySymbol = osgGA::GUIEventAdapter::KeySymbol;
 
-  switch (key)
-  {
+  switch (key) {
     case KeySymbol::KEY_Tab:
       return ConvertedKey_Tab;
     case KeySymbol::KEY_Left:
@@ -243,8 +242,7 @@ bool ImGuiHandler::hasWidget(const std::shared_ptr<ImGuiWidget>& widget) const
 void ImGuiHandler::addWidget(
     const std::shared_ptr<ImGuiWidget>& widget, bool visible)
 {
-  if (hasWidget(widget))
-  {
+  if (hasWidget(widget)) {
     dtwarn
         << "[ImGuiHandler::addWidget] Attempting to add existing widget to the "
            "viewer. Ignoring this action.";
@@ -258,8 +256,7 @@ void ImGuiHandler::addWidget(
 //==============================================================================
 void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
 {
-  if (!hasWidget(widget))
-  {
+  if (!hasWidget(widget)) {
     dtwarn << "[ImGuiHandler::removeWidget] Attempting to remove not existing "
               "widget from the viewer. Ignoring this action.\n";
     return;
@@ -286,14 +283,12 @@ bool ImGuiHandler::handle(
   const auto wantCapureMouse = io.WantCaptureMouse;
   const auto wantCapureKeyboard = io.WantCaptureKeyboard;
 
-  switch (eventAdapter.getEventType())
-  {
+  switch (eventAdapter.getEventType()) {
     case osgGA::GUIEventAdapter::KEYDOWN: {
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
-      if (special_key > 0)
-      {
+      if (special_key > 0) {
         assert(special_key < 512 && "ImGui KeysDown is an array of 512");
         assert(
             special_key > 256
@@ -309,9 +304,7 @@ bool ImGuiHandler::handle(
                     || io.KeysDown[ConvertedKey_RightAlt];
         io.KeySuper = io.KeysDown[ConvertedKey_LeftSuper]
                       || io.KeysDown[ConvertedKey_RightSuper];
-      }
-      else if (0 < c && c < 0x10000)
-      {
+      } else if (0 < c && c < 0x10000) {
         io.KeysDown[c] = true;
         io.AddInputCharacter(static_cast<ImWchar>(c));
       }
@@ -322,8 +315,7 @@ bool ImGuiHandler::handle(
       const auto c = eventAdapter.getUnmodifiedKey();
       const auto special_key = convertFromOSGKey(c);
 
-      if (special_key > 0)
-      {
+      if (special_key > 0) {
         assert(special_key < 512 && "ImGui KeysDown is an array of 512");
         assert(
             special_key > 256
@@ -339,9 +331,7 @@ bool ImGuiHandler::handle(
                     || io.KeysDown[ConvertedKey_RightAlt];
         io.KeySuper = io.KeysDown[ConvertedKey_LeftSuper]
                       || io.KeysDown[ConvertedKey_RightSuper];
-      }
-      else if (0 < c && c < 0x10000)
-      {
+      } else if (0 < c && c < 0x10000) {
         io.KeysDown[c] = false;
         io.AddInputCharacter(static_cast<ImWchar>(c));
       }
@@ -353,24 +343,17 @@ bool ImGuiHandler::handle(
           = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
 
       if (eventAdapter.getButtonMask()
-          == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
-      {
+          == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
         mMousePressed[0] = true;
-      }
-      else if (
+      } else if (
           eventAdapter.getButtonMask()
-          == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
-      {
+          == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) {
         mMousePressed[1] = true;
-      }
-      else if (
+      } else if (
           eventAdapter.getButtonMask()
-          == osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
-      {
+          == osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) {
         mMousePressed[2] = true;
-      }
-      else
-      {
+      } else {
         // Shouldn't be reached to here. Mark left button by default.
         mMousePressed[0] = true;
       }
@@ -396,8 +379,7 @@ bool ImGuiHandler::handle(
     case osgGA::GUIEventAdapter::SCROLL: {
       constexpr float increment = 0.1f;
 
-      switch (eventAdapter.getScrollingMotion())
-      {
+      switch (eventAdapter.getScrollingMotion()) {
         case (osgGA::GUIEventAdapter::SCROLL_NONE):
           break;
         case (osgGA::GUIEventAdapter::SCROLL_LEFT):
@@ -454,8 +436,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 //==============================================================================
 void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
 {
-  for (const auto& widget : mWidgets)
-  {
+  for (const auto& widget : mWidgets) {
     if (widget->isVisible())
       widget->render();
   }

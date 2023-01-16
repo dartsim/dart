@@ -91,8 +91,7 @@ public:
   bool solve() override
   {
     std::shared_ptr<optimization::Problem> problem = mProperties.mProblem;
-    if (nullptr == problem)
-    {
+    if (nullptr == problem) {
       dtwarn << "[FailingSolver::solve] Attempting to solve a nullptr "
              << "problem! We will return false.\n";
       return false;

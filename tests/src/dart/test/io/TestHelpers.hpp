@@ -171,16 +171,14 @@ inline SkeletonPtr createThreeLinkRobot(
       = add1DofJoint(robot, nullptr, node, "joint1", 0.0, -pi(), pi(), type1);
   auto current_node = pair1.second;
   auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
-  if (collisionShape)
-  {
+  if (collisionShape) {
     shapeNode->createCollisionAspect();
     shapeNode->createDynamicsAspect();
   }
 
   BodyNode* parent_node = current_node;
 
-  if (stopAfter > 1)
-  {
+  if (stopAfter > 1) {
     // Create the second link
     node = BodyNode::Properties(BodyNode::AspectProperties("link2"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2) / 2.0));
@@ -195,8 +193,7 @@ inline SkeletonPtr createThreeLinkRobot(
 
     auto current_node = pair2.second;
     auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
-    if (collisionShape)
-    {
+    if (collisionShape) {
       shapeNode->createCollisionAspect();
       shapeNode->createDynamicsAspect();
     }
@@ -205,8 +202,7 @@ inline SkeletonPtr createThreeLinkRobot(
     dimEE = dim2;
   }
 
-  if (stopAfter > 2)
-  {
+  if (stopAfter > 2) {
     // Create the third link
     node = BodyNode::Properties(BodyNode::AspectProperties("link3"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim3(2) / 2.0));
@@ -221,8 +217,7 @@ inline SkeletonPtr createThreeLinkRobot(
 
     auto current_node = pair3.second;
     auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
-    if (collisionShape)
-    {
+    if (collisionShape) {
       shapeNode->createCollisionAspect();
       shapeNode->createDynamicsAspect();
     }
@@ -289,8 +284,7 @@ inline SkeletonPtr createNLinkRobot(
   BodyNode* parent_node = current_node;
 
   // Create links iteratively
-  for (int i = 1; i < _n; ++i)
-  {
+  for (int i = 1; i < _n; ++i) {
     std::ostringstream ssLink;
     std::ostringstream ssJoint;
     ssLink << "link" << i;
@@ -362,8 +356,7 @@ inline SkeletonPtr createNLinkPendulum(
   BodyNode* parent_node = current_node;
 
   // Create links iteratively
-  for (size_t i = 1; i < numBodyNodes; ++i)
-  {
+  for (size_t i = 1; i < numBodyNodes; ++i) {
     std::ostringstream ssLink;
     std::ostringstream ssJoint;
     ssLink << "link" << i;

@@ -133,8 +133,7 @@ void SimpleFrame::copy(
   setRelativeSpatialVelocity(relativeVelocity, Frame::World());
   setRelativeSpatialAcceleration(relativeAcceleration, Frame::World());
 
-  if (_copyProperties)
-  {
+  if (_copyProperties) {
     const auto shapeFrame = dynamic_cast<const ShapeFrame*>(_otherFrame);
     if (shapeFrame)
       setCompositeProperties(shapeFrame->getCompositeProperties());

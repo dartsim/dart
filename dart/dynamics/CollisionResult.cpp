@@ -125,8 +125,7 @@ void CollisionResult::clear()
 //==============================================================================
 void CollisionResult::addObject(CollisionObject* object)
 {
-  if (!object)
-  {
+  if (!object) {
     dterr << "[CollisionResult::addObject] Attempting to add a collision with "
           << "a nullptr object to a CollisionResult instance. This is not "
           << "allowed. Please report this as a bug!\n";
@@ -137,8 +136,7 @@ void CollisionResult::addObject(CollisionObject* object)
   const dynamics::ShapeFrame* frame = object->getShapeFrame();
   mCollidingShapeFrames.insert(frame);
 
-  if (frame->isShapeNode())
-  {
+  if (frame->isShapeNode()) {
     const dynamics::ShapeNode* node = frame->asShapeNode();
     mCollidingBodyNodes.insert(node->getBodyNodePtr());
   }

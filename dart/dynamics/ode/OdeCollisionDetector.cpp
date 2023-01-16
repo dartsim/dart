@@ -303,15 +303,13 @@ void reportContacts(
 
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
-  if (1u == option.maxNumContacts)
-  {
+  if (1u == option.maxNumContacts) {
     result.addContact(convertContact(contactGeoms[0], b1, b2, option));
 
     return;
   }
 
-  for (auto i = 0; i < numContacts; ++i)
-  {
+  for (auto i = 0; i < numContacts; ++i) {
     result.addContact(convertContact(contactGeoms[i], b1, b2, option));
 
     if (result.getNumContacts() >= option.maxNumContacts)
@@ -331,8 +329,7 @@ Contact convertContact(
   contact.collisionObject1 = b1;
   contact.collisionObject2 = b2;
 
-  if (option.enableContact)
-  {
+  if (option.enableContact) {
     contact.point = OdeTypes::convertVector3(odeContact.pos);
     contact.normal = OdeTypes::convertVector3(odeContact.normal);
     contact.penetrationDepth = odeContact.depth;

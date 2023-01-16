@@ -141,8 +141,7 @@ void EndEffector::resetRelativeTransform()
 //==============================================================================
 void EndEffector::dirtyTransform()
 {
-  if (!mNeedTransformUpdate)
-  {
+  if (!mNeedTransformUpdate) {
     const SkeletonPtr& skel = getSkeleton();
     if (skel)
       skel->dirtySupportPolygon(getTreeIndex());

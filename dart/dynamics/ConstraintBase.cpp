@@ -77,8 +77,7 @@ void ConstraintBase::uniteSkeletons()
 dynamics::SkeletonPtr ConstraintBase::compressPath(
     dynamics::SkeletonPtr _skeleton)
 {
-  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton)
-  {
+  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton) {
     _skeleton->mUnionRootSkeleton
         = _skeleton->mUnionRootSkeleton.lock()->mUnionRootSkeleton.lock();
     _skeleton = _skeleton->mUnionRootSkeleton.lock();

@@ -757,8 +757,7 @@ TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
   Matrix<double, 6, 6> m2;
 
   clock_t start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     a2 = Transform_Affine3d(A1, a1);
   }
   std::cout << "Transform_Affine3d: "
@@ -766,8 +765,7 @@ TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
   // cout << "result: " << a2 << endl;
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     i2 = Transform_Isometry3d(I1, i1);
   }
   std::cout << "Transform_Isometry3d: "
@@ -775,8 +773,7 @@ TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
   // cout << "result: " << i2 << endl;
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     i2 = Transform_Isometry3d_2(I1, i1);
   }
   std::cout << "Transform_Isometry3d_2: "
@@ -784,8 +781,7 @@ TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
   // cout << "result: " << i2 << endl;
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     i2 = Transform_Isometry3d_3(I1, i1);
   }
   std::cout << "Transform_Isometry3d_3: "
@@ -793,8 +789,7 @@ TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
   // cout << "result: " << i2 << endl;
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     m2 = Transform_Matrix4d(M1, m1);
   }
   std::cout << "Transform_Matrix4d: "
@@ -834,8 +829,7 @@ TEST(MATH, ADJOINT_MAPPING)
   m1 << 1, 2, 3, 4, 5, 6;
 
   clock_t start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     a2 = Ad_Affine3d_1(A1, a1);
   }
   std::cout << "Ad_Affine3d_1: " << (double)(clock() - start) / CLOCKS_PER_SEC
@@ -843,8 +837,7 @@ TEST(MATH, ADJOINT_MAPPING)
   // cout << "result: " << a2 << endl;
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     a4 = Ad_Affine3d_2(A2, a3);
   }
   std::cout << "Ad_Affine3d_2: " << (double)(clock() - start) / CLOCKS_PER_SEC
@@ -860,8 +853,7 @@ TEST(MATH, ADJOINT_MAPPING)
   //    //cout << "result: " << a6 << endl;
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     i2 = Ad_Isometry3d(I1, i1);
   }
   std::cout << "Ad_Isometry3d: " << (double)(clock() - start) / CLOCKS_PER_SEC
@@ -869,8 +861,7 @@ TEST(MATH, ADJOINT_MAPPING)
   // cout << "result: " << i2 << endl;
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     m2 = Ad_Matrix4d(M1, m1);
   }
   std::cout << "Ad_Matrix4d: " << (double)(clock() - start) / CLOCKS_PER_SEC
@@ -898,32 +889,28 @@ TEST(MATH, TRANSFORMATION)
   EigenSE3 ES2(A1.matrix()), ES3(A1.matrix());
 
   clock_t start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     prod(ES2, ES1, ES3);
   }
   std::cout << "EigenSE3: " << (double)(clock() - start) / CLOCKS_PER_SEC
             << " s\n";
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     prod(A2, A1, A3);
   }
   std::cout << "Affine3d: " << (double)(clock() - start) / CLOCKS_PER_SEC
             << " s\n";
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     prod(I2, I1, I3);
   }
   std::cout << "Isometry3d: " << (double)(clock() - start) / CLOCKS_PER_SEC
             << " s\n";
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     prod(M2, M1, M3);
   }
   std::cout << "Matrix4d: " << (double)(clock() - start) / CLOCKS_PER_SEC
@@ -931,8 +918,7 @@ TEST(MATH, TRANSFORMATION)
 
   A2 = A1;
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     concatenate(A2, A1, A3);
   }
   std::cout << "Hard-coded: " << (double)(clock() - start) / CLOCKS_PER_SEC
@@ -956,32 +942,28 @@ TEST(MATH, INVERSION)
   Matrix4d M2 = M1, M3;
 
   clock_t start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     inv(A1, A2);
   }
   std::cout << "Affine3d: " << (double)(clock() - start) / CLOCKS_PER_SEC
             << " s\n";
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     inv(I1, I2);
   }
   std::cout << "Isometry3d_1: " << (double)(clock() - start) / CLOCKS_PER_SEC
             << " s\n";
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     inv_se3(I1, I2);
   }
   std::cout << "Isometry3d_2: " << (double)(clock() - start) / CLOCKS_PER_SEC
             << " s\n";
 
   start = clock();
-  for (int i = 0; i < iterations; i++)
-  {
+  for (int i = 0; i < iterations; i++) {
     inv(M1, M2);
   }
   std::cout << "Matrix4d: " << (double)(clock() - start) / CLOCKS_PER_SEC
@@ -1368,8 +1350,7 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
   Matrix<double, 6, 3> fixedJ = dynamicJ; // Matrix<double, 6, 3>::Random();
 
   // Test1: verify the results
-  for (int i = 0; i < testCount; ++i)
-  {
+  for (int i = 0; i < testCount; ++i) {
     Jacobian resJ1 = AdTJac1(T, dynamicJ);
     Jacobian resJ2 = AdTJac2(T, dynamicJ);
     Jacobian resJ3 = AdTJac3(T, fixedJ);
@@ -1385,43 +1366,37 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
 
   // Test2: performance
   tic();
-  for (int i = 0; i < testCount; ++i)
-  {
+  for (int i = 0; i < testCount; ++i) {
     Jacobian resJ1 = AdTJac1(T, dynamicJ);
   }
   std::cout << "AdTJac1 - dynamic: " << toc() << " s\n";
 
   tic();
-  for (int i = 0; i < testCount; ++i)
-  {
+  for (int i = 0; i < testCount; ++i) {
     Jacobian resJ1 = AdTJac1(T, fixedJ);
   }
   std::cout << "AdTJac1 - fixed  : " << toc() << " s\n";
 
   tic();
-  for (int i = 0; i < testCount; ++i)
-  {
+  for (int i = 0; i < testCount; ++i) {
     Jacobian resJ2 = AdTJac2(T, dynamicJ);
   }
   std::cout << "AdTJac2 - dynamic: " << toc() << " s\n";
 
   tic();
-  for (int i = 0; i < testCount; ++i)
-  {
+  for (int i = 0; i < testCount; ++i) {
     Jacobian resJ2 = AdTJac2(T, fixedJ);
   }
   std::cout << "AdTJac2 - fixed  : " << toc() << " s\n";
 
   tic();
-  for (int i = 0; i < testCount; ++i)
-  {
+  for (int i = 0; i < testCount; ++i) {
     Jacobian resJ3 = AdTJac3(T, dynamicJ);
   }
   std::cout << "AdTJac3 - dynamic: " << toc() << " s\n";
 
   tic();
-  for (int i = 0; i < testCount; ++i)
-  {
+  for (int i = 0; i < testCount; ++i) {
     Jacobian resJ3 = AdTJac3(T, fixedJ);
   }
   std::cout << "AdTJac3 - fixed  : " << toc() << " s\n";

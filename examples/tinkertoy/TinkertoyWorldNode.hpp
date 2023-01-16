@@ -94,13 +94,10 @@ public:
 
   void resetForceLine()
   {
-    if (mPickedNode)
-    {
+    if (mPickedNode) {
       mForceLine->setVertex(0, mPickedNode->getWorldTransform() * mPickedPoint);
       mForceLine->setVertex(1, mTarget->getWorldTransform().translation());
-    }
-    else
-    {
+    } else {
       mForceLine->setVertex(0, Eigen::Vector3d::Zero());
       mForceLine->setVertex(1, Eigen::Vector3d::Zero());
     }
@@ -108,13 +105,10 @@ public:
 
   void customPreRefresh() override
   {
-    if (isSimulating())
-    {
+    if (isSimulating()) {
       setAllBodyColors(DefaultSimulationColor);
       setPickedNodeColor(DefaultForceBodyColor);
-    }
-    else
-    {
+    } else {
       setAllBodyColors(DefaultPausedColor);
       setPickedNodeColor(DefaultSelectedColor);
     }
@@ -124,8 +118,7 @@ public:
 
   void customPreStep() override
   {
-    if (mPickedNode)
-    {
+    if (mPickedNode) {
       Eigen::Vector3d F = mForceCoeff
                           * (mTarget->getWorldTransform().translation()
                              - mPickedNode->getWorldTransform() * mPickedPoint);
@@ -167,16 +160,14 @@ public:
     if (!mPickedNode)
       return;
 
-    if (isSimulating())
-    {
+    if (isSimulating()) {
       std::cout << " -- Please pause simulation [using the Spacebar] before "
                 << "attempting to delete blocks." << std::endl;
       return;
     }
 
     dart::dynamics::SkeletonPtr temporary = mPickedNode->remove();
-    for (size_t i = 0; i < temporary->getNumBodyNodes(); ++i)
-    {
+    for (size_t i = 0; i < temporary->getNumBodyNodes(); ++i) {
       mViewer->disableDragAndDrop(
           mViewer->enableDragAndDrop(temporary->getBodyNode(i)));
     }
@@ -237,20 +228,16 @@ public:
       const Eigen::Isometry3d& relTf,
       const dart::dynamics::ShapePtr& jointShape)
   {
-    if (isSimulating())
-    {
+    if (isSimulating()) {
       std::cout << " -- Please pause simulation [using the Spacebar] before "
                 << "attempting to add new bodies" << std::endl;
       return std::make_pair(nullptr, nullptr);
     }
 
     dart::dynamics::SkeletonPtr skel;
-    if (parent)
-    {
+    if (parent) {
       skel = parent->getSkeleton();
-    }
-    else
-    {
+    } else {
       skel = dart::dynamics::Skeleton::create(
           "toy_#" + std::to_string(getWorld()->getNumSkeletons() + 1));
       getWorld()->addSkeleton(skel);

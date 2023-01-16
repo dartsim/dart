@@ -150,8 +150,7 @@ template <class ShapeNodeProperties>
 ShapeNode* BodyNode::createShapeNode(
     ShapeNodeProperties properties, bool automaticName)
 {
-  if (automaticName)
-  {
+  if (automaticName) {
     properties.mName
         = getName() + "_ShapeNode_" + std::to_string(getNumShapeNodes());
   }
@@ -208,8 +207,7 @@ std::size_t BodyNode::getNumShapeNodesWith() const
   auto count = 0u;
   auto numShapeNode = getNumShapeNodes();
 
-  for (auto i = 0u; i < numShapeNode; ++i)
-  {
+  for (auto i = 0u; i < numShapeNode; ++i) {
     if (getShapeNode(i)->has<AspectT>())
       ++count;
   }
@@ -224,8 +222,7 @@ ShapeNode* BodyNode::getShapeNodeWith(std::size_t index)
   std::size_t count = 0;
   ShapeNode* found = nullptr;
   eachShapeNodeWith<AspectT>([&](ShapeNode* shapeNode) -> bool {
-    if (count++ == index)
-    {
+    if (count++ == index) {
       found = shapeNode;
       return false;
     }
@@ -242,8 +239,7 @@ const ShapeNode* BodyNode::getShapeNodeWith(std::size_t index) const
   std::size_t count = 0;
   const ShapeNode* found = nullptr;
   eachShapeNodeWith<AspectT>([&](const ShapeNode* shapeNode) -> bool {
-    if (count++ == index)
-    {
+    if (count++ == index) {
       found = shapeNode;
       return false;
     }
@@ -266,25 +262,18 @@ void BodyNode::eachShapeNodeWith(Func func) const
 {
   if constexpr (std::is_same_v<
                     std::invoke_result_t<Func, const ShapeNode*>,
-                    bool>)
-  {
-    for (auto i = 0u; i < getNumShapeNodes(); ++i)
-    {
+                    bool>) {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       const ShapeNode* shapeNode = getShapeNode(i);
-      if (shapeNode->has<AspectT>())
-      {
+      if (shapeNode->has<AspectT>()) {
         if (!func(shapeNode))
           return;
       }
     }
-  }
-  else
-  {
-    for (auto i = 0u; i < getNumShapeNodes(); ++i)
-    {
+  } else {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       const ShapeNode* shapeNode = getShapeNode(i);
-      if (shapeNode->has<AspectT>())
-      {
+      if (shapeNode->has<AspectT>()) {
         func(shapeNode);
       }
     }
@@ -295,25 +284,18 @@ void BodyNode::eachShapeNodeWith(Func func) const
 template <typename AspectT, typename Func>
 void BodyNode::eachShapeNodeWith(Func func)
 {
-  if constexpr (std::is_same_v<std::invoke_result_t<Func, ShapeNode*>, bool>)
-  {
-    for (auto i = 0u; i < getNumShapeNodes(); ++i)
-    {
+  if constexpr (std::is_same_v<std::invoke_result_t<Func, ShapeNode*>, bool>) {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       ShapeNode* shapeNode = getShapeNode(i);
-      if (shapeNode->has<AspectT>())
-      {
+      if (shapeNode->has<AspectT>()) {
         if (!func(shapeNode))
           return;
       }
     }
-  }
-  else
-  {
-    for (auto i = 0u; i < getNumShapeNodes(); ++i)
-    {
+  } else {
+    for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       ShapeNode* shapeNode = getShapeNode(i);
-      if (shapeNode->has<AspectT>())
-      {
+      if (shapeNode->has<AspectT>()) {
         func(shapeNode);
       }
     }

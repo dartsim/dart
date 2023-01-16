@@ -289,8 +289,7 @@ template <
 void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     const Data& data)
 {
-  if (mOwner)
-  {
+  if (mOwner) {
     (*setData)(mOwner, data);
     return;
   }
@@ -307,8 +306,7 @@ template <
     DataT (*getData)(const OwnerT*)>
 void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(Data&& data)
 {
-  if (mOwner)
-  {
+  if (mOwner) {
     (*setData)(mOwner, data);
     return;
   }
@@ -486,19 +484,14 @@ void CloneableMap<MapType>::copy(const MapType& otherMap, bool merge)
   typename MapType::iterator receiver = mMap.begin();
   typename MapType::const_iterator sender = otherMap.begin();
 
-  while (otherMap.end() != sender)
-  {
-    if (mMap.end() == receiver)
-    {
+  while (otherMap.end() != sender) {
+    if (mMap.end() == receiver) {
       // If we've reached the end of this CloneableMapHolder's map, then we
       // should just add each entry
       mMap[sender->first] = sender->second->clone();
       ++sender;
-    }
-    else if (receiver->first == sender->first)
-    {
-      if (sender->second)
-      {
+    } else if (receiver->first == sender->first) {
+      if (sender->second) {
         // If the sender has an object, we should copy it.
         if (receiver->second)
           // We should copy instead of cloning the incoming object when possible
@@ -506,30 +499,22 @@ void CloneableMap<MapType>::copy(const MapType& otherMap, bool merge)
           receiver->second->copy(*sender->second);
         else
           receiver->second = sender->second->clone();
-      }
-      else if (!merge)
-      {
+      } else if (!merge) {
         // If the sender has no object, we should clear this one.
         receiver->second = nullptr;
       }
 
       ++receiver;
       ++sender;
-    }
-    else if (receiver->first < sender->first)
-    {
-      if (!merge)
-      {
+    } else if (receiver->first < sender->first) {
+      if (!merge) {
         // Clear this entry in the map, because it does not have an analog in
         // the map that we are copying
         receiver->second = nullptr;
       }
       ++receiver;
-    }
-    else
-    {
-      if (sender->second)
-      {
+    } else {
+      if (sender->second) {
         // If receiver has a higher value, then the receiving map does not
         // contain an entry for this entry of the sending map, and therefore the
         // entry must be created.
@@ -539,10 +524,8 @@ void CloneableMap<MapType>::copy(const MapType& otherMap, bool merge)
     }
   }
 
-  if (!merge)
-  {
-    while (mMap.end() != receiver)
-    {
+  if (!merge) {
+    while (mMap.end() != receiver) {
       mMap.erase(receiver++);
     }
   }
@@ -626,8 +609,7 @@ void CloneableVector<T>::copy(const CloneableVector<T>& anotherVector)
   const std::vector<T>& other = anotherVector.getVector();
   mVector.resize(other.size());
 
-  for (std::size_t i = 0; i < other.size(); ++i)
-  {
+  for (std::size_t i = 0; i < other.size(); ++i) {
     if (mVector[i] && other[i])
       mVector[i]->copy(*other[i]);
     else if (other[i])

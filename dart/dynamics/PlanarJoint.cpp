@@ -230,8 +230,7 @@ Joint* PlanarJoint::clone() const
 void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch (mAspectProperties.mPlaneType)
-  {
+  switch (mAspectProperties.mPlaneType) {
     case PlaneType::XY:
       affixes.push_back("_x");
       affixes.push_back("_y");
@@ -254,10 +253,8 @@ void PlanarJoint::updateDegreeOfFreedomNames()
             << static_cast<int>(mAspectProperties.mPlaneType) << ")\n";
   }
 
-  if (affixes.size() == 2)
-  {
-    for (std::size_t i = 0; i < 2; ++i)
-    {
+  if (affixes.size() == 2) {
+    for (std::size_t i = 0; i < 2; ++i) {
       if (!mDofs[i]->isNamePreserved())
         mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);
     }

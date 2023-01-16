@@ -62,10 +62,8 @@ bool equals(
     return false;
 
   // Check each index
-  for (std::size_t i = 0; i < m1; i++)
-  {
-    for (std::size_t j = 0; j < n1; j++)
-    {
+  for (std::size_t i = 0; i < m1; i++) {
+    for (std::size_t j = 0; j < n1; j++) {
       if (std::isnan(A(i, j)) ^ std::isnan(B(i, j)))
         return false;
       else if (std::abs(A(i, j) - B(i, j)) > tol)
@@ -137,8 +135,7 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
   Eigen::Matrix6d I;                                 // Body inertia
   math::Jacobian J;                                  // Body Jacobian
 
-  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); ++i) {
     dynamics::BodyNode* body = _skel->getBodyNode(i);
 
     int dof = body->getNumDependentGenCoords();
@@ -152,12 +149,10 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
 
     M = J.transpose() * I * J; // (dof x dof) matrix
 
-    for (int j = 0; j < dof; ++j)
-    {
+    for (int j = 0; j < dof; ++j) {
       int jIdx = body->getDependentGenCoordIndex(j);
 
-      for (int k = 0; k < dof; ++k)
-      {
+      for (int k = 0; k < dof; ++k) {
         int kIdx = body->getDependentGenCoordIndex(k);
 
         skelM(jIdx, kIdx) += M(j, k);
@@ -180,8 +175,7 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
   MatrixXd AugM;
 
   // Compute diagonal matrices of joint damping and joint stiffness
-  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); ++i) {
     dynamics::BodyNode* body = _skel->getBodyNode(i);
     dynamics::Joint* joint = body->getParentJoint();
 
@@ -190,8 +184,7 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
 
     int dof = joint->getNumDofs();
 
-    for (int j = 0; j < dof; ++j)
-    {
+    for (int j = 0; j < dof; ++j) {
       int idx = joint->getIndexInSkeleton(j);
 
       D(idx, idx) = joint->getDampingCoefficient(j);
@@ -267,8 +260,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   myWorld = io::SkelParser::readWorld(_fileName);
   EXPECT_TRUE(myWorld != nullptr);
 
-  for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
-  {
+  for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
     dynamics::SkeletonPtr softSkel = myWorld->getSkeleton(i);
 
     int dof = softSkel->getNumDofs();
@@ -277,25 +269,21 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
     if (softSkel != nullptr)
       nSoftBodyNodes = softSkel->getNumSoftBodyNodes();
 
-    if (dof == 0)
-    {
+    if (dof == 0) {
       dtmsg << "Skeleton [" << softSkel->getName()
             << "] is skipped since it has "
             << "0 DOF." << endl;
       continue;
     }
 
-    for (std::size_t j = 0; j < nRandomItr; ++j)
-    {
+    for (std::size_t j = 0; j < nRandomItr; ++j) {
       // Random joint stiffness and damping coefficient
-      for (std::size_t k = 0; k < softSkel->getNumBodyNodes(); ++k)
-      {
+      for (std::size_t k = 0; k < softSkel->getNumBodyNodes(); ++k) {
         BodyNode* body = softSkel->getBodyNode(k);
         Joint* joint = body->getParentJoint();
         int localDof = joint->getNumDofs();
 
-        for (int l = 0; l < localDof; ++l)
-        {
+        for (int l = 0; l < localDof; ++l) {
           joint->setDampingCoefficient(l, Random::uniform(lbD, ubD));
           joint->setSpringStiffness(l, Random::uniform(lbK, ubK));
 
@@ -307,8 +295,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Set random states
       Skeleton::Configuration x = softSkel->getConfiguration();
-      for (auto k = 0u; k < softSkel->getNumDofs(); ++k)
-      {
+      for (auto k = 0u; k < softSkel->getNumDofs(); ++k) {
         x.mPositions[k] = Random::uniform(lb, ub);
         x.mVelocities[k] = Random::uniform(lb, ub);
       }
@@ -337,43 +324,37 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Check mass matrix
       EXPECT_TRUE(equals(M, M2, 1e-6));
-      if (!equals(M, M2, 1e-6))
-      {
+      if (!equals(M, M2, 1e-6)) {
         cout << "M :" << endl << M << endl << endl;
         cout << "M2:" << endl << M2 << endl << endl;
       }
 
       // Check augmented mass matrix
       EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
-      if (!equals(AugM, AugM2, 1e-6))
-      {
+      if (!equals(AugM, AugM2, 1e-6)) {
         cout << "AugM :" << endl << AugM << endl << endl;
         cout << "AugM2:" << endl << AugM2 << endl << endl;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
       EXPECT_TRUE(equals(M_InvM, I, 1e-6));
-      if (!equals(M_InvM, I, 1e-6))
-      {
+      if (!equals(M_InvM, I, 1e-6)) {
         cout << "InvM  :" << endl << InvM << endl << endl;
       }
       EXPECT_TRUE(equals(InvM_M, I, 1e-6));
-      if (!equals(InvM_M, I, 1e-6))
-      {
+      if (!equals(InvM_M, I, 1e-6)) {
         cout << "InvM_M:" << endl << InvM_M << endl << endl;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
       EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
-      if (!equals(AugM_InvAugM, I, 1e-6))
-      {
+      if (!equals(AugM_InvAugM, I, 1e-6)) {
         cout << "InvAugM  :" << endl << InvAugM << endl << endl;
         cout << "InvAugM2  :" << endl << AugM.inverse() << endl << endl;
         cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
       }
       EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
-      if (!equals(InvAugM_AugM, I, 1e-6))
-      {
+      if (!equals(InvAugM_AugM, I, 1e-6)) {
         cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
       }
 
@@ -390,8 +371,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       vector<double> oldKv(nSoftBodyNodes, 0.0);
       vector<double> oldKe(nSoftBodyNodes, 0.0);
       vector<double> oldD(nSoftBodyNodes, 0.0);
-      for (int k = 0; k < nSoftBodyNodes; ++k)
-      {
+      for (int k = 0; k < nSoftBodyNodes; ++k) {
         assert(softSkel != nullptr);
         dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
         oldKv[k] = sbn->getVertexSpringStiffness();
@@ -402,8 +382,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       softSkel->resetGeneralizedForces();
       softSkel->clearExternalForces();
       softSkel->setAccelerations(VectorXd::Zero(dof));
-      for (int k = 0; k < nSoftBodyNodes; ++k)
-      {
+      for (int k = 0; k < nSoftBodyNodes; ++k) {
         assert(softSkel != nullptr);
         dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
         sbn->setVertexSpringStiffness(0.0);
@@ -426,15 +405,13 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       VectorXd Cg2 = softSkel->getForces();
 
       EXPECT_TRUE(equals(C, C2, 1e-6));
-      if (!equals(C, C2, 1e-6))
-      {
+      if (!equals(C, C2, 1e-6)) {
         cout << "C :" << C.transpose() << endl;
         cout << "C2:" << C2.transpose() << endl;
       }
 
       EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
-      if (!equals(Cg, Cg2, 1e-6))
-      {
+      if (!equals(Cg, Cg2, 1e-6)) {
         cout << "Cg :" << Cg.transpose() << endl;
         cout << "Cg2:" << Cg2.transpose() << endl;
       }

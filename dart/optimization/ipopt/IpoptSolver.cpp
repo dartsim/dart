@@ -82,20 +82,16 @@ bool IpoptSolver::solve()
   mIpoptApp->Options()->SetStringValue("output_file", getResultFileName());
 
   std::size_t freq = mProperties.mIterationsPerPrint;
-  if (freq > 0)
-  {
+  if (freq > 0) {
     mIpoptApp->Options()->SetIntegerValue("print_frequency_iter", freq);
-  }
-  else
-  {
+  } else {
     mIpoptApp->Options()->SetIntegerValue(
         "print_frequency_iter", math::max<int>());
   }
 
   // Intialize the IpoptApplication and process the options
   Ipopt::ApplicationReturnStatus init_status = mIpoptApp->Initialize();
-  if (init_status != Ipopt::Solve_Succeeded)
-  {
+  if (init_status != Ipopt::Solve_Succeeded) {
     dterr << "[IpoptSolver::solve] Error during ipopt initialization.\n";
     assert(false);
     return false;
@@ -207,22 +203,19 @@ bool DartTNLP::get_bounds_info(
   DART_UNUSED(m);
 
   // lower and upper bounds
-  for (Ipopt::Index i = 0; i < n; i++)
-  {
+  for (Ipopt::Index i = 0; i < n; i++) {
     x_l[i] = problem->getLowerBounds()[i];
     x_u[i] = problem->getUpperBounds()[i];
   }
 
   // Add inequality constraint functions
   std::size_t idx = 0;
-  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
     g_l[idx] = g_u[idx] = 0.0;
     ++idx;
   }
 
-  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
     // Ipopt interprets any number greater than nlp_upper_bound_inf as
     // infinity. The default value of nlp_upper_bound_inf and
     // nlp_lower_bound_inf is 1e+19 and can be changed through ipopt options.
@@ -249,16 +242,14 @@ bool DartTNLP::get_starting_point(
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
   // If init_x is true, this method must provide an initial value for x.
-  if (init_x)
-  {
+  if (init_x) {
     for (int i = 0; i < n; ++i)
       x[i] = problem->getInitialGuess()[i];
   }
 
   // If init_z is true, this method must provide an initial value for the bound
   // multipliers z^L and z^U
-  if (init_z)
-  {
+  if (init_z) {
     // TODO(JS): Not implemented yet.
     dterr << "Initializing lower/upper bounds for z is not supported yet. "
           << "Ignored here.\n";
@@ -266,8 +257,7 @@ bool DartTNLP::get_starting_point(
 
   // If init_lambda is true, this method must provide an initial value for the
   // constraint multipliers, lambda.
-  if (init_lambda)
-  {
+  if (init_lambda) {
     // TODO(JS): Not implemented yet.
     dterr << "Initializing lambda is not supported yet. "
           << "Ignored here.\n";
@@ -325,24 +315,21 @@ bool DartTNLP::eval_g(
   DART_UNUSED(_m);
 
   // TODO(JS):
-  if (_new_x)
-  {
+  if (_new_x) {
   }
 
   Eigen::Map<const Eigen::VectorXd> x(_x, _n);
   std::size_t idx = 0;
 
   // Evaluate function values for equality constraints
-  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
     _g[idx] = problem->getEqConstraint(i)->eval(
         static_cast<const Eigen::VectorXd&>(x));
     idx++;
   }
 
   // Evaluate function values for inequality constraints
-  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
     _g[idx] = problem->getIneqConstraint(i)->eval(
         static_cast<const Eigen::VectorXd&>(x));
     idx++;
@@ -369,40 +356,33 @@ bool DartTNLP::eval_jac_g(
   // only). At this time, the x argument and the values argument will be
   // nullptr.
 
-  if (nullptr == _values)
-  {
+  if (nullptr == _values) {
     // return the structure of the Jacobian
 
     // Assume the gradient is dense
     std::size_t idx = 0;
-    for (int i = 0; i < _m; ++i)
-    {
-      for (int j = 0; j < _n; ++j)
-      {
+    for (int i = 0; i < _m; ++i) {
+      for (int j = 0; j < _n; ++j) {
         _iRow[idx] = i;
         _jCol[idx] = j;
         ++idx;
       }
     }
-  }
-  else
-  {
+  } else {
     // return the values of the Jacobian of the constraints
     std::size_t idx = 0;
     Eigen::Map<const Eigen::VectorXd> x(_x, _n);
     Eigen::Map<Eigen::VectorXd> grad(nullptr, 0);
 
     // Evaluate function values for equality constraints
-    for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
-    {
+    for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
       new (&grad) Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
       problem->getEqConstraint(i)->evalGradient(x, grad);
       idx += _n;
     }
 
     // Evaluate function values for inequality constraints
-    for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
-    {
+    for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
       new (&grad) Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
       problem->getIneqConstraint(i)->evalGradient(x, grad);
       idx += _n;

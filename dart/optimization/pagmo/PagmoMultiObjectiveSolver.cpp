@@ -122,8 +122,7 @@ static pagmo::algorithm createNsga2(
 static pagmo::algorithm createPagmoAlgorithm(
     const PagmoMultiObjectiveSolver::Properties& properties)
 {
-  switch (properties.mAlgorithm)
-  {
+  switch (properties.mAlgorithm) {
 #ifdef PAGMO_WITH_NLOPT
     case PagmoMultiObjectiveSolver::Algorithm::Local_nlopt_COBYLA: {
       return createNloptCobyla(properties);
@@ -160,8 +159,7 @@ bool PagmoMultiObjectiveSolver::solve(std::size_t numEvolutions)
 
   mPopulations.clear();
   mPopulations.reserve(archi.size());
-  for (std::size_t i = 0u; i < archi.size(); ++i)
-  {
+  for (std::size_t i = 0u; i < archi.size(); ++i) {
     mPopulations.emplace_back(
         PagmoTypes::convertPopulation(archi[i].get_population(), prob));
   }

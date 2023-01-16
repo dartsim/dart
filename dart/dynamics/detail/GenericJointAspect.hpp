@@ -259,8 +259,7 @@ GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
     mDampingCoefficients(dampingCoefficient),
     mFrictions(coulombFrictions)
 {
-  for (auto i = 0u; i < NumDofs; ++i)
-  {
+  for (auto i = 0u; i < NumDofs; ++i) {
     mPreserveDofNames[i] = false;
     mDofNames[i] = std::string();
   }
@@ -285,8 +284,7 @@ GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
     mDampingCoefficients(_other.mDampingCoefficients),
     mFrictions(_other.mFrictions)
 {
-  for (auto i = 0u; i < NumDofs; ++i)
-  {
+  for (auto i = 0u; i < NumDofs; ++i) {
     mPreserveDofNames[i] = _other.mPreserveDofNames[i];
     mDofNames[i] = _other.mDofNames[i];
   }
@@ -298,8 +296,7 @@ GenericJointUniqueProperties<ConfigSpaceT>&
 GenericJointUniqueProperties<ConfigSpaceT>::operator=(
     const GenericJointUniqueProperties& other)
 {
-  if (this != &other)
-  {
+  if (this != &other) {
     mPositionLowerLimits = other.mPositionLowerLimits;
     mPositionUpperLimits = other.mPositionUpperLimits;
     mInitialPositions = other.mInitialPositions;
@@ -315,8 +312,7 @@ GenericJointUniqueProperties<ConfigSpaceT>::operator=(
     mDampingCoefficients = other.mDampingCoefficients;
     mFrictions = other.mFrictions;
 
-    for (auto i = 0u; i < NumDofs; ++i)
-    {
+    for (auto i = 0u; i < NumDofs; ++i) {
       mPreserveDofNames[i] = other.mPreserveDofNames[i];
       mDofNames[i] = other.mDofNames[i];
     }

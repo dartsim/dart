@@ -62,8 +62,7 @@ TEST(Issue1583, ServoJointWithPositionLimits)
   EXPECT_DOUBLE_EQ(0, joint->getVelocity(0));
   EXPECT_DOUBLE_EQ(0, joint->getAcceleration(0));
 
-  for (std::size_t i = 0; i < 1000; ++i)
-  {
+  for (std::size_t i = 0; i < 1000; ++i) {
     joint->setCommand(0, vel_desired);
     world->step();
 
@@ -73,8 +72,7 @@ TEST(Issue1583, ServoJointWithPositionLimits)
     EXPECT_LE(pos, pos_ub + 1e-6);
     EXPECT_GE(pos, pos_lb - 1e-6);
 
-    if (std::abs(vel - vel_desired) > 1e-6)
-    {
+    if (std::abs(vel - vel_desired) > 1e-6) {
       EXPECT_NEAR(pos, pos_ub, 1e-2);
     }
   }

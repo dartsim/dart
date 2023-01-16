@@ -92,8 +92,7 @@ const std::string& JointCoulombFrictionConstraint::getStaticType()
 void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (_cfm < 1e-9)
-  {
+  if (_cfm < 1e-9) {
     dtwarn << "Constraint force mixing parameter[" << _cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
@@ -116,12 +115,10 @@ void JointCoulombFrictionConstraint::update()
   mDim = 0;
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     mNegativeVel[i] = -mJoint->getVelocity(i);
 
-    if (mNegativeVel[i] != 0.0)
-    {
+    if (mNegativeVel[i] != 0.0) {
       double timeStep = mJoint->getSkeleton()->getTimeStep();
       // TODO: There are multiple ways to get time step (or its inverse).
       //   - ContactConstraint get it from the constructor parameter
@@ -135,20 +132,15 @@ void JointCoulombFrictionConstraint::update()
       mUpperBound[i] = mJoint->getCoulombFriction(i) * timeStep;
       mLowerBound[i] = -mUpperBound[i];
 
-      if (mActive[i])
-      {
+      if (mActive[i]) {
         ++(mLifeTime[i]);
-      }
-      else
-      {
+      } else {
         mActive[i] = true;
         mLifeTime[i] = 0;
       }
 
       ++mDim;
-    }
-    else
-    {
+    } else {
       mActive[i] = false;
     }
   }
@@ -159,8 +151,7 @@ void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
 {
   std::size_t index = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -190,13 +181,11 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(std::size_t _index)
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
-    if (localIndex == _index)
-    {
+    if (localIndex == _index) {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
       skeleton->updateBiasImpulse(mBodyNode);
@@ -218,8 +207,7 @@ void JointCoulombFrictionConstraint::getVelocityChange(
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -233,8 +221,7 @@ void JointCoulombFrictionConstraint::getVelocityChange(
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // varaible in ODE
-  if (_withCfm)
-  {
+  if (_withCfm) {
     _delVel[mAppliedImpulseIndex]
         += _delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
@@ -259,8 +246,7 @@ void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
 {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
@@ -282,8 +268,7 @@ dynamics::SkeletonPtr JointCoulombFrictionConstraint::getRootSkeleton() const
 //==============================================================================
 bool JointCoulombFrictionConstraint::isActive() const
 {
-  for (std::size_t i = 0; i < 6; ++i)
-  {
+  for (std::size_t i = 0; i < 6; ++i) {
     if (mActive[i])
       return true;
   }

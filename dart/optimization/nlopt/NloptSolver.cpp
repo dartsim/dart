@@ -91,12 +91,9 @@ bool NloptSolver::solve()
   // Allocate a new nlopt::opt structure if needed
   std::size_t dimension = mProperties.mProblem->getDimension();
   if (nullptr == mOpt || mOpt->get_dimension() != dimension
-      || mOpt->get_algorithm() != mAlg)
-  {
+      || mOpt->get_algorithm() != mAlg) {
     mOpt = std::make_unique<nlopt::opt>(mAlg, dimension);
-  }
-  else
-  {
+  } else {
     mOpt->remove_equality_constraints();
     mOpt->remove_inequality_constraints();
   }
@@ -112,24 +109,18 @@ bool NloptSolver::solve()
   mOpt->set_min_objective(
       NloptSolver::_nlopt_func, problem->getObjective().get());
 
-  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
     FunctionPtr fn = problem->getEqConstraint(i);
-    try
-    {
+    try {
       mOpt->add_equality_constraint(
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
-    }
-    catch (const std::invalid_argument& e)
-    {
+    } catch (const std::invalid_argument& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an equality constraint to an Nlopt solver. "
             << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
             << "] (" << mAlg << ") supports equality constraints!\n";
       assert(false);
-    }
-    catch (const std::exception& e)
-    {
+    } catch (const std::exception& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an equality constraint to the Nlopt solver. "
             << "This might be a bug in DART; please report this!\n";
@@ -137,24 +128,18 @@ bool NloptSolver::solve()
     }
   }
 
-  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
-  {
+  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
     FunctionPtr fn = problem->getIneqConstraint(i);
-    try
-    {
+    try {
       mOpt->add_inequality_constraint(
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
-    }
-    catch (const std::invalid_argument& e)
-    {
+    } catch (const std::invalid_argument& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an inequality constraint to an Nlopt solver. "
             << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
             << "] (" << mAlg << ") supports inequality constraints!\n";
       assert(false);
-    }
-    catch (const std::exception& e)
-    {
+    } catch (const std::exception& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an inequality constraint to the Nlopt solver. "
             << "This might be a bug in DART; please report this!\n";
@@ -234,8 +219,7 @@ NloptSolver::Algorithm NloptSolver::getAlgorithm() const
 //==============================================================================
 nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
 {
-  switch (algorithm)
-  {
+  switch (algorithm) {
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(GN_DIRECT)
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(GN_DIRECT_L)
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(GN_DIRECT_L_RAND)
@@ -289,8 +273,7 @@ nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
 //==============================================================================
 NloptSolver::Algorithm NloptSolver::convertAlgorithm(nlopt::algorithm algorithm)
 {
-  switch (algorithm)
-  {
+  switch (algorithm) {
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT)
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L)
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L_RAND)
@@ -350,8 +333,7 @@ double NloptSolver::_nlopt_func(
 
   Eigen::Map<const Eigen::VectorXd> mapX(x, n);
 
-  if (gradient)
-  {
+  if (gradient) {
     Eigen::Map<Eigen::VectorXd> grad(gradient, n);
     fn->evalGradient(mapX, grad);
   }

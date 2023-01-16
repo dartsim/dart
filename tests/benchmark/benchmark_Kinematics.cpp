@@ -95,22 +95,18 @@ void testForwardKinematicSpeed(
   while (bn->getNumChildBodyNodes() > 0)
     bn = bn->getChildBodyNode(0);
 
-  for (std::size_t i = 0; i < numTests; ++i)
-  {
-    for (std::size_t i = 0; i < skel->getNumDofs(); ++i)
-    {
+  for (std::size_t i = 0; i < numTests; ++i) {
+    for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
       dart::dynamics::DegreeOfFreedom* dof = skel->getDof(i);
       dof->setPosition(dart::math::Random::uniform(
           std::max(dof->getPositionLowerLimit(), -1.0),
           std::min(dof->getPositionUpperLimit(), 1.0)));
     }
 
-    for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
-    {
+    for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
       if (position)
         skel->getBodyNode(i)->getWorldTransform();
-      if (velocity)
-      {
+      if (velocity) {
         skel->getBodyNode(i)->getSpatialVelocity();
         skel->getBodyNode(i)->getPartialAcceleration();
       }
@@ -128,8 +124,7 @@ void runKinematicsTest(
     std::size_t numTests)
 {
   // Test for updating the whole skeleton
-  for (std::size_t i = 0; i < worlds.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr world = worlds[i];
     testForwardKinematicSpeed(
         world->getSkeleton(0), position, velocity, acceleration, numTests);
@@ -144,8 +139,7 @@ static void BM_Kinematics(benchmark::State& state)
   int n = state.range(0);
 
   // Call the Kinematics function and measure the time it takes
-  for (auto _ : state)
-  {
+  for (auto _ : state) {
     runKinematicsTest(worlds, true, true, true, n);
   }
 }
@@ -184,8 +178,7 @@ static void BM_Dynamics(benchmark::State& state)
   int n = state.range(0);
 
   // Call the Kinematics function and measure the time it takes
-  for (auto _ : state)
-  {
+  for (auto _ : state) {
     runDynamicsTest(worlds, n);
   }
 }

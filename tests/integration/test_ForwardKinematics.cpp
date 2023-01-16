@@ -66,15 +66,13 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
 
   // Check each case by setting the joint values and obtaining the end-effector
   // position
-  for (std::size_t i = 0; i < numTests; i++)
-  {
+  for (std::size_t i = 0; i < numTests; i++) {
     robot->setPositions(Eigen::VectorXd(joints[i]));
     BodyNode* bn = robot->getBodyNode("ee");
     Vector3d actual = bn->getTransform().translation();
     bool equality = test::equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
-    if (!equality)
-    {
+    if (!equality) {
       std::cout << "Joint values: " << joints[i].transpose() << std::endl;
       std::cout << "Actual pos: " << actual.transpose() << std::endl;
       std::cout << "Expected pos: " << expectedPos[i].transpose() << std::endl;
@@ -107,14 +105,12 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 
   // Check each case by setting the joint values and obtaining the end-effector
   // position
-  for (std::size_t i = 0; i < numTests; i++)
-  {
+  for (std::size_t i = 0; i < numTests; i++) {
     robot->setPositions(joints[i]);
     Vector3d actual = robot->getBodyNode("ee")->getTransform().translation();
     bool equality = test::equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
-    if (!equality)
-    {
+    if (!equality) {
       std::cout << "Joint values: " << joints[i].transpose() << std::endl;
       std::cout << "Actual pos: " << actual.transpose() << std::endl;
       std::cout << "Expected pos: " << expectedPos[i].transpose() << std::endl;
@@ -130,8 +126,7 @@ Eigen::MatrixXd finiteDifferenceJacobian(
     JacobianNode* node)
 {
   Eigen::MatrixXd J(3, q.size());
-  for (int i = 0; i < q.size(); ++i)
-  {
+  for (int i = 0; i < q.size(); ++i) {
     const double dq = 1e-4;
 
     Eigen::VectorXd q_up = q;

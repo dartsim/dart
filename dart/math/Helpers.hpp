@@ -244,15 +244,11 @@ inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6)
   if (rows != cols)
     return false;
 
-  for (std::size_t i = 0; i < rows; ++i)
-  {
-    for (std::size_t j = i + 1; j < cols; ++j)
-    {
-      if (std::abs(_m(i, j) - _m(j, i)) > _tol)
-      {
+  for (std::size_t i = 0; i < rows; ++i) {
+    for (std::size_t j = i + 1; j < cols; ++j) {
+      if (std::abs(_m(i, j) - _m(j, i)) > _tol) {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < rows; ++k)
-        {
+        for (std::size_t k = 0; k < rows; ++k) {
           for (std::size_t l = 0; l < cols; ++l)
             std::cout << std::setprecision(4) << _m(k, l) << " ";
           std::cout << std::endl;

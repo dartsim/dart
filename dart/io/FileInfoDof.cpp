@@ -86,11 +86,9 @@ bool FileInfoDof::loadFile(const char* _fName)
   // dof names
   for (std::size_t i = 0; i < nDof; i++)
     inFile >> buffer;
-  for (std::size_t j = 0; j < mNumFrames; j++)
-  {
+  for (std::size_t j = 0; j < mNumFrames; j++) {
     mDofs[j].resize(nDof);
-    for (std::size_t i = 0; i < nDof; i++)
-    {
+    for (std::size_t i = 0; i < nDof; i++) {
       double val;
       inFile >> val;
       mDofs[j][i] = val;
@@ -132,8 +130,7 @@ bool FileInfoDof::saveFile(
   outFile << "frames = " << last - first + 1
           << " dofs = " << mSkel->getNumDofs() << std::endl;
 
-  for (std::size_t i = 0; i < mSkel->getNumDofs(); i++)
-  {
+  for (std::size_t i = 0; i < mSkel->getNumDofs(); i++) {
     const dynamics::DegreeOfFreedom* dof = mSkel->getDof(i);
     const dynamics::Joint* joint = dof->getJoint();
     const std::size_t localIndex = dof->getIndexInJoint();
@@ -143,8 +140,7 @@ bool FileInfoDof::saveFile(
 
   outFile << std::endl;
 
-  for (std::size_t i = first; i <= last; i++)
-  {
+  for (std::size_t i = first; i <= last; i++) {
     for (std::size_t j = 0; j < mSkel->getNumDofs(); j++)
       outFile << mDofs[i][j] << ' ';
     outFile << std::endl;

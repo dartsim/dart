@@ -98,8 +98,7 @@ TEST(JointForceTorqueTest, Static)
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
 
   // Run 10 steps
-  for (auto i = 0u; i < 10; ++i)
-  {
+  for (auto i = 0u; i < 10; ++i) {
     world->step();
 
     //----------------------
@@ -202,16 +201,14 @@ TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
   world->setGravity(Eigen::Vector3d(-30, 10, -50));
 
   // Wait for dynamics to be stabilized
-  for (auto i = 0; i < 2000; ++i)
-  {
+  for (auto i = 0; i < 2000; ++i) {
     world->step();
   }
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
 
   // Run 5 steps
-  for (auto i = 0u; i < 5; ++i)
-  {
+  for (auto i = 0u; i < 5; ++i) {
     world->step();
 
     //----------------------
@@ -330,8 +327,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   const double target1 = 0;
   const double target2 = -0.25 * math::pi();
   const auto steps = 4500u;
-  for (auto i = 0u; i < steps; ++i)
-  {
+  for (auto i = 0u; i < steps; ++i) {
     // PD control
     const double j1State = joint_12->getPosition(0);
     const double j2State = joint_23->getPosition(0);

@@ -117,8 +117,7 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    switch (key)
-    {
+    switch (key) {
       case '1':
         addObject(mOriginalBall->cloneSkeleton());
         break;
@@ -171,8 +170,7 @@ public:
     // We remove playback and baking, because we want to be able to add and
     // remove objects during runtime
     int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
-    if (mSimulating)
-    {
+    if (mSimulating) {
       for (int i = 0; i < numIter; i++)
         timeStepping();
     }
@@ -226,14 +224,12 @@ protected:
   /// it, if one existed
   void removeSkeleton(const SkeletonPtr& skel)
   {
-    for (std::size_t i = 0; i < mJointConstraints.size(); ++i)
-    {
+    for (std::size_t i = 0; i < mJointConstraints.size(); ++i) {
       const dart::dynamics::DynamicJointConstraintPtr& constraint
           = mJointConstraints[i];
 
       if (constraint->getBodyNode1()->getSkeleton() == skel
-          || constraint->getBodyNode2()->getSkeleton() == skel)
-      {
+          || constraint->getBodyNode2()->getSkeleton() == skel) {
         mWorld->getConstraintSolver()->removeConstraint(constraint);
         mJointConstraints.erase(mJointConstraints.begin() + i);
         break; // There should only be one constraint per skeleton

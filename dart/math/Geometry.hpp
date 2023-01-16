@@ -482,8 +482,7 @@ void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
 {
   int rank = 0;
   // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
-  if (_SVD.nonzeroSingularValues() > 0)
-  {
+  if (_SVD.nonzeroSingularValues() > 0) {
     double thresh
         = std::max(_SVD.singularValues().coeff(0) * 1e-10, math::min<double>());
     int i = _SVD.nonzeroSingularValues() - 1;

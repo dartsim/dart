@@ -113,8 +113,7 @@ protected:
   // Triggered when this node gets added to the Viewer
   void setupViewer() override
   {
-    if (mViewer)
-    {
+    if (mViewer) {
       dnd = mViewer->enableDragAndDrop(mTarget.get());
       dnd->setObstructable(false);
       mViewer->addInstructionText(
@@ -158,18 +157,15 @@ public:
   virtual bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
-    if (nullptr == mDnD)
-    {
+    if (nullptr == mDnD) {
       clearConstraints();
       return false;
     }
 
     bool handled = false;
-    switch (ea.getEventType())
-    {
+    switch (ea.getEventType()) {
       case ::osgGA::GUIEventAdapter::KEYDOWN: {
-        switch (ea.getKey())
-        {
+        switch (ea.getKey()) {
           case '1':
             mConstrained[0] = true;
             handled = true;
@@ -187,8 +183,7 @@ public:
       }
 
       case ::osgGA::GUIEventAdapter::KEYUP: {
-        switch (ea.getKey())
-        {
+        switch (ea.getKey()) {
           case '1':
             mConstrained[0] = false;
             handled = true;
@@ -217,21 +212,16 @@ public:
       if (mConstrained[i])
         ++constraintDofs;
 
-    if (constraintDofs == 0 || constraintDofs == 3)
-    {
+    if (constraintDofs == 0 || constraintDofs == 3) {
       mDnD->unconstrain();
-    }
-    else if (constraintDofs == 1)
-    {
+    } else if (constraintDofs == 1) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
       for (std::size_t i = 0; i < 3; ++i)
         if (mConstrained[i])
           v[i] = 1.0;
 
       mDnD->constrainToLine(v);
-    }
-    else if (constraintDofs == 2)
-    {
+    } else if (constraintDofs == 2) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
       for (std::size_t i = 0; i < 3; ++i)
         if (!mConstrained[i])
@@ -260,10 +250,8 @@ public:
   bool handle(
       const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
   {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == 's' || ea.getKey() == 'S')
-      {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == 's' || ea.getKey() == 'S') {
         if (mNode->isShadowed())
           mNode->setShadowTechnique(nullptr);
         else

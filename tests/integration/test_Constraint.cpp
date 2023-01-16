@@ -160,16 +160,14 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   // double ub =  1.5 * pi();
 
   int maxSteps = 500;
-  for (int i = 0; i < maxSteps; ++i)
-  {
+  for (int i = 0; i < maxSteps; ++i) {
     //    Vector3d pos1 = sphere->getWorldTransform().translation();
     //    Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
 
     //    std::cout << "pos1:" << pos1.transpose() << std::endl;
     //    std::cout << "vel1:" << vel1.transpose() << std::endl;
 
-    if (!world->checkCollision())
-    {
+    if (!world->checkCollision()) {
       world->step();
       continue;
     }
@@ -188,8 +186,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 
     const auto& result = world->getConstraintSolver()->getLastCollisionResult();
 
-    for (const auto& contact : result.getContacts())
-    {
+    for (const auto& contact : result.getContacts()) {
       Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
       Vector3d vel1 = sphere->getLinearVelocity(pos1);
 

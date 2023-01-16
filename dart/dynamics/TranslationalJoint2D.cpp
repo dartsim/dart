@@ -234,8 +234,7 @@ void TranslationalJoint2D::updateRelativeTransform() const
 //==============================================================================
 void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
 {
-  if (mandatory)
-  {
+  if (mandatory) {
     mJacobian.bottomRows<3>()
         = Joint::mAspectProperties.mT_ChildBodyToJoint.linear()
           * mAspectProperties.getTranslationalAxes();

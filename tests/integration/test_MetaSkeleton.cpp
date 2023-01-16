@@ -92,8 +92,7 @@ std::vector<SkeletonPtr> getSkeletons()
     worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
   std::vector<SkeletonPtr> skeletons;
-  for (std::size_t i = 0; i < worlds.size(); ++i)
-  {
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     WorldPtr world = worlds[i];
     for (std::size_t j = 0; j < world->getNumSkeletons(); ++j)
       skeletons.push_back(world->getSkeleton(j));
@@ -113,21 +112,18 @@ TEST(MetaSkeleton, Referential)
   std::size_t numIterations = 20;
 #endif
 
-  for (std::size_t i = 0; i < skeletons.size(); ++i)
-  {
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
     SkeletonPtr skeleton = skeletons[i];
 
     skeleton->eachJoint(
         [&](const Joint* joint) { EXPECT_TRUE(skeleton->hasJoint(joint)); });
 
-    for (std::size_t j = 0; j < skeleton->getNumTrees(); ++j)
-    {
+    for (std::size_t j = 0; j < skeleton->getNumTrees(); ++j) {
       BranchPtr tree = Branch::create(skeleton->getRootBodyNode(j));
 
       const std::vector<BodyNode*>& skelBns = skeleton->getTreeBodyNodes(j);
       EXPECT_TRUE(tree->getNumBodyNodes() == skelBns.size());
-      for (BodyNode* bn : skelBns)
-      {
+      for (BodyNode* bn : skelBns) {
         EXPECT_FALSE(tree->getIndexOf(bn) == INVALID_INDEX);
         EXPECT_TRUE(tree->getBodyNode(tree->getIndexOf(bn)) == bn);
         EXPECT_TRUE(skeleton->hasBodyNode(bn));
@@ -135,8 +131,7 @@ TEST(MetaSkeleton, Referential)
 
       const std::vector<DegreeOfFreedom*>& skelDofs = skeleton->getTreeDofs(j);
       EXPECT_TRUE(tree->getNumDofs() == skelDofs.size());
-      for (DegreeOfFreedom* dof : skelDofs)
-      {
+      for (DegreeOfFreedom* dof : skelDofs) {
         EXPECT_FALSE(tree->getIndexOf(dof) == INVALID_INDEX);
         EXPECT_TRUE(tree->getDof(tree->getIndexOf(dof)) == dof);
       }
@@ -145,10 +140,8 @@ TEST(MetaSkeleton, Referential)
       Eigen::VectorXd dq = tree->getVelocities();
       Eigen::VectorXd ddq = tree->getAccelerations();
 
-      for (std::size_t k = 0; k < numIterations; ++k)
-      {
-        for (int r = 0; r < q.size(); ++r)
-        {
+      for (std::size_t k = 0; k < numIterations; ++k) {
+        for (int r = 0; r < q.size(); ++r) {
           q[r] = math::Random::uniform<double>(-10, 10);
           dq[r] = math::Random::uniform<double>(-10, 10);
           ddq[r] = math::Random::uniform<double>(-10, 10);
@@ -190,11 +183,9 @@ TEST(MetaSkeleton, Referential)
         const Eigen::VectorXd& treeFc = tree->getConstraintForces();
 
         const std::size_t nDofs = tree->getNumDofs();
-        for (std::size_t r1 = 0; r1 < nDofs; ++r1)
-        {
+        for (std::size_t r1 = 0; r1 < nDofs; ++r1) {
           const std::size_t sr1 = tree->getDof(r1)->getIndexInSkeleton();
-          for (std::size_t r2 = 0; r2 < nDofs; ++r2)
-          {
+          for (std::size_t r2 = 0; r2 < nDofs; ++r2) {
             const std::size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
 
             EXPECT_TRUE(skelMassMatrix(sr1, sr2) == treeMassMatrix(r1, r2));
@@ -212,17 +203,14 @@ TEST(MetaSkeleton, Referential)
         }
 
         const std::size_t numBodyNodes = tree->getNumBodyNodes();
-        for (std::size_t m = 0; m < numBodyNodes; ++m)
-        {
+        for (std::size_t m = 0; m < numBodyNodes; ++m) {
           const BodyNode* bn = tree->getBodyNode(m);
           const Eigen::MatrixXd Jtree = tree->getJacobian(bn);
           const Eigen::MatrixXd Jskel = skeleton->getJacobian(bn);
 
-          for (std::size_t r2 = 0; r2 < nDofs; ++r2)
-          {
+          for (std::size_t r2 = 0; r2 < nDofs; ++r2) {
             const std::size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
-            for (std::size_t r1 = 0; r1 < 6; ++r1)
-            {
+            for (std::size_t r1 = 0; r1 < 6; ++r1) {
               EXPECT_TRUE(Jtree(r1, r2) == Jskel(r1, sr2));
             }
           }
@@ -311,8 +299,7 @@ void checkForBodyNodes(
 {
   bool contains = refSkel->getIndexOf(skel->getBodyNode(name)) != INVALID_INDEX;
   EXPECT_TRUE(contains);
-  if (!contains)
-  {
+  if (!contains) {
     dtmsg << "The ReferentialSkeleton [" << refSkel->getName() << "] does NOT "
           << "contain the BodyNode [" << name << "] of the Skeleton ["
           << skel->getName() << "]\n";
@@ -333,12 +320,10 @@ std::size_t checkForBodyNodes(
   std::size_t count = 0;
   checkForBodyNodes(count, refSkel, skel, args...);
 
-  if (checkCount)
-  {
+  if (checkCount) {
     bool countValid = (count == refSkel->getNumBodyNodes());
     EXPECT_TRUE(countValid);
-    if (!countValid)
-    {
+    if (!countValid) {
       dtmsg << "The number of BodyNodes checked for [" << count << "] "
             << "does not equal the number [" << refSkel->getNumBodyNodes()
             << "] in the ReferentialSkeleton [" << refSkel->getName() << "]\n";
@@ -355,8 +340,7 @@ void checkLinkageJointConsistency(const ReferentialSkeletonPtr& refSkel)
 
   // Linkages should have the property:
   // getJoint(i) == getBodyNode(i)->getParentJoint()
-  for (std::size_t i = 0; i < refSkel->getNumJoints(); ++i)
-  {
+  for (std::size_t i = 0; i < refSkel->getNumJoints(); ++i) {
     EXPECT_EQ(refSkel->getJoint(i), refSkel->getBodyNode(i)->getParentJoint());
     EXPECT_EQ(refSkel->getIndexOf(refSkel->getJoint(i)), i);
   }
@@ -629,8 +613,7 @@ TEST(MetaSkeleton, Group)
   std::vector<BodyNode*> bodyNodes;
   std::vector<Joint*> joints;
   std::vector<DegreeOfFreedom*> dofs;
-  for (std::size_t i = 0; i < 2 * skel->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < 2 * skel->getNumBodyNodes(); ++i) {
     std::size_t randomIndex
         = Random::uniform<std::size_t>(0, skel->getNumBodyNodes() - 1);
     BodyNode* bn = skel->getBodyNode(randomIndex);
@@ -848,8 +831,7 @@ void testReferentialSkeletonClone(
 
   // The skeleton instance of group clone should be different from the original,
   // but the properties should be the same.
-  for (std::size_t i = 0u; i < skel->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0u; i < skel->getNumBodyNodes(); ++i) {
     const auto& bodyNode = skel->getBodyNode(i);
     const auto& skel = bodyNode->getSkeleton();
 
@@ -861,8 +843,7 @@ void testReferentialSkeletonClone(
     EXPECT_EQ(skel->getNumJoints(), skelClone->getNumJoints());
     EXPECT_EQ(skel->getNumDofs(), skelClone->getNumDofs());
   }
-  for (std::size_t i = 0u; i < skel->getNumJoints(); ++i)
-  {
+  for (std::size_t i = 0u; i < skel->getNumJoints(); ++i) {
     const auto& joint = skel->getJoint(i);
     const auto& skel = joint->getSkeleton();
 

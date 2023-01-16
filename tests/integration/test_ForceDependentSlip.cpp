@@ -137,14 +137,12 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 
   const auto numSteps = 2000;
   const double extForce = 10.0;
-  for (auto i = 0u; i < numSteps; ++i)
-  {
+  for (auto i = 0u; i < numSteps; ++i) {
     body1->addExtForce({extForce, 0, 0});
     body2->addExtForce({extForce, 0, 0});
     world->step();
 
-    if (i > 1000)
-    {
+    if (i > 1000) {
       // The velocity of body1 should stabilize at F_ext * slip = 0.2 m/s
       EXPECT_NEAR(extForce * slip, body1->getLinearVelocity().x(), 2e-5);
       EXPECT_NEAR(0.0, body1->getLinearVelocity().y(), 2e-5);
@@ -164,8 +162,7 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
   EXPECT_DOUBLE_EQ(body1Dynamics->getSecondarySlipCompliance(), slip2);
 
   // Step without external force so the body stop moving
-  for (auto i = 0u; i < 500; ++i)
-  {
+  for (auto i = 0u; i < 500; ++i) {
     world->step();
   }
   EXPECT_NEAR(0.0, body1->getLinearVelocity().x(), 2e-5);
@@ -176,14 +173,12 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
   EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), 2e-5);
 
   // Apply force in the +y direction
-  for (auto i = 0u; i < numSteps; ++i)
-  {
+  for (auto i = 0u; i < numSteps; ++i) {
     body1->addExtForce({0, extForce, 0});
     body2->addExtForce({0, extForce, 0});
     world->step();
 
-    if (i > 1500)
-    {
+    if (i > 1500) {
       // The velocity of body1 should stabilize at F_ext * slip2 = 0.3 m/s
       EXPECT_NEAR(0.0, body1->getLinearVelocity().x(), 2e-5);
       EXPECT_NEAR(extForce * slip2, body1->getLinearVelocity().y(), 2e-5);
@@ -253,14 +248,12 @@ TEST(ForceDependentSlip, CylinderSlipVelocity)
   const double extTorqueY = 2.0;
 
   auto lastVel = body2->getLinearVelocity();
-  for (auto i = 0u; i < numSteps; ++i)
-  {
+  for (auto i = 0u; i < numSteps; ++i) {
     body1->addExtForce({extForceX, 0, 0});
     body2->addExtTorque({0, extTorqueY, 0.0}, false);
     world->step();
 
-    if (i > 1000)
-    {
+    if (i > 1000) {
       // The velocity of body1 should stabilize at F_ext * slip
       EXPECT_NEAR(extForceX * slip, body1->getLinearVelocity().x(), 1e-4);
       EXPECT_NEAR(0.0, body1->getLinearVelocity().y(), 1e-4);
