@@ -30,26 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CALLOCATOR_HPP_
-#define DART_COMMON_CALLOCATOR_HPP_
+#ifndef DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
+#define DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
 
-#include <dart/common/Export.hpp>
-#include <dart/common/MemoryAllocator.hpp>
+#include <dart/common/allocator/MemoryAllocator.hpp>
+
+#include <iostream>
+#include <mutex>
+#include <unordered_map>
 
 namespace dart::common {
 
-/// A stateless memory allocator (in release mode) that uses std::malloc and
-/// std::free for memory allocation and deallocation.
-class DART_COMMON_API CAllocator : public MemoryAllocator
+template <typename T>
+class MemoryAllocatorDebugger : public MemoryAllocator
 {
 public:
   /// Constructor
-  CAllocator() noexcept;
+  template <typename... Args>
+  MemoryAllocatorDebugger(Args&&... args);
 
   /// Destructor
-  ~CAllocator() override;
+  ~MemoryAllocatorDebugger();
 
-  DART_STRING_TYPE(CAllocator);
+  /// Returns type string.
+  [[nodiscard]] static const std::string& getStaticType();
+
+  // Documentation inherited
+  [[nodiscard]] const std::string& getType() const override;
 
   // Documentation inherited
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;
@@ -57,10 +64,35 @@ public:
   // Documentation inherited
   void deallocate(void* pointer, size_t bytes) override;
 
+  /// Returns true if there is no memory allocated by the internal allocator.
+  [[nodiscard]] bool isEmpty() const;
+
+  /// Returns true if a pointer is allocated by the internal allocator.
+  [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const;
+
+  /// Returns the internal allocator
+  [[nodiscard]] const T& getInternalAllocator() const;
+
+  /// Returns the internal allocator
+  [[nodiscard]] T& getInternalAllocator();
+
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
+
+private:
+  T mInternalAllocator;
+
+  size_t mSize = 0;
+
+  size_t mPeak = 0;
+
+  std::unordered_map<void*, size_t> mMapPointerToSize;
+
+  mutable std::mutex mMutex;
 };
 
 } // namespace dart::common
 
-#endif // DART_COMMON_CALLOCATOR_HPP_
+#include <dart/common/allocator/detail/MemoryAllocatorDebugger-impl.hpp>
+
+#endif // DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_

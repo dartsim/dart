@@ -35,7 +35,7 @@
 
 #include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
-#include <dart/common/MemoryAllocatorDebugger.hpp>
+#include <dart/common/allocator/MemoryAllocatorDebugger.hpp>
 
 namespace dart::common {
 
@@ -57,7 +57,7 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
 
   if (!mMapPointerToSize.empty()) {
     size_t totalSize = 0;
-    for (auto it : mMapPointerToSize) {
+    for (const auto it : mMapPointerToSize) {
       void* pointer = it.first;
       size_t size = it.second;
       totalSize += size;
@@ -80,7 +80,7 @@ template <typename T>
 const std::string& MemoryAllocatorDebugger<T>::getStaticType()
 {
   static const std::string type
-      = "MemoryAllocatorDebugger<" + T::getStaticType() + ">";
+      = "dart::common::MemoryAllocatorDebugger<" + T::getStaticType() + ">";
   return type;
 }
 

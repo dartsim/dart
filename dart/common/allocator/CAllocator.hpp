@@ -30,55 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/CAllocator.hpp"
+#ifndef DART_COMMON_CALLOCATOR_HPP_
+#define DART_COMMON_CALLOCATOR_HPP_
 
-#include "dart/common/Console.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include <dart/common/Export.hpp>
+#include <dart/common/allocator/MemoryAllocator.hpp>
 
 namespace dart::common {
 
-//==============================================================================
-CAllocator::CAllocator() noexcept
+/// A stateless memory allocator (in release mode) that uses std::malloc and
+/// std::free for memory allocation and deallocation.
+class DART_COMMON_API CAllocator : public MemoryAllocator
 {
-  // Do nothing
-}
+public:
+  /// Constructor
+  CAllocator() noexcept;
 
-//==============================================================================
-CAllocator::~CAllocator()
-{
-  // Do nothing
-}
+  /// Destructor
+  ~CAllocator() override;
 
-//==============================================================================
-void* CAllocator::allocate(size_t bytes) noexcept
-{
-  if (bytes == 0) {
-    return nullptr;
-  }
+  DART_STRING_TYPE(CAllocator);
 
-  DART_TRACE("Allocated {} bytes.", bytes);
-  return std::malloc(bytes);
-}
+  // Documentation inherited
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
-//==============================================================================
-void CAllocator::deallocate(void* pointer, size_t bytes)
-{
-  DART_UNUSED(bytes);
-  std::free(pointer);
-  DART_TRACE("Deallocated.");
-}
+  // Documentation inherited
+  void deallocate(void* pointer, size_t bytes) override;
 
-//==============================================================================
-void CAllocator::print(std::ostream& os, int indent) const
-{
-  if (indent == 0) {
-    os << "[CAllocator]\n";
-  }
-  const std::string spaces(indent, ' ');
-  if (indent != 0) {
-    os << spaces << "type: " << getType() << "\n";
-  }
-}
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
+};
 
 } // namespace dart::common
+
+#endif // DART_COMMON_CALLOCATOR_HPP_

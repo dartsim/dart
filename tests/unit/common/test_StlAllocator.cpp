@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/StlAllocator.hpp>
+#include <dart/common/allocator/StlAllocator.hpp>
 
 #include <gtest/gtest.h>
 

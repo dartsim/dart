@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simulation/Export.hpp>
+
 #include <dart/common/Fwd.hpp>
 
 namespace dart::simulation {

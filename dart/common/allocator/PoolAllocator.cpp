@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/PoolAllocator.hpp"
+#include "dart/common/allocator/PoolAllocator.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"

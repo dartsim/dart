@@ -34,26 +34,26 @@
 #define DART_COMMON_FREELISTALLOCATOR_HPP_
 
 #include <dart/common/Export.hpp>
-#include <dart/common/MemoryAllocator.hpp>
-#include <dart/common/MemoryAllocatorDebugger.hpp>
+#include <dart/common/allocator/MemoryAllocator.hpp>
+#include <dart/common/allocator/MemoryAllocatorDebugger.hpp>
 
 #include <mutex>
 
 namespace dart::common {
 
-/// Most general heap memory allocator for allocating memory of various sizes.
+/// FreeListAllocator is a memory allocator designed for allocating memory of
+/// various sizes.
 ///
-/// This allocator preallocates a large chunk of contiguous memory on
-/// construction, using the base memory allocator and returns the fraction of
-/// the allocated memories by request. This way the class controls the timing
-/// and frequency of dynamic memory allocations to minimize the performance hit
-/// by dynamic memory allocation by the system.
+/// It preallocates a large chunk of contiguous memory during construction,
+/// using a base memory allocator, and returns small portions of this memory
+/// upon request. By controlling the timing and frequency of dynamic memory
+/// allocations, this allocator aims to minimize the performance impact of
+/// dynamic memory allocation on the system.
 ///
-/// As the name saying, this class manages the information of which part of the
-/// preallocated memory is actually used using the free list data structure.
-///
-/// If the preallocated memory is all used up, then this class allocates
-/// additional memory chunck using the base allocator.
+/// The class uses the free list data structure to keep track of which parts of
+/// the preallocated memory are currently in use. If the preallocated memory
+/// runs out, the class will allocate additional memory chunks using the base
+/// allocator.
 class DART_COMMON_API FreeListAllocator : public MemoryAllocator
 {
 public:

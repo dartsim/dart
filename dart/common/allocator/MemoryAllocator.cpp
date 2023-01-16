@@ -30,69 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
-#define DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
+#include "dart/common/allocator/MemoryAllocator.hpp"
 
-#include <dart/common/MemoryAllocator.hpp>
-
-#include <iostream>
-#include <mutex>
-#include <unordered_map>
+#include "dart/common/Logging.hpp"
+#include "dart/common/allocator/CAllocator.hpp"
 
 namespace dart::common {
 
-template <typename T>
-class MemoryAllocatorDebugger : public MemoryAllocator
+//==============================================================================
+MemoryAllocator& MemoryAllocator::GetDefault()
 {
-public:
-  /// Constructor
-  template <typename... Args>
-  MemoryAllocatorDebugger(Args&&... args);
+  static CAllocator defaultAllocator;
+  return defaultAllocator;
+}
 
-  /// Destructor
-  ~MemoryAllocatorDebugger();
+//==============================================================================
+void MemoryAllocator::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[*::print is not implemented]\n";
+  }
+  const std::string spaces(indent, ' ');
+  os << spaces << "*::print is not implemented:\n";
+}
 
-  /// Returns type string.
-  [[nodiscard]] static const std::string& getStaticType();
-
-  // Documentation inherited
-  [[nodiscard]] const std::string& getType() const override;
-
-  // Documentation inherited
-  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
-
-  // Documentation inherited
-  void deallocate(void* pointer, size_t bytes) override;
-
-  /// Returns true if there is no memory allocated by the internal allocator.
-  [[nodiscard]] bool isEmpty() const;
-
-  /// Returns true if a pointer is allocated by the internal allocator.
-  [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const;
-
-  /// Returns the internal allocator
-  [[nodiscard]] const T& getInternalAllocator() const;
-
-  /// Returns the internal allocator
-  [[nodiscard]] T& getInternalAllocator();
-
-  // Documentation inherited
-  void print(std::ostream& os = std::cout, int indent = 0) const override;
-
-private:
-  T mInternalAllocator;
-
-  size_t mSize = 0;
-
-  size_t mPeak = 0;
-
-  std::unordered_map<void*, size_t> mMapPointerToSize;
-
-  mutable std::mutex mMutex;
-};
+//==============================================================================
+std::ostream& operator<<(std::ostream& os, const MemoryAllocator& allocator)
+{
+  allocator.print(os);
+  return os;
+}
 
 } // namespace dart::common
-
-#include <dart/common/detail/MemoryAllocatorDebugger-impl.hpp>
-
-#endif // DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_

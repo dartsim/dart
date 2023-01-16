@@ -30,35 +30,68 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/MemoryAllocator.hpp"
+#ifndef DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
+#define DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
 
-#include "dart/common/CAllocator.hpp"
-#include "dart/common/Logging.hpp"
+#include <dart/common/allocator/MemoryAllocator.hpp>
 
 namespace dart::common {
 
 //==============================================================================
-MemoryAllocator& MemoryAllocator::GetDefault()
+template <typename T>
+T* MemoryAllocator::allocateAs(size_t n) noexcept
 {
-  static CAllocator defaultAllocator;
-  return defaultAllocator;
+  return static_cast<T*>(allocate(n * sizeof(T)));
 }
 
 //==============================================================================
-void MemoryAllocator::print(std::ostream& os, int indent) const
+template <typename T, typename... Args>
+T* MemoryAllocator::construct(Args&&... args) noexcept
 {
-  if (indent == 0) {
-    os << "[*::print is not implemented]\n";
+  // Allocate new memory for a new object (without calling the constructor)
+  void* object = allocate(sizeof(T));
+  if (!object) {
+    return nullptr;
   }
-  const std::string spaces(indent, ' ');
-  os << spaces << "*::print is not implemented:\n";
+
+  // Call constructor. Return nullptr if failed.
+  try {
+    new (object) T(std::forward<Args>(args)...);
+  } catch (...) {
+    deallocate(object, sizeof(T));
+    return nullptr;
+  }
+
+  return reinterpret_cast<T*>(object);
 }
 
 //==============================================================================
-std::ostream& operator<<(std::ostream& os, const MemoryAllocator& allocator)
+template <typename T, typename... Args>
+T* MemoryAllocator::constructAt(void* pointer, Args&&... args)
 {
-  allocator.print(os);
-  return os;
+  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
+      T(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryAllocator::constructAt(T* pointer, Args&&... args)
+{
+  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
+      T(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T>
+void MemoryAllocator::destroy(T* object) noexcept
+{
+  if (!object) {
+    return;
+  }
+  object->~T();
+  deallocate(object, sizeof(T));
 }
 
 } // namespace dart::common
+
+#endif // DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_

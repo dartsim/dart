@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/CAllocator.hpp>
+#include <dart/common/allocator/CAllocator.hpp>
 
 #include <gtest/gtest.h>
 

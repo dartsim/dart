@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/FreeListAllocator.hpp>
+#include <dart/common/allocator/FreeListAllocator.hpp>
 
 #include <gtest/gtest.h>
 

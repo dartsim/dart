@@ -30,22 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STLALLOCATOR_HPP_
-#define DART_COMMON_STLALLOCATOR_HPP_
+#pragma once
 
-#include <dart/common/MemoryAllocator.hpp>
+#include <dart/common/allocator/MemoryAllocator.hpp>
 
 #include <memory>
 
 namespace dart::common {
 
-/// Wrapper class for MemoryAllocator to be compatible with std::allocator
+/// This class is a wrapper for a MemoryAllocator making it compatible with the
+/// STL's std::allocator interface. By using this wrapper class, you can use
+/// your custom memory allocator with STL container classes such as std::vector
+/// and std::list.
+///
+/// Example Usage:
+///
+/// @code
+/// MyAllocator<double> allocator;
+/// std::vector<double, MyAllocator<double>> vec(allocator);
+/// vec.push_back(1.2);
+/// @endcode
+///
+/// Note that this class can be used with any custom memory allocator that
+/// implements the required interface of the std::allocator, such as the
+/// FreeListAllocator.
 template <typename T>
 class StlAllocator : public std::allocator<T>
 {
 public:
-  // Type aliases
   using Base = std::allocator<T>;
+
+  // The following typedefs are required by the C++ Standard Library to be a
+  // valid allocator type (see 20.1.5 [allocator.requirements]/3) and are used
+  // by the STL containers to determine the type of the elements they contain.
+  // The typedefs are also used by the STL algorithms to determine the type of
+  // the elements they operate on. The typedefs are not used by the allocator.
+  // The typedefs are not required to be public, but they are public here to
+  // make it easier to use the allocator with the STL containers.
   using value_type = typename std::allocator_traits<Base>::value_type;
   using size_type = typename std::allocator_traits<Base>::size_type;
   using pointer = typename std::allocator_traits<Base>::pointer;
@@ -106,6 +127,4 @@ private:
 
 } // namespace dart::common
 
-#include <dart/common/detail/StlAllocator-impl.hpp>
-
-#endif // DART_COMMON_STLALLOCATOR_HPP_
+#include <dart/common/allocator/detail/StlAllocator-impl.hpp>

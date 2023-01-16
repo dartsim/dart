@@ -30,73 +30,69 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_
-#define DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_
+#include <dart/simulation/MemoryManager.hpp>
 
-#include <dart/common/MemoryManager.hpp>
+#include <gtest/gtest.h>
 
-namespace dart::common {
+using namespace dart;
+using namespace simulation;
 
 //==============================================================================
-template <typename T, typename... Args>
-T* MemoryManager::construct(Type type, Args&&... args) noexcept
+TEST(MemoryManagerTest, BaseAllocator)
 {
-  // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(type, sizeof(T));
-  if (!object) {
-    return nullptr;
-  }
+  auto mm = MemoryManager();
+  auto& baseAllocator = mm.getBaseAllocator();
+  auto& freeListAllocator = mm.getFreeListAllocator();
+  auto& poolAllocator = mm.getPoolAllocator();
 
-  // Call constructor. Return nullptr if failed.
-  try {
-    new (object) T(std::forward<Args>(args)...);
-  } catch (...) {
-    deallocate(type, object, sizeof(T));
-    return nullptr;
-  }
-
-  return reinterpret_cast<T*>(object);
+  EXPECT_EQ(&freeListAllocator.getBaseAllocator(), &baseAllocator);
+  EXPECT_EQ(&poolAllocator.getBaseAllocator(), &freeListAllocator);
 }
 
 //==============================================================================
-template <typename T, typename... Args>
-T* MemoryManager::constructUsingFree(Args&&... args) noexcept
+TEST(MemoryManagerTest, Allocate)
 {
-  return construct<T, Args...>(Type::Free, std::forward<Args>(args)...);
+  auto mm = MemoryManager();
+
+  // Cannot allocate 0 bytes
+  EXPECT_EQ(mm.allocateUsingFree(0), nullptr);
+  EXPECT_EQ(mm.allocateUsingPool(0), nullptr);
+
+  // Allocate 1 byte using FreeListAllocator
+  auto ptr1 = mm.allocateUsingFree(1);
+  EXPECT_NE(ptr1, nullptr);
+#ifndef NDEBUG
+  EXPECT_TRUE(mm.hasAllocated(ptr1, 1));
+  EXPECT_FALSE(mm.hasAllocated(nullptr, 1));
+  EXPECT_FALSE(mm.hasAllocated(ptr1, 1 * 2));
+#endif
+
+  // Allocate 1 byte using PoolAllocator
+  auto ptr2 = mm.allocateUsingPool(1);
+  EXPECT_NE(ptr2, nullptr);
+#ifndef NDEBUG
+  EXPECT_TRUE(mm.hasAllocated(ptr2, 1));
+  EXPECT_FALSE(mm.hasAllocated(nullptr, 1));
+  EXPECT_FALSE(mm.hasAllocated(ptr2, 1 * 2));
+#endif
+
+  // Deallocate all
+  mm.deallocateUsingFree(ptr1, 1);
+  mm.deallocateUsingPool(ptr2, 1);
 }
 
 //==============================================================================
-template <typename T, typename... Args>
-T* MemoryManager::constructUsingPool(Args&&... args) noexcept
+TEST(MemoryManagerTest, MemoryLeak)
 {
-  return construct<T, Args...>(Type::Pool, std::forward<Args>(args)...);
+  auto a = MemoryManager();
+
+  // Allocate small memory
+  auto ptr1 = a.allocateUsingPool(1);
+  EXPECT_NE(ptr1, nullptr);
+
+  // Allocate small memory
+  auto ptr2 = a.allocateUsingFree(1);
+  EXPECT_NE(ptr2, nullptr);
+
+  // Expect that MemoryManager complains that not all the memory is deallocated
 }
-
-//==============================================================================
-template <typename T>
-void MemoryManager::destroy(Type type, T* object) noexcept
-{
-  if (!object) {
-    return;
-  }
-  object->~T();
-  deallocate(type, object, sizeof(T));
-}
-
-//==============================================================================
-template <typename T>
-void MemoryManager::destroyUsingFree(T* pointer) noexcept
-{
-  destroy(Type::Free, pointer);
-}
-
-//==============================================================================
-template <typename T>
-void MemoryManager::destroyUsingPool(T* pointer) noexcept
-{
-  destroy(Type::Pool, pointer);
-}
-
-} // namespace dart::common
-
-#endif // DART_COMMON_DETAIL_MEMORYMANAGER_IMPL_HPP_

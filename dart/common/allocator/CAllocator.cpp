@@ -30,81 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/common/allocator/CAllocator.hpp"
 
-#include <dart/common/Logging.hpp>
-#include <dart/common/StlAllocator.hpp>
+#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-template <typename T>
-StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
-  : mBaseAllocator(baseAllocator)
+CAllocator::CAllocator() noexcept
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename T>
-StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+CAllocator::~CAllocator()
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename T>
-template <class U>
-StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+void* CAllocator::allocate(size_t bytes) noexcept
 {
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
-    size_type n, const void* hint)
-{
-  (void)hint;
-  pointer ptr
-      = reinterpret_cast<pointer>(mBaseAllocator.allocate(n * sizeof(T)));
-
-  // Throw std::bad_alloc to comply 23.10.9.1
-  // Reference: https://stackoverflow.com/a/50326956/3122234
-  if (!ptr) {
-    throw std::bad_alloc();
+  if (bytes == 0) {
+    return nullptr;
   }
 
-  return ptr;
+  DART_TRACE("Allocated {} bytes.", bytes);
+  return std::malloc(bytes);
 }
 
 //==============================================================================
-template <typename T>
-void StlAllocator<T>::deallocate(pointer pointer, size_type n)
+void CAllocator::deallocate(void* pointer, size_t bytes)
 {
-  mBaseAllocator.deallocate(pointer, n * sizeof(T));
+  DART_UNUSED(bytes);
+  std::free(pointer);
+  DART_TRACE("Deallocated.");
 }
 
 //==============================================================================
-template <typename T>
-void StlAllocator<T>::print(std::ostream& os, int indent) const
+void CAllocator::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
-    os << "[StlAllocator]\n";
+    os << "[CAllocator]\n";
   }
   const std::string spaces(indent, ' ');
-  os << spaces << "base_allocator:\n";
-  mBaseAllocator.print(os, indent + 2);
-}
-
-//==============================================================================
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const StlAllocator<T>& allocator)
-{
-  allocator.print(os);
-  return os;
+  if (indent != 0) {
+    os << spaces << "type: " << getType() << "\n";
+  }
 }
 
 } // namespace dart::common

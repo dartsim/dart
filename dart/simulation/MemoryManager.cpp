@@ -30,23 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/MemoryManager.hpp"
+#include "dart/simulation/MemoryManager.hpp"
 
 #ifndef NDEBUG // debug
   #include "dart/common/Logging.hpp"
 #endif
 
-namespace dart::common {
+namespace dart::simulation {
 
 //==============================================================================
 MemoryManager& MemoryManager::GetDefault()
 {
-  static MemoryManager defaultMemoryManager(MemoryAllocator::GetDefault());
+  static MemoryManager defaultMemoryManager(
+      common::MemoryAllocator::GetDefault());
   return defaultMemoryManager;
 }
 
 //==============================================================================
-MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
+MemoryManager::MemoryManager(common::MemoryAllocator& baseAllocator)
   : mBaseAllocator(baseAllocator),
     mFreeListAllocator(mBaseAllocator),
 #ifdef NDEBUG
@@ -65,13 +66,13 @@ MemoryManager::~MemoryManager()
 }
 
 //==============================================================================
-MemoryAllocator& MemoryManager::getBaseAllocator()
+common::MemoryAllocator& MemoryManager::getBaseAllocator()
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-FreeListAllocator& MemoryManager::getFreeListAllocator()
+common::FreeListAllocator& MemoryManager::getFreeListAllocator()
 {
 #ifdef NDEBUG
   return mFreeListAllocator;
@@ -81,7 +82,7 @@ FreeListAllocator& MemoryManager::getFreeListAllocator()
 }
 
 //==============================================================================
-PoolAllocator& MemoryManager::getPoolAllocator()
+common::PoolAllocator& MemoryManager::getPoolAllocator()
 {
 #ifdef NDEBUG
   return mPoolAllocator;
@@ -162,7 +163,7 @@ bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
 void MemoryManager::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
-    os << "[MemoryManager]\n";
+    os << "[dart::simulation::MemoryManager]\n";
   }
   const std::string spaces(indent, ' ');
   os << spaces << "free_allocator:\n";
@@ -180,4 +181,4 @@ std::ostream& operator<<(std::ostream& os, const MemoryManager& memoryManager)
   return os;
 }
 
-} // namespace dart::common
+} // namespace dart::simulation

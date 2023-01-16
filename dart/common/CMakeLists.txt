@@ -132,7 +132,7 @@ dart_add_component(
   TARGET_COMPILE_OPTIONS_PUBLIC
     ${compile_options_public}
   SUB_DIRECTORIES
-    detail
+    detail allocator
   GENERATE_EXPORT_HEADER
   GENERATE_META_HEADER
   FORMAT_CODE

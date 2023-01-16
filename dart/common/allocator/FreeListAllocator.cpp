@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/FreeListAllocator.hpp"
+#include "dart/common/allocator/FreeListAllocator.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
@@ -223,7 +223,7 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 //==============================================================================
 bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 {
-  // Allocate memory chunck for header and the actual requested size
+  // Allocate memory chunk for header and the actual requested size
   void* memory
       = mBaseAllocator.allocate(sizeToAllocate + sizeof(MemoryBlockHeader));
 

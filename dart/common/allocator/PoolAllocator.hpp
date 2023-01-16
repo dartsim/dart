@@ -34,8 +34,8 @@
 #define DART_COMMON_POOLALLOCATOR_HPP_
 
 #include <dart/common/Export.hpp>
-#include <dart/common/MemoryAllocator.hpp>
-#include <dart/common/MemoryAllocatorDebugger.hpp>
+#include <dart/common/allocator/MemoryAllocator.hpp>
+#include <dart/common/allocator/MemoryAllocatorDebugger.hpp>
 
 #include <array>
 #include <mutex>
