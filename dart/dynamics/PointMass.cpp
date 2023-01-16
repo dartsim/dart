@@ -729,7 +729,7 @@ void PointMass::updateTransform() const
 void PointMass::updateVelocity() const
 {
   // v = w(parent) x mX + v(parent) + dq
-  const Eigen::Vector6d& v_parent = mParentSoftBodyNode->getSpatialVelocity();
+  const math::Vector6d& v_parent = mParentSoftBodyNode->getSpatialVelocity();
   mV = v_parent.head<3>().cross(getLocalPosition()) + v_parent.tail<3>()
        + getVelocities();
   assert(!math::isNan(mV));
@@ -748,7 +748,7 @@ void PointMass::updatePartialAcceleration() const
 void PointMass::updateAccelerationID() const
 {
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
-  const Eigen::Vector6d& a_parent
+  const math::Vector6d& a_parent
       = mParentSoftBodyNode->getSpatialAcceleration();
   mA = a_parent.head<3>().cross(getLocalPosition()) + a_parent.tail<3>()
        + getPartialAccelerations() + getAccelerations();
@@ -852,7 +852,7 @@ void PointMass::updateAccelerationFD()
 {
   // ddq = imp_psi*(alpha - m*(dw(parent) x mX + dv(parent))
   const Eigen::Vector3d& X = getLocalPosition();
-  const Eigen::Vector6d& a_parent
+  const math::Vector6d& a_parent
       = mParentSoftBodyNode->getSpatialAcceleration();
   Eigen::Vector3d ddq
       = getImplicitPsi()

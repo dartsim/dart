@@ -59,8 +59,7 @@ namespace math {
 // }
 
 //==============================================================================
-int Lemke(
-    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z)
+int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd* _z)
 {
   int n = _q.size();
 
@@ -71,29 +70,29 @@ int Lemke(
 
   if (_q.minCoeff() >= 0) {
     // LOG(INFO) << "Trivial solution exists.";
-    *_z = Eigen::VectorXd::Zero(n);
+    *_z = VectorXd::Zero(n);
     return err;
   }
 
   // solve trivial case for n=1
   //   if (n==1){
   //     if (_M(0)>0){
-  //         *_z = (- _q(0)/_M(0) )*Eigen::VectorXd::Ones(n);
+  //         *_z = (- _q(0)/_M(0) )*VectorXd::Ones(n);
   //         return err;
   //     } else {
-  //         *_z = Eigen::VectorXd::Zero(n);
+  //         *_z = VectorXd::Zero(n);
   //         err = 4; // no solution
   //         return err;
   //     }
   //   }
 
-  *_z = Eigen::VectorXd::Zero(2 * n);
+  *_z = VectorXd::Zero(2 * n);
   int iter = 0;
   // double theta = 0;
   double ratio = 0;
   int leaving = 0;
-  Eigen::VectorXd Be = Eigen::VectorXd::Constant(n, 1);
-  Eigen::VectorXd x = _q;
+  VectorXd Be = VectorXd::Constant(n, 1);
+  VectorXd x = _q;
   std::vector<int> bas;
   std::vector<int> nonbas;
 
@@ -109,10 +108,10 @@ int Lemke(
     nonbas.push_back(i);
   }
 
-  Eigen::MatrixXd B = -Eigen::MatrixXd::Identity(n, n);
+  MatrixXd B = -MatrixXd::Identity(n, n);
 
   if (!bas.empty()) {
-    Eigen::MatrixXd B_copy = B;
+    MatrixXd B_copy = B;
     for (std::size_t i = 0; i < bas.size(); ++i) {
       B.col(i) = _M.col(bas[i]);
     }
@@ -120,11 +119,11 @@ int Lemke(
       B.col(bas.size() + i) = B_copy.col(nonbas[i]);
     }
     // TODO: check the condition number to return err = 3
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(B);
+    Eigen::JacobiSVD<MatrixXd> svd(B);
     double cond = svd.singularValues()(0)
                   / svd.singularValues()(svd.singularValues().size() - 1);
     if (cond > 1e16) {
-      (*_z) = Eigen::VectorXd::Zero(n);
+      (*_z) = VectorXd::Zero(n);
       err = 3;
       return err;
     }
@@ -133,7 +132,7 @@ int Lemke(
 
   // Check if initial basis provides solution
   if (x.minCoeff() >= 0) {
-    Eigen::VectorXd __z = Eigen::VectorXd::Zero(2 * n);
+    VectorXd __z = VectorXd::Zero(2 * n);
     for (std::size_t i = 0; i < bas.size(); ++i) {
       (__z).row(bas[i]) = x.row(i);
     }
@@ -142,7 +141,7 @@ int Lemke(
   }
 
   // Determine initial leaving variable
-  Eigen::VectorXd minuxX = -x;
+  VectorXd minuxX = -x;
   int lvindex;
   double tval = minuxX.maxCoeff(&lvindex);
   for (std::size_t i = 0; i < nonbas.size(); ++i) {
@@ -152,7 +151,7 @@ int Lemke(
 
   bas[lvindex] = t; // pivoting in the artificial variable
 
-  Eigen::VectorXd U = Eigen::VectorXd::Zero(n);
+  VectorXd U = VectorXd::Zero(n);
   for (int i = 0; i < n; ++i) {
     if (x[i] < 0)
       U[i] = 1;
@@ -167,14 +166,14 @@ int Lemke(
       break;
     } else if (leaving < n) {
       entering = n + leaving;
-      Be = Eigen::VectorXd::Zero(n);
+      Be = VectorXd::Zero(n);
       Be[leaving] = -1;
     } else {
       entering = leaving - n;
       Be = _M.col(entering);
     }
 
-    Eigen::VectorXd d = B.householderQr().solve(Be);
+    VectorXd d = B.householderQr().solve(Be);
 
     // Find new leaving variable
     std::vector<int> j;
@@ -189,7 +188,7 @@ int Lemke(
     }
 
     std::size_t jSize = j.size();
-    Eigen::VectorXd minRatio(jSize);
+    VectorXd minRatio(jSize);
     for (std::size_t i = 0; i < jSize; ++i) {
       minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
     }
@@ -278,7 +277,7 @@ int Lemke(
       }
     }
 
-    Eigen::VectorXd __z = _z->head(n);
+    VectorXd __z = _z->head(n);
     *_z = __z;
 
     if (!validate(_M, *_z, _q)) {
@@ -286,7 +285,7 @@ int Lemke(
       err = 3;
     }
   } else {
-    *_z = Eigen::VectorXd::Zero(n); // solve failed, return a 0 vector
+    *_z = VectorXd::Zero(n); // solve failed, return a 0 vector
   }
 
   //  if (err == 1)
@@ -303,15 +302,12 @@ int Lemke(
 }
 
 //==============================================================================
-bool validate(
-    const Eigen::MatrixXd& _M,
-    const Eigen::VectorXd& _z,
-    const Eigen::VectorXd& _q)
+bool validate(const MatrixXd& _M, const VectorXd& _z, const VectorXd& _q)
 {
   const double threshold = 1e-4;
   int n = _z.size();
 
-  Eigen::VectorXd w = _M * _z + _q;
+  VectorXd w = _M * _z + _q;
   for (int i = 0; i < n; ++i) {
     if (w(i) < -threshold || _z(i) < -threshold)
       return false;

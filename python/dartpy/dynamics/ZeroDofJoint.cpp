@@ -627,7 +627,7 @@ void ZeroDofJoint(py::module& m)
           })
       .def(
           "getBodyConstraintWrench",
-          +[](const dart::dynamics::ZeroDofJoint* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::ZeroDofJoint* self) -> math::Vector6d {
             return self->getBodyConstraintWrench();
           });
 }

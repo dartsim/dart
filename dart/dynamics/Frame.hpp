@@ -36,7 +36,7 @@
 #include <dart/dynamics/Entity.hpp>
 #include <dart/dynamics/Export.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 #include <Eigen/Geometry>
 
@@ -103,23 +103,23 @@ public:
 
   /// Get the spatial velocity of this Frame relative to its parent Frame, in
   /// its own coordinates.
-  virtual const Eigen::Vector6d& getRelativeSpatialVelocity() const = 0;
+  virtual const math::Vector6d& getRelativeSpatialVelocity() const = 0;
 
   /// Get the total spatial velocity of this Frame in the coordinates of this
   /// Frame.
-  const Eigen::Vector6d& getSpatialVelocity() const;
+  const math::Vector6d& getSpatialVelocity() const;
 
   /// Get the spatial velocity of this Frame relative to some other Frame. It
   /// can be expressed in the coordinates of any Frame.
-  Eigen::Vector6d getSpatialVelocity(
+  math::Vector6d getSpatialVelocity(
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Get the spatial velocity of a fixed point in this Frame. The velocity is
   /// in coordinates of this Frame and is relative to the World Frame.
-  Eigen::Vector6d getSpatialVelocity(const Eigen::Vector3d& _offset) const;
+  math::Vector6d getSpatialVelocity(const Eigen::Vector3d& _offset) const;
 
   /// Get the spatial velocity of a fixed point in this Frame.
-  Eigen::Vector6d getSpatialVelocity(
+  math::Vector6d getSpatialVelocity(
       const Eigen::Vector3d& _offset,
       const Frame* _relativeTo,
       const Frame* _inCoordinatesOf) const;
@@ -150,7 +150,7 @@ public:
 
   /// Get the spatial acceleration of this Frame relative to its parent Frame,
   /// in the coordinates of this Frame.
-  virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const = 0;
+  virtual const math::Vector6d& getRelativeSpatialAcceleration() const = 0;
 
   /// The Featherstone ABI algorithm exploits a component of the spatial
   /// acceleration which we refer to as the partial acceleration, accessible
@@ -163,29 +163,29 @@ public:
   /// Frame, use getRelativeSpatialAcceleration(). To get the full spatial
   /// acceleration of this Frame relative to the World Frame, use
   /// getSpatialAcceleration().
-  virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const = 0;
+  virtual const math::Vector6d& getPrimaryRelativeAcceleration() const = 0;
 
   /// The Featherstone ABI algorithm exploits a component of the spatial
   /// acceleration which we refer to as the partial acceleration. This function
   /// returns that component of acceleration.
-  virtual const Eigen::Vector6d& getPartialAcceleration() const = 0;
+  virtual const math::Vector6d& getPartialAcceleration() const = 0;
 
   /// Get the total spatial acceleration of this Frame in the coordinates of
   /// this Frame.
-  const Eigen::Vector6d& getSpatialAcceleration() const;
+  const math::Vector6d& getSpatialAcceleration() const;
 
   /// Get the spatial acceleration of this Frame relative to some other Frame.
   /// It can be expressed in the coordinates of any Frame.
-  Eigen::Vector6d getSpatialAcceleration(
+  math::Vector6d getSpatialAcceleration(
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Get the spatial acceleration of a fixed point in this Frame. The
   /// acceleration is in coordinates of this Frame and is relative to the World
   /// Frame.
-  Eigen::Vector6d getSpatialAcceleration(const Eigen::Vector3d& _offset) const;
+  math::Vector6d getSpatialAcceleration(const Eigen::Vector3d& _offset) const;
 
   /// Get the spatial acceleration of a fixed point in this Frame
-  Eigen::Vector6d getSpatialAcceleration(
+  math::Vector6d getSpatialAcceleration(
       const Eigen::Vector3d& _offset,
       const Frame* _relativeTo,
       const Frame* _inCoordinatesOf) const;
@@ -313,12 +313,12 @@ protected:
   /// Total velocity of this Frame, in the coordinates of this Frame
   ///
   /// Do not use directly! Use getSpatialVelocity() to access this quantity
-  mutable Eigen::Vector6d mVelocity;
+  mutable math::Vector6d mVelocity;
 
   /// Total acceleration of this Frame, in the coordinates of this Frame
   ///
   /// Do not use directly! Use getSpatialAcceleration() to access this quantity
-  mutable Eigen::Vector6d mAcceleration;
+  mutable math::Vector6d mAcceleration;
 
   /// Container of this Frame's child Frames.
   std::set<Frame*> mChildFrames;
@@ -351,16 +351,16 @@ public:
   const Eigen::Isometry3d& getRelativeTransform() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const override final;
+  const math::Vector6d& getRelativeSpatialVelocity() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override final;
+  const math::Vector6d& getRelativeSpatialAcceleration() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override final;
+  const math::Vector6d& getPrimaryRelativeAcceleration() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPartialAcceleration() const override final;
+  const math::Vector6d& getPartialAcceleration() const override final;
 
   const std::string& setName(const std::string& name) override final;
 
@@ -375,7 +375,7 @@ private:
   const Eigen::Isometry3d mRelativeTf;
 
   /// This is set to a Zero vector and never changes
-  static const Eigen::Vector6d mZero;
+  static const math::Vector6d mZero;
 
 public:
   // To get byte-aligned Eigen vectors

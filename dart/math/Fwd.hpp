@@ -36,7 +36,215 @@
 
 #include <dart/common/Fwd.hpp>
 
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+
+// Forward declarations for math classes
+
 namespace dart::math {
+
+//------------------------------------------------------------------------------
+// Base classes and constants
+//------------------------------------------------------------------------------
+
+/// MatrixBase is a base class for all Eigen matrix types.
+/// @tparam Derived The derived type.
+template <typename Derived>
+using MatrixBase = ::Eigen::MatrixBase<Derived>;
+
+constexpr int Dynamic = ::Eigen::Dynamic;
+
+//------------------------------------------------------------------------------
+// Eigen matrix types
+//------------------------------------------------------------------------------
+
+/// Fixed-size matrix
+/// @tparam S Scalar type
+/// @tparam Rows Size of the rows
+/// @tparam Cols Size of the columns
+template <typename S, int Rows, int Cols = Rows>
+using Matrix = ::Eigen::Matrix<S, Rows, Cols>;
+
+/// Fixed-size matrix (float)
+/// @tparam Rows Size of the rows
+/// @tparam Cols Size of the columns
+template <int Rows, int Cols = Rows>
+using Matrixf = Matrix<float, Rows, Cols>;
+
+/// Fixed-size matrix (double)
+/// @tparam Rows Size of the rows
+/// @tparam Cols Size of the columns
+template <int Rows, int Cols = Rows>
+using Matrixd = Matrix<double, Rows, Cols>;
+
+template <typename S>
+using Matrix1 = Matrix<S, 1>;
+template <typename S>
+using Matrix2 = Matrix<S, 2>;
+template <typename S>
+using Matrix3 = Matrix<S, 3>;
+template <typename S>
+using Matrix4 = Matrix<S, 4>;
+template <typename S>
+using Matrix5 = Matrix<S, 5>;
+template <typename S>
+using Matrix6 = Matrix<S, 6>;
+
+/// Dynamic-size matrix (float)
+using MatrixXf = Matrixd<Dynamic>;
+
+/// Dynamic-size matrix (double)
+using MatrixXd = Matrixd<Dynamic>;
+
+// Fixed-size matrices for specific sizes (float)
+using Matrix1f = Matrixf<1>;
+using Matrix2f = Matrixf<2>;
+using Matrix3f = Matrixf<3>;
+using Matrix4f = Matrixf<4>;
+using Matrix5f = Matrixf<5>;
+using Matrix6f = Matrixf<6>;
+
+// Fixed-size matrices for specific sizes (double)
+using Matrix1d = Matrixd<1>;
+using Matrix2d = Matrixd<2>;
+using Matrix3d = Matrixd<3>;
+using Matrix4d = Matrixd<4>;
+using Matrix5d = Matrixd<5>;
+using Matrix6d = Matrixd<6>;
+
+//------------------------------------------------------------------------------
+// Eigen vector types
+//------------------------------------------------------------------------------
+
+/// Fixed-size column vector
+/// @tparam S Scalar type
+/// @tparam Size Size of the vector
+template <typename S, int Size>
+using Vector = Matrix<S, Size, 1>;
+
+/// Fixed-size column vector (float)
+/// @tparam Size Size of the vector
+template <int Size>
+using Vectorf = Vector<float, Size>;
+
+/// Fixed-size column vector (double)
+/// @tparam Size Size of the vector
+template <int Size>
+using Vectord = Vector<double, Size>;
+
+template <typename S>
+using Vector1 = Vector<S, 1>;
+template <typename S>
+using Vector2 = Vector<S, 2>;
+template <typename S>
+using Vector3 = Vector<S, 3>;
+template <typename S>
+using Vector4 = Vector<S, 4>;
+template <typename S>
+using Vector5 = Vector<S, 5>;
+template <typename S>
+using Vector6 = Vector<S, 6>;
+
+/// Dynamic-size column vector (float)
+using VectorXf = Vectorf<Dynamic>;
+
+/// Dynamic-size column vector (double)
+using VectorXd = Vectord<Dynamic>;
+
+// Fixed-size vectors for specific sizes (float)
+using Vector1f = Vectorf<1>;
+using Vector2f = Vectorf<2>;
+using Vector3f = Vectorf<3>;
+using Vector4f = Vectorf<4>;
+using Vector5f = Vectorf<5>;
+using Vector6f = Vectorf<6>;
+
+// Fixed-size vectors for specific sizes (double)
+using Vector1d = Vectord<1>;
+using Vector2d = Vectord<2>;
+using Vector3d = Vectord<3>;
+using Vector4d = Vectord<4>;
+using Vector5d = Vectord<5>;
+using Vector6d = Vectord<6>;
+
+//------------------------------------------------------------------------------
+// Eigen geometry types
+//------------------------------------------------------------------------------
+
+/// Quaternion type
+/// @tparam S Scalar type
+template <typename S>
+using Quaternion = ::Eigen::Quaternion<S>;
+
+/// Quaternion type (float)
+using Quaternionf = Quaternion<float>;
+
+/// Quaternion type (double)
+using Quaterniond = Quaternion<double>;
+
+/// @brief Axis-angle type
+/// @tparam S Scalar type
+template <typename S>
+using AngleAxis = ::Eigen::AngleAxis<S>;
+
+/// Axis-angle type (float)
+using AngleAxisf = AngleAxis<float>;
+
+/// Axis-angle type (double)
+using AngleAxisd = AngleAxis<double>;
+
+/// Isometry transform (or SE(2))
+/// @tparam S Scalar type
+template <typename S>
+using Isometry2 = ::Eigen::Transform<S, 2, ::Eigen::Isometry>;
+
+/// Isometry transform (or SE(2)) (float)
+using Isometry2f = Isometry2<float>;
+
+/// Isometry transform (or SE(2)) (double)
+using Isometry2d = Isometry2<double>;
+
+/// Isometry transform (or SE(3))
+/// @tparam S Scalar type
+template <typename S>
+using Isometry3 = ::Eigen::Transform<S, 3, ::Eigen::Isometry>;
+
+/// Isometry transform (or SE(3)) (float)
+using Isometry3f = Isometry3<float>;
+
+/// Isometry transform (or SE(3)) (double)
+using Isometry3d = Isometry3<double>;
+
+/// Affine transform (or SE(3))
+/// @tparam S Scalar type
+template <typename S>
+using Affine3 = ::Eigen::Transform<S, 3, ::Eigen::Affine>;
+
+/// Affine transform (or Sim(3)) (float)
+using Affine3f = Affine3<float>;
+
+/// Affine transform (or Sim(3)) (double)
+using Affine3d = Affine3<double>;
+
+/// @brief Translation transform
+/// @tparam S Scalar type
+template <typename S>
+using Translation3 = ::Eigen::Translation<S, 3>;
+
+/// Translation transform (float)
+using Translation3f = Translation3<float>;
+
+/// Translation transform (double)
+using Translation3d = Translation3<double>;
+
+//------------------------------------------------------------------------------
+// Other DART types
+//------------------------------------------------------------------------------
+
+using Inertia = Matrix6d;
+using LinearJacobian = Matrix<double, 3, Dynamic>;
+using AngularJacobian = Matrix<double, 3, Dynamic>;
+using Jacobian = Matrix<double, 6, Dynamic>;
 
 DART_DECLARE_CLASS_POINTERS_S(Color);
 

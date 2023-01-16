@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/math/Fwd.hpp>
 #include <dart/math/Random.hpp>
 
 namespace dart {
@@ -51,7 +52,7 @@ using is_base_of_template
     = decltype(is_base_of_template_impl<C>(std::declval<T*>()));
 
 template <typename T>
-using is_base_of_matrix = is_base_of_template<Eigen::MatrixBase, T>;
+using is_base_of_matrix = is_base_of_template<MatrixBase, T>;
 
 //==============================================================================
 /// Check whether \c T can be used for std::uniform_int_distribution<T>
@@ -138,11 +139,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime == Dynamic>::type>
 {
   static typename Derived::PlainObject run(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
+      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
   {
     const auto uniformFunc = [&](int i, int j) {
       return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
@@ -159,11 +159,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime == Dynamic>::type>
 {
   static typename Derived::PlainObject run(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
+      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
   {
     const auto uniformFunc = [&](int i) {
       return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
@@ -179,11 +178,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime != Dynamic>::type>
 {
   static typename Derived::PlainObject run(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
+      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
   {
     const auto uniformFunc = [&](int i, int j) {
       return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
@@ -199,11 +197,10 @@ struct UniformMatrixImpl<
     Derived,
     typename std::enable_if<
         Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime != Dynamic>::type>
 {
   static typename Derived::PlainObject run(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
+      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
   {
     const auto uniformFunc = [&](int i) {
       return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
@@ -237,7 +234,7 @@ struct UniformImpl<
     T,
     typename std::enable_if<is_base_of_matrix<T>::value>::type>
 {
-  static T run(const Eigen::MatrixBase<T>& min, const Eigen::MatrixBase<T>& max)
+  static T run(const MatrixBase<T>& min, const MatrixBase<T>& max)
   {
     return UniformMatrixImpl<T>::run(min, max);
   }

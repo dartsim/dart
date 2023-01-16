@@ -137,19 +137,17 @@ public:
     // Compute the pseudo-inverse of the Jacobian
     Eigen::MatrixXd pinv_J
         = J.transpose()
-          * (J * J.transpose() + 0.0025 * Eigen::Matrix6d::Identity())
-                .inverse();
+          * (J * J.transpose() + 0.0025 * Matrix6d::Identity()).inverse();
 
     // Compute the Jacobian time derivative
     Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
     // Comptue the pseudo-inverse of the Jacobian time derivative
     Eigen::MatrixXd pinv_dJ
         = dJ.transpose()
-          * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix6d::Identity())
-                .inverse();
+          * (dJ * dJ.transpose() + 0.0025 * Matrix6d::Identity()).inverse();
 
     // Compute the linear error
-    Eigen::Vector6d e;
+    Vector6d e;
     e.tail<3>() = mTarget->getWorldTransform().translation()
                   - mEndEffector->getWorldTransform() * mOffset;
 
@@ -158,20 +156,20 @@ public:
     e.head<3>() = aa.angle() * aa.axis();
 
     // Compute the time derivative of the error
-    Eigen::Vector6d de = -mEndEffector->getSpatialVelocity(
+    Vector6d de = -mEndEffector->getSpatialVelocity(
         mOffset, mTarget.get(), Frame::World());
 
     // Compute the forces needed to compensate for Coriolis forces and gravity
     const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 
     // Turn the control gains into matrix form
-    Eigen::Matrix6d Kp = mKpOS * Eigen::Matrix6d::Identity();
+    Matrix6d Kp = mKpOS * Matrix6d::Identity();
 
     std::size_t dofs = mManipulator->getNumDofs();
     Eigen::MatrixXd Kd = mKdOS * Eigen::MatrixXd::Identity(dofs, dofs);
 
     // Compute the joint forces needed to exert the desired workspace force
-    Eigen::Vector6d fDesired = Eigen::Vector6d::Zero();
+    Vector6d fDesired = Vector6d::Zero();
     fDesired[3] = default_push_force;
     Eigen::VectorXd f = J.transpose() * fDesired;
 
@@ -251,7 +249,7 @@ public:
         = default_distance
           * Eigen::Vector3d(cos(mTotalAngle), sin(mTotalAngle), 0.0);
 
-    Eigen::Vector6d x = lastDomino->getPositions();
+    Vector6d x = lastDomino->getPositions();
     x.tail<3>() += dx;
 
     // Adjust the angle for the new domino

@@ -161,7 +161,7 @@ ScrewJoint::getRelativeJacobianStatic(
 {
   using namespace dart::math::suffixes;
 
-  Eigen::Vector6d S = Eigen::Vector6d::Zero();
+  math::Vector6d S = math::Vector6d::Zero();
   S.head<3>() = getAxis();
   S.tail<3>() = getAxis() * getPitch() / 2.0_pi;
 
@@ -203,7 +203,7 @@ void ScrewJoint::updateRelativeTransform() const
 {
   using namespace dart::math::suffixes;
 
-  Eigen::Vector6d S = Eigen::Vector6d::Zero();
+  math::Vector6d S = math::Vector6d::Zero();
   S.head<3>() = getAxis();
   S.tail<3>() = getAxis() * getPitch() / 2.0_pi;
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -223,7 +223,7 @@ void ScrewJoint::updateRelativeJacobian(bool _mandatory) const
 void ScrewJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of screw joint is always zero
-  assert(mJacobianDeriv == Eigen::Vector6d::Zero());
+  assert(mJacobianDeriv == math::Vector6d::Zero());
 }
 
 } // namespace dynamics

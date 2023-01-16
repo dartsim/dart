@@ -187,9 +187,9 @@ void DynamicsTest::randomizeRefFrames()
     tf.linear() = math::eulerXYZToMatrix(theta);
 
     F->setRelativeTransform(tf);
-    F->setRelativeSpatialVelocity(Random::uniform<Eigen::Vector6d>(-100, 100));
+    F->setRelativeSpatialVelocity(Random::uniform<math::Vector6d>(-100, 100));
     F->setRelativeSpatialAcceleration(
-        Random::uniform<Eigen::Vector6d>(-100, 100));
+        Random::uniform<math::Vector6d>(-100, 100));
   }
 }
 
@@ -1382,15 +1382,15 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   Eigen::VectorXd ddq;
 
   std::map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
-  std::map<dynamics::BodyNodePtr, Eigen::Vector6d> Vmap;
-  std::map<dynamics::BodyNodePtr, Eigen::Vector6d> dVmap;
+  std::map<dynamics::BodyNodePtr, math::Vector6d> Vmap;
+  std::map<dynamics::BodyNodePtr, math::Vector6d> dVmap;
 
   for (auto j = 0u; j < numBodies; ++j) {
     auto body = skel->getBodyNode(j);
 
     Tmap[body] = Eigen::Isometry3d::Identity();
-    Vmap[body] = Eigen::Vector6d::Zero();
-    dVmap[body] = Eigen::Vector6d::Zero();
+    Vmap[body] = math::Vector6d::Zero();
+    dVmap[body] = math::Vector6d::Zero();
   }
 
   for (auto i = 0u; i < nRandomItr; ++i) {
@@ -1414,8 +1414,8 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
         Eigen::VectorXd jointDDQ = joint->getAccelerations();
 
         Eigen::Isometry3d relT = body->getRelativeTransform();
-        Eigen::Vector6d relV = S * jointDQ;
-        Eigen::Vector6d relDV = dS * jointDQ + S * jointDDQ;
+        math::Vector6d relV = S * jointDQ;
+        math::Vector6d relDV = dS * jointDQ + S * jointDDQ;
 
         if (parentBody) {
           Tmap[body] = Tmap[parentBody] * relT;
@@ -2156,7 +2156,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
 
         // Set constraint impulse on each body
         skel->clearConstraintImpulses();
-        Eigen::Vector6d impulseOnBody = Eigen::Vector6d::Random();
+        math::Vector6d impulseOnBody = math::Vector6d::Random();
         body->setConstraintImpulse(impulseOnBody);
 
         // Get constraint force vector

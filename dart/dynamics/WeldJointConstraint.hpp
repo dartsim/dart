@@ -36,7 +36,7 @@
 #include <dart/dynamics/DynamicJointConstraint.hpp>
 #include <dart/dynamics/Export.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 #include <Eigen/Dense>
 
@@ -109,13 +109,13 @@ private:
   Eigen::Isometry3d mRelativeTransform;
 
   ///
-  Eigen::Vector6d mViolation;
+  math::Vector6d mViolation;
 
   ///
-  const Eigen::Matrix6d mJacobian1;
+  const math::Matrix6d mJacobian1;
 
   ///
-  Eigen::Matrix6d mJacobian2;
+  math::Matrix6d mJacobian2;
 
   ///
   double mOldX[6];

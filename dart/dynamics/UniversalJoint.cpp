@@ -206,19 +206,19 @@ void UniversalJoint::updateRelativeJacobian(bool) const
 //==============================================================================
 void UniversalJoint::updateRelativeJacobianTimeDeriv() const
 {
-  Eigen::Vector6d tmpV1
+  math::Vector6d tmpV1
       = getRelativeJacobianStatic().col(1) * getVelocitiesStatic()[1];
 
   Eigen::Isometry3d tmpT
       = math::expAngular(-getAxis2() * getPositionsStatic()[1]);
 
-  Eigen::Vector6d tmpV2 = math::AdTAngular(
+  math::Vector6d tmpV2 = math::AdTAngular(
       Joint::mAspectProperties.mT_ChildBodyToJoint * tmpT, getAxis1());
 
   mJacobianDeriv.col(0) = -math::ad(tmpV1, tmpV2);
 
   assert(!math::isNan(mJacobianDeriv.col(0)));
-  assert(mJacobianDeriv.col(1) == Eigen::Vector6d::Zero());
+  assert(mJacobianDeriv.col(1) == math::Vector6d::Zero());
 }
 
 } // namespace dynamics

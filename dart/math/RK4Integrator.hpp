@@ -53,13 +53,13 @@ public:
 
 private:
   /// \brief Initial configurations
-  Eigen::VectorXd q1;
+  VectorXd q1;
 
   /// \brief Chache data for generalized velocities
-  Eigen::VectorXd dq1, dq2, dq3, dq4;
+  VectorXd dq1, dq2, dq3, dq4;
 
   /// \brief Chache data for generalized accelerations
-  Eigen::VectorXd ddq1, ddq2, ddq3, ddq4;
+  VectorXd ddq1, ddq2, ddq3, ddq4;
 };
 
 } // namespace math

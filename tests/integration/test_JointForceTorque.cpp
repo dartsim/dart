@@ -116,7 +116,7 @@ TEST(JointForceTorqueTest, Static)
     SimpleFramePtr childFrame01
         = std::make_shared<SimpleFrame>(link_1, "childFrame01", tf);
 
-    const Eigen::Vector6d parentF01
+    const math::Vector6d parentF01
         = joint_01->getWrenchToParentBodyNode(parentFrame01.get());
     EXPECT_DOUBLE_EQ(parentF01[0], 0); // torque
     EXPECT_DOUBLE_EQ(parentF01[1], 0);
@@ -125,7 +125,7 @@ TEST(JointForceTorqueTest, Static)
     EXPECT_DOUBLE_EQ(parentF01[4], 0);
     EXPECT_DOUBLE_EQ(parentF01[5], 1000);
 
-    const Eigen::Vector6d childF01
+    const math::Vector6d childF01
         = joint_01->getWrenchToChildBodyNode(childFrame01.get());
     EXPECT_EQ(childF01, -parentF01);
 
@@ -144,7 +144,7 @@ TEST(JointForceTorqueTest, Static)
     SimpleFramePtr childFrame12
         = std::make_shared<SimpleFrame>(link_2, "childFrame12", tf);
 
-    const Eigen::Vector6d parentF12
+    const math::Vector6d parentF12
         = joint_12->getWrenchToParentBodyNode(parentFrame12.get());
     EXPECT_DOUBLE_EQ(parentF12[0], 0); // torque
     EXPECT_DOUBLE_EQ(parentF12[1], 0);
@@ -153,7 +153,7 @@ TEST(JointForceTorqueTest, Static)
     EXPECT_DOUBLE_EQ(parentF12[4], 0);
     EXPECT_DOUBLE_EQ(parentF12[5], 500);
 
-    const Eigen::Vector6d childF12
+    const math::Vector6d childF12
         = joint_12->getWrenchToChildBodyNode(childFrame01.get());
     EXPECT_EQ(childF12, -parentF12);
   }
@@ -226,7 +226,7 @@ TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
     SimpleFramePtr childFrame01
         = std::make_shared<SimpleFrame>(link_1, "childFrame01", tf);
 
-    const Eigen::Vector6d parentF01
+    const math::Vector6d parentF01
         = joint_01->getWrenchToParentBodyNode(parentFrame01.get());
     EXPECT_NEAR(parentF01[0], 750, 7.5); // torque
     EXPECT_NEAR(parentF01[1], 0, 4.5);
@@ -235,7 +235,7 @@ TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
     EXPECT_NEAR(parentF01[4], -200, 10);
     EXPECT_NEAR(parentF01[5], 1000, 2);
 
-    const Eigen::Vector6d childF01
+    const math::Vector6d childF01
         = joint_01->getWrenchToChildBodyNode(childFrame01.get());
     EXPECT_NEAR(childF01[0], -750, 7.5); // torque
     EXPECT_NEAR(childF01[1], -450, 4.5);
@@ -259,7 +259,7 @@ TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
     SimpleFramePtr childFrame12
         = std::make_shared<SimpleFrame>(link_2, "childFrame12", tf);
 
-    const Eigen::Vector6d parentF12
+    const math::Vector6d parentF12
         = joint_12->getWrenchToParentBodyNode(parentFrame12.get());
     EXPECT_NEAR(parentF12[0], 250, 2.5); // torque
     EXPECT_NEAR(parentF12[1], 150, 1.5);
@@ -268,7 +268,7 @@ TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
     EXPECT_NEAR(parentF12[4], -500, 5);
     EXPECT_NEAR(parentF12[5], -100, 1);
 
-    const Eigen::Vector6d childF12
+    const math::Vector6d childF12
         = joint_12->getWrenchToChildBodyNode(childFrame12.get());
     EXPECT_TRUE(childF12.isApprox(-parentF12));
   }
@@ -361,7 +361,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   SimpleFramePtr childFrame01
       = std::make_shared<SimpleFrame>(link_2, "childFrame01", tf);
 
-  const Eigen::Vector6d parentF01
+  const math::Vector6d parentF01
       = joint_12->getWrenchToParentBodyNode(parentFrame01.get());
   EXPECT_NEAR(parentF01[0], 25, tol); // torque
   EXPECT_NEAR(parentF01[1], -175, tol);
@@ -370,7 +370,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   EXPECT_NEAR(parentF01[4], 0, tol);
   EXPECT_NEAR(parentF01[5], 300, tol);
 
-  const Eigen::Vector6d childF01
+  const math::Vector6d childF01
       = joint_12->getWrenchToChildBodyNode(childFrame01.get());
   EXPECT_TRUE(childF01.isApprox(-parentF01, tol));
 
@@ -389,7 +389,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   SimpleFramePtr childFrame12
       = std::make_shared<SimpleFrame>(link_3, "childFrame12", tf);
 
-  const Eigen::Vector6d parentF12
+  const math::Vector6d parentF12
       = joint_23->getWrenchToParentBodyNode(parentFrame12.get());
   EXPECT_NEAR(parentF12[0], 25, tol); // torque
   EXPECT_NEAR(parentF12[1], 0, tol);
@@ -398,7 +398,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   EXPECT_NEAR(parentF12[4], 0, tol);
   EXPECT_NEAR(parentF12[5], 50, tol);
 
-  const Eigen::Vector6d childF12
+  const math::Vector6d childF12
       = joint_23->getWrenchToChildBodyNode(childFrame12.get());
   EXPECT_NEAR(childF12[0], -17.678, tol); // torque
   EXPECT_NEAR(childF12[1], 0, tol);

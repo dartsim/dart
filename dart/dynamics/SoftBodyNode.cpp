@@ -577,7 +577,7 @@ void SoftBodyNode::updateAccelerationID()
 void SoftBodyNode::updateTransmittedForceID(
     const Eigen::Vector3d& _gravity, bool _withExternalForces)
 {
-  const Eigen::Matrix6d& mI
+  const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   for (auto& pointMass : mPointMasses)
     pointMass->updateTransmittedForceID(_gravity, _withExternalForces);
@@ -603,7 +603,7 @@ void SoftBodyNode::updateTransmittedForceID(
   mF -= mFgravity;
 
   // Coriolis force
-  const Eigen::Vector6d& V = getSpatialVelocity();
+  const math::Vector6d& V = getSpatialVelocity();
   mF -= math::dad(V, mI * V);
 
   //
@@ -652,7 +652,7 @@ void SoftBodyNode::updateJointImpulseFD()
 //==============================================================================
 void SoftBodyNode::updateArtInertia(double _timeStep) const
 {
-  const Eigen::Matrix6d& mI
+  const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   for (auto& pointMass : mPointMasses)
     pointMass->updateArtInertiaFD(_timeStep);
@@ -696,7 +696,7 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
 void SoftBodyNode::updateBiasForce(
     const Eigen::Vector3d& _gravity, double _timeStep)
 {
-  const Eigen::Matrix6d& mI
+  const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   for (PointMass* pointMass : mPointMasses) {
     // Reset internal forces of point masses before used.
@@ -716,7 +716,7 @@ void SoftBodyNode::updateBiasForce(
     mFgravity.setZero();
 
   // Set bias force
-  const Eigen::Vector6d& V = getSpatialVelocity();
+  const math::Vector6d& V = getSpatialVelocity();
   mBiasForce = -math::dad(V, mI * V) - BodyNode::mAspectState.mFext - mFgravity;
 
   // Verifycation
@@ -890,7 +890,7 @@ void SoftBodyNode::aggregateAugMassMatrix(
 {
   // TODO(JS): Need to be reimplemented
 
-  const Eigen::Matrix6d& mI
+  const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   //------------------------ PointMass Part ------------------------------------
   for (std::size_t i = 0; i < mPointMasses.size(); ++i)
@@ -1020,7 +1020,7 @@ void SoftBodyNode::aggregateInvMassMatrix(
   } else {
     //
     mParentJoint->getInvMassMatrixSegment(
-        _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
+        _InvMCol, _col, getArticulatedInertia(), math::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -1055,7 +1055,7 @@ void SoftBodyNode::aggregateInvAugMassMatrix(
   //    //
   //    mParentJoint->getInvAugMassMatrixSegment(
   //          *_InvMCol, _col, getArticulatedInertiaImplicit(),
-  //          Eigen::Vector6d::Zero());
+  //          math::Vector6d::Zero());
 
   //    //
   //    mInvM_U.setZero();
@@ -1080,7 +1080,7 @@ void SoftBodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
 void SoftBodyNode::aggregateGravityForceVector(
     Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity)
 {
-  const Eigen::Matrix6d& mI
+  const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   //------------------------ PointMass Part ------------------------------------
   for (std::size_t i = 0; i < mPointMasses.size(); ++i)
@@ -1256,7 +1256,7 @@ void SoftBodyNode::updateInertiaWithPointMass()
 {
   // TODO(JS): Not implemented
 
-  const Eigen::Matrix6d& mI
+  const math::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   mI2 = mI;
 

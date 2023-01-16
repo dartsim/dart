@@ -249,9 +249,9 @@ Eigen::Vector4d toVector4d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector6d toVector6d(const std::string& str)
+math::Vector6d toVector6d(const std::string& str)
 {
-  Eigen::Vector6d ret;
+  math::Vector6d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
@@ -262,7 +262,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         std::cerr << "value [" << pieces[i]
-                  << "] is not a valid double for Eigen::Vector6d[" << i
+                  << "] is not a valid double for math::Vector6d[" << i
                   << "]: " << e.what() << std::endl;
       }
     }
@@ -298,7 +298,7 @@ Eigen::VectorXd toVectorXd(const std::string& str)
 Eigen::Isometry3d toIsometry3d(const std::string& str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d elements = Eigen::Vector6d::Zero();
+  math::Vector6d elements = math::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
 
@@ -323,7 +323,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
 Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d elements = Eigen::Vector6d::Zero();
+  math::Vector6d elements = math::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   assert(pieces.size() == 6);
 
@@ -477,7 +477,7 @@ Eigen::Vector3i getValueVector3i(
 }
 
 //==============================================================================
-Eigen::Vector6d getValueVector6d(
+math::Vector6d getValueVector6d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   assert(parentElement != nullptr);
@@ -811,7 +811,7 @@ Eigen::Vector4d getAttributeVector4d(
 }
 
 //==============================================================================
-Eigen::Vector6d getAttributeVector6d(
+math::Vector6d getAttributeVector6d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);

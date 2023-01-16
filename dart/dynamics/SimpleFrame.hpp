@@ -157,7 +157,7 @@ public:
   ///
   /// Use setClassicDerivatives to set the velocity according to classic
   /// relative linear and angular velocity values.
-  void setRelativeSpatialVelocity(const Eigen::Vector6d& _newSpatialVelocity);
+  void setRelativeSpatialVelocity(const math::Vector6d& _newSpatialVelocity);
 
   /// Set the spatial velocity of this SimpleFrame relative to its parent Frame.
   /// Specify the coordinate Frame of _newSpatialVelocity.
@@ -165,11 +165,10 @@ public:
   /// Use setClassicDerivatives to set the velocity according to classic
   /// relative linear and angular velocity values.
   void setRelativeSpatialVelocity(
-      const Eigen::Vector6d& _newSpatialVelocity,
-      const Frame* _inCoordinatesOf);
+      const math::Vector6d& _newSpatialVelocity, const Frame* _inCoordinatesOf);
 
   // Documentation inherited
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
+  const math::Vector6d& getRelativeSpatialVelocity() const override;
 
   //--------------------------------------------------------------------------
   // Acceleration
@@ -181,22 +180,22 @@ public:
   /// This is the most computationally efficient way of setting relative
   /// acceleration.
   void setRelativeSpatialAcceleration(
-      const Eigen::Vector6d& _newSpatialAcceleration);
+      const math::Vector6d& _newSpatialAcceleration);
 
   /// Set the spatial acceleration of this SimpleFrame relative to its parent
   /// Frame. Specify the coordinate Frame of _newSpatialAcceleration.
   void setRelativeSpatialAcceleration(
-      const Eigen::Vector6d& _newSpatialAcceleration,
+      const math::Vector6d& _newSpatialAcceleration,
       const Frame* _inCoordinatesOf);
 
   // Documentation inherited
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
+  const math::Vector6d& getRelativeSpatialAcceleration() const override;
 
   // Documentation inherited
-  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
+  const math::Vector6d& getPrimaryRelativeAcceleration() const override;
 
   // Documentation inherited
-  const Eigen::Vector6d& getPartialAcceleration() const override;
+  const math::Vector6d& getPartialAcceleration() const override;
 
   //--------------------------------------------------------------------------
   // Classic Method
@@ -229,13 +228,13 @@ protected:
   Eigen::Isometry3d mRelativeTf;
 
   /// Relative spatial velocity of the SimpleFrame
-  Eigen::Vector6d mRelativeVelocity;
+  math::Vector6d mRelativeVelocity;
 
   /// Relative spatial acceleration of the SimpleFrame
-  Eigen::Vector6d mRelativeAcceleration;
+  math::Vector6d mRelativeAcceleration;
 
   /// Partial Acceleration of this Frame
-  mutable Eigen::Vector6d mPartialAcceleration;
+  mutable math::Vector6d mPartialAcceleration;
 
 public:
   // To get byte-aligned Eigen vectors

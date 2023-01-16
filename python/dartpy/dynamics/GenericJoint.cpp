@@ -1281,7 +1281,7 @@ namespace py = pybind11;
       .def(                                                                    \
           "getBodyConstraintWrench",                                           \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \
-              -> Eigen::Vector6d { return self->getBodyConstraintWrench(); })  \
+              -> math::Vector6d { return self->getBodyConstraintWrench(); })   \
       .def(                                                                    \
           "getRelativeJacobian",                                               \
           +[](const dart::dynamics::GenericJoint<space>* self)                 \

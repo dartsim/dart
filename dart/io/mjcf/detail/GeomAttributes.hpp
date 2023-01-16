@@ -36,7 +36,7 @@
 #include <dart/io/mjcf/detail/Error.hpp>
 #include <dart/io/mjcf/detail/Types.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 #include <Eigen/Core>
 #include <tinyxml2.h>
@@ -97,7 +97,7 @@ struct GeomAttributes final
   /// This attribute can only be used with capsule, cylinder, ellipsoid and
   /// box geoms. It provides an alternative specification of the geom length
   /// as well as the frame position and orientation.
-  std::optional<Eigen::Vector6d> mFromTo;
+  std::optional<math::Vector6d> mFromTo;
 
   /// Position of the geom frame, in local or global coordinates as determined
   /// by the coordinate attribute of compiler.
@@ -118,7 +118,7 @@ struct GeomAttributes final
   /// the Y axis of the frame, which is automatically made orthogonal to the X
   /// axis. The Z axis is then defined as the cross-product of the X and Y
   /// axes.
-  std::optional<Eigen::Vector6d> mXYAxes;
+  std::optional<math::Vector6d> mXYAxes;
 
   /// The Z axis of the frame
   std::optional<Eigen::Vector3d> mZAxis;

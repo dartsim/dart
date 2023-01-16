@@ -82,7 +82,7 @@ struct toEuclideanPointImpl<SO3Space>
   static typename SO3Space::EuclideanPoint run(
       const typename SO3Space::Point& point)
   {
-    return math::logMap(point);
+    return logMap(point);
   }
 };
 
@@ -93,9 +93,9 @@ struct toEuclideanPointImpl<SE3Space>
   static typename SE3Space::EuclideanPoint run(
       const typename SE3Space::Point& point)
   {
-    Eigen::Vector6d x;
+    Vector6d x;
 
-    x.head<3>() = math::logMap(point.linear());
+    x.head<3>() = logMap(point.linear());
     x.tail<3>() = point.translation();
 
     return x;
@@ -120,7 +120,7 @@ struct toManifoldPointImpl<SO3Space>
   static typename SO3Space::Point run(
       const typename SO3Space::EuclideanPoint& point)
   {
-    return math::expMapRot(point);
+    return expMapRot(point);
   }
 };
 
@@ -131,9 +131,9 @@ struct toManifoldPointImpl<SE3Space>
   static typename SE3Space::Point run(
       const typename SE3Space::EuclideanPoint& point)
   {
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    Isometry3d tf(Isometry3d::Identity());
 
-    tf.linear() = math::expMapRot(point.head<3>());
+    tf.linear() = expMapRot(point.head<3>());
     tf.translation() = point.tail<3>();
 
     return tf;

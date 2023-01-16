@@ -48,7 +48,7 @@ public:
   // Type aliases
   using Scalar = S;
   using Index = std::size_t;
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
+  using Vector3 = Matrix<S, 3, 1>;
   using Vertices = std::vector<Vector3>;
   using Normals = std::vector<Vector3>;
   using Indices = std::vector<Index>;

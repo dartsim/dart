@@ -57,7 +57,7 @@ void Inertia(py::module& m)
               Eigen::Matrix3d::Identity(),
               "Eigen::Matrix3d::Identity()"))
       .def(
-          ::py::init<const Eigen::Matrix6d&>(),
+          ::py::init<const math::Matrix6d&>(),
           ::py::arg("spatialInertiaTensor"))
       .def(
           "setMass",
@@ -95,13 +95,13 @@ void Inertia(py::module& m)
           })
       .def(
           "setSpatialTensor",
-          +[](dart::dynamics::Inertia* self, const Eigen::Matrix6d& spatial) {
+          +[](dart::dynamics::Inertia* self, const math::Matrix6d& spatial) {
             self->setSpatialTensor(spatial);
           },
           ::py::arg("spatial"))
       .def(
           "getSpatialTensor",
-          +[](const dart::dynamics::Inertia* self) -> const Eigen::Matrix6d& {
+          +[](const dart::dynamics::Inertia* self) -> const math::Matrix6d& {
             return self->getSpatialTensor();
           },
           ::py::return_value_policy::reference_internal)
@@ -133,7 +133,7 @@ void Inertia(py::module& m)
           ::py::arg_v("tolerance", 1e-8))
       .def_static(
           "verifySpatialTensor",
-          +[](const Eigen::Matrix6d& spatial,
+          +[](const math::Matrix6d& spatial,
               bool printWarnings = true,
               double tolerance = 1e-8) -> bool {
             return dart::dynamics::Inertia::verifySpatialTensor(

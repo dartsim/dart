@@ -60,7 +60,7 @@ TEST(InverseKinematics, SolveForFreeJoint)
   ik->getTarget()->setTransform(tf);
 
   ik->getErrorMethod().setBounds(
-      Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
+      math::Vector6d::Constant(-1e-8), math::Vector6d::Constant(1e-8));
 
   ik->getSolver()->setNumMaxIterations(100);
 

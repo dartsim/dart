@@ -153,7 +153,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
 
 //==============================================================================
 static bool canUseFromTo(
-    GeomType type, const std::optional<Eigen::Vector6d>& fromto)
+    GeomType type, const std::optional<math::Vector6d>& fromto)
 {
   if (!fromto)
     return false;
@@ -233,7 +233,7 @@ Errors Site::preprocess(const Compiler& compiler)
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   if (canUseFromTo(mData.mType, mData.mFromTo)) {
     assert(mData.mFromTo);
-    const Eigen::Vector6d& fromto = *mData.mFromTo;
+    const math::Vector6d& fromto = *mData.mFromTo;
     const Eigen::Vector3d from = fromto.head<3>();
     const Eigen::Vector3d to = fromto.tail<3>();
     const Eigen::Vector3d dir = (to - from).normalized();

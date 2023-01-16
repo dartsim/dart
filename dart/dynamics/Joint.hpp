@@ -37,7 +37,7 @@
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/detail/JointAspect.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
@@ -619,14 +619,14 @@ public:
 
   /// Get spatial velocity of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+  const math::Vector6d& getRelativeSpatialVelocity() const;
 
   /// Get spatial acceleration of the child BodyNode relative to the parent
   /// BodyNode expressed in the child BodyNode frame
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+  const math::Vector6d& getRelativeSpatialAcceleration() const;
 
   /// Get J * \f$ \ddot{q} \f$ of this joint
-  const Eigen::Vector6d& getRelativePrimaryAcceleration() const;
+  const math::Vector6d& getRelativePrimaryAcceleration() const;
 
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
@@ -642,7 +642,7 @@ public:
   virtual const math::Jacobian getRelativeJacobianTimeDeriv() const = 0;
 
   /// Get constraint wrench expressed in body node frame
-  virtual Eigen::Vector6d getBodyConstraintWrench() const = 0;
+  virtual math::Vector6d getBodyConstraintWrench() const = 0;
   // TODO: Need more informative name.
 
   /// Get spring force
@@ -681,7 +681,7 @@ public:
   /// \return Wrench where the first three elements represent torque and the
   /// last three elements represent force. Zero vector if this joint has no
   /// child body node defined.
-  Eigen::Vector6d getWrenchToChildBodyNode(
+  math::Vector6d getWrenchToChildBodyNode(
       const Frame* withRespectTo = nullptr) const;
 
   /// Returns wrench exerted to the parent body node to satisfy the joint
@@ -693,7 +693,7 @@ public:
   /// \return Wrench where the first three elements represent torque and the
   /// last three elements represent force. Zero vector if this joint has no
   /// child body node defined.
-  Eigen::Vector6d getWrenchToParentBodyNode(
+  math::Vector6d getWrenchToParentBodyNode(
       const Frame* withRespectTo = nullptr) const;
 
   //----------------------------------------------------------------------------
@@ -782,66 +782,65 @@ protected:
   void updateArticulatedInertia() const;
 
   /// Add joint velocity to _vel
-  virtual void addVelocityTo(Eigen::Vector6d& _vel) = 0;
+  virtual void addVelocityTo(math::Vector6d& _vel) = 0;
 
   /// Set joint partial acceleration to _partialAcceleration
   virtual void setPartialAccelerationTo(
-      Eigen::Vector6d& _partialAcceleration,
-      const Eigen::Vector6d& _childVelocity)
+      math::Vector6d& _partialAcceleration,
+      const math::Vector6d& _childVelocity)
       = 0;
   // TODO(JS): Rename with more informative name
 
   /// Add joint acceleration to _acc
-  virtual void addAccelerationTo(Eigen::Vector6d& _acc) = 0;
+  virtual void addAccelerationTo(math::Vector6d& _acc) = 0;
 
   /// Add joint velocity change to _velocityChange
-  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) = 0;
+  virtual void addVelocityChangeTo(math::Vector6d& _velocityChange) = 0;
 
   /// Add child's articulated inertia to parent's one
   virtual void addChildArtInertiaTo(
-      Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia)
+      math::Matrix6d& _parentArtInertia, const math::Matrix6d& _childArtInertia)
       = 0;
 
   /// Add child's articulated inertia to parent's one. Forward dynamics routine.
   virtual void addChildArtInertiaImplicitTo(
-      Eigen::Matrix6d& _parentArtInertiaImplicit,
-      const Eigen::Matrix6d& _childArtInertiaImplicit)
+      math::Matrix6d& _parentArtInertiaImplicit,
+      const math::Matrix6d& _childArtInertiaImplicit)
       = 0;
   // TODO(JS): rename to updateAInertiaChildAInertia()
 
   /// Update inverse of projected articulated body inertia
-  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia) = 0;
+  virtual void updateInvProjArtInertia(const math::Matrix6d& _artInertia) = 0;
 
   /// Forward dynamics routine.
   virtual void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& _artInertia, double _timeStep)
+      const math::Matrix6d& _artInertia, double _timeStep)
       = 0;
   // TODO(JS): rename to updateAInertiaPsi()
 
   /// Add child's bias force to parent's one
   virtual void addChildBiasForceTo(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce,
-      const Eigen::Vector6d& _childPartialAcc)
+      math::Vector6d& _parentBiasForce,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasForce,
+      const math::Vector6d& _childPartialAcc)
       = 0;
 
   /// Add child's bias impulse to parent's one
   virtual void addChildBiasImpulseTo(
-      Eigen::Vector6d& _parentBiasImpulse,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasImpulse)
+      math::Vector6d& _parentBiasImpulse,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasImpulse)
       = 0;
 
   /// Update joint total force
   virtual void updateTotalForce(
-      const Eigen::Vector6d& _bodyForce, double _timeStep)
+      const math::Vector6d& _bodyForce, double _timeStep)
       = 0;
   // TODO: rename
 
   /// Update joint total impulse
-  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse) = 0;
+  virtual void updateTotalImpulse(const math::Vector6d& _bodyImpulse) = 0;
   // TODO: rename
 
   /// Set total impulses to zero
@@ -849,15 +848,14 @@ protected:
 
   /// Update joint acceleration
   virtual void updateAcceleration(
-      const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
+      const math::Matrix6d& _artInertia, const math::Vector6d& _spatialAcc)
       = 0;
 
   /// Update joint velocity change
   /// \param _artInertia
   /// \param _velocityChange
   virtual void updateVelocityChange(
-      const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _velocityChange)
+      const math::Matrix6d& _artInertia, const math::Vector6d& _velocityChange)
       = 0;
 
   /// Update joint force for inverse dynamics.
@@ -868,7 +866,7 @@ protected:
   /// \param[in] _withDampingForces
   /// \param[in] _withSpringForces
   virtual void updateForceID(
-      const Eigen::Vector6d& _bodyForce,
+      const math::Vector6d& _bodyForce,
       double _timeStep,
       bool _withDampingForces,
       bool _withSpringForces)
@@ -882,17 +880,17 @@ protected:
   /// \param[in] _withDampingForces
   /// \param[in] _withSpringForces
   virtual void updateForceFD(
-      const Eigen::Vector6d& _bodyForce,
+      const math::Vector6d& _bodyForce,
       double _timeStep,
       bool _withDampingForces,
       bool _withSpringForces)
       = 0;
 
   /// Update joint impulses for inverse dynamics
-  virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) = 0;
+  virtual void updateImpulseID(const math::Vector6d& _bodyImpulse) = 0;
 
   /// Update joint impulses for forward dynamics
-  virtual void updateImpulseFD(const Eigen::Vector6d& _bodyImpulse) = 0;
+  virtual void updateImpulseFD(const math::Vector6d& _bodyImpulse) = 0;
 
   /// Update constrained terms for forward dynamics
   virtual void updateConstrainedTerms(double _timeStep) = 0;
@@ -905,45 +903,45 @@ protected:
 
   /// Add child's bias force to parent's one
   virtual void addChildBiasForceForInvMassMatrix(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce)
+      math::Vector6d& _parentBiasForce,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasForce)
       = 0;
 
   /// Add child's bias force to parent's one
   virtual void addChildBiasForceForInvAugMassMatrix(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce)
+      math::Vector6d& _parentBiasForce,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasForce)
       = 0;
 
   ///
   virtual void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& _bodyForce)
+      const math::Vector6d& _bodyForce)
       = 0;
 
   ///
   virtual void getInvMassMatrixSegment(
       Eigen::MatrixXd& _invMassMat,
       const std::size_t _col,
-      const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _spatialAcc)
+      const math::Matrix6d& _artInertia,
+      const math::Vector6d& _spatialAcc)
       = 0;
 
   ///
   virtual void getInvAugMassMatrixSegment(
       Eigen::MatrixXd& _invMassMat,
       const std::size_t _col,
-      const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _spatialAcc)
+      const math::Matrix6d& _artInertia,
+      const math::Vector6d& _spatialAcc)
       = 0;
 
   ///
-  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) = 0;
+  virtual void addInvMassMatrixSegmentTo(math::Vector6d& _acc) = 0;
 
   ///
   virtual Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& _spatial)
+      const math::Vector6d& _spatial)
       = 0;
 
   /// \}
@@ -962,18 +960,18 @@ protected:
   /// velocity is expressed in child body Frame
   ///
   /// Do not use directly! Use getRelativeSpatialVelocity() to access this
-  mutable Eigen::Vector6d mSpatialVelocity;
+  mutable math::Vector6d mSpatialVelocity;
 
   /// Relative spatial acceleration from parent BodyNode to child BodyNode where
   /// the acceleration is expressed in the child body Frame
   ///
   /// Do not use directly! Use getRelativeSpatialAcceleration() to access this
-  mutable Eigen::Vector6d mSpatialAcceleration;
+  mutable math::Vector6d mSpatialAcceleration;
 
   /// J * q_dd
   ///
   /// Do not use directly! Use getRelativePrimaryAcceleration() to access this
-  mutable Eigen::Vector6d mPrimaryAcceleration;
+  mutable math::Vector6d mPrimaryAcceleration;
 
   /// True iff this joint's position has changed since the last call to
   /// getRelativeTransform()

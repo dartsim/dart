@@ -49,7 +49,7 @@ Inertia::Inertia(
 }
 
 //==============================================================================
-Inertia::Inertia(const Eigen::Matrix6d& _spatialInertiaTensor)
+Inertia::Inertia(const math::Matrix6d& _spatialInertiaTensor)
 {
   setSpatialTensor(_spatialInertiaTensor);
 }
@@ -187,14 +187,14 @@ Eigen::Matrix3d Inertia::getMoment() const
 }
 
 //==============================================================================
-void Inertia::setSpatialTensor(const Eigen::Matrix6d& _spatial)
+void Inertia::setSpatialTensor(const math::Matrix6d& _spatial)
 {
   setSpatialTensor(_spatial, true);
 }
 
 //==============================================================================
 void Inertia::setSpatialTensor(
-    const Eigen::Matrix6d& _spatial, bool _printWarnings)
+    const math::Matrix6d& _spatial, bool _printWarnings)
 {
   if (!verifySpatialTensor(_spatial, _printWarnings))
     dtwarn << "[Inertia::setSpatialTensor] Passing in an invalid spatial "
@@ -206,7 +206,7 @@ void Inertia::setSpatialTensor(
 }
 
 //==============================================================================
-const Eigen::Matrix6d& Inertia::getSpatialTensor() const
+const math::Matrix6d& Inertia::getSpatialTensor() const
 {
   return mSpatialTensor;
 }
@@ -246,7 +246,7 @@ bool Inertia::verifyMoment(
 
 //==============================================================================
 bool Inertia::verifySpatialTensor(
-    const Eigen::Matrix6d& _spatial, bool _printWarnings, double _tolerance)
+    const math::Matrix6d& _spatial, bool _printWarnings, double _tolerance)
 {
   bool valid = true;
 

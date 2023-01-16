@@ -520,11 +520,11 @@ void ReferentialSkeleton(py::module& m)
       .def(
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self)
-              -> Eigen::Vector6d { return self->getCOMSpatialVelocity(); })
+              -> math::Vector6d { return self->getCOMSpatialVelocity(); })
       .def(
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -532,8 +532,7 @@ void ReferentialSkeleton(py::module& m)
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo, _inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -562,11 +561,11 @@ void ReferentialSkeleton(py::module& m)
       .def(
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self)
-              -> Eigen::Vector6d { return self->getCOMSpatialAcceleration(); })
+              -> math::Vector6d { return self->getCOMSpatialAcceleration(); })
       .def(
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector6d {
             return self->getCOMSpatialAcceleration(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -574,8 +573,7 @@ void ReferentialSkeleton(py::module& m)
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector6d {
             return self->getCOMSpatialAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },

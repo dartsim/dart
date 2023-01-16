@@ -58,7 +58,7 @@ And now we can compute the total position of the new domino. First, we'll copy
 the positions of the last domino:
 
 ```cpp
-Eigen::Vector6d x = lastDomino->getPositions();
+math::Vector6d x = lastDomino->getPositions();
 ```
 
 And then we'll add the translational offset to it:
@@ -446,7 +446,7 @@ the pseudoinverse of the Jacobian, but a simple way is like this:
 
 ```cpp
 Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
-                       + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+                       + 0.0025 * math::Matrix6d::Identity()).inverse();
 ```
 
 Note that this pseudoinverse is also damped so that it behaves better around
@@ -463,7 +463,7 @@ Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
 
 // Comptue the pseudo-inverse of the Jacobian time derivative
 Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
-                        + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+                        + 0.0025 * math::Matrix6d::Identity()).inverse();
 ```
 
 Notice that here we're compute the **classic** derivative, which means the
@@ -474,7 +474,7 @@ to use ``BodyNode::getJacobianSpatialDeriv`` instead.
 Now we can compute the linear components of error:
 
 ```cpp
-Eigen::Vector6d e;
+math::Vector6d e;
 e.tail<3>() = mTarget->getWorldTransform().translation()
             - mEndEffector->getWorldTransform() * mOffset;
 ```
@@ -489,7 +489,7 @@ e.head<3>() = aa.angle() * aa.axis();
 Then the time derivative of error, assuming our desired velocity is zero:
 
 ```cpp
-Eigen::Vector6d de = -mEndEffector->getSpatialVelocity(
+math::Vector6d de = -mEndEffector->getSpatialVelocity(
       mOffset, mTarget.get(), Frame::World());
 ```
 
@@ -504,7 +504,7 @@ The gains for the operational space controller need to be in matrix form, but
 we're storing the gains as scalars, so we'll need to conver them:
 
 ```cpp
-Eigen::Matrix6d Kp = mKpOS * Eigen::Matrix6d::Identity();
+math::Matrix6d Kp = mKpOS * math::Matrix6d::Identity();
 
 size_t dofs = mManipulator->getNumDofs();
 Eigen::MatrixXd Kd = mKdOS * Eigen::MatrixXd::Identity(dofs, dofs);
@@ -514,7 +514,7 @@ And we'll need to compute the joint forces needed to achieve our desired end
 effector force. This is easily done using the Jacobian transpose:
 
 ```cpp
-Eigen::Vector6d fDesired = Eigen::Vector6d::Zero();
+math::Vector6d fDesired = math::Vector6d::Zero();
 fDesired[3] = default_push_force;
 Eigen::VectorXd f = J.transpose() * fDesired;
 ```

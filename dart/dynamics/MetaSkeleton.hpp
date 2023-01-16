@@ -803,7 +803,7 @@ public:
 
   /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
   /// World Frame)
-  virtual Eigen::Vector6d getCOMSpatialVelocity(
+  virtual math::Vector6d getCOMSpatialVelocity(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
@@ -815,7 +815,7 @@ public:
 
   /// Get the Skeleton's COM spatial acceleration in terms of any Frame (default
   /// is World Frame)
-  virtual Eigen::Vector6d getCOMSpatialAcceleration(
+  virtual math::Vector6d getCOMSpatialAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 

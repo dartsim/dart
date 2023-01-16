@@ -196,7 +196,7 @@ void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const
 void PrismaticJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of prismatic joint is always zero
-  assert(mJacobianDeriv == Eigen::Vector6d::Zero());
+  assert(mJacobianDeriv == math::Vector6d::Zero());
 }
 
 } // namespace dynamics

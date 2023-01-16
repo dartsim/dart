@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/Export.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 #include <array>
 
@@ -72,7 +72,7 @@ public:
       const Eigen::Vector3d& _com = Eigen::Vector3d::Zero(),
       const Eigen::Matrix3d& _momentOfInertia = Eigen::Matrix3d::Identity());
 
-  Inertia(const Eigen::Matrix6d& _spatialInertiaTensor);
+  Inertia(const math::Matrix6d& _spatialInertiaTensor);
 
   Inertia(
       double _mass,
@@ -122,13 +122,13 @@ public:
   Eigen::Matrix3d getMoment() const;
 
   /// Set the spatial tensor
-  void setSpatialTensor(const Eigen::Matrix6d& _spatial);
+  void setSpatialTensor(const math::Matrix6d& _spatial);
 
   /// Set the spatial tensor, with option to silence warnings.
-  void setSpatialTensor(const Eigen::Matrix6d& _spatial, bool _printWarnings);
+  void setSpatialTensor(const math::Matrix6d& _spatial, bool _printWarnings);
 
   /// Get the spatial inertia tensor
-  const Eigen::Matrix6d& getSpatialTensor() const;
+  const math::Matrix6d& getSpatialTensor() const;
 
   /// Returns true iff _moment is a physically valid moment of inertia
   static bool verifyMoment(
@@ -138,7 +138,7 @@ public:
 
   /// Returns true iff _spatial is a physically valid spatial inertia tensor
   static bool verifySpatialTensor(
-      const Eigen::Matrix6d& _spatial,
+      const math::Matrix6d& _spatial,
       bool _printWarnings = true,
       double _tolerance = 1e-8);
 
@@ -165,7 +165,7 @@ protected:
   std::array<double, 6> mMoment;
 
   /// Cache for generalized spatial inertia of the Body
-  Eigen::Matrix6d mSpatialTensor;
+  math::Matrix6d mSpatialTensor;
 
 public:
   // To get byte-aligned Eigen vectors

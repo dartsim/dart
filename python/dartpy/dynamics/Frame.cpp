@@ -82,14 +82,14 @@ void Frame(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getSpatialVelocity",
-          +[](const dart::dynamics::Frame* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::Frame* self) -> math::Vector6d {
             return self->getSpatialVelocity();
           })
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo,
-              const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* inCoordinatesOf) -> math::Vector6d {
             return self->getSpatialVelocity(relativeTo, inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -97,14 +97,14 @@ void Frame(py::module& m)
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self, const Eigen::Vector3d& offset)
-              -> Eigen::Vector6d { return self->getSpatialVelocity(offset); },
+              -> math::Vector6d { return self->getSpatialVelocity(offset); },
           ::py::arg("offset"))
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self,
               const Eigen::Vector3d& offset,
               const dart::dynamics::Frame* relativeTo,
-              const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* inCoordinatesOf) -> math::Vector6d {
             return self->getSpatialVelocity(
                 offset, relativeTo, inCoordinatesOf);
           },
@@ -180,14 +180,14 @@ void Frame(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getSpatialAcceleration",
-          +[](const dart::dynamics::Frame* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::Frame* self) -> math::Vector6d {
             return self->getSpatialAcceleration();
           })
       .def(
           "getSpatialAcceleration",
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo,
-              const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* inCoordinatesOf) -> math::Vector6d {
             return self->getSpatialAcceleration(relativeTo, inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -195,7 +195,7 @@ void Frame(py::module& m)
       .def(
           "getSpatialAcceleration",
           +[](const dart::dynamics::Frame* self,
-              const Eigen::Vector3d& offset) -> Eigen::Vector6d {
+              const Eigen::Vector3d& offset) -> math::Vector6d {
             return self->getSpatialAcceleration(offset);
           },
           ::py::arg("offset"))
@@ -204,7 +204,7 @@ void Frame(py::module& m)
           +[](const dart::dynamics::Frame* self,
               const Eigen::Vector3d& offset,
               const dart::dynamics::Frame* relativeTo,
-              const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* inCoordinatesOf) -> math::Vector6d {
             return self->getSpatialAcceleration(
                 offset, relativeTo, inCoordinatesOf);
           },

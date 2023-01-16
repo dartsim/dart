@@ -1566,7 +1566,7 @@ void GenericJoint<ConfigSpaceT>::registerDofs()
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::Vector6d GenericJoint<ConfigSpaceT>::getBodyConstraintWrench() const
+math::Vector6d GenericJoint<ConfigSpaceT>::getBodyConstraintWrench() const
 {
   assert(this->mChildBodyNode);
   return this->mChildBodyNode->getBodyForce()
@@ -1600,7 +1600,7 @@ void GenericJoint<ConfigSpaceT>::updateRelativePrimaryAcceleration() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GenericJoint<ConfigSpaceT>::addVelocityTo(Eigen::Vector6d& vel)
+void GenericJoint<ConfigSpaceT>::addVelocityTo(math::Vector6d& vel)
 {
   // Add joint velocity to _vel
   vel.noalias() += getRelativeJacobianStatic() * getVelocitiesStatic();
@@ -1612,7 +1612,7 @@ void GenericJoint<ConfigSpaceT>::addVelocityTo(Eigen::Vector6d& vel)
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPartialAccelerationTo(
-    Eigen::Vector6d& partialAcceleration, const Eigen::Vector6d& childVelocity)
+    math::Vector6d& partialAcceleration, const math::Vector6d& childVelocity)
 {
   // ad(V, S * dq) + dS * dq
   partialAcceleration
@@ -1625,7 +1625,7 @@ void GenericJoint<ConfigSpaceT>::setPartialAccelerationTo(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GenericJoint<ConfigSpaceT>::addAccelerationTo(Eigen::Vector6d& acc)
+void GenericJoint<ConfigSpaceT>::addAccelerationTo(math::Vector6d& acc)
 {
   // Add joint acceleration to _acc
   acc.noalias() += getRelativeJacobianStatic() * getAccelerationsStatic();
@@ -1637,7 +1637,7 @@ void GenericJoint<ConfigSpaceT>::addAccelerationTo(Eigen::Vector6d& acc)
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addVelocityChangeTo(
-    Eigen::Vector6d& velocityChange)
+    math::Vector6d& velocityChange)
 {
   // Add joint velocity change to velocityChange
   velocityChange.noalias() += getRelativeJacobianStatic() * mVelocityChanges;
@@ -1669,7 +1669,7 @@ GenericJoint<ConfigSpaceT>::getInvProjArtInertiaImplicit() const
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaTo(
-    Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
+    math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -1692,11 +1692,11 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaTo(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
-    Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
+    math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia)
 {
   // Child body's articulated inertia
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
-  Eigen::Matrix6d PI = childArtInertia;
+  math::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
   assert(!math::isNan(PI));
 
@@ -1709,7 +1709,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
-    Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
+    math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia)
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
@@ -1720,7 +1720,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
-    Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
+    math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -1743,11 +1743,11 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
-    Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
+    math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia)
 {
   // Child body's articulated inertia
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
-  Eigen::Matrix6d PI = childArtInertia;
+  math::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
   assert(!math::isNan(PI));
 
@@ -1760,7 +1760,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
-    Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
+    math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia)
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
@@ -1771,7 +1771,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertia(
-    const Eigen::Matrix6d& artInertia)
+    const math::Matrix6d& artInertia)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -1794,7 +1794,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertia(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
-    const Eigen::Matrix6d& artInertia)
+    const math::Matrix6d& artInertia)
 {
   // Projected articulated inertia
   const JacobianMatrix& Jacobian = getRelativeJacobianStatic();
@@ -1810,7 +1810,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaKinematic(
-    const Eigen::Matrix6d& /*_artInertia*/)
+    const math::Matrix6d& /*_artInertia*/)
 {
   // Do nothing
 }
@@ -1818,7 +1818,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
-    const Eigen::Matrix6d& artInertia, double timeStep)
+    const math::Matrix6d& artInertia, double timeStep)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -1841,7 +1841,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
-    const Eigen::Matrix6d& artInertia, double timeStep)
+    const math::Matrix6d& artInertia, double timeStep)
 {
   // Projected articulated inertia
   const JacobianMatrix& Jacobian = getRelativeJacobianStatic();
@@ -1862,7 +1862,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitKinematic(
-    const Eigen::Matrix6d& /*artInertia*/, double /*timeStep*/)
+    const math::Matrix6d& /*artInertia*/, double /*timeStep*/)
 {
   // Do nothing
 }
@@ -1870,10 +1870,10 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasForceTo(
-    Eigen::Vector6d& parentBiasForce,
-    const Eigen::Matrix6d& childArtInertia,
-    const Eigen::Vector6d& childBiasForce,
-    const Eigen::Vector6d& childPartialAcc)
+    math::Vector6d& parentBiasForce,
+    const math::Matrix6d& childArtInertia,
+    const math::Vector6d& childBiasForce,
+    const math::Vector6d& childPartialAcc)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -1898,20 +1898,20 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceTo(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
-    Eigen::Vector6d& parentBiasForce,
-    const Eigen::Matrix6d& childArtInertia,
-    const Eigen::Vector6d& childBiasForce,
-    const Eigen::Vector6d& childPartialAcc)
+    math::Vector6d& parentBiasForce,
+    const math::Matrix6d& childArtInertia,
+    const math::Vector6d& childBiasForce,
+    const math::Vector6d& childPartialAcc)
 {
   // Compute beta
-  const Eigen::Vector6d beta
+  const math::Vector6d beta
       = childBiasForce
         + childArtInertia
               * (childPartialAcc
                  + getRelativeJacobianStatic() * getInvProjArtInertiaImplicit()
                        * mTotalForce);
 
-  //    Eigen::Vector6d beta
+  //    math::Vector6d beta
   //        = _childBiasForce;
   //    beta.noalias() += _childArtInertia * _childPartialAcc;
   //    beta.noalias() += _childArtInertia *  mJacobian *
@@ -1928,19 +1928,19 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
-    Eigen::Vector6d& _parentBiasForce,
-    const Eigen::Matrix6d& childArtInertia,
-    const Eigen::Vector6d& childBiasForce,
-    const Eigen::Vector6d& childPartialAcc)
+    math::Vector6d& _parentBiasForce,
+    const math::Matrix6d& childArtInertia,
+    const math::Vector6d& childBiasForce,
+    const math::Vector6d& childPartialAcc)
 {
   // Compute beta
-  const Eigen::Vector6d beta
+  const math::Vector6d beta
       = childBiasForce
         + childArtInertia
               * (childPartialAcc
                  + getRelativeJacobianStatic() * getAccelerationsStatic());
 
-  //    Eigen::Vector6d beta
+  //    math::Vector6d beta
   //        = _childBiasForce;
   //    beta.noalias() += _childArtInertia * _childPartialAcc;
   //    beta.noalias() += _childArtInertia *  mJacobian *
@@ -1957,9 +1957,9 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasImpulseTo(
-    Eigen::Vector6d& parentBiasImpulse,
-    const Eigen::Matrix6d& childArtInertia,
-    const Eigen::Vector6d& childBiasImpulse)
+    math::Vector6d& parentBiasImpulse,
+    const math::Matrix6d& childArtInertia,
+    const math::Vector6d& childBiasImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -1984,14 +1984,14 @@ void GenericJoint<ConfigSpaceT>::addChildBiasImpulseTo(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
-    Eigen::Vector6d& _parentBiasImpulse,
-    const Eigen::Matrix6d& childArtInertia,
-    const Eigen::Vector6d& childBiasImpulse)
+    math::Vector6d& _parentBiasImpulse,
+    const math::Matrix6d& childArtInertia,
+    const math::Vector6d& childBiasImpulse)
 {
   // Compute beta
-  const Eigen::Vector6d beta = childBiasImpulse
-                               + childArtInertia * getRelativeJacobianStatic()
-                                     * getInvProjArtInertia() * mTotalImpulse;
+  const math::Vector6d beta = childBiasImpulse
+                              + childArtInertia * getRelativeJacobianStatic()
+                                    * getInvProjArtInertia() * mTotalImpulse;
 
   // Verification
   assert(!math::isNan(beta));
@@ -2004,9 +2004,9 @@ void GenericJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasImpulseToKinematic(
-    Eigen::Vector6d& parentBiasImpulse,
-    const Eigen::Matrix6d& /*childArtInertia*/,
-    const Eigen::Vector6d& childBiasImpulse)
+    math::Vector6d& parentBiasImpulse,
+    const math::Matrix6d& /*childArtInertia*/,
+    const math::Vector6d& childBiasImpulse)
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -2017,7 +2017,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasImpulseToKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalForce(
-    const Eigen::Vector6d& bodyForce, double timeStep)
+    const math::Vector6d& bodyForce, double timeStep)
 {
   assert(timeStep > 0.0);
 
@@ -2055,7 +2055,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalForce(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalForceDynamic(
-    const Eigen::Vector6d& bodyForce, double timeStep)
+    const math::Vector6d& bodyForce, double timeStep)
 {
   // Spring force
   const Vector springForce
@@ -2076,7 +2076,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalForceDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalForceKinematic(
-    const Eigen::Vector6d& /*bodyForce*/, double /*timeStep*/)
+    const math::Vector6d& /*bodyForce*/, double /*timeStep*/)
 {
   // Do nothing
 }
@@ -2084,7 +2084,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalForceKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalImpulse(
-    const Eigen::Vector6d& bodyImpulse)
+    const math::Vector6d& bodyImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -2107,7 +2107,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalImpulse(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
-    const Eigen::Vector6d& bodyImpulse)
+    const math::Vector6d& bodyImpulse)
 {
   //
   mTotalImpulse = mConstraintImpulses
@@ -2117,7 +2117,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalImpulseKinematic(
-    const Eigen::Vector6d& /*bodyImpulse*/)
+    const math::Vector6d& /*bodyImpulse*/)
 {
   // Do nothing
 }
@@ -2132,7 +2132,7 @@ void GenericJoint<ConfigSpaceT>::resetTotalImpulses()
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateAcceleration(
-    const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc)
+    const math::Matrix6d& artInertia, const math::Vector6d& spatialAcc)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -2155,7 +2155,7 @@ void GenericJoint<ConfigSpaceT>::updateAcceleration(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
-    const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc)
+    const math::Matrix6d& artInertia, const math::Vector6d& spatialAcc)
 {
   //
   setAccelerationsStatic(
@@ -2171,8 +2171,7 @@ void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateAccelerationKinematic(
-    const Eigen::Matrix6d& /*artInertia*/,
-    const Eigen::Vector6d& /*spatialAcc*/)
+    const math::Matrix6d& /*artInertia*/, const math::Vector6d& /*spatialAcc*/)
 {
   // Do nothing
 }
@@ -2180,7 +2179,7 @@ void GenericJoint<ConfigSpaceT>::updateAccelerationKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateVelocityChange(
-    const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange)
+    const math::Matrix6d& artInertia, const math::Vector6d& velocityChange)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -2203,7 +2202,7 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChange(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
-    const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange)
+    const math::Matrix6d& artInertia, const math::Vector6d& velocityChange)
 {
   //
   mVelocityChanges
@@ -2219,8 +2218,8 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateVelocityChangeKinematic(
-    const Eigen::Matrix6d& /*artInertia*/,
-    const Eigen::Vector6d& /*velocityChange*/)
+    const math::Matrix6d& /*artInertia*/,
+    const math::Vector6d& /*velocityChange*/)
 {
   // Do nothing
 }
@@ -2228,7 +2227,7 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChangeKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateForceID(
-    const Eigen::Vector6d& bodyForce,
+    const math::Vector6d& bodyForce,
     double timeStep,
     bool withDampingForces,
     bool withSpringForces)
@@ -2260,7 +2259,7 @@ void GenericJoint<ConfigSpaceT>::updateForceID(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateForceFD(
-    const Eigen::Vector6d& bodyForce,
+    const math::Vector6d& bodyForce,
     double timeStep,
     bool withDampingForces,
     bool withSpringForces)
@@ -2285,7 +2284,7 @@ void GenericJoint<ConfigSpaceT>::updateForceFD(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateImpulseID(
-    const Eigen::Vector6d& bodyImpulse)
+    const math::Vector6d& bodyImpulse)
 {
   mImpulses = getRelativeJacobianStatic().transpose() * bodyImpulse;
 }
@@ -2293,7 +2292,7 @@ void GenericJoint<ConfigSpaceT>::updateImpulseID(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateImpulseFD(
-    const Eigen::Vector6d& bodyImpulse)
+    const math::Vector6d& bodyImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -2358,12 +2357,12 @@ void GenericJoint<ConfigSpaceT>::updateConstrainedTermsKinematic(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
-    Eigen::Vector6d& parentBiasForce,
-    const Eigen::Matrix6d& childArtInertia,
-    const Eigen::Vector6d& childBiasForce)
+    math::Vector6d& parentBiasForce,
+    const math::Matrix6d& childArtInertia,
+    const math::Vector6d& childBiasForce)
 {
   // Compute beta
-  Eigen::Vector6d beta = childBiasForce;
+  math::Vector6d beta = childBiasForce;
   beta.noalias() += childArtInertia * getRelativeJacobianStatic()
                     * getInvProjArtInertia() * mInvM_a;
 
@@ -2378,12 +2377,12 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
-    Eigen::Vector6d& parentBiasForce,
-    const Eigen::Matrix6d& childArtInertia,
-    const Eigen::Vector6d& childBiasForce)
+    math::Vector6d& parentBiasForce,
+    const math::Matrix6d& childArtInertia,
+    const math::Vector6d& childBiasForce)
 {
   // Compute beta
-  Eigen::Vector6d beta = childBiasForce;
+  math::Vector6d beta = childBiasForce;
   beta.noalias() += childArtInertia * getRelativeJacobianStatic()
                     * getInvProjArtInertiaImplicit() * mInvM_a;
 
@@ -2398,7 +2397,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalForceForInvMassMatrix(
-    const Eigen::Vector6d& bodyForce)
+    const math::Vector6d& bodyForce)
 {
   // Compute alpha
   mInvM_a = this->mAspectState.mForces
@@ -2410,8 +2409,8 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::getInvMassMatrixSegment(
     Eigen::MatrixXd& _invMassMat,
     const size_t _col,
-    const Eigen::Matrix6d& artInertia,
-    const Eigen::Vector6d& spatialAcc)
+    const math::Matrix6d& artInertia,
+    const math::Vector6d& spatialAcc)
 {
   //
   mInvMassMatrixSegment
@@ -2435,8 +2434,8 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::getInvAugMassMatrixSegment(
     Eigen::MatrixXd& invMassMat,
     const size_t col,
-    const Eigen::Matrix6d& artInertia,
-    const Eigen::Vector6d& spatialAcc)
+    const math::Matrix6d& artInertia,
+    const math::Vector6d& spatialAcc)
 {
   //
   mInvMassMatrixSegment
@@ -2457,7 +2456,7 @@ void GenericJoint<ConfigSpaceT>::getInvAugMassMatrixSegment(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GenericJoint<ConfigSpaceT>::addInvMassMatrixSegmentTo(Eigen::Vector6d& acc)
+void GenericJoint<ConfigSpaceT>::addInvMassMatrixSegmentTo(math::Vector6d& acc)
 {
   //
   acc += getRelativeJacobianStatic() * mInvMassMatrixSegment;
@@ -2466,7 +2465,7 @@ void GenericJoint<ConfigSpaceT>::addInvMassMatrixSegmentTo(Eigen::Vector6d& acc)
 //==============================================================================
 template <class ConfigSpaceT>
 Eigen::VectorXd GenericJoint<ConfigSpaceT>::getSpatialToGeneralized(
-    const Eigen::Vector6d& spatial)
+    const math::Vector6d& spatial)
 {
   return getRelativeJacobianStatic().transpose() * spatial;
 }

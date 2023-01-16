@@ -522,7 +522,7 @@ wall. We also want to have the ability to randomize its location along the y-axi
 
 First, let's create a zero vector for the position:
 ```cpp
-Eigen::Vector6d positions(Eigen::Vector6d::Zero());
+math::Vector6d positions(math::Vector6d::Zero());
 ```
 
 You'll notice that this is an Eigen::Vector**6**d rather than the usual

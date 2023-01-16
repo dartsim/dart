@@ -48,7 +48,6 @@ using namespace common;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
-using namespace Eigen;
 
 #define MATH_TOL 0.000001
 #define MATH_EPS 0.000001
@@ -380,7 +379,7 @@ Matrix<double, 6, 6> Transform_Affine3d(
         + (T(0, 2) * AI(3, 5) + T(1, 2) * AI(4, 5) + T(2, 2) * AI(5, 5))
               * T(2, 2);
 
-  ret.triangularView<StrictlyLower>() = ret.transpose();
+  ret.triangularView<Eigen::StrictlyLower>() = ret.transpose();
 
   return ret;
 }
@@ -465,7 +464,7 @@ Matrix<double, 6, 6> Transform_Isometry3d(
         + (T(0, 2) * AI(3, 5) + T(1, 2) * AI(4, 5) + T(2, 2) * AI(5, 5))
               * T(2, 2);
 
-  ret.triangularView<StrictlyLower>() = ret.transpose();
+  ret.triangularView<Eigen::StrictlyLower>() = ret.transpose();
 
   return ret;
 }
@@ -731,7 +730,7 @@ Matrix<double, 6, 6> Transform_Matrix4d(
         + (T(0, 2) * AI(3, 5) + T(1, 2) * AI(4, 5) + T(2, 2) * AI(5, 5))
               * T(2, 2);
 
-  ret.triangularView<StrictlyLower>() = ret.transpose();
+  ret.triangularView<Eigen::StrictlyLower>() = ret.transpose();
 
   return ret;
 }

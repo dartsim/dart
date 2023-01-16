@@ -191,9 +191,9 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
   double s1 = sin(q1);
   double s2 = sin(q2);
 
-  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
+  math::Vector6d J0 = math::Vector6d::Zero();
+  math::Vector6d J1 = math::Vector6d::Zero();
+  math::Vector6d J2 = math::Vector6d::Zero();
 
   switch (getAxisOrder()) {
     case AxisOrder::XYZ: {
@@ -356,9 +356,9 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
   double s1 = sin(q1);
   double s2 = sin(q2);
 
-  Eigen::Vector6d dJ0 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d dJ1 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d dJ2 = Eigen::Vector6d::Zero();
+  math::Vector6d dJ0 = math::Vector6d::Zero();
+  math::Vector6d dJ1 = math::Vector6d::Zero();
+  math::Vector6d dJ2 = math::Vector6d::Zero();
 
   switch (getAxisOrder()) {
     case AxisOrder::XYZ: {

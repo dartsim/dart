@@ -204,7 +204,7 @@ public:
       double& _Iyz) const;
 
   /// Return spatial inertia
-  const Eigen::Matrix6d& getSpatialInertia() const;
+  const math::Matrix6d& getSpatialInertia() const;
 
   /// Set the inertia data for this BodyNode
   void setInertia(const Inertia& inertia);
@@ -236,11 +236,11 @@ public:
 
   /// Return the spatial velocity of the center of mass, expressed in
   /// coordinates of this Frame and relative to the World Frame
-  Eigen::Vector6d getCOMSpatialVelocity() const;
+  math::Vector6d getCOMSpatialVelocity() const;
 
   /// Return the spatial velocity of the center of mass, expressed in terms of
   /// arbitrary Frames
-  Eigen::Vector6d getCOMSpatialVelocity(
+  math::Vector6d getCOMSpatialVelocity(
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Return the linear acceleration of the center of mass, expressed in terms
@@ -251,11 +251,11 @@ public:
 
   /// Return the acceleration of the center of mass expressed in coordinates of
   /// this BodyNode Frame and relative to the World Frame
-  Eigen::Vector6d getCOMSpatialAcceleration() const;
+  math::Vector6d getCOMSpatialAcceleration() const;
 
   /// Return the spatial acceleration of the center of mass, expressed in terms
   /// of arbitrary Frames
-  Eigen::Vector6d getCOMSpatialAcceleration(
+  math::Vector6d getCOMSpatialAcceleration(
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   //--------------------------------------------------------------------------
@@ -618,16 +618,16 @@ public:
   const Eigen::Isometry3d& getRelativeTransform() const override;
 
   // Documentation inherited
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
+  const math::Vector6d& getRelativeSpatialVelocity() const override;
 
   // Documentation inherited
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
+  const math::Vector6d& getRelativeSpatialAcceleration() const override;
 
   // Documentation inherited
-  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
+  const math::Vector6d& getPrimaryRelativeAcceleration() const override;
 
   /// Return the partial acceleration of this body
-  const Eigen::Vector6d& getPartialAcceleration() const override;
+  const math::Vector6d& getPartialAcceleration() const override;
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the Frame of this BodyNode.
@@ -669,7 +669,7 @@ public:
   using TemplatedJacobianNode<BodyNode>::getJacobianClassicDeriv;
 
   /// Return the velocity change due to the constraint impulse
-  const Eigen::Vector6d& getBodyVelocityChange() const;
+  const math::Vector6d& getBodyVelocityChange() const;
 
   /// Add applying linear Cartesian forces to this node
   ///
@@ -713,17 +713,17 @@ public:
   virtual void clearInternalForces();
 
   ///
-  const Eigen::Vector6d& getExternalForceLocal() const;
+  const math::Vector6d& getExternalForceLocal() const;
 
   ///
-  Eigen::Vector6d getExternalForceGlobal() const;
+  math::Vector6d getExternalForceGlobal() const;
 
   /// Get spatial body force transmitted from the parent joint.
   ///
   /// The spatial body force is transmitted to this BodyNode from the parent
   /// body through the connecting joint. It is expressed in this BodyNode's
   /// frame.
-  const Eigen::Vector6d& getBodyForce() const;
+  const math::Vector6d& getBodyForce() const;
 
   //----------------------------------------------------------------------------
   // Constraints
@@ -738,11 +738,11 @@ public:
 
   /// Set constraint impulse
   /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
-  void setConstraintImpulse(const Eigen::Vector6d& _constImp);
+  void setConstraintImpulse(const math::Vector6d& _constImp);
 
   /// Add constraint impulse
   /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
-  void addConstraintImpulse(const Eigen::Vector6d& _constImp);
+  void addConstraintImpulse(const math::Vector6d& _constImp);
 
   /// Add constraint impulse
   void addConstraintImpulse(
@@ -756,7 +756,7 @@ public:
   virtual void clearConstraintImpulse();
 
   /// Return constraint impulse
-  const Eigen::Vector6d& getConstraintImpulse() const;
+  const math::Vector6d& getConstraintImpulse() const;
 
   //----------------------------------------------------------------------------
   // Energies
@@ -985,7 +985,7 @@ protected:
 
   ///
   virtual void aggregateSpatialToGeneralized(
-      Eigen::VectorXd& _generalized, const Eigen::Vector6d& _spatial);
+      Eigen::VectorXd& _generalized, const math::Vector6d& _spatial);
 
   /// Update body Jacobian. getJacobian() calls this function if
   /// mIsBodyJacobianDirty is true.
@@ -1081,7 +1081,7 @@ protected:
   /// Partial spatial body acceleration due to parent joint's velocity
   ///
   /// Do not use directly! Use getPartialAcceleration() to access this quantity
-  mutable Eigen::Vector6d mPartialAcceleration;
+  mutable math::Vector6d mPartialAcceleration;
   // TODO(JS): Rename with more informative name
 
   /// Is the partial acceleration vector dirty
@@ -1089,10 +1089,10 @@ protected:
 
   /// Transmitted wrench from parent to the bodynode expressed in body-fixed
   /// frame
-  Eigen::Vector6d mF;
+  math::Vector6d mF;
 
   /// Spatial gravity force
-  Eigen::Vector6d mFgravity;
+  math::Vector6d mFgravity;
 
   /// Articulated body inertia
   ///
@@ -1105,44 +1105,44 @@ protected:
   mutable math::Inertia mArtInertiaImplicit;
 
   /// Bias force
-  Eigen::Vector6d mBiasForce;
+  math::Vector6d mBiasForce;
 
   /// Cache data for combined vector of the system.
-  Eigen::Vector6d mCg_dV;
-  Eigen::Vector6d mCg_F;
+  math::Vector6d mCg_dV;
+  math::Vector6d mCg_F;
 
   /// Cache data for gravity force vector of the system.
-  Eigen::Vector6d mG_F;
+  math::Vector6d mG_F;
 
   /// Cache data for external force vector of the system.
-  Eigen::Vector6d mFext_F;
+  math::Vector6d mFext_F;
 
   /// Cache data for mass matrix of the system.
-  Eigen::Vector6d mM_dV;
-  Eigen::Vector6d mM_F;
+  math::Vector6d mM_dV;
+  math::Vector6d mM_F;
 
   /// Cache data for inverse mass matrix of the system.
-  Eigen::Vector6d mInvM_c;
-  Eigen::Vector6d mInvM_U;
+  math::Vector6d mInvM_c;
+  math::Vector6d mInvM_U;
 
   /// Cache data for arbitrary spatial value
-  Eigen::Vector6d mArbitrarySpatial;
+  math::Vector6d mArbitrarySpatial;
 
   //------------------------- Impulse-based Dyanmics ---------------------------
   /// Velocity change due to to external impulsive force exerted on
   ///        bodies of the parent skeleton.
-  Eigen::Vector6d mDelV;
+  math::Vector6d mDelV;
 
   /// Impulsive bias force due to external impulsive force exerted on
   ///        bodies of the parent skeleton.
-  Eigen::Vector6d mBiasImpulse;
+  math::Vector6d mBiasImpulse;
 
   /// Constraint impulse: contact impulse, dynamic joint impulse
-  Eigen::Vector6d mConstraintImpulse;
+  math::Vector6d mConstraintImpulse;
 
   // TODO(JS): rename with more informative one
   /// Generalized impulsive body force w.r.t. body frame.
-  Eigen::Vector6d mImpF;
+  math::Vector6d mImpF;
 
   /// Collision shape added signal
   ColShapeAddedSignal mColShapeAddedSignal;

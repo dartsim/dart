@@ -858,17 +858,17 @@ void Joint(py::module& m)
           })
       .def(
           "getRelativeSpatialVelocity",
-          +[](const dart::dynamics::Joint* self) -> const Eigen::Vector6d& {
+          +[](const dart::dynamics::Joint* self) -> const math::Vector6d& {
             return self->getRelativeSpatialVelocity();
           })
       .def(
           "getRelativeSpatialAcceleration",
-          +[](const dart::dynamics::Joint* self) -> const Eigen::Vector6d& {
+          +[](const dart::dynamics::Joint* self) -> const math::Vector6d& {
             return self->getRelativeSpatialAcceleration();
           })
       .def(
           "getRelativePrimaryAcceleration",
-          +[](const dart::dynamics::Joint* self) -> const Eigen::Vector6d& {
+          +[](const dart::dynamics::Joint* self) -> const math::Vector6d& {
             return self->getRelativePrimaryAcceleration();
           })
       .def(
@@ -890,7 +890,7 @@ void Joint(py::module& m)
           })
       .def(
           "getBodyConstraintWrench",
-          +[](const dart::dynamics::Joint* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::Joint* self) -> math::Vector6d {
             return self->getBodyConstraintWrench();
           })
       .def(

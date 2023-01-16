@@ -83,11 +83,10 @@ public:
   /// getTransformFromParentBodyNode() * _tf *
   /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
   /// the child BodyNode frames when applied to a FreeJoint.
-  static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
+  static math::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
 
   /// Convert a FreeJoint-style 6D vector into a transform
-  static Eigen::Isometry3d convertToTransform(
-      const Eigen::Vector6d& _positions);
+  static Eigen::Isometry3d convertToTransform(const math::Vector6d& _positions);
 
   /// If the given joint is a FreeJoint, then set the transform of the given
   /// Joint's child BodyNode so that its transform with respect to
@@ -144,10 +143,10 @@ public:
   void setSpatialMotion(
       const Eigen::Isometry3d* newTransform,
       const Frame* withRespectTo,
-      const Eigen::Vector6d* newSpatialVelocity,
+      const math::Vector6d* newSpatialVelocity,
       const Frame* velRelativeTo,
       const Frame* velInCoordinatesOf,
-      const Eigen::Vector6d* newSpatialAcceleration,
+      const math::Vector6d* newSpatialAcceleration,
       const Frame* accRelativeTo,
       const Frame* accInCoordinatesOf);
 
@@ -167,7 +166,7 @@ public:
   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
   /// BodyNode. The reference frame of "newSpatialVelocity" is the child
   /// BodyNode.
-  void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity);
+  void setRelativeSpatialVelocity(const math::Vector6d& newSpatialVelocity);
 
   /// Set the spatial velocity of the child BodyNode relative to the parent
   /// BodyNode.
@@ -175,7 +174,7 @@ public:
   /// BodyNode.
   /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
   void setRelativeSpatialVelocity(
-      const Eigen::Vector6d& newSpatialVelocity, const Frame* inCoordinatesOf);
+      const math::Vector6d& newSpatialVelocity, const Frame* inCoordinatesOf);
 
   /// Set the spatial velocity of the child BodyNode relative to an arbitrary
   /// Frame.
@@ -184,7 +183,7 @@ public:
   /// \param[in] relativeTo The relative frame of "newSpatialVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
   void setSpatialVelocity(
-      const Eigen::Vector6d& newSpatialVelocity,
+      const math::Vector6d& newSpatialVelocity,
       const Frame* relativeTo,
       const Frame* inCoordinatesOf);
 
@@ -222,7 +221,7 @@ public:
   /// child BodyNode. The reference frame of "newSpatialAcceleration" is the
   /// child BodyNode.
   void setRelativeSpatialAcceleration(
-      const Eigen::Vector6d& newSpatialAcceleration);
+      const math::Vector6d& newSpatialAcceleration);
 
   /// Set the spatial acceleration of the child BodyNode relative to the parent
   /// BodyNode.
@@ -231,7 +230,7 @@ public:
   /// \param[in] inCoordinatesOf The reference frame of
   /// "newSpatialAcceleration".
   void setRelativeSpatialAcceleration(
-      const Eigen::Vector6d& newSpatialAcceleration,
+      const math::Vector6d& newSpatialAcceleration,
       const Frame* inCoordinatesOf);
 
   /// Set the spatial acceleration of the child BodyNode relative to an
@@ -242,7 +241,7 @@ public:
   /// \param[in] inCoordinatesOf The reference frame of
   /// "newSpatialAcceleration".
   void setSpatialAcceleration(
-      const Eigen::Vector6d& newSpatialAcceleration,
+      const math::Vector6d& newSpatialAcceleration,
       const Frame* relativeTo,
       const Frame* inCoordinatesOf);
 
@@ -276,12 +275,12 @@ public:
       const Frame* inCoordinatesOf = Frame::World());
 
   // Documentation inherited
-  Eigen::Matrix6d getRelativeJacobianStatic(
-      const Eigen::Vector6d& _positions) const override;
+  math::Matrix6d getRelativeJacobianStatic(
+      const math::Vector6d& _positions) const override;
 
   // Documentation inherited
-  Eigen::Vector6d getPositionDifferencesStatic(
-      const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const override;
+  math::Vector6d getPositionDifferencesStatic(
+      const math::Vector6d& _q2, const math::Vector6d& _q1) const override;
 
 protected:
   /// Constructor called by Skeleton class

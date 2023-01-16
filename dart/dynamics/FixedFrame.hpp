@@ -73,16 +73,16 @@ public:
   const Eigen::Isometry3d& getRelativeTransform() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
+  const math::Vector6d& getRelativeSpatialVelocity() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
+  const math::Vector6d& getRelativeSpatialAcceleration() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
+  const math::Vector6d& getPrimaryRelativeAcceleration() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPartialAcceleration() const override;
+  const math::Vector6d& getPartialAcceleration() const override;
 
 protected:
   /// Default constructor -- calls the Abstract constructor
@@ -92,7 +92,7 @@ protected:
   explicit FixedFrame(ConstructAbstractTag);
 
   /// Used for Relative Velocity and Relative Acceleration of this Frame
-  static const Eigen::Vector6d mZero;
+  static const math::Vector6d mZero;
 
 public:
   // To get byte-aligned Eigen vectors

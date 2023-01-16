@@ -394,7 +394,7 @@ public:
   double computePotentialEnergy() const override;
 
   // Documentation inherited
-  Eigen::Vector6d getBodyConstraintWrench() const override;
+  math::Vector6d getBodyConstraintWrench() const override;
 
 protected:
   /// Constructor called by inheriting classes
@@ -421,88 +421,88 @@ protected:
   const math::Jacobian getRelativeJacobianTimeDeriv() const override;
 
   // Documentation inherited
-  void addVelocityTo(Eigen::Vector6d& _vel) override;
+  void addVelocityTo(math::Vector6d& _vel) override;
 
   // Documentation inherited
   void setPartialAccelerationTo(
-      Eigen::Vector6d& _partialAcceleration,
-      const Eigen::Vector6d& _childVelocity) override;
+      math::Vector6d& _partialAcceleration,
+      const math::Vector6d& _childVelocity) override;
 
   // Documentation inherited
-  void addAccelerationTo(Eigen::Vector6d& _acc) override;
+  void addAccelerationTo(math::Vector6d& _acc) override;
 
   // Documentation inherited
-  void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) override;
+  void addVelocityChangeTo(math::Vector6d& _velocityChange) override;
 
   // Documentation inherited
   void addChildArtInertiaTo(
-      Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia) override;
+      math::Matrix6d& _parentArtInertia,
+      const math::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
   void addChildArtInertiaImplicitTo(
-      Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia) override;
+      math::Matrix6d& _parentArtInertia,
+      const math::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
-  void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia) override;
+  void updateInvProjArtInertia(const math::Matrix6d& _artInertia) override;
 
   // Documentation inherited
   void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& _artInertia, double _timeStep) override;
+      const math::Matrix6d& _artInertia, double _timeStep) override;
 
   // Documentation inherited
   void addChildBiasForceTo(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce,
-      const Eigen::Vector6d& _childPartialAcc) override;
+      math::Vector6d& _parentBiasForce,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasForce,
+      const math::Vector6d& _childPartialAcc) override;
 
   // Documentation inherited
   void addChildBiasImpulseTo(
-      Eigen::Vector6d& _parentBiasImpulse,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasImpulse) override;
+      math::Vector6d& _parentBiasImpulse,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasImpulse) override;
 
   // Documentation inherited
   void updateTotalForce(
-      const Eigen::Vector6d& _bodyForce, double _timeStep) override;
+      const math::Vector6d& _bodyForce, double _timeStep) override;
 
   // Documentation inherited
-  void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse) override;
+  void updateTotalImpulse(const math::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
   void resetTotalImpulses() override;
 
   // Documentation inherited
   void updateAcceleration(
-      const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _spatialAcc) override;
+      const math::Matrix6d& _artInertia,
+      const math::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
   void updateVelocityChange(
-      const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _velocityChange) override;
+      const math::Matrix6d& _artInertia,
+      const math::Vector6d& _velocityChange) override;
 
   // Documentation inherited
   void updateForceID(
-      const Eigen::Vector6d& _bodyForce,
+      const math::Vector6d& _bodyForce,
       double _timeStep,
       bool _withDampingForces,
       bool _withSpringForces) override;
 
   // Documentation inherited
   void updateForceFD(
-      const Eigen::Vector6d& _bodyForce,
+      const math::Vector6d& _bodyForce,
       double _timeStep,
       bool _withDampingForces,
       bool _withSpringForces) override;
 
   // Documentation inherited
-  void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) override;
+  void updateImpulseID(const math::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
-  void updateImpulseFD(const Eigen::Vector6d& _bodyImpulse) override;
+  void updateImpulseFD(const math::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
   void updateConstrainedTerms(double _timeStep) override;
@@ -515,40 +515,40 @@ protected:
 
   /// Add child's bias force to parent's one
   void addChildBiasForceForInvMassMatrix(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce) override;
+      math::Vector6d& _parentBiasForce,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasForce) override;
 
   /// Add child's bias force to parent's one
   void addChildBiasForceForInvAugMassMatrix(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce) override;
+      math::Vector6d& _parentBiasForce,
+      const math::Matrix6d& _childArtInertia,
+      const math::Vector6d& _childBiasForce) override;
 
   ///
   void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& _bodyForce) override;
+      const math::Vector6d& _bodyForce) override;
 
   // Documentation inherited
   void getInvMassMatrixSegment(
       Eigen::MatrixXd& _invMassMat,
       const std::size_t _col,
-      const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _spatialAcc) override;
+      const math::Matrix6d& _artInertia,
+      const math::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
   void getInvAugMassMatrixSegment(
       Eigen::MatrixXd& _invMassMat,
       const std::size_t _col,
-      const Eigen::Matrix6d& _artInertia,
-      const Eigen::Vector6d& _spatialAcc) override;
+      const math::Matrix6d& _artInertia,
+      const math::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
-  void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) override;
+  void addInvMassMatrixSegmentTo(math::Vector6d& _acc) override;
 
   // Documentation inherited
   Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& _spatial) override;
+      const math::Vector6d& _spatial) override;
 
   /// \}
 

@@ -36,7 +36,7 @@
 #include <dart/dynamics/CollisionDetector.hpp>
 #include <dart/dynamics/ConstraintBase.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 namespace dart {
 
@@ -216,10 +216,10 @@ private:
   double mRestitutionCoeff;
 
   /// Local body jacobians for mBodyNode1
-  std::vector<Eigen::Vector6d> mJacobians1;
+  std::vector<math::Vector6d> mJacobians1;
 
   /// Local body jacobians for mBodyNode2
-  std::vector<Eigen::Vector6d> mJacobians2;
+  std::vector<math::Vector6d> mJacobians2;
 
   /// Contact normal expressed in body frame of the first body node
   Eigen::Vector3d mBodyDirection1;

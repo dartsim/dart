@@ -504,7 +504,7 @@ public:
 class DART_DYNAMICS_API InverseKinematics::ErrorMethod : public common::Subject
 {
 public:
-  typedef std::pair<Eigen::Vector6d, Eigen::Vector6d> Bounds;
+  typedef std::pair<math::Vector6d, math::Vector6d> Bounds;
 
   /// The Properties struct contains settings that are commonly used by
   /// methods that compute error for inverse kinematics.
@@ -513,18 +513,18 @@ public:
     /// Default constructor
     Properties(
         const Bounds& _bounds = Bounds(
-            Eigen::Vector6d::Constant(-DefaultIKTolerance),
-            Eigen::Vector6d::Constant(DefaultIKTolerance)),
+            math::Vector6d::Constant(-DefaultIKTolerance),
+            math::Vector6d::Constant(DefaultIKTolerance)),
         double _errorClamp = DefaultIKErrorClamp,
-        const Eigen::Vector6d& _errorWeights
-        = (Eigen::Vector6d()
+        const math::Vector6d& _errorWeights
+        = (math::Vector6d()
                << Eigen::Vector3d::Constant(DefaultIKAngularWeight),
            Eigen::Vector3d::Constant(DefaultIKLinearWeight))
               .finished());
 
     /// Bounds that define the acceptable range of the Node's transform
     /// relative to its target frame.
-    std::pair<Eigen::Vector6d, Eigen::Vector6d> mBounds;
+    std::pair<math::Vector6d, math::Vector6d> mBounds;
 
     /// The error vector will be clamped to this length with each iteration.
     /// This is used to enforce sane behavior, even when there are extremely
@@ -536,7 +536,7 @@ public:
     /// others, or to scale their coordinate spaces. For example, you will
     /// often want the first three components (orientation error) to have
     /// smaller weights than the last three components (translation error).
-    Eigen::Vector6d mErrorWeights;
+    math::Vector6d mErrorWeights;
 
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -564,34 +564,34 @@ public:
   /// current joint positions corresponds to the positions that you
   /// must use to compute the error. This function will only get called when
   /// an update is needed.
-  virtual Eigen::Vector6d computeError() = 0;
+  virtual math::Vector6d computeError() = 0;
 
   /// Override this function with your implementation of computing the desired
   /// given the current transform and error vector. If you want the desired
   /// transform to always be equal to the Target's transform, you can simply
   /// call ErrorMethod::computeDesiredTransform to implement this function.
   virtual Eigen::Isometry3d computeDesiredTransform(
-      const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error)
+      const Eigen::Isometry3d& _currentTf, const math::Vector6d& _error)
       = 0;
 
   /// This function is used to handle caching the error vector.
-  const Eigen::Vector6d& evalError(const Eigen::VectorXd& _q);
+  const math::Vector6d& evalError(const Eigen::VectorXd& _q);
 
   /// Get the name of this ErrorMethod.
   const std::string& getMethodName() const;
 
   /// Set all the error bounds.
   void setBounds(
-      const Eigen::Vector6d& _lower
-      = Eigen::Vector6d::Constant(-DefaultIKTolerance),
-      const Eigen::Vector6d& _upper
-      = Eigen::Vector6d::Constant(DefaultIKTolerance));
+      const math::Vector6d& _lower
+      = math::Vector6d::Constant(-DefaultIKTolerance),
+      const math::Vector6d& _upper
+      = math::Vector6d::Constant(DefaultIKTolerance));
 
   /// Set all the error bounds.
-  void setBounds(const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds);
+  void setBounds(const std::pair<math::Vector6d, math::Vector6d>& _bounds);
 
   /// Get all the error bounds.
-  const std::pair<Eigen::Vector6d, Eigen::Vector6d>& getBounds() const;
+  const std::pair<math::Vector6d, math::Vector6d>& getBounds() const;
 
   /// Set the error bounds for orientation.
   void setAngularBounds(
@@ -631,11 +631,11 @@ public:
 
   /// Set the weights that will be applied to each component of the error
   /// vector.
-  void setErrorWeights(const Eigen::Vector6d& _weights);
+  void setErrorWeights(const math::Vector6d& _weights);
 
   /// Get the weights that will be applied to each component of the error
   /// vector.
-  const Eigen::Vector6d& getErrorWeights() const;
+  const math::Vector6d& getErrorWeights() const;
 
   /// Set the weights that will be applied to each angular component of the
   /// error vector.
@@ -675,7 +675,7 @@ protected:
   Eigen::VectorXd mLastPositions;
 
   /// The last error vector computed by this ErrorMethod
-  Eigen::Vector6d mLastError;
+  math::Vector6d mLastError;
 
   /// The properties of this ErrorMethod
   Properties mErrorP;
@@ -735,10 +735,10 @@ public:
   // Documentation inherited
   Eigen::Isometry3d computeDesiredTransform(
       const Eigen::Isometry3d& _currentTf,
-      const Eigen::Vector6d& _error) override;
+      const math::Vector6d& _error) override;
 
   // Documentation inherited
-  Eigen::Vector6d computeError() override;
+  math::Vector6d computeError() override;
 
   /// Set whether this TaskSpaceRegion should compute its error vector from
   /// the center of the region.
@@ -813,7 +813,7 @@ public:
   /// must use to compute the error. This function will only get called when
   /// an update is needed.
   virtual void computeGradient(
-      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
+      const math::Vector6d& _error, Eigen::VectorXd& _grad)
       = 0;
 
   /// This function is used to handle caching the gradient vector and
@@ -940,7 +940,7 @@ public:
 
   // Documentation inherited
   void computeGradient(
-      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) override;
+      const math::Vector6d& _error, Eigen::VectorXd& _grad) override;
 
   /// Set the damping coefficient. A higher damping coefficient will smooth
   /// out behavior around singularities but will also result in less precision
@@ -981,7 +981,7 @@ public:
 
   // Documentation inherited
   void computeGradient(
-      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) override;
+      const math::Vector6d& _error, Eigen::VectorXd& _grad) override;
 };
 
 //==============================================================================
@@ -1126,7 +1126,7 @@ public:
   /// You should not need to override this function. Instead, you should
   /// override computeSolutions.
   void computeGradient(
-      const Eigen::Vector6d& _error, Eigen::VectorXd& _grad) override;
+      const math::Vector6d& _error, Eigen::VectorXd& _grad) override;
 
   /// Use this function to fill the entries of the mSolutions variable. Be
   /// sure to clear the mSolutions vector at the start, and to also return the
@@ -1213,7 +1213,7 @@ protected:
   /// solution is computed.
   virtual void addExtraDofGradient(
       Eigen::VectorXd& grad,
-      const Eigen::Vector6d& error,
+      const math::Vector6d& error,
       ExtraDofUtilization utilization);
 
   /// Go through the mSolutions vector and tag entries with LIMIT_VIOLATED if

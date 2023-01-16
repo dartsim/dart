@@ -33,10 +33,8 @@
 #ifndef DART_MATH_CONFIGURATIONSPACE_HPP_
 #define DART_MATH_CONFIGURATIONSPACE_HPP_
 
+#include <dart/math/Fwd.hpp>
 #include <dart/math/Geometry.hpp>
-#include <dart/math/MathTypes.hpp>
-
-#include <Eigen/Dense>
 
 namespace dart {
 namespace math {
@@ -50,11 +48,11 @@ struct RealVectorSpace
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
-  using Point = Eigen::Matrix<double, NumDofs, 1>;
-  using EuclideanPoint = Eigen::Matrix<double, NumDofs, 1>;
-  using Vector = Eigen::Matrix<double, NumDofs, 1>;
-  using Matrix = Eigen::Matrix<double, NumDofs, NumDofs>;
-  using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
+  using Point = ::dart::math::Matrix<double, NumDofs, 1>;
+  using EuclideanPoint = ::dart::math::Matrix<double, NumDofs, 1>;
+  using Vector = ::dart::math::Matrix<double, NumDofs, 1>;
+  using Matrix = ::dart::math::Matrix<double, NumDofs, NumDofs>;
+  using JacobianMatrix = ::dart::math::Matrix<double, 6, NumDofs>;
 };
 
 //==============================================================================
@@ -82,11 +80,11 @@ struct SO3Space
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
-  using Point = Eigen::Matrix3d;
-  using EuclideanPoint = Eigen::Vector3d;
-  using Vector = Eigen::Vector3d;
-  using Matrix = Eigen::Matrix3d;
-  using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
+  using Point = Matrix3d;
+  using EuclideanPoint = Vector3d;
+  using Vector = Vector3d;
+  using Matrix = Matrix3d;
+  using JacobianMatrix = ::dart::math::Matrix<double, 6, NumDofs>;
 };
 
 //==============================================================================
@@ -97,11 +95,11 @@ struct SE3Space
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
-  using Point = Eigen::Isometry3d;
-  using EuclideanPoint = Eigen::Vector6d;
-  using Vector = Eigen::Vector6d;
-  using Matrix = Eigen::Matrix6d;
-  using JacobianMatrix = Eigen::Matrix6d;
+  using Point = Isometry3d;
+  using EuclideanPoint = Vector6d;
+  using Vector = Vector6d;
+  using Matrix = Matrix6d;
+  using JacobianMatrix = Matrix6d;
 };
 
 struct MapsToManifoldPoint

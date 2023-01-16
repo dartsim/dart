@@ -56,9 +56,9 @@ ODELCPSolver::~ODELCPSolver()
 
 //==============================================================================
 bool ODELCPSolver::Solve(
-    const Eigen::MatrixXd& _A,
-    const Eigen::VectorXd& _b,
-    Eigen::VectorXd* _x,
+    const MatrixXd& _A,
+    const VectorXd& _b,
+    VectorXd* _x,
     int _numContacts,
     double _mu,
     int _numDir,
@@ -119,7 +119,7 @@ bool ODELCPSolver::Solve(
     //        cout << "w[i] " << i << " is zero, but x is " << x[i] << endl;
     //    }
 
-    *_x = Eigen::VectorXd(n);
+    *_x = VectorXd(n);
     for (int i = 0; i < n; ++i) {
       (*_x)[i] = x[i];
     }
@@ -139,18 +139,18 @@ bool ODELCPSolver::Solve(
 
 //==============================================================================
 void ODELCPSolver::transferToODEFormulation(
-    const Eigen::MatrixXd& _A,
-    const Eigen::VectorXd& _b,
-    Eigen::MatrixXd* _AOut,
-    Eigen::VectorXd* _bOut,
+    const MatrixXd& _A,
+    const VectorXd& _b,
+    MatrixXd* _AOut,
+    VectorXd* _bOut,
     int _numDir,
     int _numContacts)
 {
   int numOtherConstrs = _A.rows() - _numContacts * (2 + _numDir);
   int n = _numContacts * 3 + numOtherConstrs;
-  Eigen::MatrixXd AIntermediate = Eigen::MatrixXd::Zero(n, _A.cols());
-  *_AOut = Eigen::MatrixXd::Zero(n, n);
-  *_bOut = Eigen::VectorXd::Zero(n);
+  MatrixXd AIntermediate = MatrixXd::Zero(n, _A.cols());
+  *_AOut = MatrixXd::Zero(n, n);
+  *_bOut = VectorXd::Zero(n);
   int offset = _numDir / 4;
   for (int i = 0; i < _numContacts; ++i) {
     AIntermediate.row(i) = _A.row(i);
@@ -183,14 +183,10 @@ void ODELCPSolver::transferToODEFormulation(
 
 //==============================================================================
 void ODELCPSolver::transferSolFromODEFormulation(
-    const Eigen::VectorXd& _x,
-    Eigen::VectorXd* _xOut,
-    int _numDir,
-    int _numContacts)
+    const VectorXd& _x, VectorXd* _xOut, int _numDir, int _numContacts)
 {
   int numOtherConstrs = _x.size() - _numContacts * 3;
-  *_xOut
-      = Eigen::VectorXd::Zero(_numContacts * (2 + _numDir) + numOtherConstrs);
+  *_xOut = VectorXd::Zero(_numContacts * (2 + _numDir) + numOtherConstrs);
 
   _xOut->head(_numContacts) = _x.head(_numContacts);
 
@@ -206,14 +202,12 @@ void ODELCPSolver::transferSolFromODEFormulation(
 
 //==============================================================================
 bool ODELCPSolver::checkIfSolution(
-    const Eigen::MatrixXd& _A,
-    const Eigen::VectorXd& _b,
-    const Eigen::VectorXd& _x)
+    const MatrixXd& _A, const VectorXd& _b, const VectorXd& _x)
 {
   const double threshold = 1e-4;
   int n = _x.size();
 
-  Eigen::VectorXd w = _A * _x + _b;
+  VectorXd w = _A * _x + _b;
   for (int i = 0; i < n; ++i) {
     if (w(i) < -threshold || _x(i) < -threshold)
       return false;

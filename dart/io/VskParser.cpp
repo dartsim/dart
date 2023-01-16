@@ -393,7 +393,7 @@ bool readSegment(
   }
 
   // Attribute: BOUNDS
-  Eigen::Vector6d bounds = Eigen::Vector6d::Zero();
+  math::Vector6d bounds = math::Vector6d::Zero();
   if (hasAttribute(segment, "BOUNDS"))
     bounds = readAttributeVector<6>(segment, "BOUNDS", vskData.parameterMap);
 
@@ -606,7 +606,7 @@ bool readJointHardySpicer(
   Eigen::Vector3d axis1 = Eigen::Vector3d::UnitX();
   Eigen::Vector3d axis2 = Eigen::Vector3d::UnitY();
   if (hasAttribute(jointEle, "AXIS-PAIR")) {
-    Eigen::Vector6d axisPair
+    math::Vector6d axisPair
         = readAttributeVector<6>(jointEle, "AXIS-PAIR", vskData.parameterMap);
     axis1 = axisPair.head<3>();
     axis2 = axisPair.tail<3>();

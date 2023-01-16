@@ -653,7 +653,7 @@ public:
   /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
   /// \param _bodyNode Body node contraint impulse, _imp, is applied
   /// \param _imp Constraint impulse expressed in body frame of _bodyNode
-  void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
+  void updateBiasImpulse(BodyNode* _bodyNode, const math::Vector6d& _imp);
 
   /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
   /// \param _bodyNode1 Body node contraint impulse, _imp1, is applied
@@ -662,9 +662,9 @@ public:
   /// \param _imp2 Constraint impulse expressed in body frame of _bodyNode2
   void updateBiasImpulse(
       BodyNode* _bodyNode1,
-      const Eigen::Vector6d& _imp1,
+      const math::Vector6d& _imp1,
       BodyNode* _bodyNode2,
-      const Eigen::Vector6d& _imp2);
+      const math::Vector6d& _imp2);
 
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(
@@ -882,7 +882,7 @@ public:
 
   /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
   /// World Frame)
-  Eigen::Vector6d getCOMSpatialVelocity(
+  math::Vector6d getCOMSpatialVelocity(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
@@ -894,7 +894,7 @@ public:
 
   /// Get the Skeleton's COM spatial acceleration in terms of any Frame (default
   /// is World Frame)
-  Eigen::Vector6d getCOMSpatialAcceleration(
+  math::Vector6d getCOMSpatialAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 

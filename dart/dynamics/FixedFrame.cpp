@@ -47,7 +47,7 @@ FixedFrameProperties::FixedFrameProperties(const Eigen::Isometry3d& relativeTf)
 } // namespace detail
 
 //==============================================================================
-const Eigen::Vector6d FixedFrame::mZero = Eigen::Vector6d::Zero();
+const math::Vector6d FixedFrame::mZero = math::Vector6d::Zero();
 
 //==============================================================================
 FixedFrame::FixedFrame(
@@ -87,25 +87,25 @@ const Eigen::Isometry3d& FixedFrame::getRelativeTransform() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getRelativeSpatialVelocity() const
+const math::Vector6d& FixedFrame::getRelativeSpatialVelocity() const
 {
   return mZero;
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getRelativeSpatialAcceleration() const
+const math::Vector6d& FixedFrame::getRelativeSpatialAcceleration() const
 {
   return mZero;
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getPrimaryRelativeAcceleration() const
+const math::Vector6d& FixedFrame::getPrimaryRelativeAcceleration() const
 {
   return mZero;
 }
 
 //==============================================================================
-const Eigen::Vector6d& FixedFrame::getPartialAcceleration() const
+const math::Vector6d& FixedFrame::getPartialAcceleration() const
 {
   return mZero;
 }

@@ -36,7 +36,7 @@
 #include <dart/dynamics/DynamicJointConstraint.hpp>
 #include <dart/dynamics/Export.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 #include <Eigen/Dense>
 

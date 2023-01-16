@@ -33,8 +33,8 @@
 #ifndef DART_UNITTESTS_GTESTUTILS_HPP_
 #define DART_UNITTESTS_GTESTUTILS_HPP_
 
+#include <dart/math/Fwd.hpp>
 #include <dart/math/Geometry.hpp>
-#include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

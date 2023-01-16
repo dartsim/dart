@@ -1025,7 +1025,7 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
   const math::Jacobian dJRelTo = getJacobianSpatialDeriv(_relativeTo);
   const Eigen::Isometry3d T = _relativeTo->getTransform(_node);
-  const Eigen::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
+  const math::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
   const math::Jacobian adJRelTo = math::adJac(V, JRelTo);
 
   const math::Jacobian result = dJ - math::AdTJac(T, dJRelTo + adJRelTo);
@@ -1050,7 +1050,7 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
   const math::Jacobian dJRelTo = getJacobianSpatialDeriv(_relativeTo);
   const Eigen::Isometry3d T = _relativeTo->getTransform(_node);
-  const Eigen::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
+  const math::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
   const math::Jacobian adJRelTo = math::adJac(V, JRelTo);
 
   math::Jacobian result = dJ - math::AdTJac(T, dJRelTo + adJRelTo);

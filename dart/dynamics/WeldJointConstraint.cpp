@@ -43,8 +43,8 @@ namespace dynamics {
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
   : DynamicJointConstraint(_body),
     mRelativeTransform(_body->getTransform()),
-    mViolation(Eigen::Vector6d::Zero()),
-    mJacobian1(Eigen::Matrix6d::Identity()),
+    mViolation(math::Vector6d::Zero()),
+    mJacobian1(math::Matrix6d::Identity()),
     mAppliedImpulseIndex(0)
 {
   mDim = 6;
@@ -63,8 +63,8 @@ WeldJointConstraint::WeldJointConstraint(
   : DynamicJointConstraint(_body1, _body2),
     mRelativeTransform(
         _body2->getTransform().inverse() * _body1->getTransform()),
-    mViolation(Eigen::Vector6d::Zero()),
-    mJacobian1(Eigen::Matrix6d::Identity()),
+    mViolation(math::Vector6d::Zero()),
+    mJacobian1(math::Matrix6d::Identity()),
     mAppliedImpulseIndex(0)
 {
   // The bodies should be different bodies.
@@ -179,7 +179,7 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[4] = mOldX[4];
   _lcp->x[5] = mOldX[5];
 
-  Eigen::Vector6d negativeVel = -mBodyNode1->getSpatialVelocity();
+  math::Vector6d negativeVel = -mBodyNode1->getSpatialVelocity();
   if (mBodyNode2)
     negativeVel += mJacobian2 * mBodyNode2->getSpatialVelocity();
 
@@ -262,7 +262,7 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
   assert(_vel != nullptr && "Null pointer is not allowed.");
   assert(isActive());
 
-  Eigen::Vector6d velChange = Eigen::Vector6d::Zero();
+  math::Vector6d velChange = math::Vector6d::Zero();
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
       && mBodyNode1->isReactive()) {
     velChange += mBodyNode1->getBodyVelocityChange();
@@ -320,7 +320,7 @@ void WeldJointConstraint::applyImpulse(double* _lambda)
   mOldX[4] = _lambda[4];
   mOldX[5] = _lambda[5];
 
-  Eigen::Vector6d imp;
+  math::Vector6d imp;
   imp << _lambda[0], _lambda[1], _lambda[2], _lambda[3], _lambda[4], _lambda[5];
 
   mBodyNode1->addConstraintImpulse(imp);

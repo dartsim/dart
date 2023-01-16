@@ -793,7 +793,7 @@ TEST(Skeleton, ZeroDofJointConstraintForces)
 
   const auto numSkelDofs = skel->getNumDofs();
   skel->eachBodyNode([&](BodyNode* bodyNode) {
-    bodyNode->setConstraintImpulse(Eigen::Vector6d::Random());
+    bodyNode->setConstraintImpulse(math::Vector6d::Random());
   });
 
   // Make sure this does not cause seg-fault

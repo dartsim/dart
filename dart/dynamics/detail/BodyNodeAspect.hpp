@@ -50,9 +50,9 @@ namespace detail {
 struct DART_DYNAMICS_API BodyNodeState
 {
   /// External spatial force
-  Eigen::Vector6d mFext;
+  math::Vector6d mFext;
 
-  BodyNodeState(const Eigen::Vector6d& Fext = Eigen::Vector6d::Zero());
+  BodyNodeState(const math::Vector6d& Fext = math::Vector6d::Zero());
 
   virtual ~BodyNodeState() = default;
 

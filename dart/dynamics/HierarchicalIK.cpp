@@ -468,7 +468,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x) const
         q[k] = _x[dofs[k]];
 
       InverseKinematics::ErrorMethod& method = ik->getErrorMethod();
-      const Eigen::Vector6d& error = method.evalError(q);
+      const math::Vector6d& error = method.evalError(q);
 
       cost += error.dot(error);
     }

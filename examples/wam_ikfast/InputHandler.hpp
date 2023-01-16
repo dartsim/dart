@@ -65,7 +65,8 @@ protected:
 
   std::vector<std::size_t> mEndEffectorIndex;
 
-  std::vector<std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
+  std::vector<std::pair<dart::math::Vector6d, dart::math::Vector6d> >
+      mDefaultBounds;
 
   std::vector<Eigen::Isometry3d> mDefaultTargetTf;
 };

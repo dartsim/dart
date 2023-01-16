@@ -130,9 +130,9 @@ void JOINTS::randomizeRefFrames()
     tf.linear() = math::eulerXYZToMatrix(theta);
 
     F->setRelativeTransform(tf);
-    F->setRelativeSpatialVelocity(Random::uniform<Eigen::Vector6d>(-100, 100));
+    F->setRelativeSpatialVelocity(Random::uniform<math::Vector6d>(-100, 100));
     F->setRelativeSpatialAcceleration(
-        Random::uniform<Eigen::Vector6d>(-100, 100));
+        Random::uniform<math::Vector6d>(-100, 100));
   }
 }
 
@@ -146,9 +146,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
   Joint* joint
       = skeleton->createJointAndBodyNodePair<JointType>(nullptr, _properties)
             .first;
-  joint->setTransformFromChildBodyNode(math::expMap(Eigen::Vector6d::Random()));
-  joint->setTransformFromParentBodyNode(
-      math::expMap(Eigen::Vector6d::Random()));
+  joint->setTransformFromChildBodyNode(math::expMap(math::Vector6d::Random()));
+  joint->setTransformFromParentBodyNode(math::expMap(math::Vector6d::Random()));
 
   int dof = joint->getNumDofs();
 
@@ -210,7 +209,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 
       // J(i)
       Eigen::Matrix4d Ji_4x4matrix_eigen = Tinv_a_eigen * dTdq_eigen;
-      Eigen::Vector6d Ji;
+      math::Vector6d Ji;
       Ji[0] = Ji_4x4matrix_eigen(2, 1);
       Ji[1] = Ji_4x4matrix_eigen(0, 2);
       Ji[2] = Ji_4x4matrix_eigen(1, 0);
@@ -1401,8 +1400,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
   //-- Actual terms
   Eigen::Isometry3d actualTf;
-  Eigen::Vector6d actualVel;
-  Eigen::Vector6d actualAcc;
+  math::Vector6d actualVel;
+  math::Vector6d actualAcc;
 
   Eigen::Vector3d actualLinVel;
   Eigen::Vector3d actualAngVel;
@@ -1417,8 +1416,8 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
   //-- Test
   for (std::size_t i = 0; i < numTests; ++i) {
     const Eigen::Isometry3d desiredTf = random_transform();
-    const Eigen::Vector6d desiredVel = random_vec<6>();
-    const Eigen::Vector6d desiredAcc = random_vec<6>();
+    const math::Vector6d desiredVel = random_vec<6>();
+    const math::Vector6d desiredAcc = random_vec<6>();
     const Eigen::Vector3d desiredLinVel = random_vec<3>();
     const Eigen::Vector3d desiredAngVel = random_vec<3>();
     const Eigen::Vector3d desiredLinAcc = random_vec<3>();

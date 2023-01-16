@@ -85,7 +85,7 @@ Errors Geom::read(
 
 //==============================================================================
 static bool canUseFromTo(
-    GeomType type, const std::optional<Eigen::Vector6d>& fromto)
+    GeomType type, const std::optional<math::Vector6d>& fromto)
 {
   if (!fromto)
     return false;
@@ -190,7 +190,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   if (canUseFromTo(mType, mAttributes.mFromTo)) {
     assert(mAttributes.mFromTo);
-    const Eigen::Vector6d& fromto = *mAttributes.mFromTo;
+    const math::Vector6d& fromto = *mAttributes.mFromTo;
     const Eigen::Vector3d from = fromto.head<3>();
     const Eigen::Vector3d to = fromto.tail<3>();
     const Eigen::Vector3d dir = (to - from).normalized();

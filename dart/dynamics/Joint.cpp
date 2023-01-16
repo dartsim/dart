@@ -304,7 +304,7 @@ const Eigen::Isometry3d& Joint::getRelativeTransform() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getRelativeSpatialVelocity() const
+const math::Vector6d& Joint::getRelativeSpatialVelocity() const
 {
   if (mNeedSpatialVelocityUpdate) {
     updateRelativeSpatialVelocity();
@@ -315,7 +315,7 @@ const Eigen::Vector6d& Joint::getRelativeSpatialVelocity() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getRelativeSpatialAcceleration() const
+const math::Vector6d& Joint::getRelativeSpatialAcceleration() const
 {
   if (mNeedSpatialAccelerationUpdate) {
     updateRelativeSpatialAcceleration();
@@ -326,7 +326,7 @@ const Eigen::Vector6d& Joint::getRelativeSpatialAcceleration() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getRelativePrimaryAcceleration() const
+const math::Vector6d& Joint::getRelativePrimaryAcceleration() const
 {
   if (mNeedPrimaryAccelerationUpdate) {
     updateRelativePrimaryAcceleration();
@@ -337,15 +337,14 @@ const Eigen::Vector6d& Joint::getRelativePrimaryAcceleration() const
 }
 
 //==============================================================================
-Eigen::Vector6d Joint::getWrenchToChildBodyNode(
-    const Frame* withRespectTo) const
+math::Vector6d Joint::getWrenchToChildBodyNode(const Frame* withRespectTo) const
 {
   const BodyNode* childBodyNode = getChildBodyNode();
   if (!childBodyNode) {
-    return Eigen::Vector6d::Zero();
+    return math::Vector6d::Zero();
   }
 
-  const Eigen::Vector6d& F2 = childBodyNode->getBodyForce();
+  const math::Vector6d& F2 = childBodyNode->getBodyForce();
   const BodyNode* parentBodyNode = getParentBodyNode();
 
   if (withRespectTo == nullptr) {
@@ -368,7 +367,7 @@ Eigen::Vector6d Joint::getWrenchToChildBodyNode(
 }
 
 //==============================================================================
-Eigen::Vector6d Joint::getWrenchToParentBodyNode(
+math::Vector6d Joint::getWrenchToParentBodyNode(
     const Frame* withRespectTo) const
 {
   return -getWrenchToChildBodyNode(withRespectTo);
@@ -478,9 +477,9 @@ const Eigen::Isometry3d& Joint::getTransformFromChildBodyNode() const
 Joint::Joint()
   : mChildBodyNode(nullptr),
     mT(Eigen::Isometry3d::Identity()),
-    mSpatialVelocity(Eigen::Vector6d::Zero()),
-    mSpatialAcceleration(Eigen::Vector6d::Zero()),
-    mPrimaryAcceleration(Eigen::Vector6d::Zero()),
+    mSpatialVelocity(math::Vector6d::Zero()),
+    mSpatialAcceleration(math::Vector6d::Zero()),
+    mPrimaryAcceleration(math::Vector6d::Zero()),
     mNeedTransformUpdate(true),
     mNeedSpatialVelocityUpdate(true),
     mNeedSpatialAccelerationUpdate(true),

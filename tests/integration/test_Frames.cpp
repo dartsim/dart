@@ -71,21 +71,21 @@ void randomize_transforms(std::vector<Eigen::Isometry3d>& tfs)
 }
 
 void compute_spatial_velocity(
-    const Eigen::Vector6d& v_parent,
-    const Eigen::Vector6d& v_relative,
+    const math::Vector6d& v_parent,
+    const math::Vector6d& v_relative,
     const Eigen::Isometry3d& tf_rel,
-    Eigen::Vector6d& v_child)
+    math::Vector6d& v_child)
 {
   v_child = math::AdInvT(tf_rel, v_parent) + v_relative;
 }
 
 void compute_spatial_acceleration(
-    const Eigen::Vector6d& a_parent,
-    const Eigen::Vector6d& a_relative,
-    const Eigen::Vector6d& v_child,
-    const Eigen::Vector6d& v_rel,
+    const math::Vector6d& a_parent,
+    const math::Vector6d& a_relative,
+    const math::Vector6d& v_child,
+    const math::Vector6d& v_rel,
     const Eigen::Isometry3d& tf_rel,
-    Eigen::Vector6d& a_child)
+    math::Vector6d& a_child)
 {
   a_child
       = math::AdInvT(tf_rel, a_parent) + a_relative + math::ad(v_child, v_rel);
@@ -186,8 +186,8 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Basic forward spatial velocity propagation
   { // The brackets are to allow reusing variable names
-    std::vector<Eigen::Vector6d> v_rels(frames.size());
-    std::vector<Eigen::Vector6d> v_total(frames.size());
+    std::vector<math::Vector6d> v_rels(frames.size());
+    std::vector<math::Vector6d> v_total(frames.size());
 
     for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<6>();
@@ -200,7 +200,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             v_total[i - 1], v_rels[i], F->getRelativeTransform(), v_total[i]);
       else
         compute_spatial_velocity(
-            Eigen::Vector6d::Zero(),
+            math::Vector6d::Zero(),
             v_rels[i],
             F->getRelativeTransform(),
             v_total[i]);
@@ -209,7 +209,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
 
-      Eigen::Vector6d v_actual = F->getSpatialVelocity();
+      math::Vector6d v_actual = F->getSpatialVelocity();
 
       EXPECT_VECTOR_DOUBLE_EQ(v_total[i], v_actual);
     }
@@ -271,11 +271,11 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Basic forward spatial acceleration propagation
   {
-    std::vector<Eigen::Vector6d> v_rels(frames.size());
-    std::vector<Eigen::Vector6d> a_rels(frames.size());
+    std::vector<math::Vector6d> v_rels(frames.size());
+    std::vector<math::Vector6d> a_rels(frames.size());
 
-    std::vector<Eigen::Vector6d> v_total(frames.size());
-    std::vector<Eigen::Vector6d> a_total(frames.size());
+    std::vector<math::Vector6d> v_total(frames.size());
+    std::vector<math::Vector6d> a_total(frames.size());
 
     for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<6>();
@@ -292,9 +292,9 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             a_total[i - 1], a_rels[i], v_total[i], v_rels[i], tf, a_total[i]);
       } else {
         compute_spatial_velocity(
-            Eigen::Vector6d::Zero(), v_rels[i], tf, v_total[i]);
+            math::Vector6d::Zero(), v_rels[i], tf, v_total[i]);
         compute_spatial_acceleration(
-            Eigen::Vector6d::Zero(),
+            math::Vector6d::Zero(),
             a_rels[i],
             v_total[i],
             v_rels[i],
@@ -306,7 +306,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
 
-      Eigen::Vector6d a_actual = F->getSpatialAcceleration();
+      math::Vector6d a_actual = F->getSpatialAcceleration();
 
       EXPECT_VECTOR_DOUBLE_EQ(a_total[i], a_actual);
     }
@@ -316,8 +316,8 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       Frame* F = frames[i];
       Frame* P = F->getParentFrame();
 
-      Eigen::Vector6d v_rel = F->getSpatialVelocity(P, F);
-      Eigen::Vector6d a_rel = F->getSpatialAcceleration(P, F);
+      math::Vector6d v_rel = F->getSpatialVelocity(P, F);
+      math::Vector6d a_rel = F->getSpatialAcceleration(P, F);
 
       EXPECT_VECTOR_NEAR(v_rels[i], v_rel, tolerance);
       EXPECT_VECTOR_NEAR(a_rels[i], a_rel, tolerance);
@@ -530,7 +530,7 @@ void check_world_values(
 
     const Eigen::Isometry3d& tf_error
         = T->getWorldTransform() * F->getWorldTransform().inverse();
-    Eigen::Vector6d error;
+    math::Vector6d error;
     Eigen::AngleAxisd rot_error(tf_error.rotation());
     error.block<3, 1>(0, 0) = rot_error.angle() * rot_error.axis();
     error.block<3, 1>(3, 0) = tf_error.translation();
@@ -572,7 +572,7 @@ void check_values(
 
     const Eigen::Isometry3d& tf_error
         = T->getTransform(relativeTo) * F->getTransform(relativeTo).inverse();
-    Eigen::Vector6d error;
+    math::Vector6d error;
     Eigen::AngleAxisd rot_error(tf_error.rotation());
     error.block<3, 1>(0, 0) = rot_error.angle() * rot_error.axis();
     error.block<3, 1>(3, 0) = tf_error.translation();

@@ -44,15 +44,13 @@ namespace math {
 
 //==============================================================================
 template <typename S, typename Index>
-std::tuple<
-    std::vector<Eigen::Matrix<S, 3, 1>>,
-    std::vector<Eigen::Matrix<Index, 3, 1>>>
+std::tuple<std::vector<Matrix<S, 3, 1>>, std::vector<Matrix<Index, 3, 1>>>
 discardUnusedVertices(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& vertices,
-    const std::vector<Eigen::Matrix<Index, 3, 1>>& triangles)
+    const std::vector<Matrix<S, 3, 1>>& vertices,
+    const std::vector<Matrix<Index, 3, 1>>& triangles)
 {
-  auto newVertices = std::vector<Eigen::Matrix<S, 3, 1>>();
-  auto newTriangles = std::vector<Eigen::Matrix<Index, 3, 1>>();
+  auto newVertices = std::vector<Matrix<S, 3, 1>>();
+  auto newTriangles = std::vector<Matrix<Index, 3, 1>>();
   newTriangles.resize(triangles.size());
   auto indexMap = std::unordered_map<Index, Index>();
   auto newIndex = 0;
@@ -79,16 +77,14 @@ discardUnusedVertices(
 
 //==============================================================================
 template <typename S, typename Index>
-std::tuple<
-    std::vector<Eigen::Matrix<S, 3, 1>>,
-    std::vector<Eigen::Matrix<Index, 3, 1>>>
+std::tuple<std::vector<Matrix<S, 3, 1>>, std::vector<Matrix<Index, 3, 1>>>
 computeConvexHull3D(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& inputVertices, bool optimize)
+    const std::vector<Matrix<S, 3, 1>>& inputVertices, bool optimize)
 {
   ch_vertex* vertices = new ch_vertex[inputVertices.size()];
 
   for (auto i = 0u; i < inputVertices.size(); ++i) {
-    const Eigen::Matrix<S, 3, 1>& inputV = inputVertices[i];
+    const Matrix<S, 3, 1>& inputV = inputVertices[i];
     ch_vertex& v = vertices[i];
     v.x = inputV[0];
     v.y = inputV[1];
@@ -100,7 +96,7 @@ computeConvexHull3D(
 
   convhull_3d_build(vertices, inputVertices.size(), &faces, &numFaces);
 
-  std::vector<Eigen::Matrix<Index, 3, 1>> eigenFaces;
+  std::vector<Matrix<Index, 3, 1>> eigenFaces;
   eigenFaces.reserve(numFaces);
 
   for (auto i = 0; i < numFaces; ++i) {

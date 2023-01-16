@@ -35,8 +35,6 @@
 #include <dart/math/Fwd.hpp>
 #include <dart/math/Random.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart::math {
 
 template <typename S>
@@ -45,111 +43,111 @@ class Color
 public:
   using Scalar = S;
 
-  static Eigen::Vector4<S> Red(S alpha)
+  static Vector4<S> Red(S alpha)
   {
-    return Eigen::Vector4<S>(0.9, 0.1, 0.1, alpha);
+    return Vector4<S>(0.9, 0.1, 0.1, alpha);
   }
 
-  static Eigen::Vector3<S> Red()
+  static Vector3<S> Red()
   {
-    return Eigen::Vector3<S>(0.9, 0.1, 0.1);
+    return Vector3<S>(0.9, 0.1, 0.1);
   }
 
-  static Eigen::Vector3<S> Fuchsia()
+  static Vector3<S> Fuchsia()
   {
-    return Eigen::Vector3<S>(1.0, 0.0, 0.5);
+    return Vector3<S>(1.0, 0.0, 0.5);
   }
 
-  static Eigen::Vector4<S> Fuchsia(S alpha)
+  static Vector4<S> Fuchsia(S alpha)
   {
-    return Eigen::Vector4<S>(1.0, 0.0, 0.5, alpha);
+    return Vector4<S>(1.0, 0.0, 0.5, alpha);
   }
 
-  static Eigen::Vector4<S> Orange(S alpha)
+  static Vector4<S> Orange(S alpha)
   {
-    return Eigen::Vector4<S>(1.0, 0.63, 0.0, alpha);
+    return Vector4<S>(1.0, 0.63, 0.0, alpha);
   }
 
-  static Eigen::Vector3<S> Orange()
+  static Vector3<S> Orange()
   {
-    return Eigen::Vector3<S>(1.0, 0.63, 0.0);
+    return Vector3<S>(1.0, 0.63, 0.0);
   }
 
-  static Eigen::Vector4<S> Green(S alpha)
+  static Vector4<S> Green(S alpha)
   {
-    return Eigen::Vector4<S>(0.1, 0.9, 0.1, alpha);
+    return Vector4<S>(0.1, 0.9, 0.1, alpha);
   }
 
-  static Eigen::Vector3<S> Green()
+  static Vector3<S> Green()
   {
-    return Eigen::Vector3<S>(0.1, 0.9, 0.1);
+    return Vector3<S>(0.1, 0.9, 0.1);
   }
 
-  static Eigen::Vector4<S> Blue(S alpha)
+  static Vector4<S> Blue(S alpha)
   {
-    return Eigen::Vector4<S>(0.1, 0.1, 0.9, alpha);
+    return Vector4<S>(0.1, 0.1, 0.9, alpha);
   }
 
-  static Eigen::Vector3<S> Blue()
+  static Vector3<S> Blue()
   {
-    return Eigen::Vector3<S>(0.1, 0.1, 0.9);
+    return Vector3<S>(0.1, 0.1, 0.9);
   }
 
-  static Eigen::Vector4<S> White(S alpha)
+  static Vector4<S> White(S alpha)
   {
-    return Eigen::Vector4<S>(1.0, 1.0, 1.0, alpha);
+    return Vector4<S>(1.0, 1.0, 1.0, alpha);
   }
 
-  static Eigen::Vector3<S> White()
+  static Vector3<S> White()
   {
-    return Eigen::Vector3<S>(1.0, 1.0, 1.0);
+    return Vector3<S>(1.0, 1.0, 1.0);
   }
 
-  static Eigen::Vector4<S> Black(S alpha)
+  static Vector4<S> Black(S alpha)
   {
-    return Eigen::Vector4<S>(0.05, 0.05, 0.05, alpha);
+    return Vector4<S>(0.05, 0.05, 0.05, alpha);
   }
 
-  static Eigen::Vector3<S> Black()
+  static Vector3<S> Black()
   {
-    return Eigen::Vector3<S>(0.05, 0.05, 0.05);
+    return Vector3<S>(0.05, 0.05, 0.05);
   }
 
-  static Eigen::Vector4<S> LightGray(S alpha)
+  static Vector4<S> LightGray(S alpha)
   {
-    return Eigen::Vector4<S>(0.9, 0.9, 0.9, alpha);
+    return Vector4<S>(0.9, 0.9, 0.9, alpha);
   }
 
-  static Eigen::Vector3<S> LightGray()
+  static Vector3<S> LightGray()
   {
-    return Eigen::Vector3<S>(0.9, 0.9, 0.9);
+    return Vector3<S>(0.9, 0.9, 0.9);
   }
 
-  static Eigen::Vector4<S> Gray(S alpha)
+  static Vector4<S> Gray(S alpha)
   {
-    return Eigen::Vector4<S>(0.6, 0.6, 0.6, alpha);
+    return Vector4<S>(0.6, 0.6, 0.6, alpha);
   }
 
-  static Eigen::Vector3<S> Gray()
+  static Vector3<S> Gray()
   {
-    return Eigen::Vector3<S>(0.6, 0.6, 0.6);
+    return Vector3<S>(0.6, 0.6, 0.6);
   }
 
-  static Eigen::Vector4<S> Random(S alpha)
+  static Vector4<S> Random(S alpha)
   {
-    return Eigen::Vector4<S>(
-        math::Random::uniform(0.0, 1.0),
-        math::Random::uniform(0.0, 1.0),
-        math::Random::uniform(0.0, 1.0),
+    return Vector4<S>(
+        Random::uniform(0.0, 1.0),
+        Random::uniform(0.0, 1.0),
+        Random::uniform(0.0, 1.0),
         alpha);
   }
 
-  static Eigen::Vector3<S> Random()
+  static Vector3<S> Random()
   {
-    return Eigen::Vector3<S>(
-        math::Random::uniform(0.0, 1.0),
-        math::Random::uniform(0.0, 1.0),
-        math::Random::uniform(0.0, 1.0));
+    return Vector3<S>(
+        Random::uniform(0.0, 1.0),
+        Random::uniform(0.0, 1.0),
+        Random::uniform(0.0, 1.0));
   }
 };
 

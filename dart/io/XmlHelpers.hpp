@@ -35,8 +35,8 @@
 
 #include <dart/io/Export.hpp>
 
+#include <dart/math/Fwd.hpp>
 #include <dart/math/Geometry.hpp>
-#include <dart/math/MathTypes.hpp>
 
 #include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
@@ -75,7 +75,7 @@ DART_IO_API Eigen::Vector2i toVector2i(const std::string& str);
 DART_IO_API Eigen::Vector3d toVector3d(const std::string& str);
 DART_IO_API Eigen::Vector3i toVector3i(const std::string& str);
 DART_IO_API Eigen::Vector4d toVector4d(const std::string& str);
-DART_IO_API Eigen::Vector6d toVector6d(const std::string& str);
+DART_IO_API math::Vector6d toVector6d(const std::string& str);
 DART_IO_API Eigen::VectorXd toVectorXd(const std::string& str);
 template <std::size_t N>
 Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str);
@@ -104,7 +104,7 @@ DART_IO_API Eigen::Vector3d getValueVector3d(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
 DART_IO_API Eigen::Vector3i getValueVector3i(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_IO_API Eigen::Vector6d getValueVector6d(
+DART_IO_API math::Vector6d getValueVector6d(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
 DART_IO_API Eigen::VectorXd getValueVectorXd(
     const tinyxml2::XMLElement* parentElement, const std::string& name);
@@ -158,7 +158,7 @@ DART_IO_API Eigen::Vector3d getAttributeVector3d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 DART_IO_API Eigen::Vector4d getAttributeVector4d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_IO_API Eigen::Vector6d getAttributeVector6d(
+DART_IO_API math::Vector6d getAttributeVector6d(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 DART_IO_API Eigen::VectorXd getAttributeVectorXd(
     const tinyxml2::XMLElement* element, const std::string& attributeName);

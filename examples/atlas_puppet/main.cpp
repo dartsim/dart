@@ -483,7 +483,7 @@ protected:
 
   std::vector<std::size_t> mEndEffectorIndex;
 
-  std::vector<std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
+  std::vector<std::pair<Vector6d, Vector6d> > mDefaultBounds;
 
   std::vector<Eigen::Isometry3d> mDefaultTargetTf;
 
@@ -514,7 +514,7 @@ SkeletonPtr createGround()
                            VisualAspect,
                            CollisionAspect,
                            DynamicsAspect>(groundShape);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue(0.2));
+  shapeNode->getVisualAspect()->setColor(Colord::Blue(0.2));
 
   return ground;
 }
@@ -536,7 +536,7 @@ SkeletonPtr createAtlas()
 
   auto shapeNode
       = atlas->getBodyNode(0)->createShapeNodeWith<VisualAspect>(boxShape);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Black());
+  shapeNode->getVisualAspect()->setColor(Colord::Black());
   shapeNode->setRelativeTransform(tf);
 
   return atlas;
@@ -660,7 +660,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Define the support geometry for the feet. These points will be used to
   // compute the convex hull of the robot's support polygon
-  dart::math::SupportGeometry support;
+  SupportGeometry support;
   const double sup_pos_x = 0.10 - 0.186;
   const double sup_neg_x = -0.03 - 0.186;
   const double sup_pos_y = 0.03;

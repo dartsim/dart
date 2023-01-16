@@ -90,7 +90,7 @@ void Geometry(py::module& m)
 
   m.def(
       "expMap",
-      +[](const Eigen::Vector6d& _S) -> Eigen::Isometry3d {
+      +[](const math::Vector6d& _S) -> Eigen::Isometry3d {
         return dart::math::expMap(_S);
       },
       ::py::arg("S"));

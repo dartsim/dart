@@ -924,11 +924,11 @@ PropertyType getCOMPropertyTemplate(
 }
 
 //==============================================================================
-Eigen::Vector6d ReferentialSkeleton::getCOMSpatialVelocity(
+math::Vector6d ReferentialSkeleton::getCOMSpatialVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector6d,
+      math::Vector6d,
       &BodyNode::getCOMSpatialVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -942,11 +942,11 @@ Eigen::Vector3d ReferentialSkeleton::getCOMLinearVelocity(
 }
 
 //==============================================================================
-Eigen::Vector6d ReferentialSkeleton::getCOMSpatialAcceleration(
+math::Vector6d ReferentialSkeleton::getCOMSpatialAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector6d,
+      math::Vector6d,
       &BodyNode::getCOMSpatialAcceleration>(
       this, _relativeTo, _inCoordinatesOf);
 }

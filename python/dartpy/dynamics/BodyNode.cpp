@@ -586,15 +586,14 @@ void BodyNode(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getCOMSpatialVelocity",
-          +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::BodyNode* self) -> math::Vector6d {
             return self->getCOMSpatialVelocity();
           })
       .def(
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo, _inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -624,15 +623,14 @@ void BodyNode(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getCOMSpatialAcceleration",
-          +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::BodyNode* self) -> math::Vector6d {
             return self->getCOMSpatialAcceleration();
           })
       .def(
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector6d {
             return self->getCOMSpatialAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },
@@ -996,7 +994,7 @@ void BodyNode(py::module& m)
           +[](dart::dynamics::BodyNode* self) { self->clearInternalForces(); })
       .def(
           "getExternalForceGlobal",
-          +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::BodyNode* self) -> math::Vector6d {
             return self->getExternalForceGlobal();
           })
       .def(
@@ -1012,15 +1010,13 @@ void BodyNode(py::module& m)
               -> bool { return self->isReactive(); })
       .def(
           "setConstraintImpulse",
-          +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector6d& _constImp) {
+          +[](dart::dynamics::BodyNode* self, const math::Vector6d& _constImp) {
             self->setConstraintImpulse(_constImp);
           },
           ::py::arg("constImp"))
       .def(
           "addConstraintImpulse",
-          +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector6d& _constImp) {
+          +[](dart::dynamics::BodyNode* self, const math::Vector6d& _constImp) {
             self->addConstraintImpulse(_constImp);
           },
           ::py::arg("constImp"))

@@ -193,7 +193,7 @@ protected:
   bool addObject(const SkeletonPtr& object)
   {
     // Set the starting position for the object
-    Eigen::Vector6d positions(Eigen::Vector6d::Zero());
+    dart::math::Vector6d positions(dart::math::Vector6d::Zero());
 
     // If randomization is on, we will randomize the starting y-location
     if (mRandomize)

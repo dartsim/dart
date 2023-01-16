@@ -2360,7 +2360,7 @@ JointPropPtr readFreeJoint(
   //--------------------------------------------------------------------------
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
-    Eigen::Vector6d init_pos = getValueVector6d(_jointElement, "init_pos");
+    math::Vector6d init_pos = getValueVector6d(_jointElement, "init_pos");
     _joint.position = init_pos;
     properties.mInitialPositions = init_pos;
   }
@@ -2368,7 +2368,7 @@ JointPropPtr readFreeJoint(
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
-    Eigen::Vector6d init_vel = getValueVector6d(_jointElement, "init_vel");
+    math::Vector6d init_vel = getValueVector6d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
     properties.mInitialVelocities = init_vel;
   }

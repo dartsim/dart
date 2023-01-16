@@ -37,7 +37,7 @@
 #include <dart/dynamics/ConstraintBase.hpp>
 #include <dart/dynamics/ContactSurface.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 
 namespace dart {
 

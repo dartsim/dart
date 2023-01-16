@@ -57,7 +57,7 @@ TEST(SkelParser, DataStructure)
   Eigen::Vector2d valVector2d = Eigen::Vector2d::Random();
   Eigen::Vector3d valVector3d = Eigen::Vector3d::Random();
   Eigen::Vector3i valVector3i = Eigen::Vector3i::Random();
-  Eigen::Vector6d valVector6d = Eigen::Vector6d::Random();
+  math::Vector6d valVector6d = math::Vector6d::Random();
   Eigen::VectorXd valVectorXd = Eigen::VectorXd::Random(10);
   Eigen::Isometry3d valIsometry3d = Eigen::Isometry3d::Identity();
 

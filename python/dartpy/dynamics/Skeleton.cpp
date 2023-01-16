@@ -750,7 +750,7 @@ void Skeleton(py::module& m)
           "updateBiasImpulse",
           +[](dart::dynamics::Skeleton* self,
               dart::dynamics::BodyNode* _bodyNode,
-              const Eigen::Vector6d& _imp) -> void {
+              const math::Vector6d& _imp) -> void {
             return self->updateBiasImpulse(_bodyNode, _imp);
           },
           ::py::arg("bodyNode"),
@@ -759,9 +759,9 @@ void Skeleton(py::module& m)
           "updateBiasImpulse",
           +[](dart::dynamics::Skeleton* self,
               dart::dynamics::BodyNode* _bodyNode1,
-              const Eigen::Vector6d& _imp1,
+              const math::Vector6d& _imp1,
               dart::dynamics::BodyNode* _bodyNode2,
-              const Eigen::Vector6d& _imp2) -> void {
+              const math::Vector6d& _imp2) -> void {
             return self->updateBiasImpulse(
                 _bodyNode1, _imp1, _bodyNode2, _imp2);
           },
@@ -1200,13 +1200,13 @@ void Skeleton(py::module& m)
           ::py::arg("withRespectTo"))
       .def(
           "getCOMSpatialVelocity",
-          +[](const dart::dynamics::Skeleton* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::Skeleton* self) -> math::Vector6d {
             return self->getCOMSpatialVelocity();
           })
       .def(
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::Skeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -1214,8 +1214,7 @@ void Skeleton(py::module& m)
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo, _inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -1244,13 +1243,13 @@ void Skeleton(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getCOMSpatialAcceleration",
-          +[](const dart::dynamics::Skeleton* self) -> Eigen::Vector6d {
+          +[](const dart::dynamics::Skeleton* self) -> math::Vector6d {
             return self->getCOMSpatialAcceleration();
           })
       .def(
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::Skeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector6d {
             return self->getCOMSpatialAcceleration(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -1258,8 +1257,7 @@ void Skeleton(py::module& m)
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector6d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector6d {
             return self->getCOMSpatialAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },

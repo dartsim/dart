@@ -42,6 +42,7 @@ using namespace std;
 
 using namespace Eigen;
 
+using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
 

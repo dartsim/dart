@@ -296,7 +296,7 @@ TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
   ASSERT_NE(nullptr, joint);
 
   link1->getParentJoint()->setVelocities(
-      Eigen::Vector6d(0, 0.25, 0, 0, 0, -0.1));
+      math::Vector6d(0, 0.25, 0, 0, 0, -0.1));
   world->step();
   Eigen::Vector3d maxAngMomentumChange = Eigen::Vector3d::Zero();
   Eigen::Vector3d h0 = computeWorldAngularMomentum(skel);

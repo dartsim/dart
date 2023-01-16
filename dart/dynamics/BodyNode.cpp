@@ -206,7 +206,7 @@ AllNodeProperties getAllNodeProperties(const BodyNode* bodyNode)
 }
 
 //==============================================================================
-BodyNodeState::BodyNodeState(const Eigen::Vector6d& Fext) : mFext(Fext)
+BodyNodeState::BodyNodeState(const math::Vector6d& Fext) : mFext(Fext)
 {
   // Do nothing
 }
@@ -511,7 +511,7 @@ void BodyNode::getMomentOfInertia(
 }
 
 //==============================================================================
-const Eigen::Matrix6d& BodyNode::getSpatialInertia() const
+const math::Matrix6d& BodyNode::getSpatialInertia() const
 {
   return mAspectProperties.mInertia.getSpatialTensor();
 }
@@ -588,13 +588,13 @@ Eigen::Vector3d BodyNode::getCOMLinearVelocity(
 }
 
 //==============================================================================
-Eigen::Vector6d BodyNode::getCOMSpatialVelocity() const
+math::Vector6d BodyNode::getCOMSpatialVelocity() const
 {
   return getSpatialVelocity(getLocalCOM());
 }
 
 //==============================================================================
-Eigen::Vector6d BodyNode::getCOMSpatialVelocity(
+math::Vector6d BodyNode::getCOMSpatialVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getSpatialVelocity(getLocalCOM(), _relativeTo, _inCoordinatesOf);
@@ -608,13 +608,13 @@ Eigen::Vector3d BodyNode::getCOMLinearAcceleration(
 }
 
 //==============================================================================
-Eigen::Vector6d BodyNode::getCOMSpatialAcceleration() const
+math::Vector6d BodyNode::getCOMSpatialAcceleration() const
 {
   return getSpatialAcceleration(getLocalCOM());
 }
 
 //==============================================================================
-Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(
+math::Vector6d BodyNode::getCOMSpatialAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getSpatialAcceleration(getLocalCOM(), _relativeTo, _inCoordinatesOf);
@@ -990,25 +990,25 @@ const Eigen::Isometry3d& BodyNode::getRelativeTransform() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getRelativeSpatialVelocity() const
+const math::Vector6d& BodyNode::getRelativeSpatialVelocity() const
 {
   return mParentJoint->getRelativeSpatialVelocity();
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getRelativeSpatialAcceleration() const
+const math::Vector6d& BodyNode::getRelativeSpatialAcceleration() const
 {
   return mParentJoint->getRelativeSpatialAcceleration();
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getPrimaryRelativeAcceleration() const
+const math::Vector6d& BodyNode::getPrimaryRelativeAcceleration() const
 {
   return mParentJoint->getRelativePrimaryAcceleration();
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
+const math::Vector6d& BodyNode::getPartialAcceleration() const
 {
   if (mIsPartialAccelerationDirty)
     updatePartialAcceleration();
@@ -1053,7 +1053,7 @@ const math::Jacobian& BodyNode::getJacobianClassicDeriv() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getBodyVelocityChange() const
+const math::Vector6d& BodyNode::getBodyVelocityChange() const
 {
   return mDelV;
 }
@@ -1066,7 +1066,7 @@ void BodyNode::addExtForce(
     bool _isOffsetLocal)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d F = Eigen::Vector6d::Zero();
+  math::Vector6d F = math::Vector6d::Zero();
   const Eigen::Isometry3d& W = getWorldTransform();
 
   if (_isOffsetLocal)
@@ -1092,7 +1092,7 @@ void BodyNode::setExtForce(
     bool _isOffsetLocal)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d F = Eigen::Vector6d::Zero();
+  math::Vector6d F = math::Vector6d::Zero();
   const Eigen::Isometry3d& W = getWorldTransform();
 
   if (_isOffsetLocal)
@@ -1145,26 +1145,26 @@ BodyNode::BodyNode(
     mID(BodyNode::msBodyNodeCount++),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
-    mPartialAcceleration(Eigen::Vector6d::Zero()),
+    mPartialAcceleration(math::Vector6d::Zero()),
     mIsPartialAccelerationDirty(true),
-    mF(Eigen::Vector6d::Zero()),
-    mFgravity(Eigen::Vector6d::Zero()),
-    mArtInertia(Eigen::Matrix6d::Identity()),
-    mArtInertiaImplicit(Eigen::Matrix6d::Identity()),
-    mBiasForce(Eigen::Vector6d::Zero()),
-    mCg_dV(Eigen::Vector6d::Zero()),
-    mCg_F(Eigen::Vector6d::Zero()),
-    mG_F(Eigen::Vector6d::Zero()),
-    mFext_F(Eigen::Vector6d::Zero()),
-    mM_dV(Eigen::Vector6d::Zero()),
-    mM_F(Eigen::Vector6d::Zero()),
-    mInvM_c(Eigen::Vector6d::Zero()),
-    mInvM_U(Eigen::Vector6d::Zero()),
-    mArbitrarySpatial(Eigen::Vector6d::Zero()),
-    mDelV(Eigen::Vector6d::Zero()),
-    mBiasImpulse(Eigen::Vector6d::Zero()),
-    mConstraintImpulse(Eigen::Vector6d::Zero()),
-    mImpF(Eigen::Vector6d::Zero()),
+    mF(math::Vector6d::Zero()),
+    mFgravity(math::Vector6d::Zero()),
+    mArtInertia(math::Matrix6d::Identity()),
+    mArtInertiaImplicit(math::Matrix6d::Identity()),
+    mBiasForce(math::Vector6d::Zero()),
+    mCg_dV(math::Vector6d::Zero()),
+    mCg_F(math::Vector6d::Zero()),
+    mG_F(math::Vector6d::Zero()),
+    mFext_F(math::Vector6d::Zero()),
+    mM_dV(math::Vector6d::Zero()),
+    mM_F(math::Vector6d::Zero()),
+    mInvM_c(math::Vector6d::Zero()),
+    mInvM_U(math::Vector6d::Zero()),
+    mArbitrarySpatial(math::Vector6d::Zero()),
+    mDelV(math::Vector6d::Zero()),
+    mBiasImpulse(math::Vector6d::Zero()),
+    mConstraintImpulse(math::Vector6d::Zero()),
+    mImpF(math::Vector6d::Zero()),
     onColShapeAdded(mColShapeAddedSignal),
     onColShapeRemoved(mColShapeRemovedSignal),
     onStructuralChange(mStructuralChangeSignal)
@@ -1506,7 +1506,7 @@ void BodyNode::updateTransmittedForceID(
     const Eigen::Vector3d& _gravity, bool _withExternalForces)
 {
   // Gravity force
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   if (mAspectProperties.mGravityMode == true)
     mFgravity.noalias()
         = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
@@ -1527,7 +1527,7 @@ void BodyNode::updateTransmittedForceID(
   mF -= mFgravity;
 
   // Coriolis force
-  const Eigen::Vector6d& V = getSpatialVelocity();
+  const math::Vector6d& V = getSpatialVelocity();
   mF -= math::dad(V, mI * V);
 
   //
@@ -1577,7 +1577,7 @@ void BodyNode::updateBiasForce(
     const Eigen::Vector3d& _gravity, double _timeStep)
 {
   // Gravity force
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   if (mAspectProperties.mGravityMode == true)
     mFgravity.noalias()
         = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
@@ -1585,7 +1585,7 @@ void BodyNode::updateBiasForce(
     mFgravity.setZero();
 
   // Set bias force
-  const Eigen::Vector6d& V = getSpatialVelocity();
+  const math::Vector6d& V = getSpatialVelocity();
   mBiasForce = -math::dad(V, mI * V) - mAspectState.mFext - mFgravity;
 
   // Verification
@@ -1664,7 +1664,7 @@ void BodyNode::updateAccelerationFD()
   } else {
     // Update joint acceleration
     mParentJoint->updateAcceleration(
-        getArticulatedInertiaImplicit(), Eigen::Vector6d::Zero());
+        getArticulatedInertiaImplicit(), math::Vector6d::Zero());
   }
 
   // Verify the spatial acceleration of this body
@@ -1685,7 +1685,7 @@ void BodyNode::updateVelocityChangeFD()
   } else {
     // Update joint velocity change
     mParentJoint->updateVelocityChange(
-        getArticulatedInertia(), Eigen::Vector6d::Zero());
+        getArticulatedInertia(), math::Vector6d::Zero());
 
     // Transmit spatial acceleration of parent body to this body
     mDelV.setZero();
@@ -1749,13 +1749,13 @@ void BodyNode::clearInternalForces()
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
+const math::Vector6d& BodyNode::getExternalForceLocal() const
 {
   return mAspectState.mFext;
 }
 
 //==============================================================================
-Eigen::Vector6d BodyNode::getExternalForceGlobal() const
+math::Vector6d BodyNode::getExternalForceGlobal() const
 {
   return math::dAdInvT(getWorldTransform(), mAspectState.mFext);
 }
@@ -1770,7 +1770,7 @@ void BodyNode::addConstraintImpulse(
   // TODO(JS): Add contact sensor data here (DART 4.1)
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d F = Eigen::Vector6d::Zero();
+  math::Vector6d F = math::Vector6d::Zero();
   const Eigen::Isometry3d& W = getWorldTransform();
 
   if (_isOffsetLocal)
@@ -1800,27 +1800,27 @@ void BodyNode::clearConstraintImpulse()
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getBodyForce() const
+const math::Vector6d& BodyNode::getBodyForce() const
 {
   return mF;
 }
 
 //==============================================================================
-void BodyNode::setConstraintImpulse(const Eigen::Vector6d& _constImp)
+void BodyNode::setConstraintImpulse(const math::Vector6d& _constImp)
 {
   assert(!math::isNan(_constImp));
   mConstraintImpulse = _constImp;
 }
 
 //==============================================================================
-void BodyNode::addConstraintImpulse(const Eigen::Vector6d& _constImp)
+void BodyNode::addConstraintImpulse(const math::Vector6d& _constImp)
 {
   assert(!math::isNan(_constImp));
   mConstraintImpulse += _constImp;
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
+const math::Vector6d& BodyNode::getConstraintImpulse() const
 {
   return mConstraintImpulse;
 }
@@ -1834,8 +1834,8 @@ double BodyNode::computeLagrangian(const Eigen::Vector3d& gravity) const
 //==============================================================================
 double BodyNode::computeKineticEnergy() const
 {
-  const Eigen::Vector6d& V = getSpatialVelocity();
-  const Eigen::Matrix6d& G = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Vector6d& V = getSpatialVelocity();
+  const math::Matrix6d& G = mAspectProperties.mInertia.getSpatialTensor();
 
   return 0.5 * V.dot(G * V);
 }
@@ -1849,7 +1849,7 @@ double BodyNode::computePotentialEnergy(const Eigen::Vector3d& gravity) const
 //==============================================================================
 Eigen::Vector3d BodyNode::getLinearMomentum() const
 {
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   return (mI * getSpatialVelocity()).tail<3>();
 }
 
@@ -1857,7 +1857,7 @@ Eigen::Vector3d BodyNode::getLinearMomentum() const
 Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   T.translation() = _pivot;
   return math::dAdT(T, mI * getSpatialVelocity()).head<3>();
 }
@@ -1895,7 +1895,7 @@ void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
 void BodyNode::aggregateGravityForceVector(
     Eigen::VectorXd& _g, const Eigen::Vector3d& _gravity)
 {
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   if (mAspectProperties.mGravityMode == true)
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
@@ -1935,13 +1935,13 @@ void BodyNode::aggregateCombinedVector(
 {
   // H(i) = I(i) * W(i) -
   //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   if (mAspectProperties.mGravityMode == true)
     mFgravity = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mFgravity.setZero();
 
-  const Eigen::Vector6d& V = getSpatialVelocity();
+  const math::Vector6d& V = getSpatialVelocity();
   mCg_F = mI * mCg_dV;
   mCg_F -= mFgravity;
   mCg_F -= math::dad(V, mI * V);
@@ -1984,7 +1984,7 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 
 //==============================================================================
 void BodyNode::aggregateSpatialToGeneralized(
-    Eigen::VectorXd& _generalized, const Eigen::Vector6d& _spatial)
+    Eigen::VectorXd& _generalized, const math::Vector6d& _spatial)
 {
   //
   mArbitrarySpatial = _spatial;
@@ -2025,7 +2025,7 @@ void BodyNode::updateMassMatrix()
 //==============================================================================
 void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 {
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   //
   mM_F.noalias() = mI * mM_dV;
 
@@ -2057,7 +2057,7 @@ void BodyNode::aggregateAugMassMatrix(
     Eigen::MatrixXd& _MCol, std::size_t _col, double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+  const math::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
 
   //
   mM_F.noalias() = mI * mM_dV;
@@ -2152,7 +2152,7 @@ void BodyNode::aggregateInvMassMatrix(
   } else {
     //
     mParentJoint->getInvMassMatrixSegment(
-        _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
+        _InvMCol, _col, getArticulatedInertia(), math::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -2183,7 +2183,7 @@ void BodyNode::aggregateInvAugMassMatrix(
         _InvMCol,
         _col,
         getArticulatedInertiaImplicit(),
-        Eigen::Vector6d::Zero());
+        math::Vector6d::Zero());
 
     //
     mInvM_U.setZero();

@@ -85,9 +85,9 @@ public:
   ///   [\c unsigned] \c long, [\c unsigned] \c long \c long
   ///
   /// and vectors and matrices as:
-  /// - Fixed-size: Eigen::Vector3i, Eigen::Vector3d, Eigen::Matrix4d, and so
+  /// - Fixed-size: Vector3i, Vector3d, Matrix4d, and so
   ///   on.
-  /// - Dynamic-size: Eigen::VectorXi, Eigen::VectorXd, Eigen::MatrixXd, and so
+  /// - Dynamic-size: VectorXi, VectorXd, MatrixXd, and so
   ///   on.
   ///
   /// Example:
@@ -101,16 +101,16 @@ public:
   /// double dblVal2 = Random::uniform<double>(0, 10);
   ///
   /// // Generate a random vector in [lb, ub)
-  /// Eigen::Vector3d lb = Eigen::Vector3d::Constant(1);
-  /// Eigen::Vector3d ub = Eigen::Vector3d::Constant(4);
-  /// Eigen::Vector3d vecVal1 = Random::uniform(lb, ub);
-  /// Eigen::Vector3d vecVal2 = Random::uniform<Eigen::Vector3d>(lb, ub);
+  /// Vector3d lb = Vector3d::Constant(1);
+  /// Vector3d ub = Vector3d::Constant(4);
+  /// Vector3d vecVal1 = Random::uniform(lb, ub);
+  /// Vector3d vecVal2 = Random::uniform<Vector3d>(lb, ub);
   ///
   /// // Generate a random matrix in [lb, ub)
-  /// Eigen::Matrix4f lb = Eigen::Matrix4f::Constant(1);
-  /// Eigen::Matrix4f ub = Eigen::Matrix4f::Constant(4);
-  /// Eigen::Matrix4f vecVal1 = Random::uniform(lb, ub);
-  /// Eigen::Matrix4f vecVal2 = Random::uniform<Eigen::Matrix4f>(lb, ub);
+  /// Matrix4f lb = Matrix4f::Constant(1);
+  /// Matrix4f ub = Matrix4f::Constant(4);
+  /// Matrix4f vecVal1 = Random::uniform(lb, ub);
+  /// Matrix4f vecVal2 = Random::uniform<Matrix4f>(lb, ub);
   /// \endcode
   ///
   /// Note that the end of the range is closed for integer types (i.e.,
@@ -138,8 +138,8 @@ public:
   /// Example:
   /// \code
   /// // Generate random vectors
-  /// Eigen::VectorXi vecXi = Random::uniform<Eigen::VectorXi>(0, 10);
-  /// Eigen::VectorXd vecXd = Random::uniform<Eigen::VectorXd>(0.0, 10.0);
+  /// VectorXi vecXi = Random::uniform<VectorXi>(0, 10);
+  /// VectorXd vecXd = Random::uniform<VectorXd>(0.0, 10.0);
   /// \endcode
   ///
   /// \tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
@@ -158,8 +158,8 @@ public:
   /// Example:
   /// \code
   /// // Generate random matrices
-  /// Eigen::MatrixXi matXi = Random::uniform<Eigen::MatrixXi>(0, 10);
-  /// Eigen::MatrixXd matXd = Random::uniform<Eigen::MatrixXd>(0.0, 10.0);
+  /// MatrixXi matXi = Random::uniform<MatrixXi>(0, 10);
+  /// MatrixXd matXd = Random::uniform<MatrixXd>(0.0, 10.0);
   /// \endcode
   ///
   /// \tparam DynamicSizeVectorT The type of dynamic-size vector.

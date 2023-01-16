@@ -50,7 +50,7 @@ public:
   using Base = Mesh<S>;
   using Index = typename Base::Index;
   using Vector3 = typename Base::Vector3;
-  using Triangle = Eigen::Matrix<Index, 3, 1>;
+  using Triangle = Matrix<Index, 3, 1>;
   using Vertices = typename Base::Vertices;
   using Normals = typename Base::Normals;
   using Triangles = std::vector<Triangle>;

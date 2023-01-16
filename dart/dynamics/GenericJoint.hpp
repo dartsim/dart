@@ -487,7 +487,7 @@ public:
   /// \}
 
   // Documentation inherited
-  Eigen::Vector6d getBodyConstraintWrench() const override;
+  math::Vector6d getBodyConstraintWrench() const override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Jacobians
@@ -543,88 +543,88 @@ protected:
   void updateRelativePrimaryAcceleration() const override;
 
   // Documentation inherited
-  void addVelocityTo(Eigen::Vector6d& vel) override;
+  void addVelocityTo(math::Vector6d& vel) override;
 
   // Documentation inherited
   void setPartialAccelerationTo(
-      Eigen::Vector6d& partialAcceleration,
-      const Eigen::Vector6d& childVelocity) override;
+      math::Vector6d& partialAcceleration,
+      const math::Vector6d& childVelocity) override;
 
   // Documentation inherited
-  void addAccelerationTo(Eigen::Vector6d& acc) override;
+  void addAccelerationTo(math::Vector6d& acc) override;
 
   // Documentation inherited
-  void addVelocityChangeTo(Eigen::Vector6d& velocityChange) override;
+  void addVelocityChangeTo(math::Vector6d& velocityChange) override;
 
   // Documentation inherited
   void addChildArtInertiaTo(
-      Eigen::Matrix6d& parentArtInertia,
-      const Eigen::Matrix6d& childArtInertia) override;
+      math::Matrix6d& parentArtInertia,
+      const math::Matrix6d& childArtInertia) override;
 
   // Documentation inherited
   void addChildArtInertiaImplicitTo(
-      Eigen::Matrix6d& parentArtInertiaImplicit,
-      const Eigen::Matrix6d& childArtInertiaImplicit) override;
+      math::Matrix6d& parentArtInertiaImplicit,
+      const math::Matrix6d& childArtInertiaImplicit) override;
 
   // Documentation inherited
-  void updateInvProjArtInertia(const Eigen::Matrix6d& artInertia) override;
+  void updateInvProjArtInertia(const math::Matrix6d& artInertia) override;
 
   // Documentation inherited
   void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& artInertia, double timeStep) override;
+      const math::Matrix6d& artInertia, double timeStep) override;
 
   // Documentation inherited
   void addChildBiasForceTo(
-      Eigen::Vector6d& parentBiasForce,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasForce,
-      const Eigen::Vector6d& childPartialAcc) override;
+      math::Vector6d& parentBiasForce,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasForce,
+      const math::Vector6d& childPartialAcc) override;
 
   // Documentation inherited
   void addChildBiasImpulseTo(
-      Eigen::Vector6d& parentBiasImpulse,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasImpulse) override;
+      math::Vector6d& parentBiasImpulse,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasImpulse) override;
 
   // Documentation inherited
   void updateTotalForce(
-      const Eigen::Vector6d& bodyForce, double timeStep) override;
+      const math::Vector6d& bodyForce, double timeStep) override;
 
   // Documentation inherited
-  void updateTotalImpulse(const Eigen::Vector6d& bodyImpulse) override;
+  void updateTotalImpulse(const math::Vector6d& bodyImpulse) override;
 
   // Documentation inherited
   void resetTotalImpulses() override;
 
   // Documentation inherited
   void updateAcceleration(
-      const Eigen::Matrix6d& artInertia,
-      const Eigen::Vector6d& spatialAcc) override;
+      const math::Matrix6d& artInertia,
+      const math::Vector6d& spatialAcc) override;
 
   // Documentation inherited
   void updateVelocityChange(
-      const Eigen::Matrix6d& artInertia,
-      const Eigen::Vector6d& velocityChange) override;
+      const math::Matrix6d& artInertia,
+      const math::Vector6d& velocityChange) override;
 
   // Documentation inherited
   void updateForceID(
-      const Eigen::Vector6d& bodyForce,
+      const math::Vector6d& bodyForce,
       double timeStep,
       bool withDampingForces,
       bool withSpringForces) override;
 
   // Documentation inherited
   void updateForceFD(
-      const Eigen::Vector6d& bodyForce,
+      const math::Vector6d& bodyForce,
       double timeStep,
       bool withDampingForcese,
       bool withSpringForces) override;
 
   // Documentation inherited
-  void updateImpulseID(const Eigen::Vector6d& bodyImpulse) override;
+  void updateImpulseID(const math::Vector6d& bodyImpulse) override;
 
   // Documentation inherited
-  void updateImpulseFD(const Eigen::Vector6d& bodyImpulse) override;
+  void updateImpulseFD(const math::Vector6d& bodyImpulse) override;
 
   // Documentation inherited
   void updateConstrainedTerms(double timeStep) override;
@@ -637,40 +637,40 @@ protected:
 
   // Documentation inherited
   void addChildBiasForceForInvMassMatrix(
-      Eigen::Vector6d& parentBiasForce,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasForce) override;
+      math::Vector6d& parentBiasForce,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasForce) override;
 
   // Documentation inherited
   void addChildBiasForceForInvAugMassMatrix(
-      Eigen::Vector6d& parentBiasForce,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasForce) override;
+      math::Vector6d& parentBiasForce,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasForce) override;
 
   // Documentation inherited
   void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& bodyForce) override;
+      const math::Vector6d& bodyForce) override;
 
   // Documentation inherited
   void getInvMassMatrixSegment(
       Eigen::MatrixXd& invMassMat,
       const size_t col,
-      const Eigen::Matrix6d& artInertia,
-      const Eigen::Vector6d& spatialAcc) override;
+      const math::Matrix6d& artInertia,
+      const math::Vector6d& spatialAcc) override;
 
   // Documentation inherited
   void getInvAugMassMatrixSegment(
       Eigen::MatrixXd& invMassMat,
       const size_t col,
-      const Eigen::Matrix6d& artInertia,
-      const Eigen::Vector6d& spatialAcc) override;
+      const math::Matrix6d& artInertia,
+      const math::Vector6d& spatialAcc) override;
 
   // Documentation inherited
-  void addInvMassMatrixSegmentTo(Eigen::Vector6d& acc) override;
+  void addInvMassMatrixSegmentTo(math::Vector6d& acc) override;
 
   // Documentation inherited
   Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& spatial) override;
+      const math::Vector6d& spatial) override;
 
   /// \}
 
@@ -741,74 +741,70 @@ private:
   //----------------------------------------------------------------------------
 
   void addChildArtInertiaToDynamic(
-      Eigen::Matrix6d& parentArtInertia,
-      const Eigen::Matrix6d& childArtInertia);
+      math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia);
 
   void addChildArtInertiaToKinematic(
-      Eigen::Matrix6d& parentArtInertia,
-      const Eigen::Matrix6d& childArtInertia);
+      math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia);
 
   void addChildArtInertiaImplicitToDynamic(
-      Eigen::Matrix6d& parentArtInertia,
-      const Eigen::Matrix6d& childArtInertia);
+      math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia);
 
   void addChildArtInertiaImplicitToKinematic(
-      Eigen::Matrix6d& parentArtInertia,
-      const Eigen::Matrix6d& childArtInertia);
+      math::Matrix6d& parentArtInertia, const math::Matrix6d& childArtInertia);
 
-  void updateInvProjArtInertiaDynamic(const Eigen::Matrix6d& artInertia);
+  void updateInvProjArtInertiaDynamic(const math::Matrix6d& artInertia);
 
-  void updateInvProjArtInertiaKinematic(const Eigen::Matrix6d& artInertia);
+  void updateInvProjArtInertiaKinematic(const math::Matrix6d& artInertia);
 
   void updateInvProjArtInertiaImplicitDynamic(
-      const Eigen::Matrix6d& artInertia, double timeStep);
+      const math::Matrix6d& artInertia, double timeStep);
 
   void updateInvProjArtInertiaImplicitKinematic(
-      const Eigen::Matrix6d& artInertia, double timeStep);
+      const math::Matrix6d& artInertia, double timeStep);
 
   void addChildBiasForceToDynamic(
-      Eigen::Vector6d& parentBiasForce,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasForce,
-      const Eigen::Vector6d& childPartialAcc);
+      math::Vector6d& parentBiasForce,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasForce,
+      const math::Vector6d& childPartialAcc);
 
   void addChildBiasForceToKinematic(
-      Eigen::Vector6d& parentBiasForce,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasForce,
-      const Eigen::Vector6d& childPartialAcc);
+      math::Vector6d& parentBiasForce,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasForce,
+      const math::Vector6d& childPartialAcc);
 
   void addChildBiasImpulseToDynamic(
-      Eigen::Vector6d& parentBiasImpulse,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasImpulse);
+      math::Vector6d& parentBiasImpulse,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasImpulse);
 
   void addChildBiasImpulseToKinematic(
-      Eigen::Vector6d& parentBiasImpulse,
-      const Eigen::Matrix6d& childArtInertia,
-      const Eigen::Vector6d& childBiasImpulse);
+      math::Vector6d& parentBiasImpulse,
+      const math::Matrix6d& childArtInertia,
+      const math::Vector6d& childBiasImpulse);
 
   void updateTotalForceDynamic(
-      const Eigen::Vector6d& bodyForce, double timeStep);
+      const math::Vector6d& bodyForce, double timeStep);
 
   void updateTotalForceKinematic(
-      const Eigen::Vector6d& bodyForce, double timeStep);
+      const math::Vector6d& bodyForce, double timeStep);
 
-  void updateTotalImpulseDynamic(const Eigen::Vector6d& bodyImpulse);
+  void updateTotalImpulseDynamic(const math::Vector6d& bodyImpulse);
 
-  void updateTotalImpulseKinematic(const Eigen::Vector6d& bodyImpulse);
+  void updateTotalImpulseKinematic(const math::Vector6d& bodyImpulse);
 
   void updateAccelerationDynamic(
-      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc);
+      const math::Matrix6d& artInertia, const math::Vector6d& spatialAcc);
 
   void updateAccelerationKinematic(
-      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc);
+      const math::Matrix6d& artInertia, const math::Vector6d& spatialAcc);
 
   void updateVelocityChangeDynamic(
-      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange);
+      const math::Matrix6d& artInertia, const math::Vector6d& velocityChange);
 
   void updateVelocityChangeKinematic(
-      const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange);
+      const math::Matrix6d& artInertia, const math::Vector6d& velocityChange);
 
   void updateConstrainedTermsDynamic(double timeStep);
 

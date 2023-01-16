@@ -248,7 +248,7 @@ public:
       const int incWY = alterantives(i, 1);
       const int flipShoulder = alterantives(i, 2);
 
-      Eigen::Vector6d testQ;
+      math::Vector6d testQ;
       bool isValid = startValid;
 
       double cosGamma = (a2 + b2 - c2) / (2 * a * b);
@@ -364,7 +364,7 @@ protected:
       return;
     }
 
-    Eigen::Vector6d saved_q;
+    math::Vector6d saved_q;
 
     DegreeOfFreedom* dofs[6];
     BodyNode* bn = base;
@@ -492,7 +492,7 @@ public:
     std::complex<double> sqrt_radical;
     Eigen::Isometry3d B, Binv;
 
-    Eigen::Vector6d testQ;
+    math::Vector6d testQ;
 
     B = (base->getParentBodyNode()->getWorldTransform() * waist).inverse()
         * _desiredBodyTf * footTfInv;
@@ -607,7 +607,7 @@ protected:
       return;
     }
 
-    Eigen::Vector6d saved_q;
+    math::Vector6d saved_q;
 
     DegreeOfFreedom* dofs[6];
     BodyNode* bn = base;
@@ -1071,7 +1071,7 @@ protected:
 
   std::vector<std::size_t> mEndEffectorIndex;
 
-  std::vector<std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
+  std::vector<std::pair<math::Vector6d, math::Vector6d> > mDefaultBounds;
 
   std::vector<Eigen::Isometry3d> mDefaultTargetTf;
 

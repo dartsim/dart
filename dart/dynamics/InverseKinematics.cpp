@@ -190,7 +190,7 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
 InverseKinematics::ErrorMethod::Properties::Properties(
     const Bounds& _bounds,
     double _errorClamp,
-    const Eigen::Vector6d& _errorWeights)
+    const math::Vector6d& _errorWeights)
   : mBounds(_bounds),
     mErrorLengthClamp(_errorClamp),
     mErrorWeights(_errorWeights)
@@ -206,7 +206,7 @@ InverseKinematics::ErrorMethod::ErrorMethod(
         _properties)
   : mIK(_ik),
     mMethodName(_methodName),
-    mLastError(Eigen::Vector6d::Constant(std::nan(""))),
+    mLastError(math::Vector6d::Constant(std::nan(""))),
     mErrorP(_properties)
 {
   // Do nothing
@@ -214,13 +214,13 @@ InverseKinematics::ErrorMethod::ErrorMethod(
 
 //==============================================================================
 Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
-    const Eigen::Isometry3d& /*_currentTf*/, const Eigen::Vector6d& /*_error*/)
+    const Eigen::Isometry3d& /*_currentTf*/, const math::Vector6d& /*_error*/)
 {
   return mIK->getTarget()->getTransform();
 }
 
 //==============================================================================
-const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
+const math::Vector6d& InverseKinematics::ErrorMethod::evalError(
     const Eigen::VectorXd& _q)
 {
   if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
@@ -267,7 +267,7 @@ const std::string& InverseKinematics::ErrorMethod::getMethodName() const
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setBounds(
-    const Eigen::Vector6d& _lower, const Eigen::Vector6d& _upper)
+    const math::Vector6d& _lower, const math::Vector6d& _upper)
 {
   mErrorP.mBounds.first = _lower;
   mErrorP.mBounds.second = _upper;
@@ -276,14 +276,14 @@ void InverseKinematics::ErrorMethod::setBounds(
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setBounds(
-    const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds)
+    const std::pair<math::Vector6d, math::Vector6d>& _bounds)
 {
   mErrorP.mBounds = _bounds;
   clearCache();
 }
 
 //==============================================================================
-const std::pair<Eigen::Vector6d, Eigen::Vector6d>&
+const std::pair<math::Vector6d, math::Vector6d>&
 InverseKinematics::ErrorMethod::getBounds() const
 {
   return mErrorP.mBounds;
@@ -352,14 +352,14 @@ double InverseKinematics::ErrorMethod::getErrorLengthClamp() const
 
 //==============================================================================
 void InverseKinematics::ErrorMethod::setErrorWeights(
-    const Eigen::Vector6d& _weights)
+    const math::Vector6d& _weights)
 {
   mErrorP.mErrorWeights = _weights;
   clearCache();
 }
 
 //==============================================================================
-const Eigen::Vector6d& InverseKinematics::ErrorMethod::getErrorWeights() const
+const math::Vector6d& InverseKinematics::ErrorMethod::getErrorWeights() const
 {
   return mErrorP.mErrorWeights;
 }
@@ -444,7 +444,7 @@ InverseKinematics::TaskSpaceRegion::clone(InverseKinematics* _newIK) const
 
 //==============================================================================
 Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
-    const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error)
+    const Eigen::Isometry3d& _currentTf, const math::Vector6d& _error)
 {
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
@@ -463,7 +463,7 @@ Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
 }
 
 //==============================================================================
-Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
+math::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
 {
   // This is a slightly modified implementation of the Berenson et al Task Space
   // Region method found in "Task Space Regions: A Framework for
@@ -503,12 +503,12 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   const Eigen::Matrix3d R_error
       = actualTf.linear() * targetTf.linear().transpose();
 
-  Eigen::Vector6d displacement;
+  math::Vector6d displacement;
   displacement << math::matrixToEulerXYZ(R_error), p_error;
 
-  Eigen::Vector6d error;
-  const Eigen::Vector6d& min = mErrorP.mBounds.first;
-  const Eigen::Vector6d& max = mErrorP.mBounds.second;
+  math::Vector6d error;
+  const math::Vector6d& min = mErrorP.mBounds.first;
+  const math::Vector6d& max = mErrorP.mBounds.second;
   double tolerance = mIK->getSolver()->getTolerance();
   for (int i = 0; i < 6; ++i) {
     if (displacement[i] < min[i]) {
@@ -638,7 +638,7 @@ void InverseKinematics::GradientMethod::evalGradient(
     }
   }
 
-  const Eigen::Vector6d& error = mIK->getErrorMethod().evalError(_q);
+  const math::Vector6d& error = mIK->getErrorMethod().evalError(_q);
   mIK->setPositions(_q);
   mLastGradient.resize(_grad.size());
   computeGradient(error, mLastGradient);
@@ -785,7 +785,7 @@ InverseKinematics::JacobianDLS::clone(InverseKinematics* _newIK) const
 
 //==============================================================================
 void InverseKinematics::JacobianDLS::computeGradient(
-    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
+    const math::Vector6d& _error, Eigen::VectorXd& _grad)
 {
   const math::Jacobian& J = mIK->computeJacobian();
 
@@ -846,7 +846,7 @@ InverseKinematics::JacobianTranspose::clone(InverseKinematics* _newIK) const
 
 //==============================================================================
 void InverseKinematics::JacobianTranspose::computeGradient(
-    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
+    const math::Vector6d& _error, Eigen::VectorXd& _grad)
 {
   const math::Jacobian& J = mIK->computeJacobian();
   _grad = J.transpose() * _error;
@@ -949,7 +949,7 @@ InverseKinematics::Analytical::Analytical(
     // clamping and weighing are useful for iterative methods, but they are
     // harmful to analytical methods.
     error->setErrorLengthClamp(math::inf<double>());
-    error->setErrorWeights(Eigen::Vector6d::Constant(1.0));
+    error->setErrorWeights(math::Vector6d::Constant(1.0));
   }
 }
 
@@ -957,7 +957,7 @@ InverseKinematics::Analytical::Analytical(
 const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 {
   const Eigen::Isometry3d& currentTf = mIK->getNode()->getWorldTransform();
-  const Eigen::Vector6d& error = mIK->getErrorMethod().computeError();
+  const math::Vector6d& error = mIK->getErrorMethod().computeError();
 
   const Eigen::Isometry3d& _desiredTf
       = mIK->getErrorMethod().computeDesiredTransform(currentTf, error);
@@ -1026,7 +1026,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
 //==============================================================================
 void InverseKinematics::Analytical::addExtraDofGradient(
     Eigen::VectorXd& grad,
-    const Eigen::Vector6d& error,
+    const math::Vector6d& error,
     ExtraDofUtilization /*utilization*/)
 {
   mExtraDofGradCache.resize(mExtraDofs.size());
@@ -1067,10 +1067,10 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
 //==============================================================================
 void InverseKinematics::Analytical::computeGradient(
-    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
+    const math::Vector6d& _error, Eigen::VectorXd& _grad)
 {
   _grad.setZero();
-  if (Eigen::Vector6d::Zero() == _error)
+  if (math::Vector6d::Zero() == _error)
     return;
 
   const Eigen::Isometry3d& desiredTf
@@ -1081,7 +1081,7 @@ void InverseKinematics::Analytical::computeGradient(
        || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
       && mExtraDofs.size() > 0) {
     const double norm = _error.norm();
-    const Eigen::Vector6d& error
+    const math::Vector6d& error
         = norm > mAnalyticalP.mExtraErrorLengthClamp
               ? mAnalyticalP.mExtraErrorLengthClamp * _error / norm
               : _error;
@@ -1129,7 +1129,7 @@ void InverseKinematics::Analytical::computeGradient(
     setPositions(bestSolution);
 
     const Eigen::Isometry3d& postTf = mIK->getNode()->getWorldTransform();
-    Eigen::Vector6d postError;
+    math::Vector6d postError;
     postError.tail<3>() = postTf.translation() - desiredTf.translation();
     Eigen::AngleAxisd aaError(postTf.linear() * desiredTf.linear().transpose());
     postError.head<3>() = aaError.angle() * aaError.axis();

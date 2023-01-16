@@ -307,7 +307,7 @@ void PlanarJoint::updateRelativeJacobianTimeDeriv() const
                   mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
           J.col(1)));
 
-  assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
+  assert(mJacobianDeriv.col(2) == math::Vector6d::Zero());
   assert(!math::isNan(mJacobianDeriv.col(0)));
   assert(!math::isNan(mJacobianDeriv.col(1)));
 }

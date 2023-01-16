@@ -342,7 +342,7 @@ public:
       const Frame* _withRespectTo = Frame::World()) const override;
 
   // Documentation inherited
-  Eigen::Vector6d getCOMSpatialVelocity(
+  math::Vector6d getCOMSpatialVelocity(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
@@ -352,7 +352,7 @@ public:
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
-  Eigen::Vector6d getCOMSpatialAcceleration(
+  math::Vector6d getCOMSpatialAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 

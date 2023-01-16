@@ -48,7 +48,7 @@
 #include <Eigen/Dense>
 // Local Headers
 #include <dart/math/Constants.hpp>
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/Fwd.hpp>
 #include <dart/math/Random.hpp>
 
 namespace dart {
@@ -70,7 +70,7 @@ constexpr T toDegree(const T& radian)
 
 /// \brief a cross b = (CR*a) dot b
 /// const Matd CR(2,2,0.0,-1.0,1.0,0.0);
-const Eigen::Matrix2d CR((Eigen::Matrix2d() << 0.0, -1.0, 1.0, 0.0).finished());
+const Matrix2d CR((Matrix2d() << 0.0, -1.0, 1.0, 0.0).finished());
 
 inline int delta(int _i, int _j)
 {
@@ -171,9 +171,9 @@ constexpr T clamp(
 
 template <typename DerivedA, typename DerivedB>
 typename DerivedA::PlainObject clamp(
-    const Eigen::MatrixBase<DerivedA>& val,
-    const Eigen::MatrixBase<DerivedB>& lower,
-    const Eigen::MatrixBase<DerivedB>& upper)
+    const MatrixBase<DerivedA>& val,
+    const MatrixBase<DerivedB>& lower,
+    const MatrixBase<DerivedB>& upper)
 {
   return lower.cwiseMax(val.cwiseMin(upper));
 }
@@ -202,7 +202,7 @@ inline bool isNan(double _v)
 }
 
 /// \brief Returns whether _m is a NaN (Not-A-Number) matrix
-inline bool isNan(const Eigen::MatrixXd& _m)
+inline bool isNan(const MatrixXd& _m)
 {
   for (int i = 0; i < _m.rows(); ++i)
     for (int j = 0; j < _m.cols(); ++j)
@@ -225,7 +225,7 @@ inline bool isInf(double _v)
 
 /// \brief Returns whether _m is an infinity matrix (either positive infinity or
 /// negative infinity).
-inline bool isInf(const Eigen::MatrixXd& _m)
+inline bool isInf(const MatrixXd& _m)
 {
   for (int i = 0; i < _m.rows(); ++i)
     for (int j = 0; j < _m.cols(); ++j)
@@ -236,7 +236,7 @@ inline bool isInf(const Eigen::MatrixXd& _m)
 }
 
 /// \brief Returns whether _m is symmetric or not
-inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6)
+inline bool isSymmetric(const MatrixXd& _m, double _tol = 1e-6)
 {
   std::size_t rows = _m.rows();
   std::size_t cols = _m.cols();

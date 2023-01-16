@@ -211,14 +211,14 @@ void SimpleFrame(py::module& m)
       .def(
           "setRelativeSpatialVelocity",
           +[](dart::dynamics::SimpleFrame* self,
-              const Eigen::Vector6d& _newSpatialVelocity) {
+              const math::Vector6d& _newSpatialVelocity) {
             self->setRelativeSpatialVelocity(_newSpatialVelocity);
           },
           ::py::arg("newSpatialVelocity"))
       .def(
           "setRelativeSpatialVelocity",
           +[](dart::dynamics::SimpleFrame* self,
-              const Eigen::Vector6d& _newSpatialVelocity,
+              const math::Vector6d& _newSpatialVelocity,
               const dart::dynamics::Frame* _inCoordinatesOf) {
             self->setRelativeSpatialVelocity(
                 _newSpatialVelocity, _inCoordinatesOf);
@@ -228,14 +228,14 @@ void SimpleFrame(py::module& m)
       .def(
           "setRelativeSpatialAcceleration",
           +[](dart::dynamics::SimpleFrame* self,
-              const Eigen::Vector6d& _newSpatialAcceleration) {
+              const math::Vector6d& _newSpatialAcceleration) {
             self->setRelativeSpatialAcceleration(_newSpatialAcceleration);
           },
           ::py::arg("newSpatialAcceleration"))
       .def(
           "setRelativeSpatialAcceleration",
           +[](dart::dynamics::SimpleFrame* self,
-              const Eigen::Vector6d& _newSpatialAcceleration,
+              const math::Vector6d& _newSpatialAcceleration,
               const dart::dynamics::Frame* _inCoordinatesOf) {
             self->setRelativeSpatialAcceleration(
                 _newSpatialAcceleration, _inCoordinatesOf);

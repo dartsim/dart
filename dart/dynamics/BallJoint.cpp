@@ -171,7 +171,7 @@ void BallJoint::updateRelativeJacobian(bool _mandatory) const
 //==============================================================================
 void BallJoint::updateRelativeJacobianTimeDeriv() const
 {
-  assert(Eigen::Matrix6d::Zero().leftCols<3>() == mJacobianDeriv);
+  assert(math::Matrix6d::Zero().leftCols<3>() == mJacobianDeriv);
 }
 
 //==============================================================================

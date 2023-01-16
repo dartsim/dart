@@ -33,7 +33,7 @@
 #ifndef DART_LCPSOLVER_ODELCPSOLVER_HPP_
 #define DART_LCPSOLVER_ODELCPSOLVER_HPP_
 
-#include <Eigen/Dense>
+#include <dart/math/Fwd.hpp>
 
 namespace dart {
 namespace math {
@@ -50,9 +50,9 @@ public:
 
   /// \brief
   bool Solve(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::VectorXd* _x,
+      const MatrixXd& _A,
+      const VectorXd& _b,
+      VectorXd* _x,
       int numContacts,
       double mu = 0,
       int numDir = 0,
@@ -61,25 +61,20 @@ public:
 private:
   /// \brief
   void transferToODEFormulation(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::MatrixXd* _AOut,
-      Eigen::VectorXd* _bOut,
+      const MatrixXd& _A,
+      const VectorXd& _b,
+      MatrixXd* _AOut,
+      VectorXd* _bOut,
       int _numDir,
       int _numContacts);
 
   /// \brief
   void transferSolFromODEFormulation(
-      const Eigen::VectorXd& _x,
-      Eigen::VectorXd* _xOut,
-      int _numDir,
-      int _numContacts);
+      const VectorXd& _x, VectorXd* _xOut, int _numDir, int _numContacts);
 
   /// \brief
   bool checkIfSolution(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      const Eigen::VectorXd& _x);
+      const MatrixXd& _A, const VectorXd& _b, const VectorXd& _x);
 };
 
 } // namespace math

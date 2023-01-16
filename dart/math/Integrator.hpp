@@ -33,7 +33,7 @@
 #ifndef DART_INTEGRATION_INTEGRATOR_HPP_
 #define DART_INTEGRATION_INTEGRATOR_HPP_
 
-#include <Eigen/Dense>
+#include <dart/math/Fwd.hpp>
 
 #include <vector>
 
@@ -52,27 +52,25 @@ public:
 
 public:
   /// \brief Set configurations
-  virtual void setConfigs(const Eigen::VectorXd& _configs) = 0;
+  virtual void setConfigs(const VectorXd& _configs) = 0;
 
   /// \brief Set generalized velocities
-  virtual void setGenVels(const Eigen::VectorXd& _genVels) = 0;
+  virtual void setGenVels(const VectorXd& _genVels) = 0;
 
   /// \brief Get configurations
-  virtual Eigen::VectorXd getConfigs() const = 0;
+  virtual VectorXd getConfigs() const = 0;
 
   /// \brief Get generalized velocities
-  virtual Eigen::VectorXd getGenVels() const = 0;
+  virtual VectorXd getGenVels() const = 0;
 
   /// \brief Evaulate generalized accelerations
-  virtual Eigen::VectorXd evalGenAccs() = 0;
+  virtual VectorXd evalGenAccs() = 0;
 
   /// \brief Integrate configruations and store them in the system
-  virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt)
-      = 0;
+  virtual void integrateConfigs(const VectorXd& _genVels, double _dt) = 0;
 
   /// \brief Integrate generalized velocities and store them in the system
-  virtual void integrateGenVels(const Eigen::VectorXd& _genVels, double _dt)
-      = 0;
+  virtual void integrateGenVels(const VectorXd& _genVels, double _dt) = 0;
 };
 
 // TODO(kasiu): Consider templating the class (which currently only works on

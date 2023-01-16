@@ -3563,8 +3563,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(
-        mSkelCache.mBodyNodes[i]->mConstraintImpulse
-        == Eigen::Vector6d::Zero());
+        mSkelCache.mBodyNodes[i]->mConstraintImpulse == math::Vector6d::Zero());
 #endif
 
   // Prepare cache data
@@ -3577,7 +3576,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 
 //==============================================================================
 void Skeleton::updateBiasImpulse(
-    BodyNode* _bodyNode, const Eigen::Vector6d& _imp)
+    BodyNode* _bodyNode, const math::Vector6d& _imp)
 {
   if (nullptr == _bodyNode) {
     dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
@@ -3594,8 +3593,7 @@ void Skeleton::updateBiasImpulse(
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(
-        mSkelCache.mBodyNodes[i]->mConstraintImpulse
-        == Eigen::Vector6d::Zero());
+        mSkelCache.mBodyNodes[i]->mConstraintImpulse == math::Vector6d::Zero());
 #endif
 
   // Set impulse of _bodyNode
@@ -3614,9 +3612,9 @@ void Skeleton::updateBiasImpulse(
 //==============================================================================
 void Skeleton::updateBiasImpulse(
     BodyNode* _bodyNode1,
-    const Eigen::Vector6d& _imp1,
+    const math::Vector6d& _imp1,
     BodyNode* _bodyNode2,
-    const Eigen::Vector6d& _imp2)
+    const math::Vector6d& _imp2)
 {
   // Assertions
   if (nullptr == _bodyNode1) {
@@ -3641,8 +3639,7 @@ void Skeleton::updateBiasImpulse(
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(
-        mSkelCache.mBodyNodes[i]->mConstraintImpulse
-        == Eigen::Vector6d::Zero());
+        mSkelCache.mBodyNodes[i]->mConstraintImpulse == math::Vector6d::Zero());
 #endif
 
   // Set impulse to _bodyNode
@@ -3682,8 +3679,7 @@ void Skeleton::updateBiasImpulse(
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(
-        mSkelCache.mBodyNodes[i]->mConstraintImpulse
-        == Eigen::Vector6d::Zero());
+        mSkelCache.mBodyNodes[i]->mConstraintImpulse == math::Vector6d::Zero());
 #endif
 
   // Set impulse to _bodyNode
@@ -3811,11 +3807,11 @@ PropertyType getCOMPropertyTemplate(
 }
 
 //==============================================================================
-Eigen::Vector6d Skeleton::getCOMSpatialVelocity(
+math::Vector6d Skeleton::getCOMSpatialVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector6d,
+      math::Vector6d,
       &BodyNode::getCOMSpatialVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
@@ -3829,11 +3825,11 @@ Eigen::Vector3d Skeleton::getCOMLinearVelocity(
 }
 
 //==============================================================================
-Eigen::Vector6d Skeleton::getCOMSpatialAcceleration(
+math::Vector6d Skeleton::getCOMSpatialAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<
-      Eigen::Vector6d,
+      math::Vector6d,
       &BodyNode::getCOMSpatialAcceleration>(
       this, _relativeTo, _inCoordinatesOf);
 }
