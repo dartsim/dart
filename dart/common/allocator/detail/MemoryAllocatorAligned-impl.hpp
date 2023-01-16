@@ -30,41 +30,67 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/common.hpp"
+#pragma once
 
-#include <gtest/gtest.h>
+#include <dart/common/allocator/MemoryAllocatorAligned.hpp>
 
-using namespace dart;
-using namespace common;
+namespace dart::common {
 
 //==============================================================================
-GTEST_TEST(StlAllocatorTest, Basics)
+template <typename T>
+T* MemoryAllocatorAligned::allocateAs(size_t n) noexcept
 {
-  auto a = StlAllocator<int>();
-  auto o1 = a.allocate(1);
-  auto o2 = a.allocate(1);
-  EXPECT_TRUE(o1 != nullptr);
-  EXPECT_TRUE(o2 != nullptr);
-  a.deallocate(o1, 1);
-  a.deallocate(o2, 1);
-  a.print();
+  return static_cast<T*>(allocate(n * sizeof(T), alignof(T)));
 }
 
 //==============================================================================
-// GTEST_TEST(StlAllocatorTest, Basics2)
-//{
-//  LinearAllocator base_allocator(sizeof(int) + 1);
-//  static_assert(
-//      sizeof(int) > 1,
-//      "sizeof(int) should be greater than 1 to keep this test valid.");
-//  auto a = StlAllocator<int>(base_allocator);
-//  EXPECT_TRUE(a.allocate(1) != nullptr);
-//  try {
-//    EXPECT_TRUE(a.allocate(1) == nullptr);
-//  } catch (std::bad_alloc& /*e*/) {
-//    EXPECT_TRUE(true);
-//  } catch (...) {
-//    EXPECT_TRUE(false);
-//  }
-//  a.print();
-//}
+template <typename T, typename... Args>
+T* MemoryAllocatorAligned::construct(Args&&... args) noexcept
+{
+  // Allocate new memory for a new object (without calling the constructor)
+  void* object = allocate(sizeof(T), alignof(T));
+  if (!object) {
+    return nullptr;
+  }
+
+  // Call constructor. Return nullptr if failed.
+  try {
+    new (object) T(std::forward<Args>(args)...);
+  } catch (...) {
+    deallocate(object, sizeof(T));
+    return nullptr;
+  }
+
+  return reinterpret_cast<T*>(object);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryAllocatorAligned::constructAt(void* pointer, Args&&... args)
+{
+  return ::new (
+      const_cast<void*>(static_cast<const volatile void*>(pointer)), alignof(T))
+      T(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T, typename... Args>
+T* MemoryAllocatorAligned::constructAt(T* pointer, Args&&... args)
+{
+  return ::new (
+      const_cast<void*>(static_cast<const volatile void*>(pointer)), alignof(T))
+      T(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T>
+void MemoryAllocatorAligned::destroy(T* object) noexcept
+{
+  if (!object) {
+    return;
+  }
+  object->~T();
+  deallocate(object, sizeof(T));
+}
+
+} // namespace dart::common

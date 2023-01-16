@@ -30,41 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/common.hpp"
+#pragma once
 
-#include <gtest/gtest.h>
+#include <dart/common/Fwd.hpp>
+#include <dart/common/allocator/MemoryAllocatorAligned.hpp>
 
-using namespace dart;
-using namespace common;
+namespace dart::common {
 
-//==============================================================================
-GTEST_TEST(StlAllocatorTest, Basics)
+/// CAllocatorAligned is a stateless memory allocator that uses
+/// std::aligned_alloc and std::free for memory allocation and deallocation.
+///
+/// It is designed to be used in release mode and is derived from the
+/// MemoryAllocatorAligned base class.
+class DART_COMMON_API CAllocatorAligned : public MemoryAllocatorAligned
 {
-  auto a = StlAllocator<int>();
-  auto o1 = a.allocate(1);
-  auto o2 = a.allocate(1);
-  EXPECT_TRUE(o1 != nullptr);
-  EXPECT_TRUE(o2 != nullptr);
-  a.deallocate(o1, 1);
-  a.deallocate(o2, 1);
-  a.print();
-}
+public:
+  /// Constructor
+  CAllocatorAligned() noexcept;
 
-//==============================================================================
-// GTEST_TEST(StlAllocatorTest, Basics2)
-//{
-//  LinearAllocator base_allocator(sizeof(int) + 1);
-//  static_assert(
-//      sizeof(int) > 1,
-//      "sizeof(int) should be greater than 1 to keep this test valid.");
-//  auto a = StlAllocator<int>(base_allocator);
-//  EXPECT_TRUE(a.allocate(1) != nullptr);
-//  try {
-//    EXPECT_TRUE(a.allocate(1) == nullptr);
-//  } catch (std::bad_alloc& /*e*/) {
-//    EXPECT_TRUE(true);
-//  } catch (...) {
-//    EXPECT_TRUE(false);
-//  }
-//  a.print();
-//}
+  /// Destructor
+  ~CAllocatorAligned() override;
+
+  DART_STRING_TYPE(CAllocatorAligned);
+
+  // Documentation inherited
+  [[nodiscard]] void* allocate(
+      size_t bytes, size_t alignment) noexcept override;
+
+  // Documentation inherited
+  void deallocate(void* pointer, size_t bytes) override;
+
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
+};
+
+} // namespace dart::common

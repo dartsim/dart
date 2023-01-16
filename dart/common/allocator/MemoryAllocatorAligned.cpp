@@ -30,41 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/common.hpp"
+#include "dart/common/allocator/MemoryAllocatorAligned.hpp"
 
-#include <gtest/gtest.h>
+#include "dart/common/allocator/CAllocatorAligned.hpp"
 
-using namespace dart;
-using namespace common;
+namespace dart::common {
 
 //==============================================================================
-GTEST_TEST(StlAllocatorTest, Basics)
+MemoryAllocatorAligned& MemoryAllocatorAligned::GetDefault()
 {
-  auto a = StlAllocator<int>();
-  auto o1 = a.allocate(1);
-  auto o2 = a.allocate(1);
-  EXPECT_TRUE(o1 != nullptr);
-  EXPECT_TRUE(o2 != nullptr);
-  a.deallocate(o1, 1);
-  a.deallocate(o2, 1);
-  a.print();
+  static CAllocatorAligned defaultAllocator;
+  return defaultAllocator;
 }
 
 //==============================================================================
-// GTEST_TEST(StlAllocatorTest, Basics2)
-//{
-//  LinearAllocator base_allocator(sizeof(int) + 1);
-//  static_assert(
-//      sizeof(int) > 1,
-//      "sizeof(int) should be greater than 1 to keep this test valid.");
-//  auto a = StlAllocator<int>(base_allocator);
-//  EXPECT_TRUE(a.allocate(1) != nullptr);
-//  try {
-//    EXPECT_TRUE(a.allocate(1) == nullptr);
-//  } catch (std::bad_alloc& /*e*/) {
-//    EXPECT_TRUE(true);
-//  } catch (...) {
-//    EXPECT_TRUE(false);
-//  }
-//  a.print();
-//}
+void MemoryAllocatorAligned::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[*::print is not implemented]\n";
+  }
+  const std::string spaces(indent, ' ');
+  os << spaces << "*::print is not implemented:\n";
+}
+
+//==============================================================================
+std::ostream& operator<<(
+    std::ostream& os, const MemoryAllocatorAligned& allocator)
+{
+  allocator.print(os);
+  return os;
+}
+
+} // namespace dart::common

@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORYALLOCATOR_HPP_
-#define DART_COMMON_MEMORYALLOCATOR_HPP_
+#pragma once
 
 #include <dart/common/Castable.hpp>
-#include <dart/common/Export.hpp>
+#include <dart/common/Fwd.hpp>
 
 #include <iostream>
 #include <string>
@@ -43,22 +42,19 @@
 
 namespace dart::common {
 
-/// MemoryAllocator is the base class for non-aligned memory allocators.
-///
-/// It provides a common interface for allocating and deallocating memory and is
-/// designed to be used as a base class for other allocators. Additionally, the
-/// class is derived from Castable, which enables casting to derived types.
-class DART_COMMON_API MemoryAllocator : public Castable<MemoryAllocator>
+/// Base class for std::allocator compatible allocators.
+class DART_COMMON_API MemoryAllocatorAligned
+  : public Castable<MemoryAllocatorAligned>
 {
 public:
   /// Returns the default memory allocator
-  static MemoryAllocator& GetDefault();
+  static MemoryAllocatorAligned& GetDefault();
 
   /// Default constructor
-  MemoryAllocator() noexcept = default;
+  MemoryAllocatorAligned() noexcept = default;
 
   /// Destructor
-  virtual ~MemoryAllocator() = default;
+  virtual ~MemoryAllocatorAligned() = default;
 
   /// Returns type string.
   [[nodiscard]] virtual const std::string& getType() const = 0;
@@ -69,7 +65,8 @@ public:
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
-  [[nodiscard]] virtual void* allocate(size_t bytes) noexcept = 0;
+  [[nodiscard]] virtual void* allocate(
+      size_t bytes, size_t alignment) noexcept = 0;
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Allocates object(s) without calling the constructor.
@@ -113,11 +110,9 @@ public:
 
   /// Prints state of the memory allocator
   friend std::ostream& operator<<(
-      std::ostream& os, const MemoryAllocator& allocator);
+      std::ostream& os, const MemoryAllocatorAligned& allocator);
 };
 
 } // namespace dart::common
 
-#include <dart/common/allocator/detail/MemoryAllocator-impl.hpp>
-
-#endif // DART_COMMON_MEMORYALLOCATOR_HPP_
+#include <dart/common/allocator/detail/MemoryAllocatorAligned-impl.hpp>

@@ -41,7 +41,7 @@
 namespace dart::common {
 
 ///// A memory allocator that keeps track of the first memory address of a
-///memory
+/// memory
 ///// chunk and moves it every time an allocation is done.
 // class DART_COMMON_API LinearAllocator : public MemoryAllocator
 //{

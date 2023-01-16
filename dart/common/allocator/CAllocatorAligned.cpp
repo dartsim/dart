@@ -30,41 +30,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/common.hpp"
+#include "dart/common/allocator/CAllocatorAligned.hpp"
 
-#include <gtest/gtest.h>
+#include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 
-using namespace dart;
-using namespace common;
+namespace dart::common {
 
 //==============================================================================
-GTEST_TEST(StlAllocatorTest, Basics)
+CAllocatorAligned::CAllocatorAligned() noexcept
 {
-  auto a = StlAllocator<int>();
-  auto o1 = a.allocate(1);
-  auto o2 = a.allocate(1);
-  EXPECT_TRUE(o1 != nullptr);
-  EXPECT_TRUE(o2 != nullptr);
-  a.deallocate(o1, 1);
-  a.deallocate(o2, 1);
-  a.print();
+  // Do nothing
 }
 
 //==============================================================================
-// GTEST_TEST(StlAllocatorTest, Basics2)
-//{
-//  LinearAllocator base_allocator(sizeof(int) + 1);
-//  static_assert(
-//      sizeof(int) > 1,
-//      "sizeof(int) should be greater than 1 to keep this test valid.");
-//  auto a = StlAllocator<int>(base_allocator);
-//  EXPECT_TRUE(a.allocate(1) != nullptr);
-//  try {
-//    EXPECT_TRUE(a.allocate(1) == nullptr);
-//  } catch (std::bad_alloc& /*e*/) {
-//    EXPECT_TRUE(true);
-//  } catch (...) {
-//    EXPECT_TRUE(false);
-//  }
-//  a.print();
-//}
+CAllocatorAligned::~CAllocatorAligned()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void* CAllocatorAligned::allocate(size_t bytes, size_t alignment) noexcept
+{
+  if (bytes == 0) {
+    return nullptr;
+  }
+
+  DART_TRACE("Allocated {} bytes.", bytes);
+  return std::aligned_alloc(alignment, bytes);
+}
+
+//==============================================================================
+void CAllocatorAligned::deallocate(void* pointer, size_t bytes)
+{
+  DART_UNUSED(bytes);
+  std::free(pointer);
+  DART_TRACE("Deallocated.");
+}
+
+//==============================================================================
+void CAllocatorAligned::print(std::ostream& os, int indent) const
+{
+  if (indent == 0) {
+    os << "[dart::commmon::CAllocatorAligned]\n";
+  }
+  const std::string spaces(indent, ' ');
+  if (indent != 0) {
+    os << spaces << "type: " << getType() << "\n";
+  }
+}
+
+} // namespace dart::common
