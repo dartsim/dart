@@ -121,8 +121,7 @@ TEST(Skeleton, Restructuring)
 
   // Test moves within the current Skeleton
   for (std::size_t i = 0; i < numIterations; ++i) {
-    std::size_t index
-        = math::Random::uniform<std::size_t>(0, skeletons.size() - 1);
+    std::size_t index = math::Uniform<std::size_t>(0, skeletons.size() - 1);
     index = std::min(index, skeletons.size() - 1);
     SkeletonPtr skeleton = skeletons[index];
     EXPECT_TRUE(skeleton->checkIndexingConsistency());
@@ -131,9 +130,9 @@ TEST(Skeleton, Restructuring)
 
     std::size_t maxNode = skeleton->getNumBodyNodes() - 1;
     BodyNode* bn1
-        = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
+        = skeleton->getBodyNode(math::Uniform<std::size_t>(0, maxNode));
     BodyNode* bn2
-        = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
+        = skeleton->getBodyNode(math::Uniform<std::size_t>(0, maxNode));
 
     if (bn1 == bn2) {
       --i;
@@ -204,8 +203,7 @@ TEST(Skeleton, Restructuring)
 
   // Test moves between Skeletons
   for (std::size_t i = 0; i < numIterations; ++i) {
-    std::size_t fromIndex
-        = math::Random::uniform<std::size_t>(0, skeletons.size() - 1);
+    std::size_t fromIndex = math::Uniform<std::size_t>(0, skeletons.size() - 1);
     fromIndex = std::min(fromIndex, skeletons.size() - 1);
     SkeletonPtr fromSkel = skeletons[fromIndex];
 
@@ -214,8 +212,7 @@ TEST(Skeleton, Restructuring)
       continue;
     }
 
-    std::size_t toIndex
-        = math::Random::uniform<std::size_t>(0, skeletons.size() - 1);
+    std::size_t toIndex = math::Uniform<std::size_t>(0, skeletons.size() - 1);
     toIndex = std::min(toIndex, skeletons.size() - 1);
     SkeletonPtr toSkel = skeletons[toIndex];
 
@@ -225,9 +222,9 @@ TEST(Skeleton, Restructuring)
     }
 
     BodyNode* childBn = fromSkel->getBodyNode(
-        math::Random::uniform<std::size_t>(0, fromSkel->getNumBodyNodes() - 1));
+        math::Uniform<std::size_t>(0, fromSkel->getNumBodyNodes() - 1));
     BodyNode* parentBn = toSkel->getBodyNode(
-        math::Random::uniform<std::size_t>(0, toSkel->getNumBodyNodes() - 1));
+        math::Uniform<std::size_t>(0, toSkel->getNumBodyNodes() - 1));
 
     if (fromSkel == toSkel) {
       if (childBn == parentBn) {

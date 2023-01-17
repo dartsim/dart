@@ -58,14 +58,10 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       break;
     case 'q':   // Spawn a cube
     case 'Q': { // Spawn a cube
-      Vector3d position = Vector3d(
-          Random::uniform(-1.0, 1.0),
-          Random::uniform(0.5, 1.0),
-          Random::uniform(-1.0, 1.0));
-      Vector3d size = Vector3d(
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5));
+      Vector3d position
+          = Vector3d(Uniform(-1.0, 1.0), Uniform(0.5, 1.0), Uniform(-1.0, 1.0));
+      Vector3d size
+          = Vector3d(Uniform(0.1, 0.5), Uniform(0.1, 0.5), Uniform(0.1, 0.5));
       spawnCube(position, size);
       break;
     }
@@ -103,7 +99,7 @@ void MyWindow::spawnCube(
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(newBoxShape);
-  shapeNode->getVisualAspect()->setColor(Random::uniform<Vector3d>(0.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(Uniform<Vector3d>(0.0, 1.0));
 
   mWorld->addSkeleton(newCubeSkeleton);
 }

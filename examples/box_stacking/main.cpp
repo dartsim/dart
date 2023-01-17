@@ -58,7 +58,7 @@ dynamics::SkeletonPtr createBox(const math::Vector3d& position)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(
-      dart::math::Random::uniform<math::Vector3d>(0.0, 1.0));
+      dart::math::Uniform<math::Vector3d>(0.0, 1.0));
 
   // Put the body into position
   math::Isometry3d tf = math::Isometry3d::Identity();

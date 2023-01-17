@@ -121,18 +121,17 @@ void JOINTS::randomizeRefFrames()
   for (std::size_t i = 0; i < frames.size(); ++i) {
     SimpleFrame* F = frames[i];
 
-    math::Vector3d p = Random::uniform<math::Vector3d>(-100, 100);
-    math::Vector3d theta = Random::uniform<math::Vector3d>(
-        -2 * dart::math::pi(), 2 * dart::math::pi());
+    math::Vector3d p = Uniform<math::Vector3d>(-100, 100);
+    math::Vector3d theta
+        = Uniform<math::Vector3d>(-2 * dart::math::pi(), 2 * dart::math::pi());
 
     math::Isometry3d tf(math::Isometry3d::Identity());
     tf.translate(p);
     tf.linear() = math::eulerXYZToMatrix(theta);
 
     F->setRelativeTransform(tf);
-    F->setRelativeSpatialVelocity(Random::uniform<math::Vector6d>(-100, 100));
-    F->setRelativeSpatialAcceleration(
-        Random::uniform<math::Vector6d>(-100, 100));
+    F->setRelativeSpatialVelocity(Uniform<math::Vector6d>(-100, 100));
+    F->setRelativeSpatialAcceleration(Uniform<math::Vector6d>(-100, 100));
   }
 }
 
@@ -161,8 +160,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     double q_delta = 0.000001;
 
     for (int i = 0; i < dof; ++i) {
-      q(i) = Random::uniform(-pi() * 1.0, pi() * 1.0);
-      dq(i) = Random::uniform(-pi() * 1.0, pi() * 1.0);
+      q(i) = Uniform(-pi() * 1.0, pi() * 1.0);
+      dq(i) = Uniform(-pi() * 1.0, pi() * 1.0);
     }
 
     joint->setPositions(q);
@@ -260,7 +259,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 
   for (int idxTest = 0; idxTest < numTests; ++idxTest) {
     for (int i = 0; i < dof; ++i)
-      q(i) = Random::uniform(posMin, posMax);
+      q(i) = Uniform(posMin, posMax);
 
     skeleton->setPositions(q);
 
@@ -1215,7 +1214,7 @@ math::Matrix<double, N, 1> random_vec(double limit = 100)
 {
   math::Matrix<double, N, 1> v;
   for (std::size_t i = 0; i < N; ++i)
-    v[i] = math::Random::uniform(-std::abs(limit), std::abs(limit));
+    v[i] = math::Uniform(-std::abs(limit), std::abs(limit));
   return v;
 }
 

@@ -4,35 +4,35 @@ from dartpy.math import Random
 
 
 def test_create():
-    rand = Random()
+    """ Test that we can create a Random object """
+    rng = Random()
 
 
 def test_seed():
-    rand = Random()
+    """ Test that the seed is set correctly """
 
+    numSeeds = 10
     N = 10
+    min = -1000
+    max = 1000
 
-    min = -10
-    max = 10
+    # Test that the same seed produces the same sequence of random numbers
+    rng = Random()
+    for i in range(numSeeds):
+        seed = rng.uniformInt(0, 100000)
 
-    first = []
-    second = []
-    third = []
+        # Create two random number generators with the same seed
+        rng1 = Random(seed)
+        rng2 = Random(seed)
 
-    tol = 1e-6
+        # Test that the seed is set correctly
+        assert rng1.getSeed() == seed
+        assert rng1.getSeed() == rng2.getSeed()
 
-    for i in range(N):
-        Random.setSeed(i)
-        first.append(Random.uniform(min, max))
-        second.append(Random.uniform(min, max))
-        third.append(Random.uniform(min, max))
-
-    for i in range(N):
-        Random.setSeed(i)
-        assert Random.getSeed() == i
-        assert Random.uniform(min, max) == pytest.approx(first[i], tol)
-        assert Random.uniform(min, max) == pytest.approx(second[i], tol)
-        assert Random.uniform(min, max) == pytest.approx(third[i], tol)
+        # Test that the random number generators produce the same sequence of
+        # random numbers
+        for j in range(N):
+            assert rng1.uniformInt(min, max) == rng2.uniformInt(min, max)
 
 
 if __name__ == "__main__":

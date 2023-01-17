@@ -35,10 +35,19 @@
 #include <dart/math/Fwd.hpp>
 #include <dart/math/Random.hpp>
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
 namespace detail {
+
+//==============================================================================
+template <typename FloatType>
+using UniformRealDist = std::uniform_real_distribution<FloatType>;
+
+template <typename IntType>
+using UniformIntDist = std::uniform_int_distribution<IntType>;
+
+template <typename FloatType>
+using NormalRealDist = std::normal_distribution<FloatType>;
 
 //==============================================================================
 template <template <typename...> class C, typename... Ts>
@@ -53,6 +62,9 @@ using is_base_of_template
 
 template <typename T>
 using is_base_of_matrix = is_base_of_template<::Eigen::MatrixBase, T>;
+
+template <typename T>
+constexpr bool is_base_of_matrix_v = is_base_of_matrix<T>::value;
 
 //==============================================================================
 /// Check whether \c T can be used for std::uniform_int_distribution<T>
@@ -83,270 +95,368 @@ struct is_compatible_to_uniform_int_distribution<
   // Define nothing
 };
 
+template <typename T>
+constexpr bool is_compatible_to_uniform_int_distribution_v = is_compatible_to_uniform_int_distribution<T>::value;
+
 // clang-format on
 
 //==============================================================================
-template <typename S, typename Enable = void>
-struct UniformScalarImpl
+template <typename T, typename Generator>
+[[nodiscard]] T genUniformScalar(
+    const T& min, const T& max, Generator& generator)
 {
-  // Define nothing
-};
-
-//==============================================================================
-// Floating-point case
-template <typename S>
-struct UniformScalarImpl<
-    S,
-    typename std::enable_if<std::is_floating_point<S>::value>::type>
-{
-  static S run(S min, S max)
-  {
-    // Distribution objects are lightweight so we simply construct a new
-    // distribution for each random number generation.
-    Random::UniformRealDist<S> d(min, max);
-    return d(Random::getGenerator());
+  if constexpr (std::is_floating_point_v<T>) {
+    UniformRealDist<T> dist(min, max);
+    return dist(generator);
+  } else if constexpr (is_compatible_to_uniform_int_distribution_v<T>) {
+    UniformIntDist<T> dist(min, max);
+    return dist(generator);
   }
-};
+}
 
 //==============================================================================
-// Floating-point case
-template <typename S>
-struct UniformScalarImpl<
-    S,
-    typename std::enable_if<
-        is_compatible_to_uniform_int_distribution<S>::value>::type>
+template <typename Derived, typename Generator>
+[[nodiscard]] typename Derived::PlainObject genUniformMatrix(
+    const ::Eigen::MatrixBase<Derived>& min,
+    const ::Eigen::MatrixBase<Derived>& max,
+    Generator& generator)
 {
-  static S run(S min, S max)
-  {
-    // Distribution objects are lightweight so we simply construct a new
-    // distribution for each random number generation.
-    Random::UniformIntDist<S> d(min, max);
-    return d(Random::getGenerator());
-  }
-};
-
-//==============================================================================
-template <typename Derived, typename Enable = void>
-struct UniformMatrixImpl
-{
-  // Define nothing
-};
-
-//==============================================================================
-// Dynamic matrix case
-template <typename Derived>
-struct UniformMatrixImpl<
-    Derived,
-    typename std::enable_if<
-        !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Dynamic>::type>
-{
-  static typename Derived::PlainObject run(
-      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
-  {
-    const auto uniformFunc = [&](int i, int j) {
-      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
-    };
+  // Dynamic size matrix
+  if constexpr (
+      !Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime == ::Eigen::Dynamic) {
     return Derived::PlainObject::NullaryExpr(
-        min.rows(), min.cols(), uniformFunc);
+        min.rows(), min.cols(), [&](const int i, const int j) {
+          return genUniformScalar(min(i, j), max(i, j), generator);
+        });
+  } // Fixed size matrix
+  else if constexpr (
+      !Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime != ::Eigen::Dynamic) {
+    return Derived::PlainObject::NullaryExpr([&](const int i, const int j) {
+      return genUniformScalar(min(i, j), max(i, j), generator);
+    });
+  } // Dynamic size vector
+  else if constexpr (
+      Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime == ::Eigen::Dynamic) {
+    return Derived::PlainObject::NullaryExpr(min.size(), [&](const int i) {
+      return genUniformScalar(min[i], max[i], generator);
+    });
+  } // Fixed size vector
+  else if constexpr (
+      Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime != ::Eigen::Dynamic) {
+    return Derived::PlainObject::NullaryExpr([&](const int i) {
+      return genUniformScalar(min[i], max[i], generator);
+    });
   }
-};
+}
 
 //==============================================================================
-// Dynamic vector case
-template <typename Derived>
-struct UniformMatrixImpl<
-    Derived,
-    typename std::enable_if<
-        Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Dynamic>::type>
+template <typename T, typename Generator>
+[[nodiscard]] T genUniform(const T& min, const T& max, Generator& generator)
 {
-  static typename Derived::PlainObject run(
-      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
-  {
-    const auto uniformFunc = [&](int i) {
-      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
-    };
-    return Derived::PlainObject::NullaryExpr(min.size(), uniformFunc);
+  // Scalar type
+  if constexpr (std::is_arithmetic_v<T>) {
+    return genUniformScalar(min, max, generator);
+  } // Matrix type
+  else if constexpr (is_base_of_matrix_v<T>) {
+    return genUniformMatrix(min, max, generator);
+  } // Unsupported type
+  else {
+    static_assert(
+        std::is_arithmetic_v<T> || is_base_of_matrix_v<T>,
+        "genUniform() is only supported for arithmetic types and Eigen types");
   }
-};
+}
 
 //==============================================================================
-// Fixed matrix case
-template <typename Derived>
-struct UniformMatrixImpl<
-    Derived,
-    typename std::enable_if<
-        !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Dynamic>::type>
+template <typename T, typename Generator>
+[[nodiscard]] T genNormalScalar(
+    const T& mean, const T& sigma, Generator& generator)
 {
-  static typename Derived::PlainObject run(
-      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
-  {
-    const auto uniformFunc = [&](int i, int j) {
-      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
-    };
-    return Derived::PlainObject::NullaryExpr(uniformFunc);
+  // Real number type
+  if constexpr (std::is_floating_point_v<T>) {
+    NormalRealDist<T> dist(mean, sigma);
+    return dist(generator);
+  } // Integer type
+  else if constexpr (is_compatible_to_uniform_int_distribution_v<T>) {
+    const float realNumber = genNormalScalar<float>(mean, sigma, generator);
+    return std::round(realNumber);
   }
-};
-
-//==============================================================================
-// Fixed vector case
-template <typename Derived>
-struct UniformMatrixImpl<
-    Derived,
-    typename std::enable_if<
-        Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Dynamic>::type>
-{
-  static typename Derived::PlainObject run(
-      const MatrixBase<Derived>& min, const MatrixBase<Derived>& max)
-  {
-    const auto uniformFunc = [&](int i) {
-      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
-    };
-    return Derived::PlainObject::NullaryExpr(uniformFunc);
+  // Unsupported type
+  else {
+    static_assert(
+        std::is_floating_point_v<T>,
+        "genNormalScalar() is only supported for floating point types");
   }
-};
+}
 
 //==============================================================================
-template <typename T, typename Enable = void>
-struct UniformImpl
+template <typename Derived, typename Generator>
+[[nodiscard]] typename Derived::PlainObject genNormalMatrix(
+    const ::Eigen::MatrixBase<Derived>& mean,
+    const ::Eigen::MatrixBase<Derived>& sigma,
+    Generator& generator)
 {
-  // Define nothing
-};
-
-//==============================================================================
-template <typename T>
-struct UniformImpl<
-    T,
-    typename std::enable_if<std::is_arithmetic<T>::value>::type>
-{
-  static T run(T min, T max)
-  {
-    return UniformScalarImpl<T>::run(min, max);
+  // Dynamic size matrix
+  if constexpr (
+      !Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime == ::Eigen::Dynamic) {
+    return Derived::PlainObject::NullaryExpr(
+        mean.rows(), mean.cols(), [&](const int i, const int j) {
+          return genNormalScalar(mean(i, j), sigma(i, j), generator);
+        });
+  } // Fixed size matrix
+  else if constexpr (
+      !Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime != ::Eigen::Dynamic) {
+    return Derived::PlainObject::NullaryExpr([&](const int i, const int j) {
+      return genNormalScalar(mean(i, j), sigma(i, j), generator);
+    });
+  } // Dynamic size vector
+  else if constexpr (
+      Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime == ::Eigen::Dynamic) {
+    return Derived::PlainObject::NullaryExpr(mean.size(), [&](const int i) {
+      return genNormalScalar(mean[i], sigma[i], generator);
+    });
+  } // Fixed size vector
+  else if constexpr (
+      Derived::IsVectorAtCompileTime
+      && Derived::SizeAtCompileTime != ::Eigen::Dynamic) {
+    return Derived::PlainObject::NullaryExpr([&](const int i) {
+      return genNormalScalar(mean[i], sigma[i], generator);
+    });
   }
-};
+}
 
 //==============================================================================
-template <typename T>
-struct UniformImpl<
-    T,
-    typename std::enable_if<is_base_of_matrix<T>::value>::type>
+template <typename T, typename Generator>
+[[nodiscard]] T genNormal(const T& mean, const T& sigma, Generator& generator)
 {
-  static T run(const MatrixBase<T>& min, const MatrixBase<T>& max)
-  {
-    return UniformMatrixImpl<T>::run(min, max);
+  // Scalar type
+  if constexpr (std::is_arithmetic_v<T>) {
+    return genNormalScalar(mean, sigma, generator);
+  } // Matrix type
+  else if constexpr (is_base_of_matrix_v<T>) {
+    return genNormalMatrix(mean, sigma, generator);
+  } // Unsupported type
+  else {
+    static_assert(
+        std::is_arithmetic_v<T> || is_base_of_matrix_v<T>,
+        "genNormal() is only supported for arithmetic types and Eigen types");
   }
-};
-
-//==============================================================================
-template <typename S, typename Enable = void>
-struct NormalScalarImpl
-{
-  // Define nothing
-};
-
-//==============================================================================
-// Floating-point case
-template <typename S>
-struct NormalScalarImpl<
-    S,
-    typename std::enable_if<std::is_floating_point<S>::value>::type>
-{
-  static S run(S mean, S sigma)
-  {
-    Random::NormalRealDist<S> d(mean, sigma);
-    return d(Random::getGenerator());
-  }
-};
-
-//==============================================================================
-// Floating-point case
-template <typename S>
-struct NormalScalarImpl<
-    S,
-    typename std::enable_if<
-        is_compatible_to_uniform_int_distribution<S>::value>::type>
-{
-  static S run(S mean, S sigma)
-  {
-    using DefaultFloatType = float;
-    const DefaultFloatType realNormal = Random::normal(
-        static_cast<DefaultFloatType>(mean),
-        static_cast<DefaultFloatType>(sigma));
-    return static_cast<S>(std::round(realNormal));
-  }
-};
-
-//==============================================================================
-template <typename T, typename Enable = void>
-struct NormalImpl
-{
-  // Define nothing
-};
-
-//==============================================================================
-template <typename T>
-struct NormalImpl<
-    T,
-    typename std::enable_if<std::is_arithmetic<T>::value>::type>
-{
-  static T run(T min, T max)
-  {
-    return NormalScalarImpl<T>::run(min, max);
-  }
-};
+}
 
 } // namespace detail
 
 //==============================================================================
-template <typename S>
-S Random::uniform(S min, S max)
+template <typename Generator>
+Random<Generator>& Random<Generator>::GetInstance()
 {
-  return detail::UniformImpl<S>::run(min, max);
+  static Random<Generator> instance;
+  return instance;
 }
 
 //==============================================================================
+template <typename Generator>
+Random<Generator>::Random(uint32_t seed) : mSeed(seed), mGenerator(seed)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename Generator>
+uint32_t Random<Generator>::getSeed() const
+{
+  return mSeed;
+}
+
+//==============================================================================
+template <typename Generator>
+void Random<Generator>::setSeed(uint32_t seed)
+{
+  if (seed == mSeed) {
+    return;
+  }
+  mSeed = seed;
+  mGenerator.seed(mSeed);
+}
+
+//==============================================================================
+template <typename Generator>
+template <typename T>
+T Random<Generator>::uniform(const T& min, const T& max)
+{
+  return detail::genUniform(min, max, mGenerator);
+}
+
+//==============================================================================
+template <typename Generator>
 template <typename FixedSizeT>
-FixedSizeT Random::uniform(
+FixedSizeT Random<Generator>::uniform(
     typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max)
 {
-  return uniform<FixedSizeT>(
-      FixedSizeT::Constant(min), FixedSizeT::Constant(max));
+  return detail::genUniformMatrix(
+      FixedSizeT::Constant(min), FixedSizeT::Constant(max), mGenerator);
 }
 
 //==============================================================================
+template <typename Generator>
 template <typename DynamicSizeVectorT>
-DynamicSizeVectorT Random::uniform(
+DynamicSizeVectorT Random<Generator>::uniform(
     int size,
     typename DynamicSizeVectorT::Scalar min,
     typename DynamicSizeVectorT::Scalar max)
 {
-  return uniform<DynamicSizeVectorT>(
+  return detail::genUniformMatrix(
       DynamicSizeVectorT::Constant(size, min),
-      DynamicSizeVectorT::Constant(size, max));
+      DynamicSizeVectorT::Constant(size, max),
+      mGenerator);
 }
 
 //==============================================================================
+template <typename Generator>
 template <typename DynamicSizeMatrixT>
-DynamicSizeMatrixT Random::uniform(
+DynamicSizeMatrixT Random<Generator>::uniform(
     int rows,
     int cols,
     typename DynamicSizeMatrixT::Scalar min,
     typename DynamicSizeMatrixT::Scalar max)
 {
-  return uniform<DynamicSizeMatrixT>(
+  return detail::genUniformMatrix(
       DynamicSizeMatrixT::Constant(rows, cols, min),
-      DynamicSizeMatrixT::Constant(rows, cols, max));
+      DynamicSizeMatrixT::Constant(rows, cols, max),
+      mGenerator);
 }
 
 //==============================================================================
-template <typename S>
-S Random::normal(S min, S max)
+template <typename Generator>
+template <typename T>
+T Random<Generator>::normal(const T& mean, const T& sigma)
 {
-  return detail::NormalImpl<S>::run(min, max);
+  return detail::genNormal(mean, sigma, mGenerator);
 }
 
-} // namespace math
-} // namespace dart
+//==============================================================================
+template <typename Generator>
+template <typename FixedSizeT>
+FixedSizeT Random<Generator>::normal(
+    typename FixedSizeT::Scalar mean, typename FixedSizeT::Scalar sigma)
+{
+  return detail::genNormalMatrix(
+      FixedSizeT::Constant(mean), FixedSizeT::Constant(sigma), mGenerator);
+}
+
+//==============================================================================
+template <typename Generator>
+template <typename DynamicSizeVectorT>
+DynamicSizeVectorT Random<Generator>::normal(
+    int size,
+    typename DynamicSizeVectorT::Scalar mean,
+    typename DynamicSizeVectorT::Scalar sigma)
+{
+  return detail::genNormalMatrix(
+      DynamicSizeVectorT::Constant(size, mean),
+      DynamicSizeVectorT::Constant(size, sigma),
+      mGenerator);
+}
+
+//==============================================================================
+template <typename Generator>
+template <typename DynamicSizeMatrixT>
+DynamicSizeMatrixT Random<Generator>::normal(
+    int rows,
+    int cols,
+    typename DynamicSizeMatrixT::Scalar mean,
+    typename DynamicSizeMatrixT::Scalar sigma)
+{
+  return detail::genNormalMatrix(
+      DynamicSizeMatrixT::Constant(rows, cols, mean),
+      DynamicSizeMatrixT::Constant(rows, cols, sigma),
+      mGenerator);
+}
+
+//==============================================================================
+template <typename T>
+T Uniform(const T& min, const T& max)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.uniform(min, max);
+}
+
+//==============================================================================
+template <typename FixedSizeT>
+FixedSizeT Uniform(
+    typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.uniform<FixedSizeT>(min, max);
+}
+
+//==============================================================================
+template <typename DynamicSizeVectorT>
+DynamicSizeVectorT Uniform(
+    int size,
+    typename DynamicSizeVectorT::Scalar min,
+    typename DynamicSizeVectorT::Scalar max)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.uniform<DynamicSizeVectorT>(size, min, max);
+}
+
+//==============================================================================
+template <typename DynamicSizeMatrixT>
+DynamicSizeMatrixT Uniform(
+    int rows,
+    int cols,
+    typename DynamicSizeMatrixT::Scalar min,
+    typename DynamicSizeMatrixT::Scalar max)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.uniform<DynamicSizeMatrixT>(rows, cols, min, max);
+}
+
+//==============================================================================
+template <typename T>
+T Normal(const T& min, const T& max)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.normal(min, max);
+}
+
+//==============================================================================
+template <typename FixedSizeT>
+FixedSizeT Normal(
+    typename FixedSizeT::Scalar mean, typename FixedSizeT::Scalar sigma)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.normal<FixedSizeT>(mean, sigma);
+}
+
+//==============================================================================
+template <typename DynamicSizeVectorT>
+DynamicSizeVectorT Normal(
+    int size,
+    typename DynamicSizeVectorT::Scalar mean,
+    typename DynamicSizeVectorT::Scalar sigma)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.normal<DynamicSizeVectorT>(size, mean, sigma);
+}
+
+//==============================================================================
+template <typename DynamicSizeMatrixT>
+DynamicSizeMatrixT Normal(
+    int rows,
+    int cols,
+    typename DynamicSizeMatrixT::Scalar mean,
+    typename DynamicSizeMatrixT::Scalar sigma)
+{
+  auto& rng = Random<>::GetInstance();
+  return rng.normal<DynamicSizeMatrixT>(rows, cols, mean, sigma);
+}
+
+} // namespace dart::math

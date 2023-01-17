@@ -236,7 +236,7 @@ TEST(World, Cloning)
         // Generate a random command vector
         math::VectorXd commands = skel->getCommands();
         for (int q = 0; q < commands.size(); ++q)
-          commands[q] = Random::uniform(-0.1, 0.1);
+          commands[q] = Uniform(-0.1, 0.1);
 
         // Assign the command vector to each clone of the kth skeleton
         for (std::size_t c = 0; c < clones.size(); ++c) {

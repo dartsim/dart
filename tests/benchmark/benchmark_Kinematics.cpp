@@ -98,7 +98,7 @@ void testForwardKinematicSpeed(
   for (std::size_t i = 0; i < numTests; ++i) {
     for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
       dart::dynamics::DegreeOfFreedom* dof = skel->getDof(i);
-      dof->setPosition(dart::math::Random::uniform(
+      dof->setPosition(dart::math::Uniform(
           std::max(dof->getPositionLowerLimit(), -1.0),
           std::min(dof->getPositionUpperLimit(), 1.0)));
     }

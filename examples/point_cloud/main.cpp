@@ -180,7 +180,7 @@ protected:
     while (true)
     {
       const auto bodyIndex
-          = math::Random::uniform<std::size_t>(0, numBodies - 1);
+          = math::uniform<std::size_t>(0, numBodies - 1);
       auto body = mRobot->getBodyNode(bodyIndex);
       const auto numShapeNodes
           = body->getNumShapeNodesWith<dynamics::VisualAspect>();
@@ -188,7 +188,7 @@ protected:
         continue;
 
       const auto shapeIndex
-          = math::Random::uniform<std::size_t>(0, numShapeNodes - 1);
+          = math::uniform<std::size_t>(0, numShapeNodes - 1);
       auto shapeNode
           = body->getShapeNodeWith<dynamics::VisualAspect>(shapeIndex);
       auto shape = shapeNode->getShape();
@@ -204,13 +204,13 @@ protected:
       if (assimpScene->mNumMeshes < 1)
         continue;
       const auto meshIndex
-          = math::Random::uniform<std::size_t>(0, assimpScene->mNumMeshes - 1);
+          = math::uniform<std::size_t>(0, assimpScene->mNumMeshes - 1);
 
       auto assimpMesh = assimpScene->mMeshes[meshIndex];
       auto numVertices = assimpMesh->mNumVertices;
 
       auto vertexIndex
-          = math::Random::uniform<unsigned int>(0, numVertices - 1);
+          = math::uniform<unsigned int>(0, numVertices - 1);
       auto vertex = assimpMesh->mVertices[vertexIndex];
 
       math::Isometry3d tf = shapeNode->getWorldTransform();
@@ -238,7 +238,7 @@ protected:
 
     for (auto i = 0u; i < numPoints; ++i)
     {
-      const math::Vector3d point = math::Random::uniform(min, max);
+      const math::Vector3d point = math::uniform(min, max);
       pointCloud.push_back(
           static_cast<float>(point.x()),
           static_cast<float>(point.y()),

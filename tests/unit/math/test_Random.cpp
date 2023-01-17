@@ -102,82 +102,82 @@ TEST(Random, CheckSyntaxValidity)
   // The output type will be inferred from the arguments.
 
   // Create random scalars given scalar bounds
-  Random::uniform(mins, maxs);
-  Random::uniform(mini, maxi);
-  Random::uniform(minl, maxl);
-  Random::uniform(minll, maxll);
-  Random::uniform(minus, maxus);
-  Random::uniform(minui, maxui);
-  Random::uniform(minul, maxul);
-  Random::uniform(minull, maxull);
-  Random::uniform(minf, maxf);
-  Random::uniform(mind, maxd);
-  Random::uniform(minld, maxld);
+  std::ignore = Uniform(mins, maxs);
+  std::ignore = Uniform(mini, maxi);
+  std::ignore = Uniform(minl, maxl);
+  std::ignore = Uniform(minll, maxll);
+  std::ignore = Uniform(minus, maxus);
+  std::ignore = Uniform(minui, maxui);
+  std::ignore = Uniform(minul, maxul);
+  std::ignore = Uniform(minull, maxull);
+  std::ignore = Uniform(minf, maxf);
+  std::ignore = Uniform(mind, maxd);
+  std::ignore = Uniform(minld, maxld);
 
   // Create random vectors given dynamic size vector bounds
-  Random::uniform(minVecXi, maxVecXi);
-  Random::uniform(minVecXf, maxVecXf);
-  Random::uniform(minVecXd, maxVecXd);
+  std::ignore = Uniform(minVecXi, maxVecXi);
+  std::ignore = Uniform(minVecXf, maxVecXf);
+  std::ignore = Uniform(minVecXd, maxVecXd);
 
   // Create random vectors given fixed-size vector bounds
-  Random::uniform(minVec3i, maxVec3i);
-  Random::uniform(minVec3f, maxVec3f);
-  Random::uniform(minVec3d, maxVec3d);
+  std::ignore = Uniform(minVec3i, maxVec3i);
+  std::ignore = Uniform(minVec3f, maxVec3f);
+  std::ignore = Uniform(minVec3d, maxVec3d);
 
   // Create random matrices given dynamic size matrix bounds
-  Random::uniform(minMatXi, maxMatXi);
-  Random::uniform(minMatXf, maxMatXf);
-  Random::uniform(minMatXd, maxMatXd);
+  std::ignore = Uniform(minMatXi, maxMatXi);
+  std::ignore = Uniform(minMatXf, maxMatXf);
+  std::ignore = Uniform(minMatXd, maxMatXd);
 
   // Create random matrices given fixed-size matrix bounds
-  Random::uniform(minMat3i, maxMat3i);
-  Random::uniform(minMat3f, maxMat3f);
-  Random::uniform(minMat3d, maxMat3d);
+  std::ignore = Uniform(minMat3i, maxMat3i);
+  std::ignore = Uniform(minMat3f, maxMat3f);
+  std::ignore = Uniform(minMat3d, maxMat3d);
 
   // -- Create random vectors explicitly given template parameters
 
   // Create random scalars given scalar bounds
-  Random::uniform<short>(mins, maxs);
-  Random::uniform<int>(mini, maxi);
-  Random::uniform<long>(minl, maxl);
-  Random::uniform<long long>(minll, maxll);
-  Random::uniform<unsigned short>(minus, maxus);
-  Random::uniform<unsigned int>(minui, maxui);
-  Random::uniform<unsigned long>(minul, maxul);
-  Random::uniform<unsigned long long>(minull, maxull);
-  Random::uniform<float>(minf, maxf);
-  Random::uniform<double>(mind, maxd);
-  Random::uniform<long double>(minld, maxld);
+  std::ignore = Uniform<short>(mins, maxs);
+  std::ignore = Uniform<int>(mini, maxi);
+  std::ignore = Uniform<long>(minl, maxl);
+  std::ignore = Uniform<long long>(minll, maxll);
+  std::ignore = Uniform<unsigned short>(minus, maxus);
+  std::ignore = Uniform<unsigned int>(minui, maxui);
+  std::ignore = Uniform<unsigned long>(minul, maxul);
+  std::ignore = Uniform<unsigned long long>(minull, maxull);
+  std::ignore = Uniform<float>(minf, maxf);
+  std::ignore = Uniform<double>(mind, maxd);
+  std::ignore = Uniform<long double>(minld, maxld);
 
   // Create random vectors given scalar bounds
-  Random::uniform<math::VectorXi>(size, mini, maxi);
-  Random::uniform<math::VectorXf>(size, minf, maxf);
-  Random::uniform<math::VectorXd>(size, mind, maxd);
+  std::ignore = Uniform<math::VectorXi>(size, mini, maxi);
+  std::ignore = Uniform<math::VectorXf>(size, minf, maxf);
+  std::ignore = Uniform<math::VectorXd>(size, mind, maxd);
 
   // Create random vectors given dynamic size vector bounds
-  Random::uniform<math::VectorXi>(minVecXi, maxVecXi);
-  Random::uniform<math::VectorXf>(minVecXf, maxVecXf);
-  Random::uniform<math::VectorXd>(minVecXd, maxVecXd);
+  std::ignore = Uniform<math::VectorXi>(minVecXi, maxVecXi);
+  std::ignore = Uniform<math::VectorXf>(minVecXf, maxVecXf);
+  std::ignore = Uniform<math::VectorXd>(minVecXd, maxVecXd);
 
   // Create random vectors given fixed-size vector bounds
-  Random::uniform<math::Vector3i>(minVec3i, maxVec3i);
-  Random::uniform<math::Vector3f>(minVec3f, maxVec3f);
-  Random::uniform<math::Vector3d>(minVec3d, maxVec3d);
+  std::ignore = Uniform<math::Vector3i>(minVec3i, maxVec3i);
+  std::ignore = Uniform<math::Vector3f>(minVec3f, maxVec3f);
+  std::ignore = Uniform<math::Vector3d>(minVec3d, maxVec3d);
 
   // Create random vectors given scalar bounds
-  Random::uniform<math::MatrixXi>(rows, cols, mini, maxi);
-  Random::uniform<math::MatrixXf>(rows, cols, minf, maxf);
-  Random::uniform<math::MatrixXd>(rows, cols, mind, maxd);
+  std::ignore = Uniform<math::MatrixXi>(rows, cols, mini, maxi);
+  std::ignore = Uniform<math::MatrixXf>(rows, cols, minf, maxf);
+  std::ignore = Uniform<math::MatrixXd>(rows, cols, mind, maxd);
 
   // Create random matrices given dynamic size matrix bounds
-  Random::uniform<math::MatrixXi>(minMatXi, maxMatXi);
-  Random::uniform<math::MatrixXf>(minMatXf, maxMatXf);
-  Random::uniform<math::MatrixXd>(minMatXd, maxMatXd);
+  std::ignore = Uniform<math::MatrixXi>(minMatXi, maxMatXi);
+  std::ignore = Uniform<math::MatrixXf>(minMatXf, maxMatXf);
+  std::ignore = Uniform<math::MatrixXd>(minMatXd, maxMatXd);
 
   // Create random matrices given fixed-size matrix bounds
-  Random::uniform<math::Matrix3i>(minMat3i, maxMat3i);
-  Random::uniform<math::Matrix3f>(minMat3f, maxMat3f);
-  Random::uniform<math::Matrix3d>(minMat3d, maxMat3d);
+  std::ignore = Uniform<math::Matrix3i>(minMat3i, maxMat3i);
+  std::ignore = Uniform<math::Matrix3f>(minMat3f, maxMat3f);
+  std::ignore = Uniform<math::Matrix3d>(minMat3d, maxMat3d);
 }
 
 //==============================================================================
@@ -192,20 +192,24 @@ TEST(Random, UniformScalar)
   int mini = -5.0;
   int maxi = 10.0;
 
-  double uniformd = math::Random::uniform(mind, maxd);
+  // Test that the random number generator can generate all values in the range
+  double uniformd = math::Uniform(mind, maxd);
   EXPECT_GE(uniformd, mind);
   EXPECT_LE(uniformd, maxd);
 
-  float uniformf = math::Random::uniform(minf, maxf);
+  // Test that the random number generator can generate all values in the range
+  float uniformf = math::Uniform(minf, maxf);
   EXPECT_GE(uniformf, minf);
   EXPECT_LE(uniformf, maxf);
 
-  int uniformi = math::Random::uniform(mini, maxi);
+  // Test that the random number generator can generate all values in the range
+  int uniformi = math::Uniform(mini, maxi);
   EXPECT_GE(uniformi, mini);
   EXPECT_LE(uniformi, maxi);
 }
 
 //==============================================================================
+// Test that the random number generator can generate all values in the range
 template <typename I>
 bool testClosedEnds(int maxTry, I min = 0, I max = 2)
 {
@@ -213,7 +217,7 @@ bool testClosedEnds(int maxTry, I min = 0, I max = 2)
   bool foundMax = false;
 
   for (int i = 0; i < maxTry; ++i) {
-    const I val = math::Random::uniform<I>(min, max);
+    const I val = math::Uniform<I>(min, max);
 
     if (val == min)
       foundMin = true;
@@ -229,20 +233,21 @@ bool testClosedEnds(int maxTry, I min = 0, I max = 2)
 }
 
 //==============================================================================
-TEST(Random, UniformClosedEnd)
+TEST(Random, UniformClosedEnds)
 {
   const int maxTry = 100000;
 
+  // Test for all integer types
   EXPECT_TRUE(testClosedEnds<short>(maxTry));
   EXPECT_TRUE(testClosedEnds<int>(maxTry));
   EXPECT_TRUE(testClosedEnds<long>(maxTry));
   EXPECT_TRUE(testClosedEnds<long long>(maxTry));
 
+  // Test for all unsigned integer types
   EXPECT_TRUE(testClosedEnds<unsigned short>(maxTry));
   EXPECT_TRUE(testClosedEnds<unsigned int>(maxTry));
   EXPECT_TRUE(testClosedEnds<unsigned long>(maxTry));
   EXPECT_TRUE(testClosedEnds<unsigned long long>(maxTry));
-
   EXPECT_TRUE(testClosedEnds<std::size_t>(maxTry));
 }
 
@@ -260,9 +265,9 @@ TEST(Random, NormalScalar)
 
   // TODO(JS): Not sure what to test because the image of the random values
   // is infinite in theory.
-  math::Random::normal(meand, sigmad);
-  math::Random::normal(meanf, sigmaf);
-  math::Random::normal(meani, sigmai);
+  std::ignore = math::Normal(meand, sigmad);
+  std::ignore = math::Normal(meanf, sigmaf);
+  std::ignore = math::Normal(meani, sigmai);
 }
 
 //==============================================================================
@@ -279,15 +284,21 @@ TEST(Random, UniformVector)
   math::VectorXi mini = math::VectorXi::Constant(vectorSize, -5);
   math::VectorXi maxi = math::VectorXi::Constant(vectorSize, 10);
 
-  math::VectorXd uniformd = math::Random::uniform(mind, maxd);
+  // Create random vectors given scalar bounds
+  math::VectorXd uniformd = math::Uniform(mind, maxd);
+  // Check that the random vector is within the bounds
   EXPECT_TRUE((uniformd.array() >= mind.array()).all());
   EXPECT_TRUE((uniformd.array() <= maxd.array()).all());
 
-  math::VectorXf uniformf = math::Random::uniform(minf, maxf);
+  // Create random vectors given dynamic size vector bounds
+  math::VectorXf uniformf = math::Uniform(minf, maxf);
+  // Check that the random vector is within the bounds
   EXPECT_TRUE((uniformf.array() >= minf.array()).all());
   EXPECT_TRUE((uniformf.array() <= maxf.array()).all());
 
-  math::VectorXi uniformi = math::Random::uniform(mini, maxi);
+  // Create random vectors given fixed-size vector bounds
+  math::VectorXi uniformi = math::Uniform(mini, maxi);
+  // Check that the random vector is within the bounds
   EXPECT_TRUE((uniformi.array() >= mini.array()).all());
   EXPECT_TRUE((uniformi.array() <= maxi.array()).all());
 }
@@ -295,27 +306,26 @@ TEST(Random, UniformVector)
 //==============================================================================
 TEST(Random, SetSeed)
 {
+  const auto numSeeds = 10;
   unsigned int N = 10;
+  const int min = -1000;
+  const int max = 1000;
 
-  int min = -10;
-  int max = 10;
+  // Test that the same seed produces the same sequence of random numbers
+  for (auto i = 0u; i < numSeeds; ++i) {
+    const auto seed = math::Uniform<unsigned>(0, 100000);
 
-  std::vector<int> first;
-  std::vector<int> second;
-  std::vector<int> third;
+    // Create two random number generators with the same seed
+    auto rng1 = Random(seed);
+    auto rng2 = Random(seed);
 
-  for (unsigned int i = 0; i < N; ++i) {
-    math::Random::setSeed(i);
-    first.push_back(math::Random::uniform(min, max));
-    second.push_back(math::Random::uniform(min, max));
-    third.push_back(math::Random::uniform(min, max));
-  }
+    // Check that the seeds are the same
+    EXPECT_EQ(rng1.getSeed(), seed);
+    EXPECT_EQ(rng1.getSeed(), rng2.getSeed());
 
-  for (unsigned int i = 0; i < N; ++i) {
-    math::Random::setSeed(i);
-    EXPECT_EQ(math::Random::getSeed(), static_cast<unsigned int>(i));
-    EXPECT_EQ(first[i], math::Random::uniform(min, max));
-    EXPECT_EQ(second[i], math::Random::uniform(min, max));
-    EXPECT_EQ(third[i], math::Random::uniform(min, max));
+    // Check that the random numbers are the same
+    for (auto j = 0u; j < N; ++j) {
+      EXPECT_EQ(rng1.uniform(min, max), rng2.uniform(min, max));
+    }
   }
 }

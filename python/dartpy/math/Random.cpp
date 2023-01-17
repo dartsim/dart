@@ -44,22 +44,47 @@ namespace python {
 
 void Random(py::module& m)
 {
-  ::py::class_<dart::math::Random>(m, "Random")
-      .def(::py::init<>())
-      .def_static(
-          "setSeed",
-          +[](unsigned int seed) { dart::math::Random::setSeed(seed); },
-          ::py::arg("seed"))
-      .def_static(
-          "getSeed",
-          +[]() -> unsigned int { return dart::math::Random::getSeed(); })
-      .def_static(
-          "uniform",
-          +[](double min, double max) -> double {
-            return dart::math::Random::uniform(min, max);
+  ::py::class_<dart::math::Random<>>(m, "Random")
+      .def(::py::init<uint32_t>(), ::py::arg("seed") = std::random_device{}())
+      .def("setSeed", &dart::math::Random<>::setSeed, ::py::arg("seed"))
+      .def("getSeed", &dart::math::Random<>::getSeed)
+      .def(
+          "uniformInt",
+          +[](dart::math::Random<>& self, int min, int max) {
+            return self.uniform<int>(min, max);
           },
           ::py::arg("min"),
           ::py::arg("max"));
+
+  m.def(
+      "UniformInt",
+      &dart::math::Uniform<int>,
+      ::py::arg("min"),
+      ::py::arg("max"));
+
+  m.def(
+      "UniformInt",
+      +[](int n, int min, int max) {
+        return dart::math::Uniform<math::VectorXi>(n, min, max);
+      },
+      ::py::arg("n"),
+      ::py::arg("min"),
+      ::py::arg("max"));
+
+  m.def(
+      "UniformFloat",
+      &dart::math::Uniform<double>,
+      ::py::arg("min"),
+      ::py::arg("max"));
+
+  m.def(
+      "UniformFloat",
+      +[](int n, double min, double max) {
+        return dart::math::Uniform<math::VectorXd>(n, min, max);
+      },
+      ::py::arg("n"),
+      ::py::arg("min"),
+      ::py::arg("max"));
 }
 
 } // namespace python

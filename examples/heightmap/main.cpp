@@ -54,7 +54,7 @@ dynamics::ShapePtr createHeightmapShape(
   typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
   for (auto i = 0u; i < yResolution; ++i) {
     for (auto j = 0u; j < xResolution; ++j) {
-      data(i, j) = math::Random::uniform(zMin, zMax);
+      data(i, j) = math::Uniform(zMin, zMax);
     }
   }
   auto scale = Vector3(xSize / xResolution, ySize / yResolution, 1);

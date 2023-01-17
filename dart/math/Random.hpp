@@ -30,196 +30,385 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_RANDOM_HPP_
-#define DART_MATH_RANDOM_HPP_
+#pragma once
 
 #include <dart/math/Fwd.hpp>
 
 #include <random>
 
-namespace dart {
-namespace math {
+namespace dart::math {
 
-class DART_MATH_API Random final
+/// The Random class is a consolidated random number generator that provides a
+/// unified and convenient interface for generating various types and
+/// distributions of random numbers. It utilizes the <random> library of the C++
+/// standard library and offers APIs for generating random numbers in the form
+/// of scalars, vectors, and matrices.
+///
+/// The following scalar types are supported:
+/// * Integers
+/// * Floating-point numbers
+///
+/// The supported distributions include:
+/// * Uniform
+/// * Normal (or Gaussian)
+///
+/// The default engine used in this class is the high-quality std::mt19937,
+/// which is a 32-bit random number generator based on the Mersenne Twister
+/// algorithm. However, this can be replaced with any preferred engine by
+/// specifying the template argument. For more information on available engines
+/// and their specific characteristics, see
+/// https://en.cppreference.com/w/cpp/numeric/random.
+///
+/// @tparam Generator_ The random number generator to use. The default is
+/// std::mt19937.
+template <typename Generator_ = std::mt19937>
+class Random final
 {
 public:
-  using GeneratorType = std::mt19937;
+  /// The type of the random number generator.
+  using GeneratorType = Generator_;
 
-  template <typename FloatType>
-  using UniformRealDist = std::uniform_real_distribution<FloatType>;
-
-  template <typename IntType>
-  using UniformIntDist = std::uniform_int_distribution<IntType>;
-
-  template <typename FloatType>
-  using NormalRealDist = std::normal_distribution<FloatType>;
-
-  /// Returns a mutable reference to the random generator
-  static GeneratorType& getGenerator();
-
-  /// Sets the seed value.
+  /// Returns a reference to the singleton instance of the random generator.
   ///
-  /// The same seed gives the same sequence of random values so that you can
-  /// regenerate the same sequencial random values as long as you knot the seed
-  /// value.
-  static void setSeed(unsigned int seed);
+  /// @note This function is thread-safe.
+  /// @return The singleton instance of the random generator.
+  [[nodiscard]] static Random& GetInstance();
 
-  /// Generates a seed value using the default random device.
+  /// Constructs a random number generator with the given seed.
   ///
-  /// \param[in] applyGeneratedSeed Whether to apply the generated seed.
-  /// \return The new seed value.
-  static unsigned int generateSeed(bool applyGeneratedSeed = false);
+  /// @param seed The seed of the random number generator.
+  explicit Random(uint32_t seed = std::random_device{}());
 
-  /// \return The current seed value.
-  static unsigned int getSeed();
+  /// Returns the seed of the random number generator.
+  [[nodiscard]] uint32_t getSeed() const;
+
+  /// Sets the seed of the random number generator.
+  /// @param seed The seed of the random number generator.
+  void setSeed(uint32_t seed);
 
   /// Returns a random number from an uniform distribution.
   ///
+  /// This template function can generate different types of random numbers,
+  /// including:
+  /// - Scalars: floating-point numbers (e.g. float, double, long double) and
+  /// integers (e.g. short, int, long, long long)
+  /// - Vectors and Matrices: both fixed-size (e.g. Vector3i, Matrix4d) and
+  /// dynamic-size (e.g. VectorXi, MatrixXd)
   ///
-  /// This template function can generate different scalar types of random
-  /// numbers as:
-  /// - Floating-point number: \c float, \c double, \c long double
-  /// - Integer number: [\c unsigned] \c short, [\c unsigned] \c int,
-  ///   [\c unsigned] \c long, [\c unsigned] \c long \c long
+  /// Example usage:
+  /// @code
+  /// auto rng = Random();
   ///
-  /// and vectors and matrices as:
-  /// - Fixed-size: Vector3i, Vector3d, Matrix4d, and so
-  ///   on.
-  /// - Dynamic-size: VectorXi, VectorXd, MatrixXd, and so
-  ///   on.
+  /// // Generate a random int in the range [0, 10] (inclusive)
+  /// int intVal1 = rng.uniform(0, 10);
+  /// int intVal2 = rng.uniform<int>(0, 10);
   ///
-  /// Example:
-  /// \code
-  /// // Generate a random int in [0, 10]
-  /// int intVal1 = Random::uniform(0, 10);
-  /// int intVal2 = Random::uniform<int>(0, 10);
+  /// // Generate a random double in the range [0.0, 10.0) (exclusive)
+  /// double dblVal1 = rng.uniform(0.0, 10.0);
+  /// double dblVal2 = rng.uniform<double>(0, 10);
   ///
-  /// // Generate a random double in [0.0, 10.0)
-  /// double dblVal1 = Random::uniform(0.0, 10.0);
-  /// double dblVal2 = Random::uniform<double>(0, 10);
-  ///
-  /// // Generate a random vector in [lb, ub)
+  /// // Generate a random Vector3d in the range [lb, ub) (exclusive)
   /// Vector3d lb = Vector3d::Constant(1);
   /// Vector3d ub = Vector3d::Constant(4);
-  /// Vector3d vecVal1 = Random::uniform(lb, ub);
-  /// Vector3d vecVal2 = Random::uniform<Vector3d>(lb, ub);
+  /// Vector3d vecVal1 = rng.uniform(lb, ub);
+  /// Vector3d vecVal2 = rng.uniform<Vector3d>(lb, ub);
   ///
-  /// // Generate a random matrix in [lb, ub)
+  /// // Generate a random Matrix4f in the range [lb, ub) (exclusive)
   /// Matrix4f lb = Matrix4f::Constant(1);
   /// Matrix4f ub = Matrix4f::Constant(4);
-  /// Matrix4f vecVal1 = Random::uniform(lb, ub);
-  /// Matrix4f vecVal2 = Random::uniform<Matrix4f>(lb, ub);
-  /// \endcode
+  /// Matrix4f vecVal1 = rng.uniform(lb, ub);
+  /// Matrix4f vecVal2 = rng.uniform<Matrix4f>(lb, ub);
+  /// @endcode
   ///
-  /// Note that the end of the range is closed for integer types (i.e.,
-  /// [int_min, int_max]), but open for floating-point types (i.e., [float_min,
-  /// float_max)).
+  /// Note that the upper bound of the range is closed for integer types, but
+  /// open for floating-point types.
   ///
-  /// \tparam S The type of random value.
-  /// \param[in] min Lower bound of the distribution.
-  /// \param[in] max Upper bound of the distribution.
+  /// @tparam T The type of random value.
+  /// @param[in] min Lower bound of the distribution.
+  /// @param[in] max Upper bound of the distribution.
   ///
-  /// \sa normal()
-  template <typename S>
-  static S uniform(S min, S max);
+  /// @sa normal()
+  template <typename T>
+  [[nodiscard]] T uniform(const T& min, const T& max);
 
-  /// Returns a random vector or matrix from an uniform distribution.
+  /// Returns a random fixed-size vector or matrix from an uniform distribution.
   ///
-  /// This is a helper function for the case that the each of lower and upper
-  /// bound has an uniform element value in it. For example, the lower bound is
-  /// [1, 1, 1] or [-2, -2].
+  /// This function is a helper for generating a fixed-size vector or matrix,
+  /// where each element has the same uniform distribution.
   ///
-  /// This variant is meant to be used for fixed-size vector or matrix types.
-  /// For dynamic-size types, please use other variants that takes the size of
-  /// vector or matrix.
+  /// For example, if the lower bound is [1, 1, 1], each element of the vector
+  /// would be randomly generated in the range [1, 1, 1] and if the upper bound
+  /// is [-2, -2], each element of the vector would be randomly generated in the
+  /// range [-2, -2].
   ///
-  /// Example:
-  /// \code
-  /// // Generate random vectors
-  /// VectorXi vecXi = Random::uniform<VectorXi>(0, 10);
-  /// VectorXd vecXd = Random::uniform<VectorXd>(0.0, 10.0);
-  /// \endcode
+  /// Example usage:
+  /// @code
+  /// auto rng = Random();
   ///
-  /// \tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
-  /// \param[in] min The constant value of the lower bound.
-  /// \param[in] max The constant value of the upper bound.
+  /// // Generate random fixed-size vectors
+  /// VectorXi vecXi = rng.uniform<VectorXi>(0, 10);
+  /// VectorXd vecXd = rng.uniform<VectorXd>(0.0, 10.0);
+  /// @endcode
   ///
-  /// \sa uniform()
+  /// @tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
+  /// @param[in] min The constant value of the lower bound for each element.
+  /// @param[in] max The constant value of the upper bound for each element.
+  ///
+  /// @sa uniform()
   template <typename FixedSizeT>
-  static FixedSizeT uniform(
+  [[nodiscard]] FixedSizeT uniform(
       typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max);
 
-  /// Returns a random vector from an uniform distribution.
+  /// Returns a random dynamic-size vector from an uniform distribution.
   ///
-  /// This variant is meant to be used for dynamic-size vector.
+  /// This function is used to generate a dynamic-size vector, where each
+  /// element has the same uniform distribution.
   ///
-  /// Example:
-  /// \code
-  /// // Generate random matrices
-  /// MatrixXi matXi = Random::uniform<MatrixXi>(0, 10);
-  /// MatrixXd matXd = Random::uniform<MatrixXd>(0.0, 10.0);
-  /// \endcode
+  /// Example usage:
+  /// @code
+  /// auto rng = Random();
   ///
-  /// \tparam DynamicSizeVectorT The type of dynamic-size vector.
-  /// \param[in] size The size of the vectors.
-  /// \param[in] min The constant value of the lower bound vector.
-  /// \param[in] max The constant value of the upper bound vector.
+  /// // Generate random dynamic-size vectors
+  /// VectorXd vecXd = rng.uniform<VectorXd>(10, 0.0, 10.0);
+  /// VectorXi vecXi = rng.uniform<VectorXi>(5, 0, 10);
+  /// @endcode
+  ///
+  /// @tparam DynamicSizeVectorT The type of dynamic-size vector.
+  /// @param[in] size The size of the vector.
+  /// @param[in] min The constant value of the lower bound for each element.
+  /// @param[in] max The constant value of the upper bound for each element.
   template <typename DynamicSizeVectorT>
-  static DynamicSizeVectorT uniform(
+  [[nodiscard]] DynamicSizeVectorT uniform(
       int size,
       typename DynamicSizeVectorT::Scalar min,
       typename DynamicSizeVectorT::Scalar max);
 
-  /// Returns a random matrix from an uniform distribution.
+  /// Returns a random dynamic-size matrix from an uniform distribution.
   ///
-  /// This variant is meant to be used for dynamic-size matrix.
+  /// This function is used to generate a dynamic-size matrix, where each
+  /// element has the same uniform distribution.
   ///
-  /// \tparam DynamicSizeMatrixT The type of dynamic-size matrix.
-  /// \param[in] rows The row size of the matrices.
-  /// \param[in] cols The col size of the matrices.
-  /// \param[in] min The constant value of the lower bound matrix.
-  /// \param[in] max The constant value of the upper bound matrix.
+  /// @tparam DynamicSizeMatrixT The type of dynamic-size matrix.
+  /// @param[in] rows The number of rows in the matrix.
+  /// @param[in] cols The number of columns in the matrix.
+  /// @param[in] min The constant value of the lower bound for each element.
+  /// @param[in] max The constant value of the upper bound for each element.
   ///
-  /// \sa uniform()
+  /// @sa uniform()
   template <typename DynamicSizeMatrixT>
-  static DynamicSizeMatrixT uniform(
+  [[nodiscard]] DynamicSizeMatrixT uniform(
       int rows,
       int cols,
       typename DynamicSizeMatrixT::Scalar min,
       typename DynamicSizeMatrixT::Scalar max);
 
-  /// Returns a random number from a normal distribution.
+  /// Returns a random number from a normal (or Gaussian) distribution.
   ///
   /// This template function can generate different scalar types of random
-  /// numbers as:
-  /// - Floating-point number: \c float, \c double, \c long double
-  /// - Integer number: [\c unsigned] \c short, [\c unsigned] \c int,
-  ///   [\c unsigned] \c long, [\c unsigned] \c long \c long
+  /// numbers, including:
+  /// - Floating-point numbers: float, double, long double
+  /// - Integer numbers: [unsigned] short, [unsigned] int, [unsigned] long,
+  /// [unsigned] long long
   ///
-  /// Example:
-  /// \code
+  /// Example usage:
+  /// @code
+  /// auto rng = Random();
+  ///
   /// // Generate a random int
-  /// int intVal = Random::normal(0, 10);
+  /// int intVal = rng.normal(0, 10);
   ///
   /// // Generate a random double
-  /// double dblVal = Random::normal(0.0, 10.0);
-  /// \endcode
+  /// double dblVal = rng.normal(0.0, 10.0);
+  /// @endcode
   ///
-  /// \param[in] mean Mean of the normal distribution.
-  /// \param[in] sigma Standard deviation of the distribution.
+  /// @param[in] mean Mean value of the normal distribution.
+  /// @param[in] sigma Standard deviation of the distribution.
   ///
-  /// \sa uniform()
-  template <typename S>
-  static S normal(S mean, S sigma);
+  /// @sa uniform()
+  template <typename T>
+  [[nodiscard]] T normal(const T& mean, const T& sigma);
+
+  /// Returns a random fixed-size vector or matrix from a normal distribution.
+  ///
+  /// This function is a helper for generating a fixed-size vector or matrix,
+  /// where each element has the same normal distribution.
+  ///
+  /// For example, if the mean is [1, 1, 1], each element of the vector would be
+  /// randomly generated from a normal distribution with mean [1, 1, 1] and if
+  /// the standard deviation is [-2, -2], each element of the vector would be
+  /// randomly generated from a normal distribution with standard deviation
+  /// [-2, -2].
+  ///
+  /// Example usage:
+  /// @code
+  /// auto rng = Random();
+  ///
+  /// // Generate random fixed-size vectors
+  /// VectorXi vecXi = rng.normal<VectorXi>(0, 10);
+  /// VectorXd vecXd = rng.normal<VectorXd>(0.0, 10.0);
+  /// @endcode
+  ///
+  /// @tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
+  /// @param[in] mean The constant value of the mean for each element.
+  /// @param[in] sigma The constant value of the standard deviation for each
+  /// element.
+  ///
+  /// @sa normal()
+  template <typename FixedSizeT>
+  [[nodiscard]] FixedSizeT normal(
+      typename FixedSizeT::Scalar mean, typename FixedSizeT::Scalar sigma);
+
+  /// Returns a random dynamic-size vector from a normal distribution.
+  ///
+  /// This function is used to generate a dynamic-size vector, where each
+  /// element has the same normal distribution.
+  ///
+  /// Example usage:
+  /// @code
+  /// auto rng = Random();
+  ///
+  /// // Generate random dynamic-size vectors
+  /// VectorXd vecXd = rng.normal<VectorXd>(10, 0.0, 10.0);
+  /// VectorXi vecXi = rng.normal<VectorXi>(5, 0, 10);
+  /// @endcode
+  ///
+  /// @tparam DynamicSizeVectorT The type of dynamic-size vector.
+  /// @param[in] size The size of the vector.
+  /// @param[in] mean The constant value of the mean for each element.
+  /// @param[in] sigma The constant value of the standard deviation for each
+  /// element.
+  template <typename DynamicSizeVectorT>
+  [[nodiscard]] DynamicSizeVectorT normal(
+      int size,
+      typename DynamicSizeVectorT::Scalar mean,
+      typename DynamicSizeVectorT::Scalar sigma);
+
+  /// Returns a random dynamic-size matrix from a normal distribution.
+  ///
+  /// This function is used to generate a dynamic-size matrix, where each
+  /// element has the same normal distribution.
+  ///
+  /// Example usage:
+  /// @code
+  /// auto rng = Random();
+  ///
+  /// // Generate random dynamic-size matrices
+  /// MatrixXd matXd = rng.normal<MatrixXd>(10, 5, 0.0, 10.0);
+  /// MatrixXi matXi = rng.normal<MatrixXi>(5, 10, 0, 10);
+  /// @endcode
+  ///
+  /// @tparam DynamicSizeMatrixT The type of dynamic-size matrix.
+  /// @param[in] rows The number of rows in the matrix.
+  /// @param[in] cols The number of columns in the matrix.
+  /// @param[in] mean The constant value of the mean for each element.
+  /// @param[in] sigma The constant value of the standard deviation for each
+  /// element.
+  template <typename DynamicSizeMatrixT>
+  [[nodiscard]] DynamicSizeMatrixT normal(
+      int rows,
+      int cols,
+      typename DynamicSizeMatrixT::Scalar mean,
+      typename DynamicSizeMatrixT::Scalar sigma);
 
 private:
-  /// \return A mutable reference to the seed.
-  static unsigned int& getSeedMutable();
+  /// The seed of the random number generator.
+  uint32_t mSeed;
+
+  /// The random number generator.
+  GeneratorType mGenerator;
 };
 
-} // namespace math
-} // namespace dart
+/// @brief Returns a random number from a uniform distribution between a given
+/// range.
+/// @tparam T The type of random number.
+/// @param[in] min Lower bound of the distribution.
+/// @param[in] max Upper bound of the distribution.
+/// @return A random number from the uniform distribution.
+template <typename T>
+[[nodiscard]] T Uniform(const T& min, const T& max);
+
+/// @brief Returns a random fixed-size vector or matrix from an uniform
+/// distribution.
+/// @tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
+/// @param[in] min The constant value of the lower bound for each element.
+/// @param[in] max The constant value of the upper bound for each element.
+/// @return A random fixed-size vector or matrix from the uniform distribution.
+template <typename FixedSizeT>
+[[nodiscard]] FixedSizeT Uniform(
+    typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max);
+
+/// Returns a random dynamic-size vector from an uniform distribution.
+/// @tparam DynamicSizeVectorT The type of dynamic-size vector.
+/// @param[in] size The size of the vector.
+/// @param[in] min The constant value of the lower bound for each element.
+/// @param[in] max The constant value of the upper bound for each element.
+/// @return A random dynamic-size vector from an uniform distribution.
+template <typename DynamicSizeVectorT>
+[[nodiscard]] DynamicSizeVectorT Uniform(
+    int size,
+    typename DynamicSizeVectorT::Scalar min,
+    typename DynamicSizeVectorT::Scalar max);
+
+/// Returns a random dynamic-size matrix from an uniform distribution.
+/// @tparam DynamicSizeMatrixT The type of dynamic-size matrix.
+/// @param[in] rows The number of rows in the matrix.
+/// @param[in] cols The number of columns in the matrix.
+/// @param[in] min The constant value of the lower bound for each element.
+/// @param[in] max The constant value of the upper bound for each element.
+/// @return A random dynamic-size matrix from an uniform distribution.
+template <typename DynamicSizeMatrixT>
+[[nodiscard]] DynamicSizeMatrixT Uniform(
+    int rows,
+    int cols,
+    typename DynamicSizeMatrixT::Scalar min,
+    typename DynamicSizeMatrixT::Scalar max);
+
+/// Returns a random number from a normal (or Gaussian) distribution.
+/// @tparam S The type of random number.
+/// @param[in] mean Mean value of the normal distribution.
+/// @param[in] sigma Standard deviation of the distribution.
+/// @return A random number from the normal distribution.
+template <typename T>
+[[nodiscard]] T Normal(const T& mean, const T& sigma);
+
+/// Returns a random fixed-size vector or matrix from a normal distribution.
+/// @tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
+/// @param[in] mean The constant value of the mean for each element.
+/// @param[in] sigma The constant value of the standard deviation for each
+/// element.
+/// @return A random fixed-size vector or matrix from the normal distribution.
+template <typename FixedSizeT>
+[[nodiscard]] FixedSizeT Normal(
+    typename FixedSizeT::Scalar mean, typename FixedSizeT::Scalar sigma);
+
+/// Returns a random dynamic-size vector from a normal distribution.
+/// @tparam DynamicSizeVectorT The type of dynamic-size vector.
+/// @param[in] size The size of the vector.
+/// @param[in] mean The constant value of the mean for each element.
+/// @param[in] sigma The constant value of the standard deviation for each
+/// element.
+/// @return A random dynamic-size vector from a normal distribution.
+template <typename DynamicSizeVectorT>
+[[nodiscard]] DynamicSizeVectorT Normal(
+    int size,
+    typename DynamicSizeVectorT::Scalar mean,
+    typename DynamicSizeVectorT::Scalar sigma);
+
+/// Returns a random dynamic-size matrix from a normal distribution.
+/// @tparam DynamicSizeMatrixT The type of dynamic-size matrix.
+/// @param[in] rows The number of rows in the matrix.
+/// @param[in] cols The number of columns in the matrix.
+/// @param[in] mean The constant value of the mean for each element.
+/// @param[in] sigma The constant value of the standard deviation for each
+/// element.
+/// @return A random dynamic-size matrix from a normal distribution.
+template <typename DynamicSizeMatrixT>
+[[nodiscard]] DynamicSizeMatrixT Normal(
+    int rows,
+    int cols,
+    typename DynamicSizeMatrixT::Scalar mean,
+    typename DynamicSizeMatrixT::Scalar sigma);
+
+} // namespace dart::math
 
 #include <dart/math/detail/Random-impl.hpp>
-
-#endif // DART_MATH_RANDOM_HPP_

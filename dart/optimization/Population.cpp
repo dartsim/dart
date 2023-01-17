@@ -89,7 +89,7 @@ Population::Population(
   const math::VectorXd& ub = mProblem->getUpperBounds();
 
   for (std::size_t i = 0u; i < populationSize; ++i)
-    set(i, math::Random::uniform(lb, ub));
+    set(i, math::Uniform(lb, ub));
 }
 
 //==============================================================================

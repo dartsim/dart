@@ -128,8 +128,8 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
   Joint* sphereJoint = sphere->getParentJoint();
-  sphereJoint->setVelocity(3, Random::uniform(-2.0, 2.0)); // x-axis
-  sphereJoint->setVelocity(5, Random::uniform(-2.0, 2.0)); // z-axis
+  sphereJoint->setVelocity(3, Uniform(-2.0, 2.0)); // x-axis
+  sphereJoint->setVelocity(5, Uniform(-2.0, 2.0)); // z-axis
   world->addSkeleton(sphereSkel);
   EXPECT_EQ(sphereSkel->getGravity(), world->getGravity());
   assert(sphere);
@@ -138,8 +138,8 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
       = createBox(Vector3d(1.0, 1.0, 1.0), Vector3d(0.0, 1.0, 0.0));
   BodyNode* box = boxSkel->getBodyNode(0);
   Joint* boxJoint = box->getParentJoint();
-  boxJoint->setVelocity(3, Random::uniform(-2.0, 2.0)); // x-axis
-  boxJoint->setVelocity(5, Random::uniform(-2.0, 2.0)); // z-axis
+  boxJoint->setVelocity(3, Uniform(-2.0, 2.0)); // x-axis
+  boxJoint->setVelocity(5, Uniform(-2.0, 2.0)); // z-axis
   //  world->addSkeleton(boxSkel);
   //  EXPECT_EQ(boxSkel->getGravity(), world->getGravity());
   //  assert(box);

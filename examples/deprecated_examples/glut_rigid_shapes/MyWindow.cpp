@@ -68,12 +68,11 @@ Isometry3d getRandomTransform()
 {
   Isometry3d T = Isometry3d::Identity();
 
-  const Vector3d rotation
-      = math::Random::uniform<Vector3d>(-math::pi(), math::pi());
+  const Vector3d rotation = math::Uniform<Vector3d>(-math::pi(), math::pi());
   const Vector3d position = Vector3d(
-      math::Random::uniform(-1.0, 1.0),
-      math::Random::uniform(0.5, 1.0),
-      math::Random::uniform(-1.0, 1.0));
+      math::Uniform(-1.0, 1.0),
+      math::Uniform(0.5, 1.0),
+      math::Uniform(-1.0, 1.0));
 
   T.translation() = position;
   T.linear() = math::expMapRot(rotation);
@@ -116,20 +115,19 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       break;
     case 'q': // Spawn a cube
     case 'Q': {
-      spawnBox(
-          getRandomTransform(), math::Random::uniform<Vector3d>(0.05, 0.25));
+      spawnBox(getRandomTransform(), math::Uniform<Vector3d>(0.05, 0.25));
       break;
     }
     case 'w': // Spawn an ellipsoid
     case 'W': {
       spawnEllipsoid(
-          getRandomTransform(), math::Random::uniform<Vector3d>(0.025, 0.125));
+          getRandomTransform(), math::Uniform<Vector3d>(0.025, 0.125));
       break;
     }
     case 'e': // Spawn an cylinder
     case 'E': {
-      const double radius = math::Random::uniform(0.05, 0.25);
-      const double height = math::Random::uniform(0.1, 0.5);
+      const double radius = math::Uniform(0.05, 0.25);
+      const double height = math::Uniform(0.1, 0.5);
       spawnCylinder(getRandomTransform(), radius, height);
       break;
     }
@@ -169,8 +167,7 @@ void MyWindow::spawnBox(
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(newShape);
-  shapeNode->getVisualAspect()->setColor(
-      math::Random::uniform<Vector3d>(0.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(math::Uniform<Vector3d>(0.0, 1.0));
 
   mWorld->addSkeleton(newSkeleton);
 }
@@ -197,8 +194,7 @@ void MyWindow::spawnEllipsoid(
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(newShape);
-  shapeNode->getVisualAspect()->setColor(
-      math::Random::uniform<Vector3d>(0.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(math::Uniform<Vector3d>(0.0, 1.0));
 
   mWorld->addSkeleton(newSkeleton);
 }
@@ -225,8 +221,7 @@ void MyWindow::spawnCylinder(
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(newShape);
-  shapeNode->getVisualAspect()->setColor(
-      math::Random::uniform<Vector3d>(0.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(math::Uniform<Vector3d>(0.0, 1.0));
 
   mWorld->addSkeleton(newSkeleton);
 }

@@ -142,9 +142,9 @@ TEST(MetaSkeleton, Referential)
 
       for (std::size_t k = 0; k < numIterations; ++k) {
         for (int r = 0; r < q.size(); ++r) {
-          q[r] = math::Random::uniform<double>(-10, 10);
-          dq[r] = math::Random::uniform<double>(-10, 10);
-          ddq[r] = math::Random::uniform<double>(-10, 10);
+          q[r] = math::Uniform<double>(-10, 10);
+          dq[r] = math::Uniform<double>(-10, 10);
+          ddq[r] = math::Uniform<double>(-10, 10);
         }
 
         tree->setPositions(q);
@@ -615,17 +615,17 @@ TEST(MetaSkeleton, Group)
   std::vector<DegreeOfFreedom*> dofs;
   for (std::size_t i = 0; i < 2 * skel->getNumBodyNodes(); ++i) {
     std::size_t randomIndex
-        = Random::uniform<std::size_t>(0, skel->getNumBodyNodes() - 1);
+        = Uniform<std::size_t>(0, skel->getNumBodyNodes() - 1);
     BodyNode* bn = skel->getBodyNode(randomIndex);
     if (group->addBodyNode(bn, false))
       bodyNodes.push_back(bn);
 
-    randomIndex = Random::uniform<std::size_t>(0, skel->getNumJoints() - 1);
+    randomIndex = Uniform<std::size_t>(0, skel->getNumJoints() - 1);
     Joint* joint = skel->getJoint(randomIndex);
     if (group->addJoint(joint, false, false))
       joints.push_back(joint);
 
-    randomIndex = Random::uniform<std::size_t>(0, skel->getNumDofs() - 1);
+    randomIndex = Uniform<std::size_t>(0, skel->getNumDofs() - 1);
     DegreeOfFreedom* dof = skel->getDof(randomIndex);
     if (group->addDof(dof, false, false))
       dofs.push_back(dof);

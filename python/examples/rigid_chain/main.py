@@ -19,8 +19,7 @@ def main():
 
     # Set initial pose
     init_pose = np.zeros(dof)
-    for i in range(dof):
-        init_pose[i] = dart.math.Random.uniform(-0.5, 0.5)
+    init_pose = dart.math.UniformFloat(dof, -0.5, 0.5)
     chain.setPositions(init_pose)
 
     # Set joint dampings

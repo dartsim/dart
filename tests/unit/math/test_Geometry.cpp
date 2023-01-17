@@ -333,7 +333,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     math::Vector3d randomS = math::Vector3d::Zero();
 
     for (int i = 0; i < 3; ++i)
-      randomS[i] = Random::uniform(min, max);
+      randomS[i] = Uniform(min, max);
 
     math::Isometry3d T = math::expAngular(randomS);
     EXPECT_TRUE(math::verifyTransform(T));
@@ -343,7 +343,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     math::Vector6d randomS = math::Vector6d::Zero();
 
     for (int i = 0; i < 6; ++i)
-      randomS[i] = Random::uniform(min, max);
+      randomS[i] = Uniform(min, max);
 
     math::Isometry3d T = math::expMap(randomS);
     EXPECT_TRUE(math::verifyTransform(T));

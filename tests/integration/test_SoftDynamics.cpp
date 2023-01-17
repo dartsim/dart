@@ -283,20 +283,20 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         int localDof = joint->getNumDofs();
 
         for (int l = 0; l < localDof; ++l) {
-          joint->setDampingCoefficient(l, Random::uniform(lbD, ubD));
-          joint->setSpringStiffness(l, Random::uniform(lbK, ubK));
+          joint->setDampingCoefficient(l, Uniform(lbD, ubD));
+          joint->setSpringStiffness(l, Uniform(lbK, ubK));
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
+          joint->setRestPosition(l, Uniform(lbRP, ubRP));
         }
       }
 
       // Set random states
       Skeleton::Configuration x = softSkel->getConfiguration();
       for (auto k = 0u; k < softSkel->getNumDofs(); ++k) {
-        x.mPositions[k] = Random::uniform(lb, ub);
-        x.mVelocities[k] = Random::uniform(lb, ub);
+        x.mPositions[k] = Uniform(lb, ub);
+        x.mVelocities[k] = Uniform(lb, ub);
       }
       softSkel->setConfiguration(x);
 

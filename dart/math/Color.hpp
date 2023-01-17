@@ -136,18 +136,12 @@ public:
   static Vector4<S> Random(S alpha)
   {
     return Vector4<S>(
-        Random::uniform(0.0, 1.0),
-        Random::uniform(0.0, 1.0),
-        Random::uniform(0.0, 1.0),
-        alpha);
+        Uniform(0.0, 1.0), Uniform(0.0, 1.0), Uniform(0.0, 1.0), alpha);
   }
 
   static Vector3<S> Random()
   {
-    return Vector3<S>(
-        Random::uniform(0.0, 1.0),
-        Random::uniform(0.0, 1.0),
-        Random::uniform(0.0, 1.0));
+    return Vector3<S>(Uniform(0.0, 1.0), Uniform(0.0, 1.0), Uniform(0.0, 1.0));
   }
 };
 

@@ -18,9 +18,8 @@ def kinematics_tester(joint):
     for _ in range(num_tests):
         q_delta = 1e-5
 
-        for i in range(dof):
-            q[i] = dart.math.Random.uniform(-math.pi, math.pi)
-            dq[i] = dart.math.Random.uniform(-math.pi, math.pi)
+        q = dart.math.UniformFloat(dof, -math.pi, math.pi)
+        dq = dart.math.UniformFloat(dof, -math.pi, math.pi)
 
         joint.setPositions(q)
         joint.setVelocities(dq)

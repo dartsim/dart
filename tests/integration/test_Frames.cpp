@@ -45,7 +45,7 @@ using namespace dynamics;
 template <int N>
 math::Matrix<double, N, 1> random_vec(double limit = 100)
 {
-  return Random::uniform<math::Matrix<double, N, 1>>(-limit, limit);
+  return Uniform<math::Matrix<double, N, 1>>(-limit, limit);
 }
 
 void randomize_transform(

@@ -46,14 +46,14 @@ TEST(Inertia, Verification)
   const int numIter = 10;
 
   for (int i = 0; i < numIter; ++i) {
-    const auto mass = math::Random::uniform<double>(0.1, 10.0);
-    const auto com = math::Random::uniform<math::Vector3d>(-5, 5);
-    const auto i_xx = math::Random::uniform<double>(0.1, 1);
-    const auto i_yy = math::Random::uniform<double>(0.1, 1);
-    const auto i_zz = math::Random::uniform<double>(0.1, 1);
-    const auto i_xy = math::Random::uniform<double>(-1, 1);
-    const auto i_xz = math::Random::uniform<double>(-1, 1);
-    const auto i_yz = math::Random::uniform<double>(-1, 1);
+    const auto mass = math::Uniform<double>(0.1, 10.0);
+    const auto com = math::Uniform<math::Vector3d>(-5, 5);
+    const auto i_xx = math::Uniform<double>(0.1, 1);
+    const auto i_yy = math::Uniform<double>(0.1, 1);
+    const auto i_zz = math::Uniform<double>(0.1, 1);
+    const auto i_xy = math::Uniform<double>(-1, 1);
+    const auto i_xz = math::Uniform<double>(-1, 1);
+    const auto i_yz = math::Uniform<double>(-1, 1);
 
     const dynamics::Inertia inertia(
         mass, com[0], com[1], com[2], i_xx, i_yy, i_zz, i_xy, i_xz, i_yz);
