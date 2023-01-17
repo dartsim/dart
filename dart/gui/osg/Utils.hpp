@@ -33,7 +33,8 @@
 #ifndef DART_GUI_OSG_UTILS_HPP_
 #define DART_GUI_OSG_UTILS_HPP_
 
-#include <Eigen/Geometry>
+#include <dart/gui/Fwd.hpp>
+
 #include <osg/Camera>
 #include <osg/Matrix>
 
@@ -46,8 +47,7 @@ constexpr T getAlphaThreshold();
 
 /// Converts math::Isometry to osg::Matrix
 template <typename Scalar>
-::osg::Matrix eigToOsgMatrix(
-    const math::Transform<Scalar, 3, math::Isometry>& tf);
+::osg::Matrix eigToOsgMatrix(const math::Isometry3<Scalar>& tf);
 
 /// Converts math::DenseBase to osg::Matrix
 template <typename Derived>

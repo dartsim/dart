@@ -48,9 +48,9 @@ void ScrewJoint(py::module& m)
   ::py::class_<dart::dynamics::ScrewJoint::UniqueProperties>(
       m, "ScrewJointUniqueProperties")
       .def(::py::init<>())
-      .def(::py::init<const Eigen::Vector3d&>(), ::py::arg("axis"))
+      .def(::py::init<const math::Vector3d&>(), ::py::arg("axis"))
       .def(
-          ::py::init<const Eigen::Vector3d&, double>(),
+          ::py::init<const math::Vector3d&, double>(),
           ::py::arg("axis"),
           ::py::arg("pitch"));
 
@@ -166,14 +166,15 @@ void ScrewJoint(py::module& m)
           ::py::arg("index"))
       .def(
           "setAxis",
-          +[](dart::dynamics::ScrewJoint* self, const Eigen::Vector3d& _axis) {
+          +[](dart::dynamics::ScrewJoint* self, const math::Vector3d& _axis) {
             self->setAxis(_axis);
           },
           ::py::arg("axis"))
       .def(
           "getAxis",
-          +[](const dart::dynamics::ScrewJoint* self)
-              -> const Eigen::Vector3d& { return self->getAxis(); },
+          +[](const dart::dynamics::ScrewJoint* self) -> const math::Vector3d& {
+            return self->getAxis();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "setPitch",

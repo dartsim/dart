@@ -246,24 +246,24 @@ void Joint(py::module& m)
           })
       .def(
           "setTransformFromParentBodyNode",
-          +[](dart::dynamics::Joint* self, const Eigen::Isometry3d& T) -> void {
+          +[](dart::dynamics::Joint* self, const math::Isometry3d& T) -> void {
             return self->setTransformFromParentBodyNode(T);
           },
           ::py::arg("T"))
       .def(
           "setTransformFromChildBodyNode",
-          +[](dart::dynamics::Joint* self, const Eigen::Isometry3d& T) -> void {
+          +[](dart::dynamics::Joint* self, const math::Isometry3d& T) -> void {
             return self->setTransformFromChildBodyNode(T);
           },
           ::py::arg("T"))
       .def(
           "getTransformFromParentBodyNode",
-          +[](const dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
+          +[](const dart::dynamics::Joint* self) -> const math::Isometry3d& {
             return self->getTransformFromParentBodyNode();
           })
       .def(
           "getTransformFromChildBodyNode",
-          +[](const dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
+          +[](const dart::dynamics::Joint* self) -> const math::Isometry3d& {
             return self->getTransformFromChildBodyNode();
           })
       .def(
@@ -360,12 +360,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setCommands",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& commands)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& commands)
               -> void { return self->setCommands(commands); },
           ::py::arg("commands"))
       .def(
           "getCommands",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getCommands();
           })
       .def(
@@ -386,12 +386,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setPositions",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& positions)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& positions)
               -> void { return self->setPositions(positions); },
           ::py::arg("positions"))
       .def(
           "getPositions",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getPositions();
           })
       .def(
@@ -408,12 +408,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setPositionLowerLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& lowerLimits)
               -> void { return self->setPositionLowerLimits(lowerLimits); },
           ::py::arg("lowerLimits"))
       .def(
           "getPositionLowerLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getPositionLowerLimits();
           })
       .def(
@@ -430,12 +430,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setPositionUpperLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& upperLimits)
               -> void { return self->setPositionUpperLimits(upperLimits); },
           ::py::arg("upperLimits"))
       .def(
           "getPositionUpperLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getPositionUpperLimits();
           })
       .def(
@@ -474,12 +474,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setInitialPositions",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& initial)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& initial)
               -> void { return self->setInitialPositions(initial); },
           ::py::arg("initial"))
       .def(
           "getInitialPositions",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getInitialPositions();
           })
       .def(
@@ -496,12 +496,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setVelocities",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& velocities)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& velocities)
               -> void { return self->setVelocities(velocities); },
           ::py::arg("velocities"))
       .def(
           "getVelocities",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getVelocities();
           })
       .def(
@@ -518,12 +518,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setVelocityLowerLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& lowerLimits)
               -> void { return self->setVelocityLowerLimits(lowerLimits); },
           ::py::arg("lowerLimits"))
       .def(
           "getVelocityLowerLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getVelocityLowerLimits();
           })
       .def(
@@ -540,12 +540,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setVelocityUpperLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& upperLimits)
               -> void { return self->setVelocityUpperLimits(upperLimits); },
           ::py::arg("upperLimits"))
       .def(
           "getVelocityUpperLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getVelocityUpperLimits();
           })
       .def(
@@ -572,12 +572,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setInitialVelocities",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& initial)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& initial)
               -> void { return self->setInitialVelocities(initial); },
           ::py::arg("initial"))
       .def(
           "getInitialVelocities",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getInitialVelocities();
           })
       .def(
@@ -597,12 +597,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setAccelerations",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& accelerations)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& accelerations)
               -> void { return self->setAccelerations(accelerations); },
           ::py::arg("accelerations"))
       .def(
           "getAccelerations",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getAccelerations();
           })
       .def(
@@ -626,12 +626,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setAccelerationLowerLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& lowerLimits)
               -> void { return self->setAccelerationLowerLimits(lowerLimits); },
           ::py::arg("lowerLimits"))
       .def(
           "getAccelerationLowerLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getAccelerationLowerLimits();
           })
       .def(
@@ -651,12 +651,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setAccelerationUpperLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& upperLimits)
               -> void { return self->setAccelerationUpperLimits(upperLimits); },
           ::py::arg("upperLimits"))
       .def(
           "getAccelerationUpperLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getAccelerationUpperLimits();
           })
       .def(
@@ -674,12 +674,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setForces",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& forces)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& forces)
               -> void { return self->setForces(forces); },
           ::py::arg("forces"))
       .def(
           "getForces",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getForces();
           })
       .def(
@@ -700,12 +700,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setForceLowerLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& lowerLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& lowerLimits)
               -> void { return self->setForceLowerLimits(lowerLimits); },
           ::py::arg("lowerLimits"))
       .def(
           "getForceLowerLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getForceLowerLimits();
           })
       .def(
@@ -722,12 +722,12 @@ void Joint(py::module& m)
           ::py::arg("index"))
       .def(
           "setForceUpperLimits",
-          +[](dart::dynamics::Joint* self, const Eigen::VectorXd& upperLimits)
+          +[](dart::dynamics::Joint* self, const math::VectorXd& upperLimits)
               -> void { return self->setForceUpperLimits(upperLimits); },
           ::py::arg("upperLimits"))
       .def(
           "getForceUpperLimits",
-          +[](const dart::dynamics::Joint* self) -> Eigen::VectorXd {
+          +[](const dart::dynamics::Joint* self) -> math::VectorXd {
             return self->getForceUpperLimits();
           })
       .def(
@@ -790,8 +790,8 @@ void Joint(py::module& m)
       .def(
           "getPositionDifferences",
           +[](const dart::dynamics::Joint* self,
-              const Eigen::VectorXd& q2,
-              const Eigen::VectorXd& q1) -> Eigen::VectorXd {
+              const math::VectorXd& q2,
+              const math::VectorXd& q1) -> math::VectorXd {
             return self->getPositionDifferences(q2, q1);
           },
           ::py::arg("q2"),
@@ -853,7 +853,7 @@ void Joint(py::module& m)
           })
       .def(
           "getRelativeTransform",
-          +[](const dart::dynamics::Joint* self) -> const Eigen::Isometry3d& {
+          +[](const dart::dynamics::Joint* self) -> const math::Isometry3d& {
             return self->getRelativeTransform();
           })
       .def(
@@ -879,7 +879,7 @@ void Joint(py::module& m)
       .def(
           "getRelativeJacobian",
           +[](const dart::dynamics::Joint* self,
-              const Eigen::VectorXd& positions) -> dart::math::Jacobian {
+              const math::VectorXd& positions) -> dart::math::Jacobian {
             return self->getRelativeJacobian(positions);
           },
           ::py::arg("positions"))

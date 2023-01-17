@@ -79,7 +79,7 @@ void NloptSolver(py::module& m)
           })
       .def(
           "getLastConfiguration",
-          +[](const dart::optimization::NloptSolver* self) -> Eigen::VectorXd {
+          +[](const dart::optimization::NloptSolver* self) -> math::VectorXd {
             return self->getLastConfiguration();
           })
       .def(

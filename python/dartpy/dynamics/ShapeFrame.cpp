@@ -171,12 +171,13 @@ void ShapeFrame(py::module& m)
           ::py::arg("properties"))
       .def(
           "setRGBA",
-          +[](dart::dynamics::VisualAspect* self,
-              const Eigen::Vector4d& color) { self->setRGBA(color); },
+          +[](dart::dynamics::VisualAspect* self, const math::Vector4d& color) {
+            self->setRGBA(color);
+          },
           ::py::arg("color"))
       .def(
           "getRGBA",
-          +[](dart::dynamics::VisualAspect* self) -> const Eigen::Vector4d& {
+          +[](dart::dynamics::VisualAspect* self) -> const math::Vector4d& {
             return self->getRGBA();
           })
       .def(
@@ -203,17 +204,19 @@ void ShapeFrame(py::module& m)
           })
       .def(
           "setColor",
-          +[](dart::dynamics::VisualAspect* self,
-              const Eigen::Vector3d& color) { self->setColor(color); },
+          +[](dart::dynamics::VisualAspect* self, const math::Vector3d& color) {
+            self->setColor(color);
+          },
           ::py::arg("color"))
       .def(
           "setColor",
-          +[](dart::dynamics::VisualAspect* self,
-              const Eigen::Vector4d& color) { self->setColor(color); },
+          +[](dart::dynamics::VisualAspect* self, const math::Vector4d& color) {
+            self->setColor(color);
+          },
           ::py::arg("color"))
       .def(
           "setRGB",
-          +[](dart::dynamics::VisualAspect* self, const Eigen::Vector3d& rgb) {
+          +[](dart::dynamics::VisualAspect* self, const math::Vector3d& rgb) {
             self->setRGB(rgb);
           },
           ::py::arg("rgb"))
@@ -225,12 +228,12 @@ void ShapeFrame(py::module& m)
           ::py::arg("alpha"))
       .def(
           "getColor",
-          +[](const dart::dynamics::VisualAspect* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::VisualAspect* self) -> math::Vector3d {
             return self->getColor();
           })
       .def(
           "getRGB",
-          +[](const dart::dynamics::VisualAspect* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::VisualAspect* self) -> math::Vector3d {
             return self->getRGB();
           })
       .def(

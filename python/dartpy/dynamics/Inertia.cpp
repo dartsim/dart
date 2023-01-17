@@ -48,14 +48,13 @@ void Inertia(py::module& m)
       dart::dynamics::Inertia,
       std::shared_ptr<dart::dynamics::Inertia>>(m, "Inertia")
       .def(
-          ::py::init<double, const Eigen::Vector3d&, const Eigen::Matrix3d&>(),
+          ::py::init<double, const math::Vector3d&, const math::Matrix3d&>(),
           ::py::arg_v("mass", 1),
-          ::py::arg_v(
-              "com", Eigen::Vector3d::Zero(), "Eigen::Vector3d::Zero()"),
+          ::py::arg_v("com", math::Vector3d::Zero(), "math::Vector3d::Zero()"),
           ::py::arg_v(
               "momentOfInertia",
-              Eigen::Matrix3d::Identity(),
-              "Eigen::Matrix3d::Identity()"))
+              math::Matrix3d::Identity(),
+              "math::Matrix3d::Identity()"))
       .def(
           ::py::init<const math::Matrix6d&>(),
           ::py::arg("spatialInertiaTensor"))
@@ -72,25 +71,25 @@ void Inertia(py::module& m)
           })
       .def(
           "setLocalCOM",
-          +[](dart::dynamics::Inertia* self, const Eigen::Vector3d& com) {
+          +[](dart::dynamics::Inertia* self, const math::Vector3d& com) {
             self->setLocalCOM(com);
           },
           ::py::arg("com"))
       .def(
           "getLocalCOM",
-          +[](const dart::dynamics::Inertia* self) -> const Eigen::Vector3d& {
+          +[](const dart::dynamics::Inertia* self) -> const math::Vector3d& {
             return self->getLocalCOM();
           },
           ::py::return_value_policy::reference_internal)
       .def(
           "setMoment",
-          +[](dart::dynamics::Inertia* self, const Eigen::Matrix3d& moment) {
+          +[](dart::dynamics::Inertia* self, const math::Matrix3d& moment) {
             self->setMoment(moment);
           },
           ::py::arg("moment"))
       .def(
           "getMoment",
-          +[](const dart::dynamics::Inertia* self) -> Eigen::Matrix3d {
+          +[](const dart::dynamics::Inertia* self) -> math::Matrix3d {
             return self->getMoment();
           })
       .def(
@@ -122,7 +121,7 @@ void Inertia(py::module& m)
           })
       .def_static(
           "verifyMoment",
-          +[](const Eigen::Matrix3d& moment,
+          +[](const math::Matrix3d& moment,
               bool printWarnings,
               double tolerance) -> bool {
             return dart::dynamics::Inertia::verifyMoment(

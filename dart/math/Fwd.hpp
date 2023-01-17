@@ -73,7 +73,7 @@ constexpr auto NoChange = ::Eigen::NoChange_t::NoChange;
 /// @tparam PlainObjectType The plain object type
 /// @tparam MapOptions The map options
 template <typename PlainObjectType, int MapOptions = 0>
-using Map = class ::Eigen::Map<PlainObjectType, MapOptions>;
+using Map = ::Eigen::Map<PlainObjectType, MapOptions>;
 
 //------------------------------------------------------------------------------
 // Eigen matrix types

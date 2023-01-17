@@ -72,12 +72,12 @@ void DragAndDrop(py::module& m)
           +[](dart::gui::osg::DragAndDrop* self) { self->release(); })
       .def(
           "getConstrainedDx",
-          +[](const dart::gui::osg::DragAndDrop* self) -> Eigen::Vector3d {
+          +[](const dart::gui::osg::DragAndDrop* self) -> math::Vector3d {
             return self->getConstrainedDx();
           })
       .def(
           "getConstrainedRotation",
-          +[](const dart::gui::osg::DragAndDrop* self) -> Eigen::AngleAxisd {
+          +[](const dart::gui::osg::DragAndDrop* self) -> math::AngleAxisd {
             return self->getConstrainedRotation();
           })
       .def(
@@ -85,14 +85,13 @@ void DragAndDrop(py::module& m)
           +[](dart::gui::osg::DragAndDrop* self) { self->unconstrain(); })
       .def(
           "constrainToLine",
-          +[](dart::gui::osg::DragAndDrop* self, const Eigen::Vector3d& slope) {
+          +[](dart::gui::osg::DragAndDrop* self, const math::Vector3d& slope) {
             self->constrainToLine(slope);
           },
           ::py::arg("slope"))
       .def(
           "constrainToPlane",
-          +[](dart::gui::osg::DragAndDrop* self,
-              const Eigen::Vector3d& normal) {
+          +[](dart::gui::osg::DragAndDrop* self, const math::Vector3d& normal) {
             self->constrainToPlane(normal);
           },
           ::py::arg("normal"))

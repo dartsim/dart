@@ -72,7 +72,7 @@ void GridVisual(py::module& m)
           })
       .def(
           "setOffset",
-          +[](dart::gui::osg::GridVisual* self, const Eigen::Vector3d& offset) {
+          +[](dart::gui::osg::GridVisual* self, const math::Vector3d& offset) {
             self->setOffset(offset);
           });
 

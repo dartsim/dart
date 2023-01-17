@@ -69,7 +69,7 @@ void Trackball::updateBall(double _x, double _y)
 
 void Trackball::applyGLRotation()
 {
-  math::Transform<double, 3, math::Affine> t(mCurrQuat);
+  math::Affine3d t(mCurrQuat);
   glMultMatrixd(t.data());
 }
 

@@ -58,9 +58,9 @@ void InverseKinematics(py::module& m)
               math::Vector6d::Constant(dart::dynamics::DefaultIKTolerance)),
           ::py::arg("errorClamp") = dart::dynamics::DefaultIKErrorClamp,
           ::py::arg("errorWeights")
-          = (math::Vector6d() << Eigen::Vector3d::Constant(
+          = (math::Vector6d() << math::Vector3d::Constant(
                  dart::dynamics::DefaultIKAngularWeight),
-             Eigen::Vector3d::Constant(dart::dynamics::DefaultIKLinearWeight))
+             math::Vector3d::Constant(dart::dynamics::DefaultIKLinearWeight))
                 .finished())
       .def_readwrite(
           "mBounds",
@@ -95,8 +95,8 @@ void InverseKinematics(py::module& m)
       .def(
           "computeDesiredTransform",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const Eigen::Isometry3d& _currentTf,
-              const math::Vector6d& _error) -> Eigen::Isometry3d {
+              const math::Isometry3d& _currentTf,
+              const math::Vector6d& _error) -> math::Isometry3d {
             return self->computeDesiredTransform(_currentTf, _error);
           },
           ::py::arg("currentTf"),
@@ -146,15 +146,13 @@ void InverseKinematics(py::module& m)
       .def(
           "setAngularBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const Eigen::Vector3d& _lower) {
-            self->setAngularBounds(_lower);
-          },
+              const math::Vector3d& _lower) { self->setAngularBounds(_lower); },
           ::py::arg("lower"))
       .def(
           "setAngularBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const Eigen::Vector3d& _lower,
-              const Eigen::Vector3d& _upper) {
+              const math::Vector3d& _lower,
+              const math::Vector3d& _upper) {
             self->setAngularBounds(_lower, _upper);
           },
           ::py::arg("lower"),
@@ -162,14 +160,14 @@ void InverseKinematics(py::module& m)
       .def(
           "setAngularBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
+              const std::pair<math::Vector3d, math::Vector3d>& _bounds) {
             self->setAngularBounds(_bounds);
           },
           ::py::arg("bounds"))
       .def(
           "getAngularBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
-              -> std::pair<Eigen::Vector3d, Eigen::Vector3d> {
+              -> std::pair<math::Vector3d, math::Vector3d> {
             return self->getAngularBounds();
           })
       .def(
@@ -180,13 +178,13 @@ void InverseKinematics(py::module& m)
       .def(
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const Eigen::Vector3d& _lower) { self->setLinearBounds(_lower); },
+              const math::Vector3d& _lower) { self->setLinearBounds(_lower); },
           ::py::arg("lower"))
       .def(
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const Eigen::Vector3d& _lower,
-              const Eigen::Vector3d& _upper) {
+              const math::Vector3d& _lower,
+              const math::Vector3d& _upper) {
             self->setLinearBounds(_lower, _upper);
           },
           ::py::arg("lower"),
@@ -194,14 +192,14 @@ void InverseKinematics(py::module& m)
       .def(
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
+              const std::pair<math::Vector3d, math::Vector3d>& _bounds) {
             self->setLinearBounds(_bounds);
           },
           ::py::arg("bounds"))
       .def(
           "getLinearBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
-              -> std::pair<Eigen::Vector3d, Eigen::Vector3d> {
+              -> std::pair<math::Vector3d, math::Vector3d> {
             return self->getLinearBounds();
           })
       .def(
@@ -233,14 +231,14 @@ void InverseKinematics(py::module& m)
       .def(
           "setAngularErrorWeights",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const Eigen::Vector3d& _weights) {
+              const math::Vector3d& _weights) {
             self->setAngularErrorWeights(_weights);
           },
           ::py::arg("weights"))
       .def(
           "getAngularErrorWeights",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
-              -> Eigen::Vector3d { return self->getAngularErrorWeights(); })
+              -> math::Vector3d { return self->getAngularErrorWeights(); })
       .def(
           "setLinearErrorWeights",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self) {
@@ -249,14 +247,14 @@ void InverseKinematics(py::module& m)
       .def(
           "setLinearErrorWeights",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
-              const Eigen::Vector3d& _weights) {
+              const math::Vector3d& _weights) {
             self->setLinearErrorWeights(_weights);
           },
           ::py::arg("weights"))
       .def(
           "getLinearErrorWeights",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
-              -> Eigen::Vector3d { return self->getLinearErrorWeights(); })
+              -> math::Vector3d { return self->getLinearErrorWeights(); })
       .def(
           "getErrorMethodProperties",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -358,7 +356,7 @@ void InverseKinematics(py::module& m)
       .def(
           "findSolution",
           +[](dart::dynamics::InverseKinematics* self,
-              Eigen::VectorXd& positions) -> bool {
+              math::VectorXd& positions) -> bool {
             return self->findSolution(positions);
           },
           py::arg("positions"))
@@ -377,7 +375,7 @@ void InverseKinematics(py::module& m)
       .def(
           "solveAndApply",
           +[](dart::dynamics::InverseKinematics* self,
-              Eigen::VectorXd& positions,
+              math::VectorXd& positions,
               bool allowIncompleteResult) -> bool {
             return self->solveAndApply(positions, allowIncompleteResult);
           },
@@ -505,12 +503,12 @@ void InverseKinematics(py::module& m)
       .def(
           "setOffset",
           +[](dart::dynamics::InverseKinematics* self,
-              const Eigen::Vector3d& _offset) { self->setOffset(_offset); },
+              const math::Vector3d& _offset) { self->setOffset(_offset); },
           ::py::arg("offset"))
       .def(
           "getOffset",
           +[](const dart::dynamics::InverseKinematics* self)
-              -> const Eigen::Vector3d& { return self->getOffset(); },
+              -> const math::Vector3d& { return self->getOffset(); },
           ::py::return_value_policy::reference_internal)
       .def(
           "hasOffset",
@@ -538,12 +536,13 @@ void InverseKinematics(py::module& m)
           })
       .def(
           "getPositions",
-          +[](const dart::dynamics::InverseKinematics* self)
-              -> Eigen::VectorXd { return self->getPositions(); })
+          +[](const dart::dynamics::InverseKinematics* self) -> math::VectorXd {
+            return self->getPositions();
+          })
       .def(
           "setPositions",
           +[](dart::dynamics::InverseKinematics* self,
-              const Eigen::VectorXd& _q) { self->setPositions(_q); },
+              const math::VectorXd& _q) { self->setPositions(_q); },
           ::py::arg("q"))
       .def(
           "clearCaches", +[](dart::dynamics::InverseKinematics* self) {

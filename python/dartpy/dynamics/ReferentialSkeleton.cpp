@@ -246,7 +246,7 @@ void ReferentialSkeleton(py::module& m)
           "getJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -255,7 +255,7 @@ void ReferentialSkeleton(py::module& m)
           "getJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset, _inCoordinatesOf);
@@ -273,7 +273,7 @@ void ReferentialSkeleton(py::module& m)
           "getWorldJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getWorldJacobian(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -300,7 +300,7 @@ void ReferentialSkeleton(py::module& m)
           "getLinearJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset)
+              const math::Vector3d& _localOffset)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node, _localOffset);
           },
@@ -310,7 +310,7 @@ void ReferentialSkeleton(py::module& m)
           "getLinearJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(
@@ -359,7 +359,7 @@ void ReferentialSkeleton(py::module& m)
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -368,7 +368,7 @@ void ReferentialSkeleton(py::module& m)
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(
@@ -399,7 +399,7 @@ void ReferentialSkeleton(py::module& m)
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -408,7 +408,7 @@ void ReferentialSkeleton(py::module& m)
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(
@@ -439,7 +439,7 @@ void ReferentialSkeleton(py::module& m)
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset)
+              const math::Vector3d& _localOffset)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_node, _localOffset);
           },
@@ -449,7 +449,7 @@ void ReferentialSkeleton(py::module& m)
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(
@@ -509,11 +509,11 @@ void ReferentialSkeleton(py::module& m)
       .def(
           "getCOM",
           +[](const dart::dynamics::ReferentialSkeleton* self)
-              -> Eigen::Vector3d { return self->getCOM(); })
+              -> math::Vector3d { return self->getCOM(); })
       .def(
           "getCOM",
           +[](const dart::dynamics::ReferentialSkeleton* self,
-              const dart::dynamics::Frame* _withRespectTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _withRespectTo) -> math::Vector3d {
             return self->getCOM(_withRespectTo);
           },
           ::py::arg("withRespectTo"))
@@ -540,11 +540,11 @@ void ReferentialSkeleton(py::module& m)
       .def(
           "getCOMLinearVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self)
-              -> Eigen::Vector3d { return self->getCOMLinearVelocity(); })
+              -> math::Vector3d { return self->getCOMLinearVelocity(); })
       .def(
           "getCOMLinearVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -552,8 +552,7 @@ void ReferentialSkeleton(py::module& m)
           "getCOMLinearVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo, _inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -582,11 +581,11 @@ void ReferentialSkeleton(py::module& m)
       .def(
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self)
-              -> Eigen::Vector3d { return self->getCOMLinearAcceleration(); })
+              -> math::Vector3d { return self->getCOMLinearAcceleration(); })
       .def(
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector3d {
             return self->getCOMLinearAcceleration(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -594,8 +593,7 @@ void ReferentialSkeleton(py::module& m)
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector3d {
             return self->getCOMLinearAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },

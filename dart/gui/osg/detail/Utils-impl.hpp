@@ -52,8 +52,7 @@ constexpr T getAlphaThreshold()
 
 //==============================================================================
 template <typename Scalar>
-::osg::Matrix eigToOsgMatrix(
-    const math::Transform<Scalar, 3, math::Isometry>& tf)
+::osg::Matrix eigToOsgMatrix(const math::Isometry3<Scalar>& tf)
 {
   return ::osg::Matrix(
       tf(0, 0),

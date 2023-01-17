@@ -218,8 +218,8 @@ void CollisionGroup(py::module& m)
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
-              const Eigen::Vector3d& from,
-              const Eigen::Vector3d& to) -> bool {
+              const math::Vector3d& from,
+              const math::Vector3d& to) -> bool {
             return self->raycast(from, to);
           },
           ::py::arg("from"),
@@ -227,8 +227,8 @@ void CollisionGroup(py::module& m)
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
-              const Eigen::Vector3d& from,
-              const Eigen::Vector3d& to,
+              const math::Vector3d& from,
+              const math::Vector3d& to,
               const dart::collision::RaycastOption& option) -> bool {
             return self->raycast(from, to, option);
           },
@@ -238,8 +238,8 @@ void CollisionGroup(py::module& m)
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
-              const Eigen::Vector3d& from,
-              const Eigen::Vector3d& to,
+              const math::Vector3d& from,
+              const math::Vector3d& to,
               const dart::collision::RaycastOption& option,
               dart::collision::RaycastResult* result) -> bool {
             return self->raycast(from, to, option, result);

@@ -33,13 +33,12 @@
 #ifndef DART_GUI_OSG_DEFAULTEVENTHANDLER_HPP_
 #define DART_GUI_OSG_DEFAULTEVENTHANDLER_HPP_
 
-#include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Observer.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <Eigen/Core>
 #include <osgGA/GUIEventHandler>
 
 #include <array>

@@ -135,7 +135,7 @@ void InteractiveFrame(py::module& m)
           ::py::init<
               dart::dynamics::Frame*,
               const std::string&,
-              const Eigen::Isometry3d&>(),
+              const math::Isometry3d&>(),
           ::py::arg("referenceFrame"),
           ::py::arg("name"),
           ::py::arg("relativeTransform"))
@@ -143,7 +143,7 @@ void InteractiveFrame(py::module& m)
           ::py::init<
               dart::dynamics::Frame*,
               const std::string&,
-              const Eigen::Isometry3d&,
+              const math::Isometry3d&,
               double>(),
           ::py::arg("referenceFrame"),
           ::py::arg("name"),
@@ -153,7 +153,7 @@ void InteractiveFrame(py::module& m)
           ::py::init<
               dart::dynamics::Frame*,
               const std::string&,
-              const Eigen::Isometry3d&,
+              const math::Isometry3d&,
               double,
               double>(),
           ::py::arg("referenceFrame"),

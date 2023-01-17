@@ -159,28 +159,27 @@ void UniversalJoint(py::module& m)
       .def(
           "setAxis1",
           +[](dart::dynamics::UniversalJoint* self,
-              const Eigen::Vector3d& _axis) { self->setAxis1(_axis); },
+              const math::Vector3d& _axis) { self->setAxis1(_axis); },
           ::py::arg("axis"))
       .def(
           "setAxis2",
           +[](dart::dynamics::UniversalJoint* self,
-              const Eigen::Vector3d& _axis) { self->setAxis2(_axis); },
+              const math::Vector3d& _axis) { self->setAxis2(_axis); },
           ::py::arg("axis"))
       .def(
           "getAxis1",
           +[](const dart::dynamics::UniversalJoint* self)
-              -> const Eigen::Vector3d& { return self->getAxis1(); },
+              -> const math::Vector3d& { return self->getAxis1(); },
           ::py::return_value_policy::reference_internal)
       .def(
           "getAxis2",
           +[](const dart::dynamics::UniversalJoint* self)
-              -> const Eigen::Vector3d& { return self->getAxis2(); },
+              -> const math::Vector3d& { return self->getAxis2(); },
           ::py::return_value_policy::reference_internal)
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::UniversalJoint* self,
-              const Eigen::Vector2d& _positions)
-              -> Eigen::Matrix<double, 6, 2> {
+              const math::Vector2d& _positions) -> math::Matrix<double, 6, 2> {
             return self->getRelativeJacobianStatic(_positions);
           },
           ::py::arg("positions"))

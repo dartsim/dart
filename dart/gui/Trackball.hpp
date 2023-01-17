@@ -33,8 +33,7 @@
 #ifndef DART_GUI_TRACKBALL_HPP_
 #define DART_GUI_TRACKBALL_HPP_
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include <dart/gui/Fwd.hpp>
 
 namespace dart {
 namespace gui {

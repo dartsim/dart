@@ -61,7 +61,7 @@ void Viewer(py::module& m)
             ::osg::ref_ptr<dart::gui::osg::Viewer>>(m, "Viewer")
             .def(::py::init<>())
             .def(
-                ::py::init([](const Eigen::Vector4f& clearColor) {
+                ::py::init([](const math::Vector4f& clearColor) {
                   return new ::dart::gui::osg::Viewer(
                       gui::osg::eigToOsgVec4d(clearColor));
                 }),
@@ -194,7 +194,7 @@ void Viewer(py::module& m)
                 ::py::arg("up"))
             .def(
                 "setUpwardsDirection",
-                +[](dart::gui::osg::Viewer* self, const Eigen::Vector3d& up) {
+                +[](dart::gui::osg::Viewer* self, const math::Vector3d& up) {
                   self->setUpwardsDirection(up);
                 },
                 ::py::arg("up"))
@@ -362,9 +362,9 @@ void Viewer(py::module& m)
             .def(
                 "setCameraHomePosition",
                 +[](dart::gui::osg::Viewer* self,
-                    const Eigen::Vector3d& eye,
-                    const Eigen::Vector3d& center,
-                    const Eigen::Vector3d& up) {
+                    const math::Vector3d& eye,
+                    const math::Vector3d& center,
+                    const math::Vector3d& up) {
                   self->getCameraManipulator()->setHomePosition(
                       gui::osg::eigToOsgVec3(eye),
                       gui::osg::eigToOsgVec3(center),

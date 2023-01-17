@@ -74,7 +74,7 @@ void CollisionObject(py::module& m)
       .def(
           "getTransform",
           +[](const dart::collision::CollisionObject* self)
-              -> const Eigen::Isometry3d& { return self->getTransform(); },
+              -> const math::Isometry3d& { return self->getTransform(); },
           ::py::return_value_policy::reference_internal,
           "Return the transformation of this CollisionObject in world "
           "coordinates.");

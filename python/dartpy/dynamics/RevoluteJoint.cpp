@@ -48,7 +48,7 @@ void RevoluteJoint(py::module& m)
   ::py::class_<dart::dynamics::RevoluteJoint::UniqueProperties>(
       m, "RevoluteJointUniqueProperties")
       .def(::py::init<>())
-      .def(::py::init<const Eigen::Vector3d&>(), ::py::arg("axis"));
+      .def(::py::init<const math::Vector3d&>(), ::py::arg("axis"));
 
   ::py::class_<
       dart::dynamics::RevoluteJoint::Properties,
@@ -158,12 +158,12 @@ void RevoluteJoint(py::module& m)
       .def(
           "setAxis",
           +[](dart::dynamics::RevoluteJoint* self,
-              const Eigen::Vector3d& _axis) { self->setAxis(_axis); },
+              const math::Vector3d& _axis) { self->setAxis(_axis); },
           ::py::arg("axis"))
       .def(
           "getAxis",
           +[](const dart::dynamics::RevoluteJoint* self)
-              -> const Eigen::Vector3d& { return self->getAxis(); },
+              -> const math::Vector3d& { return self->getAxis(); },
           ::py::return_value_policy::reference_internal)
       .def(
           "getRelativeJacobianStatic",

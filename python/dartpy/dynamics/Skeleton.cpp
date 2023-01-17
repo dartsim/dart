@@ -320,12 +320,12 @@ void Skeleton(py::module& m)
           })
       .def(
           "setGravity",
-          +[](dart::dynamics::Skeleton* self, const Eigen::Vector3d& _gravity)
+          +[](dart::dynamics::Skeleton* self, const math::Vector3d& _gravity)
               -> void { return self->setGravity(_gravity); },
           ::py::arg("gravity"))
       .def(
           "getGravity",
-          +[](const dart::dynamics::Skeleton* self) -> const Eigen::Vector3d& {
+          +[](const dart::dynamics::Skeleton* self) -> const math::Vector3d& {
             return self->getGravity();
           },
           ::py::return_value_policy::reference_internal)
@@ -637,8 +637,8 @@ void Skeleton(py::module& m)
       .def(
           "getPositionDifferences",
           +[](const dart::dynamics::Skeleton* self,
-              const Eigen::VectorXd& _q2,
-              const Eigen::VectorXd& _q1) -> Eigen::VectorXd {
+              const math::VectorXd& _q2,
+              const math::VectorXd& _q1) -> math::VectorXd {
             return self->getPositionDifferences(_q2, _q1);
           },
           ::py::arg("q2"),
@@ -646,8 +646,8 @@ void Skeleton(py::module& m)
       .def(
           "getVelocityDifferences",
           +[](const dart::dynamics::Skeleton* self,
-              const Eigen::VectorXd& _dq2,
-              const Eigen::VectorXd& _dq1) -> Eigen::VectorXd {
+              const math::VectorXd& _dq2,
+              const math::VectorXd& _dq1) -> math::VectorXd {
             return self->getVelocityDifferences(_dq2, _dq1);
           },
           ::py::arg("dq2"),
@@ -774,7 +774,7 @@ void Skeleton(py::module& m)
           +[](dart::dynamics::Skeleton* self,
               dart::dynamics::SoftBodyNode* _softBodyNode,
               dart::dynamics::PointMass* _pointMass,
-              const Eigen::Vector3d& _imp) -> void {
+              const math::Vector3d& _imp) -> void {
             return self->updateBiasImpulse(_softBodyNode, _pointMass, _imp);
           },
           ::py::arg("softBodyNode"),
@@ -820,7 +820,7 @@ void Skeleton(py::module& m)
           "getJacobian",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -829,7 +829,7 @@ void Skeleton(py::module& m)
           "getJacobian",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset, _inCoordinatesOf);
@@ -847,7 +847,7 @@ void Skeleton(py::module& m)
           "getWorldJacobian",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getWorldJacobian(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -874,7 +874,7 @@ void Skeleton(py::module& m)
           "getLinearJacobian",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset)
+              const math::Vector3d& _localOffset)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node, _localOffset);
           },
@@ -884,7 +884,7 @@ void Skeleton(py::module& m)
           "getLinearJacobian",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(
@@ -933,7 +933,7 @@ void Skeleton(py::module& m)
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -942,7 +942,7 @@ void Skeleton(py::module& m)
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(
@@ -973,7 +973,7 @@ void Skeleton(py::module& m)
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
+              const math::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node, _localOffset);
           },
           ::py::arg("node"),
@@ -982,7 +982,7 @@ void Skeleton(py::module& m)
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(
@@ -1013,7 +1013,7 @@ void Skeleton(py::module& m)
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset)
+              const math::Vector3d& _localOffset)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_node, _localOffset);
           },
@@ -1023,7 +1023,7 @@ void Skeleton(py::module& m)
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::JacobianNode* _node,
-              const Eigen::Vector3d& _localOffset,
+              const math::Vector3d& _localOffset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(
@@ -1057,7 +1057,7 @@ void Skeleton(py::module& m)
       .def(
           "getMassMatrix",
           +[](const dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::MatrixXd& {
+              std::size_t treeIndex) -> const math::MatrixXd& {
             return self->getMassMatrix(treeIndex);
           })
       // TODO(JS): Redefining get[~]() that are already defined in MetaSkeleton.
@@ -1066,84 +1066,84 @@ void Skeleton(py::module& m)
       // resolved: https://github.com/pybind/pybind11/issues/974
       .def(
           "getMassMatrix",
-          +[](const dart::dynamics::Skeleton* self) -> const Eigen::MatrixXd& {
+          +[](const dart::dynamics::Skeleton* self) -> const math::MatrixXd& {
             return self->getMassMatrix();
           })
       .def(
           "getAugMassMatrix",
           +[](const dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::MatrixXd& {
+              std::size_t treeIndex) -> const math::MatrixXd& {
             return self->getAugMassMatrix(treeIndex);
           })
       .def(
           "getAugMassMatrix",
-          +[](const dart::dynamics::Skeleton* self) -> const Eigen::MatrixXd& {
+          +[](const dart::dynamics::Skeleton* self) -> const math::MatrixXd& {
             return self->getAugMassMatrix();
           })
       .def(
           "getInvMassMatrix",
           +[](const dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::MatrixXd& {
+              std::size_t treeIndex) -> const math::MatrixXd& {
             return self->getInvMassMatrix(treeIndex);
           })
       .def(
           "getInvMassMatrix",
-          +[](const dart::dynamics::Skeleton* self) -> const Eigen::MatrixXd& {
+          +[](const dart::dynamics::Skeleton* self) -> const math::MatrixXd& {
             return self->getInvMassMatrix();
           })
       .def(
           "getCoriolisForces",
           +[](dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::VectorXd& {
+              std::size_t treeIndex) -> const math::VectorXd& {
             return self->getCoriolisForces(treeIndex);
           })
       .def(
           "getCoriolisForces",
-          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+          +[](dart::dynamics::Skeleton* self) -> const math::VectorXd& {
             return self->getCoriolisForces();
           })
       .def(
           "getGravityForces",
           +[](dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::VectorXd& {
+              std::size_t treeIndex) -> const math::VectorXd& {
             return self->getGravityForces(treeIndex);
           })
       .def(
           "getGravityForces",
-          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+          +[](dart::dynamics::Skeleton* self) -> const math::VectorXd& {
             return self->getGravityForces();
           })
       .def(
           "getCoriolisAndGravityForces",
           +[](dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::VectorXd& {
+              std::size_t treeIndex) -> const math::VectorXd& {
             return self->getCoriolisAndGravityForces(treeIndex);
           })
       .def(
           "getCoriolisAndGravityForces",
-          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+          +[](dart::dynamics::Skeleton* self) -> const math::VectorXd& {
             return self->getCoriolisAndGravityForces();
           })
       .def(
           "getExternalForces",
           +[](dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::VectorXd& {
+              std::size_t treeIndex) -> const math::VectorXd& {
             return self->getExternalForces(treeIndex);
           })
       .def(
           "getExternalForces",
-          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+          +[](dart::dynamics::Skeleton* self) -> const math::VectorXd& {
             return self->getExternalForces();
           })
       .def(
           "getConstraintForces",
           +[](dart::dynamics::Skeleton* self,
-              std::size_t treeIndex) -> const Eigen::VectorXd& {
+              std::size_t treeIndex) -> const math::VectorXd& {
             return self->getConstraintForces(treeIndex);
           })
       .def(
           "getConstraintForces",
-          +[](dart::dynamics::Skeleton* self) -> const Eigen::VectorXd& {
+          +[](dart::dynamics::Skeleton* self) -> const math::VectorXd& {
             return self->getConstraintForces();
           })
       .def(
@@ -1188,13 +1188,13 @@ void Skeleton(py::module& m)
       //      -> void { return self->clearCollidingBodies(); })
       .def(
           "getCOM",
-          +[](const dart::dynamics::Skeleton* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::Skeleton* self) -> math::Vector3d {
             return self->getCOM();
           })
       .def(
           "getCOM",
           +[](const dart::dynamics::Skeleton* self,
-              const dart::dynamics::Frame* _withRespectTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _withRespectTo) -> math::Vector3d {
             return self->getCOM(_withRespectTo);
           },
           ::py::arg("withRespectTo"))
@@ -1221,13 +1221,13 @@ void Skeleton(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getCOMLinearVelocity",
-          +[](const dart::dynamics::Skeleton* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::Skeleton* self) -> math::Vector3d {
             return self->getCOMLinearVelocity();
           })
       .def(
           "getCOMLinearVelocity",
           +[](const dart::dynamics::Skeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -1235,8 +1235,7 @@ void Skeleton(py::module& m)
           "getCOMLinearVelocity",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo, _inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -1265,13 +1264,13 @@ void Skeleton(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getCOMLinearAcceleration",
-          +[](const dart::dynamics::Skeleton* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::Skeleton* self) -> math::Vector3d {
             return self->getCOMLinearAcceleration();
           })
       .def(
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::Skeleton* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector3d {
             return self->getCOMLinearAcceleration(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -1279,8 +1278,7 @@ void Skeleton(py::module& m)
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::Skeleton* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector3d {
             return self->getCOMLinearAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },

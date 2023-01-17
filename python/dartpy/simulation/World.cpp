@@ -78,7 +78,7 @@ void World(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "setGravity",
-          ::py::overload_cast<const Eigen::Vector3d&>(
+          ::py::overload_cast<const math::Vector3d&>(
               &dart::simulation::World::setGravity),
           ::py::arg("gravity"))
       .def(
@@ -90,7 +90,7 @@ void World(py::module& m)
           ::py::arg("z"))
       .def(
           "getGravity",
-          +[](const dart::simulation::World* self) -> const Eigen::Vector3d& {
+          +[](const dart::simulation::World* self) -> const math::Vector3d& {
             return self->getGravity();
           },
           ::py::return_value_policy::reference_internal)

@@ -42,7 +42,7 @@
 #define DARTPY_DEFINE_EULAERTOMATRIX(order)                                    \
   m.def(                                                                       \
       "euler" #order "ToMatrix",                                               \
-      +[](Eigen::Vector3d angle) -> Eigen::Matrix3d {                          \
+      +[](math::Vector3d angle) -> math::Matrix3d {                            \
         return dart::math::euler##order##ToMatrix(angle);                      \
       },                                                                       \
       ::py::arg("angle"));
@@ -50,7 +50,7 @@
 #define DARTPY_DEFINE_MATRIXTOEULAER(order)                                    \
   m.def(                                                                       \
       "matrixToEuler" #order,                                                  \
-      +[](const Eigen::Matrix3d& R) -> Eigen::Vector3d {                       \
+      +[](const math::Matrix3d& R) -> math::Vector3d {                         \
         return dart::math::matrixToEuler##order(R);                            \
       },                                                                       \
       ::py::arg("R"));
@@ -90,56 +90,56 @@ void Geometry(py::module& m)
 
   m.def(
       "expMap",
-      +[](const math::Vector6d& _S) -> Eigen::Isometry3d {
+      +[](const math::Vector6d& _S) -> math::Isometry3d {
         return dart::math::expMap(_S);
       },
       ::py::arg("S"));
 
   m.def(
       "expMapJac",
-      +[](const Eigen::Vector3d& _expmap) -> Eigen::Matrix3d {
+      +[](const math::Vector3d& _expmap) -> math::Matrix3d {
         return dart::math::expMapJac(_expmap);
       },
       ::py::arg("expmap"));
 
   m.def(
       "expMapRot",
-      +[](const Eigen::Vector3d& _expmap) -> Eigen::Matrix3d {
+      +[](const math::Vector3d& _expmap) -> math::Matrix3d {
         return dart::math::expMapRot(_expmap);
       },
       ::py::arg("expmap"));
 
   m.def(
       "expToQuat",
-      +[](const Eigen::Vector3d& _v) -> Eigen::Quaterniond {
+      +[](const math::Vector3d& _v) -> math::Quaterniond {
         return dart::math::expToQuat(_v);
       },
       ::py::arg("v"));
 
   m.def(
       "quatToExp",
-      +[](const Eigen::Quaterniond& _q) -> Eigen::Vector3d {
+      +[](const math::Quaterniond& _q) -> math::Vector3d {
         return dart::math::quatToExp(_q);
       },
       ::py::arg("q"));
 
   m.def(
       "expAngular",
-      +[](const Eigen::Vector3d& _s) -> Eigen::Isometry3d {
+      +[](const math::Vector3d& _s) -> math::Isometry3d {
         return dart::math::expAngular(_s);
       },
       ::py::arg("s"));
 
   m.def(
       "verifyRotation",
-      +[](const Eigen::Matrix3d& _R) -> bool {
+      +[](const math::Matrix3d& _R) -> bool {
         return dart::math::verifyRotation(_R);
       },
       ::py::arg("R"));
 
   m.def(
       "verifyTransform",
-      +[](const Eigen::Isometry3d& _T) -> bool {
+      +[](const math::Isometry3d& _T) -> bool {
         return dart::math::verifyTransform(_T);
       },
       ::py::arg("T"));

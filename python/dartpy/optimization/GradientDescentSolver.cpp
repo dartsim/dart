@@ -87,7 +87,7 @@ void GradientDescentSolver(py::module& m)
               double,
               double,
               double,
-              Eigen::VectorXd>(),
+              math::VectorXd>(),
           ::py::arg("stepMultiplier"),
           ::py::arg("maxAttempts"),
           ::py::arg("perturbationStep"),
@@ -103,8 +103,8 @@ void GradientDescentSolver(py::module& m)
               double,
               double,
               double,
-              Eigen::VectorXd,
-              Eigen::VectorXd>(),
+              math::VectorXd,
+              math::VectorXd>(),
           ::py::arg("stepMultiplier"),
           ::py::arg("maxAttempts"),
           ::py::arg("perturbationStep"),
@@ -184,7 +184,7 @@ void GradientDescentSolver(py::module& m)
       .def(
           "getLastConfiguration",
           +[](const dart::optimization::GradientDescentSolver* self)
-              -> Eigen::VectorXd { return self->getLastConfiguration(); })
+              -> math::VectorXd { return self->getLastConfiguration(); })
       .def(
           "getType",
           +[](const dart::optimization::GradientDescentSolver* self)
@@ -267,12 +267,12 @@ void GradientDescentSolver(py::module& m)
       .def(
           "randomizeConfiguration",
           +[](dart::optimization::GradientDescentSolver* self,
-              Eigen::VectorXd& _x) { self->randomizeConfiguration(_x); },
+              math::VectorXd& _x) { self->randomizeConfiguration(_x); },
           ::py::arg("x"))
       .def(
           "clampToBoundary",
           +[](dart::optimization::GradientDescentSolver* self,
-              Eigen::VectorXd& _x) { self->clampToBoundary(_x); },
+              math::VectorXd& _x) { self->clampToBoundary(_x); },
           ::py::arg("x"))
       .def(
           "getLastNumIterations",

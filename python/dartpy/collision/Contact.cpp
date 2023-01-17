@@ -56,13 +56,13 @@ void Contact(py::module& m)
           })
       .def_static(
           "isZeroNormal",
-          +[](const Eigen::Vector3d& normal) -> bool {
+          +[](const math::Vector3d& normal) -> bool {
             return dart::collision::Contact::isZeroNormal(normal);
           },
           ::py::arg("normal"))
       .def_static(
           "isNonZeroNormal",
-          +[](const Eigen::Vector3d& normal) -> bool {
+          +[](const math::Vector3d& normal) -> bool {
             return dart::collision::Contact::isNonZeroNormal(normal);
           },
           ::py::arg("normal"))

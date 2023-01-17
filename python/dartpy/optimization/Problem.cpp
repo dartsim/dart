@@ -64,18 +64,18 @@ void Problem(py::module& m)
       .def(
           "setInitialGuess",
           +[](dart::optimization::Problem* self,
-              const Eigen::VectorXd& _initGuess) {
+              const math::VectorXd& _initGuess) {
             self->setInitialGuess(_initGuess);
           },
           ::py::arg("initGuess"))
       .def(
           "getInitialGuess",
-          +[](dart::optimization::Problem* self) -> const Eigen::VectorXd& {
+          +[](dart::optimization::Problem* self) -> const math::VectorXd& {
             return self->getInitialGuess();
           })
       .def(
           "addSeed",
-          +[](dart::optimization::Problem* self, const Eigen::VectorXd& _seed) {
+          +[](dart::optimization::Problem* self, const math::VectorXd& _seed) {
             self->addSeed(_seed);
           },
           ::py::arg("seed"))
@@ -84,13 +84,13 @@ void Problem(py::module& m)
           +[](dart::optimization::Problem* self) { self->clearAllSeeds(); })
       .def(
           "setLowerBounds",
-          +[](dart::optimization::Problem* self, const Eigen::VectorXd& _lb) {
+          +[](dart::optimization::Problem* self, const math::VectorXd& _lb) {
             self->setLowerBounds(_lb);
           },
           ::py::arg("lb"))
       .def(
           "setUpperBounds",
-          +[](dart::optimization::Problem* self, const Eigen::VectorXd& _ub) {
+          +[](dart::optimization::Problem* self, const math::VectorXd& _ub) {
             self->setUpperBounds(_ub);
           },
           ::py::arg("ub"))
@@ -183,13 +183,13 @@ void Problem(py::module& m)
       .def(
           "setOptimalSolution",
           +[](dart::optimization::Problem* self,
-              const Eigen::VectorXd& _optParam) {
+              const math::VectorXd& _optParam) {
             self->setOptimalSolution(_optParam);
           },
           ::py::arg("optParam"))
       .def(
           "getOptimalSolution",
-          +[](dart::optimization::Problem* self) -> const Eigen::VectorXd& {
+          +[](dart::optimization::Problem* self) -> const math::VectorXd& {
             return self->getOptimalSolution();
           });
 }

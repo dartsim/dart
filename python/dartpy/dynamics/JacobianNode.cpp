@@ -112,14 +112,14 @@ void JacobianNode(py::module& m)
       .def(
           "getJacobian",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobian(_offset);
           },
           ::py::arg("offset"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobian(_offset, _inCoordinatesOf);
@@ -129,7 +129,7 @@ void JacobianNode(py::module& m)
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getWorldJacobian(_offset);
           },
           ::py::arg("offset"))
@@ -150,14 +150,14 @@ void JacobianNode(py::module& m)
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset) -> dart::math::LinearJacobian {
+              const math::Vector3d& _offset) -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_offset);
           },
           ::py::arg("offset"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_offset, _inCoordinatesOf);
@@ -189,14 +189,14 @@ void JacobianNode(py::module& m)
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_offset);
           },
           ::py::arg("offset"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_offset, _inCoordinatesOf);
@@ -214,14 +214,14 @@ void JacobianNode(py::module& m)
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_offset);
           },
           ::py::arg("offset"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_offset, _inCoordinatesOf);
@@ -245,14 +245,14 @@ void JacobianNode(py::module& m)
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset) -> dart::math::LinearJacobian {
+              const math::Vector3d& _offset) -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_offset);
           },
           ::py::arg("offset"))
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::JacobianNode* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_offset, _inCoordinatesOf);

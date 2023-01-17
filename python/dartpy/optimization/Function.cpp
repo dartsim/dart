@@ -50,7 +50,7 @@ public:
   using Function::Function;
 
   // Trampoline for virtual function
-  double eval(const Eigen::VectorXd& x) const override
+  double eval(const math::VectorXd& x) const override
   {
     PYBIND11_OVERLOAD_PURE(
         double,   // Return type
@@ -61,7 +61,7 @@ public:
 
   // Trampoline for virtual function
   void evalGradient(
-      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) const override
+      const math::VectorXd& x, math::Map<math::VectorXd> grad) const override
   {
     PYBIND11_OVERLOAD(
         void,         // Return type
@@ -103,7 +103,7 @@ void Function(py::module& m)
       .def(
           "eval",
           +[](dart::optimization::NullFunction* self,
-              const Eigen::VectorXd& _arg0_) -> double {
+              const math::VectorXd& _arg0_) -> double {
             return self->eval(_arg0_);
           },
           ::py::arg("arg0_"));
@@ -123,7 +123,7 @@ void Function(py::module& m)
       .def(
           "eval",
           +[](dart::optimization::ModularFunction* self,
-              const Eigen::VectorXd& _x) -> double { return self->eval(_x); },
+              const math::VectorXd& _x) -> double { return self->eval(_x); },
           ::py::arg("x"))
       .def(
           "setCostFunction",

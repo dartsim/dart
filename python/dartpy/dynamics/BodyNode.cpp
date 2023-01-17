@@ -147,7 +147,7 @@ void BodyNode(py::module& m)
           "getJacobian",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobian(_offset);
           },
           ::py::arg("offset"))
@@ -155,7 +155,7 @@ void BodyNode(py::module& m)
           "getJacobian",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobian(_offset, _inCoordinatesOf);
@@ -166,7 +166,7 @@ void BodyNode(py::module& m)
           "getWorldJacobian",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getWorldJacobian(_offset);
           },
           ::py::arg("offset"))
@@ -189,7 +189,7 @@ void BodyNode(py::module& m)
           "getLinearJacobian",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset) -> dart::math::LinearJacobian {
+              const math::Vector3d& _offset) -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_offset);
           },
           ::py::arg("offset"))
@@ -197,7 +197,7 @@ void BodyNode(py::module& m)
           "getLinearJacobian",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_offset, _inCoordinatesOf);
@@ -232,7 +232,7 @@ void BodyNode(py::module& m)
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_offset);
           },
           ::py::arg("offset"))
@@ -240,7 +240,7 @@ void BodyNode(py::module& m)
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_offset, _inCoordinatesOf);
@@ -260,7 +260,7 @@ void BodyNode(py::module& m)
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
+              const math::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_offset);
           },
           ::py::arg("offset"))
@@ -268,7 +268,7 @@ void BodyNode(py::module& m)
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_offset, _inCoordinatesOf);
@@ -294,7 +294,7 @@ void BodyNode(py::module& m)
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset) -> dart::math::LinearJacobian {
+              const math::Vector3d& _offset) -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_offset);
           },
           ::py::arg("offset"))
@@ -302,7 +302,7 @@ void BodyNode(py::module& m)
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
                   dart::dynamics::BodyNode>* self,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_offset, _inCoordinatesOf);
@@ -540,37 +540,37 @@ void BodyNode(py::module& m)
           ::py::return_value_policy::reference_internal)
       .def(
           "setLocalCOM",
-          +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _com) {
+          +[](dart::dynamics::BodyNode* self, const math::Vector3d& _com) {
             self->setLocalCOM(_com);
           },
           ::py::arg("com"))
       .def(
           "getLocalCOM",
-          +[](const dart::dynamics::BodyNode* self) -> const Eigen::Vector3d& {
+          +[](const dart::dynamics::BodyNode* self) -> const math::Vector3d& {
             return self->getLocalCOM();
           },
           ::py::return_value_policy::reference_internal)
       .def(
           "getCOM",
-          +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::BodyNode* self) -> math::Vector3d {
             return self->getCOM();
           })
       .def(
           "getCOM",
           +[](const dart::dynamics::BodyNode* self,
-              const dart::dynamics::Frame* _withRespectTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _withRespectTo) -> math::Vector3d {
             return self->getCOM(_withRespectTo);
           },
           ::py::arg("withRespectTo"))
       .def(
           "getCOMLinearVelocity",
-          +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::BodyNode* self) -> math::Vector3d {
             return self->getCOMLinearVelocity();
           })
       .def(
           "getCOMLinearVelocity",
           +[](const dart::dynamics::BodyNode* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -578,8 +578,7 @@ void BodyNode(py::module& m)
           "getCOMLinearVelocity",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo, _inCoordinatesOf);
           },
           ::py::arg("relativeTo"),
@@ -600,13 +599,13 @@ void BodyNode(py::module& m)
           ::py::arg("inCoordinatesOf"))
       .def(
           "getCOMLinearAcceleration",
-          +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::BodyNode* self) -> math::Vector3d {
             return self->getCOMLinearAcceleration();
           })
       .def(
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::BodyNode* self,
-              const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _relativeTo) -> math::Vector3d {
             return self->getCOMLinearAcceleration(_relativeTo);
           },
           ::py::arg("relativeTo"))
@@ -614,8 +613,7 @@ void BodyNode(py::module& m)
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::Frame* _relativeTo,
-              const dart::dynamics::Frame* _inCoordinatesOf)
-              -> Eigen::Vector3d {
+              const dart::dynamics::Frame* _inCoordinatesOf) -> math::Vector3d {
             return self->getCOMLinearAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },
@@ -884,15 +882,15 @@ void BodyNode(py::module& m)
           })
       .def(
           "addExtForce",
-          +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _force) {
+          +[](dart::dynamics::BodyNode* self, const math::Vector3d& _force) {
             self->addExtForce(_force);
           },
           ::py::arg("force"))
       .def(
           "addExtForce",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _force,
-              const Eigen::Vector3d& _offset) {
+              const math::Vector3d& _force,
+              const math::Vector3d& _offset) {
             self->addExtForce(_force, _offset);
           },
           ::py::arg("force"),
@@ -900,8 +898,8 @@ void BodyNode(py::module& m)
       .def(
           "addExtForce",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _force,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _force,
+              const math::Vector3d& _offset,
               bool _isForceLocal) {
             self->addExtForce(_force, _offset, _isForceLocal);
           },
@@ -911,8 +909,8 @@ void BodyNode(py::module& m)
       .def(
           "addExtForce",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _force,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _force,
+              const math::Vector3d& _offset,
               bool _isForceLocal,
               bool _isOffsetLocal) {
             self->addExtForce(_force, _offset, _isForceLocal, _isOffsetLocal);
@@ -923,15 +921,15 @@ void BodyNode(py::module& m)
           ::py::arg("isOffsetLocal"))
       .def(
           "setExtForce",
-          +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _force) {
+          +[](dart::dynamics::BodyNode* self, const math::Vector3d& _force) {
             self->setExtForce(_force);
           },
           ::py::arg("force"))
       .def(
           "setExtForce",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _force,
-              const Eigen::Vector3d& _offset) {
+              const math::Vector3d& _force,
+              const math::Vector3d& _offset) {
             self->setExtForce(_force, _offset);
           },
           ::py::arg("force"),
@@ -939,8 +937,8 @@ void BodyNode(py::module& m)
       .def(
           "setExtForce",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _force,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _force,
+              const math::Vector3d& _offset,
               bool _isForceLocal) {
             self->setExtForce(_force, _offset, _isForceLocal);
           },
@@ -950,8 +948,8 @@ void BodyNode(py::module& m)
       .def(
           "setExtForce",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _force,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _force,
+              const math::Vector3d& _offset,
               bool _isForceLocal,
               bool _isOffsetLocal) {
             self->setExtForce(_force, _offset, _isForceLocal, _isOffsetLocal);
@@ -962,27 +960,27 @@ void BodyNode(py::module& m)
           ::py::arg("isOffsetLocal"))
       .def(
           "addExtTorque",
-          +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _torque) {
+          +[](dart::dynamics::BodyNode* self, const math::Vector3d& _torque) {
             self->addExtTorque(_torque);
           },
           ::py::arg("torque"))
       .def(
           "addExtTorque",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _torque,
+              const math::Vector3d& _torque,
               bool _isLocal) { self->addExtTorque(_torque, _isLocal); },
           ::py::arg("torque"),
           ::py::arg("isLocal"))
       .def(
           "setExtTorque",
-          +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _torque) {
+          +[](dart::dynamics::BodyNode* self, const math::Vector3d& _torque) {
             self->setExtTorque(_torque);
           },
           ::py::arg("torque"))
       .def(
           "setExtTorque",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _torque,
+              const math::Vector3d& _torque,
               bool _isLocal) { self->setExtTorque(_torque, _isLocal); },
           ::py::arg("torque"),
           ::py::arg("isLocal"))
@@ -1023,8 +1021,8 @@ void BodyNode(py::module& m)
       .def(
           "addConstraintImpulse",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _constImp,
-              const Eigen::Vector3d& _offset) {
+              const math::Vector3d& _constImp,
+              const math::Vector3d& _offset) {
             self->addConstraintImpulse(_constImp, _offset);
           },
           ::py::arg("constImp"),
@@ -1032,8 +1030,8 @@ void BodyNode(py::module& m)
       .def(
           "addConstraintImpulse",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _constImp,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _constImp,
+              const math::Vector3d& _offset,
               bool _isImpulseLocal) {
             self->addConstraintImpulse(_constImp, _offset, _isImpulseLocal);
           },
@@ -1043,8 +1041,8 @@ void BodyNode(py::module& m)
       .def(
           "addConstraintImpulse",
           +[](dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& _constImp,
-              const Eigen::Vector3d& _offset,
+              const math::Vector3d& _constImp,
+              const math::Vector3d& _offset,
               bool _isImpulseLocal,
               bool _isOffsetLocal) {
             self->addConstraintImpulse(
@@ -1061,7 +1059,7 @@ void BodyNode(py::module& m)
       .def(
           "computeLagrangian",
           +[](const dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& gravity) -> double {
+              const math::Vector3d& gravity) -> double {
             return self->computeLagrangian(gravity);
           },
           ::py::arg("gravity"))
@@ -1073,24 +1071,24 @@ void BodyNode(py::module& m)
       .def(
           "computePotentialEnergy",
           +[](const dart::dynamics::BodyNode* self,
-              const Eigen::Vector3d& gravity) -> double {
+              const math::Vector3d& gravity) -> double {
             return self->computePotentialEnergy(gravity);
           },
           ::py::arg("gravity"))
       .def(
           "getLinearMomentum",
-          +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector3d {
+          +[](const dart::dynamics::BodyNode* self) -> math::Vector3d {
             return self->getLinearMomentum();
           })
       .def(
           "getAngularMomentum",
-          +[](dart::dynamics::BodyNode* self) -> Eigen::Vector3d {
+          +[](dart::dynamics::BodyNode* self) -> math::Vector3d {
             return self->getAngularMomentum();
           })
       .def(
           "getAngularMomentum",
-          +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _pivot)
-              -> Eigen::Vector3d { return self->getAngularMomentum(_pivot); },
+          +[](dart::dynamics::BodyNode* self, const math::Vector3d& _pivot)
+              -> math::Vector3d { return self->getAngularMomentum(_pivot); },
           ::py::arg("pivot"))
       .def(
           "dirtyTransform",
@@ -1113,12 +1111,12 @@ void BodyNode(py::module& m)
           +[](dart::dynamics::BodyNode* self) { self->dirtyCoriolisForces(); })
       .def(
           "setColor",
-          ::py::overload_cast<const Eigen::Vector3d&>(
+          ::py::overload_cast<const math::Vector3d&>(
               &dynamics::BodyNode::setColor),
           ::py::arg("color"))
       .def(
           "setColor",
-          ::py::overload_cast<const Eigen::Vector4d&>(
+          ::py::overload_cast<const math::Vector4d&>(
               &dynamics::BodyNode::setColor),
           ::py::arg("color"))
       .def("setAlpha", &dynamics::BodyNode::setAlpha, ::py::arg("alpha"));

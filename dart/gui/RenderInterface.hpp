@@ -33,7 +33,8 @@
 #ifndef DART_GUI_RENDERINTERFACE_HPP_
 #define DART_GUI_RENDERINTERFACE_HPP_
 
-#include <Eigen/Dense>
+#include <dart/gui/Fwd.hpp>
+
 #include <assimp/scene.h>
 
 #include <vector>

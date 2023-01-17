@@ -104,14 +104,14 @@ void DynamicJointConstraint(py::module& m)
       std::shared_ptr<dart::dynamics::BallJointConstraint>>(
       m, "BallJointConstraint")
       .def(
-          ::py::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
+          ::py::init<dart::dynamics::BodyNode*, const math::Vector3d&>(),
           ::py::arg("body"),
           ::py::arg("jointPos"))
       .def(
           ::py::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
-              const Eigen::Vector3d&>(),
+              const math::Vector3d&>(),
           ::py::arg("body1"),
           ::py::arg("body2"),
           ::py::arg("jointPos"))
@@ -138,7 +138,7 @@ void DynamicJointConstraint(py::module& m)
       .def(
           "setRelativeTransform",
           +[](dart::dynamics::WeldJointConstraint* self,
-              const Eigen::Isometry3d& tf) { self->setRelativeTransform(tf); },
+              const math::Isometry3d& tf) { self->setRelativeTransform(tf); },
           ::py::arg("tf"));
 }
 
