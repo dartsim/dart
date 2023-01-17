@@ -110,7 +110,7 @@ void EllipsoidShapeNode::refresh()
 }
 
 //==============================================================================
-double smallestComponent(const Eigen::Vector3d& v)
+double smallestComponent(const math::Vector3d& v)
 {
   return std::min(v[0], std::min(v[1], v[2]));
 }
@@ -121,8 +121,8 @@ void EllipsoidShapeNode::extractData(bool firstTime)
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
       || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {
-    Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
-    const Eigen::Vector3d& s
+    math::Matrix4d S(math::Matrix4d::Zero());
+    const math::Vector3d& s
         = mEllipsoidShape->getDiameters()
           / smallestComponent(mEllipsoidShape->getDiameters());
     S(0, 0) = s[0];

@@ -237,7 +237,7 @@ const std::string& World::getName() const
 }
 
 //==============================================================================
-void World::setGravity(const Eigen::Vector3d& _gravity)
+void World::setGravity(const math::Vector3d& _gravity)
 {
   mGravity = _gravity;
   for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
@@ -250,11 +250,11 @@ void World::setGravity(const Eigen::Vector3d& _gravity)
 //==============================================================================
 void World::setGravity(double x, double y, double z)
 {
-  setGravity(Eigen::Vector3d(x, y, z));
+  setGravity(math::Vector3d(x, y, z));
 }
 
 //==============================================================================
-const Eigen::Vector3d& World::getGravity() const
+const math::Vector3d& World::getGravity() const
 {
   return mGravity;
 }
@@ -563,7 +563,7 @@ void World::bake()
   const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
   const auto nSkeletons = getNumSkeletons();
 
-  Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
+  math::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
   for (auto i = 0u; i < getNumSkeletons(); ++i) {
     state.segment(getIndex(i), getSkeleton(i)->getNumDofs())
         = getSkeleton(i)->getPositions();

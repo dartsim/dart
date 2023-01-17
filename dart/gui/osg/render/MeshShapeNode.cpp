@@ -327,8 +327,8 @@ void MeshShapeNode::extractData(bool firstTime)
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
       || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {
-    Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
-    const Eigen::Vector3d& s = mMeshShape->getScale();
+    math::Matrix4d S(math::Matrix4d::Zero());
+    const math::Vector3d& s = mMeshShape->getScale();
     S(0, 0) = s[0];
     S(1, 1) = s[1];
     S(2, 2) = s[2];
@@ -667,7 +667,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if (mNormals->size() != mAiMesh->mNumVertices)
       mNormals->resize(mAiMesh->mNumVertices);
 
-    const Eigen::Vector3f s = mMeshShape->getScale().cast<float>();
+    const math::Vector3f s = mMeshShape->getScale().cast<float>();
 
     for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
       const aiVector3D& v = mAiMesh->mVertices[i];
@@ -835,7 +835,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
         || mMeshShape->getColorMode()
                == dart::dynamics::MeshShape::SHAPE_COLOR) {
       // Set color
-      const Eigen::Vector4f& c = mVisualAspect->getRGBA().cast<float>();
+      const math::Vector4f& c = mVisualAspect->getRGBA().cast<float>();
       mColors->resize(1);
       (*mColors)[0] = ::osg::Vec4(c[0], c[1], c[2], c[3]);
       setColorArray(mColors);

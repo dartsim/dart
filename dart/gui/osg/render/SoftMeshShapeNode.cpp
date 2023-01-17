@@ -84,7 +84,7 @@ protected:
   ::osg::ref_ptr<::osg::Vec3Array> mNormals;
   ::osg::ref_ptr<::osg::Vec4Array> mColors;
 
-  std::vector<Eigen::Vector3d> mEigNormals;
+  std::vector<math::Vector3d> mEigNormals;
 
   dart::dynamics::SoftMeshShape* mSoftMeshShape;
   dart::dynamics::VisualAspect* mVisualAspect;
@@ -188,20 +188,20 @@ SoftMeshShapeDrawable::SoftMeshShapeDrawable(
   refresh(true);
 }
 
-static Eigen::Vector3d normalFromVertex(
+static math::Vector3d normalFromVertex(
     const dart::dynamics::SoftBodyNode* bn,
-    const Eigen::Vector3i& face,
+    const math::Vector3i& face,
     std::size_t v)
 {
-  const Eigen::Vector3d& v0 = bn->getPointMass(face[v])->getLocalPosition();
-  const Eigen::Vector3d& v1
+  const math::Vector3d& v0 = bn->getPointMass(face[v])->getLocalPosition();
+  const math::Vector3d& v1
       = bn->getPointMass(face[(v + 1) % 3])->getLocalPosition();
-  const Eigen::Vector3d& v2
+  const math::Vector3d& v2
       = bn->getPointMass(face[(v + 2) % 3])->getLocalPosition();
 
-  const Eigen::Vector3d dv1 = v1 - v0;
-  const Eigen::Vector3d dv2 = v2 - v0;
-  const Eigen::Vector3d n = dv1.cross(dv2);
+  const math::Vector3d dv1 = v1 - v0;
+  const math::Vector3d dv2 = v2 - v0;
+  const math::Vector3d n = dv1.cross(dv2);
 
   double weight = n.norm() / (dv1.norm() * dv2.norm());
   weight = std::max(-1.0, std::min(1.0, weight));
@@ -210,14 +210,14 @@ static Eigen::Vector3d normalFromVertex(
 }
 
 static void computeNormals(
-    std::vector<Eigen::Vector3d>& normals,
+    std::vector<math::Vector3d>& normals,
     const dart::dynamics::SoftBodyNode* bn)
 {
   for (std::size_t i = 0; i < normals.size(); ++i)
-    normals[i] = Eigen::Vector3d::Zero();
+    normals[i] = math::Vector3d::Zero();
 
   for (std::size_t i = 0; i < bn->getNumFaces(); ++i) {
-    const Eigen::Vector3i& face = bn->getFace(i);
+    const math::Vector3i& face = bn->getFace(i);
     for (std::size_t j = 0; j < 3; ++j)
       normals[face[j]] += normalFromVertex(bn, face, j);
   }
@@ -243,7 +243,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     elements->reserve(3 * bn->getNumFaces());
 
     for (std::size_t i = 0; i < bn->getNumFaces(); ++i) {
-      const Eigen::Vector3i& F = bn->getFace(i);
+      const math::Vector3i& F = bn->getFace(i);
       for (std::size_t j = 0; j < 3; ++j)
         elements->push_back(F[j]);
     }

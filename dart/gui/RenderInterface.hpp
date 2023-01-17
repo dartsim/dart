@@ -78,15 +78,15 @@ public:
   virtual void setViewport(int _x, int _y, int _width, int _height);
   virtual void getViewport(int& _x, int& _y, int& _width, int& _height) const;
 
-  virtual void clear(const Eigen::Vector3d& _color);
+  virtual void clear(const math::Vector3d& _color);
 
   virtual void setMaterial(
-      const Eigen::Vector3d& _diffuse,
-      const Eigen::Vector3d& _specular,
+      const math::Vector3d& _diffuse,
+      const math::Vector3d& _specular,
       double _cosinePow);
   virtual void getMaterial(
-      Eigen::Vector3d& _diffuse,
-      Eigen::Vector3d& _specular,
+      math::Vector3d& _diffuse,
+      math::Vector3d& _specular,
       double& _cosinePow) const;
   virtual void setDefaultMaterial();
 
@@ -95,17 +95,17 @@ public:
   virtual void pushName(int _id);
   virtual void popName();
 
-  virtual void translate(const Eigen::Vector3d& _offset);         // glTranslate
-  virtual void rotate(const Eigen::Vector3d& _axis, double _rad); // glRotate
-  virtual void transform(const Eigen::Isometry3d& _transform); // glMultMatrix
-  virtual void scale(const Eigen::Vector3d& _scale);           // glScale
+  virtual void translate(const math::Vector3d& _offset);         // glTranslate
+  virtual void rotate(const math::Vector3d& _axis, double _rad); // glRotate
+  virtual void transform(const math::Isometry3d& _transform);    // glMultMatrix
+  virtual void scale(const math::Vector3d& _scale);              // glScale
 
   virtual void drawSphere(double radius, int slices = 16, int stacks = 16);
   virtual void drawMultiSphereConvexHull(
-      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+      const std::vector<std::pair<double, math::Vector3d>>& spheres,
       std::size_t subdivisions);
-  virtual void drawEllipsoid(const Eigen::Vector3d& _size);
-  virtual void drawCube(const Eigen::Vector3d& _size);
+  virtual void drawEllipsoid(const math::Vector3d& _size);
+  virtual void drawCube(const math::Vector3d& _size);
   virtual void drawOpenCylinder(
       double baseRadius,
       double topRadius,
@@ -117,18 +117,18 @@ public:
   virtual void drawCapsule(double _radius, double _height);
   virtual void drawCone(double _radius, double _height);
   virtual void drawPyramid(double baseWidth, double baseDepth, double height);
-  virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
+  virtual void drawMesh(const math::Vector3d& _scale, const aiScene* _mesh);
   virtual void drawSoftMesh(const aiMesh* mesh);
   virtual void drawList(unsigned int index);
   virtual void drawLineSegments(
-      const std::vector<Eigen::Vector3d>& _vertices,
-      const std::vector<Eigen::Vector2i>& _connections);
+      const std::vector<math::Vector3d>& _vertices,
+      const std::vector<math::Vector2i>& _connections);
 
   virtual unsigned int compileDisplayList(
-      const Eigen::Vector3d& _size, const aiScene* _mesh);
+      const math::Vector3d& _size, const aiScene* _mesh);
 
-  virtual void setPenColor(const Eigen::Vector4d& _col);
-  virtual void setPenColor(const Eigen::Vector3d& _col);
+  virtual void setPenColor(const math::Vector4d& _col);
+  virtual void setPenColor(const math::Vector3d& _col);
 
   virtual void setLineWidth(float _width);
 

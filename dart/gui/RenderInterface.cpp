@@ -49,18 +49,18 @@ void RenderInterface::getViewport(
 {
 }
 
-void RenderInterface::clear(const Eigen::Vector3d& /*_color*/) {}
+void RenderInterface::clear(const math::Vector3d& /*_color*/) {}
 
 void RenderInterface::setMaterial(
-    const Eigen::Vector3d& /*_diffuse*/,
-    const Eigen::Vector3d& /*_specular*/,
+    const math::Vector3d& /*_diffuse*/,
+    const math::Vector3d& /*_specular*/,
     double /*_cosinePow*/)
 {
 }
 
 void RenderInterface::getMaterial(
-    Eigen::Vector3d& /*_diffuse*/,
-    Eigen::Vector3d& /*_specular*/,
+    math::Vector3d& /*_diffuse*/,
+    math::Vector3d& /*_specular*/,
     double& /*cosinePow*/) const
 {
 }
@@ -75,15 +75,15 @@ void RenderInterface::pushName(int /*_id*/) {}
 
 void RenderInterface::popName() {}
 
-void RenderInterface::translate(const Eigen::Vector3d& /*_offset*/) {}
+void RenderInterface::translate(const math::Vector3d& /*_offset*/) {}
 
-void RenderInterface::rotate(const Eigen::Vector3d& /*_axis*/, double /*_rad*/)
+void RenderInterface::rotate(const math::Vector3d& /*_axis*/, double /*_rad*/)
 {
 }
 
-void RenderInterface::transform(const Eigen::Isometry3d& /*_transform*/) {}
+void RenderInterface::transform(const math::Isometry3d& /*_transform*/) {}
 
-void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/) {}
+void RenderInterface::scale(const math::Vector3d& /*_scale*/) {}
 
 void RenderInterface::drawSphere(
     double /*_radius*/, int /*slices*/, int /*stacks*/)
@@ -91,16 +91,16 @@ void RenderInterface::drawSphere(
 }
 
 void RenderInterface::drawMultiSphereConvexHull(
-    const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/,
+    const std::vector<std::pair<double, math::Vector3d>>& /*spheres*/,
     std::size_t /*subdivisions*/)
 {
   // Do nothing
 }
 
-void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/) {}
+void RenderInterface::drawEllipsoid(const math::Vector3d& /*_size*/) {}
 
 void RenderInterface::drawMesh(
-    const Eigen::Vector3d& /*_scale*/, const aiScene* /*_mesh*/)
+    const math::Vector3d& /*_scale*/, const aiScene* /*_mesh*/)
 {
 }
 
@@ -112,17 +112,17 @@ void RenderInterface::drawSoftMesh(const aiMesh* /*mesh*/)
 void RenderInterface::drawList(unsigned int /*indeX*/) {}
 
 void RenderInterface::drawLineSegments(
-    const std::vector<Eigen::Vector3d>&, const std::vector<Eigen::Vector2i>&)
+    const std::vector<math::Vector3d>&, const std::vector<math::Vector2i>&)
 {
 }
 
 unsigned int RenderInterface::compileDisplayList(
-    const Eigen::Vector3d& /*_size*/, const aiScene* /*_mesh*/)
+    const math::Vector3d& /*_size*/, const aiScene* /*_mesh*/)
 {
   return 0;
 }
 
-void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/) {}
+void RenderInterface::drawCube(const math::Vector3d& /*_size*/) {}
 
 void RenderInterface::drawOpenCylinder(
     double /*baseRadius*/,
@@ -147,9 +147,9 @@ void RenderInterface::drawPyramid(
 {
 }
 
-void RenderInterface::setPenColor(const Eigen::Vector4d& /*_col*/) {}
+void RenderInterface::setPenColor(const math::Vector4d& /*_col*/) {}
 
-void RenderInterface::setPenColor(const Eigen::Vector3d& /*_col*/) {}
+void RenderInterface::setPenColor(const math::Vector3d& /*_col*/) {}
 
 void RenderInterface::setLineWidth(float) {}
 

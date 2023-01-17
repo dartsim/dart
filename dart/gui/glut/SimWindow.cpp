@@ -150,16 +150,16 @@ void SimWindow::draw()
         // std::size_t sumDofs = mWorld->getIndex(nSkels);
         int nContact = mWorld->getRecording()->getNumContacts(mPlayFrame);
         for (int i = 0; i < nContact; i++) {
-          Eigen::Vector3d v
+          math::Vector3d v
               = mWorld->getRecording()->getContactPoint(mPlayFrame, i);
-          Eigen::Vector3d f
+          math::Vector3d f
               = mWorld->getRecording()->getContactForce(mPlayFrame, i);
 
           glBegin(GL_LINES);
           glVertex3f(v[0], v[1], v[2]);
           glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
           glEnd();
-          mRI->setPenColor(Eigen::Vector3d(0.2, 0.2, 0.8));
+          mRI->setPenColor(math::Vector3d(0.2, 0.2, 0.8));
           mRI->pushMatrix();
           glTranslated(v[0], v[1], v[2]);
           mRI->drawSphere(0.01);
@@ -172,13 +172,13 @@ void SimWindow::draw()
       const auto result
           = mWorld->getConstraintSolver()->getLastCollisionResult();
       for (const auto& contact : result.getContacts()) {
-        Eigen::Vector3d v = contact.point;
-        Eigen::Vector3d f = contact.force / 10.0;
+        math::Vector3d v = contact.point;
+        math::Vector3d f = contact.force / 10.0;
         glBegin(GL_LINES);
         glVertex3f(v[0], v[1], v[2]);
         glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
         glEnd();
-        mRI->setPenColor(Eigen::Vector3d(0.2, 0.2, 0.8));
+        mRI->setPenColor(math::Vector3d(0.2, 0.2, 0.8));
         mRI->pushMatrix();
         glTranslated(v[0], v[1], v[2]);
         mRI->drawSphere(0.01);
@@ -264,7 +264,7 @@ void SimWindow::saveWorld()
   worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
 }
 
-void SimWindow::plot(Eigen::VectorXd& _data)
+void SimWindow::plot(math::VectorXd& _data)
 {
   GraphWindow* figure = new GraphWindow();
   figure->setData(_data);
@@ -275,7 +275,7 @@ void SimWindow::plot(Eigen::VectorXd& _data)
 //==============================================================================
 void SimWindow::drawSkeleton(
     const dynamics::Skeleton* skeleton,
-    const Eigen::Vector4d& color,
+    const math::Vector4d& color,
     bool useDefaultColor) const
 {
   if (!skeleton)
@@ -288,7 +288,7 @@ void SimWindow::drawSkeleton(
 //==============================================================================
 void SimWindow::drawEntity(
     const dynamics::Entity* entity,
-    const Eigen::Vector4d& color,
+    const math::Vector4d& color,
     bool useDefaultColor) const
 {
   if (!entity)
@@ -310,7 +310,7 @@ void SimWindow::drawEntity(
 //==============================================================================
 void SimWindow::drawBodyNode(
     const dynamics::BodyNode* bodyNode,
-    const Eigen::Vector4d& color,
+    const math::Vector4d& color,
     bool useDefaultColor,
     bool recursive) const
 {
@@ -359,7 +359,7 @@ void SimWindow::drawBodyNode(
 //==============================================================================
 void SimWindow::drawShapeFrame(
     const dynamics::ShapeFrame* shapeFrame,
-    const Eigen::Vector4d& color,
+    const math::Vector4d& color,
     bool useDefaultColor) const
 {
   if (!shapeFrame)
@@ -386,7 +386,7 @@ void SimWindow::drawShapeFrame(
 
 //==============================================================================
 void SimWindow::drawShape(
-    const dynamics::Shape* shape, const Eigen::Vector4d& color) const
+    const dynamics::Shape* shape, const math::Vector4d& color) const
 {
   if (!shape)
     return;
@@ -454,21 +454,21 @@ void SimWindow::drawShape(
 //==============================================================================
 void SimWindow::drawPointMasses(
     const std::vector<dynamics::PointMass*> pointMasses,
-    const Eigen::Vector4d& color,
+    const math::Vector4d& color,
     bool useDefaultColor) const
 {
   if (!mRI)
     return;
 
   for (const auto& pointMass : pointMasses) {
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    math::Isometry3d T = math::Isometry3d::Identity();
 
     // render point at the current position
     mRI->pushMatrix();
     T.translation() = pointMass->getLocalPosition();
     mRI->transform(T);
     if (useDefaultColor)
-      mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
+      mRI->setPenColor(math::Vector4d(0.8, 0.3, 0.3, 1.0));
     else
       mRI->setPenColor(color);
     mRI->drawSphere(0.005);
@@ -479,7 +479,7 @@ void SimWindow::drawPointMasses(
     T.translation() = pointMass->getRestingPosition();
     mRI->transform(T);
     if (useDefaultColor)
-      mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
+      mRI->setPenColor(math::Vector4d(0.8, 0.3, 0.3, 1.0));
     else
       mRI->setPenColor(color);
     mRI->drawSphere(0.005);
@@ -490,7 +490,7 @@ void SimWindow::drawPointMasses(
 //==============================================================================
 void SimWindow::drawMarker(
     const dynamics::Marker* marker,
-    const Eigen::Vector4d& color,
+    const math::Vector4d& color,
     bool useDefaultColor) const
 {
   if (!marker)

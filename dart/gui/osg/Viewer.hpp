@@ -229,7 +229,7 @@ public:
 
   /// Set the direction that this Viewer should consider to be upwards (default
   /// is <0,0,1>)
-  void setUpwardsDirection(const Eigen::Vector3d& _up);
+  void setUpwardsDirection(const math::Vector3d& _up);
 
   /// Set the given WorldNode to active
   void setWorldNodeActive(WorldNode* _node, bool _active = true);

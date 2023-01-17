@@ -81,7 +81,7 @@ public:
   void saveWorld();
 
   /// \brief Plot _data in a 2D window
-  void plot(Eigen::VectorXd& _data);
+  void plot(math::VectorXd& _data);
   //  bool isSimulating() const { return mSimulating; }
 
   //  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
@@ -89,37 +89,37 @@ public:
 protected:
   virtual void drawSkeleton(
       const dynamics::Skeleton* skeleton,
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      const math::Vector4d& color = math::Vector4d::Constant(0.5),
       bool useDefaultColor = true) const;
 
   virtual void drawEntity(
       const dynamics::Entity* entity,
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      const math::Vector4d& color = math::Vector4d::Constant(0.5),
       bool useDefaultColor = true) const;
 
   virtual void drawBodyNode(
       const dynamics::BodyNode* bodyNode,
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      const math::Vector4d& color = math::Vector4d::Constant(0.5),
       bool useDefaultColor = true,
       bool recursive = false) const;
 
   virtual void drawShapeFrame(
       const dynamics::ShapeFrame* shapeFrame,
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      const math::Vector4d& color = math::Vector4d::Constant(0.5),
       bool useDefaultColor = true) const;
 
   virtual void drawShape(
       const dynamics::Shape* shape,
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5)) const;
+      const math::Vector4d& color = math::Vector4d::Constant(0.5)) const;
 
   virtual void drawPointMasses(
       const std::vector<dynamics::PointMass*> pointMasses,
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      const math::Vector4d& color = math::Vector4d::Constant(0.5),
       bool useDefaultColor = true) const;
 
   virtual void drawMarker(
       const dynamics::Marker* marker,
-      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      const math::Vector4d& color = math::Vector4d::Constant(0.5),
       bool useDefaultColor = true) const;
 
   /// \brief

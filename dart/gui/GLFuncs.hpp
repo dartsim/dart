@@ -42,15 +42,15 @@ namespace gui {
 
 /// \brief
 DART_GUI_API void drawArrow3D(
-    const Eigen::Vector3d& _pt,
-    const Eigen::Vector3d& _dir,
+    const math::Vector3d& _pt,
+    const math::Vector3d& _dir,
     const double _length,
     const double _thickness,
     const double _arrowThickness = -1);
 
 /// \brief
 DART_GUI_API void drawArrow2D(
-    const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec, double _thickness);
+    const math::Vector2d& _pt, const math::Vector2d& _vec, double _thickness);
 
 /// \brief
 DART_GUI_API void drawProgressBar(int _currFrame, int _totalFrame);

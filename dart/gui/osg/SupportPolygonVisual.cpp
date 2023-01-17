@@ -119,17 +119,17 @@ void SupportPolygonVisual::displayPolygon(bool display)
 }
 
 //==============================================================================
-void SupportPolygonVisual::setPolygonColor(const Eigen::Vector4d& color)
+void SupportPolygonVisual::setPolygonColor(const math::Vector4d& color)
 {
   (*mPolygonColor)[0] = ::osg::Vec4(color[0], color[1], color[2], color[3]);
   mPolygonGeom->setColorArray(mPolygonColor, ::osg::Array::BIND_OVERALL);
 }
 
 //==============================================================================
-Eigen::Vector4d SupportPolygonVisual::getPolygonColor() const
+math::Vector4d SupportPolygonVisual::getPolygonColor() const
 {
   const ::osg::Vec4& c = (*mPolygonColor)[0];
-  return Eigen::Vector4d(c[0], c[1], c[2], c[3]);
+  return math::Vector4d(c[0], c[1], c[2], c[3]);
 }
 
 //==============================================================================
@@ -211,25 +211,25 @@ double SupportPolygonVisual::getCenterOfMassRadius() const
 }
 
 //==============================================================================
-void SupportPolygonVisual::setValidCOMColor(const Eigen::Vector4d& color)
+void SupportPolygonVisual::setValidCOMColor(const math::Vector4d& color)
 {
   mValidColor = color;
 }
 
 //==============================================================================
-const Eigen::Vector4d& SupportPolygonVisual::getValidCOMColor() const
+const math::Vector4d& SupportPolygonVisual::getValidCOMColor() const
 {
   return mValidColor;
 }
 
 //==============================================================================
-void SupportPolygonVisual::setInvalidCOMColor(const Eigen::Vector4d& color)
+void SupportPolygonVisual::setInvalidCOMColor(const math::Vector4d& color)
 {
   mInvalidColor = color;
 }
 
 //==============================================================================
-const Eigen::Vector4d& SupportPolygonVisual::getInvalidCOMColor() const
+const math::Vector4d& SupportPolygonVisual::getInvalidCOMColor() const
 {
   return mInvalidColor;
 }
@@ -246,18 +246,18 @@ void SupportPolygonVisual::refresh()
             ? skel->getSupportPolygon()
             : skel->getSupportPolygon(mTreeIndex);
 
-  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& axes
+  const std::pair<math::Vector3d, math::Vector3d>& axes
       = (dart::dynamics::INVALID_INDEX == mTreeIndex)
             ? skel->getSupportAxes()
             : skel->getSupportAxes(mTreeIndex);
-  const Eigen::Vector3d& up = axes.first.cross(axes.second);
+  const math::Vector3d& up = axes.first.cross(axes.second);
 
   if (mDisplayPolygon) {
     mVertices->resize(poly.size());
     mFaces->resize(poly.size());
     for (std::size_t i = 0; i < poly.size(); ++i) {
-      const Eigen::Vector3d& v = axes.first * poly[i][0]
-                                 + axes.second * poly[i][1] + up * mElevation;
+      const math::Vector3d& v = axes.first * poly[i][0]
+                                + axes.second * poly[i][1] + up * mElevation;
       (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
       (*mFaces)[i] = i;
     }
@@ -267,14 +267,14 @@ void SupportPolygonVisual::refresh()
   }
 
   if (mDisplayCentroid) {
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    math::Isometry3d tf(math::Isometry3d::Identity());
 
     if (poly.size() > 0) {
-      const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)
-                                      ? skel->getSupportCentroid()
-                                      : skel->getSupportCentroid(mTreeIndex);
+      const math::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)
+                                     ? skel->getSupportCentroid()
+                                     : skel->getSupportCentroid(mTreeIndex);
 
-      const Eigen::Vector3d& C
+      const math::Vector3d& C
           = Cp[0] * axes.first + Cp[1] * axes.second + up * mElevation;
 
       tf.translation() = C;
@@ -294,7 +294,7 @@ void SupportPolygonVisual::refresh()
   }
 
   if (mDisplayCOM) {
-    Eigen::Vector3d com(Eigen::Vector3d::Zero());
+    math::Vector3d com(math::Vector3d::Zero());
     if (dart::dynamics::INVALID_INDEX == mTreeIndex) {
       com = skel->getCOM();
     } else {
@@ -314,12 +314,12 @@ void SupportPolygonVisual::refresh()
       com = com / mass;
     }
 
-    const Eigen::Vector2d& Cproj
-        = Eigen::Vector2d(com.dot(axes.first), com.dot(axes.second));
-    const Eigen::Vector3d& C
+    const math::Vector2d& Cproj
+        = math::Vector2d(com.dot(axes.first), com.dot(axes.second));
+    const math::Vector3d& C
         = Cproj[0] * axes.first + Cproj[1] * axes.second + up * mElevation;
 
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    math::Isometry3d tf(math::Isometry3d::Identity());
     tf.translation() = C;
     mCom->setTransform(tf);
 
@@ -372,7 +372,7 @@ void SupportPolygonVisual::initialize()
       std::make_shared<dart::dynamics::SphereShape>(mCentroidRadius / 4.0));
 
   mCentroid->getVisualAspect(true)->setColor(
-      Eigen::Vector4d(color[0], color[1], color[2], color[3]));
+      math::Vector4d(color[0], color[1], color[2], color[3]));
 
   mCentroidNode = new ShapeFrameNode(mCentroid.get(), nullptr);
   addChild(mCentroidNode);

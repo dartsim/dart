@@ -177,7 +177,7 @@ void BoxShapeDrawable::refresh(bool firstTime)
 
   if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {
-    const Eigen::Vector3d& d = mBoxShape->getSize();
+    const math::Vector3d& d = mBoxShape->getSize();
     ::osg::ref_ptr<::osg::Box> osg_shape
         = new ::osg::Box(::osg::Vec3(0, 0, 0), d[0], d[1], d[2]);
     setShape(osg_shape);

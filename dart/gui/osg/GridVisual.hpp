@@ -85,10 +85,10 @@ public:
   PlaneType getPlaneType() const;
 
   /// Changes the offset at which the grid is displayed
-  void setOffset(const Eigen::Vector3d& offset);
+  void setOffset(const math::Vector3d& offset);
 
   /// Returns the elevation of display for the support polygon
-  const Eigen::Vector3d& getOffset() const;
+  const math::Vector3d& getOffset() const;
 
   /// Displays the support polygon
   void display(bool display);
@@ -97,16 +97,16 @@ public:
   bool isDisplayed() const;
 
   /// Sets the color of major lines
-  void setMajorLineColor(const Eigen::Vector4d& color);
+  void setMajorLineColor(const math::Vector4d& color);
 
   /// Returns the color of major lines
-  Eigen::Vector4d getMajorLineColor() const;
+  math::Vector4d getMajorLineColor() const;
 
   /// Sets the color of minor lines
-  void setMinorLineColor(const Eigen::Vector4d& color);
+  void setMinorLineColor(const math::Vector4d& color);
 
   /// Returns the color of minor lines
-  Eigen::Vector4d getMinorLineColor() const;
+  math::Vector4d getMinorLineColor() const;
 
   /// Sets line width for axis lines
   void setAxisLineWidth(float width);
@@ -146,7 +146,7 @@ protected:
   std::size_t mNumMinorLinesPerMajorLine;
 
   /// Elevation that this visual should use
-  Eigen::Vector3d mOffset;
+  math::Vector3d mOffset;
 
   /// Whether to display the grid
   bool mDisplayGrid;

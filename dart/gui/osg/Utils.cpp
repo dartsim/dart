@@ -40,27 +40,27 @@
 namespace dart::gui::osg {
 
 //==============================================================================
-Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec)
+math::Vector3f osgToEigVec3(const ::osg::Vec3f& vec)
 {
-  return Eigen::Vector3f(vec[0], vec[1], vec[2]);
+  return math::Vector3f(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
-Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec)
+math::Vector3d osgToEigVec3(const ::osg::Vec3d& vec)
 {
-  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
+  return math::Vector3d(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
-Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec)
+math::Vector4f osgToEigVec4(const ::osg::Vec4f& vec)
 {
-  return Eigen::Vector4f(vec[0], vec[1], vec[2], vec[3]);
+  return math::Vector4f(vec[0], vec[1], vec[2], vec[3]);
 }
 
 //==============================================================================
-Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
+math::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
 {
-  return Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
+  return math::Vector4d(vec[0], vec[1], vec[2], vec[3]);
 }
 
 //==============================================================================

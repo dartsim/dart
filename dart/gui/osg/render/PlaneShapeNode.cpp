@@ -184,8 +184,8 @@ void PlaneShapeDrawable::refresh(bool firstTime)
 
   if (mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {
-    const Eigen::Vector3d& n = mPlaneShape->getNormal();
-    const Eigen::Vector3d& p = mPlaneShape->getOffset() * n;
+    const math::Vector3d& n = mPlaneShape->getNormal();
+    const math::Vector3d& p = mPlaneShape->getOffset() * n;
     ::osg::ref_ptr<::osg::InfinitePlane> osg_shape = new ::osg::InfinitePlane;
     static_cast<::osg::Plane&>(*osg_shape)
         = ::osg::Plane(eigToOsgVec3(n), eigToOsgVec3(p));

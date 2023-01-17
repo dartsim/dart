@@ -156,7 +156,7 @@ void InteractiveTool::removeAllShapeFrames()
 InteractiveFrame::InteractiveFrame(
     dart::dynamics::Frame* referenceFrame,
     const std::string& name,
-    const Eigen::Isometry3d& relativeTransform,
+    const math::Isometry3d& relativeTransform,
     double size_scale,
     double thickness_scale)
   : Entity(referenceFrame, false),
@@ -280,11 +280,11 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
   // Create translation arrows
   for (std::size_t a = 0; a < 3; ++a) {
-    Eigen::Vector3d tail(Eigen::Vector3d::Zero());
+    math::Vector3d tail(math::Vector3d::Zero());
     tail[a] = ring_inner_scale;
-    Eigen::Vector3d head(Eigen::Vector3d::Zero());
+    math::Vector3d head(math::Vector3d::Zero());
     head[a] = size;
-    Eigen::Vector4d color(Eigen::Vector4d::Ones());
+    math::Vector4d color(math::Vector4d::Ones());
     color *= 0.2;
     color[a] = 0.9;
     color[3] = getTool(InteractiveTool::LINEAR, a)->getDefaultAlpha();
@@ -444,14 +444,14 @@ void InteractiveFrame::createStandardVisualizationShapes(
     scene->mRootNode = node;
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+        new dart::dynamics::MeshShape(math::Vector3d::Ones(), scene));
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    math::Isometry3d tf(math::Isometry3d::Identity());
     if (r == 1)
-      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 0, 1)));
+      tf.rotate(math::AngleAxisd(pi / 2, math::Vector3d(0, 0, 1)));
     else if (r == 2)
-      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
+      tf.rotate(math::AngleAxisd(pi / 2, math::Vector3d(0, 1, 0)));
 
     auto shapeFrame = mTools[InteractiveTool::ANGULAR][r]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
@@ -528,14 +528,14 @@ void InteractiveFrame::createStandardVisualizationShapes(
     scene->mRootNode = node;
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+        new dart::dynamics::MeshShape(math::Vector3d::Ones(), scene));
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    math::Isometry3d tf(math::Isometry3d::Identity());
     if (p == 1)
-      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 0, 1)));
+      tf.rotate(math::AngleAxisd(pi / 2, math::Vector3d(0, 0, 1)));
     else if (p == 2)
-      tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
+      tf.rotate(math::AngleAxisd(pi / 2, math::Vector3d(0, 1, 0)));
 
     auto shapeFrame = mTools[InteractiveTool::PLANAR][p]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
@@ -555,11 +555,11 @@ void InteractiveFrame::createStandardVisualizationShapes(
   for (std::size_t i = 0; i < 3; ++i) {
     std::shared_ptr<dart::dynamics::LineSegmentShape> line(
         new dart::dynamics::LineSegmentShape(3.0));
-    line->addVertex(Eigen::Vector3d::Zero());
-    Eigen::Vector3d v(Eigen::Vector3d::Zero());
+    line->addVertex(math::Vector3d::Zero());
+    math::Vector3d v(math::Vector3d::Zero());
     v[i] = 0.9 * size;
     line->addVertex(v);
-    Eigen::Vector3d c(Eigen::Vector3d::Zero());
+    math::Vector3d c(math::Vector3d::Zero());
     c[i] = 1.0;
     auto shapeFrame = addShapeFrame(line);
     shapeFrame->getVisualAspect(true)->setColor(c);

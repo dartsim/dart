@@ -106,10 +106,10 @@ public:
   virtual void release();
 
   /// Default method for getting the translation requested by the user
-  virtual Eigen::Vector3d getConstrainedDx() const;
+  virtual math::Vector3d getConstrainedDx() const;
 
   /// Default method for getting the rotation requested by the user
-  virtual Eigen::AngleAxisd getConstrainedRotation() const;
+  virtual math::AngleAxisd getConstrainedRotation() const;
 
   /// Remove all constraints from the dragging and dropping.
   void unconstrain();
@@ -117,12 +117,12 @@ public:
   /// Constrain translation to only occur along the given slope, or constrain
   /// rotation to only occur about the given slope. For rotation, this function
   /// is equivalent to constrainToPlane
-  void constrainToLine(const Eigen::Vector3d& slope);
+  void constrainToLine(const math::Vector3d& slope);
 
   /// Constrain translation to only occur within the plane defined by the given
   /// normal, or constrain rotation to only occur about the given normal. For
   /// rotation, this function is equivalent to constrainToLine
-  void constrainToPlane(const Eigen::Vector3d& normal);
+  void constrainToPlane(const math::Vector3d& normal);
 
   /// Returns the mAmMoving flag
   bool isMoving() const;
@@ -151,14 +151,14 @@ protected:
   dart::dynamics::Entity* mEntity;
 
   /// The location in the world that was picked by the user
-  Eigen::Vector3d mPickedPosition;
+  math::Vector3d mPickedPosition;
 
   /// Reference vector for constraint (slope for line constraint, or normal for
   /// plane constraint)
-  Eigen::Vector3d mVector;
+  math::Vector3d mVector;
 
   /// Point in space about which rotations should happen
-  Eigen::Vector3d mPivot;
+  math::Vector3d mPivot;
 
   /// Constraint type for this DnD
   ConstraintType mConstraintType;
@@ -201,7 +201,7 @@ protected:
   dart::dynamics::SimpleFrame* mFrame;
 
   /// The saved rotation of the frame
-  Eigen::AngleAxisd mSavedRotation;
+  math::AngleAxisd mSavedRotation;
 };
 
 //==============================================================================
@@ -331,14 +331,14 @@ protected:
 
   /// The offset of the pick from the BodyNode origin, expressed in global
   /// coordinates
-  Eigen::Vector3d mSavedGlobalOffset;
+  math::Vector3d mSavedGlobalOffset;
 
   /// The offset of the pick from the BodyNode origin, expressed in local
   /// coordinates
-  Eigen::Vector3d mSavedLocalOffset;
+  math::Vector3d mSavedLocalOffset;
 
   /// The rotation of the BodyNode
-  Eigen::AngleAxisd mSavedRotation;
+  math::AngleAxisd mSavedRotation;
 
   /// Whether to use an external IK
   bool mUseExternalIK;

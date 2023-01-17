@@ -62,7 +62,7 @@ GraphWindow::~GraphWindow() {}
 
 void GraphWindow::draw()
 {
-  mRI->setPenColor(Eigen::Vector3d(0.2, 0.8, 0.2));
+  mRI->setPenColor(math::Vector3d(0.2, 0.8, 0.2));
   glPointSize(2);
   glMatrixMode(GL_MODELVIEW);
 
@@ -125,7 +125,7 @@ void GraphWindow::keyboard(unsigned char _key, int _x, int _y)
   glutPostRedisplay();
 }
 
-void GraphWindow::setData(Eigen::VectorXd _data)
+void GraphWindow::setData(math::VectorXd _data)
 {
   mData = _data;
 }

@@ -123,7 +123,7 @@ GridVisual::PlaneType GridVisual::getPlaneType() const
 }
 
 //==============================================================================
-void GridVisual::setOffset(const Eigen::Vector3d& offset)
+void GridVisual::setOffset(const math::Vector3d& offset)
 {
   if (mOffset.isApprox(offset))
     return;
@@ -133,7 +133,7 @@ void GridVisual::setOffset(const Eigen::Vector3d& offset)
 }
 
 //==============================================================================
-const Eigen::Vector3d& GridVisual::getOffset() const
+const math::Vector3d& GridVisual::getOffset() const
 {
   return mOffset;
 }
@@ -159,7 +159,7 @@ bool GridVisual::isDisplayed() const
 }
 
 //==============================================================================
-void GridVisual::setMajorLineColor(const Eigen::Vector4d& color)
+void GridVisual::setMajorLineColor(const math::Vector4d& color)
 {
   assert(mMajorLineColor->size() == 1);
   mMajorLineColor->at(0) = ::osg::Vec4(
@@ -171,14 +171,14 @@ void GridVisual::setMajorLineColor(const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-Eigen::Vector4d GridVisual::getMajorLineColor() const
+math::Vector4d GridVisual::getMajorLineColor() const
 {
   const ::osg::Vec4& c = mMajorLineColor->at(0);
-  return Eigen::Vector4f(c[0], c[1], c[2], c[3]).cast<double>();
+  return math::Vector4f(c[0], c[1], c[2], c[3]).cast<double>();
 }
 
 //==============================================================================
-void GridVisual::setMinorLineColor(const Eigen::Vector4d& color)
+void GridVisual::setMinorLineColor(const math::Vector4d& color)
 {
   assert(mMinorLineColor->size() == 1);
   mMinorLineColor->at(0) = ::osg::Vec4(
@@ -190,10 +190,10 @@ void GridVisual::setMinorLineColor(const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-Eigen::Vector4d GridVisual::getMinorLineColor() const
+math::Vector4d GridVisual::getMinorLineColor() const
 {
   const ::osg::Vec4& c = mMinorLineColor->at(0);
-  return Eigen::Vector4f(c[0], c[1], c[2], c[3]).cast<double>();
+  return math::Vector4f(c[0], c[1], c[2], c[3]).cast<double>();
 }
 
 //==============================================================================
@@ -245,7 +245,7 @@ float GridVisual::getMinorLineWidth() const
 }
 
 //==============================================================================
-::osg::Vec3 toVec3(const Eigen::Vector3d& point)
+::osg::Vec3 toVec3(const math::Vector3d& point)
 {
   return ::osg::Vec3(
       static_cast<float>(point.x()),
@@ -262,7 +262,7 @@ void setVertices(
     std::size_t numMinorLinesPerMajorLine,
     float stepSize,
     GridVisual::PlaneType planeType,
-    const Eigen::Vector3d& offset)
+    const math::Vector3d& offset)
 {
   assert(axisLineVertices);
   assert(majorLineVertices);
@@ -528,7 +528,7 @@ void GridVisual::initialize()
   mMinorLineStepSize = 0.1;
   mNumMinorLinesPerMajorLine = 5;
 
-  mOffset = Eigen::Vector3d::Zero();
+  mOffset = math::Vector3d::Zero();
 
   mGeode = new ::osg::Geode;
   mGeode->getOrCreateStateSet()->setMode(

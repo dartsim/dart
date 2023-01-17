@@ -67,15 +67,15 @@ public:
   void setViewport(int _x, int _y, int _width, int _height) override;
   void getViewport(int& _x, int& _y, int& _width, int& _height) const override;
 
-  void clear(const Eigen::Vector3d& _color) override;
+  void clear(const math::Vector3d& _color) override;
 
   void setMaterial(
-      const Eigen::Vector3d& _diffuse,
-      const Eigen::Vector3d& _specular,
+      const math::Vector3d& _diffuse,
+      const math::Vector3d& _specular,
       double _cosinePow) override;
   void getMaterial(
-      Eigen::Vector3d& _diffuse,
-      Eigen::Vector3d& _specular,
+      math::Vector3d& _diffuse,
+      math::Vector3d& _specular,
       double& _cosinePow) const override;
   void setDefaultMaterial() override;
 
@@ -84,22 +84,22 @@ public:
   void pushName(int _id) override;
   void popName() override;
 
-  void translate(const Eigen::Vector3d& _offset) override; // glTranslate
-  void rotate(const Eigen::Vector3d& _axis, double _rad) override; // glRotate
-  void transform(const Eigen::Isometry3d& _transform) override; // glMultMatrix
-  void scale(const Eigen::Vector3d& _scale) override;           // glScale
+  void translate(const math::Vector3d& _offset) override;         // glTranslate
+  void rotate(const math::Vector3d& _axis, double _rad) override; // glRotate
+  void transform(const math::Isometry3d& _transform) override; // glMultMatrix
+  void scale(const math::Vector3d& _scale) override;           // glScale
 
   void compileList(dynamics::Skeleton* _skel);
   void compileList(dynamics::BodyNode* _node);
   void compileList(dynamics::Shape* _shape);
-  GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
+  GLuint compileList(const math::Vector3d& _scale, const aiScene* _mesh);
 
   void drawSphere(double radius, int slices = 16, int stacks = 16) override;
   void drawMultiSphereConvexHull(
-      const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+      const std::vector<std::pair<double, math::Vector3d>>& spheres,
       std::size_t subdivisions) override;
-  void drawEllipsoid(const Eigen::Vector3d& _diameters) override;
-  void drawCube(const Eigen::Vector3d& _size) override;
+  void drawEllipsoid(const math::Vector3d& _diameters) override;
+  void drawCube(const math::Vector3d& _size) override;
   void drawOpenCylinder(
       double baseRadius,
       double topRadius,
@@ -114,15 +114,15 @@ public:
   void drawCapsule(double radius, double height) override;
   void drawCone(double radius, double height) override;
   void drawPyramid(double baseWidth, double baseDepth, double height) override;
-  void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
+  void drawMesh(const math::Vector3d& _scale, const aiScene* _mesh) override;
   void drawSoftMesh(const aiMesh* mesh) override;
   void drawList(GLuint index) override;
   void drawLineSegments(
-      const std::vector<Eigen::Vector3d>& _vertices,
-      const std::vector<Eigen::Vector2i>& _connections) override;
+      const std::vector<math::Vector3d>& _vertices,
+      const std::vector<math::Vector2i>& _connections) override;
 
-  void setPenColor(const Eigen::Vector4d& _col) override;
-  void setPenColor(const Eigen::Vector3d& _col) override;
+  void setPenColor(const math::Vector4d& _col) override;
+  void setPenColor(const math::Vector3d& _col) override;
 
   void setLineWidth(float _width) override;
 

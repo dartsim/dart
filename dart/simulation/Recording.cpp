@@ -88,7 +88,7 @@ int Recording::getNumContacts(int _frameIdx) const
 }
 
 //==============================================================================
-Eigen::VectorXd Recording::getConfig(int _frameIdx, int _skelIdx) const
+math::VectorXd Recording::getConfig(int _frameIdx, int _skelIdx) const
 {
   int index = 0;
   for (int i = 0; i < _skelIdx; i++)
@@ -106,7 +106,7 @@ double Recording::getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const
 }
 
 //==============================================================================
-Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
+math::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 {
   int totalDofs = 0;
   for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
@@ -115,7 +115,7 @@ Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 }
 
 //==============================================================================
-Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
+math::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
 {
   int totalDofs = 0;
   for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
@@ -130,7 +130,7 @@ void Recording::clear()
 }
 
 //==============================================================================
-void Recording::addState(const Eigen::VectorXd& _state)
+void Recording::addState(const math::VectorXd& _state)
 {
   mBakedStates.push_back(_state);
 }

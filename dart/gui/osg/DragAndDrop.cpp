@@ -51,7 +51,7 @@ namespace osg {
 DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
   : mViewer(viewer),
     mEntity(entity),
-    mPickedPosition(Eigen::Vector3d::Zero()),
+    mPickedPosition(math::Vector3d::Zero()),
     mConstraintType(UNCONSTRAINED),
     mAmObstructable(true),
     mAmMoving(false),
@@ -134,17 +134,17 @@ void DragAndDrop::release()
 }
 
 //==============================================================================
-Eigen::Vector3d DragAndDrop::getConstrainedDx() const
+math::Vector3d DragAndDrop::getConstrainedDx() const
 {
   return mViewer->getDefaultEventHandler()->getDeltaCursor(
       mPickedPosition, mConstraintType, mVector);
 }
 
 //==============================================================================
-Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
+math::AngleAxisd DragAndDrop::getConstrainedRotation() const
 {
-  Eigen::Vector3d v1 = mPickedPosition - mPivot;
-  Eigen::Vector3d v2;
+  math::Vector3d v1 = mPickedPosition - mPivot;
+  math::Vector3d v2;
 
   if (LINE_CONSTRAINT == mConstraintType
       || PLANE_CONSTRAINT == mConstraintType) {
@@ -157,23 +157,23 @@ Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
   }
 
   if (v1.norm() == 0 || v2.norm() == 0 || v1.cross(v2).norm() == 0)
-    return Eigen::AngleAxisd(0, Eigen::Vector3d(1, 0, 0));
+    return math::AngleAxisd(0, math::Vector3d(1, 0, 0));
 
   v1.normalize();
   v2.normalize();
 
-  Eigen::Vector3d axis = v1.cross(v2);
+  math::Vector3d axis = v1.cross(v2);
   if (LINE_CONSTRAINT == mConstraintType
       || PLANE_CONSTRAINT == mConstraintType) {
     if (axis.dot(mVector) == 0)
-      return Eigen::AngleAxisd(0, Eigen::Vector3d(1, 0, 0));
+      return math::AngleAxisd(0, math::Vector3d(1, 0, 0));
 
     axis = axis.dot(mVector) * mVector;
   }
 
   axis.normalize();
 
-  return Eigen::AngleAxisd(acos(v1.dot(v2)), axis);
+  return math::AngleAxisd(acos(v1.dot(v2)), axis);
 }
 
 //==============================================================================
@@ -183,14 +183,14 @@ void DragAndDrop::unconstrain()
 }
 
 //==============================================================================
-void DragAndDrop::constrainToLine(const Eigen::Vector3d& slope)
+void DragAndDrop::constrainToLine(const math::Vector3d& slope)
 {
   mConstraintType = LINE_CONSTRAINT;
   mVector = slope;
 }
 
 //==============================================================================
-void DragAndDrop::constrainToPlane(const Eigen::Vector3d& normal)
+void DragAndDrop::constrainToPlane(const math::Vector3d& normal)
 {
   mConstraintType = PLANE_CONSTRAINT;
   mVector = normal;
@@ -255,7 +255,7 @@ dart::dynamics::SimpleFrame* SimpleFrameDnD::getSimpleFrame() const
 //==============================================================================
 void SimpleFrameDnD::move()
 {
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  math::Isometry3d tf(math::Isometry3d::Identity());
 
   bool modkey_down
       = (mViewer->getDefaultEventHandler()->getModKeyMask() & mRotationModKey);
@@ -264,14 +264,14 @@ void SimpleFrameDnD::move()
       || RotationOption::ALWAYS_ON == mRotationOption) {
     // Rotate
 
-    Eigen::AngleAxisd R = getConstrainedRotation();
+    math::AngleAxisd R = getConstrainedRotation();
 
     tf.translation() = mPivot;
     tf.linear() = (R * mSavedRotation).matrix();
   } else {
     // Translate
 
-    Eigen::Vector3d dx = getConstrainedDx();
+    math::Vector3d dx = getConstrainedDx();
 
     tf.translation() = mPivot + dx;
     tf.rotate(mSavedRotation);
@@ -547,7 +547,7 @@ void InteractiveFrameDnD::update()
   if (!mAmMoving) {
     for (std::size_t i = 0; i < 3; ++i) {
       DragAndDrop* dnd = mDnDs[i];
-      Eigen::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
+      math::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
       dnd->constrainToLine(R.col(i));
 
       dnd = mDnDs[i + 3];
@@ -695,7 +695,7 @@ void BodyNodeDnD::move()
       mIK->useChain();
   }
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  math::Isometry3d tf(math::Isometry3d::Identity());
 
   bool preserveOrientation
       = (mViewer->getDefaultEventHandler()->getModKeyMask()
@@ -704,7 +704,7 @@ void BodyNodeDnD::move()
   if (preserveOrientation) {
     tf.rotate(mSavedRotation);
   } else {
-    Eigen::AngleAxisd R = getConstrainedRotation();
+    math::AngleAxisd R = getConstrainedRotation();
     tf.linear() = (R * mSavedRotation).matrix();
   }
 
@@ -716,7 +716,7 @@ void BodyNodeDnD::move()
     tf.translation() = mPivot;
     mIK->setOffset();
   } else {
-    Eigen::Vector3d dx = getConstrainedDx();
+    math::Vector3d dx = getConstrainedDx();
     tf.translation() = mPivot + dx + mSavedGlobalOffset;
     mIK->setOffset(mSavedLocalOffset);
   }

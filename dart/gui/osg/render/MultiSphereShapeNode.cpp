@@ -211,7 +211,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     auto mesh = math::TriMeshd();
     for (const auto& sphere : spheres) {
       const double& radius = sphere.first;
-      const Eigen::Vector3d& center = sphere.second;
+      const math::Vector3d& center = sphere.second;
 
       auto icosphere = math::Icosphered(radius, subdivisions);
       icosphere.translate(center);

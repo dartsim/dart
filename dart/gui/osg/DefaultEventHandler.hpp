@@ -61,8 +61,8 @@ struct PickInfo
 {
   dart::dynamics::ShapeFrame* frame;
   std::shared_ptr<dart::dynamics::Shape> shape;
-  Eigen::Vector3d position;
-  Eigen::Vector3d normal;
+  math::Vector3d position;
+  math::Vector3d normal;
 };
 
 class Viewer;
@@ -135,17 +135,16 @@ public:
   /// If _constraint is set to PLANE_CONSTRAINT, the change in cursor position
   /// will be constrained to a plane that passes through _fromPosition with a
   /// normal vector of _constraintVector.
-  Eigen::Vector3d getDeltaCursor(
-      const Eigen::Vector3d& _fromPosition,
+  math::Vector3d getDeltaCursor(
+      const math::Vector3d& _fromPosition,
       ConstraintType _constraint = UNCONSTRAINED,
-      const Eigen::Vector3d& _constraintVector
-      = Eigen::Vector3d::UnitZ()) const;
+      const math::Vector3d& _constraintVector = math::Vector3d::UnitZ()) const;
 
   /// Get two points that are under the current cursor position. The near point
   /// will be inside the plane of the camera. The far point will have the given
   /// distance from the plane of the camera (default is 1.0).
   void getNearAndFarPointUnderCursor(
-      Eigen::Vector3d& near, Eigen::Vector3d& far, double distance = 1.0) const;
+      math::Vector3d& near, math::Vector3d& far, double distance = 1.0) const;
 
   /// Get the most recent picks for the specified button and event type
   const std::vector<PickInfo>& getButtonPicks(
@@ -225,7 +224,7 @@ protected:
 
   /// X/Y values of the cursor (in the window coordinates) during the last mouse
   /// event
-  Eigen::Vector2d mLastCursorPosition;
+  math::Vector2d mLastCursorPosition;
 
   /// Storage for the last modkey mask
   int mLastModKeyMask;

@@ -101,13 +101,13 @@ public:
   const std::string& getName() const;
 
   /// Set gravity
-  void setGravity(const Eigen::Vector3d& _gravity);
+  void setGravity(const math::Vector3d& _gravity);
 
   /// Set gravity
   void setGravity(double x, double y, double z);
 
   /// Get gravity
-  const Eigen::Vector3d& getGravity() const;
+  const math::Vector3d& getGravity() const;
 
   /// Set time step
   void setTimeStep(double _timeStep);
@@ -343,7 +343,7 @@ protected:
   std::vector<int> mIndices;
 
   /// Gravity
-  Eigen::Vector3d mGravity;
+  math::Vector3d mGravity;
 
   /// Simulation time step
   double mTimeStep;

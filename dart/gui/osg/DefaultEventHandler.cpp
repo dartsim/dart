@@ -53,7 +53,7 @@ namespace osg {
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
-    mLastCursorPosition(Eigen::Vector2d::Zero()),
+    mLastCursorPosition(math::Vector2d::Zero()),
     mLastModKeyMask(0)
 {
   mViewer->addInstructionText("Spacebar:     Turn simulation on/off\n");
@@ -98,22 +98,22 @@ double DefaultEventHandler::getWindowCursorY() const
 }
 
 //==============================================================================
-Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
-    const Eigen::Vector3d& _fromPosition,
+math::Vector3d DefaultEventHandler::getDeltaCursor(
+    const math::Vector3d& _fromPosition,
     ConstraintType _constraint,
-    const Eigen::Vector3d& _constraintVector) const
+    const math::Vector3d& _constraintVector) const
 {
   ::osg::Vec3d eye, center, up;
   mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
 
-  Eigen::Vector3d nearPt, farPt;
+  math::Vector3d nearPt, farPt;
   getNearAndFarPointUnderCursor(nearPt, farPt);
-  Eigen::Vector3d v1 = farPt - nearPt;
+  math::Vector3d v1 = farPt - nearPt;
 
   if (LINE_CONSTRAINT == _constraint) {
-    const Eigen::Vector3d& b1 = nearPt;
-    const Eigen::Vector3d& v2 = _constraintVector;
-    const Eigen::Vector3d& b2 = _fromPosition;
+    const math::Vector3d& b1 = nearPt;
+    const math::Vector3d& v2 = _constraintVector;
+    const math::Vector3d& b2 = _fromPosition;
 
     double v1_v1 = v1.dot(v1);
     double v2_v2 = v2.dot(v2);
@@ -130,21 +130,21 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
 
     return v2 * s;
   } else if (PLANE_CONSTRAINT == _constraint) {
-    const Eigen::Vector3d& n = _constraintVector;
+    const math::Vector3d& n = _constraintVector;
     double s = n.dot(_fromPosition - nearPt) / n.dot(v1);
     return nearPt - _fromPosition + s * v1;
   } else {
-    Eigen::Vector3d n = osgToEigVec3(center - eye);
+    math::Vector3d n = osgToEigVec3(center - eye);
     double s = n.dot(_fromPosition - nearPt) / n.dot(v1);
     return nearPt - _fromPosition + s * v1;
   }
 
-  return Eigen::Vector3d::Zero();
+  return math::Vector3d::Zero();
 }
 
 //==============================================================================
 void DefaultEventHandler::getNearAndFarPointUnderCursor(
-    Eigen::Vector3d& nearPt, Eigen::Vector3d& farPt, double distance) const
+    math::Vector3d& nearPt, math::Vector3d& farPt, double distance) const
 {
   ::osg::Camera* C = mViewer->getCamera();
   ::osg::Matrix VPW = C->getViewMatrix() * C->getProjectionMatrix()

@@ -117,8 +117,7 @@ public:
   InteractiveFrame(
       dart::dynamics::Frame* referenceFrame,
       const std::string& name = "interactive_frame",
-      const Eigen::Isometry3d& relativeTransform
-      = Eigen::Isometry3d::Identity(),
+      const math::Isometry3d& relativeTransform = math::Isometry3d::Identity(),
       double size_scale = 0.2,
       double thickness_scale = 2.0);
 

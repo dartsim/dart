@@ -59,10 +59,10 @@ public:
   /// \brief
   void keyboard(unsigned char _key, int _x, int _y) override;
 
-  void setData(Eigen::VectorXd _data);
+  void setData(math::VectorXd _data);
 
 protected:
-  Eigen::VectorXd mData;
+  math::VectorXd mData;
 };
 
 } // namespace glut

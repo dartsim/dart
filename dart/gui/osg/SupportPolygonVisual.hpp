@@ -86,10 +86,10 @@ public:
   bool isPolygonDisplayed() const;
 
   /// Set the color of the support polygon
-  void setPolygonColor(const Eigen::Vector4d& color);
+  void setPolygonColor(const math::Vector4d& color);
 
   /// Get the color of the support polygon
-  Eigen::Vector4d getPolygonColor() const;
+  math::Vector4d getPolygonColor() const;
 
   /// Display the centroid
   void displayCentroid(bool display);
@@ -117,19 +117,19 @@ public:
 
   /// Set the color that will be used for the center of mass if its projection
   /// is on the support polygon
-  void setValidCOMColor(const Eigen::Vector4d& color);
+  void setValidCOMColor(const math::Vector4d& color);
 
   /// Get the color that will be used for the center of mass if its projection
   /// is on the support polygon
-  const Eigen::Vector4d& getValidCOMColor() const;
+  const math::Vector4d& getValidCOMColor() const;
 
   /// Set the color that will be used for the center of mass if its projection
   /// is NOT on the support polygon
-  void setInvalidCOMColor(const Eigen::Vector4d& color);
+  void setInvalidCOMColor(const math::Vector4d& color);
 
   /// Get the color that will be used for the center of mass if its projection
   /// is NOT on the support polygon
-  const Eigen::Vector4d& getInvalidCOMColor() const;
+  const math::Vector4d& getInvalidCOMColor() const;
 
   /// Update the support polygon visual
   void refresh() override final;
@@ -169,10 +169,10 @@ protected:
   double mComRadius;
 
   /// Color to be used when COM is valid
-  Eigen::Vector4d mValidColor;
+  math::Vector4d mValidColor;
 
   /// Color to be used when COM is invalid
-  Eigen::Vector4d mInvalidColor;
+  math::Vector4d mInvalidColor;
 
   /// Color for the polygon
   ::osg::ref_ptr<::osg::Vec4Array> mPolygonColor;

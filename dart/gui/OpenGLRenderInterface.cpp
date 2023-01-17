@@ -82,7 +82,7 @@ void OpenGLRenderInterface::initialize()
   glEnable(GL_DEPTH_TEST);
   // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
   glShadeModel(GL_SMOOTH);
-  clear(Eigen::Vector3d(1.0, 1.0, 1.0));
+  clear(math::Vector3d(1.0, 1.0, 1.0));
 }
 
 void OpenGLRenderInterface::destroy() {}
@@ -105,22 +105,22 @@ void OpenGLRenderInterface::getViewport(
   _height = mViewportHeight;
 }
 
-void OpenGLRenderInterface::clear(const Eigen::Vector3d& _color)
+void OpenGLRenderInterface::clear(const math::Vector3d& _color)
 {
   glClearColor((GLfloat)_color[0], (GLfloat)_color[1], (GLfloat)_color[2], 1.0);
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void OpenGLRenderInterface::setMaterial(
-    const Eigen::Vector3d& /*_diffuse*/,
-    const Eigen::Vector3d& /*_specular*/,
+    const math::Vector3d& /*_diffuse*/,
+    const math::Vector3d& /*_specular*/,
     double /*_cosinePow*/)
 {
 }
 
 void OpenGLRenderInterface::getMaterial(
-    Eigen::Vector3d& /*_diffuse*/,
-    Eigen::Vector3d& /*_specular*/,
+    math::Vector3d& /*_diffuse*/,
+    math::Vector3d& /*_specular*/,
     double& /*_cosinePow*/) const
 {
 }
@@ -147,22 +147,22 @@ void OpenGLRenderInterface::popName()
   glPopName();
 }
 
-void OpenGLRenderInterface::translate(const Eigen::Vector3d& _offset)
+void OpenGLRenderInterface::translate(const math::Vector3d& _offset)
 {
   glTranslated(_offset[0], _offset[1], _offset[2]);
 }
 
-void OpenGLRenderInterface::rotate(const Eigen::Vector3d& _axis, double _rad)
+void OpenGLRenderInterface::rotate(const math::Vector3d& _axis, double _rad)
 {
   glRotated(_rad, _axis[0], _axis[1], _axis[2]);
 }
 
-void OpenGLRenderInterface::transform(const Eigen::Isometry3d& _transform)
+void OpenGLRenderInterface::transform(const math::Isometry3d& _transform)
 {
   glMultMatrixd(_transform.data());
 }
 
-void OpenGLRenderInterface::scale(const Eigen::Vector3d& _scale)
+void OpenGLRenderInterface::scale(const math::Vector3d& _scale)
 {
   glScaled(_scale[0], _scale[1], _scale[2]);
 }
@@ -180,33 +180,33 @@ void OpenGLRenderInterface::drawSphere(double radius, int slices, int stacks)
 
 void drawOpenCylinderConnectingTwoSpheres(
     OpenGLRenderInterface* ri,
-    const std::pair<double, Eigen::Vector3d>& sphere0,
-    const std::pair<double, Eigen::Vector3d>& sphere1,
+    const std::pair<double, math::Vector3d>& sphere0,
+    const std::pair<double, math::Vector3d>& sphere1,
     int slices,
     int stacks)
 {
   const auto& r0 = sphere0.first;
   const auto& r1 = sphere1.first;
-  const Eigen::Vector3d& p0 = sphere0.second;
-  const Eigen::Vector3d& p1 = sphere1.second;
+  const math::Vector3d& p0 = sphere0.second;
+  const math::Vector3d& p1 = sphere1.second;
 
   const auto dist = (p0 - p1).norm();
 
   if (dist < math::eps<double>())
     return;
 
-  const Eigen::Vector3d zAxis = (p1 - p0).normalized();
+  const math::Vector3d zAxis = (p1 - p0).normalized();
 
   const auto r0r1 = r0 - r1;
   const auto theta = std::acos(r0r1 / dist);
   const auto baseRadius = r0 * std::sin(theta);
   const auto topRadius = r1 * std::sin(theta);
-  const Eigen::Vector3d baseCenter = p0 + r0 * std::cos(theta) * zAxis;
-  const Eigen::Vector3d topCenter = p1 + r1 * std::cos(theta) * zAxis;
-  const Eigen::Vector3d center = 0.5 * (baseCenter + topCenter);
+  const math::Vector3d baseCenter = p0 + r0 * std::cos(theta) * zAxis;
+  const math::Vector3d topCenter = p1 + r1 * std::cos(theta) * zAxis;
+  const math::Vector3d center = 0.5 * (baseCenter + topCenter);
   const auto height = (topCenter - baseCenter).norm();
-  const Eigen::AngleAxisd aa(
-      Eigen::Quaterniond().setFromTwoVectors(Eigen::Vector3d::UnitZ(), zAxis));
+  const math::AngleAxisd aa(
+      math::Quaterniond().setFromTwoVectors(math::Vector3d::UnitZ(), zAxis));
 
   glPushMatrix();
   {
@@ -223,14 +223,14 @@ void drawOpenCylinderConnectingTwoSpheres(
 }
 
 void OpenGLRenderInterface::drawMultiSphereConvexHull(
-    const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+    const std::vector<std::pair<double, math::Vector3d>>& spheres,
     std::size_t subdivisions)
 {
   // Create meshes of sphere and combine them into a single mesh
   auto mesh = math::TriMeshf();
   for (const auto& sphere : spheres) {
     const double& radius = sphere.first;
-    const Eigen::Vector3d& center = sphere.second;
+    const math::Vector3d& center = sphere.second;
 
     auto icosphere = math::Icospheref(radius, subdivisions);
     icosphere.translate(center.cast<float>());
@@ -259,14 +259,14 @@ void OpenGLRenderInterface::drawMultiSphereConvexHull(
   glEnd();
 }
 
-void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters)
+void OpenGLRenderInterface::drawEllipsoid(const math::Vector3d& _diameters)
 {
   glScaled(_diameters(0), _diameters(1), _diameters(2));
 
   drawSphere(0.5);
 }
 
-void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size)
+void OpenGLRenderInterface::drawCube(const math::Vector3d& _size)
 {
   glScaled(_size(0), _size(1), _size(2));
 
@@ -474,10 +474,10 @@ void OpenGLRenderInterface::drawCone(double radius, double height)
 }
 
 //==============================================================================
-Eigen::Vector3d computeNormal(
-    const Eigen::Vector3d& v1,
-    const Eigen::Vector3d& v2,
-    const Eigen::Vector3d& v3)
+math::Vector3d computeNormal(
+    const math::Vector3d& v1,
+    const math::Vector3d& v2,
+    const math::Vector3d& v3)
 {
   return (v1 - v2).cross(v2 - v3).normalized();
 }
@@ -497,8 +497,8 @@ void OpenGLRenderInterface::drawPyramid(
   const double front = -d / 2;
   const double back = d / 2;
 
-  std::vector<Eigen::Vector3d> points(5);
-  std::vector<Eigen::Vector3i> faces(6);
+  std::vector<math::Vector3d> points(5);
+  std::vector<math::Vector3i> faces(6);
 
   points[0] << 0, 0, hTop;
   points[1] << right, back, hBottom;
@@ -518,7 +518,7 @@ void OpenGLRenderInterface::drawPyramid(
     const auto& p1 = points[static_cast<size_t>(face[0])];
     const auto& p2 = points[static_cast<size_t>(face[1])];
     const auto& p3 = points[static_cast<size_t>(face[2])];
-    const Eigen::Vector3d n = computeNormal(p1, p2, p3);
+    const math::Vector3d n = computeNormal(p1, p2, p3);
 
     glNormal3dv(n.data());
     glVertex3dv(p1.data());
@@ -691,7 +691,7 @@ void OpenGLRenderInterface::recursiveRender(
 
 //==============================================================================
 void OpenGLRenderInterface::drawMesh(
-    const Eigen::Vector3d& scale, const aiScene* mesh)
+    const math::Vector3d& scale, const aiScene* mesh)
 {
   if (!mesh)
     return;
@@ -733,13 +733,13 @@ void OpenGLRenderInterface::drawList(GLuint index)
 }
 
 void OpenGLRenderInterface::drawLineSegments(
-    const std::vector<Eigen::Vector3d>& _vertices,
-    const std::vector<Eigen::Vector2i>& _connections)
+    const std::vector<math::Vector3d>& _vertices,
+    const std::vector<math::Vector2i>& _connections)
 {
   glBegin(GL_LINES);
-  for (const Eigen::Vector2i& c : _connections) {
-    const Eigen::Vector3d& v1 = _vertices[c[0]];
-    const Eigen::Vector3d& v2 = _vertices[c[1]];
+  for (const math::Vector2i& c : _connections) {
+    const math::Vector3d& v1 = _vertices[c[0]];
+    const math::Vector3d& v2 = _vertices[c[1]];
     glVertex3f(v1[0], v1[1], v1[2]);
     glVertex3f(v2[0], v2[1], v2[2]);
   }
@@ -794,7 +794,7 @@ void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
 }
 
 GLuint OpenGLRenderInterface::compileList(
-    const Eigen::Vector3d& _scale, const aiScene* _mesh)
+    const math::Vector3d& _scale, const aiScene* _mesh)
 {
   if (!_mesh)
     return 0;
@@ -809,12 +809,12 @@ GLuint OpenGLRenderInterface::compileList(
   return index;
 }
 
-void OpenGLRenderInterface::setPenColor(const Eigen::Vector4d& _col)
+void OpenGLRenderInterface::setPenColor(const math::Vector4d& _col)
 {
   glColor4d(_col[0], _col[1], _col[2], _col[3]);
 }
 
-void OpenGLRenderInterface::setPenColor(const Eigen::Vector3d& _col)
+void OpenGLRenderInterface::setPenColor(const math::Vector3d& _col)
 {
   glColor4d(_col[0], _col[1], _col[2], 1.0);
 }

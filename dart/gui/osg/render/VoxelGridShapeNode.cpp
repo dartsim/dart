@@ -54,7 +54,7 @@ namespace render {
 class BoxDrawable final : public ::osg::ShapeDrawable
 {
 public:
-  BoxDrawable(double size, const Eigen::Vector4d& color)
+  BoxDrawable(double size, const math::Vector4d& color)
   {
     mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
     setColor(eigToOsgVec4f(color));
@@ -76,7 +76,7 @@ public:
     dirtyDisplayList();
   }
 
-  void updateColor(const Eigen::Vector4d& color)
+  void updateColor(const math::Vector4d& color)
   {
     // Set color
     setColor(eigToOsgVec4f(color));
@@ -107,7 +107,7 @@ class VoxelNode : public ::osg::MatrixTransform
 {
 public:
   VoxelNode(
-      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
+      const math::Vector3d& point, double size, const math::Vector4d& color)
   {
     mDrawable = new BoxDrawable(size, color);
     mGeode = new ::osg::Geode();
@@ -118,9 +118,9 @@ public:
     updateCenter(point);
   }
 
-  void updateCenter(const Eigen::Vector3d& point)
+  void updateCenter(const math::Vector3d& point)
   {
-    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    math::Isometry3d tf = math::Isometry3d::Identity();
     tf.translation() = point;
     setMatrix(eigToOsgMatrix(tf));
   }
@@ -130,7 +130,7 @@ public:
     mDrawable->updateSize(size);
   }
 
-  void updateColor(const Eigen::Vector4d& color)
+  void updateColor(const math::Vector4d& color)
   {
     mDrawable->updateColor(color);
   }
@@ -170,9 +170,9 @@ void VoxelGridShapeNode::refresh()
 }
 
 //==============================================================================
-Eigen::Vector3d toVector3d(const octomap::point3d& point)
+math::Vector3d toVector3d(const octomap::point3d& point)
 {
-  return Eigen::Vector3d(
+  return math::Vector3d(
       static_cast<double>(point.x()),
       static_cast<double>(point.y()),
       static_cast<double>(point.z()));

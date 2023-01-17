@@ -511,7 +511,7 @@ void Viewer::setUpwardsDirection(const ::osg::Vec3& _up)
 }
 
 //==============================================================================
-void Viewer::setUpwardsDirection(const Eigen::Vector3d& _up)
+void Viewer::setUpwardsDirection(const math::Vector3d& _up)
 {
   setUpwardsDirection(eigToOsgVec3(_up));
 }

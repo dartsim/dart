@@ -50,15 +50,15 @@ namespace gui {
 
 // draw a 3D arrow starting from pt along dir, the arrowhead is on the other end
 void drawArrow3D(
-    const Eigen::Vector3d& _pt,
-    const Eigen::Vector3d& _dir,
+    const math::Vector3d& _pt,
+    const math::Vector3d& _dir,
     const double _length,
     const double _thickness,
     const double _arrowThickness)
 {
   const double pi = math::pi();
 
-  Eigen::Vector3d normDir = _dir;
+  math::Vector3d normDir = _dir;
   normDir.normalize();
 
   double arrowLength;
@@ -92,7 +92,7 @@ void drawArrow3D(
 // draw a 2D arrow starting from pt along vec, the arrow head is on the other
 // end
 void drawArrow2D(
-    const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec, double _thickness)
+    const math::Vector2d& _pt, const math::Vector2d& _vec, double _thickness)
 {
   const double pi = math::pi();
 

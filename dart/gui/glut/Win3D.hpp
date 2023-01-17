@@ -63,9 +63,9 @@ public:
 
 protected:
   Trackball mTrackBall;
-  Eigen::Vector3d mTrans;
-  Eigen::Vector3d mEye;
-  Eigen::Vector3d mUp;
+  math::Vector3d mTrans;
+  math::Vector3d mEye;
+  math::Vector3d mUp;
   float mZoom;
   float mPersp;
 

@@ -44,60 +44,60 @@ namespace dart::gui::osg {
 template <typename T = double>
 constexpr T getAlphaThreshold();
 
-/// Converts Eigen::Isometry to osg::Matrix
+/// Converts math::Isometry to osg::Matrix
 template <typename Scalar>
 ::osg::Matrix eigToOsgMatrix(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& tf);
+    const math::Transform<Scalar, 3, math::Isometry>& tf);
 
-/// Converts Eigen::DenseBase to osg::Matrix
+/// Converts math::DenseBase to osg::Matrix
 template <typename Derived>
-::osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M);
+::osg::Matrix eigToOsgMatrix(const math::DenseBase<Derived>& M);
 
-/// Converts Eigen::MatrixBase to osg::Vec3f
+/// Converts math::MatrixBase to osg::Vec3f
 template <typename Derived>
-::osg::Vec3f eigToOsgVec3f(const Eigen::MatrixBase<Derived>& vec);
+::osg::Vec3f eigToOsgVec3f(const math::MatrixBase<Derived>& vec);
 
-/// Converts Eigen::MatrixBase to osg::Vec3d
+/// Converts math::MatrixBase to osg::Vec3d
 template <typename Derived>
-::osg::Vec3d eigToOsgVec3d(const Eigen::MatrixBase<Derived>& vec);
+::osg::Vec3d eigToOsgVec3d(const math::MatrixBase<Derived>& vec);
 
-/// Converts Eigen::MatrixBase to osg::Vec3f or osg::Vec3d based on the scalar
+/// Converts math::MatrixBase to osg::Vec3f or osg::Vec3d based on the scalar
 /// type
 template <typename Derived>
 typename std::conditional<
     std::is_same<typename Derived::Scalar, float>::value,
     ::osg::Vec3f,
     ::osg::Vec3d>::type
-eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec);
+eigToOsgVec3(const math::MatrixBase<Derived>& vec);
 
-/// Converts osg::Vec3f to Eigen::Vector3f
-Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec);
+/// Converts osg::Vec3f to math::Vector3f
+math::Vector3f osgToEigVec3(const ::osg::Vec3f& vec);
 
-/// Converts osg::Vec3d to Eigen::Vector3d
-Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec);
+/// Converts osg::Vec3d to math::Vector3d
+math::Vector3d osgToEigVec3(const ::osg::Vec3d& vec);
 
-/// Converts Eigen::MatrixBase to osg::Vec4f
+/// Converts math::MatrixBase to osg::Vec4f
 template <typename Derived>
-::osg::Vec4f eigToOsgVec4f(const Eigen::MatrixBase<Derived>& vec);
+::osg::Vec4f eigToOsgVec4f(const math::MatrixBase<Derived>& vec);
 
-/// Converts Eigen::MatrixBase to osg::Vec4d
+/// Converts math::MatrixBase to osg::Vec4d
 template <typename Derived>
-::osg::Vec4d eigToOsgVec4d(const Eigen::MatrixBase<Derived>& vec);
+::osg::Vec4d eigToOsgVec4d(const math::MatrixBase<Derived>& vec);
 
-/// Converts Eigen::MatrixBase to osg::Vec4f or osg::Vec4d based on the scalar
+/// Converts math::MatrixBase to osg::Vec4f or osg::Vec4d based on the scalar
 /// type
 template <typename Derived>
 std::conditional<
     std::is_same<typename Derived::Scalar, float>::value,
     ::osg::Vec4f,
     ::osg::Vec4d>
-eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec);
+eigToOsgVec4(const math::MatrixBase<Derived>& vec);
 
-/// Converts osg::Vec4f to Eigen::Vector4f
-Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec);
+/// Converts osg::Vec4f to math::Vector4f
+math::Vector4f osgToEigVec4(const ::osg::Vec4f& vec);
 
-/// Converts osg::Vec4d to Eigen::Vector4d
-Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec);
+/// Converts osg::Vec4d to math::Vector4d
+math::Vector4d osgToEigVec4(const ::osg::Vec4d& vec);
 
 /// Create a Render-To-Texture (RTT) camera.
 ::osg::Camera* createRttCamera(

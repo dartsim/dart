@@ -84,7 +84,7 @@ class HeightmapShapeDrawable : public ::osg::Geometry
 {
 public:
   using Scalar = S;
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
+  using Vector3 = math::Matrix<S, 3, 1>;
 
   using osgVec3 = typename std::conditional<
       std::is_same<S, float>::value,
@@ -276,10 +276,10 @@ HeightmapShapeDrawable<S>::HeightmapShapeDrawable(
 
 //==============================================================================
 template <typename S>
-Eigen::Matrix<S, 3, 1> getNormal(
-    const Eigen::Matrix<S, 3, 1>& p1,
-    const Eigen::Matrix<S, 3, 1>& p2,
-    const Eigen::Matrix<S, 3, 1>& p3)
+math::Matrix<S, 3, 1> getNormal(
+    const math::Matrix<S, 3, 1>& p1,
+    const math::Matrix<S, 3, 1>& p2,
+    const math::Matrix<S, 3, 1>& p3)
 {
   return (p2 - p1).cross(p3 - p1).normalized();
 }

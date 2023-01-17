@@ -62,7 +62,7 @@ void Win3D::initWindow(int _w, int _h, const char* _name)
   Window::initWindow(_w, _h, _name);
 
   int smaller = _w < _h ? _w : _h;
-  mTrackBall.setTrackball(Eigen::Vector2d(_w * 0.5, _h * 0.5), smaller / 2.5);
+  mTrackBall.setTrackball(math::Vector2d(_w * 0.5, _h * 0.5), smaller / 2.5);
 }
 
 //==============================================================================
@@ -83,7 +83,7 @@ void Win3D::resize(int _w, int _h)
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  mTrackBall.setCenter(Eigen::Vector2d(_w * 0.5, _h * 0.5));
+  mTrackBall.setCenter(math::Vector2d(_w * 0.5, _h * 0.5));
   mTrackBall.setRadius(std::min(_w, _h) / 2.5);
 
   glutPostRedisplay();
@@ -169,9 +169,9 @@ void Win3D::drag(int _x, int _y)
       mTrackBall.updateBall(_x, mWinHeight - _y);
   }
   if (mTranslate) {
-    Eigen::Matrix3d rot = mTrackBall.getRotationMatrix();
-    mTrans += (1 / mZoom) * rot.transpose()
-              * Eigen::Vector3d(deltaX, -deltaY, 0.0);
+    math::Matrix3d rot = mTrackBall.getRotationMatrix();
+    mTrans
+        += (1 / mZoom) * rot.transpose() * math::Vector3d(deltaX, -deltaY, 0.0);
   }
   if (mZooming) {
     mZoom += deltaY * 0.01;
