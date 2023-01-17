@@ -36,7 +36,7 @@
 #include <dart/simulation/World.hpp>
 
 #include <dart/io/CompositeResourceRetriever.hpp>
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 #include <dart/io/PackageResourceRetriever.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>

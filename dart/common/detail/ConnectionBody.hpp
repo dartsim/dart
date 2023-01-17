@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 #define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
-#include <dart/common/Export.hpp>
+#include <dart/common/Fwd.hpp>
 
 #include <memory>
 

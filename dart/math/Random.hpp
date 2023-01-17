@@ -33,7 +33,7 @@
 #ifndef DART_MATH_RANDOM_HPP_
 #define DART_MATH_RANDOM_HPP_
 
-#include <dart/math/Export.hpp>
+#include <dart/math/Fwd.hpp>
 
 #include <Eigen/Core>
 

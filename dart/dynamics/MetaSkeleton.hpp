@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_METASKELETON_HPP_
 #define DART_DYNAMICS_METASKELETON_HPP_
 
-#include <dart/dynamics/Export.hpp>
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/InvalidIndex.hpp>
 
 #include <dart/math/Geometry.hpp>

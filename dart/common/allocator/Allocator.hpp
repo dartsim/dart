@@ -34,7 +34,7 @@
 #define DART_COMMON_MEMORYALLOCATOR_HPP_
 
 #include <dart/common/Castable.hpp>
-#include <dart/common/Export.hpp>
+#include <dart/common/Fwd.hpp>
 
 #include <iostream>
 #include <string>

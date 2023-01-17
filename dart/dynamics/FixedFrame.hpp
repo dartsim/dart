@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_FIXEDFRAME_HPP_
 #define DART_DYNAMICS_FIXEDFRAME_HPP_
 
-#include <dart/dynamics/Export.hpp>
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/detail/FixedFrameAspect.hpp>
 
 #include <dart/common/EmbeddedAspect.hpp>

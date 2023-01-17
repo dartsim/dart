@@ -36,7 +36,6 @@
 #include <dart/config.hpp>
 
 #include <dart/dynamics/EndEffector.hpp>
-#include <dart/dynamics/Export.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Marker.hpp>

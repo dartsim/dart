@@ -33,8 +33,8 @@
 #ifndef DART_OPTIMIZER_GENERICMULTIOBJECTIVEPROBLEM_HPP_
 #define DART_OPTIMIZER_GENERICMULTIOBJECTIVEPROBLEM_HPP_
 
-#include <dart/optimization/Export.hpp>
 #include <dart/optimization/Function.hpp>
+#include <dart/optimization/Fwd.hpp>
 #include <dart/optimization/MultiObjectiveProblem.hpp>
 
 #include <Eigen/Dense>

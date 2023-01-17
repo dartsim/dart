@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_
 
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <Eigen/Geometry>
 

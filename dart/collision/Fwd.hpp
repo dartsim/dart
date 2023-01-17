@@ -30,48 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CONSOLE_HPP_
-#define DART_COMMON_CONSOLE_HPP_
+#pragma once
 
-#include <dart/common/Fwd.hpp>
+#include <dart/collision/Export.hpp>
 
-#include <ostream>
-#include <string>
+#include <dart/math/Fwd.hpp>
 
-/// \brief Output a message
-#define dtmsg (::dart::common::colorMsg("Msg", 32))
+namespace dart::collision {
 
-/// \brief Output a debug message
-#define dtdbg (::dart::common::colorMsg("Dbg", 36))
-
-/// \brief Output a warning message
-#define dtwarn (::dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
-
-/// \brief Output an error message
-#define dterr (::dart::common::colorErr("Error", __FILE__, __LINE__, 31))
-
-namespace dart {
-namespace common {
-
-/// \brief
-DART_COMMON_API std::ostream& colorMsg(const std::string& _msg, int _color);
-
-/// \brief
-DART_COMMON_API std::ostream& colorErr(
-    const std::string& _msg,
-    const std::string& _file,
-    unsigned int _line,
-    int _color);
-
-} // namespace common
-
-template <class T>
-auto operator<<(std::ostream& os, const T& t) -> decltype(t.print(os), os)
-{
-  t.print(os);
-  return os;
-}
-
-} // namespace dart
-
-#endif // DART_COMMON_CONSOLE_HPP_
+} // namespace dart::collision

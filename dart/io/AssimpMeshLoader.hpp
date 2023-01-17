@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 #include <dart/io/MeshLoader.hpp>
 
 namespace dart::io {

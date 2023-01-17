@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/collision/Export.hpp>
+#include <dart/collision/Fwd.hpp>
 
 namespace dart::collision {
 

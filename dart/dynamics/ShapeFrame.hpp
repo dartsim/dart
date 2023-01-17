@@ -34,8 +34,8 @@
 #define DART_DYNAMICS_SHAPEFRAME_HPP_
 
 #include <dart/dynamics/EllipsoidShape.hpp>
-#include <dart/dynamics/Export.hpp>
 #include <dart/dynamics/FixedFrame.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/detail/ShapeFrameAspect.hpp>
 

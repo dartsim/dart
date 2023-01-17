@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/math/Export.hpp>
+#include <dart/math/Fwd.hpp>
 #include <dart/math/geometry/Mesh.hpp>
 
 #include <memory>

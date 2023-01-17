@@ -33,7 +33,7 @@
 #ifndef DART_OPTIMIZER_SOLVER_HPP_
 #define DART_OPTIMIZER_SOLVER_HPP_
 
-#include <dart/optimization/Export.hpp>
+#include <dart/optimization/Fwd.hpp>
 
 #include <Eigen/Dense>
 

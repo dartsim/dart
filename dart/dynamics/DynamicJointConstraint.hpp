@@ -34,7 +34,7 @@
 #define DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 
 #include <dart/dynamics/ConstraintBase.hpp>
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 namespace dart {
 

@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_BALANCECONSTRAINT_HPP_
 #define DART_CONSTRAINT_BALANCECONSTRAINT_HPP_
 
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/HierarchicalIK.hpp>
 
 namespace dart {

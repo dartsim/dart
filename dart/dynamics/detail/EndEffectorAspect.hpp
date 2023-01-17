@@ -34,7 +34,7 @@
 #define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
 
 #include <dart/dynamics/CompositeNode.hpp>
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/SpecializedForAspect.hpp>
 

@@ -34,7 +34,7 @@
 #define DART_CONSTRAINT_BALLJOINTCONSTRAINT_HPP_
 
 #include <dart/dynamics/DynamicJointConstraint.hpp>
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/math/Fwd.hpp>
 

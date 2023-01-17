@@ -35,7 +35,7 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>

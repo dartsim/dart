@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_VSKPARSER_HPP_
 #define DART_UTILS_VSKPARSER_HPP_
 
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 
 #include <dart/dynamics/Skeleton.hpp>
 

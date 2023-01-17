@@ -35,7 +35,7 @@
 
 #include <dart/gui/osg/render/ShapeNode.hpp>
 
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <osg/MatrixTransform>
 #include <osg/ShapeDrawable>

@@ -35,7 +35,7 @@
 
 #include "DefaultEventHandler.hpp"
 
-#include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
 
 #include <dart/dynamics/Entity.hpp>
 #include <dart/dynamics/Shape.hpp>

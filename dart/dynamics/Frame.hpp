@@ -34,7 +34,7 @@
 #define DART_DYNAMICS_FRAME_HPP_
 
 #include <dart/dynamics/Entity.hpp>
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/math/Fwd.hpp>
 

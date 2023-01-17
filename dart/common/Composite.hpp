@@ -34,7 +34,7 @@
 #define DART_COMMON_COMPOSITE_HPP_
 
 #include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/Export.hpp>
+#include <dart/common/Fwd.hpp>
 #include <dart/common/detail/CompositeData.hpp>
 
 namespace dart {

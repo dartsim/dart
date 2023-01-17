@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_MUJOCOMODEL_HPP_
 #define DART_UTILS_MJCF_DETAIL_MUJOCOMODEL_HPP_
 
-#include <dart/io/Export.hpp>
+#include <dart/io/Fwd.hpp>
 #include <dart/io/mjcf/detail/Asset.hpp>
 #include <dart/io/mjcf/detail/Compiler.hpp>
 #include <dart/io/mjcf/detail/Default.hpp>

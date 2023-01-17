@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/common/Export.hpp>
+#include <dart/common/Fwd.hpp>
 #include <dart/common/allocator/AlignedAllocator.hpp>
 #include <dart/common/allocator/AllocatorDebugger.hpp>
 

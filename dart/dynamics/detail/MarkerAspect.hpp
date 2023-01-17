@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
 
-#include <dart/dynamics/Export.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/math/Color.hpp>
 
