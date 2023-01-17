@@ -35,8 +35,6 @@
 
 #include <dart/config.hpp>
 
-#include <Eigen/Dense>
-
 // clang-format off
 #define FCL_VERSION_AT_LEAST(x,y,z)                                            \
   (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x &&                         \

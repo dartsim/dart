@@ -36,7 +36,6 @@
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Shape.hpp>
 
-#include <Eigen/Dense>
 #include <assimp/scene.h>
 
 namespace dart {

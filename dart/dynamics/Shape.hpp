@@ -43,8 +43,6 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 
-#include <Eigen/Dense>
-
 #include <memory>
 
 namespace dart {

@@ -38,7 +38,6 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <Eigen/Core>
 #include <osgShadow/ShadowTechnique>
 #include <osgViewer/Viewer>
 

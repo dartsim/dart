@@ -39,7 +39,6 @@
 
 #include <dart/test/io/TestHelpers.hpp>
 
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include <fstream>

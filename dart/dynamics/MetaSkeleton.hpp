@@ -43,8 +43,6 @@
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <Eigen/Dense>
-
 #include <string>
 #include <vector>
 

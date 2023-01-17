@@ -39,7 +39,6 @@
 #include "dart/math/Constants.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include <string>

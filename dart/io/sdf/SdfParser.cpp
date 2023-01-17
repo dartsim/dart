@@ -56,8 +56,6 @@
 #include "dart/io/XmlHelpers.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
 #include <tinyxml2.h>
 
 #include <fstream>

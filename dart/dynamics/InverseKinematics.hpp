@@ -46,8 +46,6 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/sub_ptr.hpp>
 
-#include <Eigen/SVD>
-
 #include <functional>
 #include <memory>
 

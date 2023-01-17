@@ -34,8 +34,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Core>
-
 #include <vector>
 
 namespace dart::math {

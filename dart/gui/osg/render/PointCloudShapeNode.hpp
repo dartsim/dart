@@ -37,7 +37,6 @@
 
 #include <dart/dynamics/PointCloudShape.hpp>
 
-#include <Eigen/Dense>
 #include <osg/Group>
 
 namespace dart {

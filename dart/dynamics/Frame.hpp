@@ -38,8 +38,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Geometry>
-
 #include <set>
 
 namespace dart {

@@ -16,7 +16,7 @@
 #include <iostream>
 #include <sstream>
 
-#include <Eigen/Dense>
+
 
 #include "renderer/RenderInterface.h"
 #include "Skeleton.h"

@@ -43,8 +43,6 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {

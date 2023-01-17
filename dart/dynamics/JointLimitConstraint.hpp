@@ -35,8 +35,6 @@
 
 #include <dart/dynamics/ConstraintBase.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart {
 
 namespace dynamics {

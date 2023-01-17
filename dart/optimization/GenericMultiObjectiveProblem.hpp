@@ -37,8 +37,6 @@
 #include <dart/optimization/Fwd.hpp>
 #include <dart/optimization/MultiObjectiveProblem.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 #include <cstddef>

@@ -35,8 +35,6 @@
 
 #include <dart/optimization/Function.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 #include <cstddef>

@@ -35,8 +35,6 @@
 
 #include <dart/dart.hpp>
 
-#include <Eigen/Dense>
-
 #include <map>
 #include <string>
 #include <vector>

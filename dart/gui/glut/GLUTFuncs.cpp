@@ -35,8 +35,6 @@
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
 
-#include <Eigen/Eigen>
-
 #include <iostream>
 #include <string>
 

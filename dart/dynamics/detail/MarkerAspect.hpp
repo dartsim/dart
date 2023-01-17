@@ -37,8 +37,6 @@
 
 #include <dart/math/Color.hpp>
 
-#include <Eigen/Core>
-
 namespace dart {
 namespace dynamics {
 namespace detail {

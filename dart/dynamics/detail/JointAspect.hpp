@@ -35,9 +35,6 @@
 
 #include <dart/dynamics/Fwd.hpp>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-
 namespace dart {
 namespace dynamics {
 namespace detail {

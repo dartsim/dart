@@ -38,8 +38,6 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <Eigen/Core>
-
 #include <memory>
 #include <string>
 

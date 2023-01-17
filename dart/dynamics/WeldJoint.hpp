@@ -36,8 +36,6 @@
 #include <dart/dynamics/Entity.hpp>
 #include <dart/dynamics/ZeroDofJoint.hpp>
 
-#include <Eigen/Dense>
-
 #include <string>
 
 namespace dart {

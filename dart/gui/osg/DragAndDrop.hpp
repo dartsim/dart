@@ -42,8 +42,6 @@
 
 #include <dart/common/sub_ptr.hpp>
 
-#include <Eigen/Geometry>
-
 #include <functional>
 
 namespace dart {

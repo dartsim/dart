@@ -37,8 +37,6 @@
 #include "dart/gui/glut/GLUTFuncs.hpp"
 #include "dart/math/Constants.hpp"
 
-#include <Eigen/Eigen>
-
 #include <iostream>
 #include <string>
 

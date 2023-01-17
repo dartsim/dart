@@ -37,8 +37,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {

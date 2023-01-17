@@ -38,8 +38,6 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {

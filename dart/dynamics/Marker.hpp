@@ -37,8 +37,6 @@
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/detail/MarkerAspect.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart {
 namespace dynamics {
 

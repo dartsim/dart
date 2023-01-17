@@ -35,8 +35,6 @@
 
 #include <dart/gui/glut/Win2D.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {

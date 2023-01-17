@@ -37,8 +37,6 @@
 #include "dart/optimization/Function.hpp"
 #include "dart/optimization/Problem.hpp"
 
-#include <Eigen/Dense>
-
 #include <memory>
 
 namespace dart {

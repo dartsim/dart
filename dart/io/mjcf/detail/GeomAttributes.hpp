@@ -38,7 +38,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Core>
 #include <tinyxml2.h>
 
 #include <optional>

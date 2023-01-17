@@ -35,8 +35,6 @@
 
 #include <dart/dynamics/Fwd.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart {
 namespace collision {
 

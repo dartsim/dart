@@ -37,8 +37,6 @@
 
 #include <dart/common/EmbeddedAspect.hpp>
 
-#include <Eigen/Core>
-
 namespace dart {
 namespace dynamics {
 

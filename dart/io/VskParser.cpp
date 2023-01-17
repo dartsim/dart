@@ -33,7 +33,6 @@
 #include "dart/io/VskParser.hpp"
 
 // Standard Library
-#include <Eigen/Dense>
 
 #include <map>
 #include <sstream>

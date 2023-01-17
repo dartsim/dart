@@ -42,8 +42,6 @@
 #include "dart/io/mjcf/detail/Utils.hpp"
 #include "dart/io/mjcf/detail/Worldbody.hpp"
 
-#include <Eigen/Dense>
-
 #include <algorithm>
 #include <vector>
 

@@ -53,8 +53,6 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 using namespace Eigen;

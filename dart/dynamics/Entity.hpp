@@ -40,8 +40,6 @@
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <Eigen/Core>
-
 #include <string>
 #include <vector>
 

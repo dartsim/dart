@@ -37,8 +37,6 @@
 
 #include <dart/common/Castable.hpp>
 
-#include <Eigen/Core>
-
 #include <string>
 
 namespace dart {

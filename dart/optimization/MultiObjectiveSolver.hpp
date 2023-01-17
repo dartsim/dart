@@ -35,8 +35,6 @@
 
 #include <dart/optimization/Population.hpp>
 
-#include <Eigen/Dense>
-
 #include <iostream>
 #include <memory>
 #include <vector>

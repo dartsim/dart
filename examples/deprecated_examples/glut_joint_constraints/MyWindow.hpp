@@ -37,7 +37,6 @@
 
 #include <dart/dart.hpp>
 
-#include <Eigen/Dense>
 #include <stdarg.h>
 
 class MyWindow : public dart::gui::glut::SimWindow

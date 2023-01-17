@@ -43,8 +43,6 @@
 
 #include <dart/gui/glut/SimWindow.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {

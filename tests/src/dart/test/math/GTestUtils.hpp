@@ -36,7 +36,6 @@
 #include <dart/math/Fwd.hpp>
 #include <dart/math/Geometry.hpp>
 
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 //==============================================================================

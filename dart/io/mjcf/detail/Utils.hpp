@@ -38,7 +38,6 @@
 #include <dart/io/mjcf/detail/Compiler.hpp>
 #include <dart/io/mjcf/detail/Error.hpp>
 
-#include <Eigen/Core>
 #include <tinyxml2.h>
 
 #include <optional>

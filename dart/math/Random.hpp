@@ -35,8 +35,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Core>
-
 #include <random>
 
 namespace dart {

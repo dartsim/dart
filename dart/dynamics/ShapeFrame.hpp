@@ -43,8 +43,6 @@
 #include <dart/common/Signal.hpp>
 #include <dart/common/SpecializedForAspect.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart {
 namespace dynamics {
 

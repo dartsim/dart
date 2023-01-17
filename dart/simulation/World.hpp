@@ -50,8 +50,6 @@
 #include <dart/common/NameManager.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <Eigen/Dense>
-
 #include <set>
 #include <string>
 #include <vector>

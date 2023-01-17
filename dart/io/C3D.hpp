@@ -35,8 +35,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 #include <ctime>

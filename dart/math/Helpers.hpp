@@ -45,7 +45,7 @@
 #include <ctime>
 
 // External Libraries
-#include <Eigen/Dense>
+
 // Local Headers
 #include <dart/math/Constants.hpp>
 #include <dart/math/Fwd.hpp>

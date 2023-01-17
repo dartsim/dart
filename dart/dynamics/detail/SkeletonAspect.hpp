@@ -38,8 +38,6 @@
 #include <dart/common/ProxyAspect.hpp>
 #include <dart/common/RequiresAspect.hpp>
 
-#include <Eigen/Core>
-
 namespace dart {
 namespace dynamics {
 

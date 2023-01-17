@@ -34,8 +34,6 @@
 
 #include <dart/math/geometry/TriMesh.hpp>
 
-#include <Eigen/Core>
-
 #include <map>
 #include <vector>
 

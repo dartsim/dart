@@ -40,8 +40,6 @@
 #include "dart/optimization/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"
 #include "dart/optimization/pagmo/PagmoUtils.hpp"
 
-#include <Eigen/Dense>
-
 #include <memory>
 
 namespace dart {

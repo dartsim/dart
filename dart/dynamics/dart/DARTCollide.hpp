@@ -35,8 +35,6 @@
 
 #include <dart/dynamics/CollisionDetector.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {

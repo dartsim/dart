@@ -70,9 +70,6 @@
 #include "dart/io/DartResourceRetriever.hpp"
 #include "dart/io/XmlHelpers.hpp"
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-
 #include <algorithm>
 #include <vector>
 

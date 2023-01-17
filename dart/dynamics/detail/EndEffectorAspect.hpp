@@ -38,8 +38,6 @@
 
 #include <dart/common/SpecializedForAspect.hpp>
 
-#include <Eigen/Geometry>
-
 namespace dart {
 namespace dynamics {
 

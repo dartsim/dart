@@ -47,9 +47,6 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-
 #include <map>
 #include <string>
 

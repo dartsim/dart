@@ -36,8 +36,6 @@
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/GenericJoint.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart {
 namespace dynamics {
 

@@ -37,8 +37,6 @@
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 
-#include <Eigen/Core>
-
 #define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
 #define DART_FRICTION_COEFF_THRESHOLD 1e-3
 #define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1

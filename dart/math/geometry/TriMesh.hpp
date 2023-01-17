@@ -161,8 +161,6 @@ DART_TEMPLATE_CLASS_HEADER(MATH, TriMesh);
 
 #include <dart/math/Geometry.hpp>
 
-#include <Eigen/Geometry>
-
 namespace dart::math {
 
 //==============================================================================

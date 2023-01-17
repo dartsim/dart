@@ -38,8 +38,6 @@
 
 #include <dart/common/Signal.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart {
 namespace dynamics {
 

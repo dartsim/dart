@@ -35,8 +35,6 @@
 
 #include <dart/optimization/Fwd.hpp>
 
-#include <Eigen/Dense>
-
 #include <iostream>
 #include <memory>
 

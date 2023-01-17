@@ -10,7 +10,7 @@
 #define DART_OPTIMIZER_SNOPT_SNOPT_H
 
 #include <vector>
-#include <Eigen/Dense>
+
 #include "dart/optimization/snopt/SnoptInterface.h"
 #include "dart/optimization/Solver.h"
 

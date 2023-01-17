@@ -37,8 +37,6 @@
 
 #include <dart/math/Helpers.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {

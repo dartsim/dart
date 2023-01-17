@@ -125,7 +125,7 @@ enum yytokentype {
 #include "Dof.h"
 #include "ParserSkel.h"
 
-#include <Eigen/Dense>
+
 using namespace Eigen;
 
 using namespace kinematics;

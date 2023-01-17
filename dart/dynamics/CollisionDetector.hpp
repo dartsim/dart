@@ -44,8 +44,6 @@
 
 #include <dart/common/Factory.hpp>
 
-#include <Eigen/Dense>
-
 #include <map>
 #include <vector>
 

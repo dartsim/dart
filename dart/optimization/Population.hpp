@@ -35,8 +35,6 @@
 
 #include <dart/optimization/MultiObjectiveProblem.hpp>
 
-#include <Eigen/Dense>
-
 #include <iostream>
 #include <memory>
 #include <random>

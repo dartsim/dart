@@ -35,8 +35,6 @@
 
 #include <dart/gui/Fwd.hpp>
 
-#include <Eigen/Eigen>
-
 namespace dart {
 namespace gui {
 

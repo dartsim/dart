@@ -49,9 +49,6 @@
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Signal.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-
 #include <string>
 #include <vector>
 

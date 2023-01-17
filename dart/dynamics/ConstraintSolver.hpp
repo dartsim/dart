@@ -38,8 +38,6 @@
 #include <dart/dynamics/ConstraintBase.hpp>
 #include <dart/dynamics/Fwd.hpp>
 
-#include <Eigen/Dense>
-
 #include <vector>
 
 namespace dart {
