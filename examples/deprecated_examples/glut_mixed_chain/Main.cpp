@@ -38,11 +38,11 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/io/io.hpp>
-
 #include <dart/dart.hpp>
 
 #include <iostream>
+
+using namespace dart::math;
 
 int main(int argc, char* argv[])
 {
@@ -53,9 +53,9 @@ int main(int argc, char* argv[])
   assert(myWorld != nullptr);
 
   int dof = myWorld->getSkeleton(1)->getNumDofs();
-  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
+  VectorXd initPose = VectorXd::Zero(dof);
   for (int i = 0; i < 3; i++)
-    initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+    initPose[i] = Random::uniform(-0.5, 0.5);
   myWorld->getSkeleton(1)->setPositions(initPose);
 
   // create a window and link it to the world

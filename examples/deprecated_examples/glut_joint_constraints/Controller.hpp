@@ -48,7 +48,7 @@ public:
       double _t);
   virtual ~Controller() {}
 
-  Eigen::VectorXd getTorques()
+  dart::math::VectorXd getTorques()
   {
     return mTorques;
   }
@@ -61,44 +61,45 @@ public:
     mDesiredDofs[_index] = _val;
   }
   void computeTorques(
-      const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
+      const dart::math::VectorXd& _dof, const dart::math::VectorXd& _dofVel);
   dart::dynamics::SkeletonPtr getSkel()
   {
     return mSkel;
   }
-  Eigen::VectorXd getDesiredDofs()
+  dart::math::VectorXd getDesiredDofs()
   {
     return mDesiredDofs;
   }
-  Eigen::MatrixXd getKp()
+  dart::math::MatrixXd getKp()
   {
     return mKp;
   }
-  Eigen::MatrixXd getKd()
+  dart::math::MatrixXd getKd()
   {
     return mKd;
   }
-  void setConstrForces(const Eigen::VectorXd& _constrForce)
+  void setConstrForces(const dart::math::VectorXd& _constrForce)
   {
     mConstrForces = _constrForce;
   }
 
 protected:
-  bool computeCoP(dart::dynamics::BodyNode* _node, Eigen::Vector3d* _cop);
-  Eigen::Vector3d evalLinMomentum(const Eigen::VectorXd& _dofVel);
-  Eigen::Vector3d evalAngMomentum(const Eigen::VectorXd& _dofVel);
-  Eigen::VectorXd adjustAngMomentum(
-      Eigen::VectorXd _deltaMomentum, Eigen::VectorXd _controlledAxis);
+  bool computeCoP(dart::dynamics::BodyNode* _node, dart::math::Vector3d* _cop);
+  dart::math::Vector3d evalLinMomentum(const dart::math::VectorXd& _dofVel);
+  dart::math::Vector3d evalAngMomentum(const dart::math::VectorXd& _dofVel);
+  dart::math::VectorXd adjustAngMomentum(
+      dart::math::VectorXd _deltaMomentum,
+      dart::math::VectorXd _controlledAxis);
   dart::dynamics::SkeletonPtr mSkel;
   dart::dynamics::ConstraintSolver* mCollisionHandle;
-  Eigen::VectorXd mTorques;
-  Eigen::VectorXd mDesiredDofs;
-  Eigen::MatrixXd mKp;
-  Eigen::MatrixXd mKd;
+  dart::math::VectorXd mTorques;
+  dart::math::VectorXd mDesiredDofs;
+  dart::math::MatrixXd mKp;
+  dart::math::MatrixXd mKd;
   int mFrame;
   double mTimestep;
   double mPreOffset;
-  Eigen::VectorXd
+  dart::math::VectorXd
       mConstrForces; // SPD utilizes the current info about contact forces
 };
 

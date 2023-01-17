@@ -45,7 +45,7 @@ class MyWindow : public dart::gui::glut::SimWindow
 public:
   MyWindow() : SimWindow()
   {
-    mForce = Eigen::Vector3d::Zero();
+    mForce = dart::math::Vector3d::Zero();
     mController = nullptr;
     mWeldJoint = nullptr;
     mImpulseDuration = 0;
@@ -65,7 +65,7 @@ public:
   }
 
 private:
-  Eigen::Vector3d mForce;
+  dart::math::Vector3d mForce;
   Controller* mController;
   dart::dynamics::WeldJointConstraintPtr mWeldJoint;
   int mImpulseDuration;

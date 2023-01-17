@@ -82,7 +82,7 @@ TEST(Issue1445, Collision)
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(
         std::make_shared<dart::dynamics::BoxShape>(
-            Eigen::Vector3d(10, 10, 0.2)));
+            math::Vector3d(10, 10, 0.2)));
     auto sn = bn->getShapeNode(0);
     ASSERT_TRUE(sn);
     sn->setRelativeTranslation({0, 0, -0.1});
@@ -101,9 +101,9 @@ TEST(Issue1445, Collision)
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(
         std::make_shared<dart::dynamics::BoxShape>(
-            Eigen::Vector3d(0.2, 0.2, 0.2)));
+            math::Vector3d(0.2, 0.2, 0.2)));
 
-    auto tf = Eigen::Isometry3d::Identity();
+    auto tf = math::Isometry3d::Identity();
     tf.translation()[2] = 0.1;
     joint->setTransform(tf);
 
@@ -125,8 +125,8 @@ TEST(Issue1445, Collision)
         dart::dynamics::DynamicsAspect>(
         std::make_shared<dart::dynamics::SphereShape>(0.1));
 
-    auto tf = Eigen::Isometry3d::Identity();
-    tf.translation() = Eigen::Vector3d(1.0, 0.0, 0.1);
+    auto tf = math::Isometry3d::Identity();
+    tf.translation() = math::Vector3d(1.0, 0.0, 0.1);
     joint->setTransform(tf);
   }
 

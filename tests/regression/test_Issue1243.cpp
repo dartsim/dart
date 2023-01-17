@@ -37,9 +37,9 @@
 #include <gtest/gtest.h>
 
 dart::dynamics::SkeletonPtr create_box(
-    const Eigen::Vector3d& dims,
+    const math::Vector3d& dims,
     double mass,
-    const Eigen::Vector4d& color,
+    const math::Vector4d& color,
     const std::string& box_name)
 {
   dart::dynamics::SkeletonPtr box_skel
@@ -84,7 +84,7 @@ dart::dynamics::SkeletonPtr create_floor()
 
   // Give the body a shape
   auto box = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(floor_width, floor_width, floor_height));
+      math::Vector3d(floor_width, floor_width, floor_height));
   auto box_node = body->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
@@ -92,7 +92,7 @@ dart::dynamics::SkeletonPtr create_floor()
   box_node->getVisualAspect()->setColor(dart::math::Colord::Gray());
 
   // Put the body into position
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  math::Isometry3d tf(math::Isometry3d::Identity());
   tf.translation()[2] -= floor_height / 2.0;
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
@@ -113,7 +113,7 @@ TEST(Issue1243, State)
   world->addSkeleton(floor_skel);
 
   dart::dynamics::Skeleton::State bookmark_state;
-  Eigen::Isometry3d bookmark_tf;
+  math::Isometry3d bookmark_tf;
   for (size_t i = 0; i < 20; i++) {
     if (i == 10) {
       bookmark_state = box_skel->getState();
@@ -122,11 +122,10 @@ TEST(Issue1243, State)
     world->step();
   }
 
-  const Eigen::Isometry3d final_tf
-      = box_skel->getRootBodyNode()->getTransform();
+  const math::Isometry3d final_tf = box_skel->getRootBodyNode()->getTransform();
 
   box_skel->setState(bookmark_state);
-  const Eigen::Isometry3d rewind_tf
+  const math::Isometry3d rewind_tf
       = box_skel->getRootBodyNode()->getTransform();
 
   EXPECT_FALSE(test::equals(bookmark_tf, final_tf));

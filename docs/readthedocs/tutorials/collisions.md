@@ -85,20 +85,20 @@ if(parent)
 Inside the brackets, we'll want to create the offset between bodies:
 
 ```cpp
-Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+math::Isometry3d tf(math::Isometry3d::Identity());
 ```
 
-An ``Eigen::Isometry3d`` is the Eigen library's version of a homogeneous
+An ``math::Isometry3d`` is the Eigen library's version of a homogeneous
 transformation matrix. Here we are initializing it to an Identity matrix to
 start out. This is almost always something you should do when creating an
-Eigen::Isometry3d, because otherwise its contents will be completely arbitrary
+math::Isometry3d, because otherwise its contents will be completely arbitrary
 trash.
 
 We can easily compute the center point between the origins of the two bodies
 using our default height value:
 
 ```cpp
-tf.translation() = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+tf.translation() = math::Vector3d(0, 0, default_shape_height / 2.0);
 ```
 
 We can then offset the parent and child BodyNodes of this Joint using this
@@ -199,10 +199,10 @@ used very often.
 Now we want to construct each of the Shape types within their conditional
 statements. Each constructor is a bit different.
 
-For box we pass in an Eigen::Vector3d that contains the three dimensions of the box:
+For box we pass in an math::Vector3d that contains the three dimensions of the box:
 
 ```cpp
-shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+shape = std::make_shared<BoxShape>(math::Vector3d(
                                      default_shape_width,
                                      default_shape_width,
                                      default_shape_height));
@@ -215,15 +215,15 @@ shape = std::make_shared<CylinderShape>(default_shape_width/2.0,
                                         default_shape_height);
 ```
 
-For ellipsoid we pass in an Eigen::Vector3d that contains the lengths of the three axes:
+For ellipsoid we pass in an math::Vector3d that contains the lengths of the three axes:
 
 ```cpp
 shape = std::make_shared<EllipsoidShape>(
-      default_shape_height*Eigen::Vector3d::Ones());
+      default_shape_height*math::Vector3d::Ones());
 ```
 
 Since we actually want a sphere, all three axis lengths will be equal, so we can
-create an Eigen::Vector3d filled with ones by using ``Eigen::Vector3d::Ones()``
+create an math::Vector3d filled with ones by using ``math::Vector3d::Ones()``
 and then multiply it by the length that we actually want for the three components.
 
 Finally, we want to add this shape as a visualization **and** collision shape for
@@ -329,12 +329,12 @@ For the SOFT_BOX:
 ```cpp
 // Make a wide and short box
 double width = default_shape_height, height = 2*default_shape_width;
-Eigen::Vector3d dims(width, width, height);
+math::Vector3d dims(width, width, height);
 
 double mass = 2*dims[0]*dims[1] + 2*dims[0]*dims[2] + 2*dims[1]*dims[2];
 mass *= default_shape_density * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeBoxProperties(
-      dims, Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4), mass);
+      dims, math::Isometry3d::Identity(), math::Vector3i(4,4,4), mass);
 ```
 
 For the SOFT_CYLINDER:
@@ -355,7 +355,7 @@ soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
 And for the SOFT_ELLIPSOID:
 ```cpp
 double radius = default_shape_height/2.0;
-Eigen::Vector3d dims = 2*radius*Eigen::Vector3d::Ones();
+math::Vector3d dims = 2*radius*math::Vector3d::Ones();
 double mass = default_shape_density * 4.0*M_PI*pow(radius, 2)
               * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeEllipsoidProperties(
@@ -410,7 +410,7 @@ simulation:
 
 ```cpp
 Inertia inertia;
-inertia.setMoment(1e-8*Eigen::Matrix3d::Identity());
+inertia.setMoment(1e-8*math::Matrix3d::Identity());
 inertia.setMass(1e-8);
 bn->setInertia(inertia);
 ```
@@ -424,7 +424,7 @@ grab that shape and reduce the value of its alpha channel:
 
 ```
 auto shape = bn->getShapeNodesWith<VisualAspect>()[0];
-Eigen::Vector4d color = shape->getVisualAspect()->getRGBA();
+math::Vector4d color = shape->getVisualAspect()->getRGBA();
 color[3] = 0.4;
 shape->getVisualAspect()->setRGBA(color);
 ```
@@ -442,7 +442,7 @@ down:
 
 ```cpp
 double width = default_shape_height, height = 2*default_shape_width;
-Eigen::Vector3d dims(width, width, height);
+math::Vector3d dims(width, width, height);
 dims *= 0.6;
 std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
 ```
@@ -484,7 +484,7 @@ Now we can give the new rigid BodyNode a regular box shape:
 ```cpp
 double box_shape_height = default_shape_height;
 std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
-      box_shape_height*Eigen::Vector3d::Ones());
+      box_shape_height*math::Vector3d::Ones());
 
 bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 ```
@@ -492,8 +492,8 @@ bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 To make the box protrude, we'll shift it away from the center of its parent:
 
 ```cpp
-Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
+math::Isometry3d tf(math::Isometry3d::Identity());
+tf.translation() = math::Vector3d(box_shape_height/2.0, 0, 0);
 bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 ```
 
@@ -525,8 +525,8 @@ First, let's create a zero vector for the position:
 math::Vector6d positions(math::Vector6d::Zero());
 ```
 
-You'll notice that this is an Eigen::Vector**6**d rather than the usual
-Eigen::Vector**3**d. This vector has six components because the root BodyNode
+You'll notice that this is an math::Vector**6**d rather than the usual
+math::Vector**3**d. This vector has six components because the root BodyNode
 has 6 degrees of freedom: three for orientation and three for translation.
 Because we follow Roy Featherstone's Spatial Vector convention, the **first**
 three components are for **orientation** using a logmap (also known as angle-axis)
@@ -638,7 +638,7 @@ velocity properties that we want the Skeleton to have. First, we'll place a
 SimpleFrame at the Skeleton's center of mass:
 
 ```cpp
-Eigen::Isometry3d centerTf(Eigen::Isometry3d::Identity());
+math::Isometry3d centerTf(math::Isometry3d::Identity());
 centerTf.translation() = object->getCOM();
 SimpleFrame center(Frame::World(), "center", centerTf);
 ```
@@ -671,8 +671,8 @@ We just use the default values unless randomization is turned on.
 Now we'll convert those speeds into directional velocities:
 
 ```cpp
-Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
-Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
+math::Vector3d v = speed * math::Vector3d(cos(angle), 0.0, sin(angle));
+math::Vector3d w = angular_speed * math::Vector3d::UnitY();
 ```
 
 And now we'll use those vectors to set the velocity properties of the SimpleFrame:
@@ -758,9 +758,9 @@ EulerJoint and FreeJoint.
 for(size_t i=1; i < ring->getNumJoints(); ++i)
 {
   Joint* joint = ring->getJoint(i);
-  Eigen::AngleAxisd rotation(angle, Eigen::Vector3d(0, 1, 0));
-  Eigen::Vector3d restPos = BallJoint::convertToPositions(
-        Eigen::Matrix3d(rotation));
+  math::AngleAxisd rotation(angle, math::Vector3d(0, 1, 0));
+  math::Vector3d restPos = BallJoint::convertToPositions(
+        math::Matrix3d(rotation));
 
   // TODO: Set the rest position
 }
@@ -802,7 +802,7 @@ BodyNode* tail = ring->getBodyNode(ring->getNumBodyNodes()-1);
 Now we want to compute the offset where the BallJoint constraint should be located:
 
 ```cpp
-Eigen::Vector3d offset = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+math::Vector3d offset = math::Vector3d(0, 0, default_shape_height / 2.0);
 offset = tail->getWorldTransform() * offset;
 ```
 

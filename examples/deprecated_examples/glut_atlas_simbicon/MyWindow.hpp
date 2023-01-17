@@ -58,7 +58,7 @@ public:
 
 private:
   /// \brief External force to exert on Atlas robot
-  Eigen::Vector3d mForce;
+  dart::math::Vector3d mForce;
 
   /// \brief Number of frames for applying external force
   int mImpulseDuration;

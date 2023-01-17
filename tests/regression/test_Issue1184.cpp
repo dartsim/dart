@@ -56,7 +56,7 @@ TEST(Issue1184, Accuracy)
   std::function<ShapeInfo()> makePlaneGround = []() {
     return ShapeInfo{
         std::make_shared<dart::dynamics::PlaneShape>(
-            Eigen::Vector3d::UnitZ(), 0.0),
+            math::Vector3d::UnitZ(), 0.0),
         0.0};
   };
 
@@ -64,14 +64,14 @@ TEST(Issue1184, Accuracy)
     const double thickness = 0.1;
     return ShapeInfo{
         std::make_shared<dart::dynamics::BoxShape>(
-            Eigen::Vector3d(100.0, 100.0, thickness)),
+            math::Vector3d(100.0, 100.0, thickness)),
         -thickness / 2.0};
   };
 
   std::function<dart::dynamics::ShapePtr(double)> makeBoxObject
       = [](const double s) -> dart::dynamics::ShapePtr {
     return std::make_shared<dart::dynamics::BoxShape>(
-        Eigen::Vector3d::Constant(2 * s));
+        math::Vector3d::Constant(2 * s));
   };
 
   std::function<dart::dynamics::ShapePtr(double)> makeSphereObject
@@ -103,10 +103,10 @@ TEST(Issue1184, Accuracy)
           world->getConstraintSolver()->setCollisionDetector(
               dart::collision::BulletCollisionDetector::create());
 
-          Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();
+          math::Isometry3d tf_object = math::Isometry3d::Identity();
           const double initialHeight
               = falling ? dropHeight + halfsize : halfsize;
-          tf_object.translate(initialHeight * Eigen::Vector3d::UnitZ());
+          tf_object.translate(initialHeight * math::Vector3d::UnitZ());
 
           auto object = dart::dynamics::Skeleton::create("ball");
           object->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
@@ -129,8 +129,8 @@ TEST(Issue1184, Accuracy)
                   dart::dynamics::CollisionAspect,
                   dart::dynamics::DynamicsAspect>(groundInfo.shape);
 
-          Eigen::Isometry3d tf_ground = Eigen::Isometry3d::Identity();
-          tf_ground.translate(groundInfo.offset * Eigen::Vector3d::UnitZ());
+          math::Isometry3d tf_ground = math::Isometry3d::Identity();
+          tf_ground.translate(groundInfo.offset * math::Vector3d::UnitZ());
           ground->getJoint(0)->setTransformFromParentBodyNode(tf_ground);
 
           world->addSkeleton(ground);

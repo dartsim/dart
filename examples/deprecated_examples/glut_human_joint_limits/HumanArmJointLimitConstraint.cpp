@@ -294,7 +294,7 @@ void HumanArmJointLimitConstraint::update()
 
     // TODO: Normalize grad seems unnecessary?
 
-    Eigen::Vector4d q_d;
+    math::Vector4d q_d;
     q_d << qz_d, qx_d, qy_d, qe_d;
     mNegativeVel = -mJacobian.dot(q_d);
 
@@ -373,7 +373,7 @@ void HumanArmJointLimitConstraint::getVelocityChange(
 
   if (mShldJoint->getSkeleton()->isImpulseApplied())
   {
-    Eigen::Vector4d delq_d;
+    math::Vector4d delq_d;
     for (std::size_t i = 0; i < 3; i++)
     {
       delq_d[i] = mShldJoint->getVelocityChange(i);

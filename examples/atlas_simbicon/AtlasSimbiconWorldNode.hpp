@@ -64,7 +64,7 @@ public:
 
 protected:
   std::unique_ptr<Controller> mController;
-  Eigen::Vector3d mExternalForce;
+  dart::math::Vector3d mExternalForce;
   int mForceDuration;
 };
 

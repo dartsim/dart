@@ -43,10 +43,12 @@
 #define FORCE_ON_RIGIDBODY 500.0;
 #define FORCE_ON_VERTEX 1.00;
 
+using namespace dart::math;
+
 MyWindow::MyWindow() : SoftSimWindow()
 {
-  mForceOnRigidBody = Eigen::Vector3d::Zero();
-  mForceOnVertex = Eigen::Vector3d::Zero();
+  mForceOnRigidBody = Vector3d::Zero();
+  mForceOnVertex = Vector3d::Zero();
   mImpulseDuration = 0.0;
 }
 
@@ -75,7 +77,7 @@ void MyWindow::drawWorld() const
 {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  //  Eigen::Vector4d color;
+  //  Vector4d color;
   //  color << 0.5, 0.8, 0.6, 1.0;
   //  mWorld->getSkeleton(0)->draw(mRI, color, false);
 
@@ -84,9 +86,8 @@ void MyWindow::drawWorld() const
     dart::dynamics::SkeletonPtr Skeleton = mWorld->getSkeleton(1);
     dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(3);
     softBodyNode->addExtForce(mForceOnRigidBody);
-    Eigen::Vector3d poa
-        = softBodyNode->getTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
-    Eigen::Vector3d start = poa - mForceOnRigidBody / 25.0;
+    Vector3d poa = softBodyNode->getTransform() * Vector3d(0.0, 0.0, 0.0);
+    Vector3d start = poa - mForceOnRigidBody / 25.0;
     double len = mForceOnRigidBody.norm() / 25.0;
     dart::gui::drawArrow3D(start, mForceOnRigidBody, len, 0.025, 0.05);
   }

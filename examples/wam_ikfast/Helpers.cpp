@@ -36,46 +36,48 @@
 
 #include <sstream>
 
+using namespace dart;
+using namespace dart::math;
+using namespace dart::dynamics;
+
 //==============================================================================
-dart::dynamics::SkeletonPtr createGround()
+SkeletonPtr createGround()
 {
   // Create a Skeleton to represent the ground
-  dart::dynamics::SkeletonPtr ground
-      = dart::dynamics::Skeleton::create("ground");
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  SkeletonPtr ground = Skeleton::create("ground");
+  Isometry3d tf(Isometry3d::Identity());
   double thickness = 0.01;
-  tf.translation() = Eigen::Vector3d(0, 0, -thickness / 2.0);
-  dart::dynamics::WeldJoint::Properties joint;
+  tf.translation() = Vector3d(0, 0, -thickness / 2.0);
+  WeldJoint::Properties joint;
   joint.mT_ParentBodyToJoint = tf;
-  ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr, joint);
-  dart::dynamics::ShapePtr groundShape
-      = std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d(10, 10, thickness));
+  ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
+  ShapePtr groundShape
+      = std::make_shared<BoxShape>(Vector3d(10, 10, thickness));
 
   auto shapeNode = ground->getBodyNode(0)
                        ->createShapeNodeWith<
-                           dart::dynamics::VisualAspect,
-                           dart::dynamics::CollisionAspect,
-                           dart::dynamics::DynamicsAspect>(groundShape);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue(0.2));
+                           VisualAspect,
+                           CollisionAspect,
+                           DynamicsAspect>(groundShape);
+  shapeNode->getVisualAspect()->setColor(Colord::Blue(0.2));
 
   return ground;
 }
 
 //==============================================================================
-dart::dynamics::SkeletonPtr createWam()
+SkeletonPtr createWam()
 {
   dart::io::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
       "herb_description", DART_DATA_LOCAL_PATH "/urdf/wam");
-  dart::dynamics::SkeletonPtr wam
+  SkeletonPtr wam
       = urdfParser.parseSkeleton(DART_DATA_LOCAL_PATH "/urdf/wam/wam.urdf");
 
   return wam;
 }
 
 //==============================================================================
-void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam)
+void setStartupConfiguration(const SkeletonPtr& wam)
 {
   wam->getDof("/j1")->setPosition(0.0);
   wam->getDof("/j2")->setPosition(0.0);
@@ -87,23 +89,20 @@ void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam)
 }
 
 //==============================================================================
-void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
+void setupEndEffectors(const SkeletonPtr& wam)
 {
-  Eigen::Vector3d linearBounds
-      = Eigen::Vector3d::Constant(dart::math::inf<double>());
+  Vector3d linearBounds = Vector3d::Constant(inf<double>());
 
-  Eigen::Vector3d angularBounds
-      = Eigen::Vector3d::Constant(dart::math::inf<double>());
+  Vector3d angularBounds = Vector3d::Constant(inf<double>());
 
-  Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
-  tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
+  Isometry3d tf_hand(Isometry3d::Identity());
+  tf_hand.translate(Vector3d(0.0, 0.0, -0.09));
 
-  dart::dynamics::EndEffector* ee
-      = wam->getBodyNode("/wam7")->createEndEffector("ee");
+  EndEffector* ee = wam->getBodyNode("/wam7")->createEndEffector("ee");
   ee->setDefaultRelativeTransform(tf_hand, true);
 
   auto wam7_target = std::make_shared<dart::gui::osg::InteractiveFrame>(
-      dart::dynamics::Frame::World(), "lh_target");
+      Frame::World(), "lh_target");
 
   ee->getIK(true)->setTarget(wam7_target);
 
@@ -117,7 +116,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
-  ee->getIK()->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(
+  ee->getIK()->setGradientMethod<SharedLibraryIkFast>(
       libName, ikFastDofs, ikFastFreeDofs);
 
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
@@ -125,15 +124,14 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 }
 
 //==============================================================================
-void enableDragAndDrops(
-    dart::gui::osg::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam)
+void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& wam)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(wam->getBodyNode(i), false, false);
 
   for (std::size_t i = 0; i < wam->getNumEndEffectors(); ++i) {
-    dart::dynamics::EndEffector* ee = wam->getEndEffector(i);
+    EndEffector* ee = wam->getEndEffector(i);
     if (!ee->getIK())
       continue;
 

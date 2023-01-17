@@ -102,8 +102,8 @@ public:
       mWorld->getConstraintSolver()->addConstraint(constraint_rleg);
     }
 
-    // Eigen::Vector3d force = Eigen::Vector3d(0,0,-4);
-    // Eigen::Vector3d location(0.0, -0.2, 0.0);
+    // math::Vector3d force = math::Vector3d(0,0,-4);
+    // math::Vector3d location(0.0, -0.2, 0.0);
     // mWorld->getSkeleton("human")->getBodyNode("l-lowerarm")->addExtForce(force,
     // location, true, true);
     SimWindow::timeStepping();

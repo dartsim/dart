@@ -172,17 +172,17 @@ public:
 
 protected:
   /// \brief Get center of mass
-  Eigen::Vector3d getCOM() const;
+  dart::math::Vector3d getCOM() const;
 
   /// \brief Get velocity of center of mass
-  Eigen::Vector3d getCOMVelocity() const;
+  dart::math::Vector3d getCOMVelocity() const;
 
   /// \brief Get a frame such that:
   ///        1) The origin is at the COM
   ///        2) The z-axis is perpendicular to the ground (y-axis by default)
   ///        3) The x-axis is a projected x-axis of pelvis on to perpendicular
   ///           plane against to the z-axis
-  Eigen::Isometry3d getCOMFrame() const;
+  dart::math::Isometry3d getCOMFrame() const;
 
   /// \brief Get sagital com distance
   double getSagitalCOMDistance();
@@ -197,13 +197,13 @@ protected:
   double getCoronalCOMVelocity();
 
   /// \brief Get stance ankle position
-  Eigen::Vector3d getStanceAnklePosition() const;
+  dart::math::Vector3d getStanceAnklePosition() const;
 
   /// \brief Get left ankle position
-  Eigen::Vector3d getLeftAnklePosition() const;
+  dart::math::Vector3d getLeftAnklePosition() const;
 
   /// \brief Get right ankle position
-  Eigen::Vector3d getRightAnklePosition() const;
+  dart::math::Vector3d getRightAnklePosition() const;
 
   // TODO(JS): Not implemented yet
   /// \brief Get global pelvis upvector angle on sagital plane
@@ -250,7 +250,7 @@ protected:
   double mElapsedTime;
 
   /// \brief Desired joint positions
-  Eigen::VectorXd mDesiredJointPositions;
+  dart::math::VectorXd mDesiredJointPositions;
 
   /// \brief Desired global angle of swing leg on sagital plane
   double mDesiredGlobalSwingLegAngleOnSagital;
@@ -265,36 +265,37 @@ protected:
   double mDesiredGlobalPelvisAngleOnCoronal;
 
   /// \brief Proportional gain for PD controller
-  Eigen::VectorXd mKp;
+  dart::math::VectorXd mKp;
 
   /// \brief Derivative gain PD controller
-  Eigen::VectorXd mKd;
+  dart::math::VectorXd mKd;
 
   /// \brief Feedback gain for com
-  Eigen::VectorXd mSagitalCd;
+  dart::math::VectorXd mSagitalCd;
 
   /// \brief Feedback gain for velocity of com
-  Eigen::VectorXd mSagitalCv;
+  dart::math::VectorXd mSagitalCv;
 
   /// \brief Feedback gain for com
-  Eigen::VectorXd mCoronalCd;
+  dart::math::VectorXd mCoronalCd;
 
   /// \brief Feedback gain for velocity of com
-  Eigen::VectorXd mCoronalCv;
+  dart::math::VectorXd mCoronalCv;
 
   /// \brief Computeed control force
-  Eigen::VectorXd mTorque;
+  dart::math::VectorXd mTorque;
 
   /// \brief Joint map
   std::map<const std::string, int> mJointMap;
 
 private:
   /// \brief Get the parent joint's position of _bodyNode
-  Eigen::Vector3d _getJointPosition(dart::dynamics::BodyNode* _bodyNode) const;
+  dart::math::Vector3d _getJointPosition(
+      dart::dynamics::BodyNode* _bodyNode) const;
 
   /// \brief Compute the angle between two vectors
   double _getAngleBetweenTwoVectors(
-      const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2) const;
+      const dart::math::Vector3d& _v1, const dart::math::Vector3d& _v2) const;
 
   /// \brief Update torque for torso and swing hip
   void _updateTorqueForStanceLeg();
@@ -330,7 +331,7 @@ private:
   std::size_t mSagitalRightHip;
 
   /// \brief Desired joint positions with balance feedback
-  Eigen::VectorXd mDesiredJointPositionsBalance;
+  dart::math::VectorXd mDesiredJointPositionsBalance;
 };
 
 #endif // EXAMPLES_ATLASSIMBICON_STATE_HPP_

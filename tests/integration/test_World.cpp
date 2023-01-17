@@ -63,41 +63,41 @@ TEST(World, AddingAndRemovingSkeletons)
 
   //-------------------- Test World::removeSkeleton() ------------------------
   SkeletonPtr skeleton1 = createThreeLinkRobot(
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_X,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Y,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Z,
       false,
       false);
 
   SkeletonPtr skeleton2 = createThreeLinkRobot(
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_X,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Y,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Z,
       false,
       false);
 
   SkeletonPtr skeleton3 = createThreeLinkRobot(
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_X,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Y,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Z,
       false,
       false);
 
   SkeletonPtr skeleton4 = createThreeLinkRobot(
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_X,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Y,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
+      math::Vector3d(1.0, 1.0, 1.0),
       DOF_Z,
       false,
       false);
@@ -234,7 +234,7 @@ TEST(World, Cloning)
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
 
         // Generate a random command vector
-        Eigen::VectorXd commands = skel->getCommands();
+        math::VectorXd commands = skel->getCommands();
         for (int q = 0; q < commands.size(); ++q)
           commands[q] = Random::uniform(-0.1, 0.1);
 
@@ -340,11 +340,11 @@ simulation::WorldPtr createWorld()
   assert(world != nullptr);
 
   // Create and initialize the world
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setGravity(math::Vector3d(0.0, -9.81, 0.0));
   world->setTimeStep(1.0 / 2000);
 
   const auto dof = world->getSkeleton(0)->getNumDofs();
-  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
+  math::VectorXd initPose = math::VectorXd::Zero(static_cast<int>(dof));
   initPose[20] = 3.14159 * 0.4;
   initPose[23] = 3.14159 * 0.4;
   initPose[26] = 3.14159 * 0.4;
@@ -356,8 +356,8 @@ simulation::WorldPtr createWorld()
   BodyNode* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
   EXPECT_TRUE(bd1 != nullptr);
   EXPECT_TRUE(bd2 != nullptr);
-  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
-  const Eigen::Vector3d jointPos = bd1->getTransform() * offset;
+  const math::Vector3d offset(0.0, 0.025, 0.0);
+  const math::Vector3d jointPos = bd1->getTransform() * offset;
   auto cl = std::make_shared<dynamics::BallJointConstraint>(bd1, bd2, jointPos);
   world->getConstraintSolver()->addConstraint(cl);
 

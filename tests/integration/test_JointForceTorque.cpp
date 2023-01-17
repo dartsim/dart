@@ -72,7 +72,7 @@ TEST(JointForceTorqueTest, Static)
   EXPECT_EQ(model_1->getNumBodyNodes(), 2);
   EXPECT_EQ(model_1->getNumJoints(), 2);
 
-  world->setGravity(Eigen::Vector3d(0, 0, -50));
+  world->setGravity(math::Vector3d(0, 0, -50));
 
   // Simulate 1 step
   world->step();
@@ -95,7 +95,7 @@ TEST(JointForceTorqueTest, Static)
   auto joint_12 = model_1->getJoint("joint_12");
   ASSERT_NE(joint_12, nullptr);
 
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  math::Isometry3d tf = math::Isometry3d::Identity();
 
   // Run 10 steps
   for (auto i = 0u; i < 10; ++i) {
@@ -174,7 +174,7 @@ TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
   EXPECT_EQ(model_1->getNumBodyNodes(), 2);
   EXPECT_EQ(model_1->getNumJoints(), 2);
 
-  world->setGravity(Eigen::Vector3d(0, 0, -50));
+  world->setGravity(math::Vector3d(0, 0, -50));
 
   // Simulate 1 step
   world->step();
@@ -198,14 +198,14 @@ TEST(JointForceTorqueTest, ForceTorqueAtJointLimits)
   ASSERT_NE(joint_12, nullptr);
 
   // Change gravity so that the top link topples over, then remeasure
-  world->setGravity(Eigen::Vector3d(-30, 10, -50));
+  world->setGravity(math::Vector3d(-30, 10, -50));
 
   // Wait for dynamics to be stabilized
   for (auto i = 0; i < 2000; ++i) {
     world->step();
   }
 
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  math::Isometry3d tf = math::Isometry3d::Identity();
 
   // Run 5 steps
   for (auto i = 0u; i < 5; ++i) {
@@ -294,7 +294,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
       model_1->getRootJoint()->getType(),
       dart::dynamics::WeldJoint::getStaticType());
 
-  world->setGravity(Eigen::Vector3d(0, 0, -50));
+  world->setGravity(math::Vector3d(0, 0, -50));
 
   // Simulate 1 step
   world->step();
@@ -319,7 +319,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   auto joint_23 = model_1->getJoint("joint2");
   ASSERT_NE(joint_23, nullptr);
 
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  math::Isometry3d tf = math::Isometry3d::Identity();
 
   // Run 4500 steps
   const double kp1 = 5e+4;

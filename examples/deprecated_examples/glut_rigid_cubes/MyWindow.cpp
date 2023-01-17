@@ -32,9 +32,11 @@
 
 #include "MyWindow.hpp"
 
+using namespace dart::math;
+
 MyWindow::MyWindow() : SimWindow()
 {
-  mForce = Eigen::Vector3d::Zero();
+  mForce = Vector3d::Zero();
 }
 
 MyWindow::~MyWindow() {}

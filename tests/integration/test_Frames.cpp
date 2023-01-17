@@ -43,27 +43,27 @@ using namespace math;
 using namespace dynamics;
 
 template <int N>
-Eigen::Matrix<double, N, 1> random_vec(double limit = 100)
+math::Matrix<double, N, 1> random_vec(double limit = 100)
 {
-  return Random::uniform<Eigen::Matrix<double, N, 1>>(-limit, limit);
+  return Random::uniform<math::Matrix<double, N, 1>>(-limit, limit);
 }
 
 void randomize_transform(
-    Eigen::Isometry3d& tf,
+    math::Isometry3d& tf,
     double translation_limit = 100,
     double rotation_limit = 100)
 {
-  Eigen::Vector3d r = random_vec<3>(translation_limit);
-  Eigen::Vector3d theta = random_vec<3>(rotation_limit);
+  math::Vector3d r = random_vec<3>(translation_limit);
+  math::Vector3d theta = random_vec<3>(rotation_limit);
 
   tf.setIdentity();
   tf.translate(r);
 
   if (theta.norm() > 0)
-    tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+    tf.rotate(math::AngleAxisd(theta.norm(), theta.normalized()));
 }
 
-void randomize_transforms(std::vector<Eigen::Isometry3d>& tfs)
+void randomize_transforms(std::vector<math::Isometry3d>& tfs)
 {
   for (std::size_t i = 0; i < tfs.size(); ++i) {
     randomize_transform(tfs[i]);
@@ -73,7 +73,7 @@ void randomize_transforms(std::vector<Eigen::Isometry3d>& tfs)
 void compute_spatial_velocity(
     const math::Vector6d& v_parent,
     const math::Vector6d& v_relative,
-    const Eigen::Isometry3d& tf_rel,
+    const math::Isometry3d& tf_rel,
     math::Vector6d& v_child)
 {
   v_child = math::AdInvT(tf_rel, v_parent) + v_relative;
@@ -84,7 +84,7 @@ void compute_spatial_acceleration(
     const math::Vector6d& a_relative,
     const math::Vector6d& v_child,
     const math::Vector6d& v_rel,
-    const Eigen::Isometry3d& tf_rel,
+    const math::Isometry3d& tf_rel,
     math::Vector6d& a_child)
 {
   a_child
@@ -92,16 +92,16 @@ void compute_spatial_acceleration(
 }
 
 void compute_velocity(
-    const Eigen::Vector3d& v_parent,
-    const Eigen::Vector3d& w_parent,
-    const Eigen::Vector3d& v_rel,
-    const Eigen::Vector3d& w_rel,
-    const Eigen::Vector3d& offset,
-    const Eigen::Isometry3d& tf_parent,
-    Eigen::Vector3d& v_child,
-    Eigen::Vector3d& w_child)
+    const math::Vector3d& v_parent,
+    const math::Vector3d& w_parent,
+    const math::Vector3d& v_rel,
+    const math::Vector3d& w_rel,
+    const math::Vector3d& offset,
+    const math::Isometry3d& tf_parent,
+    math::Vector3d& v_child,
+    math::Vector3d& w_child)
 {
-  const Eigen::Matrix3d& R = tf_parent.rotation();
+  const math::Matrix3d& R = tf_parent.rotation();
 
   v_child = v_parent + R * v_rel + w_parent.cross(R * offset);
 
@@ -109,19 +109,19 @@ void compute_velocity(
 }
 
 void compute_acceleration(
-    const Eigen::Vector3d& a_parent,
-    const Eigen::Vector3d& alpha_parent,
-    const Eigen::Vector3d& w_parent,
-    const Eigen::Vector3d& a_rel,
-    const Eigen::Vector3d& alpha_rel,
-    const Eigen::Vector3d& v_rel,
-    const Eigen::Vector3d& w_rel,
-    const Eigen::Vector3d& offset,
-    const Eigen::Isometry3d& tf_parent,
-    Eigen::Vector3d& a_child,
-    Eigen::Vector3d& alpha_child)
+    const math::Vector3d& a_parent,
+    const math::Vector3d& alpha_parent,
+    const math::Vector3d& w_parent,
+    const math::Vector3d& a_rel,
+    const math::Vector3d& alpha_rel,
+    const math::Vector3d& v_rel,
+    const math::Vector3d& w_rel,
+    const math::Vector3d& offset,
+    const math::Isometry3d& tf_parent,
+    math::Vector3d& a_child,
+    math::Vector3d& alpha_child)
 {
-  const Eigen::Matrix3d& R = tf_parent.rotation();
+  const math::Matrix3d& R = tf_parent.rotation();
 
   a_child = a_parent + R * a_rel + alpha_parent.cross(R * offset)
             + 2 * w_parent.cross(R * v_rel)
@@ -147,10 +147,10 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // -- Test Position --------------------------------------------------------
   EXPECT_TRANSFORM_NEAR(
-      D.getTransform(), Eigen::Isometry3d::Identity(), tolerance);
+      D.getTransform(), math::Isometry3d::Identity(), tolerance);
 
-  std::vector<Eigen::Isometry3d> tfs;
-  tfs.resize(frames.size(), Eigen::Isometry3d::Identity());
+  std::vector<math::Isometry3d> tfs;
+  tfs.resize(frames.size(), math::Isometry3d::Identity());
 
   randomize_transforms(tfs);
 
@@ -161,12 +161,12 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   for (std::size_t i = 0; i < frames.size(); ++i) {
     Frame* F = frames[i];
-    Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
+    math::Isometry3d expectation(math::Isometry3d::Identity());
     for (std::size_t j = 0; j <= i; ++j) {
       expectation = expectation * tfs[j];
     }
 
-    Eigen::Isometry3d actual = F->getTransform();
+    math::Isometry3d actual = F->getTransform();
     EXPECT_TRANSFORM_NEAR(actual, expectation, tolerance);
   }
 
@@ -176,7 +176,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     F->setRelativeTransform(tfs[i]);
   }
 
-  Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
+  math::Isometry3d expectation(math::Isometry3d::Identity());
   for (std::size_t j = 0; j < frames.size(); ++j)
     expectation = expectation * tfs[j];
 
@@ -217,11 +217,11 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Testing conversion beteween spatial and classical velocities
   {
-    std::vector<Eigen::Vector3d> v_rels(frames.size());
-    std::vector<Eigen::Vector3d> w_rels(frames.size());
+    std::vector<math::Vector3d> v_rels(frames.size());
+    std::vector<math::Vector3d> w_rels(frames.size());
 
-    std::vector<Eigen::Vector3d> v_total(frames.size());
-    std::vector<Eigen::Vector3d> w_total(frames.size());
+    std::vector<math::Vector3d> v_total(frames.size());
+    std::vector<math::Vector3d> w_total(frames.size());
 
     for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<3>();
@@ -230,10 +230,10 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       SimpleFrame* F = frames[i];
       F->setClassicDerivatives(v_rels[i], w_rels[i]);
 
-      Eigen::Vector3d offset = F->getRelativeTransform().translation();
+      math::Vector3d offset = F->getRelativeTransform().translation();
 
-      Eigen::Isometry3d tf = i > 0 ? frames[i - 1]->getTransform()
-                                   : Eigen::Isometry3d::Identity();
+      math::Isometry3d tf = i > 0 ? frames[i - 1]->getTransform()
+                                  : math::Isometry3d::Identity();
 
       if (i > 0)
         compute_velocity(
@@ -247,8 +247,8 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             w_total[i]);
       else
         compute_velocity(
-            Eigen::Vector3d::Zero(),
-            Eigen::Vector3d::Zero(),
+            math::Vector3d::Zero(),
+            math::Vector3d::Zero(),
             v_rels[i],
             w_rels[i],
             offset,
@@ -259,8 +259,8 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
     for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
-      Eigen::Vector3d v_actual = F->getLinearVelocity();
-      Eigen::Vector3d w_actual = F->getAngularVelocity();
+      math::Vector3d v_actual = F->getLinearVelocity();
+      math::Vector3d w_actual = F->getAngularVelocity();
 
       EXPECT_VECTOR_NEAR(v_total[i], v_actual, tolerance);
       EXPECT_VECTOR_NEAR(w_total[i], w_actual, tolerance);
@@ -284,7 +284,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       SimpleFrame* F = frames[i];
       F->setRelativeSpatialVelocity(v_rels[i]);
       F->setRelativeSpatialAcceleration(a_rels[i]);
-      Eigen::Isometry3d tf = F->getRelativeTransform();
+      math::Isometry3d tf = F->getRelativeTransform();
 
       if (i > 0) {
         compute_spatial_velocity(v_total[i - 1], v_rels[i], tf, v_total[i]);
@@ -325,17 +325,17 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
     // Test offset computations
     for (std::size_t i = 0; i < frames.size(); ++i) {
-      Eigen::Vector3d offset = random_vec<3>();
+      math::Vector3d offset = random_vec<3>();
       Frame* F = frames[i];
 
-      Eigen::Vector3d v_actual = F->getLinearVelocity(offset);
-      Eigen::Vector3d w_actual = F->getAngularVelocity();
-      Eigen::Vector3d v_expect, w_expect;
+      math::Vector3d v_actual = F->getLinearVelocity(offset);
+      math::Vector3d w_actual = F->getAngularVelocity();
+      math::Vector3d v_expect, w_expect;
       compute_velocity(
           F->getLinearVelocity(),
           F->getAngularVelocity(),
-          Eigen::Vector3d::Zero(),
-          Eigen::Vector3d::Zero(),
+          math::Vector3d::Zero(),
+          math::Vector3d::Zero(),
           offset,
           F->getWorldTransform(),
           v_expect,
@@ -344,17 +344,17 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       EXPECT_VECTOR_DOUBLE_EQ(v_expect, v_actual);
       EXPECT_VECTOR_DOUBLE_EQ(w_expect, w_actual);
 
-      Eigen::Vector3d a_actual = F->getLinearAcceleration(offset);
-      Eigen::Vector3d alpha_actual = F->getAngularAcceleration();
-      Eigen::Vector3d a_expect, alpha_expect;
+      math::Vector3d a_actual = F->getLinearAcceleration(offset);
+      math::Vector3d alpha_actual = F->getAngularAcceleration();
+      math::Vector3d a_expect, alpha_expect;
       compute_acceleration(
           F->getLinearAcceleration(),
           F->getAngularAcceleration(),
           F->getAngularVelocity(),
-          Eigen::Vector3d::Zero(),
-          Eigen::Vector3d::Zero(),
-          Eigen::Vector3d::Zero(),
-          Eigen::Vector3d::Zero(),
+          math::Vector3d::Zero(),
+          math::Vector3d::Zero(),
+          math::Vector3d::Zero(),
+          math::Vector3d::Zero(),
           offset,
           F->getWorldTransform(),
           a_expect,
@@ -367,15 +367,15 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Testing conversion between spatial and classical accelerations
   {
-    std::vector<Eigen::Vector3d> v_rels(frames.size());
-    std::vector<Eigen::Vector3d> w_rels(frames.size());
-    std::vector<Eigen::Vector3d> a_rels(frames.size());
-    std::vector<Eigen::Vector3d> alpha_rels(frames.size());
+    std::vector<math::Vector3d> v_rels(frames.size());
+    std::vector<math::Vector3d> w_rels(frames.size());
+    std::vector<math::Vector3d> a_rels(frames.size());
+    std::vector<math::Vector3d> alpha_rels(frames.size());
 
-    std::vector<Eigen::Vector3d> v_total(frames.size());
-    std::vector<Eigen::Vector3d> w_total(frames.size());
-    std::vector<Eigen::Vector3d> a_total(frames.size());
-    std::vector<Eigen::Vector3d> alpha_total(frames.size());
+    std::vector<math::Vector3d> v_total(frames.size());
+    std::vector<math::Vector3d> w_total(frames.size());
+    std::vector<math::Vector3d> a_total(frames.size());
+    std::vector<math::Vector3d> alpha_total(frames.size());
 
     for (std::size_t i = 0; i < frames.size(); ++i) {
       v_rels[i] = random_vec<3>();
@@ -384,15 +384,15 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       alpha_rels[i] = random_vec<3>();
 
       SimpleFrame* F = frames[i];
-      Eigen::Isometry3d rel_tf;
+      math::Isometry3d rel_tf;
       randomize_transform(rel_tf);
       F->setRelativeTransform(rel_tf);
       F->setClassicDerivatives(v_rels[i], w_rels[i], a_rels[i], alpha_rels[i]);
 
-      Eigen::Vector3d offset = F->getRelativeTransform().translation();
+      math::Vector3d offset = F->getRelativeTransform().translation();
 
-      Eigen::Isometry3d tf = i > 0 ? frames[i - 1]->getTransform()
-                                   : Eigen::Isometry3d::Identity();
+      math::Isometry3d tf = i > 0 ? frames[i - 1]->getTransform()
+                                  : math::Isometry3d::Identity();
 
       if (i > 0) {
         compute_velocity(
@@ -418,8 +418,8 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             alpha_total[i]);
       } else {
         compute_velocity(
-            Eigen::Vector3d::Zero(),
-            Eigen::Vector3d::Zero(),
+            math::Vector3d::Zero(),
+            math::Vector3d::Zero(),
             v_rels[i],
             w_rels[i],
             offset,
@@ -427,9 +427,9 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
             v_total[i],
             w_total[i]);
         compute_acceleration(
-            Eigen::Vector3d::Zero(),
-            Eigen::Vector3d::Zero(),
-            Eigen::Vector3d::Zero(),
+            math::Vector3d::Zero(),
+            math::Vector3d::Zero(),
+            math::Vector3d::Zero(),
             a_rels[i],
             alpha_rels[i],
             v_rels[i],
@@ -443,10 +443,10 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
     for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
-      Eigen::Vector3d v_actual = F->getLinearVelocity();
-      Eigen::Vector3d w_actual = F->getAngularVelocity();
-      Eigen::Vector3d a_actual = F->getLinearAcceleration();
-      Eigen::Vector3d alpha_actual = F->getAngularAcceleration();
+      math::Vector3d v_actual = F->getLinearVelocity();
+      math::Vector3d w_actual = F->getAngularVelocity();
+      math::Vector3d a_actual = F->getLinearAcceleration();
+      math::Vector3d alpha_actual = F->getAngularAcceleration();
 
       EXPECT_VECTOR_NEAR(v_total[i], v_actual, tolerance);
       EXPECT_VECTOR_NEAR(w_total[i], w_actual, tolerance);
@@ -458,10 +458,10 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     for (std::size_t i = 0; i < frames.size(); ++i) {
       SimpleFrame* F = frames[i];
       Frame* P = F->getParentFrame();
-      Eigen::Vector3d v_rel = F->getLinearVelocity(P, P);
-      Eigen::Vector3d w_rel = F->getAngularVelocity(P, P);
-      Eigen::Vector3d a_rel = F->getLinearAcceleration(P, P);
-      Eigen::Vector3d alpha_rel = F->getAngularAcceleration(P, P);
+      math::Vector3d v_rel = F->getLinearVelocity(P, P);
+      math::Vector3d w_rel = F->getAngularVelocity(P, P);
+      math::Vector3d a_rel = F->getLinearAcceleration(P, P);
+      math::Vector3d alpha_rel = F->getAngularAcceleration(P, P);
 
       EXPECT_VECTOR_NEAR(v_rels[i], v_rel, tolerance);
       EXPECT_VECTOR_NEAR(w_rels[i], w_rel, tolerance);
@@ -477,7 +477,7 @@ void randomize_target_values(
   for (std::size_t i = 0; i < targets.size(); ++i) {
     SimpleFrame* T = targets[i];
 
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    math::Isometry3d tf(math::Isometry3d::Identity());
     randomize_transform(tf, 1, 2 * dart::math::pi());
 
     if (spatial) {
@@ -528,10 +528,10 @@ void check_world_values(
     Frame* T = targets[i];
     Frame* F = followers[i];
 
-    const Eigen::Isometry3d& tf_error
+    const math::Isometry3d& tf_error
         = T->getWorldTransform() * F->getWorldTransform().inverse();
     math::Vector6d error;
-    Eigen::AngleAxisd rot_error(tf_error.rotation());
+    math::AngleAxisd rot_error(tf_error.rotation());
     error.block<3, 1>(0, 0) = rot_error.angle() * rot_error.axis();
     error.block<3, 1>(3, 0) = tf_error.translation();
 
@@ -570,10 +570,10 @@ void check_values(
     Frame* T = targets[i];
     Frame* F = followers[i];
 
-    const Eigen::Isometry3d& tf_error
+    const math::Isometry3d& tf_error
         = T->getTransform(relativeTo) * F->getTransform(relativeTo).inverse();
     math::Vector6d error;
-    Eigen::AngleAxisd rot_error(tf_error.rotation());
+    math::AngleAxisd rot_error(tf_error.rotation());
     error.block<3, 1>(0, 0) = rot_error.angle() * rot_error.axis();
     error.block<3, 1>(3, 0) = tf_error.translation();
 
@@ -622,19 +622,19 @@ void check_offset_computations(
     Frame* T = targets[i];
     Frame* F = followers[i];
 
-    Eigen::Isometry3d coordTf = relativeTo->getTransform(inCoordinatesOf);
+    math::Isometry3d coordTf = relativeTo->getTransform(inCoordinatesOf);
 
-    Eigen::Vector3d offset_T = random_vec<3>();
-    Eigen::Vector3d offset_F = T->getTransform(F) * offset_T;
+    math::Vector3d offset_T = random_vec<3>();
+    math::Vector3d offset_F = T->getTransform(F) * offset_T;
 
-    Eigen::Vector3d v_TO, w_TO, v_FO, w_FO, a_TO, alpha_TO, a_FO, alpha_FO;
+    math::Vector3d v_TO, w_TO, v_FO, w_FO, a_TO, alpha_TO, a_FO, alpha_FO;
 
     // Compute velocity of the offfset in the relative frame
     compute_velocity(
         T->getLinearVelocity(relativeTo, relativeTo),
         T->getAngularVelocity(relativeTo, relativeTo),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
         offset_T,
         T->getTransform(relativeTo),
         v_TO,
@@ -648,10 +648,10 @@ void check_offset_computations(
         T->getLinearAcceleration(relativeTo, relativeTo),
         T->getAngularAcceleration(relativeTo, relativeTo),
         T->getAngularVelocity(relativeTo, relativeTo),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
         offset_T,
         T->getTransform(relativeTo),
         a_TO,
@@ -663,8 +663,8 @@ void check_offset_computations(
     compute_velocity(
         F->getLinearVelocity(relativeTo, relativeTo),
         F->getAngularVelocity(relativeTo, relativeTo),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
         offset_F,
         F->getTransform(relativeTo),
         v_FO,
@@ -676,10 +676,10 @@ void check_offset_computations(
         F->getLinearAcceleration(relativeTo, relativeTo),
         F->getAngularAcceleration(relativeTo, relativeTo),
         F->getAngularVelocity(relativeTo, relativeTo),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
+        math::Vector3d::Zero(),
         offset_F,
         F->getTransform(relativeTo),
         a_FO,
@@ -687,18 +687,18 @@ void check_offset_computations(
     a_FO = coordTf.linear() * a_FO;
     alpha_FO = coordTf.linear() * alpha_FO;
 
-    Eigen::Vector3d v_TO_actual
+    math::Vector3d v_TO_actual
         = T->getLinearVelocity(offset_T, relativeTo, inCoordinatesOf);
-    Eigen::Vector3d v_FO_actual
+    math::Vector3d v_FO_actual
         = F->getLinearVelocity(offset_F, relativeTo, inCoordinatesOf);
 
     EXPECT_VECTOR_NEAR(v_TO, v_FO, tolerance);
     EXPECT_VECTOR_NEAR(v_TO, v_TO_actual, tolerance);
     EXPECT_VECTOR_NEAR(v_FO, v_FO_actual, tolerance);
 
-    Eigen::Vector3d a_TO_actual
+    math::Vector3d a_TO_actual
         = T->getLinearAcceleration(offset_T, relativeTo, inCoordinatesOf);
-    Eigen::Vector3d a_FO_actual
+    math::Vector3d a_FO_actual
         = F->getLinearAcceleration(offset_F, relativeTo, inCoordinatesOf);
 
     EXPECT_VECTOR_NEAR(a_TO, a_FO, tolerance);
@@ -765,7 +765,7 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
     for (std::size_t j = 0; j < followers.size(); ++j) {
       SimpleFrame* F = followers[i];
       SimpleFrame* T = followers[j];
-      Eigen::Isometry3d tf;
+      math::Isometry3d tf;
       randomize_transform(tf, 1, 2 * dart::math::pi());
       T->setTransform(tf, F);
       if (i != j) {

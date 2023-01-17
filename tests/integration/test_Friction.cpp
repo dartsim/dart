@@ -54,7 +54,7 @@ dynamics::SkeletonPtr createFloor()
   double floorWidth = 10.0;
   double floorHeight = 0.01;
   auto box = std::make_shared<dynamics::BoxShape>(
-      Eigen::Vector3d(floorWidth, floorWidth, floorHeight));
+      math::Vector3d(floorWidth, floorWidth, floorHeight));
   auto* shapeNode = body->createShapeNodeWith<
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
@@ -62,8 +62,8 @@ dynamics::SkeletonPtr createFloor()
   shapeNode->getVisualAspect()->setColor(dart::math::Colord::LightGray());
 
   // Put the body into position
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -0.5 - floorHeight / 2.0);
+  math::Isometry3d tf = math::Isometry3d::Identity();
+  tf.translation() = math::Vector3d(0.0, 0.0, -0.5 - floorHeight / 2.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
@@ -73,20 +73,20 @@ dynamics::SkeletonPtr createFloor()
 TEST(Friction, FrictionPerShapeNode)
 {
   auto skeleton1
-      = createBox(Eigen::Vector3d(0.3, 0.3, 0.3), Eigen::Vector3d(-0.5, 0, 0));
+      = createBox(math::Vector3d(0.3, 0.3, 0.3), math::Vector3d(-0.5, 0, 0));
   skeleton1->setName("Skeleton1");
   auto skeleton2
-      = createBox(Eigen::Vector3d(0.3, 0.3, 0.3), Eigen::Vector3d(+0.5, 0, 0));
+      = createBox(math::Vector3d(0.3, 0.3, 0.3), math::Vector3d(+0.5, 0, 0));
   skeleton2->setName("Skeleton2");
   auto skeleton3 = createBox(
-      Eigen::Vector3d(0.3, 0.3, 0.3),
-      Eigen::Vector3d(+1.5, 0, 0),
-      Eigen::Vector3d(0, 0, 0.7853981633974483));
+      math::Vector3d(0.3, 0.3, 0.3),
+      math::Vector3d(+1.5, 0, 0),
+      math::Vector3d(0, 0, 0.7853981633974483));
   skeleton3->setName("Skeleton3");
   auto skeleton4 = createBox(
-      Eigen::Vector3d(0.3, 0.3, 0.3),
-      Eigen::Vector3d(-1.5, 0, 0),
-      Eigen::Vector3d(0, 0, 0.7853981633974483));
+      math::Vector3d(0.3, 0.3, 0.3),
+      math::Vector3d(-1.5, 0, 0),
+      math::Vector3d(0, 0, 0.7853981633974483));
   skeleton4->setName("Skeleton4");
 
   auto body1 = skeleton1->getRootBodyNode();
@@ -166,7 +166,7 @@ TEST(Friction, FrictionPerShapeNode)
   // along Y axis so that gravity pushes it in x and y
   body3->getShapeNode(0)->getDynamicsAspect()->setPrimaryFrictionCoeff(0.0);
   body3->getShapeNode(0)->getDynamicsAspect()->setFirstFrictionDirection(
-      Eigen::Vector3d(0, 1, 0));
+      math::Vector3d(0, 1, 0));
   // check friction values
   EXPECT_DOUBLE_EQ(
       0.5, body3->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
@@ -216,7 +216,7 @@ TEST(Friction, FrictionPerShapeNode)
   body4->getShapeNode(0)->getDynamicsAspect()->setFirstFrictionDirectionFrame(
       Frame::World());
   body4->getShapeNode(0)->getDynamicsAspect()->setFirstFrictionDirection(
-      Eigen::Vector3d(0.5 * std::sqrt(2), 0.5 * std::sqrt(2), 0));
+      math::Vector3d(0.5 * std::sqrt(2), 0.5 * std::sqrt(2), 0));
   // check friction values
   EXPECT_DOUBLE_EQ(
       0.5, body4->getShapeNode(0)->getDynamicsAspect()->getFrictionCoeff());
@@ -240,11 +240,10 @@ TEST(Friction, FrictionPerShapeNode)
 
   // Create a world and add the rigid body
   auto world = simulation::World::create();
+  EXPECT_TRUE(test::equals(world->getGravity(), ::math::Vector3d(0, 0, -9.81)));
+  world->setGravity(math::Vector3d(0.0, -5.0, -9.81));
   EXPECT_TRUE(
-      test::equals(world->getGravity(), ::Eigen::Vector3d(0, 0, -9.81)));
-  world->setGravity(Eigen::Vector3d(0.0, -5.0, -9.81));
-  EXPECT_TRUE(
-      test::equals(world->getGravity(), ::Eigen::Vector3d(0.0, -5.0, -9.81)));
+      test::equals(world->getGravity(), ::math::Vector3d(0.0, -5.0, -9.81)));
 
   world->addSkeleton(createFloor());
   world->addSkeleton(skeleton1);

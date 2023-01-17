@@ -50,7 +50,7 @@ has turned so far. We'll use that to figure out what translational offset the
 new domino should have from the last domino:
 
 ```cpp
-Eigen::Vector3d dx = default_distance * Eigen::Vector3d(
+math::Vector3d dx = default_distance * math::Vector3d(
       cos(mTotalAngle), sin(mTotalAngle), 0.0);
 ```
 
@@ -201,9 +201,9 @@ is a label for **Lesson 1d**. This spot will get visited whenever the user
 presses 'f', so we'll apply an external force to the first domino here:
 
 ```cpp
-Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
-Eigen::Vector3d location =
-    default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+math::Vector3d force = default_push_force * math::Vector3d::UnitX();
+math::Vector3d location =
+    default_domino_height / 2.0 * math::Vector3d::UnitZ();
 mFirstDomino->getBodyNode(0)->addExtForce(force, location);
 ```
 
@@ -246,8 +246,8 @@ Experimentation has demonstrated that the following setup is good for our purpos
 
 ```cpp
 // Position its base in a reasonable way
-Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-tf.translation() = Eigen::Vector3d(-0.65, 0.0, 0.0);
+math::Isometry3d tf = math::Isometry3d::Identity();
+tf.translation() = math::Vector3d(-0.65, 0.0, 0.0);
 manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
 // Get it into a useful configuration
@@ -290,8 +290,8 @@ in the ``Controller`` class.
 First, we'll grab the current positions and velocities:
 
 ```cpp
-Eigen::VectorXd q = mManipulator->getPositions();
-Eigen::VectorXd dq = mManipulator->getVelocities();
+math::VectorXd q = mManipulator->getPositions();
+math::VectorXd dq = mManipulator->getVelocities();
 ```
 
 Additionally, we'll integrate the position forward by one timestep:
@@ -308,19 +308,19 @@ without this line to see what effect it has on the stability.
 Now we'll compute our joint position error:
 
 ```cpp
-Eigen::VectorXd q_err = mQDesired - q;
+math::VectorXd q_err = mQDesired - q;
 ```
 
 And our joint velocity error, assuming our desired joint velocity is zero:
 
 ```cpp
-Eigen::VectorXd dq_err = -dq;
+math::VectorXd dq_err = -dq;
 ```
 
 Now we can grab our mass matrix, which we will use to scale our force terms:
 
 ```cpp
-const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
+const math::MatrixXd& M = mManipulator->getMassMatrix();
 ```
 
 And then combine all this into a PD controller that computes forces to minimize
@@ -345,7 +345,7 @@ Coriolis forces, allowing you to write much higher quality controllers than you
 would be able to otherwise. This is easily done like so:
 
 ```cpp
-const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+const math::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 ```
 
 And now we can update our control law by just slapping this term onto the end
@@ -383,7 +383,7 @@ Operational Space controller; instead we want to use a slight offset, to get to
 the tool area of the last BodyNode:
 
 ```cpp
-mOffset = default_endeffector_offset * Eigen::Vector3d::UnitX();
+mOffset = default_endeffector_offset * math::Vector3d::UnitX();
 ```
 
 Also, our target will be the spot on top of the first domino, so we'll create a
@@ -397,9 +397,9 @@ Then compute the transform needed to get from the center of the domino to the
 top of the domino:
 
 ```cpp
-Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
+math::Isometry3d target_offset(math::Isometry3d::Identity());
 target_offset.translation() =
-    default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+    default_domino_height / 2.0 * math::Vector3d::UnitZ();
 ```
 
 And then we should rotate the target's coordinate frame to make sure that lines
@@ -430,7 +430,7 @@ One of the key ingredients in an operational space controller is the mass matrix
 We can get this easily, just like we did for the PD controller:
 
 ```cpp
-const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
+const math::MatrixXd& M = mManipulator->getMassMatrix();
 ```
 
 Next we'll want the Jacobian of the tool offset in the end effector. We can get
@@ -445,7 +445,7 @@ of the Jacobian rather than the Jacobian itself. There are many ways to compute
 the pseudoinverse of the Jacobian, but a simple way is like this:
 
 ```cpp
-Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
+math::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
                        + 0.0025 * math::Matrix6d::Identity()).inverse();
 ```
 
@@ -462,7 +462,7 @@ Next we'll want the time derivative of the Jacobian, as well as its pseudoinvers
 Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
 
 // Comptue the pseudo-inverse of the Jacobian time derivative
-Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
+math::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
                         + 0.0025 * math::Matrix6d::Identity()).inverse();
 ```
 
@@ -482,7 +482,7 @@ e.tail<3>() = mTarget->getWorldTransform().translation()
 And then the angular components of error:
 
 ```cpp
-Eigen::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
+math::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
 e.head<3>() = aa.angle() * aa.axis();
 ```
 
@@ -497,7 +497,7 @@ Like with the PD controller, we can mix in terms to compensate for gravity and
 Coriolis forces:
 
 ```cpp
-const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+const math::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 ```
 
 The gains for the operational space controller need to be in matrix form, but
@@ -507,7 +507,7 @@ we're storing the gains as scalars, so we'll need to conver them:
 math::Matrix6d Kp = mKpOS * math::Matrix6d::Identity();
 
 size_t dofs = mManipulator->getNumDofs();
-Eigen::MatrixXd Kd = mKdOS * Eigen::MatrixXd::Identity(dofs, dofs);
+math::MatrixXd Kd = mKdOS * math::MatrixXd::Identity(dofs, dofs);
 ```
 
 And we'll need to compute the joint forces needed to achieve our desired end
@@ -516,13 +516,13 @@ effector force. This is easily done using the Jacobian transpose:
 ```cpp
 math::Vector6d fDesired = math::Vector6d::Zero();
 fDesired[3] = default_push_force;
-Eigen::VectorXd f = J.transpose() * fDesired;
+math::VectorXd f = J.transpose() * fDesired;
 ```
 
 And now we can mix everything together into the single control law:
 
 ```cpp
-Eigen::VectorXd dq = mManipulator->getVelocities();
+math::VectorXd dq = mManipulator->getVelocities();
 mForces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e)
           - Kd * dq + Kd * pinv_J * Kp * e + Cg + f;
 ```

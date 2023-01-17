@@ -66,7 +66,7 @@ dynamics::SkeletonPtr createFloor()
   double floorWidth = 10000.0;
   double floorHeight = 0.01;
   auto box = std::make_shared<dynamics::BoxShape>(
-      Eigen::Vector3d(floorWidth, floorWidth, floorHeight));
+      math::Vector3d(floorWidth, floorWidth, floorHeight));
   auto* shapeNode = body->createShapeNodeWith<
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
@@ -76,8 +76,8 @@ dynamics::SkeletonPtr createFloor()
   shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0);
 
   // Put the body into position
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floorHeight / 2.0);
+  math::Isometry3d tf = math::Isometry3d::Identity();
+  tf.translation() = math::Vector3d(0.0, 0.0, -floorHeight / 2.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
@@ -87,8 +87,8 @@ dynamics::SkeletonPtr createFloor()
 SkeletonPtr createCylinder(
     double _radius,
     double _height,
-    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+    const math::Vector3d& _position = math::Vector3d::Zero(),
+    const math::Vector3d& _orientation = math::Vector3d::Zero())
 {
   SkeletonPtr cylinder = createObject(_position, _orientation);
 
@@ -103,7 +103,7 @@ SkeletonPtr createCylinder(
 //==============================================================================
 TEST(ForceDependentSlip, BoxSlipVelocity)
 {
-  using Eigen::Vector3d;
+  using math::Vector3d;
   const double mass = 5.0;
   const double slip = 0.02;
   auto skeleton1 = createBox({0.3, 0.3, 0.3}, {0, -0.5, 0.15});
@@ -196,7 +196,7 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 // of the world so it's rolling and slipping.
 TEST(ForceDependentSlip, CylinderSlipVelocity)
 {
-  using Eigen::Vector3d;
+  using math::Vector3d;
   const double mass = 2.0;
   const double radius = 0.5;
   const double slip = 0.02;

@@ -32,6 +32,9 @@
 
 #include "Controller.hpp"
 
+using namespace dart;
+using namespace dart::math;
+
 Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
 {
   mSkel = _skel;
@@ -46,8 +49,8 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
   mTimestep = _t;
   mFrame = 0;
   int nDof = mSkel->getNumDofs();
-  mKp = Eigen::MatrixXd::Identity(nDof, nDof);
-  mKd = Eigen::MatrixXd::Identity(nDof, nDof);
+  mKp = MatrixXd::Identity(nDof, nDof);
+  mKd = MatrixXd::Identity(nDof, nDof);
 
   mTorques.resize(nDof);
   mTorques.setZero();
@@ -69,7 +72,7 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel, double _t)
 
 Controller::~Controller() {}
 
-Eigen::VectorXd Controller::getTorques()
+VectorXd Controller::getTorques()
 {
   return mTorques;
 }
@@ -86,23 +89,23 @@ void Controller::setDesiredDof(int _index, double _val)
 
 void Controller::computeTorques()
 {
-  Eigen::VectorXd _dof = mSkel->getPositions();
-  Eigen::VectorXd _dofVel = mSkel->getVelocities();
-  Eigen::VectorXd constrForces = mSkel->getConstraintForces();
+  VectorXd _dof = mSkel->getPositions();
+  VectorXd _dofVel = mSkel->getVelocities();
+  VectorXd constrForces = mSkel->getConstraintForces();
 
   // SPD tracking
   // std::size_t nDof = mSkel->getNumDofs();
-  Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
-  Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
-  Eigen::VectorXd d = -mKd * _dofVel;
-  Eigen::VectorXd qddot
+  MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
+  VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
+  VectorXd d = -mKd * _dofVel;
+  VectorXd qddot
       = invM * (-mSkel->getCoriolisAndGravityForces() + p + d + constrForces);
 
   mTorques = p + d - mKd * qddot * mTimestep;
 
   // ankle strategy for sagital plane
-  Eigen::Vector3d com = mSkel->getCOM();
-  Eigen::Vector3d cop = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
+  Vector3d com = mSkel->getCOM();
+  Vector3d cop = mLeftHeel->getTransform() * Vector3d(0.05, 0, 0);
 
   double offset = com[0] - cop[0];
   if (offset < 0.1 && offset > 0.0) {
@@ -137,17 +140,17 @@ dart::dynamics::MetaSkeletonPtr Controller::getSkel()
   return mSkel;
 }
 
-Eigen::VectorXd Controller::getDesiredDofs()
+VectorXd Controller::getDesiredDofs()
 {
   return mDesiredDofs;
 }
 
-Eigen::MatrixXd Controller::getKp()
+MatrixXd Controller::getKp()
 {
   return mKp;
 }
 
-Eigen::MatrixXd Controller::getKd()
+MatrixXd Controller::getKd()
 {
   return mKd;
 }

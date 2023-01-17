@@ -127,7 +127,7 @@ TEST(IkFast, LoadWamArmIk)
   auto ik = ee->createIK();
   auto targetFrame
       = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
-  targetFrame->setRotation(Eigen::Matrix3d::Identity());
+  targetFrame->setRotation(math::Matrix3d::Identity());
 
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
@@ -153,7 +153,7 @@ TEST(IkFast, LoadWamArmIk)
   EXPECT_EQ(ikfast->getIkType2(), dynamics::IkFast::IkType::TRANSFORM_6D);
   EXPECT_EQ(ikfast->getIkFastVersion2(), "71");
 
-  targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
+  targetFrame->setTranslation(math::Vector3d(0, 0, 0.5));
   auto solutions = ikfast->getSolutions(targetFrame->getTransform());
   EXPECT_TRUE(!solutions.empty());
 
@@ -166,7 +166,7 @@ TEST(IkFast, LoadWamArmIk)
       continue;
 
     wam->setPositions(dofs, solution.mConfig);
-    Eigen::Isometry3d newTf = ee->getTransform();
+    math::Isometry3d newTf = ee->getTransform();
     EXPECT_TRUE(test::equals(targetFrame->getTransform(), newTf, 1e-2));
   }
 }

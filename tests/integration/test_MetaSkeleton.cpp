@@ -136,9 +136,9 @@ TEST(MetaSkeleton, Referential)
         EXPECT_TRUE(tree->getDof(tree->getIndexOf(dof)) == dof);
       }
 
-      Eigen::VectorXd q = tree->getPositions();
-      Eigen::VectorXd dq = tree->getVelocities();
-      Eigen::VectorXd ddq = tree->getAccelerations();
+      math::VectorXd q = tree->getPositions();
+      math::VectorXd dq = tree->getVelocities();
+      math::VectorXd ddq = tree->getAccelerations();
 
       for (std::size_t k = 0; k < numIterations; ++k) {
         for (int r = 0; r < q.size(); ++r) {
@@ -155,32 +155,32 @@ TEST(MetaSkeleton, Referential)
         EXPECT_TRUE(test::equals(dq, tree->getVelocities(), 0.0));
         EXPECT_TRUE(test::equals(ddq, tree->getAccelerations(), 0.0));
 
-        const Eigen::MatrixXd& skelMassMatrix = skeleton->getMassMatrix();
-        const Eigen::MatrixXd& treeMassMatrix = tree->getMassMatrix();
+        const math::MatrixXd& skelMassMatrix = skeleton->getMassMatrix();
+        const math::MatrixXd& treeMassMatrix = tree->getMassMatrix();
 
-        const Eigen::MatrixXd& skelAugM = skeleton->getAugMassMatrix();
-        const Eigen::MatrixXd& treeAugM = tree->getAugMassMatrix();
+        const math::MatrixXd& skelAugM = skeleton->getAugMassMatrix();
+        const math::MatrixXd& treeAugM = tree->getAugMassMatrix();
 
-        const Eigen::MatrixXd& skelInvM = skeleton->getInvMassMatrix();
-        const Eigen::MatrixXd& treeInvM = tree->getInvMassMatrix();
+        const math::MatrixXd& skelInvM = skeleton->getInvMassMatrix();
+        const math::MatrixXd& treeInvM = tree->getInvMassMatrix();
 
-        const Eigen::MatrixXd& skelInvAugM = skeleton->getInvAugMassMatrix();
-        const Eigen::MatrixXd& treeInvAugM = tree->getInvAugMassMatrix();
+        const math::MatrixXd& skelInvAugM = skeleton->getInvAugMassMatrix();
+        const math::MatrixXd& treeInvAugM = tree->getInvAugMassMatrix();
 
-        const Eigen::VectorXd& skelCvec = skeleton->getCoriolisForces();
-        const Eigen::VectorXd& treeCvec = tree->getCoriolisForces();
+        const math::VectorXd& skelCvec = skeleton->getCoriolisForces();
+        const math::VectorXd& treeCvec = tree->getCoriolisForces();
 
-        const Eigen::VectorXd& skelFg = skeleton->getGravityForces();
-        const Eigen::VectorXd& treeFg = tree->getGravityForces();
+        const math::VectorXd& skelFg = skeleton->getGravityForces();
+        const math::VectorXd& treeFg = tree->getGravityForces();
 
-        const Eigen::VectorXd& skelCg = skeleton->getCoriolisAndGravityForces();
-        const Eigen::VectorXd& treeCg = tree->getCoriolisAndGravityForces();
+        const math::VectorXd& skelCg = skeleton->getCoriolisAndGravityForces();
+        const math::VectorXd& treeCg = tree->getCoriolisAndGravityForces();
 
-        const Eigen::VectorXd& skelFext = skeleton->getExternalForces();
-        const Eigen::VectorXd& treeFext = tree->getExternalForces();
+        const math::VectorXd& skelFext = skeleton->getExternalForces();
+        const math::VectorXd& treeFext = tree->getExternalForces();
 
-        const Eigen::VectorXd& skelFc = skeleton->getConstraintForces();
-        const Eigen::VectorXd& treeFc = tree->getConstraintForces();
+        const math::VectorXd& skelFc = skeleton->getConstraintForces();
+        const math::VectorXd& treeFc = tree->getConstraintForces();
 
         const std::size_t nDofs = tree->getNumDofs();
         for (std::size_t r1 = 0; r1 < nDofs; ++r1) {
@@ -205,8 +205,8 @@ TEST(MetaSkeleton, Referential)
         const std::size_t numBodyNodes = tree->getNumBodyNodes();
         for (std::size_t m = 0; m < numBodyNodes; ++m) {
           const BodyNode* bn = tree->getBodyNode(m);
-          const Eigen::MatrixXd Jtree = tree->getJacobian(bn);
-          const Eigen::MatrixXd Jskel = skeleton->getJacobian(bn);
+          const math::MatrixXd Jtree = tree->getJacobian(bn);
+          const math::MatrixXd Jskel = skeleton->getJacobian(bn);
 
           for (std::size_t r2 = 0; r2 < nDofs; ++r2) {
             const std::size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();

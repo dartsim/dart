@@ -173,11 +173,11 @@ controller and add them to the internal forces of biped using ``setForces``:
 ```cpp
 void addPDForces()
 {
-    Eigen::VectorXd q = mBiped->getPositions();
-    Eigen::VectorXd dq = mBiped->getVelocities();
+    math::VectorXd q = mBiped->getPositions();
+    math::VectorXd dq = mBiped->getVelocities();
     
-    Eigen::VectorXd p = -mKp * (q - mTargetPositions);
-    Eigen::VectorXd d = -mKd * dq;
+    math::VectorXd p = -mKp * (q - mTargetPositions);
+    math::VectorXd d = -mKd * dq;
     
     mForces += p + d;
     mBiped->setForces(mForces);
@@ -220,13 +220,13 @@ implementation of SPD simple and concise:
 ```cpp
 void addSPDForces()
 {
-    Eigen::VectorXd q = mBiped->getPositions();
-    Eigen::VectorXd dq = mBiped->getVelocities();
+    math::VectorXd q = mBiped->getPositions();
+    math::VectorXd dq = mBiped->getVelocities();
 
-    Eigen::MatrixXd invM = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
-    Eigen::VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
-    Eigen::VectorXd d = -mKd * dq;
-    Eigen::VectorXd qddot = invM * (-mBiped->getCoriolisAndGravityForces() + p + d + mBiped->getConstraintForces());
+    math::MatrixXd invM = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
+    math::VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
+    math::VectorXd d = -mKd * dq;
+    math::VectorXd qddot = invM * (-mBiped->getCoriolisAndGravityForces() + p + d + mBiped->getConstraintForces());
 
     mForces += p + d - mKd * qddot * mBiped->getTimeStep();
     mBiped->setForces(mForces);
@@ -272,9 +272,9 @@ anterior-posterior axis:
 ```cpp
 void addAnkleStrategyForces()
 {
-    Eigen::Vector3d COM = mBiped->getCOM();
-    Eigen::Vector3d offset(0.05, 0, 0);
-    Eigen::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
+    math::Vector3d COM = mBiped->getCOM();
+    math::Vector3d offset(0.05, 0, 0);
+    math::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
     double diff = COM[0] - COP[0];
 ...
 }
@@ -291,8 +291,8 @@ computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
 void addAnkleStrategyForces()
 {
 ...
-    Eigen::Vector3d dCOM = mBiped->getCOMLinearVelocity();
-    Eigen::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
+    math::Vector3d dCOM = mBiped->getCOMLinearVelocity();
+    math::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
     double dDiff = dCOM[0] - dCOP[0];
 ...
 }
@@ -345,7 +345,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
 ...
     EulerJoint::Properties properties = EulerJoint::Properties();
-    properties.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(0, 0.1, 0);
+    properties.mT_ChildBodyToJoint.translation() = math::Vector3d(0, 0.1, 0);
 ...
 }
 ```
@@ -473,10 +473,10 @@ center of mass of the Skeleton, as well as the Jacobian of the center
 of mass of a BodyNode:
 
 ```cpp
-Eigen::VectorXd solveIK(SkeletonPtr biped)
+math::VectorXd solveIK(SkeletonPtr biped)
 {
 ...
-    Eigen::Vector3d localCOM = leftHeel->getCOM(leftHeel);
+    math::Vector3d localCOM = leftHeel->getCOM(leftHeel);
     LinearJacobian jacobian = biped->getCOMLinearJacobian() - biped->getLinearJacobian(leftHeel, localCOM);
 ...
 }
@@ -493,10 +493,10 @@ reference. We use ``getLinearJacobian`` again to compute the
 gradient of the second term of the objective function:
 
 ```cpp
-Eigen::VectorXd solveIK(SkeletonPtr biped)
+math::VectorXd solveIK(SkeletonPtr biped)
 {
 ...
-    Eigen::Vector3d offset(0.0, -0.04, -0.03);
+    math::Vector3d offset(0.0, -0.04, -0.03);
     gradient = biped->getLinearJacobian(leftHeel, offset).row(1);
 ...
 }

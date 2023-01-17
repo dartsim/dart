@@ -336,11 +336,11 @@ TEST(Skeleton, Persistence)
     {
       {
         SkeletonPtr skeleton = createThreeLinkRobot(
-            Eigen::Vector3d(1.0, 1.0, 1.0),
+            math::Vector3d(1.0, 1.0, 1.0),
             DOF_X,
-            Eigen::Vector3d(1.0, 1.0, 1.0),
+            math::Vector3d(1.0, 1.0, 1.0),
             DOF_Y,
-            Eigen::Vector3d(1.0, 1.0, 1.0),
+            math::Vector3d(1.0, 1.0, 1.0),
             DOF_Z);
         weakSkelPtr = skeleton;
 
@@ -485,11 +485,11 @@ TEST(Skeleton, Persistence)
     }
 
     SkeletonPtr other_skeleton = createThreeLinkRobot(
-        Eigen::Vector3d(1.0, 1.0, 1.0),
+        math::Vector3d(1.0, 1.0, 1.0),
         DOF_X,
-        Eigen::Vector3d(1.0, 1.0, 1.0),
+        math::Vector3d(1.0, 1.0, 1.0),
         DOF_Y,
-        Eigen::Vector3d(1.0, 1.0, 1.0),
+        math::Vector3d(1.0, 1.0, 1.0),
         DOF_Z);
     BodyNode* tail
         = other_skeleton->getBodyNode(other_skeleton->getNumBodyNodes() - 1);
@@ -797,7 +797,7 @@ TEST(Skeleton, ZeroDofJointConstraintForces)
   });
 
   // Make sure this does not cause seg-fault
-  Eigen::VectorXd constraintForces = skel->getConstraintForces();
+  math::VectorXd constraintForces = skel->getConstraintForces();
   EXPECT_EQ(constraintForces.size(), static_cast<int>(numSkelDofs));
 }
 
@@ -885,11 +885,11 @@ TEST(Skeleton, Updating)
   skeleton = Skeleton::create();
   ScrewJoint* screw = skeleton->createJointAndBodyNodePair<ScrewJoint>().first;
 
-  screw->setAxis(Eigen::Vector3d::UnitX());
+  screw->setAxis(math::Vector3d::UnitX());
   screw->setPitch(2);
 
   J0i = screw->getRelativeJacobian();
-  screw->setAxis(Eigen::Vector3d::UnitY());
+  screw->setAxis(math::Vector3d::UnitY());
   J0f = screw->getRelativeJacobian();
   EXPECT_FALSE(test::equals(J0i, J0f));
 

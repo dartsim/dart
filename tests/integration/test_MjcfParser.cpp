@@ -82,7 +82,7 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
   EXPECT_EQ(rootBody0.getName(), "torso");
   EXPECT_TRUE(test::equals(
       rootBody0.getRelativeTransform().translation().eval(),
-      Eigen::Vector3d(0, 0, 0.75)));
+      math::Vector3d(0, 0, 0.75)));
 
   ASSERT_EQ(rootBody0.getNumJoints(), 1);
   const auto& rootJoint0 = rootBody0.getJoint(0);
@@ -108,7 +108,7 @@ TEST(MjcfParserTest, DefaultSettings)
   ASSERT_NE(boxShapeNode, nullptr);
   auto boxVisualAspect = boxShapeNode->getVisualAspect();
   ASSERT_NE(boxVisualAspect, nullptr);
-  EXPECT_TRUE(boxVisualAspect->getRGBA().isApprox(Eigen::Vector4d(1, 0, 0, 1)));
+  EXPECT_TRUE(boxVisualAspect->getRGBA().isApprox(math::Vector4d(1, 0, 0, 1)));
 
   auto bodySkel = world->getSkeleton("body0");
   ASSERT_NE(bodySkel, nullptr);
@@ -117,19 +117,19 @@ TEST(MjcfParserTest, DefaultSettings)
   ASSERT_NE(ellipsoidShapeNode, nullptr);
   auto ellipsoidVisualAspect = ellipsoidShapeNode->getVisualAspect();
   ASSERT_NE(ellipsoidVisualAspect, nullptr);
-  ellipsoidVisualAspect->getRGBA().isApprox(Eigen::Vector4d(0, 1, 0, 1));
+  ellipsoidVisualAspect->getRGBA().isApprox(math::Vector4d(0, 1, 0, 1));
 
   auto sphereShapeNode = bodySkel->getShapeNode(1);
   ASSERT_NE(sphereShapeNode, nullptr);
   auto sphereVisualAspect = sphereShapeNode->getVisualAspect();
   ASSERT_NE(sphereVisualAspect, nullptr);
-  sphereVisualAspect->getRGBA().isApprox(Eigen::Vector4d(0, 0, 1, 1));
+  sphereVisualAspect->getRGBA().isApprox(math::Vector4d(0, 0, 1, 1));
 
   auto cylinderShapeNode = bodySkel->getShapeNode(2);
   ASSERT_NE(cylinderShapeNode, nullptr);
   auto cylinderVisualAspect = cylinderShapeNode->getVisualAspect();
   ASSERT_NE(cylinderVisualAspect, nullptr);
-  cylinderVisualAspect->getRGBA().isApprox(Eigen::Vector4d(1, 0, 0, 1));
+  cylinderVisualAspect->getRGBA().isApprox(math::Vector4d(1, 0, 0, 1));
 }
 
 //==============================================================================
@@ -150,7 +150,7 @@ TEST(MjcfParserTest, IncludeDefaultSettings)
   ASSERT_NE(boxShapeNode, nullptr);
   auto boxVisualAspect = boxShapeNode->getVisualAspect();
   ASSERT_NE(boxVisualAspect, nullptr);
-  EXPECT_TRUE(boxVisualAspect->getRGBA().isApprox(Eigen::Vector4d(1, 0, 0, 1)));
+  EXPECT_TRUE(boxVisualAspect->getRGBA().isApprox(math::Vector4d(1, 0, 0, 1)));
 
   auto bodySkel = world->getSkeleton("body0");
   ASSERT_NE(bodySkel, nullptr);
@@ -159,19 +159,19 @@ TEST(MjcfParserTest, IncludeDefaultSettings)
   ASSERT_NE(ellipsoidShapeNode, nullptr);
   auto ellipsoidVisualAspect = ellipsoidShapeNode->getVisualAspect();
   ASSERT_NE(ellipsoidVisualAspect, nullptr);
-  ellipsoidVisualAspect->getRGBA().isApprox(Eigen::Vector4d(0, 1, 0, 1));
+  ellipsoidVisualAspect->getRGBA().isApprox(math::Vector4d(0, 1, 0, 1));
 
   auto sphereShapeNode = bodySkel->getShapeNode(1);
   ASSERT_NE(sphereShapeNode, nullptr);
   auto sphereVisualAspect = sphereShapeNode->getVisualAspect();
   ASSERT_NE(sphereVisualAspect, nullptr);
-  sphereVisualAspect->getRGBA().isApprox(Eigen::Vector4d(0, 0, 1, 1));
+  sphereVisualAspect->getRGBA().isApprox(math::Vector4d(0, 0, 1, 1));
 
   auto cylinderShapeNode = bodySkel->getShapeNode(2);
   ASSERT_NE(cylinderShapeNode, nullptr);
   auto cylinderVisualAspect = cylinderShapeNode->getVisualAspect();
   ASSERT_NE(cylinderVisualAspect, nullptr);
-  cylinderVisualAspect->getRGBA().isApprox(Eigen::Vector4d(1, 0, 0, 1));
+  cylinderVisualAspect->getRGBA().isApprox(math::Vector4d(1, 0, 0, 1));
 }
 
 //==============================================================================

@@ -54,9 +54,9 @@ TEST(InverseKinematics, SolveForFreeJoint)
 
   std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);
-  tf.rotate(Eigen::AngleAxisd(math::pi() / 8, Eigen::Vector3d(0, 1, 0)));
+  math::Isometry3d tf(math::Isometry3d::Identity());
+  tf.translation() = math::Vector3d(0.0, 0.0, 0.8);
+  tf.rotate(math::AngleAxisd(math::pi() / 8, math::Vector3d(0, 1, 0)));
   ik->getTarget()->setTransform(tf);
 
   ik->getErrorMethod().setBounds(
@@ -98,8 +98,8 @@ public:
     }
 
     const auto dim = problem->getDimension();
-    const Eigen::VectorXd wrongSolution
-        = Eigen::VectorXd::Constant(static_cast<int>(dim), mConstant);
+    const math::VectorXd wrongSolution
+        = math::VectorXd::Constant(static_cast<int>(dim), mConstant);
     problem->setOptimalSolution(wrongSolution);
 
     return false;
@@ -127,16 +127,16 @@ TEST(InverseKinematics, DoNotApplySolutionOnFailure)
 
   std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
   ik->setSolver(std::make_shared<FailingSolver>(10));
-  ik->getTarget()->setTransform(Eigen::Isometry3d::Identity());
+  ik->getTarget()->setTransform(math::Isometry3d::Identity());
 
   const auto dofs = static_cast<int>(skel->getNumDofs());
   skel->resetPositions();
 
   EXPECT_FALSE(ik->solveAndApply(false));
   EXPECT_TRUE(
-      test::equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+      test::equals(skel->getPositions(), math::VectorXd::Zero(dofs).eval()));
 
   EXPECT_FALSE(ik->solveAndApply(true));
   EXPECT_FALSE(
-      test::equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+      test::equals(skel->getPositions(), math::VectorXd::Zero(dofs).eval()));
 }

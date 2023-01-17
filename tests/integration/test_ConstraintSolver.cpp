@@ -66,8 +66,8 @@ TEST(ConstraintSolver, CustomConstactSurfaceHandler)
     {
       auto params = ContactSurfaceHandler::createParams(
           contact, numContactsOnCollisionObject);
-      params.mFirstFrictionalDirection = Eigen::Vector3d::UnitY();
-      params.mContactSurfaceMotionVelocity = Eigen::Vector3d::UnitY();
+      params.mFirstFrictionalDirection = math::Vector3d::UnitY();
+      params.mContactSurfaceMotionVelocity = math::Vector3d::UnitY();
       return params;
     }
   };

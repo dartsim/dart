@@ -63,7 +63,7 @@ TEST(Issue1624, ContactGrouping)
   }
 
   world->eachSkeleton([&](Skeleton* skel) {
-    Eigen::Vector3d velocity = skel->getCOMLinearVelocity();
+    math::Vector3d velocity = skel->getCOMLinearVelocity();
     EXPECT_LE(velocity.norm(), 2.0);
   });
 }

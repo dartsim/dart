@@ -35,6 +35,8 @@
 
 #include <dart/dart.hpp>
 
+using namespace dart::math;
+
 //==============================================================================
 class TinkertoyInputHandler : public osgGA::GUIEventHandler
 {
@@ -138,7 +140,7 @@ int main()
       = dart::gui::osg::InteractiveFrame::createShared(
           dart::dynamics::Frame::World(),
           "coordinates",
-          Eigen::Isometry3d::Identity(),
+          Isometry3d::Identity(),
           0.2);
 
   for (size_t i = 0; i < 3; ++i)

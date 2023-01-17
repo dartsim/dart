@@ -32,13 +32,6 @@
 
 #include <dart/dart.hpp>
 
-const double default_speed_increment = 0.5;
-
-const int default_ik_iterations = 4500;
-
-const double default_force = 50.0; // N
-const int default_countdown = 100; // Number of timesteps for applying force
-
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -46,6 +39,13 @@ using namespace dart::gui;
 using namespace dart::gui::glut;
 using namespace dart::io;
 using namespace dart::math;
+
+const double default_speed_increment = 0.5;
+
+const int default_ik_iterations = 4500;
+
+const double default_force = 50.0; // N
+const int default_countdown = 100; // Number of timesteps for applying force
 
 class Controller
 {
@@ -55,10 +55,10 @@ public:
   {
     int nDofs = mBiped->getNumDofs();
 
-    mForces = Eigen::VectorXd::Zero(nDofs);
+    mForces = VectorXd::Zero(nDofs);
 
-    mKp = Eigen::MatrixXd::Identity(nDofs, nDofs);
-    mKd = Eigen::MatrixXd::Identity(nDofs, nDofs);
+    mKp = MatrixXd::Identity(nDofs, nDofs);
+    mKd = MatrixXd::Identity(nDofs, nDofs);
 
     for (std::size_t i = 0; i < 6; ++i) {
       mKp(i, i) = 0.0;
@@ -74,7 +74,7 @@ public:
   }
 
   /// Reset the desired dof position to the current position
-  void setTargetPositions(const Eigen::VectorXd& pose)
+  void setTargetPositions(const VectorXd& pose)
   {
     mTargetPositions = pose;
   }
@@ -88,11 +88,11 @@ public:
   /// Add commanding forces from PD controllers (Lesson 2 Answer)
   void addPDForces()
   {
-    Eigen::VectorXd q = mBiped->getPositions();
-    Eigen::VectorXd dq = mBiped->getVelocities();
+    VectorXd q = mBiped->getPositions();
+    VectorXd dq = mBiped->getVelocities();
 
-    Eigen::VectorXd p = -mKp * (q - mTargetPositions);
-    Eigen::VectorXd d = -mKd * dq;
+    VectorXd p = -mKp * (q - mTargetPositions);
+    VectorXd d = -mKd * dq;
 
     mForces += p + d;
     mBiped->setForces(mForces);
@@ -101,17 +101,16 @@ public:
   /// Add commanind forces from Stable-PD controllers (Lesson 3 Answer)
   void addSPDForces()
   {
-    Eigen::VectorXd q = mBiped->getPositions();
-    Eigen::VectorXd dq = mBiped->getVelocities();
+    VectorXd q = mBiped->getPositions();
+    VectorXd dq = mBiped->getVelocities();
 
-    Eigen::MatrixXd invM
+    MatrixXd invM
         = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
-    Eigen::VectorXd p
-        = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
-    Eigen::VectorXd d = -mKd * dq;
-    Eigen::VectorXd qddot = invM
-                            * (-mBiped->getCoriolisAndGravityForces() + p + d
-                               + mBiped->getConstraintForces());
+    VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
+    VectorXd d = -mKd * dq;
+    VectorXd qddot = invM
+                     * (-mBiped->getCoriolisAndGravityForces() + p + d
+                        + mBiped->getConstraintForces());
 
     mForces += p + d - mKd * qddot * mBiped->getTimeStep();
     mBiped->setForces(mForces);
@@ -120,15 +119,14 @@ public:
   /// add commanding forces from ankle strategy (Lesson 4 Answer)
   void addAnkleStrategyForces()
   {
-    Eigen::Vector3d COM = mBiped->getCOM();
+    Vector3d COM = mBiped->getCOM();
     // Approximated center of pressure in sagittal axis
-    Eigen::Vector3d offset(0.05, 0, 0);
-    Eigen::Vector3d COP
-        = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
+    Vector3d offset(0.05, 0, 0);
+    Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
     double diff = COM[0] - COP[0];
 
-    Eigen::Vector3d dCOM = mBiped->getCOMLinearVelocity();
-    Eigen::Vector3d dCOP
+    Vector3d dCOM = mBiped->getCOMLinearVelocity();
+    Vector3d dCOP
         = mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
     double dDiff = dCOM[0] - dCOP[0];
 
@@ -189,16 +187,16 @@ protected:
   SkeletonPtr mBiped;
 
   /// Joint forces for the biped (output of the Controller)
-  Eigen::VectorXd mForces;
+  VectorXd mForces;
 
   /// Control gains for the proportional error terms in the PD controller
-  Eigen::MatrixXd mKp;
+  MatrixXd mKp;
 
   /// Control gains for the derivative error terms in the PD controller
-  Eigen::MatrixXd mKd;
+  MatrixXd mKd;
 
   /// Target positions for the PD controllers
-  Eigen::VectorXd mTargetPositions;
+  VectorXd mTargetPositions;
 
   /// For velocity actuator: Current speed of the skateboard
   double mSpeed;
@@ -254,20 +252,14 @@ public:
     // Apply body forces based on user input, and color the body shape red
     if (mForceCountDown > 0) {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
-      bn->setColor(dart::math::Colord::Red());
+      bn->setColor(Colord::Red());
 
       if (mPositiveSign)
         bn->addExtForce(
-            default_force * Eigen::Vector3d::UnitX(),
-            bn->getCOM(),
-            false,
-            false);
+            default_force * Vector3d::UnitX(), bn->getCOM(), false, false);
       else
         bn->addExtForce(
-            -default_force * Eigen::Vector3d::UnitX(),
-            bn->getCOM(),
-            false,
-            false);
+            -default_force * Vector3d::UnitX(), bn->getCOM(), false, false);
 
       --mForceCountDown;
     }
@@ -332,7 +324,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
   SkeletonPtr skateboard = world->getSkeleton(0);
 
   EulerJoint::Properties properties = EulerJoint::Properties();
-  properties.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(0, 0.1, 0);
+  properties.mT_ChildBodyToJoint.translation() = Vector3d(0, 0.1, 0);
 
   skateboard->getRootBodyNode()->moveTo<EulerJoint>(
       biped->getBodyNode("h_heel_left"), properties);
@@ -352,7 +344,7 @@ void setVelocityAccuators(SkeletonPtr biped)
 }
 
 // Solve for a balanced pose using IK (Lesson 7 Answer)
-Eigen::VectorXd solveIK(SkeletonPtr biped)
+VectorXd solveIK(SkeletonPtr biped)
 {
   // Modify the intial pose to one-foot stance before IK
   biped->setPosition(biped->getDof("j_shin_right")->getIndexInSkeleton(), -1.4);
@@ -361,21 +353,21 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
   biped->setPosition(
       biped->getDof("j_bicep_right_x")->getIndexInSkeleton(), -0.8);
 
-  Eigen::VectorXd newPose = biped->getPositions();
+  VectorXd newPose = biped->getPositions();
   BodyNodePtr leftHeel = biped->getBodyNode("h_heel_left");
   BodyNodePtr leftToe = biped->getBodyNode("h_toe_left");
   double initialHeight = -0.8;
 
   for (std::size_t i = 0; i < default_ik_iterations; ++i) {
-    Eigen::Vector3d deviation = biped->getCOM() - leftHeel->getCOM();
-    Eigen::Vector3d localCOM = leftHeel->getCOM(leftHeel);
+    Vector3d deviation = biped->getCOM() - leftHeel->getCOM();
+    Vector3d localCOM = leftHeel->getCOM(leftHeel);
     LinearJacobian jacobian = biped->getCOMLinearJacobian()
                               - biped->getLinearJacobian(leftHeel, localCOM);
 
     // Sagittal deviation
     double error = deviation[0];
-    Eigen::VectorXd gradient = jacobian.row(0);
-    Eigen::VectorXd newDirection = -0.2 * error * gradient;
+    VectorXd gradient = jacobian.row(0);
+    VectorXd newDirection = -0.2 * error * gradient;
 
     // Lateral deviation
     error = deviation[2];
@@ -383,7 +375,7 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
     newDirection += -0.2 * error * gradient;
 
     // Position constraint on four (approximated) corners of the left foot
-    Eigen::Vector3d offset(0.0, -0.04, -0.03);
+    Vector3d offset(0.0, -0.04, -0.03);
     error = (leftHeel->getTransform() * offset)[1] - initialHeight;
     gradient = biped->getLinearJacobian(leftHeel, offset).row(1);
     newDirection += -0.2 * error * gradient;
@@ -422,16 +414,16 @@ SkeletonPtr createFloor()
   double floor_width = 10.0;
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
-      new BoxShape(Eigen::Vector3d(floor_width, floor_height, floor_width)));
+      new BoxShape(Vector3d(floor_width, floor_height, floor_width)));
   auto shapeNode = body->createShapeNodeWith<
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(box);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Black());
+  shapeNode->getVisualAspect()->setColor(Colord::Black());
 
   // Put the body into position
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.0, -1.0, 0.0);
+  Isometry3d tf(Isometry3d::Identity());
+  tf.translation() = Vector3d(0.0, -1.0, 0.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
@@ -454,11 +446,11 @@ int main(int argc, char* argv[])
   setVelocityAccuators(biped);
 
   // Lesson 7
-  Eigen::VectorXd balancedPose = solveIK(biped);
+  VectorXd balancedPose = solveIK(biped);
   biped->setPositions(balancedPose);
 
   WorldPtr world = std::make_shared<World>();
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setGravity(Vector3d(0.0, -9.81, 0.0));
 
   if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
     world->getConstraintSolver()->setCollisionDetector(

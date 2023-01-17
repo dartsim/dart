@@ -816,7 +816,7 @@ TEST(Aspect, BodyNodes)
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(
-      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+      std::make_shared<dart::dynamics::BoxShape>(math::Vector3d::Ones()));
 
   EXPECT_EQ(bn->getNumShapeNodes(), 1u);
   EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::VisualAspect>(), 1u);

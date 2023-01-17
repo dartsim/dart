@@ -149,7 +149,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
 //==============================================================================
 void MyWindow::spawnBox(
-    const Eigen::Isometry3d& _T, const Eigen::Vector3d& _size, double _mass)
+    const math::Isometry3d& _T, const math::Vector3d& _size, double _mass)
 {
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
@@ -177,7 +177,7 @@ void MyWindow::spawnBox(
 
 //==============================================================================
 void MyWindow::spawnEllipsoid(
-    const Eigen::Isometry3d& _T, const Eigen::Vector3d& _radii, double _mass)
+    const math::Isometry3d& _T, const math::Vector3d& _radii, double _mass)
 {
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
@@ -205,7 +205,7 @@ void MyWindow::spawnEllipsoid(
 
 //==============================================================================
 void MyWindow::spawnCylinder(
-    const Eigen::Isometry3d& _T, double _radius, double _height, double _mass)
+    const math::Isometry3d& _T, double _radius, double _height, double _mass)
 {
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 

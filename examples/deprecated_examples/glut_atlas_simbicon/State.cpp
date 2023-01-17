@@ -62,15 +62,15 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
 {
   int dof = mSkeleton->getNumDofs();
 
-  mDesiredJointPositions = Eigen::VectorXd::Zero(dof);
-  mDesiredJointPositionsBalance = Eigen::VectorXd::Zero(dof);
-  mKp = Eigen::VectorXd::Zero(dof);
-  mKd = Eigen::VectorXd::Zero(dof);
-  mSagitalCd = Eigen::VectorXd::Zero(dof);
-  mSagitalCv = Eigen::VectorXd::Zero(dof);
-  mCoronalCd = Eigen::VectorXd::Zero(dof);
-  mCoronalCv = Eigen::VectorXd::Zero(dof);
-  mTorque = Eigen::VectorXd::Zero(dof);
+  mDesiredJointPositions = VectorXd::Zero(dof);
+  mDesiredJointPositionsBalance = VectorXd::Zero(dof);
+  mKp = VectorXd::Zero(dof);
+  mKd = VectorXd::Zero(dof);
+  mSagitalCd = VectorXd::Zero(dof);
+  mSagitalCv = VectorXd::Zero(dof);
+  mCoronalCd = VectorXd::Zero(dof);
+  mCoronalCv = VectorXd::Zero(dof);
+  mTorque = VectorXd::Zero(dof);
 
   for (int i = 0; i < dof; ++i) {
     mKp[i] = ATLAS_DEFAULT_KP;
@@ -211,33 +211,33 @@ void State::end(double _currentTime)
 }
 
 //==============================================================================
-Eigen::Vector3d State::getCOM() const
+Vector3d State::getCOM() const
 {
   return mSkeleton->getCOM();
 }
 
 //==============================================================================
-Eigen::Vector3d State::getCOMVelocity() const
+Vector3d State::getCOMVelocity() const
 {
   return mSkeleton->getCOMLinearVelocity();
 }
 
 //==============================================================================
-Eigen::Isometry3d State::getCOMFrame() const
+Isometry3d State::getCOMFrame() const
 {
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  Isometry3d T = Isometry3d::Identity();
 
   // Y-axis
-  const Eigen::Vector3d yAxis = Eigen::Vector3d::UnitY();
+  const Vector3d yAxis = Vector3d::UnitY();
 
   // X-axis
-  Eigen::Vector3d pelvisXAxis = mPelvis->getTransform().linear().col(0);
+  Vector3d pelvisXAxis = mPelvis->getTransform().linear().col(0);
   const double mag = yAxis.dot(pelvisXAxis);
   pelvisXAxis -= mag * yAxis;
-  const Eigen::Vector3d xAxis = pelvisXAxis.normalized();
+  const Vector3d xAxis = pelvisXAxis.normalized();
 
   // Z-axis
-  const Eigen::Vector3d zAxis = xAxis.cross(yAxis);
+  const Vector3d zAxis = xAxis.cross(yAxis);
 
   T.translation() = getCOM();
 
@@ -251,8 +251,8 @@ Eigen::Isometry3d State::getCOMFrame() const
 //==============================================================================
 double State::getSagitalCOMDistance()
 {
-  Eigen::Vector3d xAxis = getCOMFrame().linear().col(0); // x-axis
-  Eigen::Vector3d d = getCOM() - getStanceAnklePosition();
+  Vector3d xAxis = getCOMFrame().linear().col(0); // x-axis
+  Vector3d d = getCOM() - getStanceAnklePosition();
 
   return d.dot(xAxis);
 }
@@ -260,8 +260,8 @@ double State::getSagitalCOMDistance()
 //==============================================================================
 double State::getSagitalCOMVelocity()
 {
-  Eigen::Vector3d xAxis = getCOMFrame().linear().col(0); // x-axis
-  Eigen::Vector3d v = getCOMVelocity();
+  Vector3d xAxis = getCOMFrame().linear().col(0); // x-axis
+  Vector3d v = getCOMVelocity();
 
   return v.dot(xAxis);
 }
@@ -269,8 +269,8 @@ double State::getSagitalCOMVelocity()
 //==============================================================================
 double State::getCoronalCOMDistance()
 {
-  Eigen::Vector3d yAxis = getCOMFrame().linear().col(2); // z-axis
-  Eigen::Vector3d d = getCOM() - getStanceAnklePosition();
+  Vector3d yAxis = getCOMFrame().linear().col(2); // z-axis
+  Vector3d d = getCOM() - getStanceAnklePosition();
 
   return d.dot(yAxis);
 }
@@ -278,14 +278,14 @@ double State::getCoronalCOMDistance()
 //==============================================================================
 double State::getCoronalCOMVelocity()
 {
-  Eigen::Vector3d yAxis = getCOMFrame().linear().col(2); // z-axis
-  Eigen::Vector3d v = getCOMVelocity();
+  Vector3d yAxis = getCOMFrame().linear().col(2); // z-axis
+  Vector3d v = getCOMVelocity();
 
   return v.dot(yAxis);
 }
 
 //==============================================================================
-Eigen::Vector3d State::getStanceAnklePosition() const
+Vector3d State::getStanceAnklePosition() const
 {
   if (mStanceFoot == nullptr)
     return getCOM();
@@ -294,13 +294,13 @@ Eigen::Vector3d State::getStanceAnklePosition() const
 }
 
 //==============================================================================
-Eigen::Vector3d State::getLeftAnklePosition() const
+Vector3d State::getLeftAnklePosition() const
 {
   return _getJointPosition(mLeftFoot);
 }
 
 //==============================================================================
-Eigen::Vector3d State::getRightAnklePosition() const
+Vector3d State::getRightAnklePosition() const
 {
   return _getJointPosition(mRightFoot);
 }
@@ -421,17 +421,17 @@ double State::getCoronalRightLegAngle() const
 }
 
 //==============================================================================
-Eigen::Vector3d State::_getJointPosition(BodyNode* _bodyNode) const
+Vector3d State::_getJointPosition(BodyNode* _bodyNode) const
 {
   Joint* parentJoint = _bodyNode->getParentJoint();
-  Eigen::Vector3d localJointPosition
+  Vector3d localJointPosition
       = parentJoint->getTransformFromChildBodyNode().translation();
   return _bodyNode->getTransform() * localJointPosition;
 }
 
 //==============================================================================
 double State::_getAngleBetweenTwoVectors(
-    const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2) const
+    const Vector3d& _v1, const Vector3d& _v2) const
 {
   return std::acos(_v1.dot(_v2) / (_v1.norm() * _v2.norm()));
 }

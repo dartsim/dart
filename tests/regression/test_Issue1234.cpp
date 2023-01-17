@@ -52,14 +52,14 @@
 bool runIssue1234Subtest(
     const dart::collision::CollisionDetectorPtr detector,
     const dart::dynamics::ShapePtr& against,
-    const Eigen::Vector3d normal,
+    const math::Vector3d normal,
     const double offset,
     const double angle,
-    const Eigen::Vector3d axis)
+    const math::Vector3d axis)
 {
   auto group = detector->createCollisionGroup();
 
-  const Eigen::Matrix3d R(Eigen::AngleAxisd(angle, axis));
+  const math::Matrix3d R(math::AngleAxisd(angle, axis));
 
   auto plane = dart::dynamics::Skeleton::create("plane");
   plane->createJointAndBodyNodePair<FreeJoint>()
@@ -93,7 +93,7 @@ void runIssue1234Test(
       meshUri, dart::io::DartResourceRetriever::create());
   ASSERT_TRUE(aiscene);
   const auto mesh = std::make_shared<dart::dynamics::MeshShape>(
-      100.0 * Eigen::Vector3d::Ones(), aiscene, meshUri);
+      100.0 * math::Vector3d::Ones(), aiscene, meshUri);
 
   const auto bb = mesh->getBoundingBox();
   for (int i = 0; i < 3; ++i) {
@@ -114,17 +114,17 @@ void runIssue1234Test(
        {dart::dynamics::ShapePtr{box}, dart::dynamics::ShapePtr{mesh}}) {
     for (const double offset : {-0.1, 0.0, 0.1}) {
       for (const auto& normal :
-           {Eigen::Vector3d(0.0, 0.0, 1.0),
-            Eigen::Vector3d(0.0, 0.0, -1.0),
-            Eigen::Vector3d(0.0, 1.0, 0.0),
-            Eigen::Vector3d(0.0, -1.0, 0.0),
-            Eigen::Vector3d(1.0, 0.0, 0.0),
-            Eigen::Vector3d(-1.0, 0.0, 0.0)}) {
+           {math::Vector3d(0.0, 0.0, 1.0),
+            math::Vector3d(0.0, 0.0, -1.0),
+            math::Vector3d(0.0, 1.0, 0.0),
+            math::Vector3d(0.0, -1.0, 0.0),
+            math::Vector3d(1.0, 0.0, 0.0),
+            math::Vector3d(-1.0, 0.0, 0.0)}) {
         if (offset < 0.0) {
           for (const auto& angle : {0.0, dart::math::toRadian(10.0)}) {
-            const Eigen::Vector3d axis = std::abs(normal[1]) > 1e-3
-                                             ? Eigen::Vector3d::UnitY()
-                                             : Eigen::Vector3d::UnitX();
+            const math::Vector3d axis = std::abs(normal[1]) > 1e-3
+                                            ? math::Vector3d::UnitY()
+                                            : math::Vector3d::UnitX();
 
             ++numTests;
             if (runIssue1234Subtest(
@@ -140,7 +140,7 @@ void runIssue1234Test(
                   normal,
                   offset,
                   0.0,
-                  Eigen::Vector3d::UnitZ())) {
+                  math::Vector3d::UnitZ())) {
             ++numPasses;
           }
         }

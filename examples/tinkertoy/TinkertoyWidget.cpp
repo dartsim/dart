@@ -41,6 +41,8 @@
 #include "TinkertoyWorldNode.hpp"
 #include "dart/external/imgui/imgui.h"
 
+using namespace dart::math;
+
 //==============================================================================
 TinkertoyWidget::TinkertoyWidget(
     dart::gui::osg::ImGuiViewer* viewer, TinkertoyWorldNode* node)
@@ -203,7 +205,7 @@ void TinkertoyWidget::setGravity(bool gravity)
   mGravity = gravity;
 
   if (mGravity)
-    mNode->getWorld()->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
+    mNode->getWorld()->setGravity(-9.81 * Vector3d::UnitZ());
   else
-    mNode->getWorld()->setGravity(Eigen::Vector3d::Zero());
+    mNode->getWorld()->setGravity(Vector3d::Zero());
 }

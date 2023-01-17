@@ -121,11 +121,11 @@ void JOINTS::randomizeRefFrames()
   for (std::size_t i = 0; i < frames.size(); ++i) {
     SimpleFrame* F = frames[i];
 
-    Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
-    Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(
+    math::Vector3d p = Random::uniform<math::Vector3d>(-100, 100);
+    math::Vector3d theta = Random::uniform<math::Vector3d>(
         -2 * dart::math::pi(), 2 * dart::math::pi());
 
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    math::Isometry3d tf(math::Isometry3d::Identity());
     tf.translate(p);
     tf.linear() = math::eulerXYZToMatrix(theta);
 
@@ -171,7 +171,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     if (dof == 0)
       return;
 
-    Eigen::Isometry3d T = joint->getRelativeTransform();
+    math::Isometry3d T = joint->getRelativeTransform();
     Jacobian J = joint->getRelativeJacobian();
     Jacobian dJ = joint->getRelativeJacobianTimeDeriv();
 
@@ -187,28 +187,28 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     Jacobian numericJ = Jacobian::Zero(6, dof);
     for (int i = 0; i < dof; ++i) {
       // a
-      Eigen::VectorXd q_a = q;
+      math::VectorXd q_a = q;
       joint->setPositions(q_a);
-      Eigen::Isometry3d T_a = joint->getRelativeTransform();
+      math::Isometry3d T_a = joint->getRelativeTransform();
 
       // b
-      Eigen::VectorXd q_b = q;
+      math::VectorXd q_b = q;
       q_b(i) += q_delta;
       joint->setPositions(q_b);
-      Eigen::Isometry3d T_b = joint->getRelativeTransform();
+      math::Isometry3d T_b = joint->getRelativeTransform();
 
       //
-      Eigen::Isometry3d Tinv_a = T_a.inverse();
-      Eigen::Matrix4d Tinv_a_eigen = Tinv_a.matrix();
+      math::Isometry3d Tinv_a = T_a.inverse();
+      math::Matrix4d Tinv_a_eigen = Tinv_a.matrix();
 
       // dTdq
-      Eigen::Matrix4d T_a_eigen = T_a.matrix();
-      Eigen::Matrix4d T_b_eigen = T_b.matrix();
-      Eigen::Matrix4d dTdq_eigen = (T_b_eigen - T_a_eigen) / q_delta;
+      math::Matrix4d T_a_eigen = T_a.matrix();
+      math::Matrix4d T_b_eigen = T_b.matrix();
+      math::Matrix4d dTdq_eigen = (T_b_eigen - T_a_eigen) / q_delta;
       // Matrix4d dTdq_eigen = (T_b_eigen * T_a_eigen.inverse()) / dt;
 
       // J(i)
-      Eigen::Matrix4d Ji_4x4matrix_eigen = Tinv_a_eigen * dTdq_eigen;
+      math::Matrix4d Ji_4x4matrix_eigen = Tinv_a_eigen * dTdq_eigen;
       math::Vector6d Ji;
       Ji[0] = Ji_4x4matrix_eigen(2, 1);
       Ji[1] = Ji_4x4matrix_eigen(0, 2);
@@ -231,12 +231,12 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     Jacobian numeric_dJ = Jacobian::Zero(6, dof);
     for (int i = 0; i < dof; ++i) {
       // a
-      Eigen::VectorXd q_a = q;
+      math::VectorXd q_a = q;
       joint->setPositions(q_a);
       Jacobian J_a = joint->getRelativeJacobian();
 
       // b
-      Eigen::VectorXd q_b = q;
+      math::VectorXd q_b = q;
       q_b(i) += q_delta;
       joint->setPositions(q_b);
       Jacobian J_b = joint->getRelativeJacobian();
@@ -267,7 +267,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     if (joint->getNumDofs() == 0)
       return;
 
-    Eigen::Isometry3d T = joint->getRelativeTransform();
+    math::Isometry3d T = joint->getRelativeTransform();
     EXPECT_TRUE(math::verifyTransform(T));
   }
 }
@@ -431,7 +431,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
       "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
-  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  myWorld->setGravity(math::Vector3d(0.0, 0.0, 0.0));
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
@@ -505,7 +505,7 @@ TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
       "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
-  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  myWorld->setGravity(math::Vector3d(0.0, 0.0, 0.0));
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
@@ -597,7 +597,7 @@ TEST_F(JOINTS, JOINT_LIMITS)
       "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
-  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  myWorld->setGravity(math::Vector3d(0.0, 0.0, 0.0));
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
@@ -607,14 +607,14 @@ TEST_F(JOINTS, JOINT_LIMITS)
   EXPECT_TRUE(joint0 != nullptr);
 
   double limit = pi() / 6.0;
-  Eigen::VectorXd limits = Eigen::VectorXd::Constant(1, pi() / 2.0);
+  math::VectorXd limits = math::VectorXd::Constant(1, pi() / 2.0);
 
   joint0->setPositionLowerLimit(0, -limit);
   joint0->setPositionUpperLimit(0, limit);
   EXPECT_EQ(
-      joint0->getPositionLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
+      joint0->getPositionLowerLimits(), math::VectorXd::Constant(1, -limit));
   EXPECT_EQ(
-      joint0->getPositionUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+      joint0->getPositionUpperLimits(), math::VectorXd::Constant(1, limit));
 
   joint0->setPositionLowerLimits(-limits);
   joint0->setPositionUpperLimits(limits);
@@ -624,9 +624,9 @@ TEST_F(JOINTS, JOINT_LIMITS)
   joint0->setVelocityLowerLimit(0, -limit);
   joint0->setVelocityUpperLimit(0, limit);
   EXPECT_EQ(
-      joint0->getVelocityLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
+      joint0->getVelocityLowerLimits(), math::VectorXd::Constant(1, -limit));
   EXPECT_EQ(
-      joint0->getVelocityUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+      joint0->getVelocityUpperLimits(), math::VectorXd::Constant(1, limit));
 
   joint0->setVelocityLowerLimits(-limits);
   joint0->setVelocityUpperLimits(limits);
@@ -637,10 +637,9 @@ TEST_F(JOINTS, JOINT_LIMITS)
   joint0->setAccelerationUpperLimit(0, limit);
   EXPECT_EQ(
       joint0->getAccelerationLowerLimits(),
-      Eigen::VectorXd::Constant(1, -limit));
+      math::VectorXd::Constant(1, -limit));
   EXPECT_EQ(
-      joint0->getAccelerationUpperLimits(),
-      Eigen::VectorXd::Constant(1, limit));
+      joint0->getAccelerationUpperLimits(), math::VectorXd::Constant(1, limit));
 
   joint0->setAccelerationLowerLimits(-limits);
   joint0->setAccelerationUpperLimits(limits);
@@ -649,9 +648,8 @@ TEST_F(JOINTS, JOINT_LIMITS)
 
   joint0->setForceLowerLimit(0, -limit);
   joint0->setForceUpperLimit(0, limit);
-  EXPECT_EQ(
-      joint0->getForceLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
-  EXPECT_EQ(joint0->getForceUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+  EXPECT_EQ(joint0->getForceLowerLimits(), math::VectorXd::Constant(1, -limit));
+  EXPECT_EQ(joint0->getForceUpperLimits(), math::VectorXd::Constant(1, limit));
 
   joint0->setForceLowerLimits(-limits);
   joint0->setForceUpperLimits(limits);
@@ -668,7 +666,7 @@ void testJointCoulombFrictionForce(double _timeStep)
       "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
-  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  myWorld->setGravity(math::Vector3d(0.0, 0.0, 0.0));
   myWorld->setTimeStep(_timeStep);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -823,7 +821,7 @@ TEST_F(JOINTS, SpringRestPosition)
   ASSERT_NE(world, nullptr);
 
   world->addSkeleton(skel);
-  world->setGravity(Eigen::Vector3d::Zero());
+  world->setGravity(math::Vector3d::Zero());
 
   joint->setPosition(0, 0);
   joint->setRestPosition(0, -1.0_pi);
@@ -872,7 +870,7 @@ void testServoMotor()
   simulation::WorldPtr world = simulation::World::create();
   EXPECT_TRUE(world != nullptr);
 
-  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+  world->setGravity(math::Vector3d(0, 0, -9.81));
   world->setTimeStep(timestep);
 
   // Each pendulum has servo motor in the joint but also have different
@@ -1027,7 +1025,7 @@ void testMimicJoint()
   simulation::WorldPtr world = simulation::World::create();
   EXPECT_TRUE(world != nullptr);
 
-  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+  world->setGravity(math::Vector3d(0, 0, -9.81));
   world->setTimeStep(timestep);
 
   Vector3d dim(1, 1, 1);
@@ -1114,7 +1112,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
       "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
-  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  myWorld->setGravity(math::Vector3d(0.0, 0.0, 0.0));
   myWorld->setTimeStep(timeStep);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -1213,42 +1211,42 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
 //==============================================================================
 template <int N>
-Eigen::Matrix<double, N, 1> random_vec(double limit = 100)
+math::Matrix<double, N, 1> random_vec(double limit = 100)
 {
-  Eigen::Matrix<double, N, 1> v;
+  math::Matrix<double, N, 1> v;
   for (std::size_t i = 0; i < N; ++i)
     v[i] = math::Random::uniform(-std::abs(limit), std::abs(limit));
   return v;
 }
 
 //==============================================================================
-Eigen::Isometry3d random_transform(
+math::Isometry3d random_transform(
     double translation_limit = 100,
     double rotation_limit = 2 * dart::math::pi())
 {
-  Eigen::Vector3d r = random_vec<3>(translation_limit);
-  Eigen::Vector3d theta = random_vec<3>(rotation_limit);
+  math::Vector3d r = random_vec<3>(translation_limit);
+  math::Vector3d theta = random_vec<3>(rotation_limit);
 
-  Eigen::Isometry3d tf;
+  math::Isometry3d tf;
   tf.setIdentity();
   tf.translate(r);
 
   if (theta.norm() > 0)
-    tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+    tf.rotate(math::AngleAxisd(theta.norm(), theta.normalized()));
 
   return tf;
 }
 
 //==============================================================================
-Eigen::Isometry3d predict_joint_transform(
-    Joint* joint, const Eigen::Isometry3d& joint_tf)
+math::Isometry3d predict_joint_transform(
+    Joint* joint, const math::Isometry3d& joint_tf)
 {
   return joint->getTransformFromParentBodyNode() * joint_tf
          * joint->getTransformFromChildBodyNode().inverse();
 }
 
 //==============================================================================
-Eigen::Isometry3d get_relative_transform(BodyNode* bn, BodyNode* relativeTo)
+math::Isometry3d get_relative_transform(BodyNode* bn, BodyNode* relativeTo)
 {
   return relativeTo->getTransform().inverse() * bn->getTransform();
 }
@@ -1293,31 +1291,31 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   // Test a hundred times
   for (std::size_t n = 0; n < 100; ++n) {
     // -- convert transforms to positions and then positions back to transforms
-    Eigen::Isometry3d desired_freejoint_tf = random_transform();
+    math::Isometry3d desired_freejoint_tf = random_transform();
     freejoint->setPositions(
         FreeJoint::convertToPositions(desired_freejoint_tf));
-    Eigen::Isometry3d actual_freejoint_tf
+    math::Isometry3d actual_freejoint_tf
         = FreeJoint::convertToTransform(freejoint->getPositions());
 
-    Eigen::Isometry3d desired_eulerjoint_tf = random_transform();
-    desired_eulerjoint_tf.translation() = Eigen::Vector3d::Zero();
+    math::Isometry3d desired_eulerjoint_tf = random_transform();
+    desired_eulerjoint_tf.translation() = math::Vector3d::Zero();
     eulerjoint->setPositions(
         eulerjoint->convertToPositions(desired_eulerjoint_tf.linear()));
-    Eigen::Isometry3d actual_eulerjoint_tf
+    math::Isometry3d actual_eulerjoint_tf
         = eulerjoint->convertToTransform(eulerjoint->getPositions());
 
-    Eigen::Isometry3d desired_balljoint_tf = random_transform();
-    desired_balljoint_tf.translation() = Eigen::Vector3d::Zero();
+    math::Isometry3d desired_balljoint_tf = random_transform();
+    desired_balljoint_tf.translation() = math::Vector3d::Zero();
     balljoint->setPositions(
         BallJoint::convertToPositions(desired_balljoint_tf.linear()));
-    Eigen::Isometry3d actual_balljoint_tf
+    math::Isometry3d actual_balljoint_tf
         = BallJoint::convertToTransform(balljoint->getPositions());
 
     // -- collect everything so we can cycle through the tests
     std::vector<Joint*> joints;
     std::vector<BodyNode*> bns;
-    std::vector<Eigen::Isometry3d> desired_tfs;
-    std::vector<Eigen::Isometry3d> actual_tfs;
+    std::vector<math::Isometry3d> desired_tfs;
+    std::vector<math::Isometry3d> actual_tfs;
 
     joints.push_back(freejoint);
     bns.push_back(freejoint_bn);
@@ -1337,7 +1335,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     for (std::size_t i = 0; i < joints.size(); ++i) {
       Joint* joint = joints[i];
       BodyNode* bn = bns[i];
-      Eigen::Isometry3d tf = desired_tfs[i];
+      math::Isometry3d tf = desired_tfs[i];
 
       bool check_transform_conversion = test::equals(
           predict_joint_transform(joint, tf).matrix(),
@@ -1399,29 +1397,29 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
   joint1->setTransformFromChildBodyNode(random_transform());
 
   //-- Actual terms
-  Eigen::Isometry3d actualTf;
+  math::Isometry3d actualTf;
   math::Vector6d actualVel;
   math::Vector6d actualAcc;
 
-  Eigen::Vector3d actualLinVel;
-  Eigen::Vector3d actualAngVel;
-  Eigen::Vector3d actualLinAcc;
-  Eigen::Vector3d actualAngAcc;
+  math::Vector3d actualLinVel;
+  math::Vector3d actualAngVel;
+  math::Vector3d actualLinAcc;
+  math::Vector3d actualAngAcc;
 
-  Eigen::Vector3d oldLinVel;
-  Eigen::Vector3d oldAngVel;
-  Eigen::Vector3d oldLinAcc;
-  Eigen::Vector3d oldAngAcc;
+  math::Vector3d oldLinVel;
+  math::Vector3d oldAngVel;
+  math::Vector3d oldLinAcc;
+  math::Vector3d oldAngAcc;
 
   //-- Test
   for (std::size_t i = 0; i < numTests; ++i) {
-    const Eigen::Isometry3d desiredTf = random_transform();
+    const math::Isometry3d desiredTf = random_transform();
     const math::Vector6d desiredVel = random_vec<6>();
     const math::Vector6d desiredAcc = random_vec<6>();
-    const Eigen::Vector3d desiredLinVel = random_vec<3>();
-    const Eigen::Vector3d desiredAngVel = random_vec<3>();
-    const Eigen::Vector3d desiredLinAcc = random_vec<3>();
-    const Eigen::Vector3d desiredAngAcc = random_vec<3>();
+    const math::Vector3d desiredLinVel = random_vec<3>();
+    const math::Vector3d desiredAngVel = random_vec<3>();
+    const math::Vector3d desiredLinAcc = random_vec<3>();
+    const math::Vector3d desiredAngAcc = random_vec<3>();
 
     //-- Relative transformation
 

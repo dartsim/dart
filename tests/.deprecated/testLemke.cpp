@@ -7,12 +7,12 @@
 //==============================================================================
 TEST(Lemke, Lemke_1D)
 {
-    Eigen::MatrixXd A;
-    Eigen::VectorXd b;
-    Eigen::VectorXd* f;
+    math::MatrixXd A;
+    math::VectorXd b;
+    math::VectorXd* f;
     int err;
 
-    f =  new Eigen::VectorXd(1);
+    f =  new math::VectorXd(1);
     A.resize(1,1);
     A << 1;
     b.resize(1);
@@ -26,12 +26,12 @@ TEST(Lemke, Lemke_1D)
 //==============================================================================
 TEST(Lemke, Lemke_2D)
 {
-    Eigen::MatrixXd A;
-    Eigen::VectorXd b;
-    Eigen::VectorXd* f;
+    math::MatrixXd A;
+    math::VectorXd b;
+    math::VectorXd* f;
     int err;
 
-    f =  new Eigen::VectorXd(2);
+    f =  new math::VectorXd(2);
     A.resize(2,2);
     A << 3.12, 0.1877, 0.1877, 3.254;
     b.resize(2);
@@ -45,12 +45,12 @@ TEST(Lemke, Lemke_2D)
 //==============================================================================
 TEST(Lemke, Lemke_4D)
 {
-    Eigen::MatrixXd A;
-    Eigen::VectorXd b;
-    Eigen::VectorXd* f;
+    math::MatrixXd A;
+    math::VectorXd b;
+    math::VectorXd* f;
     int err;
 
-    f =  new Eigen::VectorXd(4);
+    f =  new math::VectorXd(4);
     A.resize(4,4);
     A <<
              3.999,0.9985, 1.001,    -2,
@@ -74,12 +74,12 @@ TEST(Lemke, Lemke_4D)
 //==============================================================================
 TEST(Lemke, Lemke_6D)
 {
-    Eigen::MatrixXd A;
-    Eigen::VectorXd b;
-    Eigen::VectorXd* f;
+    math::MatrixXd A;
+    math::VectorXd b;
+    math::VectorXd* f;
     int err;
 
-    f =  new Eigen::VectorXd(6);
+    f =  new math::VectorXd(6);
     A.resize(6,6);
     A <<
             3.1360,   -2.0370,   0.9723,   0.1096,  -2.0370,   0.9723,
@@ -107,12 +107,12 @@ TEST(Lemke, Lemke_6D)
 //==============================================================================
 TEST(Lemke, Lemke_12D)
 {
-    Eigen::MatrixXd A;
-    Eigen::VectorXd b;
-    Eigen::VectorXd* f;
+    math::MatrixXd A;
+    math::VectorXd b;
+    math::VectorXd* f;
     int err;
 
-    f =  new Eigen::VectorXd(12);
+    f =  new math::VectorXd(12);
     A.resize(12,12);
     A <<
                4.03, -1.014, -1.898,   1.03, -1.014, -1.898,      1, -1.014, -1.898,     -2, -1.014, -1.898,

@@ -48,7 +48,7 @@ TEST(Issue1583, ServoJointWithPositionLimits)
   ASSERT_NE(skel, nullptr);
 
   auto world = dart::simulation::World::create();
-  world->setGravity(Eigen::Vector3d::Zero());
+  world->setGravity(math::Vector3d::Zero());
   world->addSkeleton(skel);
   ASSERT_EQ(world->getNumSkeletons(), 1);
 

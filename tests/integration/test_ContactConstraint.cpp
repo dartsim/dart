@@ -54,7 +54,7 @@ void testContactWithKinematicJoint(
   auto joint1 = pair1.first;
   joint1->setActuatorType(dynamics::Joint::VELOCITY);
   auto shape1
-      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+      = std::make_shared<dynamics::BoxShape>(math::Vector3d(1.0, 1.0, 1.0));
   bodyNode1->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
       shape1);
   skeleton1->setPosition(5, 0.0);
@@ -65,7 +65,7 @@ void testContactWithKinematicJoint(
   auto joint2 = pair2.first;
   joint2->setActuatorType(dynamics::Joint::FORCE);
   auto shape2
-      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
+      = std::make_shared<dynamics::BoxShape>(math::Vector3d(0.5, 0.5, 0.5));
   bodyNode2->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
       shape2);
   skeleton2->setPosition(5, 0.75);

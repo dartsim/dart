@@ -155,7 +155,7 @@ void Collision::dropWithRotation(
   dart::collision::fcl::Transform3 objectTransf;
   objectTransf.setIdentity();
   objectTransf.linear()
-      = eulerZYXToMatrix(Eigen::Vector3d(EulerZ, EulerY, EulerX));
+      = eulerZYXToMatrix(math::Vector3d(EulerZ, EulerY, EulerX));
   dart::collision::fcl::Vector3 dropping_position(0, 0, 0);
   objectTransf.translation() = dropping_position;
 
@@ -265,7 +265,7 @@ TEST_F(Collision, FCL_BOX_BOX)
   dart::collision::fcl::Transform3 objectTransf;
   objectTransf.setIdentity();
   objectTransf.linear()
-      = eulerZYXToMatrix(Eigen::Vector3d(EulerZ, EulerY, EulerX));
+      = eulerZYXToMatrix(math::Vector3d(EulerZ, EulerY, EulerX));
   dart::collision::fcl::Vector3 dropping_position(0.0, 0.0, 5.0);
   objectTransf.translation() = dropping_position;
 
@@ -299,9 +299,9 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame3 = SimpleFrame::createShared(Frame::World());
 
-  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
-  ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
-  ShapePtr shape3(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape1(new BoxShape(math::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(math::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape3(new BoxShape(math::Vector3d(1.0, 1.0, 1.0)));
 
   simpleFrame1->setShape(shape1);
   simpleFrame2->setShape(shape2);
@@ -338,17 +338,17 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   collision::CollisionOption option;
   collision::CollisionResult result;
 
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
-  simpleFrame3->setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(1.1, 0.0, 0.0));
+  simpleFrame3->setTranslation(math::Vector3d(2.2, 0.0, 0.0));
   EXPECT_FALSE(group1->collide(option, &result));
   EXPECT_FALSE(group2->collide(option, &result));
   EXPECT_FALSE(group3->collide(option, &result));
   EXPECT_FALSE(groupAll->collide(option, &result));
 
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
-  simpleFrame3->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(0.5, 0.0, 0.0));
+  simpleFrame3->setTranslation(math::Vector3d(1.0, 0.0, 0.0));
   EXPECT_TRUE(group1->collide(group2.get(), option, &result));
   EXPECT_TRUE(group1->collide(group2.get(), option, &result));
   EXPECT_TRUE(group2->collide(group3.get(), option, &result));
@@ -356,9 +356,9 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 
   auto group23
       = cd->createCollisionGroup(simpleFrame2.get(), simpleFrame3.get());
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
-  simpleFrame3->setTranslation(Eigen::Vector3d(1.6, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(1.1, 0.0, 0.0));
+  simpleFrame3->setTranslation(math::Vector3d(1.6, 0.0, 0.0));
   EXPECT_FALSE(group1->collide(group2.get()));
   EXPECT_FALSE(group1->collide(group3.get()));
   EXPECT_TRUE(group2->collide(group3.get()));
@@ -419,8 +419,8 @@ void testSphereSphere(
 
   collision::CollisionResult result;
 
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(2.0, 0.0, 0.0));
 
   //----------------------------------------------------------------------------
   // Test 1: No contact
@@ -430,8 +430,8 @@ void testSphereSphere(
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(1.5, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(1.5, 0.0, 0.0));
 
   //----------------------------------------------------------------------------
   // Test 2: Point contact
@@ -444,10 +444,10 @@ void testSphereSphere(
   const auto& contact = result.getContact(0);
 
   // Test contact location
-  EXPECT_TRUE(contact.point.isApprox(Eigen::Vector3d::UnitX(), tol));
+  EXPECT_TRUE(contact.point.isApprox(math::Vector3d::UnitX(), tol));
 
   // Test normal
-  Eigen::Vector3d expectedNormal;
+  math::Vector3d expectedNormal;
   if (result.getContact(0).collisionObject1->getShapeFrame()
       == simpleFrame1.get())
     expectedNormal << -1, 0, 0;
@@ -468,8 +468,8 @@ void testSphereSphere(
   // smaller sphere
   //----------------------------------------------------------------------------
 
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d::Zero());
   result.clear();
   if (cd->getType() == FCLCollisionDetector::getStaticType()) {
     EXPECT_FALSE(group->collide(option, &result));
@@ -533,9 +533,9 @@ TEST_F(Collision, SphereSphere)
 
 //==============================================================================
 bool checkBoundingBox(
-    const Eigen::Vector3d& min,
-    const Eigen::Vector3d& max,
-    const Eigen::Vector3d& point,
+    const math::Vector3d& min,
+    const math::Vector3d& max,
+    const math::Vector3d& point,
     double tol = 1e-12)
 {
   for (auto i = 0u; i < 3u; ++i) {
@@ -553,13 +553,13 @@ void testBoxBox(
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
-  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
-  ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  ShapePtr shape1(new BoxShape(math::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(math::Vector3d(0.5, 0.5, 0.5)));
   simpleFrame1->setShape(shape1);
   simpleFrame2->setShape(shape2);
 
-  Eigen::Vector3d pos1 = Eigen::Vector3d(0.0, 0.0, -0.5);
-  Eigen::Vector3d pos2 = Eigen::Vector3d(0.0, 0.5, 0.25);
+  math::Vector3d pos1 = math::Vector3d(0.0, 0.0, -0.5);
+  math::Vector3d pos2 = math::Vector3d(0.0, 0.5, 0.25);
   simpleFrame1->setTranslation(pos1);
   simpleFrame2->setTranslation(pos2);
 
@@ -582,8 +582,8 @@ void testBoxBox(
   result.clear();
   EXPECT_TRUE(groupAll->collide(option, &result));
 
-  Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
-  Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
+  math::Vector3d min = math::Vector3d(-0.25, 0.25, 0.0);
+  math::Vector3d max = math::Vector3d(0.25, 0.5, 0.0);
 
   const auto numContacts = result.getNumContacts();
 
@@ -647,16 +647,16 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame3 = SimpleFrame::createShared(Frame::World());
 
-  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
-  ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
-  ShapePtr shape3(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  ShapePtr shape1(new BoxShape(math::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(math::Vector3d(0.5, 0.5, 0.5)));
+  ShapePtr shape3(new BoxShape(math::Vector3d(0.5, 0.5, 0.5)));
   simpleFrame1->setShape(shape1);
   simpleFrame2->setShape(shape2);
   simpleFrame3->setShape(shape3);
 
-  Eigen::Vector3d pos1 = Eigen::Vector3d(0.0, 0.0, -0.5);
-  Eigen::Vector3d pos2 = Eigen::Vector3d(0.0, 0.5, 0.25);
-  Eigen::Vector3d pos3 = Eigen::Vector3d(0.0, -0.5, 0.25);
+  math::Vector3d pos1 = math::Vector3d(0.0, 0.0, -0.5);
+  math::Vector3d pos2 = math::Vector3d(0.0, 0.5, 0.25);
+  math::Vector3d pos3 = math::Vector3d(0.0, -0.5, 0.25);
   simpleFrame1->setTranslation(pos1);
   simpleFrame2->setTranslation(pos2);
   simpleFrame3->setTranslation(pos3);
@@ -722,14 +722,14 @@ void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
   collision::CollisionResult result;
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(2.0, 0.0, 0.0));
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(0.75, 0.0, 0.0));
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }
@@ -793,14 +793,14 @@ void testConeCone(const std::shared_ptr<CollisionDetector>& cd)
   collision::CollisionResult result;
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(2.0, 0.0, 0.0));
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(0.75, 0.0, 0.0));
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }
@@ -864,14 +864,14 @@ void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
   collision::CollisionResult result;
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(2.0, 0.0, 0.0));
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(0.74, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d::Zero());
+  simpleFrame2->setTranslation(math::Vector3d(0.74, 0.0, 0.0));
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }
@@ -920,9 +920,9 @@ void testPlane(const std::shared_ptr<CollisionDetector>& cd)
   auto sphereFrame = SimpleFrame::createShared(Frame::World());
   auto boxFrame = SimpleFrame::createShared(Frame::World());
 
-  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  auto plane = std::make_shared<PlaneShape>(math::Vector3d::UnitZ(), 0.0);
   auto sphere = std::make_shared<SphereShape>(0.5);
-  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto box = std::make_shared<BoxShape>(math::Vector3d(1.0, 1.0, 1.0));
 
   planeFrame->setShape(plane);
   sphereFrame->setShape(sphere);
@@ -939,13 +939,13 @@ void testPlane(const std::shared_ptr<CollisionDetector>& cd)
   collision::CollisionResult result;
 
   result.clear();
-  sphereFrame->setTranslation(Eigen::Vector3d(-10.0, 0.0, 1.0));
-  boxFrame->setTranslation(Eigen::Vector3d(-8.0, 0.0, 1.0));
+  sphereFrame->setTranslation(math::Vector3d(-10.0, 0.0, 1.0));
+  boxFrame->setTranslation(math::Vector3d(-8.0, 0.0, 1.0));
   EXPECT_FALSE(group->collide(option, &result));
 
   result.clear();
-  sphereFrame->setTranslation(Eigen::Vector3d(-10.0, 0.0, 0.49));
-  boxFrame->setTranslation(Eigen::Vector3d(-8.0, 0.0, 0.49));
+  sphereFrame->setTranslation(math::Vector3d(-10.0, 0.0, 0.49));
+  boxFrame->setTranslation(math::Vector3d(-8.0, 0.0, 0.49));
   EXPECT_TRUE(group->collide(option, &result));
 }
 
@@ -976,7 +976,7 @@ void testHeightmapBox(
     const bool extendsUntilGroundPlane = false,
     const S odeThck = 0)
 {
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
+  using Vector3 = math::Matrix<S, 3, 1>;
 
   ///////////////////////////////////////
   // Set test parameters.
@@ -1012,7 +1012,7 @@ void testHeightmapBox(
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto terrainShape = std::make_shared<HeightmapShape<S>>();
   auto boxShape = std::make_shared<BoxShape>(
-      Eigen::Vector3d::Constant(static_cast<double>(boxSize)));
+      math::Vector3d::Constant(static_cast<double>(boxSize)));
 
   // make a terrain with a linearly increasing slope
   std::vector<S> heights = {minH, halfHeight, halfHeight, maxH};
@@ -1038,7 +1038,7 @@ void testHeightmapBox(
   collision::CollisionResult result;
   // the terrain is going to remain in the origin. During the tests,
   // we are only moving the box.
-  terrainFrame->setTranslation(Eigen::Vector3d::Zero());
+  terrainFrame->setTranslation(math::Vector3d::Zero());
 
   // there should be no collision underneath the height field, which should be
   // on the x/y plane.
@@ -1278,7 +1278,7 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   // Create two bodies skeleton. The two bodies are placed at the same position
   // with the same size shape so that they collide by default.
   auto skel = Skeleton::create();
-  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
+  auto shape = std::make_shared<BoxShape>(math::Vector3d(1, 1, 1));
   auto pair0 = skel->createJointAndBodyNodePair<RevoluteJoint>(nullptr);
   auto* body0 = pair0.second;
   body0->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
@@ -1377,9 +1377,9 @@ TEST_F(Collision, Filter)
 //==============================================================================
 void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 {
-  Eigen::Vector3d size(1.0, 1.0, 1.0);
-  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
-  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
+  math::Vector3d size(1.0, 1.0, 1.0);
+  math::Vector3d pos1(0.0, 0.0, 0.0);
+  math::Vector3d pos2(0.5, 0.0, 0.0);
 
   auto boxSkeleton1 = createBox(size, pos1);
   auto boxSkeleton2 = createBox(size, pos2);
@@ -1592,13 +1592,13 @@ TEST_F(Collision, VoxelGrid)
   collision::CollisionResult result;
 
   result.clear();
-  simpleFrame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame2->setTranslation(math::Vector3d(0.0, 0.0, 0.0));
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   result.clear();
-  shape1->updateOccupancy(Eigen::Vector3d(0.0, 0.0, 0.0), true);
-  simpleFrame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  shape1->updateOccupancy(math::Vector3d(0.0, 0.0, 0.0), true);
+  simpleFrame2->setTranslation(math::Vector3d(0.0, 0.0, 0.0));
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }

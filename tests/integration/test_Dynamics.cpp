@@ -178,11 +178,11 @@ void DynamicsTest::randomizeRefFrames()
   for (std::size_t i = 0; i < refFrames.size(); ++i) {
     SimpleFrame* F = refFrames[i];
 
-    Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
-    Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(
+    math::Vector3d p = Random::uniform<math::Vector3d>(-100, 100);
+    math::Vector3d theta = Random::uniform<math::Vector3d>(
         -2 * dart::math::pi(), 2 * dart::math::pi());
 
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    math::Isometry3d tf(math::Isometry3d::Identity());
     tf.translate(p);
     tf.linear() = math::eulerXYZToMatrix(theta);
 
@@ -475,7 +475,7 @@ void compareBodyNodeFkToJacobian(
 void compareBodyNodeFkToJacobian(
     const BodyNode* bn,
     const Frame* refFrame,
-    const Eigen::Vector3d& offset,
+    const math::Vector3d& offset,
     double tolerance)
 {
   using math::AngularJacobian;
@@ -788,7 +788,7 @@ void compareBodyNodeFkToJacobianRelative(
 //==============================================================================
 void compareBodyNodeFkToJacobianRelative(
     const JacobianNode* bn,
-    const Eigen::Vector3d& _offset,
+    const math::Vector3d& _offset,
     const JacobianNode* relativeTo,
     const Frame* refFrame,
     double tolerance)
@@ -946,14 +946,14 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
         compareBodyNodeFkToJacobian(
             bn,
             Frame::World(),
-            Random::uniform<Eigen::Vector3d>(-10, 10),
+            Random::uniform<math::Vector3d>(-10, 10),
             TOLERANCE);
 
         // Compare results using this BodyNode's own reference Frame
         compareBodyNodeFkToJacobian(bn, bn, TOLERANCE);
         compareBodyNodeFkToJacobian(bn, bn, bn->getLocalCOM(), TOLERANCE);
         compareBodyNodeFkToJacobian(
-            bn, bn, Random::uniform<Eigen::Vector3d>(-10, 10), TOLERANCE);
+            bn, bn, Random::uniform<math::Vector3d>(-10, 10), TOLERANCE);
 
         // Compare results using the randomized reference Frames
         for (std::size_t r = 0; r < refFrames.size(); ++r) {
@@ -963,7 +963,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
           compareBodyNodeFkToJacobian(
               bn,
               refFrames[r],
-              Random::uniform<Eigen::Vector3d>(-10, 10),
+              Random::uniform<math::Vector3d>(-10, 10),
               TOLERANCE);
         }
 
@@ -990,7 +990,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
               bn, bn->getLocalCOM(), relativeTo, Frame::World(), TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
               bn,
-              Random::uniform<Eigen::Vector3d>(-10, 10),
+              Random::uniform<math::Vector3d>(-10, 10),
               relativeTo,
               Frame::World(),
               TOLERANCE);
@@ -1000,7 +1000,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
               bn, bn->getLocalCOM(), relativeTo, bn, TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
               bn,
-              Random::uniform<Eigen::Vector3d>(-10, 10),
+              Random::uniform<math::Vector3d>(-10, 10),
               relativeTo,
               bn,
               TOLERANCE);
@@ -1011,7 +1011,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
               bn, bn->getLocalCOM(), relativeTo, relativeTo, TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
               bn,
-              Random::uniform<Eigen::Vector3d>(-10, 10),
+              Random::uniform<math::Vector3d>(-10, 10),
               relativeTo,
               relativeTo,
               TOLERANCE);
@@ -1023,7 +1023,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
                 bn, bn->getLocalCOM(), relativeTo, refFrames[r], TOLERANCE);
             compareBodyNodeFkToJacobianRelative(
                 bn,
-                Random::uniform<Eigen::Vector3d>(-10, 10),
+                Random::uniform<math::Vector3d>(-10, 10),
                 relativeTo,
                 refFrames[r],
                 TOLERANCE);
@@ -1167,15 +1167,15 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
       std::size_t numBodies = skeleton->getNumBodyNodes();
 
       // Generate random states
-      VectorXd q = Random::uniform<Eigen::VectorXd>(dof, qLB, qUB);
-      VectorXd dq = Random::uniform<Eigen::VectorXd>(dof, dqLB, dqUB);
-      VectorXd ddq = Random::uniform<Eigen::VectorXd>(dof, ddqLB, ddqUB);
+      VectorXd q = Random::uniform<math::VectorXd>(dof, qLB, qUB);
+      VectorXd dq = Random::uniform<math::VectorXd>(dof, dqLB, dqUB);
+      VectorXd ddq = Random::uniform<math::VectorXd>(dof, ddqLB, ddqUB);
 
       skeleton->setPositions(q);
       skeleton->setVelocities(dq);
       skeleton->setAccelerations(ddq);
 
-      std::map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
+      std::map<dynamics::BodyNodePtr, math::Isometry3d> Tmap;
       for (auto k = 0u; k < numBodies; ++k) {
         auto body = skeleton->getBodyNode(k);
         Tmap[body] = body->getTransform();
@@ -1377,26 +1377,26 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   auto dof = skel->getNumDofs();
   auto numBodies = skel->getNumBodyNodes();
 
-  Eigen::VectorXd q;
-  Eigen::VectorXd dq;
-  Eigen::VectorXd ddq;
+  math::VectorXd q;
+  math::VectorXd dq;
+  math::VectorXd ddq;
 
-  std::map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
+  std::map<dynamics::BodyNodePtr, math::Isometry3d> Tmap;
   std::map<dynamics::BodyNodePtr, math::Vector6d> Vmap;
   std::map<dynamics::BodyNodePtr, math::Vector6d> dVmap;
 
   for (auto j = 0u; j < numBodies; ++j) {
     auto body = skel->getBodyNode(j);
 
-    Tmap[body] = Eigen::Isometry3d::Identity();
+    Tmap[body] = math::Isometry3d::Identity();
     Vmap[body] = math::Vector6d::Zero();
     dVmap[body] = math::Vector6d::Zero();
   }
 
   for (auto i = 0u; i < nRandomItr; ++i) {
-    q = Random::uniform<Eigen::VectorXd>(dof, qLB, qUB);
-    dq = Random::uniform<Eigen::VectorXd>(dof, dqLB, dqUB);
-    ddq = Random::uniform<Eigen::VectorXd>(dof, ddqLB, ddqUB);
+    q = Random::uniform<math::VectorXd>(dof, qLB, qUB);
+    dq = Random::uniform<math::VectorXd>(dof, dqLB, dqUB);
+    ddq = Random::uniform<math::VectorXd>(dof, ddqLB, ddqUB);
 
     skel->setPositions(q);
     skel->setVelocities(dq);
@@ -1407,13 +1407,13 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
         auto body = skel->getBodyNode(k);
         auto joint = skel->getJoint(k);
         auto parentBody = body->getParentBodyNode();
-        Eigen::MatrixXd S = joint->getRelativeJacobian();
-        Eigen::MatrixXd dS = joint->getRelativeJacobianTimeDeriv();
-        Eigen::VectorXd jointQ = joint->getPositions();
-        Eigen::VectorXd jointDQ = joint->getVelocities();
-        Eigen::VectorXd jointDDQ = joint->getAccelerations();
+        math::MatrixXd S = joint->getRelativeJacobian();
+        math::MatrixXd dS = joint->getRelativeJacobianTimeDeriv();
+        math::VectorXd jointQ = joint->getPositions();
+        math::VectorXd jointDQ = joint->getVelocities();
+        math::VectorXd jointDDQ = joint->getAccelerations();
 
-        Eigen::Isometry3d relT = body->getRelativeTransform();
+        math::Isometry3d relT = body->getRelativeTransform();
         math::Vector6d relV = S * jointDQ;
         math::Vector6d relDV = dS * jointDQ + S * jointDDQ;
 
@@ -1947,7 +1947,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
 //==============================================================================
 void compareCOMAccelerationToGravity(
-    SkeletonPtr skel, const Eigen::Vector3d& gravity, double tolerance)
+    SkeletonPtr skel, const math::Vector3d& gravity, double tolerance)
 {
   const std::size_t numFrames = 1e+2;
   skel->setGravity(gravity);
@@ -2160,11 +2160,11 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
         body->setConstraintImpulse(impulseOnBody);
 
         // Get constraint force vector
-        Eigen::VectorXd constraintVector1 = skel->getConstraintForces();
+        math::VectorXd constraintVector1 = skel->getConstraintForces();
 
         // Get constraint force vector by using Jacobian of skeleon
-        Eigen::MatrixXd bodyJacobian = body->getJacobian();
-        Eigen::VectorXd constraintVector2
+        math::MatrixXd bodyJacobian = body->getJacobian();
+        math::VectorXd constraintVector2
             = bodyJacobian.transpose() * impulseOnBody / skel->getTimeStep();
 
         std::size_t index = 0;
@@ -2414,8 +2414,8 @@ TEST_F(DynamicsTest, HybridDynamics)
   const std::size_t numDofs = skel->getNumDofs();
 
   // Zero initial states
-  Eigen::VectorXd q0 = Eigen::VectorXd::Zero(numDofs);
-  Eigen::VectorXd dq0 = Eigen::VectorXd::Zero(numDofs);
+  math::VectorXd q0 = math::VectorXd::Zero(numDofs);
+  math::VectorXd dq0 = math::VectorXd::Zero(numDofs);
 
   // Initialize the skeleton with the zero initial states
   skel->setPositions(q0);
@@ -2431,8 +2431,8 @@ TEST_F(DynamicsTest, HybridDynamics)
   EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::VELOCITY);
 
   // Prepare command for each joint types per simulation steps
-  Eigen::MatrixXd command = Eigen::MatrixXd::Zero(numFrames, numDofs);
-  Eigen::VectorXd amp = Eigen::VectorXd::Zero(numDofs);
+  math::MatrixXd command = math::MatrixXd::Zero(numFrames, numDofs);
+  math::VectorXd amp = math::VectorXd::Zero(numDofs);
   for (std::size_t i = 0; i < numDofs; ++i)
     amp[i] = math::Random::uniform(-1.5, 1.5);
   for (std::size_t i = 0; i < numFrames; ++i) {
@@ -2441,7 +2441,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   }
 
   // Record joint forces for joint[1~4]
-  Eigen::MatrixXd forces = Eigen::MatrixXd::Zero(numFrames, numDofs);
+  math::MatrixXd forces = math::MatrixXd::Zero(numFrames, numDofs);
   for (std::size_t i = 0; i < numFrames; ++i) {
     skel->setCommands(command.row(i));
 
@@ -2475,7 +2475,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::FORCE);
 
   // Test if the skeleton moves as the command with the joint forces
-  Eigen::MatrixXd output = Eigen::MatrixXd::Zero(numFrames, numDofs);
+  math::MatrixXd output = math::MatrixXd::Zero(numFrames, numDofs);
   for (std::size_t i = 0; i < numFrames; ++i) {
     skel->setCommands(forces.row(i));
 
@@ -2500,7 +2500,7 @@ TEST_F(DynamicsTest, OffsetCOM)
 {
   WorldPtr world = World::create();
   ASSERT_TRUE(world != nullptr);
-  world->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  world->setGravity(math::Vector3d(0.0, 0.0, 0.0));
   const double dt = 0.001;
   world->setTimeStep(dt);
 
@@ -2513,8 +2513,8 @@ TEST_F(DynamicsTest, OffsetCOM)
       box->getShapeNode(0)->getShape()->computeInertia(inertia.getMass()));
   inertia.setLocalCOM({0, 500, 0});
   box->setInertia(inertia);
-  Eigen::Isometry3d boxInitialPose = box->getWorldTransform();
-  Eigen::Vector3d torque(0, 0, 100);
+  math::Isometry3d boxInitialPose = box->getWorldTransform();
+  math::Vector3d torque(0, 0, 100);
   box->addExtTorque(torque, false);
 
   {

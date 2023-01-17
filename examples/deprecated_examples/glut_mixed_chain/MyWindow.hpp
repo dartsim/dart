@@ -62,13 +62,13 @@ public:
 
 private:
   /// \brief
-  Eigen::Vector3d mForceOnRigidBody;
+  dart::math::Vector3d mForceOnRigidBody;
 
   /// \brief Number of frames for applying external force
   int mImpulseDuration;
 
   /// \brief
-  Eigen::Vector3d mForceOnVertex;
+  dart::math::Vector3d mForceOnVertex;
 };
 
 #endif // EXAMPLES_TESTDROP_MYWINDOW_HPP_

@@ -32,6 +32,8 @@
 
 #include "Controller.hpp"
 
+using namespace dart;
+
 //==============================================================================
 Controller::Controller(
     dart::dynamics::SkeletonPtr _robot, dart::dynamics::BodyNode* _endEffector)
@@ -65,29 +67,29 @@ Controller::Controller(
 Controller::~Controller() {}
 
 //==============================================================================
-void Controller::update(const Eigen::Vector3d& _targetPosition)
+void Controller::update(const math::Vector3d& _targetPosition)
 {
   using namespace dart;
 
   // Get equation of motions
-  Eigen::Vector3d x = mEndEffector->getTransform().translation();
-  Eigen::Vector3d dx = mEndEffector->getLinearVelocity();
-  Eigen::MatrixXd invM = mRobot->getInvMassMatrix();                 // n x n
-  Eigen::VectorXd Cg = mRobot->getCoriolisAndGravityForces();        // n x 1
+  math::Vector3d x = mEndEffector->getTransform().translation();
+  math::Vector3d dx = mEndEffector->getLinearVelocity();
+  math::MatrixXd invM = mRobot->getInvMassMatrix();                  // n x n
+  math::VectorXd Cg = mRobot->getCoriolisAndGravityForces();         // n x 1
   math::LinearJacobian Jv = mEndEffector->getLinearJacobian();       // 3 x n
   math::LinearJacobian dJv = mEndEffector->getLinearJacobianDeriv(); // 3 x n
-  Eigen::VectorXd dq = mRobot->getVelocities();                      // n x 1
+  math::VectorXd dq = mRobot->getVelocities();                       // n x 1
 
   // Compute operational space values
-  Eigen::MatrixXd A = Jv * invM;                   // 3 x n
-  Eigen::Vector3d b = /*-(A*Cg) + */ dJv * dq;     // 3 x 1
-  Eigen::MatrixXd M2 = Jv * invM * Jv.transpose(); // 3 x 3
+  math::MatrixXd A = Jv * invM;                   // 3 x n
+  math::Vector3d b = /*-(A*Cg) + */ dJv * dq;     // 3 x 1
+  math::MatrixXd M2 = Jv * invM * Jv.transpose(); // 3 x 3
 
   // Compute virtual operational space spring force at the end effector
-  Eigen::Vector3d f = -mKp * (x - _targetPosition) - mKv * dx;
+  math::Vector3d f = -mKp * (x - _targetPosition) - mKv * dx;
 
   // Compute desired operational space acceleration given f
-  Eigen::Vector3d desired_ddx = b + M2 * f;
+  math::Vector3d desired_ddx = b + M2 * f;
 
   // Gravity compensation
   mForces = Cg;

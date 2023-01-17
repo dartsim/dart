@@ -33,6 +33,8 @@
 #include <dart/dart.hpp>
 #include <dart/external/imgui/imgui.h>
 
+using namespace dart::math;
+
 //==============================================================================
 class CustomWorldNode : public dart::gui::osg::WorldNode
 {
@@ -230,9 +232,9 @@ protected:
     mGravity = gravity;
 
     if (mGravity)
-      mWorld->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
+      mWorld->setGravity(-9.81 * Vector3d::UnitZ());
     else
-      mWorld->setGravity(Eigen::Vector3d::Zero());
+      mWorld->setGravity(Vector3d::Zero());
   }
 
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;

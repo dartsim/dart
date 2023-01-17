@@ -34,6 +34,12 @@
 
 #include <random>
 
+using namespace dart::math;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+using namespace dart::gui;
+using namespace dart::gui::glut;
+
 [[maybe_unused]] const double default_shape_density = 1000;  // kg/m^3
 [[maybe_unused]] const double default_shape_height = 0.1;    // m
 [[maybe_unused]] const double default_shape_width = 0.03;    // m
@@ -45,15 +51,12 @@
 [[maybe_unused]] const double maximum_start_v = 4.0; // m/s
 [[maybe_unused]] const double default_start_v = 3.5; // m/s
 
-[[maybe_unused]] const double minimum_launch_angle
-    = dart::math::toRadian(30.0); // rad
-[[maybe_unused]] const double maximum_launch_angle
-    = dart::math::toRadian(70.0); // rad
-[[maybe_unused]] const double default_launch_angle
-    = dart::math::toRadian(45.0); // rad
+[[maybe_unused]] const double minimum_launch_angle = toRadian(30.0); // rad
+[[maybe_unused]] const double maximum_launch_angle = toRadian(70.0); // rad
+[[maybe_unused]] const double default_launch_angle = toRadian(45.0); // rad
 
-[[maybe_unused]] const double maximum_start_w = 6 * dart::math::pi(); // rad/s
-[[maybe_unused]] const double default_start_w = 3 * dart::math::pi(); // rad/s
+[[maybe_unused]] const double maximum_start_w = 6 * pi(); // rad/s
+[[maybe_unused]] const double default_start_w = 3 * pi(); // rad/s
 
 [[maybe_unused]] const double ring_spring_stiffness = 0.5;
 [[maybe_unused]] const double ring_damping_coefficient = 0.05;
@@ -70,11 +73,6 @@ const double default_wall_height = 1;
 [[maybe_unused]] const double default_vertex_stiffness = 1000.0;
 [[maybe_unused]] const double default_edge_stiffness = 1.0;
 [[maybe_unused]] const double default_soft_damping = 5.0;
-
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::gui::glut;
 
 void setupRing(const SkeletonPtr& /*ring*/)
 {
@@ -335,7 +333,7 @@ BodyNode* addSoftBody(
   return bn;
 }
 
-void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
+void setAllColors(const SkeletonPtr& object, const Vector3d& color)
 {
   // Set the color of all the shapes in the object
   object->setColor(color);
@@ -348,7 +346,7 @@ SkeletonPtr createBall()
   // Give the ball a body
   addRigidBody<FreeJoint>(ball, "rigid ball", EllipsoidShape::getStaticType());
 
-  setAllColors(ball, dart::math::Colord::Red());
+  setAllColors(ball, Colord::Red());
 
   return ball;
 }
@@ -364,7 +362,7 @@ SkeletonPtr createRigidChain()
       chain, "rigid cyl 2", CylinderShape::getStaticType(), bn);
   addRigidBody<BallJoint>(chain, "rigid box 3", BoxShape::getStaticType(), bn);
 
-  setAllColors(chain, dart::math::Colord::Orange());
+  setAllColors(chain, Colord::Orange());
 
   return chain;
 }
@@ -387,7 +385,7 @@ SkeletonPtr createRigidRing()
   addRigidBody<BallJoint>(
       ring, "rigid cyl 6", CylinderShape::getStaticType(), bn);
 
-  setAllColors(ring, dart::math::Colord::Blue());
+  setAllColors(ring, Colord::Blue());
 
   return ring;
 }
@@ -402,7 +400,7 @@ SkeletonPtr createSoftBody()
   // Add a rigid collision geometry and inertia
   // Lesson 2f
 
-  setAllColors(soft, dart::math::Colord::Fuchsia());
+  setAllColors(soft, Colord::Fuchsia());
 
   return soft;
 }
@@ -418,7 +416,7 @@ SkeletonPtr createHybridBody()
   // Add a rigid body attached by a WeldJoint
   // Lesson 2g
 
-  setAllColors(hybrid, dart::math::Colord::Green());
+  setAllColors(hybrid, Colord::Green());
 
   return hybrid;
 }
@@ -429,12 +427,12 @@ SkeletonPtr createGround()
 
   BodyNode* bn = ground->createJointAndBodyNodePair<WeldJoint>().second;
 
-  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Vector3d(
       default_ground_width, default_ground_width, default_wall_thickness));
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(Vector3d(1.0, 1.0, 1.0));
 
   return ground;
 }
@@ -445,15 +443,15 @@ SkeletonPtr createWall()
 
   BodyNode* bn = wall->createJointAndBodyNodePair<WeldJoint>().second;
 
-  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Vector3d(
       default_wall_thickness, default_ground_width, default_wall_height));
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
+  shapeNode->getVisualAspect()->setColor(Vector3d(0.8, 0.8, 0.8));
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(
+  Isometry3d tf(Isometry3d::Identity());
+  tf.translation() = Vector3d(
       (default_ground_width + default_wall_thickness) / 2.0,
       0.0,
       (default_wall_height - default_wall_thickness) / 2.0);

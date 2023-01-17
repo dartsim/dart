@@ -34,6 +34,8 @@
 
 #include <iostream>
 
+using namespace dart;
+
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
   : SimWindow(), mController(_controller), mCircleTask(false)
@@ -54,7 +56,7 @@ void MyWindow::timeStepping()
     static double time = 0.0;
     const double dt = 0.0005;
     const double radius = 0.6;
-    Eigen::Vector3d center = Eigen::Vector3d(0.0, 0.1, 0.0);
+    math::Vector3d center = math::Vector3d(0.0, 0.1, 0.0);
 
     mTargetPosition = center;
     mTargetPosition[0] = radius * std::sin(time);
@@ -76,10 +78,10 @@ void MyWindow::drawWorld() const
 {
   // Draw the target position
   if (mRI) {
-    mRI->setPenColor(Eigen::Vector3d(0.8, 0.2, 0.2));
+    mRI->setPenColor(math::Vector3d(0.8, 0.2, 0.2));
     mRI->pushMatrix();
     mRI->translate(mTargetPosition);
-    mRI->drawEllipsoid(Eigen::Vector3d(0.05, 0.05, 0.05));
+    mRI->drawEllipsoid(math::Vector3d(0.05, 0.05, 0.05));
     mRI->popMatrix();
   }
 

@@ -47,7 +47,7 @@ TEST(Inertia, Verification)
 
   for (int i = 0; i < numIter; ++i) {
     const auto mass = math::Random::uniform<double>(0.1, 10.0);
-    const auto com = math::Random::uniform<Eigen::Vector3d>(-5, 5);
+    const auto com = math::Random::uniform<math::Vector3d>(-5, 5);
     const auto i_xx = math::Random::uniform<double>(0.1, 1);
     const auto i_yy = math::Random::uniform<double>(0.1, 1);
     const auto i_zz = math::Random::uniform<double>(0.1, 1);

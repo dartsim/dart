@@ -48,7 +48,7 @@ public:
   //  void keyboard(unsigned char key, int x, int y) override;
 
 private:
-  Eigen::VectorXd computeDamping();
+  dart::math::VectorXd computeDamping();
 };
 
 #endif // EXAMPLES_CLOSEDLOOP_MYWINDOW_HPP_

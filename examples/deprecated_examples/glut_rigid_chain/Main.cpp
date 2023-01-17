@@ -32,26 +32,28 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/io/io.hpp>
-
 #include <dart/dart.hpp>
+
+using namespace dart;
+using namespace math;
+using namespace simulation;
+using namespace io;
 
 int main(int argc, char* argv[])
 {
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::io::SkelParser::readWorld("dart://sample/skel/chain.skel");
+  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/chain.skel");
   assert(myWorld != nullptr);
 
   // create and initialize the world
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
   myWorld->setTimeStep(1.0 / 2000);
 
   int dof = myWorld->getSkeleton(0)->getNumDofs();
-  Eigen::VectorXd initPose(dof);
+  VectorXd initPose(dof);
   for (int i = 0; i < dof; i++)
-    initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+    initPose[i] = Random::uniform(-0.5, 0.5);
   myWorld->getSkeleton(0)->setPositions(initPose);
 
   // create a window and link it to the world

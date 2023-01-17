@@ -44,10 +44,10 @@ class RelaxedPosture : public dart::optimization::Function
 {
 public:
   RelaxedPosture(
-      const Eigen::VectorXd& idealPosture,
-      const Eigen::VectorXd& lower,
-      const Eigen::VectorXd& upper,
-      const Eigen::VectorXd& weights,
+      const VectorXd& idealPosture,
+      const VectorXd& lower,
+      const VectorXd& upper,
+      const VectorXd& weights,
       bool enforceIdeal = false)
     : enforceIdealPosture(enforceIdeal),
       mIdeal(idealPosture),
@@ -67,15 +67,13 @@ public:
     mResultVector.setZero(dofs);
   }
 
-  double eval(const Eigen::VectorXd& _x) const override
+  double eval(const VectorXd& _x) const override
   {
     computeResultVector(_x);
     return 0.5 * mResultVector.dot(mResultVector);
   }
 
-  void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override
+  void evalGradient(const VectorXd& _x, Map<VectorXd> _grad) const override
   {
     computeResultVector(_x);
 
@@ -85,7 +83,7 @@ public:
       _grad[i] = mResultVector[i];
   }
 
-  void computeResultVector(const Eigen::VectorXd& _x) const
+  void computeResultVector(const VectorXd& _x) const
   {
     mResultVector.setZero();
 
@@ -114,15 +112,15 @@ public:
   bool enforceIdealPosture;
 
 protected:
-  mutable Eigen::VectorXd mResultVector;
+  mutable VectorXd mResultVector;
 
-  Eigen::VectorXd mIdeal;
+  VectorXd mIdeal;
 
-  Eigen::VectorXd mLower;
+  VectorXd mLower;
 
-  Eigen::VectorXd mUpper;
+  VectorXd mUpper;
 
-  Eigen::VectorXd mWeights;
+  VectorXd mWeights;
 };
 
 class TeleoperationWorld : public dart::gui::osg::WorldNode
@@ -170,23 +168,23 @@ public:
   void customPreRefresh() override
   {
     if (mAnyMovement) {
-      Eigen::Isometry3d old_tf = mAtlas->getBodyNode(0)->getWorldTransform();
-      Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
-      Eigen::Vector3d forward = old_tf.linear().col(0);
+      Isometry3d old_tf = mAtlas->getBodyNode(0)->getWorldTransform();
+      Isometry3d new_tf = Isometry3d::Identity();
+      Vector3d forward = old_tf.linear().col(0);
       forward[2] = 0.0;
       if (forward.norm() > 1e-10)
         forward.normalize();
       else
         forward.setZero();
 
-      Eigen::Vector3d left = old_tf.linear().col(1);
+      Vector3d left = old_tf.linear().col(1);
       left[2] = 0.0;
       if (left.norm() > 1e-10)
         left.normalize();
       else
         left.setZero();
 
-      const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
+      const Vector3d& up = Vector3d::UnitZ();
 
       const double linearStep = 0.01;
       const double elevationStep = 0.2 * linearStep;
@@ -211,10 +209,10 @@ public:
         new_tf.translate(-elevationStep * up);
 
       if (mMoveComponents[MOVE_Q])
-        new_tf.rotate(Eigen::AngleAxisd(rotationalStep, up));
+        new_tf.rotate(AngleAxisd(rotationalStep, up));
 
       if (mMoveComponents[MOVE_E])
-        new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
+        new_tf.rotate(AngleAxisd(-rotationalStep, up));
 
       new_tf.pretranslate(old_tf.translation());
       new_tf.rotate(old_tf.rotation());
@@ -241,7 +239,7 @@ protected:
   EndEffectorPtr l_foot;
   EndEffectorPtr r_foot;
 
-  Eigen::VectorXd grad;
+  VectorXd grad;
 
   std::vector<bool> mMoveComponents;
 
@@ -475,7 +473,7 @@ protected:
 
   WorldPtr mWorld;
 
-  Eigen::VectorXd mRestConfig;
+  VectorXd mRestConfig;
 
   std::vector<std::size_t> mLegs;
 
@@ -485,7 +483,7 @@ protected:
 
   std::vector<std::pair<Vector6d, Vector6d> > mDefaultBounds;
 
-  std::vector<Eigen::Isometry3d> mDefaultTargetTf;
+  std::vector<Isometry3d> mDefaultTargetTf;
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
@@ -500,14 +498,14 @@ SkeletonPtr createGround()
 {
   // Create a Skeleton to represent the ground
   SkeletonPtr ground = Skeleton::create("ground");
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  Isometry3d tf(Isometry3d::Identity());
   double thickness = 0.01;
-  tf.translation() = Eigen::Vector3d(0, 0, -thickness / 2.0);
+  tf.translation() = Vector3d(0, 0, -thickness / 2.0);
   WeldJoint::Properties joint;
   joint.mT_ParentBodyToJoint = tf;
   ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
   ShapePtr groundShape
-      = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, thickness));
+      = std::make_shared<BoxShape>(Vector3d(10, 10, thickness));
 
   auto shapeNode = ground->getBodyNode(0)
                        ->createShapeNodeWith<
@@ -529,10 +527,10 @@ SkeletonPtr createAtlas()
   // Add a box to the root node to make it easier to click and drag
   double scale = 0.25;
   ShapePtr boxShape
-      = std::make_shared<BoxShape>(scale * Eigen::Vector3d(1.0, 1.0, 0.5));
+      = std::make_shared<BoxShape>(scale * Vector3d(1.0, 1.0, 0.5));
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.1 * Eigen::Vector3d(0.0, 0.0, 1.0));
+  Isometry3d tf(Isometry3d::Identity());
+  tf.translation() = Vector3d(0.1 * Vector3d(0.0, 0.0, 1.0));
 
   auto shapeNode
       = atlas->getBodyNode(0)->createShapeNodeWith<VisualAspect>(boxShape);
@@ -576,24 +574,23 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // Apply very small weights to the gradient of the root joint in order to
   // encourage the arms to use arm joints instead of only moving around the root
   // joint
-  Eigen::VectorXd rootjoint_weights = Eigen::VectorXd::Ones(6);
+  VectorXd rootjoint_weights = VectorXd::Ones(6);
   rootjoint_weights = 0.01 * rootjoint_weights;
 
   // Setting the bounds to be infinite allows the end effector to be implicitly
   // unconstrained
-  Eigen::Vector3d linearBounds = Eigen::Vector3d::Constant(inf<double>());
+  Vector3d linearBounds = Vector3d::Constant(inf<double>());
 
-  Eigen::Vector3d angularBounds = Eigen::Vector3d::Constant(inf<double>());
+  Vector3d angularBounds = Vector3d::Constant(inf<double>());
 
   // -- Set up the left hand --
 
   // Create a relative transform for the EndEffector frame. This is the
   // transform that the left hand will have relative to the BodyNode that it is
   // attached to
-  Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
-  tf_hand.translation() = Eigen::Vector3d(0.0009, 0.1254, 0.012);
-  tf_hand.rotate(
-      Eigen::AngleAxisd(90.0 * pi() / 180.0, Eigen::Vector3d::UnitZ()));
+  Isometry3d tf_hand(Isometry3d::Identity());
+  tf_hand.translation() = Vector3d(0.0009, 0.1254, 0.012);
+  tf_hand.rotate(AngleAxisd(90.0 * pi() / 180.0, Vector3d::UnitZ()));
 
   // Create the left hand's end effector and set its relative transform
   EndEffector* l_hand
@@ -665,15 +662,15 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   const double sup_neg_x = -0.03 - 0.186;
   const double sup_pos_y = 0.03;
   const double sup_neg_y = -0.03;
-  support.push_back(Eigen::Vector3d(sup_neg_x, sup_neg_y, 0.0));
-  support.push_back(Eigen::Vector3d(sup_pos_x, sup_neg_y, 0.0));
-  support.push_back(Eigen::Vector3d(sup_pos_x, sup_pos_y, 0.0));
-  support.push_back(Eigen::Vector3d(sup_neg_x, sup_pos_y, 0.0));
+  support.push_back(Vector3d(sup_neg_x, sup_neg_y, 0.0));
+  support.push_back(Vector3d(sup_pos_x, sup_neg_y, 0.0));
+  support.push_back(Vector3d(sup_pos_x, sup_pos_y, 0.0));
+  support.push_back(Vector3d(sup_neg_x, sup_pos_y, 0.0));
 
   // Create a relative transform that goes from the center of the feet to the
   // bottom of the feet
-  Eigen::Isometry3d tf_foot(Eigen::Isometry3d::Identity());
-  tf_foot.translation() = Eigen::Vector3d(0.186, 0.0, -0.08);
+  Isometry3d tf_foot(Isometry3d::Identity());
+  tf_foot.translation() = Vector3d(0.186, 0.0, -0.08);
 
   // Constrain the feet to snap to the ground
   linearBounds[2] = 1e-8;
@@ -760,7 +757,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   std::size_t nDofs = atlas->getNumDofs();
 
   double default_weight = 0.01;
-  Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);
+  VectorXd weights = default_weight * VectorXd::Ones(nDofs);
   weights[2] = 0.0;
   weights[3] = 0.0;
   weights[4] = 0.0;
@@ -769,8 +766,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   weights[7] *= 0.2;
   weights[8] *= 0.2;
 
-  Eigen::VectorXd lower_posture
-      = Eigen::VectorXd::Constant(nDofs, -inf<double>());
+  VectorXd lower_posture = VectorXd::Constant(nDofs, -inf<double>());
   lower_posture[0] = -0.35;
   lower_posture[1] = -0.35;
   lower_posture[5] = 0.600;
@@ -779,8 +775,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   lower_posture[7] = -0.1;
   lower_posture[8] = -0.1;
 
-  Eigen::VectorXd upper_posture
-      = Eigen::VectorXd::Constant(nDofs, inf<double>());
+  VectorXd upper_posture = VectorXd::Constant(nDofs, inf<double>());
   upper_posture[0] = 0.35;
   upper_posture[1] = 0.35;
   upper_posture[5] = 0.885;

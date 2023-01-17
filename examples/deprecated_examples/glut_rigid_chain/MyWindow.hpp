@@ -45,7 +45,7 @@ public:
   void timeStepping() override;
 
 private:
-  Eigen::VectorXd computeDamping();
+  dart::math::VectorXd computeDamping();
 };
 
 #endif // EXAMPLES_FORWARDSIM_MYWINDOW_HPP_

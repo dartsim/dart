@@ -46,9 +46,9 @@ Controller::Controller(
   mTimestep = _t;
   mFrame = 0;
   int nDof = mSkel->getNumDofs();
-  mKp = Eigen::MatrixXd::Identity(nDof, nDof);
-  mKd = Eigen::MatrixXd::Identity(nDof, nDof);
-  mConstrForces = Eigen::VectorXd::Zero(nDof);
+  mKp = math::MatrixXd::Identity(nDof, nDof);
+  mKd = math::MatrixXd::Identity(nDof, nDof);
+  mConstrForces = math::VectorXd::Zero(nDof);
 
   mTorques.resize(nDof);
   mDesiredDofs.resize(nDof);
@@ -75,22 +75,22 @@ Controller::Controller(
 }
 
 void Controller::computeTorques(
-    const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel)
+    const math::VectorXd& _dof, const math::VectorXd& _dofVel)
 {
   // SPD tracking
   // std::size_t nDof = mSkel->getNumDofs();
-  Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
-  Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
-  Eigen::VectorXd d = -mKd * _dofVel;
-  Eigen::VectorXd qddot
+  math::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
+  math::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
+  math::VectorXd d = -mKd * _dofVel;
+  math::VectorXd qddot
       = invM * (-mSkel->getCoriolisAndGravityForces() + p + d + mConstrForces);
   mTorques = p + d - mKd * qddot * mTimestep;
 
   // ankle strategy for sagital plane
-  Eigen::Vector3d com = mSkel->getCOM();
-  Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
-                        * Eigen::Vector3d(0.05, 0, 0);
-  Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
+  math::Vector3d com = mSkel->getCOM();
+  math::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
+                       * math::Vector3d(0.05, 0, 0);
+  math::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
   if (diff[0] < 0.1) {
     double offset = com[0] - cop[0];
     double k1 = 20.0;

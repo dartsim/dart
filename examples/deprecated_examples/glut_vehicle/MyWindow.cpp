@@ -32,6 +32,9 @@
 
 #include "MyWindow.hpp"
 
+using namespace dart::math;
+using namespace dart::dynamics;
+
 MyWindow::MyWindow() : SimWindow()
 {
   mBackWheelVelocity = 0.0;
@@ -44,14 +47,14 @@ MyWindow::~MyWindow() {}
 
 void MyWindow::timeStepping()
 {
-  dart::dynamics::SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
+  SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
   assert(vehicle != 0);
 
   std::size_t dof = vehicle->getNumDofs();
 
-  Eigen::VectorXd q = vehicle->getPositions();
-  Eigen::VectorXd dq = vehicle->getVelocities();
-  Eigen::VectorXd tau = Eigen::VectorXd::Zero(dof);
+  VectorXd q = vehicle->getPositions();
+  VectorXd dq = vehicle->getVelocities();
+  VectorXd tau = VectorXd::Zero(dof);
 
   tau[6] = -mK * (q[6] - mSteeringWheelAngle) - mD * dq[6];
   tau[8] = -mK * (q[8] - mSteeringWheelAngle) - mD * dq[8];
@@ -75,7 +78,7 @@ void MyWindow::drawWorld() const
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
-  using namespace dart::math::suffixes;
+  using namespace suffixes;
 
   switch (_key) {
     case ' ': // use space key to play or stop the motion

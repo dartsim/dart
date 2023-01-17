@@ -62,15 +62,15 @@ public:
       joint->setDampingCoefficient(0, 0.5);
     });
 
-    mOffset = Eigen::Vector3d(0.05, 0, 0);
+    mOffset = Vector3d(0.05, 0, 0);
 
     // Create target Frame
-    Eigen::Isometry3d tf = mEndEffector->getWorldTransform();
+    Isometry3d tf = mEndEffector->getWorldTransform();
     tf.pretranslate(mOffset);
     mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target", tf);
     ShapePtr ball(new SphereShape(0.025));
     mTarget->setShape(ball);
-    mTarget->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0, 0));
+    mTarget->getVisualAspect(true)->setColor(Vector3d(0.9, 0, 0));
     mWorld->addSimpleFrame(mTarget);
 
     mOffset
@@ -80,26 +80,24 @@ public:
   // Triggered at the beginning of each simulation step
   void customPreStep() override
   {
-    Eigen::MatrixXd M = mRobot->getMassMatrix();
+    MatrixXd M = mRobot->getMassMatrix();
 
     LinearJacobian J = mEndEffector->getLinearJacobian(mOffset);
-    Eigen::MatrixXd pinv_J
+    MatrixXd pinv_J
         = J.transpose()
-          * (J * J.transpose() + 0.0025 * Eigen::Matrix3d::Identity())
-                .inverse();
+          * (J * J.transpose() + 0.0025 * Matrix3d::Identity()).inverse();
 
     LinearJacobian dJ = mEndEffector->getLinearJacobianDeriv(mOffset);
-    Eigen::MatrixXd pinv_dJ
+    MatrixXd pinv_dJ
         = dJ.transpose()
-          * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix3d::Identity())
-                .inverse();
+          * (dJ * dJ.transpose() + 0.0025 * Matrix3d::Identity()).inverse();
 
-    Eigen::Vector3d e = mTarget->getWorldTransform().translation()
-                        - mEndEffector->getWorldTransform() * mOffset;
+    Vector3d e = mTarget->getWorldTransform().translation()
+                 - mEndEffector->getWorldTransform() * mOffset;
 
-    Eigen::Vector3d de = -mEndEffector->getLinearVelocity(mOffset);
+    Vector3d de = -mEndEffector->getLinearVelocity(mOffset);
 
-    Eigen::VectorXd Cg = mRobot->getCoriolisAndGravityForces();
+    VectorXd Cg = mRobot->getCoriolisAndGravityForces();
 
     mForces = M * (pinv_J * mKp * de + pinv_dJ * mKp * e) + Cg
               + mKd * pinv_J * mKp * e;
@@ -132,10 +130,10 @@ protected:
   BodyNode* mEndEffector;
   SimpleFramePtr mTarget;
 
-  Eigen::Vector3d mOffset;
-  Eigen::Matrix3d mKp;
-  Eigen::MatrixXd mKd;
-  Eigen::VectorXd mForces;
+  Vector3d mOffset;
+  Matrix3d mKp;
+  MatrixXd mKd;
+  VectorXd mForces;
 };
 
 class ConstraintEventHandler : public ::osgGA::GUIEventHandler
@@ -215,14 +213,14 @@ public:
     if (constraintDofs == 0 || constraintDofs == 3) {
       mDnD->unconstrain();
     } else if (constraintDofs == 1) {
-      Eigen::Vector3d v(Eigen::Vector3d::Zero());
+      Vector3d v(Vector3d::Zero());
       for (std::size_t i = 0; i < 3; ++i)
         if (mConstrained[i])
           v[i] = 1.0;
 
       mDnD->constrainToLine(v);
     } else if (constraintDofs == 2) {
-      Eigen::Vector3d v(Eigen::Vector3d::Zero());
+      Vector3d v(Vector3d::Zero());
       for (std::size_t i = 0; i < 3; ++i)
         if (!mConstrained[i])
           v[i] = 1.0;
@@ -284,8 +282,7 @@ int main()
   world->addSkeleton(robot);
 
   // Rotate the robot so that z is upwards (default transform is not Identity)
-  robot->getJoint(0)->setTransformFromParentBodyNode(
-      Eigen::Isometry3d::Identity());
+  robot->getJoint(0)->setTransformFromParentBodyNode(Isometry3d::Identity());
 
   // Load the ground
   dart::dynamics::SkeletonPtr ground
@@ -293,10 +290,9 @@ int main()
   world->addSkeleton(ground);
 
   // Rotate and move the ground so that z is upwards
-  Eigen::Isometry3d ground_tf
-      = ground->getJoint(0)->getTransformFromParentBodyNode();
-  ground_tf.pretranslate(Eigen::Vector3d(0, 0, 0.5));
-  ground_tf.rotate(Eigen::AngleAxisd(pi() / 2, Eigen::Vector3d(1, 0, 0)));
+  Isometry3d ground_tf = ground->getJoint(0)->getTransformFromParentBodyNode();
+  ground_tf.pretranslate(Vector3d(0, 0, 0.5));
+  ground_tf.rotate(AngleAxisd(pi() / 2, Vector3d(1, 0, 0)));
   ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
 
   // Create an instance of our customized WorldNode

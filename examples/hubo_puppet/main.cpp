@@ -41,10 +41,10 @@ class RelaxedPosture : public dart::optimization::Function
 {
 public:
   RelaxedPosture(
-      const Eigen::VectorXd& idealPosture,
-      const Eigen::VectorXd& lower,
-      const Eigen::VectorXd& upper,
-      const Eigen::VectorXd& weights,
+      const math::VectorXd& idealPosture,
+      const math::VectorXd& lower,
+      const math::VectorXd& upper,
+      const math::VectorXd& weights,
       bool enforceIdeal = false)
     : enforceIdealPosture(enforceIdeal),
       mIdeal(idealPosture),
@@ -64,15 +64,14 @@ public:
     mResultVector.setZero(dofs);
   }
 
-  double eval(const Eigen::VectorXd& _x) const override
+  double eval(const math::VectorXd& _x) const override
   {
     computeResultVector(_x);
     return 0.5 * mResultVector.dot(mResultVector);
   }
 
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override
   {
     computeResultVector(_x);
 
@@ -82,7 +81,7 @@ public:
       _grad[i] = mResultVector[i];
   }
 
-  void computeResultVector(const Eigen::VectorXd& _x) const
+  void computeResultVector(const math::VectorXd& _x) const
   {
     mResultVector.setZero();
 
@@ -109,18 +108,18 @@ public:
   bool enforceIdealPosture;
 
 protected:
-  mutable Eigen::VectorXd mResultVector;
+  mutable math::VectorXd mResultVector;
 
-  Eigen::VectorXd mIdeal;
+  math::VectorXd mIdeal;
 
-  Eigen::VectorXd mLower;
+  math::VectorXd mLower;
 
-  Eigen::VectorXd mUpper;
+  math::VectorXd mUpper;
 
-  Eigen::VectorXd mWeights;
+  math::VectorXd mWeights;
 };
 
-static inline bool checkDist(Eigen::Vector3d& p, double a, double b)
+static inline bool checkDist(math::Vector3d& p, double a, double b)
 {
   double d = p.norm();
   double dmax = a + b;
@@ -148,9 +147,9 @@ static inline void clamp_sincos(double& sincos, bool& valid)
   }
 }
 
-static inline Eigen::Vector3d flipEuler3Axis(const Eigen::Vector3d& u)
+static inline math::Vector3d flipEuler3Axis(const math::Vector3d& u)
 {
-  Eigen::Vector3d v;
+  math::Vector3d v;
   v[0] = u[0] - pi();
   v[1] = pi() - u[1];
   v[2] = u[2] - pi();
@@ -180,7 +179,7 @@ public:
   }
 
   const std::vector<Solution>& computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf) override
+      const math::Isometry3d& _desiredBodyTf) override
   {
     mSolutions.clear();
     mSolutions.reserve(8);
@@ -221,12 +220,12 @@ public:
 
     const SkeletonPtr& skel = base->getSkeleton();
 
-    Eigen::Isometry3d B
+    math::Isometry3d B
         = base->getParentBodyNode()->getWorldTransform().inverse()
           * _desiredBodyTf * mWristEnd->getTransform(mIK->getNode());
 
-    Eigen::Isometry3d shoulder_from_wrist = shoulderTf.inverse() * B;
-    Eigen::Vector3d p = shoulder_from_wrist.inverse().translation();
+    math::Isometry3d shoulder_from_wrist = shoulderTf.inverse() * B;
+    math::Vector3d p = shoulder_from_wrist.inverse().translation();
 
     const double a2 = L5 * L5 + L4 * L4;
     const double b2 = L3 * L3 + L4 * L4;
@@ -298,16 +297,16 @@ public:
       double theta1 = atan2(ks1, kc1);
       testQ(WP) = theta1;
 
-      Eigen::Quaterniond Rlower = Eigen::Quaterniond(Eigen::AngleAxisd(
-                                      testQ(EP), Eigen::Vector3d::UnitY()))
-                                  * Eigen::Quaterniond(Eigen::AngleAxisd(
-                                      testQ(WY), Eigen::Vector3d::UnitZ()))
-                                  * Eigen::Quaterniond(Eigen::AngleAxisd(
-                                      testQ(WP), Eigen::Vector3d::UnitY()));
+      math::Quaterniond Rlower = math::Quaterniond(math::AngleAxisd(
+                                     testQ(EP), math::Vector3d::UnitY()))
+                                 * math::Quaterniond(math::AngleAxisd(
+                                     testQ(WY), math::Vector3d::UnitZ()))
+                                 * math::Quaterniond(math::AngleAxisd(
+                                     testQ(WP), math::Vector3d::UnitY()));
 
-      Eigen::Matrix3d Rupper = B.rotation() * Rlower.inverse().matrix();
+      math::Matrix3d Rupper = B.rotation() * Rlower.inverse().matrix();
 
-      Eigen::Vector3d euler = Rupper.eulerAngles(1, 0, 2);
+      math::Vector3d euler = Rupper.eulerAngles(1, 0, 2);
 
       if (flipShoulder)
         euler = flipEuler3Axis(euler);
@@ -391,19 +390,19 @@ protected:
         elbow->getTransform(dofs[3]->getParentBodyNode()).translation()[0]);
 
     BodyNode* wrist = dofs[5]->getChildBodyNode();
-    Eigen::Isometry3d wrist_tf = wrist->getTransform(elbow);
+    math::Isometry3d wrist_tf = wrist->getTransform(elbow);
     L5 = std::abs(wrist_tf.translation()[2]);
 
-    shoulderTf = Eigen::Isometry3d::Identity();
+    shoulderTf = math::Isometry3d::Identity();
     shoulderTf.translate(
         dofs[3]->getParentBodyNode()->getTransform(pelvis).translation()[0]
-        * Eigen::Vector3d::UnitX());
+        * math::Vector3d::UnitX());
     shoulderTf.translate(
         dofs[2]->getParentBodyNode()->getTransform(pelvis).translation()[1]
-        * Eigen::Vector3d::UnitY());
+        * math::Vector3d::UnitY());
     shoulderTf.translate(
         dofs[2]->getParentBodyNode()->getTransform(pelvis).translation()[2]
-        * Eigen::Vector3d::UnitZ());
+        * math::Vector3d::UnitZ());
 
     mWristEnd = dofs[5]->getChildBodyNode();
 
@@ -420,12 +419,12 @@ protected:
 
   mutable bool configured;
 
-  mutable Eigen::Isometry3d shoulderTf;
-  mutable Eigen::Isometry3d wristTfInv;
-  mutable Eigen::Isometry3d mNodeOffsetTfInv;
+  mutable math::Isometry3d shoulderTf;
+  mutable math::Isometry3d wristTfInv;
+  mutable math::Isometry3d mNodeOffsetTfInv;
   mutable double L3, L4, L5;
 
-  mutable Eigen::Matrix<int, 8, 3> alterantives;
+  mutable math::Matrix<int, 8, 3> alterantives;
 
   mutable std::vector<std::size_t> mDofs;
 
@@ -458,7 +457,7 @@ public:
   }
 
   const std::vector<Solution>& computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf) override
+      const math::Isometry3d& _desiredBodyTf) override
   {
     mSolutions.clear();
     mSolutions.reserve(8);
@@ -490,7 +489,7 @@ public:
     double C45, psi, q345;
     std::complex<double> radical;
     std::complex<double> sqrt_radical;
-    Eigen::Isometry3d B, Binv;
+    math::Isometry3d B, Binv;
 
     math::Vector6d testQ;
 
@@ -638,17 +637,17 @@ protected:
     // This offset will be taken care of with footTfInv
     L6 = 0.0;
 
-    hipRotation = Eigen::Isometry3d::Identity();
+    hipRotation = math::Isometry3d::Identity();
     hipRotation.rotate(
-        Eigen::AngleAxisd(90 * pi() / 180.0, Eigen::Vector3d::UnitZ()));
+        math::AngleAxisd(90 * pi() / 180.0, math::Vector3d::UnitZ()));
 
     waist = dofs[2]->getChildBodyNode()->getTransform(
                 dofs[0]->getParentBodyNode())
             * hipRotation;
 
-    footTfInv = Eigen::Isometry3d::Identity();
+    footTfInv = math::Isometry3d::Identity();
     footTfInv.rotate(
-        Eigen::AngleAxisd(-90 * pi() / 180.0, Eigen::Vector3d::UnitY()));
+        math::AngleAxisd(-90 * pi() / 180.0, math::Vector3d::UnitY()));
     footTfInv
         = footTfInv * mIK->getNode()->getTransform(dofs[5]->getChildBodyNode());
     footTfInv = footTfInv.inverse();
@@ -665,10 +664,10 @@ protected:
   }
 
   mutable double L4, L5, L6;
-  mutable Eigen::Isometry3d waist;
-  mutable Eigen::Isometry3d hipRotation;
-  mutable Eigen::Isometry3d footTfInv;
-  mutable Eigen::Matrix<int, 8, 3> alternatives;
+  mutable math::Isometry3d waist;
+  mutable math::Isometry3d hipRotation;
+  mutable math::Isometry3d footTfInv;
+  mutable math::Matrix<int, 8, 3> alternatives;
 
   mutable std::vector<std::size_t> mDofs;
 
@@ -727,23 +726,23 @@ public:
   void customPreRefresh() override
   {
     if (mAnyMovement) {
-      Eigen::Isometry3d old_tf = mHubo->getBodyNode(0)->getWorldTransform();
-      Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
-      Eigen::Vector3d forward = old_tf.linear().col(0);
+      math::Isometry3d old_tf = mHubo->getBodyNode(0)->getWorldTransform();
+      math::Isometry3d new_tf = math::Isometry3d::Identity();
+      math::Vector3d forward = old_tf.linear().col(0);
       forward[2] = 0.0;
       if (forward.norm() > 1e-10)
         forward.normalize();
       else
         forward.setZero();
 
-      Eigen::Vector3d left = old_tf.linear().col(1);
+      math::Vector3d left = old_tf.linear().col(1);
       left[2] = 0.0;
       if (left.norm() > 1e-10)
         left.normalize();
       else
         left.setZero();
 
-      const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
+      const math::Vector3d& up = math::Vector3d::UnitZ();
 
       double linearStep = 0.01;
       double elevationStep = 0.2 * linearStep;
@@ -774,10 +773,10 @@ public:
         new_tf.translate(-elevationStep * up);
 
       if (mMoveComponents[MOVE_Q])
-        new_tf.rotate(Eigen::AngleAxisd(rotationalStep, up));
+        new_tf.rotate(math::AngleAxisd(rotationalStep, up));
 
       if (mMoveComponents[MOVE_E])
-        new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
+        new_tf.rotate(math::AngleAxisd(-rotationalStep, up));
 
       new_tf.pretranslate(old_tf.translation());
       new_tf.rotate(old_tf.rotation());
@@ -802,7 +801,7 @@ protected:
 
   std::vector<IK::Analytical::Solution> mSolutions;
 
-  Eigen::VectorXd grad;
+  math::VectorXd grad;
 
   // Order: q, w, e, a, s, d
   std::vector<bool> mMoveComponents;
@@ -1065,7 +1064,7 @@ protected:
 
   WorldPtr mWorld;
 
-  Eigen::VectorXd mRestConfig;
+  math::VectorXd mRestConfig;
 
   std::vector<bool> mConstraintActive;
 
@@ -1073,7 +1072,7 @@ protected:
 
   std::vector<std::pair<math::Vector6d, math::Vector6d> > mDefaultBounds;
 
-  std::vector<Eigen::Isometry3d> mDefaultTargetTf;
+  std::vector<math::Isometry3d> mDefaultTargetTf;
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
@@ -1088,14 +1087,14 @@ SkeletonPtr createGround()
 {
   // Create a Skeleton to represent the ground
   SkeletonPtr ground = Skeleton::create("ground");
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  math::Isometry3d tf(math::Isometry3d::Identity());
   double thickness = 0.01;
-  tf.translation() = Eigen::Vector3d(0, 0, -thickness / 2.0);
+  tf.translation() = math::Vector3d(0, 0, -thickness / 2.0);
   WeldJoint::Properties joint;
   joint.mT_ParentBodyToJoint = tf;
   ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
   ShapePtr groundShape
-      = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, thickness));
+      = std::make_shared<BoxShape>(math::Vector3d(10, 10, thickness));
 
   auto shapeNode = ground->getBodyNode(0)
                        ->createShapeNodeWith<
@@ -1155,18 +1154,17 @@ void setStartupConfiguration(const SkeletonPtr& hubo)
 
 void setupEndEffectors(const SkeletonPtr& hubo)
 {
-  Eigen::VectorXd rootjoint_weights = Eigen::VectorXd::Ones(7);
+  math::VectorXd rootjoint_weights = math::VectorXd::Ones(7);
   rootjoint_weights = 0.01 * rootjoint_weights;
 
   double extra_error_clamp = 0.1;
 
-  Eigen::Vector3d linearBounds = Eigen::Vector3d::Constant(math::inf<double>());
+  math::Vector3d linearBounds = math::Vector3d::Constant(math::inf<double>());
 
-  Eigen::Vector3d angularBounds
-      = Eigen::Vector3d::Constant(math::inf<double>());
+  math::Vector3d angularBounds = math::Vector3d::Constant(math::inf<double>());
 
-  Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
-  tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
+  math::Isometry3d tf_hand(math::Isometry3d::Identity());
+  tf_hand.translate(math::Vector3d(0.0, 0.0, -0.09));
 
   EndEffector* l_hand
       = hubo->getBodyNode("Body_LWR")->createEndEffector("l_hand");
@@ -1219,17 +1217,17 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       -angularBounds, angularBounds);
 
   dart::math::SupportGeometry foot_support;
-  foot_support.push_back(Eigen::Vector3d(-0.08, 0.05, 0.0));
-  foot_support.push_back(Eigen::Vector3d(-0.18, 0.05, 0.0));
-  foot_support.push_back(Eigen::Vector3d(-0.18, -0.05, 0.0));
-  foot_support.push_back(Eigen::Vector3d(-0.08, -0.05, 0.0));
+  foot_support.push_back(math::Vector3d(-0.08, 0.05, 0.0));
+  foot_support.push_back(math::Vector3d(-0.18, 0.05, 0.0));
+  foot_support.push_back(math::Vector3d(-0.18, -0.05, 0.0));
+  foot_support.push_back(math::Vector3d(-0.08, -0.05, 0.0));
 
-  Eigen::Isometry3d tf_foot(Eigen::Isometry3d::Identity());
+  math::Isometry3d tf_foot(math::Isometry3d::Identity());
   double ground_dist = 0.01;
-  tf_foot.translation() = Eigen::Vector3d(0.14, 0.0, -0.136 + ground_dist);
+  tf_foot.translation() = math::Vector3d(0.14, 0.0, -0.136 + ground_dist);
 
   linearBounds[2] = 1e-8;
-  Eigen::Vector3d ground_offset = ground_dist * Eigen::Vector3d::UnitZ();
+  math::Vector3d ground_offset = ground_dist * math::Vector3d::UnitZ();
 
   angularBounds[0] = 1e-8;
   angularBounds[1] = 1e-8;
@@ -1277,13 +1275,13 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_foot->getSupport()->setActive();
 
   dart::math::SupportGeometry peg_support;
-  peg_support.push_back(Eigen::Vector3d::Zero());
+  peg_support.push_back(math::Vector3d::Zero());
 
-  linearBounds = Eigen::Vector3d::Constant(math::inf<double>());
+  linearBounds = math::Vector3d::Constant(math::inf<double>());
   angularBounds = linearBounds;
 
-  Eigen::Isometry3d tf_peg(Eigen::Isometry3d::Identity());
-  tf_peg.translation() = Eigen::Vector3d(0.0, 0.0, 0.09);
+  math::Isometry3d tf_peg(math::Isometry3d::Identity());
+  tf_peg.translation() = math::Vector3d(0.0, 0.0, 0.09);
 
   EndEffector* l_peg
       = hubo->getBodyNode("Body_LWP")->createEndEffector("l_peg");
@@ -1355,19 +1353,19 @@ void setupWholeBodySolver(const SkeletonPtr& hubo)
   std::size_t nDofs = hubo->getNumDofs();
 
   double default_weight = 0.01;
-  Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);
+  math::VectorXd weights = default_weight * math::VectorXd::Ones(nDofs);
   weights[2] = 0.0;
   weights[3] = 0.0;
   weights[4] = 0.0;
 
-  Eigen::VectorXd lower_posture
-      = Eigen::VectorXd::Constant(nDofs, -math::inf<double>());
+  math::VectorXd lower_posture
+      = math::VectorXd::Constant(nDofs, -math::inf<double>());
   lower_posture[0] = -0.35;
   lower_posture[1] = -0.35;
   lower_posture[5] = 0.55;
 
-  Eigen::VectorXd upper_posture
-      = Eigen::VectorXd::Constant(nDofs, math::inf<double>());
+  math::VectorXd upper_posture
+      = math::VectorXd::Constant(nDofs, math::inf<double>());
   upper_posture[0] = 0.35;
   upper_posture[1] = 0.50;
   upper_posture[5] = 0.95;
@@ -1395,7 +1393,7 @@ int main()
   setStartupConfiguration(hubo);
   setupEndEffectors(hubo);
 
-  Eigen::VectorXd positions = hubo->getPositions();
+  math::VectorXd positions = hubo->getPositions();
   // We make a clone to test whether the cloned version behaves the exact same
   // as the original version.
   hubo = hubo->cloneSkeleton("hubo_copy");

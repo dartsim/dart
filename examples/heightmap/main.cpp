@@ -49,7 +49,7 @@ dynamics::ShapePtr createHeightmapShape(
     S zMin = S(0.0),
     S zMax = S(0.1))
 {
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
+  using Vector3 = math::Matrix<S, 3, 1>;
 
   typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
   for (auto i = 0u; i < yResolution; ++i) {
@@ -303,7 +303,7 @@ public:
               mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
           }
 
-          static Eigen::Vector3f offset;
+          static math::Vector3f offset;
           ImGui::Columns(3);
           offset = mGrid->getOffset().cast<float>();
           if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f"))
@@ -412,7 +412,7 @@ protected:
 int main()
 {
   auto world = dart::simulation::World::create();
-  world->setGravity(Eigen::Vector3d::Zero());
+  world->setGravity(math::Vector3d::Zero());
 
   auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, 0.f, 0.1f);
   world->addSimpleFrame(terrain);

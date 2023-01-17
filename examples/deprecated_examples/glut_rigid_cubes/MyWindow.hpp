@@ -50,7 +50,7 @@ public:
 
 private:
   /// \brief
-  Eigen::Vector3d mForce;
+  dart::math::Vector3d mForce;
 };
 
 #endif // EXAMPLES_CUBES_MYWINDOW_HPP_

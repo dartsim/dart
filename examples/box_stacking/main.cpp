@@ -38,7 +38,7 @@
 using namespace dart;
 
 //==============================================================================
-dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
+dynamics::SkeletonPtr createBox(const math::Vector3d& position)
 {
   dynamics::SkeletonPtr boxSkel = dynamics::Skeleton::create("box");
 
@@ -52,16 +52,16 @@ dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
   double boxDepth = 1.0;
   double boxHeight = 0.5;
   auto boxShape = std::make_shared<dynamics::BoxShape>(
-      Eigen::Vector3d(boxWidth, boxDepth, boxHeight));
+      math::Vector3d(boxWidth, boxDepth, boxHeight));
   dynamics::ShapeNode* shapeNode = boxBody->createShapeNodeWith<
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(
-      dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0));
+      dart::math::Random::uniform<math::Vector3d>(0.0, 1.0));
 
   // Put the body into position
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  math::Isometry3d tf = math::Isometry3d::Identity();
   tf.translation() = position;
   boxBody->getParentJoint()->setTransformFromParentBodyNode(tf);
 
@@ -76,7 +76,7 @@ std::vector<dynamics::SkeletonPtr> createBoxStack(
 
   for (auto i = 0u; i < numBoxes; ++i)
     boxSkels[i] = createBox(
-        Eigen::Vector3d(0.0, 0.0, heightFromGround + 0.25 + i * 0.5));
+        math::Vector3d(0.0, 0.0, heightFromGround + 0.25 + i * 0.5));
 
   return boxSkels;
 }
@@ -94,7 +94,7 @@ dynamics::SkeletonPtr createFloor()
   double floorWidth = 10.0;
   double floorHeight = 0.01;
   auto box = std::make_shared<dynamics::BoxShape>(
-      Eigen::Vector3d(floorWidth, floorWidth, floorHeight));
+      math::Vector3d(floorWidth, floorWidth, floorHeight));
   dynamics::ShapeNode* shapeNode = body->createShapeNodeWith<
       dynamics::VisualAspect,
       dynamics::CollisionAspect,
@@ -102,8 +102,8 @@ dynamics::SkeletonPtr createFloor()
   shapeNode->getVisualAspect()->setColor(dart::math::Colord::LightGray());
 
   // Put the body into position
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floorHeight / 2.0);
+  math::Isometry3d tf = math::Isometry3d::Identity();
+  tf.translation() = math::Vector3d(0.0, 0.0, -floorHeight / 2.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
@@ -356,9 +356,9 @@ protected:
     mGravity = gravity;
 
     if (mGravity)
-      mWorld->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
+      mWorld->setGravity(-9.81 * math::Vector3d::UnitZ());
     else
-      mWorld->setGravity(Eigen::Vector3d::Zero());
+      mWorld->setGravity(math::Vector3d::Zero());
   }
 
   ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;

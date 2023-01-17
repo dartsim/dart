@@ -143,7 +143,7 @@ private:
   tiny_dnn::network<tiny_dnn::sequential> mNet;
 
   /// Gradient of the neural net function
-  Eigen::Vector4d mJacobian;
+  math::Vector4d mJacobian;
 
   /// Index of applied impulse
   std::size_t mAppliedImpulseIndex;

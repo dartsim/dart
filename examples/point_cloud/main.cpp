@@ -93,8 +93,8 @@ public:
       return;
 
     // Set robot pose
-    Eigen::VectorXd pos = mRobot->getPositions();
-    pos += 0.01 * Eigen::VectorXd::Random(pos.size());
+    math::VectorXd pos = mRobot->getPositions();
+    pos += 0.01 * math::VectorXd::Random(pos.size());
     mRobot->setPositions(pos);
 
     // Generate point cloud from robot meshes
@@ -108,8 +108,8 @@ public:
       case SAMPLE_IN_BOX:
         pointCloud = generatePointCloudInBox(
             numPoints,
-            Eigen::Vector3d::Constant(-0.5),
-            Eigen::Vector3d::Constant(0.5));
+            math::Vector3d::Constant(-0.5),
+            math::Vector3d::Constant(0.5));
         break;
     }
 
@@ -117,8 +117,8 @@ public:
     static double time = 0.0;
     const double dt = 0.001;
     const double radius = 1.0;
-    Eigen::Vector3d center = Eigen::Vector3d(0.0, 0.1, 0.0);
-    Eigen::Vector3d sensorPos = center;
+    math::Vector3d center = math::Vector3d(0.0, 0.1, 0.0);
+    math::Vector3d sensorPos = center;
     sensorPos[0] = radius * std::sin(time);
     sensorPos[1] = radius * std::cos(time);
     sensorPos[2] = 0.5 + 0.25 * std::sin(time * 2.0);
@@ -213,9 +213,9 @@ protected:
           = math::Random::uniform<unsigned int>(0, numVertices - 1);
       auto vertex = assimpMesh->mVertices[vertexIndex];
 
-      Eigen::Isometry3d tf = shapeNode->getWorldTransform();
-      Eigen::Vector3d eigenVertex
-          = Eigen::Vector3f(vertex.x, vertex.y, vertex.z).cast<double>();
+      math::Isometry3d tf = shapeNode->getWorldTransform();
+      math::Vector3d eigenVertex
+          = math::Vector3f(vertex.x, vertex.y, vertex.z).cast<double>();
       eigenVertex = tf * eigenVertex;
 
       pointCloud.push_back(
@@ -230,15 +230,15 @@ protected:
 
   octomap::Pointcloud generatePointCloudInBox(
       std::size_t numPoints,
-      const Eigen::Vector3d& min = Eigen::Vector3d::Constant(-0.5),
-      const Eigen::Vector3d& max = Eigen::Vector3d::Constant(0.5))
+      const math::Vector3d& min = math::Vector3d::Constant(-0.5),
+      const math::Vector3d& max = math::Vector3d::Constant(0.5))
   {
     octomap::Pointcloud pointCloud;
     pointCloud.reserve(numPoints);
 
     for (auto i = 0u; i < numPoints; ++i)
     {
-      const Eigen::Vector3d point = math::Random::uniform(min, max);
+      const math::Vector3d point = math::Random::uniform(min, max);
       pointCloud.push_back(
           static_cast<float>(point.x()),
           static_cast<float>(point.y()),
@@ -248,7 +248,7 @@ protected:
     return pointCloud;
   }
 
-  std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
+  std::vector<math::Vector4d, math::aligned_allocator<math::Vector4d>>
   generatePointCloudColors(const octomap::Pointcloud& pointCloud)
   {
     const auto& points = mPointCloudShape->getPoints();
@@ -262,7 +262,7 @@ protected:
     double diffZ
         = std::max(std::abs(maxZ - minZ), math::min<double>());
 
-    std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
+    std::vector<math::Vector4d, math::aligned_allocator<math::Vector4d>>
         colors;
     colors.reserve(pointCloud.size());
     for (const auto& point : pointCloud)
@@ -274,7 +274,7 @@ protected:
       r = math::clip(r, 0.1f, 0.9f);
       g = math::clip(g, 0.1f, 0.9f);
       b = math::clip(b, 0.1f, 0.9f);
-      colors.emplace_back(Eigen::Vector4f(r, g, b, 0.75).cast<double>());
+      colors.emplace_back(math::Vector4f(r, g, b, 0.75).cast<double>());
     }
 
     return colors;
@@ -430,7 +430,7 @@ public:
           if (colorMode == 0)
           {
             auto visual = mNode->getPointCloudVisualAspect();
-            Eigen::Vector4d rgba = visual->getRGBA();
+            math::Vector4d rgba = visual->getRGBA();
             float color_rbga[4];
             color_rbga[0] = static_cast<float>(rgba[0]);
             color_rbga[1] = static_cast<float>(rgba[1]);
@@ -502,7 +502,7 @@ public:
         if (vgShow)
         {
           auto visual = mNode->getVoxelGridVisualAspect();
-          Eigen::Vector4d rgba = visual->getRGBA();
+          math::Vector4d rgba = visual->getRGBA();
           float color_rbga[4];
           color_rbga[0] = static_cast<float>(rgba[0]);
           color_rbga[1] = static_cast<float>(rgba[1]);
@@ -543,7 +543,7 @@ public:
               mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
           }
 
-          static Eigen::Vector3f offset;
+          static math::Vector3f offset;
           ImGui::Columns(3);
           offset = mGrid->getOffset().cast<float>();
           if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f"))
@@ -656,7 +656,7 @@ dynamics::SkeletonPtr createRobot(const std::string& name)
 
   // Rotate the robot so that z is upwards (default transform is not Identity)
   robot->getJoint(0)->setTransformFromParentBodyNode(
-      Eigen::Isometry3d::Identity());
+      math::Isometry3d::Identity());
 
   robot->setName(name);
 
@@ -670,11 +670,11 @@ dynamics::SkeletonPtr createGround()
   auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
 
   // Rotate and move the ground so that z is upwards
-  Eigen::Isometry3d ground_tf
+  math::Isometry3d ground_tf
       = ground->getJoint(0)->getTransformFromParentBodyNode();
-  ground_tf.pretranslate(Eigen::Vector3d(0, 0, 0.5));
+  ground_tf.pretranslate(math::Vector3d(0, 0, 0.5));
   ground_tf.rotate(
-      Eigen::AngleAxisd(pi() / 2, Eigen::Vector3d(1, 0, 0)));
+      math::AngleAxisd(pi() / 2, math::Vector3d(1, 0, 0)));
   ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
 
   return ground;
@@ -725,7 +725,7 @@ dynamics::SimpleFramePtr createSensorFrame()
 int main()
 {
   auto world = dart::simulation::World::create();
-  world->setGravity(Eigen::Vector3d::Zero());
+  world->setGravity(math::Vector3d::Zero());
 
   auto robot = createRobot(robotName);
   world->addSkeleton(robot);

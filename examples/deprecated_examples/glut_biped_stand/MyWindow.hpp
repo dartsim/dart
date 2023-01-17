@@ -55,7 +55,7 @@ public:
 
 private:
   void plotCOMX();
-  Eigen::Vector3d mForce;
+  dart::math::Vector3d mForce;
   Controller* mController;
   int mImpulseDuration;
 };

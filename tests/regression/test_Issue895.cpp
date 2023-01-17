@@ -47,13 +47,13 @@ TEST(Issue895, BodyNodeSelfCollision)
   skel->enableSelfCollisionCheck();
 
   dart::dynamics::BoxShapePtr box
-      = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
+      = std::make_shared<dart::dynamics::BoxShape>(math::Vector3d::Ones());
 
   // Create two ShapeNodes on one BodyNode where the ShapeNodes will always be
   // in collision
   bn->createShapeNodeWith<CollisionAspect>(box);
   bn->createShapeNodeWith<CollisionAspect>(box)->setRelativeTranslation(
-      Eigen::Vector3d(0.5, 0.5, 0.0));
+      math::Vector3d(0.5, 0.5, 0.0));
 
   dart::simulation::WorldPtr world
       = std::make_shared<dart::simulation::World>();

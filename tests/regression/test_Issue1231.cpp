@@ -56,14 +56,14 @@ TEST(Issue1231, NoContacts)
     auto joint = pair.first;
     auto bn = pair.second;
 
-    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-    tf.translation() = Eigen::Vector3d(x, x, x);
+    math::Isometry3d tf = math::Isometry3d::Identity();
+    tf.translation() = math::Vector3d(x, x, x);
     joint->setTransform(tf);
     x += 0.5;
 
     bn->createShapeNodeWith<dart::dynamics::CollisionAspect>(
         std::make_shared<dart::dynamics::BoxShape>(
-            Eigen::Vector3d::Constant(1.0)));
+            math::Vector3d::Constant(1.0)));
 
     world->addSkeleton(skeleton);
   }

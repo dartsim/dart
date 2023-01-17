@@ -34,6 +34,11 @@
 
 #include <random>
 
+using namespace dart;
+using namespace dart::math;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+
 const double default_shape_density = 1000;  // kg/m^3
 const double default_shape_height = 0.1;    // m
 const double default_shape_width = 0.03;    // m
@@ -45,12 +50,12 @@ const double minimum_start_v = 2.5; // m/s
 const double maximum_start_v = 4.0; // m/s
 const double default_start_v = 3.5; // m/s
 
-const double minimum_launch_angle = dart::math::toRadian(30.0); // rad
-const double maximum_launch_angle = dart::math::toRadian(70.0); // rad
-const double default_launch_angle = dart::math::toRadian(45.0); // rad
+const double minimum_launch_angle = toRadian(30.0); // rad
+const double maximum_launch_angle = toRadian(70.0); // rad
+const double default_launch_angle = toRadian(45.0); // rad
 
-const double maximum_start_w = 6 * dart::math::pi(); // rad/s
-const double default_start_w = 3 * dart::math::pi(); // rad/s
+const double maximum_start_w = 6 * pi(); // rad/s
+const double default_start_w = 3 * pi(); // rad/s
 
 const double ring_spring_stiffness = 0.5;
 const double ring_damping_coefficient = 0.05;
@@ -67,9 +72,6 @@ const double default_vertex_stiffness = 1000.0;
 const double default_edge_stiffness = 1.0;
 const double default_soft_damping = 5.0;
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
-
 void setupRing(const SkeletonPtr& ring)
 {
   // Set the spring and damping coefficients for the degrees of freedom
@@ -81,14 +83,13 @@ void setupRing(const SkeletonPtr& ring)
 
   // Compute the joint angle needed to form a ring
   std::size_t numEdges = ring->getNumBodyNodes();
-  double angle = 2 * dart::math::pi() / numEdges;
+  double angle = 2 * pi() / numEdges;
 
   // Set the BallJoints so that they have the correct rest position angle
   for (std::size_t i = 1; i < ring->getNumJoints(); ++i) {
     Joint* joint = ring->getJoint(i);
-    Eigen::AngleAxisd rotation(angle, Eigen::Vector3d(0, 1, 0));
-    Eigen::Vector3d restPos
-        = BallJoint::convertToPositions(Eigen::Matrix3d(rotation));
+    AngleAxisd rotation(angle, Vector3d(0, 1, 0));
+    Vector3d restPos = BallJoint::convertToPositions(Matrix3d(rotation));
 
     for (std::size_t j = 0; j < 3; ++j)
       joint->setRestPosition(j, restPos[j]);
@@ -193,7 +194,7 @@ protected:
   bool addObject(const SkeletonPtr& object)
   {
     // Set the starting position for the object
-    dart::math::Vector6d positions(dart::math::Vector6d::Zero());
+    Vector6d positions(Vector6d::Zero());
 
     // If randomization is on, we will randomize the starting y-location
     if (mRandomize)
@@ -227,7 +228,7 @@ protected:
     }
 
     // Create reference frames for setting the initial velocity
-    Eigen::Isometry3d centerTf(Eigen::Isometry3d::Identity());
+    Isometry3d centerTf(Isometry3d::Identity());
     centerTf.translation() = object->getCOM();
     SimpleFrame center(Frame::World(), "center", centerTf);
 
@@ -248,8 +249,8 @@ protected:
       angular_speed = mDistribution(mMT) * maximum_start_w;
     }
 
-    Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
-    Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
+    Vector3d v = speed * Vector3d(cos(angle), 0.0, sin(angle));
+    Vector3d w = angular_speed * Vector3d::UnitY();
     center.setClassicDerivatives(v, w);
 
     SimpleFrame ref(&center, "root_reference");
@@ -275,7 +276,7 @@ protected:
     BodyNode* tail = ring->getBodyNode(ring->getNumBodyNodes() - 1);
 
     // Compute the offset where the JointConstraint should be located
-    Eigen::Vector3d offset = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+    Vector3d offset = Vector3d(0, 0, default_shape_height / 2.0);
     offset = tail->getWorldTransform() * offset;
     auto constraint = std::make_shared<dart::dynamics::BallJointConstraint>(
         head, tail, offset);
@@ -349,8 +350,8 @@ BodyNode* addRigidBody(
   if (parent) {
     // If the body has a parent, we should position the joint to be in the
     // middle of the centers of the two bodies
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.translation() = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+    Isometry3d tf(Isometry3d::Identity());
+    tf.translation() = Vector3d(0, 0, default_shape_height / 2.0);
     properties.mT_ParentBodyToJoint = tf;
     properties.mT_ChildBodyToJoint = tf.inverse();
   }
@@ -364,14 +365,14 @@ BodyNode* addRigidBody(
   // Make the shape based on the requested Shape type
   ShapePtr shape;
   if (BoxShape::getStaticType() == type) {
-    shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+    shape = std::make_shared<BoxShape>(Vector3d(
         default_shape_width, default_shape_width, default_shape_height));
   } else if (CylinderShape::getStaticType() == type) {
     shape = std::make_shared<CylinderShape>(
         default_shape_width / 2.0, default_shape_height);
   } else if (EllipsoidShape::getStaticType() == type) {
     shape = std::make_shared<EllipsoidShape>(
-        default_shape_height * Eigen::Vector3d::Ones());
+        default_shape_height * Vector3d::Ones());
   }
 
   auto shapeNode
@@ -379,7 +380,7 @@ BodyNode* addRigidBody(
           shape);
 
   // Setup the inertia for the body
-  Inertia inertia;
+  dynamics::Inertia inertia;
   double mass = default_shape_density * shape->getVolume();
   inertia.setMass(mass);
   inertia.setMoment(shape->computeInertia(mass));
@@ -419,8 +420,8 @@ BodyNode* addSoftBody(
   if (parent) {
     // If the body has a parent, we should position the joint to be in the
     // middle of the centers of the two bodies
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.translation() = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+    Isometry3d tf(Isometry3d::Identity());
+    tf.translation() = Vector3d(0, 0, default_shape_height / 2.0);
     joint_properties.mT_ParentBodyToJoint = tf;
     joint_properties.mT_ChildBodyToJoint = tf.inverse();
   }
@@ -432,31 +433,31 @@ BodyNode* addSoftBody(
   if (SOFT_BOX == type) {
     // Make a wide and short box
     double width = default_shape_height, height = 2 * default_shape_width;
-    Eigen::Vector3d dims(width, width, height);
+    Vector3d dims(width, width, height);
 
     double mass
         = 2 * dims[0] * dims[1] + 2 * dims[0] * dims[2] + 2 * dims[1] * dims[2];
     mass *= default_shape_density * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeBoxProperties(
-        dims, Eigen::Isometry3d::Identity(), Eigen::Vector3i(4, 4, 4), mass);
+        dims, Isometry3d::Identity(), Vector3i(4, 4, 4), mass);
   } else if (SOFT_CYLINDER == type) {
     // Make a wide and short cylinder
     double radius = default_shape_height / 2.0,
            height = 2 * default_shape_width;
 
     // Mass of center
-    double mass = default_shape_density * height * 2 * dart::math::pi() * radius
+    double mass = default_shape_density * height * 2 * pi() * radius
                   * default_skin_thickness;
     // Mass of top and bottom
-    mass += 2 * default_shape_density * dart::math::pi() * pow(radius, 2)
+    mass += 2 * default_shape_density * pi() * pow(radius, 2)
             * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
         radius, height, 8, 3, 2, mass);
   } else if (SOFT_ELLIPSOID == type) {
     double radius = default_shape_height / 2.0;
-    Eigen::Vector3d dims = 2 * radius * Eigen::Vector3d::Ones();
-    double mass = default_shape_density * 4.0 * dart::math::pi()
-                  * pow(radius, 2) * default_skin_thickness;
+    Vector3d dims = 2 * radius * Vector3d::Ones();
+    double mass = default_shape_density * 4.0 * pi() * pow(radius, 2)
+                  * default_skin_thickness;
     soft_properties
         = SoftBodyNodeHelper::makeEllipsoidProperties(dims, 6, 6, mass);
   }
@@ -473,8 +474,8 @@ BodyNode* addSoftBody(
                          .second;
 
   // Zero out the inertia for the underlying BodyNode
-  Inertia inertia;
-  inertia.setMoment(1e-8 * Eigen::Matrix3d::Identity());
+  dynamics::Inertia inertia;
+  inertia.setMoment(1e-8 * Matrix3d::Identity());
   inertia.setMass(1e-8);
   bn->setInertia(inertia);
 
@@ -484,7 +485,7 @@ BodyNode* addSoftBody(
   return bn;
 }
 
-void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
+void setAllColors(const SkeletonPtr& object, const Vector3d& color)
 {
   // Set the color of all the shapes in the object
   object->setColor(color);
@@ -497,7 +498,7 @@ SkeletonPtr createBall()
   // Give the ball a body
   addRigidBody<FreeJoint>(ball, "rigid ball", EllipsoidShape::getStaticType());
 
-  setAllColors(ball, dart::math::Colord::Red());
+  setAllColors(ball, Colord::Red());
 
   return ball;
 }
@@ -514,7 +515,7 @@ SkeletonPtr createRigidChain()
   bn = addRigidBody<BallJoint>(
       chain, "rigid box 3", BoxShape::getStaticType(), bn);
 
-  setAllColors(chain, dart::math::Colord::Orange());
+  setAllColors(chain, Colord::Orange());
 
   return chain;
 }
@@ -537,7 +538,7 @@ SkeletonPtr createRigidRing()
   bn = addRigidBody<BallJoint>(
       ring, "rigid cyl 6", CylinderShape::getStaticType(), bn);
 
-  setAllColors(ring, dart::math::Colord::Blue());
+  setAllColors(ring, Colord::Blue());
 
   return ring;
 }
@@ -551,17 +552,17 @@ SkeletonPtr createSoftBody()
 
   // Add a rigid collision geometry and inertia
   double width = default_shape_height, height = 2 * default_shape_width;
-  Eigen::Vector3d dims(width, width, height);
+  Vector3d dims(width, width, height);
   dims *= 0.6;
   std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
   bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 
-  Inertia inertia;
+  dynamics::Inertia inertia;
   inertia.setMass(default_shape_density * box->getVolume());
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
-  setAllColors(soft, dart::math::Colord::Fuchsia());
+  setAllColors(soft, Colord::Fuchsia());
 
   return soft;
 }
@@ -579,19 +580,19 @@ SkeletonPtr createHybridBody()
 
   double box_shape_height = default_shape_height;
   std::shared_ptr<BoxShape> box
-      = std::make_shared<BoxShape>(box_shape_height * Eigen::Vector3d::Ones());
+      = std::make_shared<BoxShape>(box_shape_height * Vector3d::Ones());
   bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(box_shape_height / 2.0, 0, 0);
+  Isometry3d tf(Isometry3d::Identity());
+  tf.translation() = Vector3d(box_shape_height / 2.0, 0, 0);
   bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-  Inertia inertia;
+  dynamics::Inertia inertia;
   inertia.setMass(default_shape_density * box->getVolume());
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
-  setAllColors(hybrid, dart::math::Colord::Green());
+  setAllColors(hybrid, Colord::Green());
 
   return hybrid;
 }
@@ -602,12 +603,12 @@ SkeletonPtr createGround()
 
   BodyNode* bn = ground->createJointAndBodyNodePair<WeldJoint>().second;
 
-  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Vector3d(
       default_ground_width, default_ground_width, default_wall_thickness));
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(Vector3d(1.0, 1.0, 1.0));
 
   return ground;
 }
@@ -618,15 +619,15 @@ SkeletonPtr createWall()
 
   BodyNode* bn = wall->createJointAndBodyNodePair<WeldJoint>().second;
 
-  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+  std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(Vector3d(
       default_wall_thickness, default_ground_width, default_wall_height));
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
+  shapeNode->getVisualAspect()->setColor(Vector3d(0.8, 0.8, 0.8));
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(
+  Isometry3d tf(Isometry3d::Identity());
+  tf.translation() = Vector3d(
       (default_ground_width + default_wall_thickness) / 2.0,
       0.0,
       (default_wall_height - default_wall_thickness) / 2.0);

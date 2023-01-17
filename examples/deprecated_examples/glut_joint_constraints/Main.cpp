@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
       = io::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  math::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
   std::vector<std::size_t> genCoordIds;
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
   genCoordIds.push_back(16); // right knee
   genCoordIds.push_back(17); // right ankle
   genCoordIds.push_back(21); // lower back
-  Eigen::VectorXd initConfig(9);
+  math::VectorXd initConfig(9);
   initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
   myWorld->getSkeleton(1)->setPositions(genCoordIds, initConfig);
 

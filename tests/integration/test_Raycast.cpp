@@ -45,8 +45,8 @@ using namespace dynamics;
 TEST(Raycast, RayHitDefaultConstructor)
 {
   RayHit rayHit;
-  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d::Zero().eval()));
-  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d::Zero().eval()));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, math::Vector3d::Zero().eval()));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, math::Vector3d::Zero().eval()));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0);
 }
 
@@ -85,59 +85,59 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
   RayHit rayHit;
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d(5.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d(5.0, 0.0, 0.0));
   cd->raycast(
       group1.get(),
-      Eigen::Vector3d(-2, 0, 0),
-      Eigen::Vector3d(2, 0, 0),
+      math::Vector3d(-2, 0, 0),
+      math::Vector3d(2, 0, 0),
       option,
       &result);
   EXPECT_FALSE(result.hasHit());
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d(0.0, 0.0, 0.0));
   cd->raycast(
       group1.get(),
-      Eigen::Vector3d(-2, 0, 0),
-      Eigen::Vector3d(2, 0, 0),
+      math::Vector3d(-2, 0, 0),
+      math::Vector3d(2, 0, 0),
       option,
       &result);
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(-1, 0, 0)));
-  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, math::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, math::Vector3d(-1, 0, 0)));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0.25);
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
-  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d(0.0, 0.0, 0.0));
   cd->raycast(
       group1.get(),
-      Eigen::Vector3d(2, 0, 0),
-      Eigen::Vector3d(-2, 0, 0),
+      math::Vector3d(2, 0, 0),
+      math::Vector3d(-2, 0, 0),
       option,
       &result);
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
-  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, math::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, math::Vector3d(1, 0, 0)));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0.25);
 
   result.clear();
-  simpleFrame1->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+  simpleFrame1->setTranslation(math::Vector3d(1.0, 0.0, 0.0));
   cd->raycast(
       group1.get(),
-      Eigen::Vector3d(-2, 0, 0),
-      Eigen::Vector3d(2, 0, 0),
+      math::Vector3d(-2, 0, 0),
+      math::Vector3d(2, 0, 0),
       option,
       &result);
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(0, 0, 0)));
-  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, math::Vector3d(0, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, math::Vector3d(-1, 0, 0)));
   EXPECT_DOUBLE_EQ(rayHit.mFraction, 0.5);
 }
 
@@ -186,41 +186,41 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   result.clear();
   option.mEnableAllHits = false;
   option.mSortByClosest = false;
-  simpleFrame1->setTranslation(Eigen::Vector3d(-2, 0, 0));
-  simpleFrame2->setTranslation(Eigen::Vector3d(2, 0, 0));
+  simpleFrame1->setTranslation(math::Vector3d(-2, 0, 0));
+  simpleFrame2->setTranslation(math::Vector3d(2, 0, 0));
   cd->raycast(
       group.get(),
-      Eigen::Vector3d(-5, 0, 0),
-      Eigen::Vector3d(5, 0, 0),
+      math::Vector3d(-5, 0, 0),
+      math::Vector3d(5, 0, 0),
       option,
       &result);
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
-  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, math::Vector3d(-3, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, math::Vector3d(-1, 0, 0)));
   EXPECT_NEAR(rayHit.mFraction, 0.2, 1e-5);
 
   result.clear();
   option.mEnableAllHits = true;
   option.mSortByClosest = true;
-  simpleFrame1->setTranslation(Eigen::Vector3d(-2, 0, 0));
-  simpleFrame2->setTranslation(Eigen::Vector3d(2, 0, 0));
+  simpleFrame1->setTranslation(math::Vector3d(-2, 0, 0));
+  simpleFrame2->setTranslation(math::Vector3d(2, 0, 0));
   cd->raycast(
       group.get(),
-      Eigen::Vector3d(-5, 0, 0),
-      Eigen::Vector3d(5, 0, 0),
+      math::Vector3d(-5, 0, 0),
+      math::Vector3d(5, 0, 0),
       option,
       &result);
   EXPECT_TRUE(result.hasHit());
   EXPECT_EQ(result.mRayHits.size(), 2u);
   rayHit = result.mRayHits[0];
-  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
-  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, math::Vector3d(-3, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, math::Vector3d(-1, 0, 0)));
   EXPECT_NEAR(rayHit.mFraction, 0.2, 1e-5);
   rayHit = result.mRayHits[1];
-  EXPECT_TRUE(test::equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
-  EXPECT_TRUE(test::equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mPoint, math::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(test::equals(rayHit.mNormal, math::Vector3d(-1, 0, 0)));
   EXPECT_NEAR(rayHit.mFraction, 0.6, 1e-5);
 }
 

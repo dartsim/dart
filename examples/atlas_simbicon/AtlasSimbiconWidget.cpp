@@ -41,6 +41,8 @@
 #include "AtlasSimbiconWorldNode.hpp"
 #include "dart/external/imgui/imgui.h"
 
+using namespace dart::math;
+
 //==============================================================================
 AtlasSimbiconWidget::AtlasSimbiconWidget(
     dart::gui::osg::ImGuiViewer* viewer, AtlasSimbiconWorldNode* node)
@@ -184,5 +186,5 @@ void AtlasSimbiconWidget::setGravity(float gravity)
     return;
 
   mGravityAcc = gravity;
-  mNode->getWorld()->setGravity(-mGravityAcc * Eigen::Vector3d::UnitY());
+  mNode->getWorld()->setGravity(-mGravityAcc * Vector3d::UnitY());
 }

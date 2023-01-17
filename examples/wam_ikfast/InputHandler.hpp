@@ -59,7 +59,7 @@ protected:
 
   dart::simulation::WorldPtr mWorld;
 
-  Eigen::VectorXd mRestConfig;
+  dart::math::VectorXd mRestConfig;
 
   std::vector<bool> mConstraintActive;
 
@@ -68,5 +68,5 @@ protected:
   std::vector<std::pair<dart::math::Vector6d, dart::math::Vector6d> >
       mDefaultBounds;
 
-  std::vector<Eigen::Isometry3d> mDefaultTargetTf;
+  std::vector<dart::math::Isometry3d> mDefaultTargetTf;
 };

@@ -34,12 +34,15 @@
 
 #include <osgShadow/ShadowMap>
 
+using namespace dart;
+using namespace math;
+
 //==============================================================================
 AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     const dart::simulation::WorldPtr& world,
     const dart::dynamics::SkeletonPtr& atlas)
   : dart::gui::osg::RealTimeWorldNode(world),
-    mExternalForce(Eigen::Vector3d::Zero()),
+    mExternalForce(Vector3d::Zero()),
     mForceDuration(0.0)
 {
   assert(world);

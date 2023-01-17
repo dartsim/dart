@@ -43,15 +43,16 @@ const double DefaultBlockMass
     = BalsaWoodDensity * DefaultBlockLength * pow(DefaultBlockWidth, 2);
 const double DefaultDamping = 0.4;
 
-const Eigen::Vector4d DefaultSimulationColor
-    = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0);
-const Eigen::Vector4d DefaultPausedColor
-    = Eigen::Vector4d(0xEE, 0xC9, 0x00, 0.0) / 255.0
-      + Eigen::Vector4d(0, 0, 0, 1.0);
-const Eigen::Vector4d DefaultSelectedColor = dart::math::Colord::Red(1.0);
-const Eigen::Vector4d DefaultForceBodyColor = dart::math::Colord::Fuchsia(1.0);
-const Eigen::Vector4d DefaultForceLineColor
-    = Eigen::Vector4d(1.0, 0.63, 0.0, 1.0);
+const dart::math::Vector4d DefaultSimulationColor
+    = dart::math::Vector4d(0.5, 0.5, 1.0, 1.0);
+const dart::math::Vector4d DefaultPausedColor
+    = dart::math::Vector4d(0xEE, 0xC9, 0x00, 0.0) / 255.0
+      + dart::math::Vector4d(0, 0, 0, 1.0);
+const dart::math::Vector4d DefaultSelectedColor = dart::math::Colord::Red(1.0);
+const dart::math::Vector4d DefaultForceBodyColor
+    = dart::math::Colord::Fuchsia(1.0);
+const dart::math::Vector4d DefaultForceLineColor
+    = dart::math::Vector4d(1.0, 0.63, 0.0, 1.0);
 
 const double MaxForce = 200.0;
 const double DefaultForceCoeff = 100.0;
@@ -78,13 +79,13 @@ public:
     createForceLine();
   }
 
-  void setAllBodyColors(const Eigen::Vector4d& color)
+  void setAllBodyColors(const dart::math::Vector4d& color)
   {
     getWorld()->eachSkeleton(
         [&](dart::dynamics::Skeleton* skel) { skel->setColor(color); });
   }
 
-  void setPickedNodeColor(const Eigen::Vector4d& color)
+  void setPickedNodeColor(const dart::math::Vector4d& color)
   {
     if (!mPickedNode)
       return;
@@ -98,8 +99,8 @@ public:
       mForceLine->setVertex(0, mPickedNode->getWorldTransform() * mPickedPoint);
       mForceLine->setVertex(1, mTarget->getWorldTransform().translation());
     } else {
-      mForceLine->setVertex(0, Eigen::Vector3d::Zero());
-      mForceLine->setVertex(1, Eigen::Vector3d::Zero());
+      mForceLine->setVertex(0, dart::math::Vector3d::Zero());
+      mForceLine->setVertex(1, dart::math::Vector3d::Zero());
     }
   }
 
@@ -119,9 +120,10 @@ public:
   void customPreStep() override
   {
     if (mPickedNode) {
-      Eigen::Vector3d F = mForceCoeff
-                          * (mTarget->getWorldTransform().translation()
-                             - mPickedNode->getWorldTransform() * mPickedPoint);
+      dart::math::Vector3d F
+          = mForceCoeff
+            * (mTarget->getWorldTransform().translation()
+               - mPickedNode->getWorldTransform() * mPickedPoint);
 
       const double F_norm = F.norm();
       if (F_norm > MaxForce)
@@ -142,7 +144,7 @@ public:
     mPickedNode = bn;
     mPickedPoint = bn->getWorldTransform().inverse() * pick.position;
 
-    Eigen::Isometry3d tf = bn->getWorldTransform();
+    dart::math::Isometry3d tf = bn->getWorldTransform();
     tf.translation()
         = pick.position + pick.normal.normalized() * DefaultBlockWidth / 2.0;
 
@@ -152,7 +154,7 @@ public:
   void clearPick()
   {
     mPickedNode = nullptr;
-    mTarget->setTransform(Eigen::Isometry3d::Identity());
+    mTarget->setTransform(dart::math::Isometry3d::Identity());
   }
 
   void deletePick()
@@ -189,7 +191,7 @@ public:
   void createWeldJointShape()
   {
     mWeldJointShape
-        = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
+        = std::make_shared<dart::dynamics::BoxShape>(dart::math::Vector3d(
             2.0 * DefaultJointRadius, DefaultBlockWidth, DefaultBlockWidth));
 
     mWeldJointShape->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
@@ -213,19 +215,20 @@ public:
 
   void createBlockShape()
   {
-    mBlockShape = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
-        DefaultBlockLength, DefaultBlockWidth, DefaultBlockWidth));
+    mBlockShape
+        = std::make_shared<dart::dynamics::BoxShape>(dart::math::Vector3d(
+            DefaultBlockLength, DefaultBlockWidth, DefaultBlockWidth));
 
     mBlockShape->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
 
-    mBlockOffset = Eigen::Isometry3d::Identity();
+    mBlockOffset = dart::math::Isometry3d::Identity();
     mBlockOffset.translation()[0] = DefaultBlockLength / 2.0;
   }
 
   template <class JointType>
   std::pair<JointType*, dart::dynamics::BodyNode*> addBlock(
       dart::dynamics::BodyNode* parent,
-      const Eigen::Isometry3d& relTf,
+      const dart::math::Isometry3d& relTf,
       const dart::dynamics::ShapePtr& jointShape)
   {
     if (isSimulating()) {
@@ -267,7 +270,8 @@ public:
     dart::dynamics::Inertia inertia = bn->getInertia();
     inertia.setMass(DefaultBlockMass);
     inertia.setMoment(mBlockShape->computeInertia(DefaultBlockMass));
-    inertia.setLocalCOM(DefaultBlockLength / 2.0 * Eigen::Vector3d::UnitX());
+    inertia.setLocalCOM(
+        DefaultBlockLength / 2.0 * dart::math::Vector3d::UnitX());
     bn->setInertia(inertia);
 
     getWorld()->getConstraintSolver()->getCollisionGroup()->addShapeFramesOf(
@@ -278,7 +282,7 @@ public:
     return std::make_pair(joint, bn);
   }
 
-  Eigen::Isometry3d getRelTf() const
+  dart::math::Isometry3d getRelTf() const
   {
     return mPickedNode ? mTarget->getTransform(mPickedNode)
                        : mTarget->getWorldTransform();
@@ -290,7 +294,7 @@ public:
   }
 
   dart::dynamics::BodyNode* addWeldJointBlock(
-      dart::dynamics::BodyNode* parent, const Eigen::Isometry3d& relTf)
+      dart::dynamics::BodyNode* parent, const dart::math::Isometry3d& relTf)
   {
     return addBlock<dart::dynamics::WeldJoint>(parent, relTf, mWeldJointShape)
         .second;
@@ -302,13 +306,13 @@ public:
   }
 
   dart::dynamics::BodyNode* addRevoluteJointBlock(
-      dart::dynamics::BodyNode* parent, const Eigen::Isometry3d& relTf)
+      dart::dynamics::BodyNode* parent, const dart::math::Isometry3d& relTf)
   {
     auto pair = addBlock<dart::dynamics::RevoluteJoint>(
         parent, relTf, mRevoluteJointShape);
 
     if (pair.first)
-      pair.first->setAxis(Eigen::Vector3d::UnitZ());
+      pair.first->setAxis(dart::math::Vector3d::UnitZ());
 
     return pair.second;
   }
@@ -319,7 +323,7 @@ public:
   }
 
   dart::dynamics::BodyNode* addBallJointBlock(
-      dart::dynamics::BodyNode* parent, const Eigen::Isometry3d& relTf)
+      dart::dynamics::BodyNode* parent, const dart::math::Isometry3d& relTf)
   {
     return addBlock<dart::dynamics::BallJoint>(parent, relTf, mBallJointShape)
         .second;
@@ -327,58 +331,58 @@ public:
 
   void createInitialToy1()
   {
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.rotate(Eigen::AngleAxisd(
-        dart::math::toRadian(45.0), Eigen::Vector3d::UnitY()));
+    dart::math::Isometry3d tf(dart::math::Isometry3d::Identity());
+    tf.rotate(dart::math::AngleAxisd(
+        dart::math::toRadian(45.0), dart::math::Vector3d::UnitY()));
     dart::dynamics::BodyNode* bn = addBallJointBlock(nullptr, tf);
 
-    tf = Eigen::Isometry3d::Identity();
+    tf = dart::math::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength;
-    tf.linear() = Eigen::Matrix3d::Identity();
-    tf.prerotate(Eigen::AngleAxisd(
-        dart::math::toRadian(90.0), Eigen::Vector3d::UnitX()));
+    tf.linear() = dart::math::Matrix3d::Identity();
+    tf.prerotate(dart::math::AngleAxisd(
+        dart::math::toRadian(90.0), dart::math::Vector3d::UnitX()));
     bn = addRevoluteJointBlock(bn, tf);
 
-    tf = Eigen::Isometry3d::Identity();
-    tf.rotate(Eigen::AngleAxisd(
-        dart::math::toRadian(90.0), Eigen::Vector3d::UnitZ()));
+    tf = dart::math::Isometry3d::Identity();
+    tf.rotate(dart::math::AngleAxisd(
+        dart::math::toRadian(90.0), dart::math::Vector3d::UnitZ()));
     bn = addWeldJointBlock(bn, tf);
 
-    tf = Eigen::Isometry3d::Identity();
+    tf = dart::math::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength / 2.0;
     tf.translation()[2] = DefaultBlockWidth;
-    tf.rotate(Eigen::AngleAxisd(
-        dart::math::toRadian(-30.0), Eigen::Vector3d::UnitZ()));
+    tf.rotate(dart::math::AngleAxisd(
+        dart::math::toRadian(-30.0), dart::math::Vector3d::UnitZ()));
     bn = addBallJointBlock(bn, tf);
   }
 
   void createInitialToy2()
   {
-    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.rotate(Eigen::AngleAxisd(
-        dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
-    tf.pretranslate(-1.0 * Eigen::Vector3d::UnitX());
+    dart::math::Isometry3d tf(dart::math::Isometry3d::Identity());
+    tf.rotate(dart::math::AngleAxisd(
+        dart::math::toRadian(90.0), dart::math::Vector3d::UnitY()));
+    tf.pretranslate(-1.0 * dart::math::Vector3d::UnitX());
     dart::dynamics::BodyNode* bn = addBallJointBlock(nullptr, tf);
 
-    tf = Eigen::Isometry3d::Identity();
+    tf = dart::math::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength;
     tf.translation()[2] = DefaultBlockLength / 2.0;
-    tf.rotate(Eigen::AngleAxisd(
-        dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
+    tf.rotate(dart::math::AngleAxisd(
+        dart::math::toRadian(90.0), dart::math::Vector3d::UnitY()));
     bn = addWeldJointBlock(bn, tf);
 
-    tf = Eigen::Isometry3d::Identity();
-    tf.rotate(Eigen::AngleAxisd(
-        dart::math::toRadian(-90.0), Eigen::Vector3d::UnitX()));
-    tf.rotate(Eigen::AngleAxisd(
-        dart::math::toRadian(-90.0), Eigen::Vector3d::UnitZ()));
+    tf = dart::math::Isometry3d::Identity();
+    tf.rotate(dart::math::AngleAxisd(
+        dart::math::toRadian(-90.0), dart::math::Vector3d::UnitX()));
+    tf.rotate(dart::math::AngleAxisd(
+        dart::math::toRadian(-90.0), dart::math::Vector3d::UnitZ()));
     tf.translation()[2] = DefaultBlockWidth / 2.0;
     addRevoluteJointBlock(bn, tf);
 
     tf.translation()[0] = DefaultBlockLength;
     bn = addRevoluteJointBlock(bn, tf);
 
-    tf = Eigen::Isometry3d::Identity();
+    tf = dart::math::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength;
     addBallJointBlock(bn, tf);
   }
@@ -390,7 +394,7 @@ public:
             dart::dynamics::Frame::World());
 
     mForceLine = std::make_shared<dart::dynamics::LineSegmentShape>(
-        Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 3.0);
+        dart::math::Vector3d::Zero(), dart::math::Vector3d::Zero(), 3.0);
     mForceLine->addDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES);
 
     lineFrame->setShape(mForceLine);
@@ -435,8 +439,8 @@ public:
 
   void reorientTarget()
   {
-    Eigen::Isometry3d tf = mTarget->getWorldTransform();
-    tf.linear() = Eigen::Matrix3d::Identity();
+    dart::math::Isometry3d tf = mTarget->getWorldTransform();
+    tf.linear() = dart::math::Matrix3d::Identity();
     mTarget->setTransform(tf);
   }
 
@@ -452,10 +456,10 @@ protected:
   dart::dynamics::ShapePtr mRevoluteJointShape;
   dart::dynamics::ShapePtr mBallJointShape;
   dart::dynamics::ShapePtr mBlockShape;
-  Eigen::Isometry3d mBlockOffset;
+  dart::math::Isometry3d mBlockOffset;
 
   dart::dynamics::BodyNode* mPickedNode;
-  Eigen::Vector3d mPickedPoint;
+  dart::math::Vector3d mPickedPoint;
   dart::gui::osg::InteractiveFramePtr mTarget;
 
   dart::dynamics::LineSegmentShapePtr mForceLine;

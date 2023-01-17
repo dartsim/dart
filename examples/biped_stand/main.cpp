@@ -56,8 +56,8 @@ public:
     mTimestep = mWorld->getTimeStep();
     mFrame = 0;
     const int nDof = static_cast<int>(mBiped->getNumDofs());
-    mKp = Eigen::MatrixXd::Identity(nDof, nDof);
-    mKd = Eigen::MatrixXd::Identity(nDof, nDof);
+    mKp = math::MatrixXd::Identity(nDof, nDof);
+    mKd = math::MatrixXd::Identity(nDof, nDof);
 
     mTorques.resize(nDof);
     mTorques.setZero();
@@ -104,26 +104,26 @@ public:
       mForce.setZero();
     }
 
-    const Eigen::VectorXd dof = mBiped->getPositions();
-    const Eigen::VectorXd dofVel = mBiped->getVelocities();
-    const Eigen::VectorXd constrForces = mBiped->getConstraintForces();
+    const math::VectorXd dof = mBiped->getPositions();
+    const math::VectorXd dofVel = mBiped->getVelocities();
+    const math::VectorXd constrForces = mBiped->getConstraintForces();
 
     // SPD tracking
     // std::size_t nDof = mSkel->getNumDofs();
-    const Eigen::MatrixXd invM
+    const math::MatrixXd invM
         = (mBiped->getMassMatrix() + mKd * mTimestep).inverse();
-    const Eigen::VectorXd p = -mKp * (dof + dofVel * mTimestep - mDesiredDofs);
-    const Eigen::VectorXd d = -mKd * dofVel;
-    const Eigen::VectorXd qddot
+    const math::VectorXd p = -mKp * (dof + dofVel * mTimestep - mDesiredDofs);
+    const math::VectorXd d = -mKd * dofVel;
+    const math::VectorXd qddot
         = invM
           * (-mBiped->getCoriolisAndGravityForces() + p + d + constrForces);
 
     mTorques = p + d - mKd * qddot * mTimestep;
 
     // ankle strategy for sagital plane
-    const Eigen::Vector3d com = mBiped->getCOM();
-    const Eigen::Vector3d cop
-        = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
+    const math::Vector3d com = mBiped->getCOM();
+    const math::Vector3d cop
+        = mLeftHeel->getTransform() * math::Vector3d(0.05, 0, 0);
 
     double offset = com[0] - cop[0];
     if (offset < 0.1 && offset > 0.0) {
@@ -163,7 +163,7 @@ public:
     // to be used.
   }
 
-  void perturbBiped(const Eigen::Vector3d& force, int frames = 100)
+  void perturbBiped(const math::Vector3d& force, int frames = 100)
   {
     mForce = force;
     mImpulseDuration = frames;
@@ -173,10 +173,10 @@ protected:
   dart::dynamics::SkeletonPtr mBiped;
 
   dart::dynamics::BodyNodePtr mLeftHeel;
-  Eigen::VectorXd mTorques;
-  Eigen::VectorXd mDesiredDofs;
-  Eigen::MatrixXd mKp;
-  Eigen::MatrixXd mKd;
+  math::VectorXd mTorques;
+  math::VectorXd mDesiredDofs;
+  math::MatrixXd mKp;
+  math::MatrixXd mKd;
   std::size_t mLeftFoot[2];
   std::size_t mRightFoot[2];
   int mFrame;
@@ -184,7 +184,7 @@ protected:
   double mPreOffset;
 
   int mImpulseDuration;
-  Eigen::Vector3d mForce;
+  math::Vector3d mForce;
 };
 
 //==============================================================================
@@ -201,16 +201,16 @@ public:
   {
     if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
       if (ea.getKey() == '1') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(50, 0, 0), 100);
+        mWorldNode->perturbBiped(math::Vector3d(50, 0, 0), 100);
         return true;
       } else if (ea.getKey() == '2') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(-50, 0, 0), 100);
+        mWorldNode->perturbBiped(math::Vector3d(-50, 0, 0), 100);
         return true;
       } else if (ea.getKey() == '3') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, 50), 100);
+        mWorldNode->perturbBiped(math::Vector3d(0, 0, 50), 100);
         return true;
       } else if (ea.getKey() == '4') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, -50), 100);
+        mWorldNode->perturbBiped(math::Vector3d(0, 0, -50), 100);
         return true;
       }
     }
@@ -232,7 +232,7 @@ int main()
   // Create a world and add the rigid body
   auto world
       = dart::io::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
-  world->setGravity(Eigen::Vector3d(0, -9.81, 0));
+  world->setGravity(math::Vector3d(0, -9.81, 0));
 
   auto biped = world->getSkeleton("fullbody1");
   biped = world->getSkeleton("fullbody1");

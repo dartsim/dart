@@ -32,21 +32,23 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/io/io.hpp>
-
 #include <dart/dart.hpp>
 
 #include <iostream>
 
+using namespace dart;
+using namespace math;
+using namespace io;
+
 int main(int argc, char* argv[])
 {
   // Create and initialize the world
-  auto world = dart::io::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  auto world = SkelParser::readWorld("dart://sample/skel/cubes.skel");
   if (!world) {
     dterr << "Failed to load world.\n";
     exit(EXIT_FAILURE);
   }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setGravity(Vector3d(0.0, -9.81, 0.0));
 
   // Create a window and link it to the world
   MyWindow window;

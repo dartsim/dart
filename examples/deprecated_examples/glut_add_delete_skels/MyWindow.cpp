@@ -32,6 +32,10 @@
 
 #include "MyWindow.hpp"
 
+using namespace dart;
+using namespace dart::math;
+using namespace dart::dynamics;
+
 MyWindow::MyWindow() : SimWindow() {}
 
 MyWindow::~MyWindow() {}
@@ -54,14 +58,14 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       break;
     case 'q':   // Spawn a cube
     case 'Q': { // Spawn a cube
-      Eigen::Vector3d position = Eigen::Vector3d(
-          dart::math::Random::uniform(-1.0, 1.0),
-          dart::math::Random::uniform(0.5, 1.0),
-          dart::math::Random::uniform(-1.0, 1.0));
-      Eigen::Vector3d size = Eigen::Vector3d(
-          dart::math::Random::uniform(0.1, 0.5),
-          dart::math::Random::uniform(0.1, 0.5),
-          dart::math::Random::uniform(0.1, 0.5));
+      Vector3d position = Vector3d(
+          Random::uniform(-1.0, 1.0),
+          Random::uniform(0.5, 1.0),
+          Random::uniform(-1.0, 1.0));
+      Vector3d size = Vector3d(
+          Random::uniform(0.1, 0.5),
+          Random::uniform(0.1, 0.5),
+          Random::uniform(0.1, 0.5));
       spawnCube(position, size);
       break;
     }
@@ -79,33 +83,27 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 }
 
 void MyWindow::spawnCube(
-    const Eigen::Vector3d& _position,
-    const Eigen::Vector3d& _size,
-    double _mass)
+    const Vector3d& _position, const Vector3d& _size, double _mass)
 {
-  dart::dynamics::SkeletonPtr newCubeSkeleton
-      = dart::dynamics::Skeleton::create();
+  SkeletonPtr newCubeSkeleton = Skeleton::create();
 
-  dart::dynamics::BodyNode::Properties body;
+  BodyNode::Properties body;
   body.mName = "cube_link";
   body.mInertia.setMass(_mass);
-  body.mInertia.setMoment(
-      dart::dynamics::BoxShape::computeInertia(_size, _mass));
-  dart::dynamics::ShapePtr newBoxShape(new dart::dynamics::BoxShape(_size));
+  body.mInertia.setMoment(BoxShape::computeInertia(_size, _mass));
+  ShapePtr newBoxShape(new BoxShape(_size));
 
-  dart::dynamics::FreeJoint::Properties joint;
+  FreeJoint::Properties joint;
   joint.mName = "cube_joint";
-  joint.mT_ParentBodyToJoint = Eigen::Translation3d(_position);
+  joint.mT_ParentBodyToJoint = Translation3d(_position);
 
-  auto pair
-      = newCubeSkeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
-          nullptr, joint, body);
+  auto pair = newCubeSkeleton->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, joint, body);
   auto shapeNode = pair.second->createShapeNodeWith<
-      dart::dynamics::VisualAspect,
-      dart::dynamics::CollisionAspect,
-      dart::dynamics::DynamicsAspect>(newBoxShape);
-  shapeNode->getVisualAspect()->setColor(
-      dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0));
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(newBoxShape);
+  shapeNode->getVisualAspect()->setColor(Random::uniform<Vector3d>(0.0, 1.0));
 
   mWorld->addSkeleton(newCubeSkeleton);
 }

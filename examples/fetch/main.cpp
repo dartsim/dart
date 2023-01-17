@@ -191,13 +191,13 @@ int main()
       = std::dynamic_pointer_cast<dynamics::WeldJointConstraint>(
           world->getConstraintSolver()->getConstraint(0));
   assert(weldJointConstraint);
-  weldJointConstraint->setRelativeTransform(Eigen::Isometry3d::Identity());
+  weldJointConstraint->setRelativeTransform(math::Isometry3d::Identity());
 
   // Create interactive frame to control the EE of Fetch
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(1.3, 0.75, 0.50);
+  math::Isometry3d tf = math::Isometry3d::Identity();
+  tf.translation() = math::Vector3d(1.3, 0.75, 0.50);
   tf.linear()
-      = Eigen::AngleAxisd(0.5_pi, Eigen::Vector3d::UnitY()).toRotationMatrix();
+      = math::AngleAxisd(0.5_pi, math::Vector3d::UnitY()).toRotationMatrix();
   auto frame = std::make_shared<gui::osg::InteractiveFrame>(
       dynamics::Frame::World(), "interactive frame", tf, 0.2);
   world->addSimpleFrame(frame);
@@ -212,7 +212,7 @@ int main()
 
   // Create grid
   ::osg::ref_ptr<gui::osg::GridVisual> grid = new gui::osg::GridVisual();
-  grid->setOffset(Eigen::Vector3d(1.3, 0.75, 0));
+  grid->setOffset(math::Vector3d(1.3, 0.75, 0));
   viewer.addAttachment(grid);
 
   // Add control widget for fetch

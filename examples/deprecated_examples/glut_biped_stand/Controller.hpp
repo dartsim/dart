@@ -45,22 +45,22 @@ public:
   Controller(dart::dynamics::SkeletonPtr _skel, double _t);
   virtual ~Controller();
 
-  Eigen::VectorXd getTorques();
+  dart::math::VectorXd getTorques();
   double getTorque(int _index);
   void setDesiredDof(int _index, double _val);
   void computeTorques();
   dart::dynamics::MetaSkeletonPtr getSkel();
-  Eigen::VectorXd getDesiredDofs();
-  Eigen::MatrixXd getKp();
-  Eigen::MatrixXd getKd();
+  dart::math::VectorXd getDesiredDofs();
+  dart::math::MatrixXd getKp();
+  dart::math::MatrixXd getKd();
 
 protected:
   dart::dynamics::MetaSkeletonPtr mSkel;
   dart::dynamics::BodyNodePtr mLeftHeel;
-  Eigen::VectorXd mTorques;
-  Eigen::VectorXd mDesiredDofs;
-  Eigen::MatrixXd mKp;
-  Eigen::MatrixXd mKd;
+  dart::math::VectorXd mTorques;
+  dart::math::VectorXd mDesiredDofs;
+  dart::math::MatrixXd mKp;
+  dart::math::MatrixXd mKd;
   std::size_t mLeftFoot[2];
   std::size_t mRightFoot[2];
   int mFrame;

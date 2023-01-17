@@ -34,13 +34,14 @@
 #include "dart/dynamics/ConstraintSolver.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/simulation/World.hpp"
-
-#include <dart/dynamics/SphereShape.hpp>
 
 #include <gtest/gtest.h>
 
 #include <iostream>
+
+using namespace dart;
 
 class CollisionGroupsTest : public testing::Test,
                             public testing::WithParamInterface<const char*>
@@ -49,8 +50,7 @@ class CollisionGroupsTest : public testing::Test,
 
 TEST_P(CollisionGroupsTest, SkeletonSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
-          GetParam())) {
+  if (!collision::CollisionDetector::getFactory()->canCreate(GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
@@ -61,12 +61,12 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
 
   // Note: When skeletons are added to a world, the constraint solver will
   // subscribe to them.
-  dart::simulation::WorldPtr world = dart::simulation::World::create();
+  simulation::WorldPtr world = simulation::World::create();
   world->getConstraintSolver()->setCollisionDetector(
-      dart::collision::CollisionDetector::getFactory()->create(GetParam()));
+      collision::CollisionDetector::getFactory()->create(GetParam()));
 
-  dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
-  dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
+  dynamics::SkeletonPtr skel_A = dynamics::Skeleton::create("A");
+  dynamics::SkeletonPtr skel_B = dynamics::Skeleton::create("B");
 
   world->addSkeleton(skel_A);
   world->addSkeleton(skel_B);
@@ -77,35 +77,35 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   // We will now add some BodyNodes and collision shapes *after* the Skeletons
   // have been added to the world, to see that the collision geometries get
   // updated automatically.
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = (1.0 + 0.25) * Eigen::Vector3d::UnitX();
+  math::Isometry3d tf = math::Isometry3d::Identity();
+  tf.translation() = (1.0 + 0.25) * math::Vector3d::UnitX();
 
-  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d::Constant(1.0));
-  auto pair = skel_A->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto boxShape
+      = std::make_shared<dynamics::BoxShape>(math::Vector3d::Constant(1.0));
+  auto pair = skel_A->createJointAndBodyNodePair<dynamics::FreeJoint>();
   pair.first->setTransform(tf);
-  auto sn1 = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-      boxShape);
+  auto sn1
+      = pair.second->createShapeNodeWith<dynamics::CollisionAspect>(boxShape);
 
-  tf.translation() = (1.0 - 0.25) * Eigen::Vector3d::UnitX();
+  tf.translation() = (1.0 - 0.25) * math::Vector3d::UnitX();
 
-  pair = skel_B->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  pair = skel_B->createJointAndBodyNodePair<dynamics::FreeJoint>();
   pair.first->setTransform(tf);
-  auto sn2 = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-      boxShape);
+  auto sn2
+      = pair.second->createShapeNodeWith<dynamics::CollisionAspect>(boxShape);
 
   EXPECT_TRUE(world->checkCollision());
 
   // Now we'll change the properties of one the box shape so that there should
   // no longer be any collisions.
-  boxShape->setSize(Eigen::Vector3d::Constant(0.2));
-  dart::collision::CollisionResult result2;
+  boxShape->setSize(math::Vector3d::Constant(0.2));
+  collision::CollisionResult result2;
   EXPECT_FALSE(world->checkCollision());
 
   // Now we'll replace one of the boxes with a large one, so that a collision
   // will occur again.
-  auto largeBox = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d::Constant(0.95));
+  auto largeBox
+      = std::make_shared<dynamics::BoxShape>(math::Vector3d::Constant(0.95));
   sn1->setShape(largeBox);
   EXPECT_TRUE(world->checkCollision());
 
@@ -114,7 +114,7 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   // the internal collision shapes are being managed correctly. Otherwise, if
   // they are not being managed correctly, then an assertion will fail when
   // testing in debug mode.
-  auto sphereShape = std::make_shared<dart::dynamics::SphereShape>(0.01);
+  auto sphereShape = std::make_shared<dynamics::SphereShape>(0.01);
   sn2->setShape(sphereShape);
   EXPECT_FALSE(world->checkCollision());
 
@@ -127,8 +127,7 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   EXPECT_FALSE(world->checkCollision());
 
   // Create a new shape node so that there should be a collision again
-  pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-      sphereShape);
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(sphereShape);
   EXPECT_TRUE(world->checkCollision());
 
   // Remove the BodyNode so that there should no longer be a collision
@@ -136,10 +135,9 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   EXPECT_FALSE(world->checkCollision());
 
   // Add a new BodyNode and Shape Node so that there is a collision again
-  pair = skel_B->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  pair = skel_B->createJointAndBodyNodePair<dynamics::FreeJoint>();
   pair.first->setTransform(tf);
-  pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-      sphereShape);
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(sphereShape);
   EXPECT_TRUE(world->checkCollision());
 
   // Remove a skeleton so that there are no longer collisions
@@ -149,8 +147,7 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
 
 TEST_P(CollisionGroupsTest, BodyNodeSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
-          GetParam())) {
+  if (!collision::CollisionDetector::getFactory()->canCreate(GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
@@ -159,23 +156,22 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
               << std::endl;
   }
 
-  auto cd
-      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+  auto cd = collision::CollisionDetector::getFactory()->create(GetParam());
 
   auto group = cd->createCollisionGroup();
 
-  auto skel1 = dart::dynamics::Skeleton::create("skel1");
-  auto skel2 = dart::dynamics::Skeleton::create("skel2");
+  auto skel1 = dynamics::Skeleton::create("skel1");
+  auto skel2 = dynamics::Skeleton::create("skel2");
 
-  auto pair_1a = skel1->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
-  auto pair_2a = skel2->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto pair_1a = skel1->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto pair_2a = skel2->createJointAndBodyNodePair<dynamics::FreeJoint>();
 
   group->subscribeTo(pair_1a.second, pair_2a.second);
   // The BodyNodes currently have no collision geometries, so we expect there to
   // be no collisions.
   EXPECT_FALSE(group->collide());
 
-  Eigen::Isometry3d tf{Eigen::Translation3d(0.5, 0.0, 0.0)};
+  math::Isometry3d tf{math::Translation3d(0.5, 0.0, 0.0)};
   pair_1a.first->setTransform(tf);
   pair_1a.first->setName("1a");
   pair_1a.second->setName("1a");
@@ -185,15 +181,13 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   pair_2a.first->setName("2a");
   pair_2a.second->setName("2a");
 
-  auto sphere = std::make_shared<dart::dynamics::SphereShape>(0.75);
+  auto sphere = std::make_shared<dynamics::SphereShape>(0.75);
 
   auto sn_1a
-      = pair_1a.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-          sphere);
+      = pair_1a.second->createShapeNodeWith<dynamics::CollisionAspect>(sphere);
 
   auto sn_2a
-      = pair_2a.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-          sphere);
+      = pair_2a.second->createShapeNodeWith<dynamics::CollisionAspect>(sphere);
 
   // The BodyNodes have been given overlapping shapes, so now we expect the
   // collision information to automatically update and identify a collision.
@@ -213,17 +207,17 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   // should collide again.
   EXPECT_TRUE(group->collide());
 
-  auto box = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d::Constant(0.5));
+  auto box
+      = std::make_shared<dynamics::BoxShape>(math::Vector3d::Constant(0.5));
   sn_2a->setShape(box);
   // Now a shape has been replaced with a smaller one, so there should no longer
   // be a collision.
   EXPECT_FALSE(group->collide());
 
-  auto pair_1b = skel1->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
-  auto pair_2b = skel2->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto pair_1b = skel1->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto pair_2b = skel2->createJointAndBodyNodePair<dynamics::FreeJoint>();
 
-  tf.translation() = 0.5 * Eigen::Vector3d::UnitX();
+  tf.translation() = 0.5 * math::Vector3d::UnitX();
   pair_1b.first->setTransform(tf);
   pair_1b.first->setName("1b");
   pair_1b.second->setName("1b");
@@ -233,8 +227,8 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   pair_2b.first->setName("2b");
   pair_2b.second->setName("2b");
 
-  pair_1b.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
-  pair_2b.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  pair_1b.second->createShapeNodeWith<dynamics::CollisionAspect>(sphere);
+  pair_2b.second->createShapeNodeWith<dynamics::CollisionAspect>(sphere);
 
   // The collision group should not be tracking the new BodyNodes, so there
   // should still be no collisions
@@ -243,14 +237,14 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   // Change the size of the box so that there are overlapping collision
   // geometries. The collision information should update automatically, and a
   // collision should be detected.
-  box->setSize(Eigen::Vector3d::Constant(2.0));
+  box->setSize(math::Vector3d::Constant(2.0));
   EXPECT_TRUE(group->collide());
 
   sn_1a->remove();
   // A shape node has been removed, so there should no longer be a collision
   EXPECT_FALSE(group->collide());
 
-  pair_1a.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  pair_1a.second->createShapeNodeWith<dynamics::CollisionAspect>(sphere);
   // A new shape node has been added with the same geometry as the one that was
   // removed, so there should be a collision again
   EXPECT_TRUE(group->collide());
@@ -262,8 +256,7 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
 
 TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 {
-  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
-          GetParam())) {
+  if (!collision::CollisionDetector::getFactory()->canCreate(GetParam())) {
     std::cout << "Skipping test for [" << GetParam() << "], because it is not "
               << "available" << std::endl;
     return;
@@ -273,14 +266,13 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   }
   // Note: When skeletons are added to a world, the constraint solver will
   // subscribe to them.
-  dart::simulation::WorldPtr world = dart::simulation::World::create();
-  auto cd
-      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+  simulation::WorldPtr world = simulation::World::create();
+  auto cd = collision::CollisionDetector::getFactory()->create(GetParam());
 
   world->getConstraintSolver()->setCollisionDetector(cd);
 
-  dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
-  dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
+  dynamics::SkeletonPtr skel_A = dynamics::Skeleton::create("A");
+  dynamics::SkeletonPtr skel_B = dynamics::Skeleton::create("B");
 
   auto group = world->getConstraintSolver()->getCollisionGroup();
 
@@ -299,12 +291,12 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 
   // Add a shape to one of the skeletons to test that removal works for
   // skeletons with and without shapes
-  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d::Constant(1.0));
+  auto boxShape
+      = std::make_shared<dynamics::BoxShape>(math::Vector3d::Constant(1.0));
 
-  auto pair = skel_B->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
-  auto sn = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
-      boxShape);
+  auto pair = skel_B->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto sn
+      = pair.second->createShapeNodeWith<dynamics::CollisionAspect>(boxShape);
 
   // Needed to update subscribtions
   world->step();

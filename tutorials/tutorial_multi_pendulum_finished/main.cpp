@@ -32,6 +32,11 @@
 
 #include <dart/dart.hpp>
 
+using namespace dart;
+using namespace dart::math;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+
 const double default_height = 1.0; // m
 const double default_width = 0.2;  // m
 const double default_depth = 0.2;  // m
@@ -41,16 +46,13 @@ const double default_force = 15.0;  // N
 const int default_countdown = 200;  // Number of timesteps for applying force
 
 const double default_rest_position = 0.0;
-const double delta_rest_position = dart::math::toRadian(10.0);
+const double delta_rest_position = toRadian(10.0);
 
 const double default_stiffness = 0.0;
 const double delta_stiffness = 10;
 
 const double default_damping = 5.0;
 const double delta_damping = 1.0;
-
-using namespace dart::dynamics;
-using namespace dart::simulation;
 
 class MyWindow : public dart::gui::glut::SimWindow
 {
@@ -72,10 +74,10 @@ public:
     ArrowShape::Properties arrow_properties;
     arrow_properties.mRadius = 0.05;
     mArrow = std::shared_ptr<ArrowShape>(new ArrowShape(
-        Eigen::Vector3d(-default_height, 0.0, default_height / 2.0),
-        Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
+        Vector3d(-default_height, 0.0, default_height / 2.0),
+        Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
         arrow_properties,
-        dart::math::Colord::Orange(1.0)));
+        Colord::Orange(1.0)));
   }
 
   void changeDirection()
@@ -83,12 +85,12 @@ public:
     mPositiveSign = !mPositiveSign;
     if (mPositiveSign) {
       mArrow->setPositions(
-          Eigen::Vector3d(-default_height, 0.0, default_height / 2.0),
-          Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0));
+          Vector3d(-default_height, 0.0, default_height / 2.0),
+          Vector3d(-default_width / 2.0, 0.0, default_height / 2.0));
     } else {
       mArrow->setPositions(
-          Eigen::Vector3d(default_height, 0.0, default_height / 2.0),
-          Eigen::Vector3d(default_width / 2.0, 0.0, default_height / 2.0));
+          Vector3d(default_height, 0.0, default_height / 2.0),
+          Vector3d(default_width / 2.0, 0.0, default_height / 2.0));
     }
   }
 
@@ -106,9 +108,8 @@ public:
 
       // The system becomes numerically unstable when the rest position exceeds
       // 90 degrees
-      if (std::abs(q0) > dart::math::toRadian(90.0))
-        q0 = (q0 > 0) ? dart::math::toRadian(90.0)
-                      : dart::math::toRadian(-90.0);
+      if (std::abs(q0) > toRadian(90.0))
+        q0 = (q0 > 0) ? toRadian(90.0) : toRadian(-90.0);
 
       dof->setRestPosition(q0);
     }
@@ -147,10 +148,9 @@ public:
     BodyNode* tip = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
 
     // Attach the last link to the world
-    Eigen::Vector3d location
-        = tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height);
-    mBallConstraint
-        = std::make_shared<dart::dynamics::BallJointConstraint>(tip, location);
+    Vector3d location
+        = tip->getTransform() * Vector3d(0.0, 0.0, default_height);
+    mBallConstraint = std::make_shared<BallJointConstraint>(tip, location);
     mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
   }
 
@@ -252,7 +252,7 @@ public:
         bn->getShapeNodeWith<VisualAspect>(2)->remove();
       }
 
-      bn->setColor(dart::math::Colord::Blue());
+      bn->setColor(Colord::Blue());
     }
 
     if (!mBodyForce) {
@@ -264,7 +264,7 @@ public:
 
           BodyNode* bn = dof->getChildBodyNode();
           bn->getShapeNodeWith<VisualAspect>(0)->getVisualAspect()->setColor(
-              dart::math::Colord::Red());
+              Colord::Red());
 
           --mForceCountDown[i];
         }
@@ -275,16 +275,15 @@ public:
         if (mForceCountDown[i] > 0) {
           BodyNode* bn = mPendulum->getBodyNode(i);
 
-          Eigen::Vector3d force = default_force * Eigen::Vector3d::UnitX();
-          Eigen::Vector3d location(
-              -default_width / 2.0, 0.0, default_height / 2.0);
+          Vector3d force = default_force * Vector3d::UnitX();
+          Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
           if (!mPositiveSign) {
             force = -force;
             location[0] = -location[0];
           }
           bn->addExtForce(force, location, true, true);
           bn->getShapeNodeWith<VisualAspect>(1)->getVisualAspect()->setColor(
-              dart::math::Colord::Red());
+              Colord::Red());
           bn->createShapeNodeWith<VisualAspect>(mArrow);
 
           --mForceCountDown[i];
@@ -320,18 +319,18 @@ protected:
 void setGeometry(const BodyNodePtr& bn)
 {
   // Create a BoxShape to be used for both visualization and collision checking
-  std::shared_ptr<BoxShape> box(new BoxShape(
-      Eigen::Vector3d(default_width, default_depth, default_height)));
+  std::shared_ptr<BoxShape> box(
+      new BoxShape(Vector3d(default_width, default_depth, default_height)));
 
   // Create a shape node for visualization and collision checking
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           box);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue());
+  shapeNode->getVisualAspect()->setColor(Colord::Blue());
 
   // Set the location of the shape node
-  Eigen::Isometry3d box_tf(Eigen::Isometry3d::Identity());
-  Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_height / 2.0);
+  Isometry3d box_tf(Isometry3d::Identity());
+  Vector3d center = Vector3d(0, 0, default_height / 2.0);
   box_tf.translation() = center;
   shapeNode->setRelativeTransform(box_tf);
 
@@ -343,9 +342,9 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
 {
   BallJoint::Properties properties;
   properties.mName = name + "_joint";
-  properties.mRestPositions = Eigen::Vector3d::Constant(default_rest_position);
-  properties.mSpringStiffnesses = Eigen::Vector3d::Constant(default_stiffness);
-  properties.mDampingCoefficients = Eigen::Vector3d::Constant(default_damping);
+  properties.mRestPositions = Vector3d::Constant(default_rest_position);
+  properties.mSpringStiffnesses = Vector3d::Constant(default_stiffness);
+  properties.mDampingCoefficients = Vector3d::Constant(default_damping);
 
   auto bodyProp = BodyNode::Properties(BodyNode::AspectProperties(name));
   BodyNodePtr bn = pendulum
@@ -356,9 +355,9 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   // Make a shape for the Joint
   const double& R = default_width;
   std::shared_ptr<EllipsoidShape> ball(
-      new EllipsoidShape(sqrt(2) * Eigen::Vector3d(R, R, R)));
+      new EllipsoidShape(sqrt(2) * Vector3d(R, R, R)));
   auto shapeNode = bn->createShapeNodeWith<VisualAspect>(ball);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue());
+  shapeNode->getVisualAspect()->setColor(Colord::Blue());
 
   // Set the geometry of the Body
   setGeometry(bn);
@@ -372,9 +371,9 @@ BodyNode* addBody(
   // Set up the properties for the Joint
   RevoluteJoint::Properties properties;
   properties.mName = name + "_joint";
-  properties.mAxis = Eigen::Vector3d::UnitY();
+  properties.mAxis = Vector3d::UnitY();
   properties.mT_ParentBodyToJoint.translation()
-      = Eigen::Vector3d(0, 0, default_height);
+      = Vector3d(0, 0, default_height);
   properties.mRestPositions[0] = default_rest_position;
   properties.mSpringStiffnesses[0] = default_stiffness;
   properties.mDampingCoefficients[0] = default_damping;
@@ -391,12 +390,11 @@ BodyNode* addBody(
   std::shared_ptr<CylinderShape> cyl(new CylinderShape(R, h));
 
   // Line up the cylinder with the Joint axis
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.linear() = dart::math::eulerXYZToMatrix(
-      Eigen::Vector3d(dart::math::toRadian(90.0), 0, 0));
+  Isometry3d tf(Isometry3d::Identity());
+  tf.linear() = eulerXYZToMatrix(Vector3d(toRadian(90.0), 0, 0));
 
   auto shapeNode = bn->createShapeNodeWith<VisualAspect>(cyl);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Blue());
+  shapeNode->getVisualAspect()->setColor(Colord::Blue());
   shapeNode->setRelativeTransform(tf);
 
   // Set the geometry of the Body
@@ -419,7 +417,7 @@ int main(int argc, char* argv[])
 
   // Set the initial position of the first DegreeOfFreedom so that the pendulum
   // starts to swing right away
-  pendulum->getDof(1)->setPosition(dart::math::toRadian(120.0));
+  pendulum->getDof(1)->setPosition(toRadian(120.0));
 
   // Create a world and add the pendulum to the world
   WorldPtr world = World::create();

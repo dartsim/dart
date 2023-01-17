@@ -36,6 +36,8 @@
 
 #include <dart/dart.hpp>
 
+using namespace dart::math;
+
 int main()
 {
   // Create a world
@@ -50,10 +52,10 @@ int main()
   world->addSkeleton(atlas);
 
   // Set initial configuration for Atlas robot
-  atlas->setPosition(0, -0.5 * dart::math::pi());
+  atlas->setPosition(0, -0.5 * pi());
 
   // Set gravity of the world
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setGravity(Vector3d(0.0, -9.81, 0.0));
 
   // Wrap a WorldNode around it
   osg::ref_ptr<AtlasSimbiconWorldNode> node

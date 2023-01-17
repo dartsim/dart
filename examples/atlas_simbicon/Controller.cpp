@@ -159,8 +159,8 @@ void Controller::changeStateMachine(std::size_t _idx, double _currentTime)
 bool Controller::isAllowingControl() const
 {
   auto pelvis = mAtlasRobot->getBodyNode("pelvis");
-  const Eigen::Isometry3d tf = pelvis->getTransform();
-  const Eigen::Vector3d pos = tf.translation();
+  const math::Isometry3d tf = pelvis->getTransform();
+  const math::Vector3d pos = tf.translation();
   const auto y = pos[1];
 
   if (y < mMinPelvisHeight || mMaxPelvisHeight < y)

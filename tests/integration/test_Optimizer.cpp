@@ -74,15 +74,14 @@ public:
   virtual ~SampleObjFunc() {}
 
   /// \copydoc Function::eval
-  double eval(const Eigen::VectorXd& _x) const override
+  double eval(const math::VectorXd& _x) const override
   {
     return std::sqrt(_x[1]);
   }
 
   /// \copydoc Function::evalGradient
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override
   {
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
@@ -100,15 +99,14 @@ public:
   virtual ~SampleConstFunc() {}
 
   /// \copydoc Function::eval
-  double eval(const Eigen::VectorXd& _x) const override
+  double eval(const math::VectorXd& _x) const override
   {
     return ((mA * _x[0] + mB) * (mA * _x[0] + mB) * (mA * _x[0] + mB) - _x[1]);
   }
 
   /// \copydoc Function::evalGradient
   void evalGradient(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd> _grad) const override
+      const math::VectorXd& _x, math::Map<math::VectorXd> _grad) const override
   {
     _grad[0] = 3 * mA * (mA * _x[0] + mB) * (mA * _x[0] + mB);
     _grad[1] = -1.0;
@@ -127,8 +125,8 @@ TEST(Optimizer, GradientDescent)
 {
   std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
-  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
-  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+  prob->setLowerBounds(math::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(math::Vector2d(1.234, 5.678));
 
   FunctionPtr obj = std::make_shared<SampleObjFunc>();
   prob->setObjective(obj);
@@ -137,7 +135,7 @@ TEST(Optimizer, GradientDescent)
   EXPECT_TRUE(solver.solve());
 
   double minF = prob->getOptimumValue();
-  Eigen::VectorXd optX = prob->getOptimalSolution();
+  math::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0, 1e-6);
   EXPECT_EQ(optX.size(), static_cast<int>(prob->getDimension()));
@@ -153,8 +151,8 @@ TEST(Optimizer, BasicNlopt)
 
   std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
-  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
-  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+  prob->setLowerBounds(math::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(math::Vector2d(1.234, 5.678));
 
   FunctionPtr obj = std::make_shared<SampleObjFunc>();
   prob->setObjective(obj);
@@ -168,7 +166,7 @@ TEST(Optimizer, BasicNlopt)
   EXPECT_TRUE(solver.solve());
 
   double minF = prob->getOptimumValue();
-  Eigen::VectorXd optX = prob->getOptimalSolution();
+  math::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
   EXPECT_EQ(static_cast<std::size_t>(optX.size()), prob->getDimension());
@@ -183,8 +181,8 @@ TEST(Optimizer, BasicIpopt)
 {
   std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
-  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
-  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+  prob->setLowerBounds(math::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(math::Vector2d(1.234, 5.678));
 
   FunctionPtr obj = std::make_shared<SampleObjFunc>();
   prob->setObjective(obj);
@@ -198,7 +196,7 @@ TEST(Optimizer, BasicIpopt)
   solver.solve();
 
   double minF = prob->getOptimumValue();
-  Eigen::VectorXd optX = prob->getOptimalSolution();
+  math::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
   EXPECT_EQ(static_cast<std::size_t>(optX.size()), prob->getDimension());
@@ -244,8 +242,8 @@ TEST(Optimizer, OutStream)
 {
   std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
-  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
-  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+  prob->setLowerBounds(math::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(math::Vector2d(1.234, 5.678));
 
   FunctionPtr obj = std::make_shared<SampleObjFunc>();
   prob->setObjective(obj);

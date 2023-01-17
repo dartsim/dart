@@ -32,60 +32,58 @@
 
 #include <dart/dart.hpp>
 
+using namespace dart::math;
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 int main(int argc, char* argv[])
 {
-  dart::simulation::WorldPtr myWorld(new dart::simulation::World);
+  WorldPtr myWorld(new World);
 
-  Eigen::Isometry3d tf1(Eigen::Isometry3d::Identity());
-  tf1.translate(Eigen::Vector3d(0.1, -0.1, 0));
+  Isometry3d tf1(Isometry3d::Identity());
+  tf1.translate(Vector3d(0.1, -0.1, 0));
 
-  Eigen::Isometry3d tf2(Eigen::Isometry3d::Identity());
-  tf2.translate(Eigen::Vector3d(0, 0.1, 0));
-  tf2.rotate(
-      Eigen::AngleAxisd(dart::math::toRadian(45.0), Eigen::Vector3d(1, 0, 0)));
+  Isometry3d tf2(Isometry3d::Identity());
+  tf2.translate(Vector3d(0, 0.1, 0));
+  tf2.rotate(AngleAxisd(toRadian(45.0), Vector3d(1, 0, 0)));
 
-  Eigen::Isometry3d tf3(Eigen::Isometry3d::Identity());
-  tf3.translate(Eigen::Vector3d(0, 0, 0.1));
-  tf3.rotate(
-      Eigen::AngleAxisd(dart::math::toRadian(60.0), Eigen::Vector3d(0, 1, 0)));
+  Isometry3d tf3(Isometry3d::Identity());
+  tf3.translate(Vector3d(0, 0, 0.1));
+  tf3.rotate(AngleAxisd(toRadian(60.0), Vector3d(0, 1, 0)));
 
   SimpleFramePtr F1(new SimpleFrame(Frame::World(), "F1", tf1));
   F1->setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
+      std::shared_ptr<Shape>(new BoxShape(Vector3d(0.05, 0.05, 0.02))));
   SimpleFrame F2(F1.get(), "F2", tf2);
-  F2.setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
+  F2.setShape(std::shared_ptr<Shape>(new BoxShape(Vector3d(0.05, 0.05, 0.02))));
   SimpleFrame F3(&F2, "F3", tf3);
-  F3.setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
+  F3.setShape(std::shared_ptr<Shape>(new BoxShape(Vector3d(0.05, 0.05, 0.02))));
 
   // Note: Adding a Frame to the world will also cause all Entities that descend
   // from that Frame to be rendered.
   myWorld->addSimpleFrame(F1);
 
   SimpleFramePtr A(new SimpleFrame(Frame::World(), "A"));
-  A->setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.02, 0.02, 0.02))));
+  A->setShape(
+      std::shared_ptr<Shape>(new EllipsoidShape(Vector3d(0.02, 0.02, 0.02))));
   SimpleFrame A1(A.get(), "A1", F1->getTransform(A.get()));
-  A1.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  A1.setShape(
+      std::shared_ptr<Shape>(new EllipsoidShape(Vector3d(0.01, 0.01, 0.01))));
   SimpleFrame A2(A.get(), "A2", F2.getTransform(A.get()));
-  A2.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  A2.setShape(
+      std::shared_ptr<Shape>(new EllipsoidShape(Vector3d(0.01, 0.01, 0.01))));
   SimpleFrame A3(A.get(), "A3", F3.getTransform(A.get()));
-  A3.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  A3.setShape(
+      std::shared_ptr<Shape>(new EllipsoidShape(Vector3d(0.01, 0.01, 0.01))));
 
   myWorld->addSimpleFrame(A);
 
   SimpleFramePtr arrow(new SimpleFrame(Frame::World(), "arrow"));
   arrow->setShape(std::shared_ptr<Shape>(new ArrowShape(
-      Eigen::Vector3d(0.1, -0.1, 0.0),
-      Eigen::Vector3d(0.1, 0.0, 0.0),
+      Vector3d(0.1, -0.1, 0.0),
+      Vector3d(0.1, 0.0, 0.0),
       ArrowShape::Properties(0.002, 1.8),
-      Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
+      Vector4d(1.0, 0.5, 0.5, 1.0))));
   myWorld->addSimpleFrame(arrow);
 
   // CAREFUL: For a Frame that gets added to the world to be

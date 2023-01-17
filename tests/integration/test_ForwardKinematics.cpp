@@ -67,7 +67,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
   // Check each case by setting the joint values and obtaining the end-effector
   // position
   for (std::size_t i = 0; i < numTests; i++) {
-    robot->setPositions(Eigen::VectorXd(joints[i]));
+    robot->setPositions(math::VectorXd(joints[i]));
     BodyNode* bn = robot->getBodyNode("ee");
     Vector3d actual = bn->getTransform().translation();
     bool equality = test::equals(actual, expectedPos[i], 1e-3);
@@ -119,27 +119,27 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 }
 
 //==============================================================================
-Eigen::MatrixXd finiteDifferenceJacobian(
+math::MatrixXd finiteDifferenceJacobian(
     const SkeletonPtr& skeleton,
-    const Eigen::VectorXd& q,
+    const math::VectorXd& q,
     const std::vector<std::size_t>& active_indices,
     JacobianNode* node)
 {
-  Eigen::MatrixXd J(3, q.size());
+  math::MatrixXd J(3, q.size());
   for (int i = 0; i < q.size(); ++i) {
     const double dq = 1e-4;
 
-    Eigen::VectorXd q_up = q;
-    Eigen::VectorXd q_down = q;
+    math::VectorXd q_up = q;
+    math::VectorXd q_down = q;
 
     q_up[i] += 0.5 * dq;
     q_down[i] -= 0.5 * dq;
 
     skeleton->setPositions(active_indices, q_up);
-    Eigen::Vector3d x_up = node->getTransform().translation();
+    math::Vector3d x_up = node->getTransform().translation();
 
     skeleton->setPositions(active_indices, q_down);
-    Eigen::Vector3d x_down = node->getTransform().translation();
+    math::Vector3d x_down = node->getTransform().translation();
 
     skeleton->setPositions(active_indices, q);
     J.col(i)
@@ -150,17 +150,17 @@ Eigen::MatrixXd finiteDifferenceJacobian(
 }
 
 //==============================================================================
-Eigen::MatrixXd standardJacobian(
+math::MatrixXd standardJacobian(
     const SkeletonPtr& skeleton,
-    const Eigen::VectorXd& q,
+    const math::VectorXd& q,
     const std::vector<std::size_t>& active_indices,
     JacobianNode* node)
 {
   skeleton->setPositions(active_indices, q);
 
-  Eigen::MatrixXd J = skeleton->getJacobian(node).bottomRows<3>();
+  math::MatrixXd J = skeleton->getJacobian(node).bottomRows<3>();
 
-  Eigen::MatrixXd reduced_J(3, q.size());
+  math::MatrixXd reduced_J(3, q.size());
   for (int i = 0; i < q.size(); ++i)
     reduced_J.col(i) = J.col(active_indices[i]);
 
@@ -183,15 +183,15 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
   for (std::size_t i = 0; i < 3; ++i)
     active_indices.push_back(i);
 
-  Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
+  math::VectorXd q = math::VectorXd::Random(active_indices.size());
 
-  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(
+  math::MatrixXd fd_J = finiteDifferenceJacobian(
       skeleton1,
       q,
       active_indices,
       skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1));
 
-  Eigen::MatrixXd J = standardJacobian(
+  math::MatrixXd J = standardJacobian(
       skeleton2,
       q,
       active_indices,
@@ -199,7 +199,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 
-  q = Eigen::VectorXd::Random(active_indices.size());
+  q = math::VectorXd::Random(active_indices.size());
 
   fd_J = finiteDifferenceJacobian(
       skeleton1,
@@ -237,16 +237,16 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
   for (std::size_t i = 0; i < 3; ++i)
     active_indices.push_back(i);
 
-  Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
+  math::VectorXd q = math::VectorXd::Random(active_indices.size());
 
-  Eigen::MatrixXd fd_J
+  math::MatrixXd fd_J
       = finiteDifferenceJacobian(skeleton1, q, active_indices, ee1);
 
-  Eigen::MatrixXd J = standardJacobian(skeleton2, q, active_indices, ee2);
+  math::MatrixXd J = standardJacobian(skeleton2, q, active_indices, ee2);
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 
-  q = Eigen::VectorXd::Random(active_indices.size());
+  q = math::VectorXd::Random(active_indices.size());
   fd_J = finiteDifferenceJacobian(skeleton1, q, active_indices, ee1);
   J = standardJacobian(skeleton2, q, active_indices, ee2);
 

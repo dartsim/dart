@@ -32,18 +32,20 @@
 
 #include "MyWindow.hpp"
 
+using namespace dart;
+
 void MyWindow::timeStepping()
 {
-  Eigen::VectorXd damping = computeDamping();
+  math::VectorXd damping = computeDamping();
   mWorld->getSkeleton(0)->setForces(damping);
   mWorld->step();
 }
 
-Eigen::VectorXd MyWindow::computeDamping()
+math::VectorXd MyWindow::computeDamping()
 {
   int nDof = mWorld->getSkeleton(0)->getNumDofs();
   // add damping to each joint; twist-dof has smaller damping
-  Eigen::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();
+  math::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();
   for (int i = 0; i < nDof; i++)
     if (i % 3 == 1)
       damping[i] *= 0.1;

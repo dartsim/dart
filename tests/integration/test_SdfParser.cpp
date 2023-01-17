@@ -165,8 +165,8 @@ TEST(SdfParser, ReadMaterial)
 
   bodyNode->eachShapeNodeWith<dart::dynamics::VisualAspect>(
       [](dart::dynamics::ShapeNode* shapeNode) {
-        Eigen::Vector4d color = shapeNode->getVisualAspect()->getRGBA();
-        Eigen::Vector4d expected_color(0.5, 0.6, 0.8, 1.0);
+        math::Vector4d color = shapeNode->getVisualAspect()->getRGBA();
+        math::Vector4d expected_color(0.5, 0.6, 0.8, 1.0);
         double diff = (color - expected_color).norm();
         EXPECT_LT(diff, 1e-4);
       });

@@ -34,9 +34,12 @@
 
 #include <dart/gui/GLFuncs.hpp>
 
+using namespace dart;
+using namespace dart::math;
+
 MyWindow::MyWindow() : SimWindow()
 {
-  mForce = Eigen::Vector3d::Zero();
+  mForce = Vector3d::Zero();
   mController = nullptr;
   mImpulseDuration = 0;
 }
@@ -66,10 +69,10 @@ void MyWindow::drawWorld() const
 
   // draw arrow
   if (mImpulseDuration > 0) {
-    Eigen::Vector3d poa
+    Vector3d poa
         = mWorld->getSkeleton(1)->getBodyNode("h_spine")->getTransform()
-          * Eigen::Vector3d(0.0, 0.0, 0.0);
-    Eigen::Vector3d start = poa - mForce / 10.0;
+          * Vector3d(0.0, 0.0, 0.0);
+    Vector3d start = poa - mForce / 10.0;
     double len = mForce.norm() / 10.0;
     dart::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
   }
@@ -144,14 +147,14 @@ void MyWindow::setController(Controller* _controller)
 void MyWindow::plotCOMX()
 {
   int nFrame = mWorld->getRecording()->getNumFrames();
-  Eigen::VectorXd data(nFrame);
+  VectorXd data(nFrame);
   for (int i = 0; i < nFrame; i++) {
-    Eigen::VectorXd pose = mWorld->getRecording()->getConfig(i, 1);
+    VectorXd pose = mWorld->getRecording()->getConfig(i, 1);
     mWorld->getSkeleton(1)->setPositions(pose);
     data[i] = mWorld->getSkeleton(1)->getCOM()[0];
   }
   if (nFrame != 0) {
-    Eigen::VectorXd pose = mWorld->getRecording()->getConfig(mPlayFrame, 1);
+    VectorXd pose = mWorld->getRecording()->getConfig(mPlayFrame, 1);
     mWorld->getSkeleton(1)->setPositions(pose);
   }
 

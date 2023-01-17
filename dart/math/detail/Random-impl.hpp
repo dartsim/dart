@@ -52,7 +52,7 @@ using is_base_of_template
     = decltype(is_base_of_template_impl<C>(std::declval<T*>()));
 
 template <typename T>
-using is_base_of_matrix = is_base_of_template<MatrixBase, T>;
+using is_base_of_matrix = is_base_of_template<::Eigen::MatrixBase, T>;
 
 //==============================================================================
 /// Check whether \c T can be used for std::uniform_int_distribution<T>

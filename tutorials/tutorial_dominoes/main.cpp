@@ -32,12 +32,16 @@
 
 #include <dart/dart.hpp>
 
+using namespace dart::dynamics;
+using namespace dart::simulation;
+using namespace dart::math;
+
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
 const double default_domino_depth = default_domino_width / 5.0;
 
 [[maybe_unused]] const double default_distance = default_domino_height / 2.0;
-const double default_angle = dart::math::toRadian(20.0);
+const double default_angle = toRadian(20.0);
 
 const double default_domino_density = 2.6e3; // kg/m^3
 const double default_domino_mass
@@ -49,10 +53,6 @@ const int default_force_duration = 200;                 // # iterations
 const int default_push_duration = 1000;                 // # iterations
 
 [[maybe_unused]] const double defaultmEndEffectormOffset = 0.05;
-
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::math;
 
 class Controller
 {
@@ -103,11 +103,11 @@ protected:
   BodyNodePtr mEndEffector;
 
   /// Desired joint positions when not applying the operational space controller
-  Eigen::VectorXd mQDesired;
+  VectorXd mQDesired;
 
   /// The offset of the end effector from the body origin of the last BodyNode
   /// in the manipulator
-  Eigen::Vector3d mOffset;
+  Vector3d mOffset;
 
   /// Control gains for the proportional error terms in the PD controller
   double mKpPD;
@@ -124,7 +124,7 @@ protected:
   double mKdOS;
 
   /// Joint forces for the manipulator (output of the Controller)
-  Eigen::VectorXd mForces;
+  VectorXd mForces;
 };
 
 class MyWindow : public dart::gui::glut::SimWindow
@@ -258,7 +258,7 @@ SkeletonPtr createDomino()
       = domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
 
   // Create a shape for the domino
-  std::shared_ptr<BoxShape> box(new BoxShape(Eigen::Vector3d(
+  std::shared_ptr<BoxShape> box(new BoxShape(Vector3d(
       default_domino_depth, default_domino_width, default_domino_height)));
   body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 
@@ -285,16 +285,16 @@ SkeletonPtr createFloor()
   double floor_width = 10.0;
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
-      new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
+      new BoxShape(Vector3d(floor_width, floor_width, floor_height)));
   auto shapeNode = body->createShapeNodeWith<
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(box);
-  shapeNode->getVisualAspect()->setColor(dart::math::Colord::Black());
+  shapeNode->getVisualAspect()->setColor(Colord::Black());
 
   // Put the body into position
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height / 2.0);
+  Isometry3d tf(Isometry3d::Identity());
+  tf.translation() = Vector3d(0.0, 0.0, -floor_height / 2.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;

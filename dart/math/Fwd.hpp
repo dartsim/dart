@@ -305,10 +305,11 @@ using FullPivLU = ::Eigen::FullPivLU<MatrixType>;
 // Other DART types
 //------------------------------------------------------------------------------
 
-using Inertia = Matrix6d;
+using Inertia = Matrix6d; // TODO(JS): Rename to SpatialInertia
 using LinearJacobian = Matrix<double, 3, Dynamic>;
 using AngularJacobian = Matrix<double, 3, Dynamic>;
-using Jacobian = Matrix<double, 6, Dynamic>;
+using Jacobian
+    = Matrix<double, 6, Dynamic>; // TODO(JS): Rename to SpatialJacobian
 
 DART_DECLARE_CLASS_POINTERS_S(Color);
 

@@ -39,6 +39,8 @@
 
 #include "MyWindow.hpp"
 
+using namespace dart::math;
+
 void MyWindow::draw()
 {
   glDisable(GL_LIGHTING);
@@ -59,7 +61,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
     case '2':
     case '3': {
       std::size_t dofIdx = _key - 49;
-      Eigen::VectorXd pose = skel->getPositions();
+      VectorXd pose = skel->getPositions();
       pose(dofIdx) = pose(dofIdx) + (inverse ? -dDOF : dDOF);
       skel->setPositions(pose);
       std::cout << "Updated pose DOF " << dofIdx << ": " << pose.transpose()

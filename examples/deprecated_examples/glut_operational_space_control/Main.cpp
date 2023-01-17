@@ -34,6 +34,8 @@
 
 #include <dart/dart.hpp>
 
+using namespace dart::math;
+
 int main(int argc, char* argv[])
 {
   // create and initialize the world
@@ -50,7 +52,7 @@ int main(int argc, char* argv[])
   world->addSkeleton(robot);
 
   // create and initialize the world
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  Vector3d gravity(0.0, -9.81, 0.0);
   world->setGravity(gravity);
   world->setTimeStep(1.0 / 1000);
 
