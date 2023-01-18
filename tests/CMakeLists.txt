@@ -37,7 +37,7 @@ if(DART_DOWNLOAD_DEPENDENT_PACKAGES)
     PROJECT_NAME googletest
     WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/.deps
     GIT_URL https://github.com/google/googletest.git
-    GIT_TAG release-1.12.1
+    GIT_TAG v1.13.0
   )
 
   # Set options
