@@ -18,6 +18,7 @@ brew 'pagmo'
 brew 'spdlog'
 brew 'tinyxml2'
 brew 'urdfdom'
+brew 'yaml-cpp'
 
 # dartpy dependencies
 brew 'python3'
