@@ -101,6 +101,11 @@ if(DART_ENABLE_SIMD)
   endif()
 endif()
 
+# Build DART with coverage settings
+if(DART_CODECOV)
+  list(APPEND link_libraries_public coverage_config)
+endif()
+
 # Add component
 dart_add_component(
   PROJECT_NAME

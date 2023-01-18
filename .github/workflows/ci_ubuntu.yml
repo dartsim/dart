@@ -39,6 +39,7 @@ jobs:
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: "${{ matrix.build_dartpy }}"
       CODECOV: ${{ matrix.codecov }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       CHECK_FORMAT: ${{ matrix.check_format }}
       IN_CI: ON
     steps:

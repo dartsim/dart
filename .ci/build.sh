@@ -141,14 +141,15 @@ echo ""
 echo "====================================="
 
 # Run CMake
-mkdir build && cd build
+build_dir=${BUILD_DIR}/build
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 elif [[ $OSTYPE = darwin* ]]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_INSTALL_RPATH=/usr/local/lib/"
 fi
 
-cmake .. \
+cmake \
+  -B $build_dir \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
@@ -158,52 +159,76 @@ cmake .. \
 
 # Check format
 if [ "$CHECK_FORMAT" = "ON" ]; then
-  make check-format
+  cmake --build $build_dir --target check-format
 fi
 
 # DART: build, test, and install
-make -j$num_threads all tests
-ctest --output-on-failure -j$num_threads
+cmake --build $build_dir --target all tests -j$num_threads 
+ctest --output-on-failure -j$num_threads --test-dir $build_dir
 
 if [ "$BUILD_EXAMPLES" = "ON" ]; then
-  make -j$num_threads all examples
+  cmake --build $build_dir --target all examples -j$num_threads 
 fi
 
 if [ "$BUILD_TUTORIALS" = "ON" ]; then
-  make -j$num_threads all tutorials
+  cmake --build $build_dir --target all tutorials -j$num_threads 
 fi
 
 # dartpy: build, test, and install
 if [ "$BUILD_DARTPY" = "ON" ]; then
-  make -j$num_threads dartpy
-  make pytest
+  cmake --build $build_dir --target dartpy -j$num_threads 
+  cmake --build $build_dir --target pytest
 fi
 
-make -j$num_threads install
+cmake --build $build_dir --target install
 
-# Codecov
+# Code coverage report generation and upload to codecov.io (only for Linux)
 if [ "$CODECOV" = "ON" ]; then
-  lcov --directory . --capture --output-file coverage.info
-  # filter out system and extra files.
-  # To also not include test code in coverage add them with full path to the patterns: '*/tests/*'
-  lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' --output-file coverage.info
-  # output coverage data for debugging (optional)
-  lcov --list coverage.info
-  # Uploading to CodeCov
-  # '-f' specifies file(s) to use and disables manual coverage gathering and file search which has already been done above
-  bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
-fi
 
-# DART: build an C++ example using installed DART
-if [ "$TEST_INSTALLATION" = "ON" ]; then
+  echo "Info: Code coverage is enabled."
+
+  echo "Downloading codecov script..."
+  curl -Os https://uploader.codecov.io/latest/linux/codecov
+  chmod +x codecov
+  ./codecov --version
+  ./codecov -t $CODECOV_TOKEN
+  
+  echo "Generating code coverage report..."  
+
+  # Capture coverage info
+  lcov --capture --directory . --output-file coverage.info
+  # Filter out system and extra files.
+  # To also not include test code in coverage add them with full path to the patterns: '*/tests/*'
+  lcov \
+    --remove coverage.info \
+      '/usr/*' \
+      '*/.deps/*' \
+      '*/tests/*' \
+      '*/examples/*' \
+      '*/tutorials/*' \
+    --output-file coverage.info
+  # Output coverage data for debugging (optional)
+  lcov --list coverage.info
+
+  # Uploading to CodeCov
+  echo "Uploading code coverage report to codecov.io..."
+  # '-f' specifies file(s) to use and disables manual coverage gathering and file search which has already been done above
+  ./codecov -f coverage.info
+
+elif [ "$TEST_INSTALLATION" = "ON" ]; then
+
+  # DART: build an C++ example using installed DART
+  echo "Info: Testing the installation..."
   cd $BUILD_DIR/examples/hello_world
   mkdir build && cd build
   cmake ..
   make -j$num_threads
+
 fi
 
 # dartpy: run a Python example using installed dartpy
 if [ "$BUILD_DARTPY" = "ON" ]; then
+  echo "Info: Running a Python example..."
   echo $PYTHONPATH
   cd $BUILD_DIR/python/examples/hello_world
   python3 main.py

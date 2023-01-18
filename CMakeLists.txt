@@ -145,11 +145,32 @@ message(STATUS "")
 # CodeCov settings
 #===============================================================================
 if(DART_CODECOV)
-  include(CodeCoverage)
-  setup_target_for_coverage(codecov ctest coverage)
-  set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage"
+  # Code Coverage Configuration
+  add_library(coverage_config INTERFACE)
+
+  # CodeCov can only be enabled in Debug mode
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(FATAL_ERROR "CodeCov can only be enabled in Debug mode")
+  endif()
+
+  # CodeCov can only be enabled with GCC or Clang
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    message(FATAL_ERROR "CodeCov can only be enabled with GCC or Clang")
+  endif()
+
+  # Add required flags (GCC & LLVM/Clang)
+  target_compile_options(coverage_config INTERFACE
+    -O0        # no optimization
+    -g         # generate debug info
+    --coverage # sets all required flags
   )
+
+  # Add required flags (GCC & LLVM/Clang)
+  target_link_options(coverage_config INTERFACE --coverage)
+
+  # Export CodeCov configuration
+  install(TARGETS coverage_config DESTINATION lib EXPORT coverage_config)
+  install(EXPORT coverage_config DESTINATION ${CONFIG_INSTALL_DIR})
 endif()
 
 #===============================================================================
