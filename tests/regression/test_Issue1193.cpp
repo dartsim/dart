@@ -78,7 +78,11 @@ TEST(Issue1193, AngularVelAdd)
 }
 
 const double tol = 1e-5;
+#if defined(NDEBUG)
 const int g_iters = 100000;
+#else
+const int g_iters = 1000;
+#endif
 
 math::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
 {

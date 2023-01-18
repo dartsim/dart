@@ -1147,3 +1147,144 @@ macro(dart_fetch_git_repo)
     WORKING_DIRECTORY ${_ARG_WORKING_DIR}/${_ARG_PROJECT_NAME}
   )
 endmacro()
+
+#===============================================================================
+function(dart_coverage)
+  set(prefix _ARG)
+  set(options
+    REQUIRED
+  )
+  set(oneValueArgs
+    INCLUDE_DIR
+    SOURCE_DIR
+    INSTALL_DIR
+  )
+  set(multiValueArgs
+    INPUT        # optional
+    EXCLUDE
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  include(GNUInstallDirs)
+
+  if(NOT _ARG_INCLUDE_DIR)
+    message(FATAL_ERROR "INCLUDE_DIR is not set")
+  endif()
+
+  if(NOT _ARG_SOURCE_DIR)
+    message(FATAL_ERROR "SOURCE_DIR is not set")
+  endif()
+
+  if(NOT _ARG_INSTALL_DIR)
+    set(_ARG_INSTALL_DIR ${CMAKE_INSTALL_PREFIXX}/${CMAKE_INSTALL_DOXDIR}/${PROJECT_NAME}${DART_VERSION_MAJOR}/coverage)
+  endif()
+
+  # Find gcovr
+  if(NOT GCOVR_EXECUTABLE)
+    find_program(GCOVR_EXECUTABLE gcovr QUIET)
+    if(NOT GCOVR_EXECUTABLE)
+      if(_ARG_REQUIRED)
+        message(FATAL_ERROR "Failed to find gcovr. Install gcovr or remove REQUIRED option.")
+      else()
+        return()
+      endif()
+    endif()
+  endif()
+
+  # Set variables
+  get_filename_component(_ARG_INCLUDE_DIR ${_ARG_INCLUDE_DIR} ABSOLUTE)
+  set(gcovr_include_dir ${_ARG_INCLUDE_DIR})
+  get_filename_component(_ARG_SOURCE_DIR ${_ARG_SOURCE_DIR} ABSOLUTE)
+  set(gcovr_source_dir ${_ARG_SOURCE_DIR})
+  set(gcovr_html_dir ${CMAKE_CURRENT_BINARY_DIR}/__coverage__)
+  set(gcovr_index_path ${gcovr_html_dir}/index.html)
+
+  # Extract Gcovr version
+  execute_process(COMMAND ${GCOVR_EXECUTABLE} --version OUTPUT_VARIABLE GCOVR_VERSION_RAW_OUTPUT)
+  string(STRIP ${GCOVR_VERSION_RAW_OUTPUT} GCOVR_VERSION_RAW_OUTPUT)
+  string(REPLACE "gcovr " "" GCOVR_VERSION_RAW_OUTPUT ${GCOVR_VERSION_RAW_OUTPUT})
+
+  # Set options based on the Gcovr version
+  if(${GCOVR_VERSION_RAW_OUTPUT} VERSION_GREATER_EQUAL 4.2)
+    set(gcovr_options --exclude-throw-branches)
+  endif()
+
+  add_custom_target(coverage
+    COMMAND
+      ${GCOVR_EXECUTABLE}
+        -r ${CMAKE_CURRENT_SOURCE_DIR}
+        -f ${gcovr_include_dir}
+        -f ${gcovr_source_dir}
+    DEPENDS tests_and_run
+    COMMENT "Generating line coverage report..."
+  )
+
+  add_custom_target(coverage_branch
+    COMMAND ${GCOVR_EXECUTABLE}
+        -b
+        ${gcovr_options}
+        --exclude-unreachable-branches
+        -r ${CMAKE_CURRENT_SOURCE_DIR}
+        -f ${gcovr_include_dir}
+        -f ${gcovr_source_dir}
+    DEPENDS tests_and_run
+    COMMENT "Generating branch coverage report..."
+  )
+
+  add_custom_target(coverage_html
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${gcovr_html_dir}
+    COMMAND ${GCOVR_EXECUTABLE}
+      --html
+      --html-details
+      ${gcovr_options}
+      --exclude-unreachable-branches
+      -o "${gcovr_index_path}"
+      -r ${CMAKE_CURRENT_SOURCE_DIR}
+      -f ${gcovr_include_dir}
+      -f ${gcovr_source_dir}
+    DEPENDS coverage coverage_branch
+    COMMENT "Generating a detailed HTML coverage report in ${gcovr_index_path}"
+  )
+
+  if(APPLE)
+    set(open_command_name "open")
+  else()
+    set(open_command_name "xdg-open")
+  endif()
+  find_program(open_command
+    NAMES ${open_command_name}
+    DOC "Path to ${open_command_name}"
+  )
+
+  if(open_command)
+    add_custom_target(coverage_view "${open_command}" "${gcovr_index_path}"
+      DEPENDS coverage_html
+      COMMENT "Opening documentation in a web browser."
+    )
+  else()
+    if(_ARG_VERBOSE)
+      message(STATUS "Failed to find ${open_command_name}, to enable "
+        "'coverage_view', please install xdg-utils"
+      )
+    endif()
+  endif()
+
+  # Remove all gcovr data and delete the html directory
+  add_custom_target(coverage_cleanup
+    COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcno
+    COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcda
+    COMMAND rm -rf ${gcovr_html_dir}
+    COMMENT "Removing stored coverage files..."
+  )
+
+  # Create the working directory ahead so that make install doesn't complain even when
+  # make coverage is run before.
+  file(MAKE_DIRECTORY ${gcovr_html_dir})
+
+  # Install
+  if(EXISTS ${gcovr_html_dir})
+    install(DIRECTORY ${gcovr_html_dir}/ DESTINATION ${_ARG_INSTALL_DIR})
+  endif()
+endfunction()

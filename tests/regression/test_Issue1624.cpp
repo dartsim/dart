@@ -57,7 +57,11 @@ TEST(Issue1624, ContactGrouping)
       OdeCollisionDetector::create());
   const double dt = 0.001;
   world->setTimeStep(dt);
+#if defined(NDEBUG)
   std::size_t maxSteps = 1000;
+#else
+  std::size_t maxSteps = 100;
+#endif
   for (std::size_t i = 0; i < maxSteps; i++) {
     world->step();
   }

@@ -145,6 +145,12 @@ message(STATUS "")
 # CodeCov settings
 #===============================================================================
 if(DART_CODECOV)
+  # Set up custom targets for code coverage
+  dart_coverage(
+    INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dart
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dart
+  )
+
   # Code Coverage Configuration
   add_library(coverage_config INTERFACE)
 
@@ -699,6 +705,11 @@ message(STATUS "- 'install'      : install all the C++ components")
 if(TARGET dartpy)
   message(STATUS "- 'dartpy'       : build dartpy")
   message(STATUS "- 'install'      : install dartpy")
+endif()
+if(TARGET coverage)
+  message(STATUS "- 'coverage'     : generage coverage report")
+  message(STATUS "- 'coverage_html': generage coverage report in html")
+  message(STATUS "- 'coverage_view': view generaged coverage report in a browser")
 endif()
 
 #===============================================================================
