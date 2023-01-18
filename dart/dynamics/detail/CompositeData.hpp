@@ -37,8 +37,6 @@
 
 #include <dart/common/TypeIndex.hpp>
 
-#include <Eigen/Core>
-
 #include <map>
 #include <typeindex>
 #include <typeinfo>

@@ -34,8 +34,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart::math {
 
 /// Solves LCP using Lemke's algorithm

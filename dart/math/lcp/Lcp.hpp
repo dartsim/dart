@@ -34,8 +34,6 @@
 
 #include <dart/math/Fwd.hpp>
 
-#include <Eigen/Dense>
-
 namespace dart::math {
 
 /// @page lcp LCP

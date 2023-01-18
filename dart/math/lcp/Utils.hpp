@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <Eigen/Dense>
+#include <dart/math/Fwd.hpp>
 
 namespace dart::math {
 
