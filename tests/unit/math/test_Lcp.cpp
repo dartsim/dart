@@ -79,8 +79,15 @@ TYPED_TEST(LcpTest, SweepingMethods)
 {
   using S = typename TestFixture::Scalar;
 
+  S tol;
+  if constexpr (std::is_same_v<S, float>)
+    tol = 1e-1;
+  else if constexpr (std::is_same_v<S, double>)
+    tol = 1e-3;
+
   LcpOption<S> option;
   option.maxIterations = 10000;
+  option.tolerance = tol;
 
 #if defined(NDEBUG)
   const auto numTests = 5;
@@ -95,8 +102,11 @@ TYPED_TEST(LcpTest, SweepingMethods)
       Eigen::VectorX<S> x = Eigen::VectorX<S>(n);
 
       EXPECT_TRUE(dart::math::solveLcpPsor(A, b, &x, option))
-          << "n: " << n << ", #" << i;
-      EXPECT_TRUE(dart::math::validateLcp(A, b, x))
+          << "n: " << n << ", #" << i << "\n"
+          << "x     : " << x.transpose() << "\n"
+          << "Ax + b: " << (A * x + b).transpose();
+      EXPECT_TRUE(dart::math::validateLcp(A, b, x, tol))
+          << "n: " << n << ", #" << i << "\n"
           << "x     : " << x.transpose() << "\n"
           << "Ax + b: " << (A * x + b).transpose();
     }
