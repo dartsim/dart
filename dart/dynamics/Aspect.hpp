@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_ASPECT_HPP_
 #define DART_COMMON_ASPECT_HPP_
 
+#include <dart/dynamics/Cloneable.hpp>
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/Cloneable.hpp>
-#include <dart/common/Fwd.hpp>
 #include <dart/common/detail/NoOp.hpp>
 
 #include <string>
@@ -45,7 +46,7 @@ namespace common {
 
 class Composite;
 
-class DART_COMMON_API Aspect
+class DART_DYNAMICS_API Aspect
 {
 public:
   friend class Composite;
@@ -211,6 +212,6 @@ protected:
   DART_COMMON_SET_ASPECT_PROPERTY(Type, Name)                                  \
   DART_COMMON_GET_ASPECT_PROPERTY(Type, Name)
 
-#include <dart/common/detail/Aspect.hpp>
+#include <dart/dynamics/detail/Aspect.hpp>
 
 #endif // DART_COMMON_ASPECT_HPP_

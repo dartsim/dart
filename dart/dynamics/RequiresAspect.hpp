@@ -30,73 +30,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ASPECT_HPP_
-#define DART_COMMON_DETAIL_ASPECT_HPP_
+#ifndef DART_COMMON_REQUIRESASPECT_HPP_
+#define DART_COMMON_REQUIRESASPECT_HPP_
 
-#include <dart/common/Aspect.hpp>
-#include <dart/common/Console.hpp>
-#include <dart/common/Macros.hpp>
+#include <dart/dynamics/SpecializedForAspect.hpp>
 
-#include <cassert>
+#include <dart/common/ClassWithVirtualBase.hpp>
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-template <class CompositeType>
-CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect()
-  : mComposite(
-      nullptr) // This will be set later when the Composite calls setComposite
+/// RequiresAspect allows classes that inherit Composite to know which Aspects
+/// are required for their operation. This guarantees that there is no way for
+/// a required Aspect do not get unexpectedly removed from their composite.
+///
+/// Required Aspects are also automatically specialized for.
+template <class... OtherRequiredAspects>
+class RequiresAspect
 {
-  // Do nothing
-}
+};
 
 //==============================================================================
-template <class CompositeType>
-CompositeType* CompositeTrackingAspect<CompositeType>::getComposite()
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+template <class ReqAspect>
+class RequiresAspect<ReqAspect> : public virtual SpecializedForAspect<ReqAspect>
 {
-  return mComposite;
-}
+public:
+  /// Default constructor. This is where the base Composite is informed that
+  /// the Aspect type is required.
+  RequiresAspect();
+};
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 //==============================================================================
-template <class CompositeType>
-const CompositeType* CompositeTrackingAspect<CompositeType>::getComposite()
-    const
+template <class ReqAspect1, class... OtherReqAspects>
+class RequiresAspect<ReqAspect1, OtherReqAspects...>
+  : public CompositeJoiner<
+        Virtual<RequiresAspect<ReqAspect1> >,
+        Virtual<RequiresAspect<OtherReqAspects...> > >
 {
-  return mComposite;
-}
-
-//==============================================================================
-template <class CompositeType>
-bool CompositeTrackingAspect<CompositeType>::hasComposite() const
-{
-  return (nullptr != mComposite);
-}
-
-//==============================================================================
-template <class CompositeType>
-void CompositeTrackingAspect<CompositeType>::setComposite(
-    Composite* newComposite)
-{
-  assert(nullptr == mComposite);
-
-  mComposite = dynamic_cast<CompositeType*>(newComposite);
-  // Note: Derived classes should be responsible for handling the case in which
-  // the new composite type does not match the expected type. We should not
-  // assume here that it is an error.
-}
-
-//==============================================================================
-template <class CompositeType>
-void CompositeTrackingAspect<CompositeType>::loseComposite(
-    Composite* oldComposite)
-{
-  DART_UNUSED(oldComposite);
-  assert(oldComposite == mComposite);
-  mComposite = nullptr;
-}
+};
 
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ASPECT_HPP_
+#include <dart/common/detail/RequiresAspect.hpp>
+
+#endif // DART_COMMON_REQUIRESASPECT_HPP_

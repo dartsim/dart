@@ -35,8 +35,7 @@
 
 #include <dart/dynamics/CompositeNode.hpp>
 #include <dart/dynamics/Fwd.hpp>
-
-#include <dart/common/SpecializedForAspect.hpp>
+#include <dart/dynamics/SpecializedForAspect.hpp>
 
 namespace dart {
 namespace dynamics {

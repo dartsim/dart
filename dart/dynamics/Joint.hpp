@@ -33,13 +33,13 @@
 #ifndef DART_DYNAMICS_JOINT_HPP_
 #define DART_DYNAMICS_JOINT_HPP_
 
+#include <dart/dynamics/EmbeddedAspect.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/detail/JointAspect.hpp>
 
 #include <dart/math/Fwd.hpp>
 
-#include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 

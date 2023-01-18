@@ -33,11 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 
+#include <dart/dynamics/AspectWithVersion.hpp>
 #include <dart/dynamics/Joint.hpp>
 
 #include <dart/math/Helpers.hpp>
-
-#include <dart/common/AspectWithVersion.hpp>
 
 namespace dart {
 namespace dynamics {

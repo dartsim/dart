@@ -35,6 +35,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/dynamics/EmbeddedAspect.hpp>
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/Fwd.hpp>
@@ -46,7 +47,6 @@
 
 #include <dart/math/Geometry.hpp>
 
-#include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Signal.hpp>
 
 #include <string>

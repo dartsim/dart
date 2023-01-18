@@ -30,64 +30,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_PROXYASPECT_HPP_
-#define DART_COMMON_PROXYASPECT_HPP_
+#include "dart/dynamics/Aspect.hpp"
 
-#include <dart/common/detail/ProxyAspect.hpp>
+#include "dart/common/Console.hpp"
+
+#include <iostream>
+#include <string>
+
+#include <cassert>
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-template <class CompositeT, typename StateT>
-using ProxyStateAspect = detail::ProxyStateAspect<
-    common::CompositeTrackingAspect<CompositeT>,
-    CompositeT,
-    StateT>;
-
-//==============================================================================
-template <class CompositeT, typename PropertiesT>
-using ProxyPropertiesAspect = detail::ProxyPropertiesAspect<
-    common::CompositeTrackingAspect<CompositeT>,
-    CompositeT,
-    PropertiesT>;
-
-//==============================================================================
-template <class CompositeT, typename StateT, typename PropertiesT>
-class ProxyStateAndPropertiesAspect : public detail::ProxyPropertiesAspect<
-                                          ProxyStateAspect<CompositeT, StateT>,
-                                          CompositeT,
-                                          PropertiesT>
+void Aspect::setAspectState(const State& /*otherState*/)
 {
-public:
-  using State = StateT;
-  using Properties = PropertiesT;
-  using CompositeType = CompositeT;
+  // Do nothing
+}
 
-  using AspectStateImpl = ProxyStateAspect<CompositeType, State>;
-  using AspectPropertiesImpl = detail::
-      ProxyPropertiesAspect<AspectStateImpl, CompositeType, Properties>;
+//==============================================================================
+const Aspect::State* Aspect::getAspectState() const
+{
+  return nullptr;
+}
 
-  using Base = AspectPropertiesImpl;
+//==============================================================================
+void Aspect::setAspectProperties(const Properties& /*someProperties*/)
+{
+  // Do nothing
+}
 
-  virtual ~ProxyStateAndPropertiesAspect() = default;
+//==============================================================================
+const Aspect::Properties* Aspect::getAspectProperties() const
+{
+  return nullptr;
+}
 
-  // Forwarding constructor
-  template <typename... Args>
-  ProxyStateAndPropertiesAspect(Args&&... args)
-    : Base(std::forward<Args>(args)...)
-  {
-    // Do nothing
-  }
+//==============================================================================
+void Aspect::setComposite(Composite* /*newComposite*/)
+{
+  // Do nothing
+}
 
-  // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect() const override
-  {
-    return std::make_unique<ProxyStateAndPropertiesAspect>();
-  }
-};
+//==============================================================================
+void Aspect::loseComposite(Composite* /*oldComposite*/)
+{
+  // Do nothing
+}
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_PROXYASPECT_HPP_

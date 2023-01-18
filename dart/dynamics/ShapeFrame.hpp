@@ -33,15 +33,15 @@
 #ifndef DART_DYNAMICS_SHAPEFRAME_HPP_
 #define DART_DYNAMICS_SHAPEFRAME_HPP_
 
+#include <dart/dynamics/AspectWithVersion.hpp>
 #include <dart/dynamics/EllipsoidShape.hpp>
 #include <dart/dynamics/FixedFrame.hpp>
 #include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/SpecializedForAspect.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/detail/ShapeFrameAspect.hpp>
 
-#include <dart/common/AspectWithVersion.hpp>
 #include <dart/common/Signal.hpp>
-#include <dart/common/SpecializedForAspect.hpp>
 
 namespace dart {
 namespace dynamics {

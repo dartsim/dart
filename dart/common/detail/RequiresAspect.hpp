@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_REQUIRESASPECT_HPP_
 #define DART_COMMON_DETAIL_REQUIRESASPECT_HPP_
 
-#include <dart/common/RequiresAspect.hpp>
+#include <dart/dynamics/RequiresAspect.hpp>
 
 namespace dart {
 namespace common {

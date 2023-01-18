@@ -33,8 +33,9 @@
 #ifndef DART_COMMON_EMBEDDEDASPECT_HPP_
 #define DART_COMMON_EMBEDDEDASPECT_HPP_
 
-#include <dart/common/CompositeJoiner.hpp>
-#include <dart/common/RequiresAspect.hpp>
+#include <dart/dynamics/CompositeJoiner.hpp>
+#include <dart/dynamics/RequiresAspect.hpp>
+
 #include <dart/common/detail/EmbeddedAspect.hpp>
 
 namespace dart {

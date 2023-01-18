@@ -33,9 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 
+#include <dart/dynamics/EmbeddedAspect.hpp>
 #include <dart/dynamics/Fwd.hpp>
-
-#include <dart/common/EmbeddedAspect.hpp>
 
 namespace dart {
 namespace dynamics {

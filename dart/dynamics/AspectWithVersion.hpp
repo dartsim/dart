@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_ASPECTWITHVERSION_HPP_
 #define DART_COMMON_ASPECTWITHVERSION_HPP_
 
-#include <dart/common/detail/AspectWithVersion.hpp>
+#include <dart/dynamics/detail/AspectWithVersion.hpp>
 
 namespace dart {
 namespace common {

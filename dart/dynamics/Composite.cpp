@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Composite.hpp"
+#include "dart/dynamics/Composite.hpp"
 
 #include "dart/common/Console.hpp"
 

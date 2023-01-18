@@ -322,6 +322,6 @@ private:
 } // namespace common
 } // namespace dart
 
-#include <dart/common/detail/Cloneable.hpp>
+#include <dart/dynamics/detail/Cloneable.hpp>
 
 #endif // DART_COMMON_CLONEABLE_HPP_
