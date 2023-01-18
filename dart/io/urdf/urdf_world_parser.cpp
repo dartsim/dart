@@ -37,12 +37,9 @@
 #include "dart/io/urdf/urdf_world_parser.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/io/urdf/IncludeUrdf.hpp"
 
 #include <tinyxml2.h>
-#include <urdf_model/model.h>
-#include <urdf_model/pose.h>
-#include <urdf_parser/urdf_parser.h>
-#include <urdf_world/world.h>
 
 #include <algorithm>
 #include <fstream>

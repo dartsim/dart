@@ -75,11 +75,6 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
     test_VskParser.cpp
   )
 
-  # TODO(JS): Fix the test
-  if(DART_IN_CI OR MSVC)
-    list(REMOVE_ITEM sources test_VskParser.cpp)
-  endif()
-
   dart_build_tests(
     TYPE integration
     LINK_LIBRARIES

@@ -281,6 +281,10 @@ if(MSVC)
   # Enable multi-threaded compilation.
   add_compile_options(/MP)
 
+  if(DART_IN_CI)
+    add_compile_options(/Zm2000)
+  endif()
+
   add_link_options(/OPT:NOREF /FORCE:MULTIPLE)
 
   set(CMAKE_INSTALL_UCRT_LIBRARIES ON)

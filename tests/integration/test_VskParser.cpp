@@ -69,7 +69,11 @@ TEST(VskParser, EmptySkeleton)
 //==============================================================================
 TEST(VskParser, LoadFromFileURI)
 {
+#if defined(_MSC_VER)
+  const std::string prefix = "file:///" DART_DATA_LOCAL_PATH "vsk/";
+#else
   const std::string prefix = "file://" DART_DATA_LOCAL_PATH "vsk/";
+#endif
 
   EXPECT_EQ(VskParser::readSkeleton(prefix + "test/empty.vsk"), nullptr);
   EXPECT_NE(VskParser::readSkeleton(prefix + "Nick01.vsk"), nullptr);

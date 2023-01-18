@@ -60,6 +60,11 @@ using MatrixBase = ::Eigen::MatrixBase<Derived>;
 template <typename Derived>
 using DenseBase = ::Eigen::DenseBase<Derived>;
 
+/// DenseBase is a base class for all Eigen plain object types.
+/// @tparam Derived The derived type.
+template <typename Derived>
+using PlainObjectBase = ::Eigen::PlainObjectBase<Derived>;
+
 // Eigen constants
 constexpr auto Dynamic = ::Eigen::Dynamic;
 constexpr auto ColMajor = ::Eigen::StorageOptions::ColMajor;

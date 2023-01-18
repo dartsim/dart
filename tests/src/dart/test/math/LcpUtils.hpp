@@ -177,7 +177,7 @@ std::pair<math::MatrixX<S>, math::VectorX<S>> generateLcpProblem(std::size_t n)
 
 //==============================================================================
 template <typename S>
-std::pair<Eigen::MatrixX<S>, Eigen::VectorX<S>> generateValidLcpProblem(
+std::pair<math::MatrixX<S>, math::VectorX<S>> generateValidLcpProblem(
     std::size_t n)
 {
   math::MatrixX<S> A;
@@ -185,10 +185,10 @@ std::pair<Eigen::MatrixX<S>, Eigen::VectorX<S>> generateValidLcpProblem(
   A = math::MatrixX<S>::Random(n, n);
   A = A * A.transpose();
 
-  const math::VectorX<int> vec = math::Uniform<Eigen::VectorX<int>>(n, 0, 1);
+  const math::VectorX<int> vec = math::Uniform<math::VectorXi>(n, 0, 1);
 
-  Eigen::VectorX<S> x = math::Uniform<Eigen::VectorX<S>>(n, 0, 1);
-  Eigen::VectorX<S> y = math::Uniform<Eigen::VectorX<S>>(n, 0, 1);
+  math::VectorX<S> x = math::Uniform<math::VectorX<S>>(n, 0, 1);
+  math::VectorX<S> y = math::Uniform<math::VectorX<S>>(n, 0, 1);
 
   for (auto i = 0u; i < n; ++i) {
     if (vec[i] == 0) {

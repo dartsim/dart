@@ -142,20 +142,6 @@ inline double acotanh(double _X)
   return log((_X + 1) / (_X - 1)) / 2;
 }
 
-inline double round(double _x)
-{
-  return floor(_x + 0.5);
-}
-
-inline double round2(double _x)
-{
-  int gintx = static_cast<int>(std::floor(_x));
-  if (_x - gintx < 0.5)
-    return static_cast<double>(gintx);
-  else
-    return static_cast<double>(gintx + 1.0);
-}
-
 template <typename T>
 constexpr T clamp(const T& val, const T& lower, const T& upper)
 {

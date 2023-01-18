@@ -63,7 +63,7 @@ TYPED_TEST(LcpTest, PivotingMethods)
   {
     for (auto i = 0; i < numTests; ++i) {
       const auto [A, b] = test::generateLcpProblem<S>(n);
-      Eigen::VectorX<S> x = Eigen::VectorX<S>(n);
+      math::VectorX<S> x = math::VectorX<S>(n);
 
       EXPECT_TRUE(dart::math::solveLcpLemke(A, b, &x))
           << "n: " << n << ", #" << i;
@@ -99,7 +99,7 @@ TYPED_TEST(LcpTest, SweepingMethods)
   {
     for (auto i = 0; i < numTests; ++i) {
       const auto [A, b] = test::generateValidLcpProblem<S>(n);
-      Eigen::VectorX<S> x = Eigen::VectorX<S>(n);
+      math::VectorX<S> x = math::VectorX<S>(n);
 
       EXPECT_TRUE(dart::math::solveLcpPsor(A, b, &x, option))
           << "n: " << n << ", #" << i << "\n"

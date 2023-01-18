@@ -49,15 +49,15 @@ template <typename S>
 
 template <typename S>
 S computeLcpError(
-    const Eigen::MatrixX<S>& A,
-    const Eigen::VectorX<S>& b,
-    const Eigen::VectorX<S>& x);
+    const math::MatrixX<S>& A,
+    const math::VectorX<S>& b,
+    const math::VectorX<S>& x);
 
 template <typename S>
 bool validateLcp(
-    const Eigen::MatrixX<S>& A,
-    const Eigen::VectorX<S>& b,
-    const Eigen::VectorX<S>& x,
+    const math::MatrixX<S>& A,
+    const math::VectorX<S>& b,
+    const math::VectorX<S>& x,
     S tol = defaultLcpValidationTolerance<S>());
 
 } // namespace dart::math
@@ -72,12 +72,12 @@ namespace dart::math {
 
 template <typename S>
 S computeLcpError(
-    const Eigen::MatrixX<S>& A,
-    const Eigen::VectorX<S>& b,
-    const Eigen::VectorX<S>& x)
+    const math::MatrixX<S>& A,
+    const math::VectorX<S>& b,
+    const math::VectorX<S>& x)
 {
   const auto n = x.size();
-  const Eigen::VectorX<S> y = A * x + b;
+  const math::VectorX<S> y = A * x + b;
 
   S error = 0;
 
@@ -96,9 +96,9 @@ S computeLcpError(
 
 template <typename S>
 bool validateLcp(
-    const Eigen::MatrixX<S>& A,
-    const Eigen::VectorX<S>& b,
-    const Eigen::VectorX<S>& x,
+    const math::MatrixX<S>& A,
+    const math::VectorX<S>& b,
+    const math::VectorX<S>& x,
     S tol)
 {
   const S error = computeLcpError(A, b, x);

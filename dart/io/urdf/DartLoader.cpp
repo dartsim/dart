@@ -46,16 +46,9 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/io/DartResourceRetriever.hpp"
+#include "dart/io/urdf/IncludeUrdf.hpp"
 #include "dart/io/urdf/urdf_world_parser.hpp"
 #include "dart/simulation/World.hpp"
-
-// TODO(JS): Remove once near and far is removed from urdfdom_header
-#if defined(_WIN32)
-  #undef near
-  #undef far
-#endif
-#include <urdf_parser/urdf_parser.h>
-#include <urdf_world/world.h>
 
 #include <fstream>
 #include <iostream>

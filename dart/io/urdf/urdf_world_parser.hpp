@@ -37,13 +37,10 @@
 
 #pragma once
 
+#include <dart/io/urdf/IncludeUrdf.hpp>
+
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
-
-#include <urdf_model/model.h>
-#include <urdf_model/pose.h>
-#include <urdf_model/twist.h>
-#include <urdf_world/world.h>
 
 #include <string>
 

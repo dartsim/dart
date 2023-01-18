@@ -122,9 +122,9 @@ template <
     typename DerivedX,
     typename S = typename DerivedA::Scalar>
 bool solveLcpLemke(
-    const Eigen::MatrixBase<DerivedA>& A,
-    const Eigen::MatrixBase<DerivedB>& b,
-    Eigen::PlainObjectBase<DerivedX>* x,
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
     const LcpOption<S>& option = LcpOption<S>(),
     LcpResult<S>* result = nullptr);
 
@@ -144,9 +144,9 @@ template <
     typename DerivedX,
     typename S = typename DerivedA::Scalar>
 bool solveLcpPgs(
-    const Eigen::MatrixBase<DerivedA>& A,
-    const Eigen::MatrixBase<DerivedB>& b,
-    Eigen::PlainObjectBase<DerivedX>* x,
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
     const LcpOption<S>& option = LcpOption<S>(),
     LcpResult<S>* result = nullptr);
 
@@ -166,9 +166,9 @@ template <
     typename DerivedX,
     typename S = typename DerivedA::Scalar>
 bool solveLcpPsor(
-    const Eigen::MatrixBase<DerivedA>& A,
-    const Eigen::MatrixBase<DerivedB>& b,
-    Eigen::PlainObjectBase<DerivedX>* x,
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
     const LcpOption<S>& option = LcpOption<S>(),
     LcpResult<S>* result = nullptr);
 
@@ -196,9 +196,9 @@ template <
     typename DerivedY,
     typename S = typename DerivedX::Scalar>
 [[nodiscard]] S computeLcpErrorFromXandY(
-    const Eigen::MatrixBase<DerivedB>& b,
-    const Eigen::MatrixBase<DerivedX>& x,
-    const Eigen::MatrixBase<DerivedY>& y)
+    const math::MatrixBase<DerivedB>& b,
+    const math::MatrixBase<DerivedX>& x,
+    const math::MatrixBase<DerivedY>& y)
 {
   S error = 0;
 
@@ -221,9 +221,9 @@ template <
 //==============================================================================
 template <typename DerivedA, typename DerivedB, typename DerivedX, typename S>
 bool solveLcpLemke(
-    const Eigen::MatrixBase<DerivedA>& A,
-    const Eigen::MatrixBase<DerivedB>& b,
-    Eigen::PlainObjectBase<DerivedX>* x,
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
     const LcpOption<S>& option,
     LcpResult<S>* result)
 {
@@ -245,9 +245,9 @@ bool solveLcpLemke(
 //==============================================================================
 template <typename DerivedA, typename DerivedB, typename DerivedX, typename S>
 bool solveLcpPgs(
-    const Eigen::MatrixBase<DerivedA>& A,
-    const Eigen::MatrixBase<DerivedB>& b,
-    Eigen::PlainObjectBase<DerivedX>* x,
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
     const LcpOption<S>& option,
     LcpResult<S>* result)
 {
@@ -259,9 +259,9 @@ bool solveLcpPgs(
 //==============================================================================
 template <typename DerivedA, typename DerivedB, typename DerivedX, typename S>
 bool solveLcpPsor(
-    const Eigen::MatrixBase<DerivedA>& A,
-    const Eigen::MatrixBase<DerivedB>& b,
-    Eigen::PlainObjectBase<DerivedX>* x,
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
     const LcpOption<S>& option,
     LcpResult<S>* result)
 {
@@ -286,12 +286,12 @@ bool solveLcpPsor(
     }
   }
 
-  const Eigen::VectorX<S> invM = A.diagonal().cwiseInverse();
+  const math::VectorX<S> invM = A.diagonal().cwiseInverse();
   S new_x;
   bool converged = false;
   std::size_t iteration = 0u;
 
-  Eigen::VectorX<S> Ax_b;
+  math::VectorX<S> Ax_b;
   Ax_b = b;
   Ax_b.noalias() += A * (*x);
 

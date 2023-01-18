@@ -23,9 +23,10 @@ jobs:
         build_dartpy: [OFF]       # Build tests and dartpy exclusively 
                                   # and building dartpy is disabled for now due to the lack of sufficient disk space in the CI
     env:
-      BUILD_TYPE: ${{ matrix.build_type }}
       VCPKG_ROOT: "C:/dartsim/vcpkg"
-      VCPKG_BUILD_TAG: v6.13-2022.07.25-0
+      VCPKG_BUILD_TAG: v2023.01.16-2
+      VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
+      BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ${{ matrix.build_dartpy }}
     steps:
       - name: Checkout
@@ -35,8 +36,8 @@ jobs:
         run: |
           mkdir -p C:\dartsim
           choco install -y wget
-          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-          unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
+          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/%VCPKG_DEPS_ZIP%
+          unzip -qq %VCPKG_DEPS_ZIP% -d C:\dartsim
       - name: Build and run tests
         if: matrix.build_dartpy == 'OFF'
         shell: cmd
