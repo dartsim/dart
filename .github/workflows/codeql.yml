@@ -13,7 +13,7 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "main", release-* ]
+    branches: [ "**" ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
@@ -57,54 +57,22 @@ jobs:
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, Go, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Install Dependencies (Cpp)
+    - name: Prework for installing packages using cache (Cpp)
       if: ${{ matrix.language == 'cpp' }}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
-          build-essential \
-          clang \
-          clang-format-14 \
-          cmake \
-          curl \
-          doxygen \
-          gcovr \
-          git \
-          lcov \
-          lsb-release \
-          pkg-config \
-          software-properties-common \
-          valgrind
-        sudo apt-get install -y --no-install-recommends \
-          libassimp-dev \
-          libccd-dev \
-          libeigen3-dev \
-          libfcl-dev \
-          libfmt-dev
-        sudo apt-get install -y --no-install-recommends \
-          coinor-libipopt-dev \
-          freeglut3-dev \
-          libxi-dev \
-          libxmu-dev \
-          libbullet-dev \
-          libtinyxml2-dev \
-          liburdfdom-dev \
-          liburdfdom-headers-dev \
-          libopenscenegraph-dev \
-          libnlopt-cxx-dev \
-          liboctomap-dev \
-          libode-dev \
-          libspdlog-dev \
-          ocl-icd-opencl-dev
-        sudo apt-get install -y --no-install-recommends \
-          libpython3-dev \
-          pybind11-dev \
-          python3 \
-          python3-dev \
-          python3-distutils \
-          python3-numpy \
-          python3-pip \
-          python3-setuptools
+        sudo apt update
+        sudo apt install -y cmake
+
+    - name: Install Dependencies with cache (Cpp)
+      uses: awalsh128/cache-apt-pkgs-action@master
+      if: ${{ matrix.language == 'cpp' }}
+      with:
+        packages: build-essential clang clang-format-14 cmake curl doxygen gcovr git lcov lsb-release pkg-config software-properties-common valgrind libassimp-dev libccd-dev libeigen3-dev libfcl-dev libfmt-dev coinor-libipopt-dev freeglut3-dev libxi-dev libxmu-dev libbullet-dev libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev libspdlog-dev ocl-icd-opencl-dev libpython3-dev pybind11-dev python3 python3-dev python3-distutils python3-numpy python3-pip python3-setuptools
+        version: 1.0
+
+    - name: Install More Dependencies (Cpp)
+      if: ${{ matrix.language == 'cpp' }}
+      run: |
         pip3 install pytest -U
 
     - name: Autobuild
