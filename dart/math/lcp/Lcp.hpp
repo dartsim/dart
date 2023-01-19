@@ -292,19 +292,17 @@ bool solveLcpPsor(
   std::size_t iteration = 0u;
 
   math::VectorX<S> Ax_b;
-  Ax_b = b;
-  Ax_b.noalias() += A * (*x);
 
   while (true) {
     // Sweep forward and backward alternatively
     if (iteration % 2) {
-      for (std::size_t i = n - 1; i == 0u; --i) {
-        new_x = (*x)[i] - option.lambda * Ax_b[i] * invM[i];
+      for (std::size_t i = n; i-- > 0u;) {  // backward from n-1 to 0
+        new_x = (*x)[i] - option.lambda * (A.row(i).dot(*x) + b[i]) * invM[i];
         (*x)[i] = std::max(S(0), new_x); // project
       }
     } else {
       for (std::size_t i = 0u; i < n; ++i) {
-        new_x = (*x)[i] - option.lambda * Ax_b[i] * invM[i];
+        new_x = (*x)[i] - option.lambda * (A.row(i).dot(*x) + b[i]) * invM[i];
         (*x)[i] = std::max(S(0), new_x); // project
       }
     }

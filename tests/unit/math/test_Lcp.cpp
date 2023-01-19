@@ -81,9 +81,9 @@ TYPED_TEST(LcpTest, SweepingMethods)
 
   S tol;
   if constexpr (std::is_same_v<S, float>)
-    tol = 1e-1;
+    tol = 1e-3;
   else if constexpr (std::is_same_v<S, double>)
-    tol = 1e-2;
+    tol = 1e-6;
 
   LcpOption<S> option;
   option.maxIterations = 10000;
