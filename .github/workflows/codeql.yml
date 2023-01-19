@@ -93,7 +93,34 @@ jobs:
     #   echo "Run, Build Application using script"
     #   ./location_of_script_within_repo/buildscript.sh
 
+    # Perform analysis
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:${{matrix.language}}"
+        upload: False  # disable the upload here, since we will upload in a separate step
+        output: sarif-results
+
+    # Filter out the results that we don't want to upload
+    - name: filter-sarif
+      uses: advanced-security/filter-sarif@v1
+      with:
+        patterns: |
+          -dart/gui/glut/detail/lodepng.*
+          -dart/external/**
+        input: sarif-results/${{ matrix.language }}.sarif
+        output: sarif-results/${{ matrix.language }}.sarif
+
+    # Upload the SARIF file as a build artifact
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: sarif-results/${{ matrix.language }}.sarif
+
+    # (optional) uploaded sarif for debugging the filter-sarif action
+    - name: Upload loc as a Build Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: sarif-results
+        path: sarif-results
+        retention-days: 1
