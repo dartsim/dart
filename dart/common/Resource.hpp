@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_RESOURCE_HPP_
-#define DART_COMMON_RESOURCE_HPP_
+#pragma once
 
 #include <dart/common/Fwd.hpp>
 
@@ -40,59 +39,55 @@
 
 #include <cstddef>
 
-namespace dart {
-namespace common {
+namespace dart::common {
 
-/// \brief Resource provides file-like access to a resource loaded from URI.
+/// Resource provides file-like access to a resource loaded from URI.
 ///
-/// It is expected that each \a ResourceRetriever will provide a concrete /
-/// instantiation of the Resource class. This interface exposes an similar API
-/// to that of the the standard C file manipulation functions.
+/// It is expected that each @a ResourceRetriever will provide a concrete
+/// instantiation of the Resource class. This interface exposes a similar API
+/// to that of the standard C file manipulation functions.
 class DART_COMMON_API Resource
 {
 public:
-  /// \brief Position to seek relative to.
-  enum SeekType
+  /// Position to seek relative to.
+  enum class SeekType
   {
-    SEEKTYPE_CUR, ///< Current position.
-    SEEKTYPE_END, ///< End of file.
-    SEEKTYPE_SET  ///< Begining of file.
+    CUR, ///< Current position.
+    END, ///< End of file.
+    SET  ///< Begining of file.
   };
 
   virtual ~Resource() = default;
 
-  /// \brief Return the size of the resource, in bytes.
+  /// Returns the size of the resource, in bytes.
   virtual std::size_t getSize() = 0;
 
-  /// \brief Return the current value of the position indicator.
-  /// \note This method has the same API as the standard ftell function.
+  /// Returns the current value of the position indicator.
+  /// @note This method has the same API as the standard ftell function.
   virtual std::size_t tell() = 0;
 
-  /// \brief Set the position indicator to a new position.
-  /// \param[in] _offset Offset, in bytes, relative to _origin.
-  /// \param[in] _origin Position used as the reference of _offset.
-  /// \note This method has the same API as the standard fseek function.
-  virtual bool seek(ptrdiff_t _offset, SeekType _origin) = 0;
+  /// Sets the position indicator to a new position.
+  /// @param[in] offset Offset, in bytes, relative to origin.
+  /// @param[in] origin Position used as the reference of offset.
+  /// @note This method has the same API as the standard fseek function.
+  virtual bool seek(ptrdiff_t offset, SeekType origin) = 0;
 
-  /// \brief Read _count element, each of size _size, into _buffer.
-  /// \param[out] _buffer Pointer to a block of memory with a size of at least
-  ///                     (_size * _count) bytes.
-  /// \param[in] _size Size, in bytes, of each element.
-  /// \param[in] _count Number of elements, each of _size bytes.
-  /// \note This method has the same API as the standard fread function.
-  virtual std::size_t read(void* _buffer, std::size_t _size, std::size_t _count)
+  /// Reads count element, each of size size, into buffer.
+  /// @param[out] buffer Pointer to a block of memory with a size of at least
+  /// (size * count) bytes.
+  /// @param[in] size Size, in bytes, of each element.
+  /// @param[in] count Number of elements, each of size bytes.
+  /// @note This method has the same API as the standard fread function.
+  virtual std::size_t read(void* buffer, std::size_t size, std::size_t count)
       = 0;
 
   /// Reads all data from this resource, and returns it as a string.
   ///
-  /// \return The string retrieved from the resource.
-  /// \throw std::runtime_error when failed to read sucessfully.
+  /// @return The string retrieved from the resource.
+  /// @throw std::runtime_error when failed to read sucessfully.
   virtual std::string readAll();
 };
 
 using ResourcePtr = std::shared_ptr<Resource>;
 
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_RESOURCE_HPP_
+} // namespace dart::common

@@ -179,40 +179,40 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   EXPECT_EQ(content.size(), resource->getSize());
 
   // Relative seek.
-  ASSERT_TRUE(resource->seek(2, Resource::SEEKTYPE_CUR));
+  ASSERT_TRUE(resource->seek(2, Resource::SeekType::CUR));
   EXPECT_EQ(2u, resource->tell());
 
   // Absolute seek.
-  ASSERT_TRUE(resource->seek(5, Resource::SEEKTYPE_SET));
+  ASSERT_TRUE(resource->seek(5, Resource::SeekType::SET));
   EXPECT_EQ(5u, resource->tell());
 
   // Seek to the end of the file.
-  ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_END));
+  ASSERT_TRUE(resource->seek(0, Resource::SeekType::END));
   EXPECT_EQ(content.size(), resource->tell());
 
-  // TODO: SEEKTYPE_END should require negative input.
-  ASSERT_TRUE(resource->seek(-3, Resource::SEEKTYPE_END));
+  // TODO: SeekType::END should require negative input.
+  ASSERT_TRUE(resource->seek(-3, Resource::SeekType::END));
   EXPECT_EQ(content.size() - 3, resource->tell());
 
   // Reading a block that's too large should do nothing.
-  ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
+  ASSERT_TRUE(resource->seek(0, Resource::SeekType::SET));
   ASSERT_EQ(0u, resource->read(buffer.data(), content.size() + 1, 1));
 
   // Reading should only return full blocks.
   buffer.assign(buffer.size(), '\0');
-  ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
+  ASSERT_TRUE(resource->seek(0, Resource::SeekType::SET));
   ASSERT_EQ(1u, resource->read(buffer.data(), 8, 1));
   EXPECT_STREQ(content.substr(0, 8).c_str(), buffer.data());
 
   // Reading multiple blocks
   buffer.assign(buffer.size(), '\0');
-  ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
+  ASSERT_TRUE(resource->seek(0, Resource::SeekType::SET));
   ASSERT_EQ(2u, resource->read(buffer.data(), 4, 2));
   EXPECT_STREQ(content.substr(0, 8).c_str(), buffer.data());
 
   // Reading the whole file at once.
   buffer.assign(buffer.size(), '\0');
-  ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
+  ASSERT_TRUE(resource->seek(0, Resource::SeekType::SET));
   ASSERT_EQ(1u, resource->read(buffer.data(), content.size(), 1));
   EXPECT_STREQ(content.c_str(), buffer.data());
 }

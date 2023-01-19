@@ -30,48 +30,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#pragma once
 
 #include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/Fwd.hpp>
 #include <dart/common/Resource.hpp>
 
-namespace dart {
-namespace common {
+namespace dart::common {
 
+/// LocalResource provides file-like access to a resource loaded from a local
+/// file path.
+///
+/// LocalResource is a concrete implementation of the Resource class that is
+/// used to access resources located on the local file system. It provides an
+/// API similar to that of the standard C file manipulation functions, and can
+/// be used to read, seek and retrieve the size of a file.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_COMMON_API LocalResource : public virtual Resource
 {
 public:
-  explicit LocalResource(const std::string& _path);
+  /// Constructs a LocalResource object with a given file path.
+  /// @param[in] path The file path of the resource.
+  explicit LocalResource(const std::string& path);
+
+  /// Destructs the LocalResource object, closing the resource if it is open.
   virtual ~LocalResource();
 
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
+  /// Deleted copy constructor to prevent copying of LocalResource objects.
+  LocalResource(const LocalResource& other) = delete;
 
-  /// Returns true if the resource is open and in a valid state.
+  /// Deleted assignment operator to prevent assignment of LocalResource
+  /// objects.
+  LocalResource& operator=(const LocalResource& other) = delete;
+
+  /// Checks if the resource is open and in a valid state.
+  /// @return true if the resource is open and in a valid state, false
+  /// otherwise.
   bool isGood() const;
 
-  // Documentation inherited.
+  /// Returns the size of the resource in bytes.
   std::size_t getSize() override;
 
-  // Documentation inherited.
+  /// Returns the current position of the resource.
   std::size_t tell() override;
 
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
+  /// Sets the position of the resource to a new position.
+  bool seek(ptrdiff_t origin, SeekType mode) override;
 
-  // Documentation inherited.
-  std::size_t read(
-      void* _buffer, std::size_t _size, std::size_t _count) override;
+  /// Reads data from the resource into a buffer.
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override;
 
 private:
   std::FILE* mFile;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
+} // namespace dart::common

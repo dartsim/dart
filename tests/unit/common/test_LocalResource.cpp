@@ -30,24 +30,75 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Resource.hpp"
+#include "dart/common/LocalResource.hpp"
 
-#include <exception>
+#include <gtest/gtest.h>
 
-namespace dart::common {
+#include <fstream>
 
-//==============================================================================
-std::string Resource::readAll()
+using namespace dart::common;
+
+class LocalResourceTest : public ::testing::Test
 {
-  std::string content;
-  content.resize(getSize());
-  const auto result = read(&content.front(), content.size(), 1);
-  // Safe because std::string is guaranteed to be contiguous in C++11.
+protected:
+  LocalResourceTest()
+  {
+    // Create a test file
+    std::ofstream testFile("test.txt");
+    testFile << "This is a test file.";
+    testFile.close();
+  }
 
-  if (result != 1)
-    throw std::runtime_error("Failed reading data from a resource.");
+  ~LocalResourceTest()
+  {
+    // Delete the test file
+    std::remove("test.txt");
+  }
+};
 
-  return content;
+TEST_F(LocalResourceTest, TestGetSize)
+{
+  LocalResource res("test.txt");
+  std::string data = res.readAll();
+  std::size_t fileSize = data.size();
+  EXPECT_EQ(fileSize, res.getSize());
 }
 
-} // namespace dart::common
+TEST_F(LocalResourceTest, TestTell)
+{
+  LocalResource res("test.txt");
+  res.seek(10, Resource::SeekType::SET);
+  std::size_t position = res.tell();
+  EXPECT_EQ(position, 10);
+}
+
+TEST_F(LocalResourceTest, TestSeek)
+{
+  LocalResource res("test.txt");
+  res.seek(10, Resource::SeekType::SET);
+  std::size_t position = res.tell();
+  EXPECT_EQ(position, 10);
+}
+
+TEST_F(LocalResourceTest, TestRead)
+{
+  LocalResource res("test.txt");
+  char buffer[100];
+  std::size_t bytesRead = res.read(buffer, 1, 100);
+  EXPECT_EQ(bytesRead, res.getSize());
+}
+
+TEST_F(LocalResourceTest, TestReadAll)
+{
+  LocalResource res("test.txt");
+  std::string data = res.readAll();
+  EXPECT_EQ(data, "This is a test file.");
+}
+
+TEST_F(LocalResourceTest, TestIsGood)
+{
+  LocalResource res("test.txt");
+  EXPECT_TRUE(res.isGood());
+  LocalResource res2("nonexistentfile.txt");
+  EXPECT_FALSE(res2.isGood());
+}
